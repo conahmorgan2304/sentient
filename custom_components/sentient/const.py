@@ -31,6 +31,18 @@ CONF_DOOR_TRIGGERS = "door_triggers"
 CONF_ANNOUNCE_VISITORS = "announce_visitors"
 CONF_PARCEL_ALERTS = "parcel_alerts"
 CONF_FACE_SENSOR = "face_sensor"
+CONF_BRIEFINGS = "briefings"
+CONF_BRIEFING_SECTIONS = "briefing_sections"
+CONF_BRIEFING_WEATHER = "briefing_weather"
+CONF_BRIEFING_TODO = "briefing_todo"
+CONF_BRIEFING_CALENDARS = "briefing_calendars"
+CONF_BRIEFING_SYSTEM = "briefing_system"
+CONF_BRIEFING_TIME = "briefing_time"
+BRIEFING_SECTIONS = [
+    "time", "weather", "reminders", "watches", "routines", "open",
+    "visitors", "said", "system", "todo", "calendar",
+]
+DEFAULT_BRIEFING_SECTIONS = ["time", "weather", "reminders", "watches", "routines", "open", "visitors"]
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"

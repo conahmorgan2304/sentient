@@ -92,3 +92,46 @@ async def test_tidy_never_removes_too_much(hass: HomeAssistant) -> None:
     res = await hass.services.async_call(DOMAIN, "tidy_memories", {}, blocking=True, return_response=True)
     assert res["result"] == "merged 0, removed 3"  # a third of nine at most
     assert len(mem.items) == 6
+
+
+async def test_briefing_sections_todo_system_and_off(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    hass.states.async_set("todo.shopping", "2", {"friendly_name": "Shopping"})
+    hass.states.async_set("sensor.cpu_temp", "61", {"friendly_name": "CPU temperature", "unit_of_measurement": "°C"})
+    hass.states.async_set("update.frigate", "on", {"friendly_name": "Frigate update"})
+
+    async def get_items(call: ServiceCall):
+        return {"todo.shopping": {"items": [{"summary": "Milk", "status": "needs_action"}, {"summary": "Bread"}]}}
+
+    hass.services.async_register("todo", "get_items", get_items, supports_response=SupportsResponse.ONLY)
+    hass.config_entries.async_update_entry(entry, options={
+        **OPTIONS, "briefing_sections": ["weather", "todo", "system"],
+        "briefing_todo": ["todo.shopping"], "briefing_system": ["sensor.cpu_temp"],
+    })
+    await hass.async_block_till_done()
+    facts = await hass.services.async_call(DOMAIN, "briefing", {"speak": False}, blocking=True, return_response=True)
+    assert set(facts) == {"weather", "to_do", "system"}
+    assert facts["to_do"] == {"Shopping": ["Milk", "Bread"]}
+    assert facts["system"] == {"updates_available": ["Frigate update"], "CPU temperature": "61 °C"}
+
+    hass.config_entries.async_update_entry(entry, options={**OPTIONS, "briefings": False})
+    await hass.async_block_till_done()
+    facts = await hass.services.async_call(DOMAIN, "briefing", {"speak": False}, blocking=True, return_response=True)
+    assert facts == {"briefings": "turned off in Sentient's settings"}
+
+
+async def test_briefing_page_keeps_other_settings(hass: HomeAssistant) -> None:
+    from homeassistant.data_entry_flow import FlowResultType
+
+    entry = await _setup(hass)
+    hass.config_entries.async_update_entry(entry, options={"chattiness": "chatty", "quiet_start": "21:00:00"})
+    await hass.async_block_till_done()
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "briefing"})
+    assert result["step_id"] == "briefing"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"briefings": True, "briefing_sections": ["time", "todo"], "briefing_time": "07:30:00"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["chattiness"] == "chatty" and entry.options["quiet_start"] == "21:00:00"
+    assert entry.options["briefing_sections"] == ["time", "todo"] and entry.options["briefing_time"] == "07:30:00"

@@ -331,7 +331,7 @@ class BriefingTool(llm.Tool):
             return {"error": "Sentient is not loaded"}
         from .upkeep import gather_briefing
 
-        return gather_briefing(hass, rt)
+        return await gather_briefing(hass, rt)
 
 
 class VisitorsTool(llm.Tool):

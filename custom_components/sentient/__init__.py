@@ -222,7 +222,7 @@ def _register_services(hass: HomeAssistant) -> None:
         rt = _runtime(hass)
         if call.data.get("speak", True):
             return await rt.upkeep.async_speak_briefing(call.data.get("priority", "normal"))
-        return gather_briefing(hass, rt)
+        return await gather_briefing(hass, rt)
 
     async def tidy(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).upkeep.async_tidy()

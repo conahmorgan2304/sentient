@@ -11,6 +11,15 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    BRIEFING_SECTIONS,
+    CONF_BRIEFING_CALENDARS,
+    CONF_BRIEFING_SECTIONS,
+    CONF_BRIEFING_SYSTEM,
+    CONF_BRIEFING_TIME,
+    CONF_BRIEFING_TODO,
+    CONF_BRIEFING_WEATHER,
+    CONF_BRIEFINGS,
+    DEFAULT_BRIEFING_SECTIONS,
     CONF_FACE_SENSOR,
     CONF_ANNOUNCE_VISITORS,
     CONF_DOOR_CAMERA,
@@ -126,6 +135,37 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
     )
 
 
+def _briefing_schema(current: dict[str, Any]) -> vol.Schema:
+    def d(key: str, fallback: Any = None) -> dict[str, Any]:
+        value = current.get(key, fallback)
+        return {} if value is None else {"default": value}
+
+    return vol.Schema(
+        {
+            vol.Required(CONF_BRIEFINGS, **d(CONF_BRIEFINGS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_BRIEFING_SECTIONS, **d(CONF_BRIEFING_SECTIONS, DEFAULT_BRIEFING_SECTIONS)): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=BRIEFING_SECTIONS, multiple=True, mode=selector.SelectSelectorMode.LIST,
+                    translation_key="briefing_section",
+                )
+            ),
+            vol.Optional(CONF_BRIEFING_WEATHER, **d(CONF_BRIEFING_WEATHER)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="weather")
+            ),
+            vol.Optional(CONF_BRIEFING_TODO, **d(CONF_BRIEFING_TODO, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="todo", multiple=True)
+            ),
+            vol.Optional(CONF_BRIEFING_CALENDARS, **d(CONF_BRIEFING_CALENDARS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar", multiple=True)
+            ),
+            vol.Optional(CONF_BRIEFING_SYSTEM, **d(CONF_BRIEFING_SYSTEM, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
+            ),
+            vol.Optional(CONF_BRIEFING_TIME, **d(CONF_BRIEFING_TIME)): selector.TimeSelector(),
+        }
+    )
+
+
 class SentientConfigFlow(ConfigFlow, domain=DOMAIN):
     """First-time setup: a name, then how the house should speak."""
 
@@ -173,15 +213,30 @@ class SentientOptionsFlow(OptionsFlow):
         self._editing: str | None = None
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        return self.async_show_menu(step_id="init", menu_options=["settings", "memories"])
+        return self.async_show_menu(step_id="init", menu_options=["settings", "briefing", "memories"])
+
+    def _save_page(self, schema: vol.Schema, user_input: dict[str, Any]) -> ConfigFlowResult:
+        """Update only this page's settings; a field left empty is cleared."""
+        options = {**self.config_entry.data, **self.config_entry.options}
+        for key in schema.schema:
+            options.pop(str(key), None)
+        options.update(user_input)
+        return self.async_create_entry(data=options)
+
+    async def async_step_briefing(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        current = {**self.config_entry.data, **self.config_entry.options}
+        schema = _briefing_schema(current)
+        if user_input is not None:
+            return self._save_page(schema, user_input)
+        return self.async_show_form(step_id="briefing", data_schema=schema)
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         current = {**self.config_entry.data, **self.config_entry.options}
-        if user_input is not None:
-            return self.async_create_entry(data=user_input)
         schema = vol.Schema(
             {vol.Required(CONF_PERSONA, default=current.get(CONF_PERSONA, DEFAULT_PERSONA)): selector.TextSelector()}
         ).extend(_speech_schema(current).schema)
+        if user_input is not None:
+            return self._save_page(schema, user_input)
         return self.async_show_form(step_id="settings", data_schema=schema)
 
     def _keep_options(self) -> ConfigFlowResult:

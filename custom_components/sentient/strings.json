@@ -71,6 +71,7 @@
         "title": "Sentient",
         "menu_options": {
           "settings": "Settings",
+          "briefing": "Briefings",
           "memories": "Memories"
         }
       },
@@ -142,6 +143,25 @@
           "text": "Memory",
           "category": "Category"
         }
+      },
+      "briefing": {
+        "title": "Briefings",
+        "description": "What a briefing covers — from the BRIEFING button, by voice, or at a set time each day.",
+        "data": {
+          "briefings": "Briefings on",
+          "briefing_sections": "Include",
+          "briefing_weather": "Weather from",
+          "briefing_todo": "To-do lists",
+          "briefing_calendars": "Calendars",
+          "briefing_system": "System sensors to report",
+          "briefing_time": "Daily briefing at"
+        },
+        "data_description": {
+          "briefings": "Off turns off the button, the voice tool and the service.",
+          "briefing_weather": "Leave empty to use the first weather entity.",
+          "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
+          "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours."
+        }
       }
     }
   },
@@ -190,6 +210,21 @@
         "quiet": "Quiet",
         "normal": "Normal",
         "chatty": "Chatty"
+      }
+    },
+    "briefing_section": {
+      "options": {
+        "time": "Time",
+        "weather": "Weather",
+        "reminders": "Reminders due today",
+        "watches": "What's being watched",
+        "routines": "Routines coming up",
+        "open": "Windows and doors open",
+        "visitors": "Visitors today",
+        "said": "What was said recently",
+        "system": "System health",
+        "todo": "To-do lists",
+        "calendar": "Calendar (next 24 hours)"
       }
     }
   },
