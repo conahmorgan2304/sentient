@@ -210,6 +210,28 @@ class CancelWatchTool(llm.Tool):
         return {"cancelled": removed.what if removed else None}
 
 
+class LookTool(llm.Tool):
+    name = "sentient_look"
+    description = (
+        "Look through a camera right now and answer a question about what it sees, e.g. "
+        "'what's going on in the garden?', 'is there a parcel at the front door?', 'are the "
+        "bins out?'. 'camera' can be the camera's name or its area. Answer the person in "
+        "your own words from the result."
+    )
+    parameters = vol.Schema({vol.Required("camera"): cv.string, vol.Required("question"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        try:
+            return await rt.watches.async_look(tool_input.tool_args["camera"], tool_input.tool_args["question"])
+        except HomeAssistantError as err:
+            return {"error": str(err)}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -222,7 +244,7 @@ class SentientAPI(llm.API):
             api_prompt=self._prompt(llm_context),
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
-                   WatchTool(), ListWatchesTool(), CancelWatchTool()],
+                   WatchTool(), ListWatchesTool(), CancelWatchTool(), LookTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

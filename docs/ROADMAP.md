@@ -17,6 +17,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] "Keep an eye on X until Y and tell me if Z", by voice (0.4.0)
 - [x] Device/sensor watches: reach a state, or cross a number — no AI needed (0.4.0)
 - [x] Camera checks through the configured AI task, woken only by that camera's own motion/object sensors, with a cooldown (0.4.0)
+- [x] On-demand camera questions by voice (`sentient_look`) (0.4.1)
 - [ ] Crop camera checks to a zone rather than the whole frame
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [ ] Doorbell / visitor / delivery awareness built on Frigate zones

@@ -91,11 +91,23 @@ class Watch:
             "id": self.id,
             "what": self.what,
             "kind": self.kind,
-            "until": dt_util.as_local(self.until_dt).strftime("%H:%M on %a %d %b"),
+            "until": local_when(self.until_dt),
+            "minutes_left": max(0, round((self.until_dt - dt_util.utcnow()).total_seconds() / 60)),
             "times_fired": self.fired,
             "checks": self.checks,
             "last_result": self.last_result,
         }
+
+
+def local_when(when: datetime) -> str:
+    """'17:18 today', '07:30 tomorrow' or '09:00 on Friday 23 October' in local time."""
+    local = dt_util.as_local(when)
+    days = (local.date() - dt_util.now().date()).days
+    if days == 0:
+        return f"{local:%H:%M} today"
+    if days == 1:
+        return f"{local:%H:%M} tomorrow"
+    return f"{local:%H:%M} on {local:%A} {local.day} {local:%B}"
 
 
 def parse_until(value: str | None, minutes: float | None, default_hours: float) -> datetime:
@@ -390,6 +402,30 @@ class WatchManager:
         if isinstance(answer, str):
             answer = answer.strip().lower() in {"true", "yes"}
         return bool(answer), (result.get("description") or "").strip() or None
+
+    async def async_look(self, camera: str, question: str) -> dict[str, Any]:
+        """One on-demand look through a camera: 'what's going on in the garden?'."""
+        entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
+        if entity_id is None or not entity_id.startswith("camera."):
+            raise HomeAssistantError(f"I can't find a camera called '{camera}'")
+        data: dict[str, Any] = {
+            "task_name": f"Sentient look: {question}"[:100],
+            "instructions": (
+                f"Look at this home camera image and answer: {question} "
+                "Reply in one or two short spoken sentences. Describe only what is visible; "
+                "if it's too dark or unclear, say so. No camera names, IDs or timestamps."
+            ),
+            "attachments": [
+                {"media_content_id": f"media-source://camera/{entity_id}", "media_content_type": "image/jpeg"}
+            ],
+        }
+        if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
+            data["entity_id"] = ai_entity
+        response = await self.hass.services.async_call(
+            "ai_task", "generate_data", data, blocking=True, return_response=True
+        )
+        answer = (response or {}).get("data")
+        return {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
 
     async def _async_fire(self, watch: Watch, description: str | None, state: State | None) -> None:
         if watch.id not in self._watches:

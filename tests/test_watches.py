@@ -165,7 +165,7 @@ async def test_voice_tools(hass: HomeAssistant) -> None:
         tool_name="sentient_watch",
         tool_args={"what": "washing machine finishing", "entity": "washing machine", "to_state": "off", "until": "6pm"},
     ))
-    assert out["watching"]["until"].startswith("18:00")
+    assert out["watching"]["until"] in ("18:00 today", "18:00 tomorrow")
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_watch", tool_args={"what": "x", "entity": "nothing here", "to_state": "on"}))
     assert "can't find" in out["error"]
     api = await llm.async_get_api(hass, "sentient", ctx)
@@ -182,3 +182,22 @@ def test_parse_until() -> None:
     assert (t.hour, t.minute) == (18, 30) and t > now
     assert parse_until(None, 15, 2) - dt_util.utcnow() < timedelta(minutes=15, seconds=1)
     assert parse_until("nonsense", None, 2) - dt_util.utcnow() > timedelta(hours=1, minutes=59)
+
+
+async def test_look_tool(hass: HomeAssistant) -> None:
+    await _setup(hass)
+    _garden_camera(hass)
+    asked: list[ServiceCall] = []
+
+    async def generate(call: ServiceCall):
+        asked.append(call)
+        return {"conversation_id": "x", "data": "Two cats are sunbathing on the lawn."}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
+    api = await llm.async_get_api(hass, "sentient", ctx)
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden", "question": "what's going on?"}))
+    assert out == {"camera": "Garden", "answer": "Two cats are sunbathing on the lawn."}
+    assert "structure" not in asked[0].data
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "attic", "question": "?"}))
+    assert "error" in out

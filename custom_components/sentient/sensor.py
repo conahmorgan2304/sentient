@@ -171,4 +171,9 @@ class WatchesSensor(_Base):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"watches": [w.summary() for w in self._entry.runtime_data.watches.watches]}
+        return {
+            "watches": [
+                {**w.summary(), "entity_id": w.entity_id, "wakes_on": w.triggers}
+                for w in self._entry.runtime_data.watches.watches
+            ]
+        }
