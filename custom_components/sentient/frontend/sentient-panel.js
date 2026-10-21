@@ -157,6 +157,8 @@
     }
 
     async _agent() {
+      const chosen = this._attr("likely_room", "chat_agent");
+      if (chosen) return chosen;
       if (this._agentId !== undefined) return this._agentId;
       try {
         const res = await this._hass.callWS({ type: "assist_pipeline/pipeline/list" });

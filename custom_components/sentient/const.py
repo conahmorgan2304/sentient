@@ -82,6 +82,7 @@ STATIC_URL = "/sentient_static"
 FRONTEND_URL = "/sentient_frontend"
 PANEL_URL_PATH = "sentient"
 CONF_SIDEBAR = "sidebar_panel"
+CONF_CHAT_AGENT = "chat_agent"
 DEFAULT_SIDEBAR = True
 
 # Events

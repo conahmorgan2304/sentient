@@ -165,6 +165,7 @@ class LikelyRoomSensor(_Base):
             "quiet_hours": rt.speech.quiet_now(),
             "persona": rt.options.get("persona") or self._entry.title,
             "ai_checks_today": rt.watches.ai_checks_today,
+            "chat_agent": rt.options.get("chat_agent"),
         }
 
 

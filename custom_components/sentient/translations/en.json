@@ -37,7 +37,8 @@
           "announce_visitors": "Say who is at the door",
           "parcel_alerts": "Say when a parcel is left",
           "face_sensor": "Recognised name from",
-          "sidebar_panel": "Show in the sidebar"
+          "sidebar_panel": "Show in the sidebar",
+          "chat_agent": "Chat agent for the sidebar page"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -59,7 +60,8 @@
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
-          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said."
+          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline."
         }
       }
     },
@@ -106,7 +108,8 @@
           "announce_visitors": "Say who is at the door",
           "parcel_alerts": "Say when a parcel is left",
           "face_sensor": "Recognised name from",
-          "sidebar_panel": "Show in the sidebar"
+          "sidebar_panel": "Show in the sidebar",
+          "chat_agent": "Chat agent for the sidebar page"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -128,7 +131,8 @@
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
-          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said."
+          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline."
         }
       },
       "memories": {
