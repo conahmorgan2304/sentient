@@ -296,3 +296,15 @@ async def test_restart_remembers_from_history(recorder_mock, hass: HomeAssistant
                                 "default_speaker": "assist_satellite.living", "motion_window": 10})
     assert entry.runtime_data.tracker.scores().get(entry.runtime_data.speech._area_of("assist_satellite.kitchen"), 0) > 100
     assert get_instance(hass) is not None
+
+
+async def test_diagnostics_redacts_personal_bits(hass: HomeAssistant) -> None:
+    from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
+
+    entry = await _setup(hass, {**OPTIONS, "house_rules": "Never say the house is empty."})
+    entry.runtime_data.memory.add("Conah likes tea", "preference")
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+    assert diag["options"]["house_rules"] == "**REDACTED**"
+    assert diag["options"]["persona"] == "**REDACTED**"
+    assert diag["memory"] == {"count": 1, "categories": ["preference"]}
+    assert "Conah" not in str(diag)
