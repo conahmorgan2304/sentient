@@ -57,6 +57,16 @@ def test_ignores_what_an_automation_already_does() -> None:
     assert not [r for r in found if r.state == "on"]
 
 
+def test_changes_made_by_automations_are_left_out() -> None:
+    rnd = random.Random(9)
+    times = {a: (18, 30 + rnd.randint(-8, 8)) for a in range(1, 15)}
+    states = _history("light.bedroom", times)
+    automated = {round(s.last_changed.timestamp()) for s in states if s.state == "on"}
+    assert not [r for r in find_routines("light.bedroom", "bedroom light", states, TODAY, automated) if r.state == "on"]
+    # without the logbook's help it would look like a habit
+    assert [r for r in find_routines("light.bedroom", "bedroom light", states, TODAY) if r.state == "on"]
+
+
 def test_random_use_is_not_a_routine() -> None:
     rnd = random.Random(1)
     times = {a: (rnd.randint(8, 22), rnd.randint(0, 59)) for a in range(1, 15)}

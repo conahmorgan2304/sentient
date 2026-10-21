@@ -6,8 +6,9 @@ time most days ("the hallway light goes on around 5:30pm on weekdays").
 
 * Plain statistics: clusters of the same change within a time window,
   separately for every day / weekdays / weekends.
-* Changes that happen to the minute every day are almost certainly an
-  automation already, so they're ignored.
+* Only changes people made count: the logbook says when an automation or
+  script caused a change, and those are left out. As a fallback, changes that
+  happen to the minute every day are treated as automated too.
 * Learned routines are shared with every voice agent, and — once each, during
   the day, when someone is home — offered: "want me to do that for you?".
   Adopted routines are then carried out at their usual time.
@@ -108,21 +109,27 @@ class Routine:
         }
 
 
-def _changes_to(states: list[State], target: str) -> list[datetime]:
-    """Local times an entity changed *to* target from some other real state."""
+def _changes_to(states: list[State], target: str, automated: set[int] | None = None) -> list[datetime]:
+    """Local times an entity changed *to* target from some other real state, by a person."""
     out: list[datetime] = []
     previous: str | None = None
     for st in states:
         if st.state in ("unavailable", "unknown"):
             continue
         if st.state == target and previous is not None and previous != target:
-            out.append(dt_util.as_local(st.last_changed))
+            stamp = round(st.last_changed.timestamp())
+            if not automated or not ({stamp - 1, stamp, stamp + 1} & automated):
+                out.append(dt_util.as_local(st.last_changed))
         previous = st.state
     return out
 
 
 def find_routines(
-    entity_id: str, name: str, states: list[State], today: datetime | None = None
+    entity_id: str,
+    name: str,
+    states: list[State],
+    today: datetime | None = None,
+    automated: set[int] | None = None,
 ) -> list[Routine]:
     """Pure statistics over one entity's history."""
     domain = entity_id.split(".", 1)[0]
@@ -132,7 +139,7 @@ def find_routines(
     window = [today - timedelta(days=i) for i in range(1, WINDOW_DAYS + 1)]
     found: list[Routine] = []
     for target in _SUPPORTED[domain]:
-        events = [e for e in _changes_to(states, target) if e.date() in window]
+        events = [e for e in _changes_to(states, target, automated) if e.date() in window]
         by_day: dict[Any, list[int]] = {}
         for e in events:
             by_day.setdefault(e.date(), []).append(e.hour * 60 + e.minute)
@@ -245,6 +252,30 @@ class Learner:
             )
         )
 
+    async def _async_automated(self, entity_ids: list[str]) -> dict[str, set[int]]:
+        """Times (epoch seconds) each entity was changed by an automation or script."""
+        if "logbook" not in self.hass.config.components or not entity_ids:
+            return {}
+        from homeassistant.components.logbook.helpers import async_determine_event_types
+        from homeassistant.components.logbook.processor import EventProcessor
+        from homeassistant.components.recorder import get_instance
+
+        end = dt_util.utcnow()
+        start = end - timedelta(days=WINDOW_DAYS + 1)
+        processor = EventProcessor(
+            self.hass, async_determine_event_types(self.hass, entity_ids, None), entity_ids,
+            None, None, timestamp=True, include_entity_name=False,
+        )
+        rows = await get_instance(self.hass).async_add_executor_job(processor.get_events, start, end)
+        out: dict[str, set[int]] = {}
+        for row in rows:
+            if row.get("context_domain") in ("automation", "script") or row.get("context_event_type") in (
+                "automation_triggered", "script_started"
+            ):
+                if (entity_id := row.get("entity_id")) and isinstance(row.get("when"), (int, float)):
+                    out.setdefault(entity_id, set()).add(round(row["when"]))
+        return out
+
     async def async_learn(self) -> list[Routine]:
         """Re-learn routines, keeping the user's decisions about ones seen before."""
         entity_ids = [e for e in self.entities if e.split(".", 1)[0] in _SUPPORTED]
@@ -253,11 +284,18 @@ class Learner:
         except Exception:  # noqa: BLE001 - learning is best effort
             _LOGGER.warning("Sentient could not read history to learn routines", exc_info=True)
             return list(self.routines.values())
+        try:
+            automated = await self._async_automated(entity_ids)
+        except Exception:  # noqa: BLE001 - fall back to the to-the-minute rule
+            _LOGGER.debug("Could not read the logbook; using timing alone", exc_info=True)
+            automated = {}
         fresh: dict[str, Routine] = {}
         for entity_id in entity_ids:
             state = self.hass.states.get(entity_id)
             name = (state.name if state else entity_id).lower()
-            for routine in find_routines(entity_id, name, history.get(entity_id, [])):
+            for routine in find_routines(
+                entity_id, name, history.get(entity_id, []), automated=automated.get(entity_id)
+            ):
                 old = self.routines.get(routine.id)
                 if old is not None:
                     routine.adopted, routine.declined, routine.suggested = old.adopted, old.declined, old.suggested

@@ -9,6 +9,7 @@
   "after_dependencies": [
     "assist_satellite",
     "conversation",
+    "logbook",
     "recorder"
   ],
   "documentation": "https://github.com/conahmorgan2304/sentient",
@@ -16,5 +17,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [],
-  "version": "0.7.0"
+  "version": "0.7.1"
 }
