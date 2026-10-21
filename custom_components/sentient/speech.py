@@ -146,39 +146,41 @@ class SpeechRouter:
                 return device.area_id
         return None
 
-    def _last_presence(self, area_id: str) -> datetime | None:
-        """Most recent time presence was seen in an area (now, if it's on)."""
-        latest: datetime | None = None
-        for entry in er.async_entries_for_area(er.async_get(self.hass), area_id):
-            if entry.domain != "binary_sensor":
+    def _presence_sensors(self, area_id: str) -> list[State]:
+        """Motion/occupancy sensors in an area, directly or through their device."""
+        ent_reg = er.async_get(self.hass)
+        entries = list(er.async_entries_for_area(ent_reg, area_id))
+        for device in dr.async_entries_for_area(dr.async_get(self.hass), area_id):
+            entries.extend(
+                e for e in er.async_entries_for_device(ent_reg, device.id) if e.area_id in (None, area_id)
+            )
+        found: dict[str, State] = {}
+        for entry in entries:
+            if entry.domain != "binary_sensor" or entry.entity_id in found:
                 continue
-            state: State | None = self.hass.states.get(entry.entity_id)
-            if state is None:
-                continue
-            device_class = state.attributes.get("device_class")
-            if device_class not in _PRESENCE_CLASSES:
-                continue
-            seen = dt_util.utcnow() if state.state == STATE_ON else state.last_changed
-            if latest is None or seen > latest:
-                latest = seen
-        # Sensors attached through their device rather than the entity
-        dev_reg = dr.async_get(self.hass)
-        for device in dr.async_entries_for_area(dev_reg, area_id):
-            for entry in er.async_entries_for_device(er.async_get(self.hass), device.id):
-                if entry.domain != "binary_sensor" or entry.area_id not in (None, area_id):
-                    continue
-                state = self.hass.states.get(entry.entity_id)
-                if state is None or state.attributes.get("device_class") not in _PRESENCE_CLASSES:
-                    continue
-                seen = dt_util.utcnow() if state.state == STATE_ON else state.last_changed
-                if latest is None or seen > latest:
-                    latest = seen
-        return latest
+            state = self.hass.states.get(entry.entity_id)
+            if state is not None and state.attributes.get("device_class") in _PRESENCE_CLASSES:
+                found[entry.entity_id] = state
+        return list(found.values())
+
+    def _presence(self, area_id: str) -> tuple[bool, datetime] | None:
+        """(motion active now, when it last changed) for the freshest sensor in an area.
+
+        Rooms with motion *now* beat rooms where it has cleared; among those,
+        the room where motion started most recently wins — that's where the
+        person has just walked into.
+        """
+        best: tuple[bool, datetime] | None = None
+        for state in self._presence_sensors(area_id):
+            score = (state.state == STATE_ON, state.last_changed)
+            if best is None or score > best:
+                best = score
+        return best
 
     def pick_speaker(self) -> list[str]:
-        """The speaker in the room with the freshest motion, else the default."""
+        """The speaker in the room the person most recently moved into, else the default."""
         window = timedelta(minutes=float(self.options.get(CONF_MOTION_WINDOW, DEFAULT_MOTION_WINDOW)))
-        best: tuple[datetime, str] | None = None
+        best: tuple[tuple[bool, datetime], str] | None = None
         for speaker in self.speakers:
             state = self.hass.states.get(speaker)
             if state is None or state.state == "unavailable":
@@ -186,9 +188,14 @@ class SpeechRouter:
             area = self._area_of(speaker)
             if not area:
                 continue
-            seen = self._last_presence(area)
-            if seen and dt_util.utcnow() - seen <= window and (best is None or seen > best[0]):
-                best = (seen, speaker)
+            presence = self._presence(area)
+            if presence is None:
+                continue
+            active, changed = presence
+            if not active and dt_util.utcnow() - changed > window:
+                continue
+            if best is None or presence > best[0]:
+                best = (presence, speaker)
         if best:
             return [best[1]]
         default = self.options.get(CONF_DEFAULT_SPEAKER)

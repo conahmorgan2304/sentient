@@ -99,6 +99,33 @@ async def test_say_follows_motion_and_cleans(hass: HomeAssistant) -> None:
     assert res["speakers"] == ["assist_satellite.hallway"]
 
 
+async def test_two_rooms_with_motion_picks_newest(hass: HomeAssistant) -> None:
+    """Living room has had motion on for ages; kitchen just started -> kitchen."""
+    from datetime import timedelta
+    from unittest.mock import patch
+    from homeassistant.util import dt as dt_util
+
+    await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"]})
+    calls = async_mock_service(hass, "assist_satellite", "announce")
+    areas = ar.async_get(hass)
+    ents = er.async_get(hass)
+    for room, sat, sensor in (("Kitchen", "assist_satellite.kitchen", "binary_sensor.kitchen_motion"),
+                              ("Living Room", "assist_satellite.living", "binary_sensor.living_motion")):
+        area = areas.async_create(room)
+        for eid in (sat, sensor):
+            domain, obj = eid.split(".")
+            entry = ents.async_get_or_create(domain, "test", obj, suggested_object_id=obj)
+            ents.async_update_entity(entry.entity_id, area_id=area.id)
+        hass.states.async_set(sat, "idle")
+    start = dt_util.utcnow()
+    with patch("homeassistant.core.dt_util.utcnow", return_value=start - timedelta(minutes=5)):
+        hass.states.async_set("binary_sensor.living_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
+    assert res["speakers"] == ["assist_satellite.kitchen"]
+    assert calls
+
+
 async def test_quiet_hours_hold_unless_urgent(hass: HomeAssistant) -> None:
     await _setup(hass, {**OPTIONS, "quiet_start": "00:00:00", "quiet_end": "23:59:59"})
     calls = async_mock_service(hass, "assist_satellite", "announce")
