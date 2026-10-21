@@ -104,6 +104,21 @@ class MemoryStore:
         self._save()
         return memory
 
+    def get(self, memory_id: str) -> Memory | None:
+        return next((m for m in self._items if m.id == memory_id), None)
+
+    def update(self, memory_id: str, text: str, category: str | None = None) -> Memory | None:
+        """Edit a memory in place (keeps its id and usage count)."""
+        memory = self.get(memory_id)
+        text = " ".join(text.split()).strip()
+        if memory is None or not text:
+            return None
+        memory.text = text
+        if category in MEMORY_CATEGORIES:
+            memory.category = category
+        self._save()
+        return memory
+
     def forget(self, memory_id_or_text: str) -> Memory | None:
         """Remove by id, or by the best text match."""
         target = next((m for m in self._items if m.id == memory_id_or_text), None)

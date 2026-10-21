@@ -40,7 +40,14 @@
   "options": {
     "step": {
       "init": {
-        "title": "Sentient settings",
+        "title": "Sentient",
+        "menu_options": {
+          "settings": "Settings",
+          "memories": "Memories"
+        }
+      },
+      "settings": {
+        "title": "Settings",
         "data": {
           "persona": "Name",
           "speakers": "Speakers",
@@ -61,6 +68,23 @@
           "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
           "all_occupied": "On: everyone who's home hears it. Off: only the busiest room."
+        }
+      },
+      "memories": {
+        "title": "Memories",
+        "description": "The house remembers {count} things. Pick one to edit, tick any to forget, or add a new one.",
+        "data": {
+          "edit": "Edit a memory",
+          "forget": "Forget",
+          "add": "Add a memory",
+          "category": "Category for the new memory"
+        }
+      },
+      "edit_memory": {
+        "title": "Edit memory",
+        "data": {
+          "text": "Memory",
+          "category": "Category"
         }
       }
     }

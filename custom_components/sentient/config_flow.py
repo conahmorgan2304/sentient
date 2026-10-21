@@ -32,6 +32,7 @@ from .const import (
     DEFAULT_QUIET_START,
     DEFAULT_SUPPRESS_SECONDS,
     DOMAIN,
+    MEMORY_CATEGORIES,
 )
 
 _SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain="assist_satellite", multiple=True))
@@ -100,14 +101,83 @@ class SentientConfigFlow(ConfigFlow, domain=DOMAIN):
         return SentientOptionsFlow()
 
 
+def _memory_label(memory) -> str:
+    text = memory.text if len(memory.text) <= 90 else memory.text[:87] + "..."
+    return f"{text}  ({memory.category})"
+
+
+_CATEGORY = selector.SelectSelector(
+    selector.SelectSelectorConfig(options=MEMORY_CATEGORIES, translation_key="category")
+)
+
+
 class SentientOptionsFlow(OptionsFlow):
-    """Change persona and speech rules any time."""
+    """Settings, plus a simple manager for what the house remembers."""
+
+    def __init__(self) -> None:
+        self._editing: str | None = None
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["settings", "memories"])
+
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         current = {**self.config_entry.data, **self.config_entry.options}
         if user_input is not None:
             return self.async_create_entry(data=user_input)
         schema = vol.Schema(
             {vol.Required(CONF_PERSONA, default=current.get(CONF_PERSONA, DEFAULT_PERSONA)): selector.TextSelector()}
         ).extend(_speech_schema(current).schema)
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="settings", data_schema=schema)
+
+    def _keep_options(self) -> ConfigFlowResult:
+        return self.async_create_entry(data=dict(self.config_entry.options))
+
+    async def async_step_memories(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        memory = self.config_entry.runtime_data.memory
+        if user_input is not None:
+            for memory_id in user_input.get("forget") or []:
+                memory.forget(memory_id)
+            if (text := (user_input.get("add") or "").strip()):
+                memory.add(text, user_input.get("category", "fact"), source="settings")
+            if (edit := user_input.get("edit")) and memory.get(edit):
+                self._editing = edit
+                return await self.async_step_edit_memory()
+            return self._keep_options()
+
+        items = sorted(memory.items, key=lambda m: m.created, reverse=True)
+        choices = [selector.SelectOptionDict(value=m.id, label=_memory_label(m)) for m in items]
+        fields: dict[Any, Any] = {}
+        if choices:
+            fields[vol.Optional("edit")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=choices, mode=selector.SelectSelectorMode.DROPDOWN)
+            )
+            fields[vol.Optional("forget", default=[])] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=choices, multiple=True, mode=selector.SelectSelectorMode.LIST)
+            )
+        fields[vol.Optional("add")] = selector.TextSelector()
+        fields[vol.Optional("category", default="fact")] = _CATEGORY
+        return self.async_show_form(
+            step_id="memories",
+            data_schema=vol.Schema(fields),
+            description_placeholders={"count": str(len(items))},
+        )
+
+    async def async_step_edit_memory(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        memory = self.config_entry.runtime_data.memory
+        item = memory.get(self._editing or "")
+        if item is None:
+            return self._keep_options()
+        if user_input is not None:
+            memory.update(item.id, user_input["text"], user_input.get("category"))
+            return self._keep_options()
+        return self.async_show_form(
+            step_id="edit_memory",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("text", default=item.text): selector.TextSelector(
+                        selector.TextSelectorConfig(multiline=True)
+                    ),
+                    vol.Required("category", default=item.category): _CATEGORY,
+                }
+            ),
+        )

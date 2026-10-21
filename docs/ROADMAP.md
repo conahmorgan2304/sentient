@@ -11,7 +11,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Activity-scored rooms: decaying motion history, voice-interaction boost, pass-through areas, every-occupied-room mode, seeded from the recorder (0.2.0)
 - [x] Memory and last-spoken sensors
 - [ ] Dashboard card (core, feed and stats) shipped with the integration
-- [ ] Memory manager in the options flow (view, edit, delete)
+- [x] Memory manager in the options flow (view, edit, delete) (0.3.0)
 
 ## Stage 2 — Watches
 - [ ] "Keep an eye on X until Y and tell me if Z", by voice
