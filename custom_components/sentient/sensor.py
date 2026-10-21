@@ -15,7 +15,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
-from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_SPOKE
+from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_SPOKE, EVENT_WATCH_CHANGED
 
 
 async def async_setup_entry(
@@ -23,7 +23,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -147,3 +147,28 @@ class LikelyRoomSensor(_Base):
             "scores": {self._name(a): v for a, v in scores},
             "speaker": (rt.speech.pick_speaker() or [None])[0],
         }
+
+
+class WatchesSensor(_Base):
+    """How many things are being watched, with each one as attributes."""
+
+    _attr_icon = "mdi:eye-outline"
+    _attr_native_unit_of_measurement = "watches"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "watches")
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_WATCH_CHANGED, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> int:
+        return len(self._entry.runtime_data.watches.watches)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"watches": [w.summary() for w in self._entry.runtime_data.watches.watches]}

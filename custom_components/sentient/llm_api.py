@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
@@ -137,6 +138,78 @@ class AnnounceTool(llm.Tool):
         return result.as_dict()
 
 
+class WatchTool(llm.Tool):
+    name = "sentient_watch"
+    description = (
+        "Keep an eye on something and speak up when it happens. Two kinds: "
+        "(1) a device or sensor reaching a state or crossing a number, e.g. 'tell me when the "
+        "washing machine finishes' (entity + to_state) or 'if the bedroom goes above 24' "
+        "(entity + above); (2) a camera, e.g. 'watch the garden until 6 and tell me if the cats "
+        "go near the rabbit pen' (entity = the camera or its area name, question = a yes/no "
+        "question about the image, look_for = the object, e.g. cat, person, car). "
+        "Use 'until' for a clock time (e.g. '18:00') or 'minutes'. Confirm briefly using the "
+        "local time returned; never read the id aloud."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("what"): cv.string,
+            vol.Required("entity"): cv.string,
+            vol.Optional("to_state"): cv.string,
+            vol.Optional("above"): vol.Coerce(float),
+            vol.Optional("below"): vol.Coerce(float),
+            vol.Optional("question"): cv.string,
+            vol.Optional("look_for"): cv.string,
+            vol.Optional("message"): cv.string,
+            vol.Optional("until"): cv.string,
+            vol.Optional("minutes"): vol.Coerce(float),
+            vol.Optional("repeat"): cv.boolean,
+            vol.Optional("priority"): vol.In(PRIORITIES),
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = dict(tool_input.tool_args)
+        try:
+            watch = rt.watches.add(args.pop("what"), args.pop("entity"), **args)
+        except HomeAssistantError as err:
+            return {"error": str(err)}
+        return {"watching": watch.summary()}
+
+
+class ListWatchesTool(llm.Tool):
+    name = "sentient_watches"
+    description = "List what the house is currently keeping an eye on, with local end times."
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        return {"watches": [w.summary() for w in rt.watches.watches]}
+
+
+class CancelWatchTool(llm.Tool):
+    name = "sentient_cancel_watch"
+    description = "Stop keeping an eye on something. 'what' can be words from the watch, e.g. 'the cats'."
+    parameters = vol.Schema({vol.Required("what"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        removed = rt.watches.cancel(tool_input.tool_args["what"])
+        return {"cancelled": removed.what if removed else None}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -148,7 +221,8 @@ class SentientAPI(llm.API):
             api=self,
             api_prompt=self._prompt(llm_context),
             llm_context=llm_context,
-            tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool()],
+            tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+                   WatchTool(), ListWatchesTool(), CancelWatchTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -172,6 +246,14 @@ class SentientAPI(llm.API):
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
+        watches = rt.watches.watches
+        if watches:
+            lines.append("You are currently keeping an eye on:")
+            lines.extend(f"- {w.what} (until {w.summary()['until']})" for w in watches[:10])
+        lines.append(
+            "When someone asks you to keep an eye on something, or to tell them when something "
+            "happens, use sentient_watch rather than promising to remember."
+        )
         lines.append(
             "When someone tells you something worth knowing later, or asks you to "
             "remember it, save it with sentient_remember. Never use the words "

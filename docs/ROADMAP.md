@@ -13,10 +13,12 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [ ] Dashboard card (core, feed and stats) shipped with the integration
 - [x] Memory manager in the options flow (view, edit, delete) (0.3.0)
 
-## Stage 2 — Watches
-- [ ] "Keep an eye on X until Y and tell me if Z", by voice
-- [ ] Camera checks through the configured AI task, using camera zones rather than whole frames
-- [ ] Local times everywhere; never read IDs aloud; cancel or change by voice
+## Stage 2 — Watches *(in progress)*
+- [x] "Keep an eye on X until Y and tell me if Z", by voice (0.4.0)
+- [x] Device/sensor watches: reach a state, or cross a number — no AI needed (0.4.0)
+- [x] Camera checks through the configured AI task, woken only by that camera's own motion/object sensors, with a cooldown (0.4.0)
+- [ ] Crop camera checks to a zone rather than the whole frame
+- [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [ ] Doorbell / visitor / delivery awareness built on Frigate zones
 
 ## Stage 3 — Speaking up

@@ -36,3 +36,70 @@ forget:
       example: "rabbit hutch"
       selector:
         text:
+watch:
+  fields:
+    what:
+      required: true
+      example: "the cats near the rabbit pen"
+      selector:
+        text:
+    entity:
+      required: true
+      example: camera.garden
+      selector:
+        text:
+    to_state:
+      example: "off"
+      selector:
+        text:
+    above:
+      selector:
+        number:
+          mode: box
+          step: any
+    below:
+      selector:
+        number:
+          mode: box
+          step: any
+    question:
+      example: "Are any cats near the rabbit pen?"
+      selector:
+        text:
+    look_for:
+      example: cat
+      selector:
+        text:
+    message:
+      selector:
+        text:
+    until:
+      example: "18:00"
+      selector:
+        text:
+    minutes:
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+    repeat:
+      default: false
+      selector:
+        boolean:
+    priority:
+      default: normal
+      selector:
+        select:
+          options: [low, normal, urgent]
+          translation_key: priority
+    speaker:
+      selector:
+        text:
+cancel_watch:
+  fields:
+    what:
+      required: true
+      example: "cats"
+      selector:
+        text:

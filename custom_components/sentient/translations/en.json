@@ -22,14 +22,18 @@
           "suppress_seconds": "Stay quiet for",
           "prompt_memories": "Memories to share with voice assistants",
           "pass_through_areas": "Pass-through areas",
-          "all_occupied": "Speak in every occupied room"
+          "all_occupied": "Speak in every occupied room",
+          "ai_task_entity": "AI for camera checks",
+          "camera_cooldown": "Minimum gap between camera checks"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
           "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
           "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
-          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room."
+          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
+          "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down."
         }
       }
     },
@@ -60,14 +64,18 @@
           "suppress_seconds": "Stay quiet for",
           "prompt_memories": "Memories to share with voice assistants",
           "pass_through_areas": "Pass-through areas",
-          "all_occupied": "Speak in every occupied room"
+          "all_occupied": "Speak in every occupied room",
+          "ai_task_entity": "AI for camera checks",
+          "camera_cooldown": "Minimum gap between camera checks"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
           "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
           "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
-          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room."
+          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
+          "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down."
         }
       },
       "memories": {
@@ -99,6 +107,9 @@
       },
       "likely_room": {
         "name": "Likely room"
+      },
+      "watches": {
+        "name": "Watches"
       }
     }
   },
@@ -160,6 +171,74 @@
         "what": {
           "name": "What",
           "description": "Memory id or words from it."
+        }
+      }
+    },
+    "watch": {
+      "name": "Watch",
+      "description": "Keep an eye on a device, sensor or camera and speak up when something happens.",
+      "fields": {
+        "what": {
+          "name": "What",
+          "description": "Short description, e.g. 'the cats near the rabbit pen'."
+        },
+        "entity": {
+          "name": "Entity",
+          "description": "Entity id, name, or a camera's area name."
+        },
+        "to_state": {
+          "name": "To state",
+          "description": "Fire when the entity reaches this state."
+        },
+        "above": {
+          "name": "Above",
+          "description": "Fire when the value goes above this."
+        },
+        "below": {
+          "name": "Below",
+          "description": "Fire when the value goes below this."
+        },
+        "question": {
+          "name": "Question",
+          "description": "Camera watches: a yes/no question about the picture."
+        },
+        "look_for": {
+          "name": "Look for",
+          "description": "Camera watches: object to wake on, e.g. person, cat, car."
+        },
+        "message": {
+          "name": "Message",
+          "description": "What to say. Leave empty for an automatic sentence."
+        },
+        "until": {
+          "name": "Until",
+          "description": "Clock time, e.g. 18:00 or 6pm."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Or how many minutes to watch for."
+        },
+        "repeat": {
+          "name": "Repeat",
+          "description": "Keep watching after it fires."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent ignores quiet hours."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it. Leave empty to follow people."
+        }
+      }
+    },
+    "cancel_watch": {
+      "name": "Cancel watch",
+      "description": "Stop a watch.",
+      "fields": {
+        "what": {
+          "name": "What",
+          "description": "Watch id or words from it."
         }
       }
     }
