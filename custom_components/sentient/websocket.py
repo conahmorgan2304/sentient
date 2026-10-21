@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-import voluptuous_serialize
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
@@ -109,6 +108,18 @@ def group_schema(group_id: str) -> vol.Schema:
     return vol.Schema({fields[k][0]: fields[k][1] for k in keys if k in fields})
 
 
+def _serialize(schema: vol.Schema) -> list[dict[str, Any]]:
+    """The schema as the frontend's form wants it (selectors only, so no extra library needed)."""
+    out = []
+    for marker, value in schema.schema.items():
+        field: dict[str, Any] = {"name": str(marker), "required": isinstance(marker, vol.Required)}
+        if marker.default is not vol.UNDEFINED:
+            field["default"] = marker.default()
+        field.update(cv.custom_serializer(value))
+        out.append(field)
+    return out
+
+
 def _current(entry) -> dict[str, Any]:
     return {**entry.data, **entry.options}
 
@@ -159,7 +170,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     groups = [
         {
             "id": gid, "title": title, "icon": icon, "blurb": blurb,
-            "schema": voluptuous_serialize.convert(group_schema(gid), custom_serializer=cv.custom_serializer),
+            "schema": _serialize(group_schema(gid)),
         }
         for gid, title, icon, blurb, _keys in GROUPS
     ]
