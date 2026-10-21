@@ -100,14 +100,19 @@ class Watch:
 
 
 def local_when(when: datetime) -> str:
-    """'17:18 today', '07:30 tomorrow' or '09:00 on Friday 23 October' in local time."""
+    """'5:18pm today', '7:30am tomorrow' or '9am on Friday 23 October', in local time.
+
+    12-hour wording because voice models read it aloud more reliably than 17:18.
+    """
     local = dt_util.as_local(when)
+    hour = local.hour % 12 or 12
+    clock = f"{hour}{'' if local.minute == 0 else f':{local.minute:02d}'}{'am' if local.hour < 12 else 'pm'}"
     days = (local.date() - dt_util.now().date()).days
     if days == 0:
-        return f"{local:%H:%M} today"
+        return f"{clock} today"
     if days == 1:
-        return f"{local:%H:%M} tomorrow"
-    return f"{local:%H:%M} on {local:%A} {local.day} {local:%B}"
+        return f"{clock} tomorrow"
+    return f"{clock} on {local:%A} {local.day} {local:%B}"
 
 
 def parse_until(value: str | None, minutes: float | None, default_hours: float) -> datetime:

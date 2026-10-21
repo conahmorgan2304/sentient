@@ -165,7 +165,7 @@ async def test_voice_tools(hass: HomeAssistant) -> None:
         tool_name="sentient_watch",
         tool_args={"what": "washing machine finishing", "entity": "washing machine", "to_state": "off", "until": "6pm"},
     ))
-    assert out["watching"]["until"] in ("18:00 today", "18:00 tomorrow")
+    assert out["watching"]["until"] in ("6pm today", "6pm tomorrow")
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_watch", tool_args={"what": "x", "entity": "nothing here", "to_state": "on"}))
     assert "can't find" in out["error"]
     api = await llm.async_get_api(hass, "sentient", ctx)
@@ -201,3 +201,12 @@ async def test_look_tool(hass: HomeAssistant) -> None:
     assert "structure" not in asked[0].data
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "attic", "question": "?"}))
     assert "error" in out
+
+
+def test_local_when_wording() -> None:
+    from custom_components.sentient.watches import local_when
+
+    base = dt_util.now().replace(hour=17, minute=18, second=0, microsecond=0)
+    assert local_when(base) == "5:18pm today"
+    assert local_when(base.replace(hour=7, minute=30) + timedelta(days=1)) == "7:30am tomorrow"
+    assert local_when(base.replace(hour=0, minute=0) + timedelta(days=1)) == "12am tomorrow"
