@@ -1,0 +1,6 @@
+# Pinned so CI matches the versions the tests are developed against.
+pytest==9.0.0
+pytest-homeassistant-custom-component==0.13.316
+hassil==3.5.0
+home-assistant-intents==2026.1.28
+PyTurboJPEG

@@ -1,17 +1,17 @@
 {
   "domain": "sentient",
   "name": "Sentient",
-  "codeowners": [
-    "@conahmorgan2304"
-  ],
-  "config_flow": true,
-  "dependencies": [],
   "after_dependencies": [
     "assist_satellite",
     "conversation",
     "logbook",
     "recorder"
   ],
+  "codeowners": [
+    "@conahmorgan2304"
+  ],
+  "config_flow": true,
+  "dependencies": [],
   "documentation": "https://github.com/conahmorgan2304/sentient",
   "integration_type": "service",
   "iot_class": "calculated",
