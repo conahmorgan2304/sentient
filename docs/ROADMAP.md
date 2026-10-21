@@ -23,7 +23,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Spoken reminders at a time, in the room people are in (0.5.0)
 - [ ] Crop the image itself to the zone
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
-- [ ] Doorbell / visitor / delivery awareness built on Frigate zones
+- [x] Doorbell visitor log: one AI look when the bell rings, kept quiet by default; parcel-left check after deliveries (0.9.0)
 
 ## Stage 3 — Speaking up *(in progress)*
 - [x] Noticing: chosen entities → free rules (quiet hours, hush, hourly limit, jitter, batching) → AI decides whether to speak (0.6.0)

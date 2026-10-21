@@ -31,7 +31,11 @@
           "chattiness": "How chatty",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
-          "suggest_routines": "Offer to take over routines"
+          "suggest_routines": "Offer to take over routines",
+          "door_camera": "Door camera",
+          "door_triggers": "Doorbell",
+          "announce_visitors": "Say who is at the door",
+          "parcel_alerts": "Say when a parcel is left"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -47,7 +51,11 @@
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days.",
-          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on."
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
+          "door_camera": "Looked at once when the doorbell rings, to log who came.",
+          "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
+          "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left."
         }
       }
     },
@@ -87,7 +95,11 @@
           "chattiness": "How chatty",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
-          "suggest_routines": "Offer to take over routines"
+          "suggest_routines": "Offer to take over routines",
+          "door_camera": "Door camera",
+          "door_triggers": "Doorbell",
+          "announce_visitors": "Say who is at the door",
+          "parcel_alerts": "Say when a parcel is left"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -103,7 +115,11 @@
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days.",
-          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on."
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
+          "door_camera": "Looked at once when the doorbell rings, to log who came.",
+          "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
+          "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left."
         }
       },
       "memories": {
@@ -141,6 +157,9 @@
       },
       "routines": {
         "name": "Routines"
+      },
+      "visitors": {
+        "name": "Visitors"
       }
     }
   },

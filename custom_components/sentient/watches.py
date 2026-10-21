@@ -238,7 +238,7 @@ class WatchManager:
                 self._watches.pop(watch.id, None)
         self._expire()
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed))
-        self._unsubs.append(async_track_time_interval(self.hass, lambda _now: self._expire(), timedelta(minutes=1)))
+        self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
 
     @callback
     def async_stop(self) -> None:
@@ -375,6 +375,10 @@ class WatchManager:
                 unsub()
             self._save()
         return watch
+
+    @callback
+    def _tick(self, _now: datetime) -> None:
+        self._expire()
 
     def _expire(self) -> None:
         now = dt_util.utcnow()

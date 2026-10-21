@@ -35,6 +35,7 @@ from .presence import ActivityTracker
 from .learning import Learner
 from .notice import Noticer
 from .upkeep import Upkeep, gather_briefing
+from .visitors import Visitors
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -57,6 +58,7 @@ class SentientRuntime:
     noticer: Noticer
     learner: Learner
     upkeep: Upkeep
+    visitors: Visitors
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -147,9 +149,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     upkeep = Upkeep(hass, lambda: entry.runtime_data)
     upkeep.async_start()
     entry.async_on_unload(upkeep.async_stop)
+    visitors = Visitors(hass, entry.entry_id, options, speech, watches)
+    await visitors.async_start()
+    entry.async_on_unload(visitors.async_stop)
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
-        noticer=noticer, learner=learner, upkeep=upkeep,
+        noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -168,6 +173,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.watches.options = options
     entry.runtime_data.noticer.options = options
     entry.runtime_data.learner.options = options
+    entry.runtime_data.visitors.options = options
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:

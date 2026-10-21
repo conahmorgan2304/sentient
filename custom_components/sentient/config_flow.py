@@ -11,6 +11,12 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ANNOUNCE_VISITORS,
+    CONF_DOOR_CAMERA,
+    CONF_DOOR_TRIGGERS,
+    CONF_PARCEL_ALERTS,
+    DEFAULT_ANNOUNCE_VISITORS,
+    DEFAULT_PARCEL_ALERTS,
     CONF_LEARN_ENTITIES,
     CONF_SUGGEST_ROUTINES,
     DEFAULT_SUGGEST_ROUTINES,
@@ -92,6 +98,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["light", "switch", "fan", "input_boolean", "cover"], multiple=True)
             ),
             vol.Required(CONF_SUGGEST_ROUTINES, **d(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)): selector.BooleanSelector(),
+            vol.Optional(CONF_DOOR_CAMERA, **d(CONF_DOOR_CAMERA)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera")
+            ),
+            vol.Optional(CONF_DOOR_TRIGGERS, **d(CONF_DOOR_TRIGGERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["binary_sensor", "event"], multiple=True)
+            ),
+            vol.Required(CONF_ANNOUNCE_VISITORS, **d(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS)): selector.BooleanSelector(),
+            vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),
             vol.Optional(CONF_AI_TASK_ENTITY, **d(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),

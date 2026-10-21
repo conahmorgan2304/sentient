@@ -26,6 +26,10 @@ CONF_CHATTINESS = "chattiness"
 CONF_HOUSE_RULES = "house_rules"
 CONF_LEARN_ENTITIES = "learn_entities"
 CONF_SUGGEST_ROUTINES = "suggest_routines"
+CONF_DOOR_CAMERA = "door_camera"
+CONF_DOOR_TRIGGERS = "door_triggers"
+CONF_ANNOUNCE_VISITORS = "announce_visitors"
+CONF_PARCEL_ALERTS = "parcel_alerts"
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"
@@ -38,6 +42,8 @@ DEFAULT_ALL_OCCUPIED = True
 DEFAULT_DAILY_AI_LIMIT = 100  # background camera checks per day
 DEFAULT_CHATTINESS = "quiet"
 DEFAULT_SUGGEST_ROUTINES = True
+DEFAULT_ANNOUNCE_VISITORS = False
+DEFAULT_PARCEL_ALERTS = True
 CHATTINESS_LIMITS = {"off": 0, "quiet": 2, "normal": 4, "chatty": 8}  # remarks per hour
 DEFAULT_CAMERA_COOLDOWN = 60  # seconds between AI looks at the same camera watch
 
@@ -67,6 +73,7 @@ EVENT_WATCH_CHANGED = f"{DOMAIN}_watch_changed"
 EVENT_WATCH_FIRED = f"{DOMAIN}_watch_fired"
 EVENT_NOTICED = f"{DOMAIN}_noticed"
 EVENT_ROUTINES_CHANGED = f"{DOMAIN}_routines_changed"
+EVENT_VISITOR = f"{DOMAIN}_visitor"
 
 # Memory
 MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note"]

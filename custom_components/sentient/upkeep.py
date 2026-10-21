@@ -79,6 +79,14 @@ def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str, Any]:
     if open_things:
         out["open_now"] = open_things
 
+    visits = rt.visitors.today()
+    if visits:
+        out["visitors_today"] = [
+            f"{dt_util.as_local(dt_util.parse_datetime(v['time'])).strftime('%-I:%M%p').lower()} {v['description']}"
+            + (" (left a parcel)" if v.get("parcel_left") else "")
+            for v in visits[:5]
+        ]
+
     said = rt.speech.recent_said(3)
     if said:
         out["said_recently"] = said

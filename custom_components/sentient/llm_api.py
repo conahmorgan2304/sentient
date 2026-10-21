@@ -329,6 +329,23 @@ class BriefingTool(llm.Tool):
         return gather_briefing(hass, rt)
 
 
+class VisitorsTool(llm.Tool):
+    name = "sentient_visitors"
+    description = (
+        "Who came to the door recently (from the doorbell camera), e.g. 'did anyone come round?', "
+        "'has a parcel come?'. Gives local times and plain descriptions, never names."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        return {"visitors": rt.visitors.summary(10)}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -342,7 +359,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -374,6 +391,8 @@ class SentientAPI(llm.API):
             lines.extend(
                 f"- {r.describe()}{' (the house does this now)' if r.adopted else ''}" for r in routines
             )
+        if visits := rt.visitors.today():
+            lines.append(f"Visitors to the door today: {len(visits)}. Use sentient_visitors for details.")
         watches = rt.watches.watches
         if watches:
             lines.append("You are currently keeping an eye on (and reminders due):")

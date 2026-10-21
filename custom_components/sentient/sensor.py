@@ -15,7 +15,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
-from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_WATCH_CHANGED
+from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
 
 
 async def async_setup_entry(
@@ -23,7 +23,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -219,3 +219,28 @@ class RoutinesSensor(_Base):
             ],
             "last_learned": learner.last_run,
         }
+
+
+class VisitorsSensor(_Base):
+    """Visitors to the door today, with the recent log."""
+
+    _attr_icon = "mdi:doorbell-video"
+    _attr_native_unit_of_measurement = "visitors"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "visitors")
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_VISITOR, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> int:
+        return len(self._entry.runtime_data.visitors.today())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"recent": list(self._entry.runtime_data.visitors.log)[:10]}
