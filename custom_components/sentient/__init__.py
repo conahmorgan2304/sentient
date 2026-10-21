@@ -30,6 +30,11 @@ from .const import (
     SERVICE_TIDY,
     SERVICE_WATCH,
     STATIC_URL,
+    FRONTEND_URL,
+    PANEL_URL_PATH,
+    CONF_SIDEBAR,
+    DEFAULT_SIDEBAR,
+    CONF_PERSONA,
 )
 from .llm_api import SentientAPI
 from .memory import MemoryStore
@@ -136,7 +141,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
         try:
             await hass.http.async_register_static_paths(
-                [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "brand"), True)]
+                [
+                    StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "brand"), True),
+                    StaticPathConfig(FRONTEND_URL, str(Path(__file__).parent / "frontend"), False),
+                ]
             )
         except RuntimeError:  # already registered (e.g. after a reload)
             pass
@@ -176,12 +184,37 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Sentient's own sidebar page — part of the integration, not an editable dashboard."""
+    options = _entry_options(entry)
+    if not options.get(CONF_SIDEBAR, DEFAULT_SIDEBAR) or "frontend" not in hass.config.components:
+        return
+    from homeassistant.components import frontend, panel_custom
+    from homeassistant.loader import async_get_integration
+
+    version = (await async_get_integration(hass, DOMAIN)).version
+    if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
+        frontend.async_remove_panel(hass, PANEL_URL_PATH)
+    await panel_custom.async_register_panel(
+        hass,
+        frontend_url_path=PANEL_URL_PATH,
+        webcomponent_name="sentient-panel",
+        module_url=f"{FRONTEND_URL}/sentient-panel.js?v={version}",
+        sidebar_title=options.get(CONF_PERSONA) or entry.title,
+        sidebar_icon="mdi:brain",
+        require_admin=False,
+        config={},
+    )
+    entry.async_on_unload(lambda: frontend.async_remove_panel(hass, PANEL_URL_PATH))
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
@@ -194,6 +227,12 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.learner.options = options
     entry.runtime_data.visitors.options = options
     entry.runtime_data.spots.options = options
+    if "frontend" in hass.config.components:
+        from homeassistant.components import frontend
+
+        if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
+            frontend.async_remove_panel(hass, PANEL_URL_PATH)
+        await _async_register_panel(hass, entry)
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:

@@ -79,6 +79,10 @@ SERVICE_BRIEFING = "briefing"
 SERVICE_TIDY = "tidy_memories"
 SERVICE_ADOPT = "adopt_routine"
 STATIC_URL = "/sentient_static"
+FRONTEND_URL = "/sentient_frontend"
+PANEL_URL_PATH = "sentient"
+CONF_SIDEBAR = "sidebar_panel"
+DEFAULT_SIDEBAR = True
 
 # Events
 EVENT_SPOKE = f"{DOMAIN}_spoke"

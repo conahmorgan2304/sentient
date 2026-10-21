@@ -31,6 +31,7 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Reminders.** "Remind me at 6 to put the oven on" — said at that time in whichever room people are in (it gets through quiet hours, because someone asked for it). Service: `sentient.remind`.
 - **Spots.** "On the garden camera, the rabbit pen is a spot" — the AI finds it once and remembers where it is. Watches and looks that mention it then check only that part of the picture: sharper answers for less.
 - **Look.** "What's going on in the garden?", "is there a parcel at the front door?" — one on-demand look through a camera via your AI task.
+- **Its own sidebar page.** A built-in panel (named after your persona) shows memories, learned routines (tap to let the house do one), watches and reminders (✕ to cancel), visitors, what was said or held back and why, and where people are — plus a briefing button. It's part of the integration, so it isn't an editable dashboard; turn it off in the settings if you don't want it.
 - **Memory manager.** Settings → Sentient → Configure → *Memories*: see everything the house remembers, edit, forget or add by hand.
 - **Room awareness.** The voice assistant is told which room the person talking to it is in, and a *Likely room* sensor shows where Sentient thinks people are (with every room's score).
 - **Sensors.** `sensor.<name>_memories` (with the list) and `sensor.<name>_last_spoken` (with a log of what was said or held back and why).

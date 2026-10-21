@@ -154,6 +154,9 @@ class LikelyRoomSensor(_Base):
         return {
             "scores": {self._name(a): v for a, v in scores},
             "speaker": (rt.speech.pick_speaker() or [None])[0],
+            "quiet_hours": rt.speech.quiet_now(),
+            "persona": rt.options.get("persona") or self._entry.title,
+            "ai_checks_today": rt.watches.ai_checks_today,
         }
 
 
