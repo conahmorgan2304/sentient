@@ -420,6 +420,20 @@
     "tidy_memories": {
       "name": "Tidy memories",
       "description": "Merge duplicates and drop nonsense from memory now (also runs every Sunday night)."
+    },
+    "adopt_routine": {
+      "name": "Adopt routine",
+      "description": "Have the house do a learned routine by itself, or stop. Leave Adopt empty to toggle.",
+      "fields": {
+        "routine": {
+          "name": "Routine",
+          "description": "Routine id or words from it."
+        },
+        "adopt": {
+          "name": "Adopt",
+          "description": "On to start, off to stop."
+        }
+      }
     }
   }
 }

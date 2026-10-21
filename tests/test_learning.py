@@ -100,6 +100,10 @@ async def test_learn_share_adopt_and_do(hass: HomeAssistant, freezer) -> None:
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_adopt_routine", tool_args={"routine": "hallway light on"}))
     assert out["house_does_it"] is True
 
+    res = await hass.services.async_call(DOMAIN, "adopt_routine", {"routine": "hallway light on"}, blocking=True, return_response=True)
+    assert res["house_does_it"] is False  # toggled off
+    res = await hass.services.async_call(DOMAIN, "adopt_routine", {"routine": "hallway light on", "adopt": True}, blocking=True, return_response=True)
+    assert res["house_does_it"] is True
     turned_on = async_mock_service(hass, "light", "turn_on")
     routine = next(r for r in entry.runtime_data.learner.routines.values() if r.state == "on")
     hour, minute = divmod(routine.minute, 60)

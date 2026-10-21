@@ -77,6 +77,8 @@ SERVICE_ASK = "ask"
 SERVICE_LEARN = "learn"
 SERVICE_BRIEFING = "briefing"
 SERVICE_TIDY = "tidy_memories"
+SERVICE_ADOPT = "adopt_routine"
+STATIC_URL = "/sentient_static"
 
 # Events
 EVENT_SPOKE = f"{DOMAIN}_spoke"

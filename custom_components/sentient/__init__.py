@@ -18,6 +18,7 @@ from .const import (
     DOMAIN,
     MEMORY_CATEGORIES,
     PRIORITIES,
+    SERVICE_ADOPT,
     SERVICE_ASK,
     SERVICE_BRIEFING,
     SERVICE_CANCEL_WATCH,
@@ -28,6 +29,7 @@ from .const import (
     SERVICE_SAY,
     SERVICE_TIDY,
     SERVICE_WATCH,
+    STATIC_URL,
 )
 from .llm_api import SentientAPI
 from .memory import MemoryStore
@@ -125,8 +127,19 @@ def _entry_options(entry: ConfigEntry) -> dict[str, Any]:
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register the LLM API and services once."""
+    """Register the LLM API, services and the logo once."""
     hass.data.setdefault(DOMAIN, {})
+    if getattr(hass, "http", None) is not None:
+        from pathlib import Path
+
+        from homeassistant.components.http import StaticPathConfig
+
+        try:
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "brand"), True)]
+            )
+        except RuntimeError:  # already registered (e.g. after a reload)
+            pass
     hass.data[DOMAIN]["unregister_api"] = llm.async_register_api(hass, SentientAPI(hass))
     _register_services(hass)
     return True
@@ -218,6 +231,16 @@ def _register_services(hass: HomeAssistant) -> None:
         created = _runtime(hass).watches.add(data.pop("what"), data.pop("entity"), **data)
         return created.summary()
 
+    async def adopt_routine(call: ServiceCall) -> ServiceResponse:
+        learner = _runtime(hass).learner
+        routine = learner.adopt(call.data["routine"], call.data["adopt"]) if "adopt" in call.data else None
+        if routine is None and "adopt" not in call.data:
+            found = learner._find(call.data["routine"])
+            routine = learner.adopt(found.id, not found.adopted) if found else None
+        if routine is None:
+            raise vol.Invalid("No learned routine matches that")
+        return {"routine": routine.describe(), "house_does_it": routine.adopted}
+
     async def briefing(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         if call.data.get("speak", True):
@@ -266,6 +289,11 @@ def _register_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(DOMAIN, SERVICE_TIDY, tidy, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(
+        DOMAIN, SERVICE_ADOPT, adopt_routine,
+        schema=vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt"): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     hass.services.async_register(
         DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
     )

@@ -176,3 +176,12 @@ briefing:
           options: [low, normal, urgent]
           translation_key: priority
 tidy_memories:
+adopt_routine:
+  fields:
+    routine:
+      required: true
+      selector:
+        text:
+    adopt:
+      selector:
+        boolean:
