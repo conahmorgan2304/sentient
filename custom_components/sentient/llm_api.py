@@ -42,7 +42,20 @@ def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
     return entries[0].runtime_data if entries else None
 
 
-class RememberTool(llm.Tool):
+class _Tool(llm.Tool):
+    """Every Sentient tool says which integration provides it."""
+
+    integration = DOMAIN
+
+
+def _read_only() -> Any:
+    """Tool annotations for look-up tools (newer Home Assistant only)."""
+    if (annotations := getattr(llm, "ToolAnnotations", None)) is None:
+        return None
+    return annotations(read_only=True, destructive=False, idempotent=True, open_world=False)
+
+
+class RememberTool(_Tool):
     name = "sentient_remember"
     description = (
         "Save a durable fact to the house's long-term memory so every voice and "
@@ -71,7 +84,8 @@ class RememberTool(llm.Tool):
         return {"saved": memory.text, "id": memory.id}
 
 
-class RecallTool(llm.Tool):
+class RecallTool(_Tool):
+    annotations = _read_only()
     name = "sentient_recall"
     description = (
         "Search the house's long-term memory. Use before answering questions about "
@@ -89,7 +103,7 @@ class RecallTool(llm.Tool):
         return {"memories": [{"id": m.id, "text": m.text, "category": m.category} for m in found]}
 
 
-class ForgetTool(llm.Tool):
+class ForgetTool(_Tool):
     name = "sentient_forget"
     description = "Remove something from the house's long-term memory when asked to forget it."
     parameters = vol.Schema({vol.Required("what"): cv.string})
@@ -104,7 +118,7 @@ class ForgetTool(llm.Tool):
         return {"forgotten": removed.text if removed else None}
 
 
-class AnnounceTool(llm.Tool):
+class AnnounceTool(_Tool):
     name = "sentient_announce"
     description = (
         "Say something out loud through the house's speakers, e.g. 'tell the kitchen "
@@ -139,7 +153,7 @@ class AnnounceTool(llm.Tool):
         return result.as_dict()
 
 
-class WatchTool(llm.Tool):
+class WatchTool(_Tool):
     name = "sentient_watch"
     description = (
         "Keep an eye on something and speak up when it happens. Two kinds: "
@@ -187,7 +201,7 @@ class WatchTool(llm.Tool):
         return {"watching": watch.summary()}
 
 
-class RemindTool(llm.Tool):
+class RemindTool(_Tool):
     name = "sentient_remind"
     description = (
         "Remind someone of something at a time, spoken in whichever room people are in, e.g. "
@@ -220,7 +234,8 @@ class RemindTool(llm.Tool):
         return {"reminder": reminder.summary()}
 
 
-class ListWatchesTool(llm.Tool):
+class ListWatchesTool(_Tool):
+    annotations = _read_only()
     name = "sentient_watches"
     description = "List what the house is keeping an eye on and any reminders, with local times."
     parameters = vol.Schema({})
@@ -234,7 +249,7 @@ class ListWatchesTool(llm.Tool):
         return {"watches": [w.summary() for w in rt.watches.watches]}
 
 
-class CancelWatchTool(llm.Tool):
+class CancelWatchTool(_Tool):
     name = "sentient_cancel_watch"
     description = "Stop keeping an eye on something. 'what' can be words from the watch, e.g. 'the cats'."
     parameters = vol.Schema({vol.Required("what"): cv.string})
@@ -249,7 +264,7 @@ class CancelWatchTool(llm.Tool):
         return {"cancelled": removed.what if removed else None}
 
 
-class LookTool(llm.Tool):
+class LookTool(_Tool):
     name = "sentient_look"
     description = (
         "Look through a camera right now and answer a question about what it sees, e.g. "
@@ -274,7 +289,8 @@ class LookTool(llm.Tool):
             return {"error": str(err)}
 
 
-class RoutinesTool(llm.Tool):
+class RoutinesTool(_Tool):
+    annotations = _read_only()
     name = "sentient_routines"
     description = (
         "List the household routines learned from history (e.g. 'the hallway light usually goes "
@@ -291,7 +307,7 @@ class RoutinesTool(llm.Tool):
         return {"routines": [r.summary() for r in rt.learner.routines.values()]}
 
 
-class AdoptRoutineTool(llm.Tool):
+class AdoptRoutineTool(_Tool):
     name = "sentient_adopt_routine"
     description = (
         "Start (adopt=true) or stop (adopt=false) the house doing a learned routine by itself, "
@@ -313,7 +329,7 @@ class AdoptRoutineTool(llm.Tool):
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
 
-class BriefingTool(llm.Tool):
+class BriefingTool(_Tool):
     name = "sentient_briefing"
     description = (
         "Get what matters right now for a briefing or 'what's going on?': reminders due today, "
@@ -334,7 +350,8 @@ class BriefingTool(llm.Tool):
         return await gather_briefing(hass, rt)
 
 
-class VisitorsTool(llm.Tool):
+class VisitorsTool(_Tool):
+    annotations = _read_only()
     name = "sentient_visitors"
     description = (
         "Who came to the door recently (from the doorbell camera), e.g. 'did anyone come round?', "
@@ -351,7 +368,7 @@ class VisitorsTool(llm.Tool):
         return {"visitors": rt.visitors.summary(10)}
 
 
-class SpotTool(llm.Tool):
+class SpotTool(_Tool):
     name = "sentient_spot"
     description = (
         "Teach the house a named area inside a camera picture, e.g. 'on the garden camera, the "

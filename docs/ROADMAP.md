@@ -38,3 +38,8 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Learn routines from history with plain statistics — no AI (0.7.0)
 - [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
+
+## Stage 5 — Its own page
+- [x] Built-in sidebar panel, not an editable dashboard (0.13.0)
+- [x] House health: offline devices, low batteries, updates (0.14.0)
+- [x] Settings tab in the panel: every option plus a memory manager (0.15.0)

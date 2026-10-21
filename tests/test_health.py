@@ -38,3 +38,22 @@ async def test_offline_battery_updates(hass: HomeAssistant, freezer) -> None:
     hass.config_entries.async_update_entry(entry, options={"health_ignore": ["sensor.tab_motion"]})
     await hass.async_block_till_done()
     assert health.describe() == ["Back door battery+ is at 14%"]
+
+
+async def test_connectivity_sensor_marks_device_offline(hass: HomeAssistant, freezer) -> None:
+    other = MockConfigEntry(domain="kiosk"); other.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    tab = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("kiosk", "t")}, name="Landing tablet")
+    ents.async_get_or_create("light", "kiosk", "screen", suggested_object_id="landing_screen", device_id=tab.id)
+    ents.async_get_or_create(
+        "binary_sensor", "kiosk", "link", suggested_object_id="landing_link", device_id=tab.id,
+        entity_category=er.EntityCategory.DIAGNOSTIC,
+    )
+    hass.states.async_set("light.landing_screen", "on")
+    hass.states.async_set("binary_sensor.landing_link", "off", {"device_class": "connectivity"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=11))
+    assert [i["name"] for i in entry.runtime_data.health.async_check()] == ["Landing tablet"]

@@ -62,20 +62,31 @@ class HouseHealth:
         ent_reg = er.async_get(self.hass)
         dev_reg = dr.async_get(self.hass)
 
-        # devices whose every (non-diagnostic) entity has been unavailable for a while
+        # devices that report a lost connection, or whose every main entity has been unavailable a while
         by_device: dict[str, list] = {}
+        links: dict[str, list] = {}
         for entry in ent_reg.entities.values():
-            if entry.device_id and not entry.disabled_by and entry.entity_category is None:
+            if not entry.device_id or entry.disabled_by:
+                continue
+            if entry.entity_category is None:
                 by_device.setdefault(entry.device_id, []).append(entry.entity_id)
+            if entry.domain == "binary_sensor":
+                links.setdefault(entry.device_id, []).append(entry.entity_id)
         offline = []
         for device_id, entity_ids in by_device.items():
             if device_id in ignore or any(e in ignore for e in entity_ids):
                 continue
             states = [self.hass.states.get(e) for e in entity_ids]
             states = [s for s in states if s is not None]
-            if not states or any(s.state != STATE_UNAVAILABLE for s in states):
+            if not states:
                 continue
-            since = min(s.last_changed for s in states)
+            link = [s for s in self._connectivity(links.get(device_id, [])) if s.state == "off"]
+            if link:  # the device says it has lost its connection
+                since = max(s.last_changed for s in link)
+            elif any(s.state != STATE_UNAVAILABLE for s in states):
+                continue
+            else:
+                since = max(s.last_changed for s in states)
             if now - since < OFFLINE_AFTER:
                 continue
             device = dev_reg.async_get(device_id)
@@ -110,14 +121,23 @@ class HouseHealth:
                 low_by_device[key] = item
         low = list(low_by_device.values())
 
-        self.updates = sorted(
+        updates = sorted(
             s.name for s in self.hass.states.async_all("update") if s.state == "on" and s.entity_id not in ignore
         )
         issues = sorted(offline, key=lambda i: i["since"]) + sorted(low, key=lambda i: (i["level"] is None, i["level"] or 0))
-        if issues != self.issues:
+        if issues != self.issues or updates != self.updates:
             self.issues = issues
+            self.updates = updates
             self.hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"count": len(issues)})
         return issues
+
+    def _connectivity(self, entity_ids: list[str]) -> list:
+        """Connectivity sensors among a device's entities (any category)."""
+        return [
+            st for e in entity_ids
+            if e.startswith("binary_sensor.") and (st := self.hass.states.get(e)) is not None
+            and st.attributes.get("device_class") == "connectivity"
+        ]
 
     def describe(self) -> list[str]:
         out = []

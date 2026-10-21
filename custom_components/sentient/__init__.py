@@ -152,6 +152,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             pass
     hass.data[DOMAIN]["unregister_api"] = llm.async_register_api(hass, SentientAPI(hass))
     _register_services(hass)
+    from .websocket import async_register as _register_websocket
+
+    _register_websocket(hass)
     return True
 
 
