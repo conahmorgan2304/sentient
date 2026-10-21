@@ -28,6 +28,7 @@ from .const import (
     CONF_ANNOUNCE_VISITORS,
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
+    CONF_FACE_SENSOR,
     CONF_PARCEL_ALERTS,
     DEFAULT_ANNOUNCE_VISITORS,
     DEFAULT_PARCEL_ALERTS,
@@ -46,6 +47,8 @@ STORAGE_VERSION = 1
 COOLDOWN = timedelta(seconds=60)
 PARCEL_RECHECK = 180  # seconds after a delivery
 KEEP = 30
+FACE_FRESH = timedelta(minutes=2)
+_NO_NAME = {"", "none", "unknown", "unavailable", "no face", "no_face", "nobody", "null"}
 KINDS = ["delivery", "visitor", "neighbour", "child", "unknown", "nobody"]
 
 
@@ -96,11 +99,22 @@ class Visitors:
         out = []
         for v in list(self.log)[:limit]:
             when = dt_util.parse_datetime(v["time"])
-            line = f"{local_when(when) if when else ''}: {v['description']}"
+            who = f"{v['name']} — " if v.get("name") else ""
+            line = f"{local_when(when) if when else ''}: {who}{v['description']}"
             if v.get("parcel_left"):
                 line += " (left a parcel)"
             out.append(line)
         return out
+
+    def recognised_name(self) -> str | None:
+        """A name from the face-recognition sensor, if one appeared just now."""
+        entity_id = self.options.get(CONF_FACE_SENSOR)
+        st = self.hass.states.get(entity_id) if entity_id else None
+        if st is None or st.state.strip().lower() in _NO_NAME:
+            return None
+        if dt_util.utcnow() - st.last_changed > FACE_FRESH:
+            return None
+        return st.state.strip().replace("_", " ").title()
 
     # ----- trigger -------------------------------------------------------------
     @callback
@@ -171,7 +185,9 @@ class Visitors:
         finally:
             self._busy = False
         kind = result.get("kind") if result.get("kind") in KINDS else "unknown"
+        name = self.recognised_name()
         visit = {
+            "name": name,
             "time": dt_util.now().isoformat(),
             "kind": kind,
             "description": (result.get("description") or "someone at the door").strip().rstrip("."),
@@ -182,9 +198,8 @@ class Visitors:
         self.log.appendleft(visit)
         self._save()
         if self.options.get(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS) and kind != "nobody":
-            await self.speech.async_say(
-                f"Someone's at the door: {visit['description']}.", "normal", None, source="visitors"
-            )
+            line = f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
+            await self.speech.async_say(line, "normal", None, source="visitors")
         if (kind == "delivery" or visit["parcel"]) and self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS):
             @callback
             def _recheck(_now: datetime) -> None:

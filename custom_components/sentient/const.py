@@ -30,6 +30,7 @@ CONF_DOOR_CAMERA = "door_camera"
 CONF_DOOR_TRIGGERS = "door_triggers"
 CONF_ANNOUNCE_VISITORS = "announce_visitors"
 CONF_PARCEL_ALERTS = "parcel_alerts"
+CONF_FACE_SENSOR = "face_sensor"
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"

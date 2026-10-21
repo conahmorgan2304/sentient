@@ -35,7 +35,8 @@
           "door_camera": "Door camera",
           "door_triggers": "Doorbell",
           "announce_visitors": "Say who is at the door",
-          "parcel_alerts": "Say when a parcel is left"
+          "parcel_alerts": "Say when a parcel is left",
+          "face_sensor": "Recognised name from"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -55,7 +56,8 @@
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
-          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left."
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
+          "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on."
         }
       }
     },
@@ -99,7 +101,8 @@
           "door_camera": "Door camera",
           "door_triggers": "Doorbell",
           "announce_visitors": "Say who is at the door",
-          "parcel_alerts": "Say when a parcel is left"
+          "parcel_alerts": "Say when a parcel is left",
+          "face_sensor": "Recognised name from"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -119,7 +122,8 @@
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
-          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left."
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
+          "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on."
         }
       },
       "memories": {

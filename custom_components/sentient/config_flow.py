@@ -11,6 +11,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_FACE_SENSOR,
     CONF_ANNOUNCE_VISITORS,
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
@@ -103,6 +104,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_DOOR_TRIGGERS, **d(CONF_DOOR_TRIGGERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["binary_sensor", "event"], multiple=True)
+            ),
+            vol.Optional(CONF_FACE_SENSOR, **d(CONF_FACE_SENSOR)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "input_text", "text", "image"])
             ),
             vol.Required(CONF_ANNOUNCE_VISITORS, **d(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS)): selector.BooleanSelector(),
             vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),

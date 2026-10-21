@@ -86,3 +86,16 @@ async def test_event_entity_trigger_cooldown_and_announce_option(hass: HomeAssis
         await hass.async_block_till_done()
     assert len(ai) == 1  # second ring inside a minute isn't looked at again
     assert said[-1].data["message"] == "Someone's at the door: A man in a red coat."
+
+
+async def test_recognised_name_is_used_when_fresh(hass: HomeAssistant) -> None:
+    await _setup(hass, announce_visitors=True, parcel_alerts=False, face_sensor="sensor.doorbell_face")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, [{"kind": "visitor", "description": "A man in a red coat"}])
+    hass.states.async_set("sensor.doorbell_face", "conah")
+    with patch("custom_components.sentient.visitors.asyncio.sleep"):
+        hass.states.async_set("binary_sensor.doorbell", "on")
+        await hass.async_block_till_done()
+    assert said[-1].data["message"] == "Conah's at the door."
+    log = hass.states.get("sensor.nova_visitors").attributes["recent"]
+    assert log[0]["name"] == "Conah"
