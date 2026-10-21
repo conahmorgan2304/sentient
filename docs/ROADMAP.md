@@ -8,6 +8,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] LLM API: memories in the prompt, plus remember / recall / forget / announce tools
 - [x] Speech router: quiet hours, word filter, duplicates, hush periods, room-following speaker choice
 - [x] Room awareness for the person talking
+- [x] Backup-only speakers, used only when no main speaker's room is occupied (0.5.0)
 - [x] Activity-scored rooms: decaying motion history, voice-interaction boost, pass-through areas, every-occupied-room mode, seeded from the recorder (0.2.0)
 - [x] Memory and last-spoken sensors
 - [ ] Dashboard card (core, feed and stats) shipped with the integration
@@ -18,13 +19,15 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Device/sensor watches: reach a state, or cross a number — no AI needed (0.4.0)
 - [x] Camera checks through the configured AI task, woken only by that camera's own motion/object sensors, with a cooldown (0.4.0)
 - [x] On-demand camera questions by voice (`sentient_look`) (0.4.1)
-- [ ] Crop camera checks to a zone rather than the whole frame
+- [x] Wake a camera watch on a zone or object sensor (e.g. a Frigate zone) instead of the whole camera (0.5.0)
+- [x] Spoken reminders at a time, in the room people are in (0.5.0)
+- [ ] Crop the image itself to the zone
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [ ] Doorbell / visitor / delivery awareness built on Frigate zones
 
 ## Stage 3 — Speaking up
 - [ ] Event triage: free rules first, then the cheapest model, and a bigger model only when needed
-- [ ] Daily AI spend cap
+- [x] Daily limit on background camera checks (0.5.0)
 - [ ] Proactive remarks and questions with follow-up listening, e.g. "Fancy a brew?"
 - [ ] Morning and evening briefings
 

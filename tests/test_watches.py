@@ -210,3 +210,89 @@ def test_local_when_wording() -> None:
     assert local_when(base) == "5:18pm today"
     assert local_when(base.replace(hour=7, minute=30) + timedelta(days=1)) == "7:30am tomorrow"
     assert local_when(base.replace(hour=0, minute=0) + timedelta(days=1)) == "12am tomorrow"
+
+
+async def test_daily_ai_limit(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", data={**OPTIONS, "daily_ai_limit": 1, "camera_cooldown": 10},
+                            unique_id=DOMAIN)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    async_mock_service(hass, "assist_satellite", "announce")
+    ai = _fake_ai(hass, False)
+    _garden_camera(hass)
+    await hass.services.async_call(
+        DOMAIN, "watch", {"what": "cats", "entity": "camera.garden", "question": "Any cats?", "repeat": True}, blocking=True
+    )
+    watch = entry.runtime_data.watches.watches[0]
+    with patch("custom_components.sentient.watches.asyncio.sleep"):
+        hass.states.async_set("binary_sensor.garden_motion", "on", {"device_class": "motion"})
+        await hass.async_block_till_done()
+        watch.last_checked = None  # pretend the cooldown passed
+        hass.states.async_set("binary_sensor.garden_motion", "off", {"device_class": "motion"})
+        hass.states.async_set("binary_sensor.garden_motion", "on", {"device_class": "motion"})
+        await hass.async_block_till_done()
+    assert len(ai) == 1
+    assert watch.last_result == "skipped: daily AI limit reached"
+    assert hass.states.get("sensor.nova_watches").attributes["ai_checks_today"] == 1
+
+
+async def test_wake_on_zone_sensor(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    async_mock_service(hass, "assist_satellite", "announce")
+    ai = _fake_ai(hass, True, "Someone is at the front gate.")
+    _garden_camera(hass)
+    hass.states.async_set("binary_sensor.front_garden_person_occupancy", "off",
+                          {"device_class": "occupancy", "friendly_name": "Front garden person occupancy"})
+    await hass.services.async_call(
+        DOMAIN, "watch", {"what": "parcels", "entity": "garden", "question": "Is anyone there?",
+                          "wake_on": "front garden person occupancy"}, blocking=True
+    )
+    assert entry.runtime_data.watches.watches[0].triggers == ["binary_sensor.front_garden_person_occupancy"]
+    with patch("custom_components.sentient.watches.asyncio.sleep"):
+        hass.states.async_set("binary_sensor.garden_motion", "on", {"device_class": "motion"})
+        await hass.async_block_till_done()
+        assert not ai
+        hass.states.async_set("binary_sensor.front_garden_person_occupancy", "on", {"device_class": "occupancy"})
+        await hass.async_block_till_done()
+    assert len(ai) == 1
+
+
+async def test_reminder_speaks_at_time_even_in_quiet_hours(hass: HomeAssistant, freezer) -> None:
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={**OPTIONS, "quiet_start": "00:00:00", "quiet_end": "23:59:59"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    res = await hass.services.async_call(
+        DOMAIN, "remind", {"message": "Time to put the oven on.", "minutes": 20}, blocking=True, return_response=True
+    )
+    assert res["kind"] == "reminder"
+    freezer.tick(timedelta(minutes=19))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert not said
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [c.data["message"] for c in said] == ["Time to put the oven on."]
+    assert not entry.runtime_data.watches.watches
+
+
+async def test_reminder_by_voice_and_cancel(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
+    api = await llm.async_get_api(hass, "sentient", ctx)
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_remind", tool_args={"message": "Check the washing.", "minutes": 20}))
+    assert out["reminder"]["minutes_left"] in (19, 20)
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_remind", tool_args={"message": "Hello"}))
+    assert "When" in out["error"]
+    api = await llm.async_get_api(hass, "sentient", ctx)
+    assert "reminder: Check the washing." in api.api_prompt
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_cancel_watch", tool_args={"what": "washing"}))
+    assert out["cancelled"] == "Check the washing."
+    assert not entry.runtime_data.watches._timers

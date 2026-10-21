@@ -25,14 +25,16 @@ from homeassistant.core import Event, EventStateChangedData, HomeAssistant, Stat
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_CAMERA_COOLDOWN,
+    CONF_DAILY_AI_LIMIT,
     DEFAULT_CAMERA_COOLDOWN,
+    DEFAULT_DAILY_AI_LIMIT,
     DOMAIN,
     EVENT_WATCH_CHANGED,
     EVENT_WATCH_FIRED,
@@ -46,6 +48,8 @@ _LOGGER = logging.getLogger(__name__)
 STORAGE_VERSION = 1
 KIND_STATE = "state"
 KIND_CAMERA = "camera"
+KIND_REMINDER = "reminder"
+LATE_REMINDER = timedelta(minutes=15)  # still say a reminder missed during a restart
 DEFAULT_STATE_HOURS = 12
 DEFAULT_CAMERA_HOURS = 2
 MAX_HOURS = 24 * 7
@@ -209,6 +213,9 @@ class WatchManager:
         self._watches: dict[str, Watch] = {}
         self._busy: set[str] = set()
         self._unsubs: list = []
+        self._timers: dict[str, Any] = {}
+        self.ai_day: str = dt_util.now().date().isoformat()
+        self.ai_checks_today = 0
 
     # ----- lifecycle ---------------------------------------------------------------
     async def async_start(self) -> None:
@@ -219,6 +226,16 @@ class WatchManager:
             except TypeError:
                 continue
             self._watches[watch.id] = watch
+        if data.get("ai_day") == self.ai_day:
+            self.ai_checks_today = int(data.get("ai_checks", 0))
+        now = dt_util.utcnow()
+        for watch in [w for w in self._watches.values() if w.kind == KIND_REMINDER]:
+            if watch.until_dt > now:
+                self._schedule(watch)
+            elif now - watch.until_dt < LATE_REMINDER:
+                self.hass.async_create_task(self._async_fire(watch, None, None))
+            else:
+                self._watches.pop(watch.id, None)
         self._expire()
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed))
         self._unsubs.append(async_track_time_interval(self.hass, lambda _now: self._expire(), timedelta(minutes=1)))
@@ -227,10 +244,20 @@ class WatchManager:
     def async_stop(self) -> None:
         while self._unsubs:
             self._unsubs.pop()()
+        for unsub in self._timers.values():
+            unsub()
+        self._timers.clear()
 
     @callback
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"watches": [w.as_dict() for w in self._watches.values()]}, 2)
+        self._store.async_delay_save(
+            lambda: {
+                "watches": [w.as_dict() for w in self._watches.values()],
+                "ai_day": self.ai_day,
+                "ai_checks": self.ai_checks_today,
+            },
+            2,
+        )
         self.hass.bus.async_fire(EVENT_WATCH_CHANGED, {"count": len(self._watches)})
 
     @property
@@ -254,6 +281,7 @@ class WatchManager:
         repeat: bool = False,
         priority: str = "normal",
         speaker: str | None = None,
+        wake_on: str | list[str] | None = None,
     ) -> Watch:
         is_camera = bool(question) or entity.startswith("camera.")
         entity_id = resolve_entity(self.hass, entity, "camera" if is_camera else None) or (
@@ -266,7 +294,16 @@ class WatchManager:
             raise HomeAssistantError("A camera watch needs a question, e.g. 'Are the cats near the rabbit pen?'")
         if kind == KIND_STATE and to_state is None and above is None and below is None:
             raise HomeAssistantError("Say what to wait for: a state, or a number to go above or below")
-        triggers = camera_triggers(self.hass, entity_id, look_for) if kind == KIND_CAMERA else []
+        triggers: list[str] = []
+        if kind == KIND_CAMERA:
+            if wake_on:
+                for item in [wake_on] if isinstance(wake_on, str) else wake_on:
+                    found = resolve_entity(self.hass, item, "binary_sensor")
+                    if found is None or not found.startswith("binary_sensor."):
+                        raise HomeAssistantError(f"I can't find a sensor called '{item}' to wake on")
+                    triggers.append(found)
+            else:
+                triggers = camera_triggers(self.hass, entity_id, look_for)
         when = parse_until(until, minutes, DEFAULT_CAMERA_HOURS if kind == KIND_CAMERA else DEFAULT_STATE_HOURS)
         watch = Watch(
             what=" ".join(what.split())[:120] or entity_id,
@@ -288,6 +325,39 @@ class WatchManager:
         self._save()
         return watch
 
+    def add_reminder(
+        self,
+        message: str,
+        *,
+        until: str | None = None,
+        minutes: float | None = None,
+        speaker: str | None = None,
+        priority: str = "urgent",
+    ) -> Watch:
+        """Say something at a time. People asked for it, so by default it gets through quiet hours."""
+        message = " ".join(message.split())
+        if not message:
+            raise HomeAssistantError("What should I remind you about?")
+        if not until and not minutes:
+            raise HomeAssistantError("When should I remind you?")
+        when = parse_until(until, minutes, 1)
+        watch = Watch(
+            what=message[:120], kind=KIND_REMINDER, entity_id="", until=when.isoformat(),
+            message=message, priority=priority, speaker=speaker,
+        )
+        self._watches[watch.id] = watch
+        self._schedule(watch)
+        self._save()
+        return watch
+
+    def _schedule(self, watch: Watch) -> None:
+        @callback
+        def _due(_now: datetime) -> None:
+            self._timers.pop(watch.id, None)
+            self.hass.async_create_task(self._async_fire(watch, None, None))
+
+        self._timers[watch.id] = async_track_point_in_utc_time(self.hass, _due, watch.until_dt)
+
     def cancel(self, id_or_words: str) -> Watch | None:
         watch = self._watches.get(id_or_words)
         if watch is None:
@@ -301,12 +371,14 @@ class WatchManager:
             watch = best
         if watch is not None:
             self._watches.pop(watch.id, None)
+            if (unsub := self._timers.pop(watch.id, None)) is not None:
+                unsub()
             self._save()
         return watch
 
     def _expire(self) -> None:
         now = dt_util.utcnow()
-        gone = [w for w in self._watches.values() if w.until_dt <= now]
+        gone = [w for w in self._watches.values() if w.until_dt <= now and w.kind != KIND_REMINDER]
         for w in gone:
             self._watches.pop(w.id, None)
             _LOGGER.debug("Watch expired: %s", w.what)
@@ -359,6 +431,10 @@ class WatchManager:
         last = dt_util.parse_datetime(watch.last_checked) if watch.last_checked else None
         if last and dt_util.utcnow() - last < self._cooldown():
             return
+        if not self._spend():
+            watch.last_result = "skipped: daily AI limit reached"
+            self._save()
+            return
         self._busy.add(watch.id)
         try:
             # give the camera a moment so the subject is in frame
@@ -408,6 +484,17 @@ class WatchManager:
             answer = answer.strip().lower() in {"true", "yes"}
         return bool(answer), (result.get("description") or "").strip() or None
 
+    def _spend(self) -> bool:
+        """Count one background AI check; False once today's limit is used up."""
+        today = dt_util.now().date().isoformat()
+        if today != self.ai_day:
+            self.ai_day, self.ai_checks_today = today, 0
+        limit = int(self.options.get(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT))
+        if self.ai_checks_today >= limit:
+            return False
+        self.ai_checks_today += 1
+        return True
+
     async def async_look(self, camera: str, question: str) -> dict[str, Any]:
         """One on-demand look through a camera: 'what's going on in the garden?'."""
         entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
@@ -426,6 +513,8 @@ class WatchManager:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
+        self._spend()  # someone asked, so always look; it still counts towards today's total
+        self._save()
         response = await self.hass.services.async_call(
             "ai_task", "generate_data", data, blocking=True, return_response=True
         )

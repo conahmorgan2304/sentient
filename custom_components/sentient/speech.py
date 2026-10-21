@@ -24,6 +24,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_FALLBACK_SPEAKERS,
     CONF_ALL_OCCUPIED,
     DEFAULT_ALL_OCCUPIED,
     CONF_BANNED_WORDS,
@@ -137,27 +138,39 @@ class SpeechRouter:
         return area_of(self.hass, entity_id)
 
     def pick_speaker(self) -> list[str]:
-        """Speakers where people are right now (busiest first), else the default."""
+        """Speakers where people are right now (busiest first), else the default.
+
+        Backup-only speakers are used only when none of the main speakers' rooms
+        has anyone in it.
+        """
         live = [
             s for s in self.speakers
             if (st := self.hass.states.get(s)) is not None and st.state != "unavailable"
         ]
-        by_area: dict[str, str] = {}
-        for speaker in live:
-            area = self._area_of(speaker)
-            if area and area not in by_area:
-                by_area[area] = speaker
+        backup = set(self.options.get(CONF_FALLBACK_SPEAKERS) or [])
         if self.tracker is not None:
-            if self.options.get(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED):
-                areas = self.tracker.occupied_areas(set(by_area))
-            else:
-                areas = [a] if (a := self.tracker.best_area(set(by_area))) else []
-            if areas:
-                return [by_area[a] for a in areas]
+            for group in ([s for s in live if s not in backup], [s for s in live if s in backup]):
+                chosen = self._occupied(group)
+                if chosen:
+                    return chosen
         default = self.options.get(CONF_DEFAULT_SPEAKER)
         if default:
             return [default]
         return self.speakers[:1]
+
+    def _occupied(self, speakers: list[str]) -> list[str]:
+        by_area: dict[str, str] = {}
+        for speaker in speakers:
+            area = self._area_of(speaker)
+            if area and area not in by_area:
+                by_area[area] = speaker
+        if not by_area or self.tracker is None:
+            return []
+        if self.options.get(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED):
+            areas = self.tracker.occupied_areas(set(by_area))
+        else:
+            areas = [a] if (a := self.tracker.best_area(set(by_area))) else []
+        return [by_area[a] for a in areas]
 
     def find_speaker(self, name: str) -> str | None:
         """Match an entity id, area name or speaker name to a configured speaker."""

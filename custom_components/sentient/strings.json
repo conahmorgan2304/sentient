@@ -24,7 +24,9 @@
           "pass_through_areas": "Pass-through areas",
           "all_occupied": "Speak in every occupied room",
           "ai_task_entity": "AI for camera checks",
-          "camera_cooldown": "Minimum gap between camera checks"
+          "camera_cooldown": "Minimum gap between camera checks",
+          "fallback_speakers": "Backup-only speakers",
+          "daily_ai_limit": "Camera checks per day"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -33,7 +35,9 @@
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
           "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
-          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down."
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
+          "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
+          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered."
         }
       }
     },
@@ -66,7 +70,9 @@
           "pass_through_areas": "Pass-through areas",
           "all_occupied": "Speak in every occupied room",
           "ai_task_entity": "AI for camera checks",
-          "camera_cooldown": "Minimum gap between camera checks"
+          "camera_cooldown": "Minimum gap between camera checks",
+          "fallback_speakers": "Backup-only speakers",
+          "daily_ai_limit": "Camera checks per day"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -75,7 +81,9 @@
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
           "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
-          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down."
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
+          "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
+          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered."
         }
       },
       "memories": {
@@ -229,6 +237,10 @@
         "speaker": {
           "name": "Speaker",
           "description": "Where to say it. Leave empty to follow people."
+        },
+        "wake_on": {
+          "name": "Wake on",
+          "description": "Camera watches: a zone or object sensor to wake on instead of the camera's own sensors."
         }
       }
     },
@@ -239,6 +251,32 @@
         "what": {
           "name": "What",
           "description": "Watch id or words from it."
+        }
+      }
+    },
+    "remind": {
+      "name": "Remind",
+      "description": "Say something at a time, in the room where people are.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "What to say, e.g. 'Time to put the oven on.'"
+        },
+        "at": {
+          "name": "At",
+          "description": "Clock time, e.g. 18:00 or 6pm."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Or in how many minutes."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it. Leave empty to follow people."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent (default) still speaks during quiet hours."
         }
       }
     }

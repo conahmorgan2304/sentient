@@ -20,6 +20,7 @@ from .const import (
     PRIORITIES,
     SERVICE_CANCEL_WATCH,
     SERVICE_FORGET,
+    SERVICE_REMIND,
     SERVICE_REMEMBER,
     SERVICE_SAY,
     SERVICE_WATCH,
@@ -80,6 +81,16 @@ WATCH_SCHEMA = vol.Schema(
         vol.Optional("repeat", default=False): cv.boolean,
         vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
         vol.Optional("speaker"): cv.string,
+        vol.Optional("wake_on"): vol.Any(cv.entity_ids, cv.string),
+    }
+)
+REMIND_SCHEMA = vol.Schema(
+    {
+        vol.Required("message"): cv.string,
+        vol.Optional("at"): cv.string,
+        vol.Optional("minutes"): vol.Coerce(float),
+        vol.Optional("speaker"): cv.string,
+        vol.Optional("priority", default="urgent"): vol.In(PRIORITIES),
     }
 )
 CANCEL_WATCH_SCHEMA = vol.Schema({vol.Required("what"): cv.string})
@@ -163,12 +174,22 @@ def _register_services(hass: HomeAssistant) -> None:
         created = _runtime(hass).watches.add(data.pop("what"), data.pop("entity"), **data)
         return created.summary()
 
+    async def remind(call: ServiceCall) -> ServiceResponse:
+        created = _runtime(hass).watches.add_reminder(
+            call.data["message"], until=call.data.get("at"), minutes=call.data.get("minutes"),
+            speaker=call.data.get("speaker"), priority=call.data["priority"],
+        )
+        return created.summary()
+
     async def cancel_watch(call: ServiceCall) -> ServiceResponse:
         removed = _runtime(hass).watches.cancel(call.data["what"])
         return {"cancelled": removed.what if removed else None}
 
     hass.services.async_register(
         DOMAIN, SERVICE_WATCH, watch, schema=WATCH_SCHEMA, supports_response=SupportsResponse.OPTIONAL
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_REMIND, remind, schema=REMIND_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
     hass.services.async_register(
         DOMAIN, SERVICE_CANCEL_WATCH, cancel_watch, schema=CANCEL_WATCH_SCHEMA,

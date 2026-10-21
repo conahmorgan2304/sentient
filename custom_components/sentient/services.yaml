@@ -96,6 +96,10 @@ watch:
     speaker:
       selector:
         text:
+    wake_on:
+      example: binary_sensor.front_garden_person_occupancy
+      selector:
+        text:
 cancel_watch:
   fields:
     what:
@@ -103,3 +107,29 @@ cancel_watch:
       example: "cats"
       selector:
         text:
+remind:
+  fields:
+    message:
+      required: true
+      example: "Time to put the oven on."
+      selector:
+        text:
+    at:
+      example: "18:00"
+      selector:
+        text:
+    minutes:
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+    speaker:
+      selector:
+        text:
+    priority:
+      default: urgent
+      selector:
+        select:
+          options: [low, normal, urgent]
+          translation_key: priority

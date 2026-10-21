@@ -200,6 +200,24 @@ async def test_two_occupied_rooms_both_hear(hass: HomeAssistant, freezer) -> Non
     assert sorted(calls[-1].data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
 
 
+async def test_backup_speaker_only_when_main_rooms_empty(hass: HomeAssistant, freezer) -> None:
+    """Living room is backup-only: used when the kitchen is empty, skipped when it isn't."""
+    clock = _Clock(freezer)
+    entry = await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],
+                                "fallback_speakers": ["assist_satellite.living"], "motion_window": 10,
+                                "default_speaker": "assist_satellite.kitchen"})
+    await _rooms(hass, (ROOMS[0], ROOMS[2]))
+    async_mock_service(hass, "assist_satellite", "announce")
+    clock.at(5)
+    hass.states.async_set("binary_sensor.living_motion", "on", {"device_class": "motion"})
+    clock.back()
+    assert entry.runtime_data.speech.pick_speaker() == ["assist_satellite.living"]
+    clock.at(3)
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    clock.back()
+    assert entry.runtime_data.speech.pick_speaker() == ["assist_satellite.kitchen"]
+
+
 async def test_nobody_anywhere_uses_default(hass: HomeAssistant, freezer) -> None:
     clock = _Clock(freezer)
     await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],

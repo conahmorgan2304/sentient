@@ -11,6 +11,9 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_DAILY_AI_LIMIT,
+    CONF_FALLBACK_SPEAKERS,
+    DEFAULT_DAILY_AI_LIMIT,
     CONF_AI_TASK_ENTITY,
     CONF_CAMERA_COOLDOWN,
     DEFAULT_CAMERA_COOLDOWN,
@@ -51,6 +54,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
         {
             vol.Optional(CONF_SPEAKERS, **d(CONF_SPEAKERS, [])): _SPEAKER,
             vol.Optional(CONF_DEFAULT_SPEAKER, **d(CONF_DEFAULT_SPEAKER)): _ONE_SPEAKER,
+            vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),
             vol.Required(CONF_QUIET_END, **d(CONF_QUIET_END, DEFAULT_QUIET_END)): selector.TimeSelector(),
@@ -72,6 +76,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_CAMERA_COOLDOWN, **d(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=10, max=3600, step=10, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_DAILY_AI_LIMIT, **d(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=5000, step=10, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_PROMPT_MEMORIES, **d(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=100, step=1, mode=selector.NumberSelectorMode.BOX)

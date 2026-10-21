@@ -19,6 +19,8 @@ CONF_PASS_THROUGH_AREAS = "pass_through_areas"
 CONF_ALL_OCCUPIED = "all_occupied"
 CONF_AI_TASK_ENTITY = "ai_task_entity"
 CONF_CAMERA_COOLDOWN = "camera_cooldown"
+CONF_FALLBACK_SPEAKERS = "fallback_speakers"
+CONF_DAILY_AI_LIMIT = "daily_ai_limit"
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"
@@ -28,6 +30,7 @@ DEFAULT_BANNED_WORDS = "sir, madam"
 DEFAULT_SUPPRESS_SECONDS = 60
 DEFAULT_PROMPT_MEMORIES = 25
 DEFAULT_ALL_OCCUPIED = True
+DEFAULT_DAILY_AI_LIMIT = 100  # background camera checks per day
 DEFAULT_CAMERA_COOLDOWN = 60  # seconds between AI looks at the same camera watch
 
 # Speech priorities
@@ -42,6 +45,7 @@ SERVICE_REMEMBER = "remember"
 SERVICE_FORGET = "forget"
 SERVICE_WATCH = "watch"
 SERVICE_CANCEL_WATCH = "cancel_watch"
+SERVICE_REMIND = "remind"
 
 # Events
 EVENT_SPOKE = f"{DOMAIN}_spoke"

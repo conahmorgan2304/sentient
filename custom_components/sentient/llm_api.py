@@ -147,8 +147,10 @@ class WatchTool(llm.Tool):
         "(entity + above); (2) a camera, e.g. 'watch the garden until 6 and tell me if the cats "
         "go near the rabbit pen' (entity = the camera or its area name, question = a yes/no "
         "question about the image, look_for = the object, e.g. cat, person, car). "
-        "Use 'until' for a clock time (e.g. '18:00') or 'minutes'. Confirm briefly using the "
-        "local time returned; never read the id aloud."
+        "Use 'until' for a clock time (e.g. '18:00') or 'minutes'. For a camera, 'wake_on' "
+        "can name a zone or object sensor (e.g. 'front garden person occupancy') so it only "
+        "looks when something enters that zone. Confirm briefly using the local time "
+        "returned; never read the id aloud. For a plain reminder at a time, use sentient_remind."
     )
     parameters = vol.Schema(
         {
@@ -164,6 +166,7 @@ class WatchTool(llm.Tool):
             vol.Optional("minutes"): vol.Coerce(float),
             vol.Optional("repeat"): cv.boolean,
             vol.Optional("priority"): vol.In(PRIORITIES),
+            vol.Optional("wake_on"): cv.string,
         }
     )
 
@@ -181,9 +184,42 @@ class WatchTool(llm.Tool):
         return {"watching": watch.summary()}
 
 
+class RemindTool(llm.Tool):
+    name = "sentient_remind"
+    description = (
+        "Remind someone of something at a time, spoken in whichever room people are in, e.g. "
+        "'remind me at 6 to put the oven on' (at='18:00') or 'in 20 minutes check the "
+        "washing' (minutes=20). 'message' is the exact sentence to say then, written to the "
+        "listener (e.g. 'Time to put the oven on.'). Confirm with the local time returned."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("message"): cv.string,
+            vol.Optional("at"): cv.string,
+            vol.Optional("minutes"): vol.Coerce(float),
+            vol.Optional("speaker"): cv.string,
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        try:
+            reminder = rt.watches.add_reminder(
+                args["message"], until=args.get("at"), minutes=args.get("minutes"), speaker=args.get("speaker")
+            )
+        except HomeAssistantError as err:
+            return {"error": str(err)}
+        return {"reminder": reminder.summary()}
+
+
 class ListWatchesTool(llm.Tool):
     name = "sentient_watches"
-    description = "List what the house is currently keeping an eye on, with local end times."
+    description = "List what the house is keeping an eye on and any reminders, with local times."
     parameters = vol.Schema({})
 
     async def async_call(
@@ -244,7 +280,7 @@ class SentientAPI(llm.API):
             api_prompt=self._prompt(llm_context),
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
-                   WatchTool(), ListWatchesTool(), CancelWatchTool(), LookTool()],
+                   WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -270,11 +306,16 @@ class SentientAPI(llm.API):
             lines.append("Use sentient_recall for anything not listed here.")
         watches = rt.watches.watches
         if watches:
-            lines.append("You are currently keeping an eye on:")
-            lines.extend(f"- {w.what} (until {w.summary()['until']})" for w in watches[:10])
+            lines.append("You are currently keeping an eye on (and reminders due):")
+            lines.extend(
+                f"- {'reminder: ' if w.kind == 'reminder' else ''}{w.what} "
+                f"({'at' if w.kind == 'reminder' else 'until'} {w.summary()['until']})"
+                for w in watches[:10]
+            )
         lines.append(
             "When someone asks you to keep an eye on something, or to tell them when something "
-            "happens, use sentient_watch rather than promising to remember."
+            "happens, use sentient_watch; to be reminded at a time, use sentient_remind. Never just "
+            "promise to remember."
         )
         lines.append(
             "When someone tells you something worth knowing later, or asks you to "
