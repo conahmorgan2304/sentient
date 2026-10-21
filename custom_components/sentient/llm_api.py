@@ -1,0 +1,190 @@
+"""Sentient as an LLM API.
+
+Any conversation agent (Google AI, OpenAI, Ollama, ...) can tick "Sentient"
+under *Control Home Assistant*. It then sees the house's memories in its
+prompt and gets tools to remember, recall, forget and speak through the house.
+That gives every voice in the house one shared brain.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+import voluptuous as vol
+
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import llm
+from homeassistant.util import dt as dt_util
+from homeassistant.util.json import JsonObjectType
+
+from .const import (
+    CONF_PERSONA,
+    CONF_PROMPT_MEMORIES,
+    DEFAULT_PERSONA,
+    DEFAULT_PROMPT_MEMORIES,
+    DOMAIN,
+    LLM_API_ID,
+    MEMORY_CATEGORIES,
+    PRIORITIES,
+)
+
+if TYPE_CHECKING:
+    from . import SentientRuntime
+
+
+def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    return entries[0].runtime_data if entries else None
+
+
+class RememberTool(llm.Tool):
+    name = "sentient_remember"
+    description = (
+        "Save a durable fact to the house's long-term memory so every voice and "
+        "automation knows it later. Use for preferences, people, routines and facts "
+        "the household tells you, or asks you to remember. One short sentence. "
+        "Never store passwords, card or account numbers, or health details."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("text"): cv.string,
+            vol.Optional("category", default="fact"): vol.In(MEMORY_CATEGORIES),
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        memory = rt.memory.add(
+            tool_input.tool_args["text"],
+            tool_input.tool_args.get("category", "fact"),
+            source=llm_context.platform,
+        )
+        return {"saved": memory.text, "id": memory.id}
+
+
+class RecallTool(llm.Tool):
+    name = "sentient_recall"
+    description = (
+        "Search the house's long-term memory. Use before answering questions about "
+        "the household's people, preferences, routines or anything you were told earlier."
+    )
+    parameters = vol.Schema({vol.Required("query"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        found = rt.memory.search(tool_input.tool_args["query"])
+        return {"memories": [{"id": m.id, "text": m.text, "category": m.category} for m in found]}
+
+
+class ForgetTool(llm.Tool):
+    name = "sentient_forget"
+    description = "Remove something from the house's long-term memory when asked to forget it."
+    parameters = vol.Schema({vol.Required("what"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        removed = rt.memory.forget(tool_input.tool_args["what"])
+        return {"forgotten": removed.text if removed else None}
+
+
+class AnnounceTool(llm.Tool):
+    name = "sentient_announce"
+    description = (
+        "Say something out loud through the house's speakers, e.g. 'tell the kitchen "
+        "dinner is ready'. Leave 'speaker' empty to use the room where someone was last "
+        "seen. Respects quiet hours unless priority is urgent."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("message"): cv.string,
+            vol.Optional("speaker"): cv.string,
+            vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        targets = None
+        if args.get("speaker"):
+            found = rt.speech.find_speaker(args["speaker"])
+            if found is None:
+                return {"spoken": False, "reason": f"no speaker matches '{args['speaker']}'",
+                        "speakers": rt.speech.describe_rooms()}
+            targets = [found]
+        result = await rt.speech.async_say(
+            args["message"], args.get("priority", "normal"), targets, source="conversation"
+        )
+        return result.as_dict()
+
+
+class SentientAPI(llm.API):
+    """Shared brain exposed to conversation agents."""
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        super().__init__(hass=hass, id=LLM_API_ID, name="Sentient")
+
+    async def async_get_api_instance(self, llm_context: llm.LLMContext) -> llm.APIInstance:
+        return llm.APIInstance(
+            api=self,
+            api_prompt=self._prompt(llm_context),
+            llm_context=llm_context,
+            tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool()],
+        )
+
+    def _prompt(self, llm_context: llm.LLMContext) -> str:
+        rt = _runtime(self.hass)
+        if rt is None:
+            return "Sentient (the house's long-term brain) is not loaded right now."
+        opts: dict[str, Any] = rt.options
+        persona = opts.get(CONF_PERSONA) or DEFAULT_PERSONA
+        lines = [
+            f"You are {persona}, the brain of this home. The same memory is shared by "
+            "every voice and automation in the house.",
+            f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')}.",
+        ]
+        room = self._room_of_device(llm_context.device_id)
+        if room:
+            lines.append(f"The person talking to you is in the {room}.")
+        if rt.speech.quiet_now():
+            lines.append("It is quiet hours: keep replies short and don't announce elsewhere unless urgent.")
+        memories = rt.memory.recent(int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)))
+        if memories:
+            lines.append("Things you know about this household:")
+            lines.extend(f"- {m.text}" for m in memories)
+            lines.append("Use sentient_recall for anything not listed here.")
+        lines.append(
+            "When someone tells you something worth knowing later, or asks you to "
+            "remember it, save it with sentient_remember. Never use the words "
+            + ", ".join(f'"{w}"' for w in rt.speech.banned)
+            + " when addressing people."
+        )
+        return "\n".join(lines)
+
+    def _room_of_device(self, device_id: str | None) -> str | None:
+        if not device_id:
+            return None
+        device = dr.async_get(self.hass).async_get(device_id)
+        if device is None or not device.area_id:
+            return None
+        area = ar.async_get(self.hass).async_get_area(device.area_id)
+        return area.name if area else None

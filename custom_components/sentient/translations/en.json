@@ -1,0 +1,85 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Meet your home's brain",
+        "description": "Give it a name. This is what it calls itself and how it appears in Home Assistant.",
+        "data": { "persona": "Name" }
+      },
+      "speech": {
+        "title": "How should the house speak?",
+        "description": "Pick the voice satellites it can talk through. It speaks in the room where someone was last seen, otherwise on the default speaker.",
+        "data": {
+          "speakers": "Speakers",
+          "default_speaker": "Default speaker",
+          "quiet_start": "Quiet hours start",
+          "quiet_end": "Quiet hours end",
+          "motion_window": "Room awareness window",
+          "banned_words": "Never use these words (comma separated)",
+          "suppress_entities": "Stay quiet after these automations or scripts",
+          "suppress_seconds": "Stay quiet for",
+          "prompt_memories": "Memories to share with voice assistants"
+        },
+        "data_description": {
+          "motion_window": "How recent motion must be for a room to count as occupied.",
+          "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
+          "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched."
+        }
+      }
+    },
+    "abort": { "already_configured": "Sentient is already set up." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sentient settings",
+        "data": {
+          "persona": "Name",
+          "speakers": "Speakers",
+          "default_speaker": "Default speaker",
+          "quiet_start": "Quiet hours start",
+          "quiet_end": "Quiet hours end",
+          "motion_window": "Room awareness window",
+          "banned_words": "Never use these words (comma separated)",
+          "suppress_entities": "Stay quiet after these automations or scripts",
+          "suppress_seconds": "Stay quiet for",
+          "prompt_memories": "Memories to share with voice assistants"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "memories": { "name": "Memories" },
+      "last_spoken": { "name": "Last spoken" }
+    }
+  },
+  "selector": {
+    "priority": { "options": { "low": "Low", "normal": "Normal", "urgent": "Urgent (ignores quiet hours)" } },
+    "category": { "options": { "fact": "Fact", "preference": "Preference", "person": "Person", "routine": "Routine", "note": "Note" } }
+  },
+  "services": {
+    "say": {
+      "name": "Say",
+      "description": "Speak through the house, following quiet hours and room awareness.",
+      "fields": {
+        "message": { "name": "Message", "description": "What to say." },
+        "priority": { "name": "Priority", "description": "Urgent ignores quiet hours and hush periods; low never interrupts." },
+        "speaker": { "name": "Speaker", "description": "A speaker, room name or entity id. Leave empty to follow the person." }
+      }
+    },
+    "remember": {
+      "name": "Remember",
+      "description": "Add something to the house's long-term memory.",
+      "fields": {
+        "text": { "name": "Text", "description": "One short sentence." },
+        "category": { "name": "Category", "description": "What kind of memory this is." }
+      }
+    },
+    "forget": {
+      "name": "Forget",
+      "description": "Remove a memory by id or by matching text.",
+      "fields": { "what": { "name": "What", "description": "Memory id or words from it." } }
+    }
+  }
+}

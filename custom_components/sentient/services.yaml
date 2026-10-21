@@ -1,0 +1,38 @@
+say:
+  fields:
+    message:
+      required: true
+      example: "The washing has finished."
+      selector:
+        text:
+          multiline: true
+    priority:
+      default: normal
+      selector:
+        select:
+          options: [low, normal, urgent]
+          translation_key: priority
+    speaker:
+      example: kitchen
+      selector:
+        text:
+remember:
+  fields:
+    text:
+      required: true
+      example: "The rabbits' hutch is by the shed."
+      selector:
+        text:
+    category:
+      default: fact
+      selector:
+        select:
+          options: [fact, preference, person, routine, note]
+          translation_key: category
+forget:
+  fields:
+    what:
+      required: true
+      example: "rabbit hutch"
+      selector:
+        text:
