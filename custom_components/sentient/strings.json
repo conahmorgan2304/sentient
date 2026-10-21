@@ -29,7 +29,9 @@
           "daily_ai_limit": "Camera checks per day",
           "notice_entities": "Things to notice",
           "chattiness": "How chatty",
-          "house_rules": "House rules"
+          "house_rules": "House rules",
+          "learn_entities": "Learn routines from",
+          "suggest_routines": "Offer to take over routines"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -43,7 +45,9 @@
           "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
-          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'"
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
+          "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days.",
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on."
         }
       }
     },
@@ -81,7 +85,9 @@
           "daily_ai_limit": "Camera checks per day",
           "notice_entities": "Things to notice",
           "chattiness": "How chatty",
-          "house_rules": "House rules"
+          "house_rules": "House rules",
+          "learn_entities": "Learn routines from",
+          "suggest_routines": "Offer to take over routines"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -95,7 +101,9 @@
           "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
-          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'"
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
+          "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days.",
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on."
         }
       },
       "memories": {
@@ -130,6 +138,9 @@
       },
       "watches": {
         "name": "Watches"
+      },
+      "routines": {
+        "name": "Routines"
       }
     }
   },
@@ -325,6 +336,10 @@
           "description": "Play the chime before asking."
         }
       }
+    },
+    "learn": {
+      "name": "Learn now",
+      "description": "Look for routines in recent history straight away instead of waiting for tonight."
     }
   }
 }

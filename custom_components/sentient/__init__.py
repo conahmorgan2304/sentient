@@ -21,6 +21,7 @@ from .const import (
     SERVICE_ASK,
     SERVICE_CANCEL_WATCH,
     SERVICE_FORGET,
+    SERVICE_LEARN,
     SERVICE_REMIND,
     SERVICE_REMEMBER,
     SERVICE_SAY,
@@ -29,6 +30,7 @@ from .const import (
 from .llm_api import SentientAPI
 from .memory import MemoryStore
 from .presence import ActivityTracker
+from .learning import Learner
 from .notice import Noticer
 from .watches import WatchManager
 from .speech import SpeechRouter
@@ -50,6 +52,7 @@ class SentientRuntime:
     tracker: ActivityTracker
     watches: WatchManager
     noticer: Noticer
+    learner: Learner
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -134,8 +137,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     noticer = Noticer(hass, options, speech, memory, watches)
     noticer.async_start()
     entry.async_on_unload(noticer.async_stop)
+    learner = Learner(hass, entry.entry_id, options, speech, tracker)
+    await learner.async_start()
+    entry.async_on_unload(learner.async_stop)
     entry.runtime_data = SentientRuntime(
-        options=options, memory=memory, speech=speech, tracker=tracker, watches=watches, noticer=noticer
+        options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
+        noticer=noticer, learner=learner,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -153,6 +160,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.tracker.options = options
     entry.runtime_data.watches.options = options
     entry.runtime_data.noticer.options = options
+    entry.runtime_data.learner.options = options
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:
@@ -190,6 +198,10 @@ def _register_services(hass: HomeAssistant) -> None:
         created = _runtime(hass).watches.add(data.pop("what"), data.pop("entity"), **data)
         return created.summary()
 
+    async def learn(call: ServiceCall) -> ServiceResponse:
+        routines = await _runtime(hass).learner.async_learn()
+        return {"routines": [r.summary() for r in routines]}
+
     async def ask(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         targets = None
@@ -215,6 +227,9 @@ def _register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, SERVICE_WATCH, watch, schema=WATCH_SCHEMA, supports_response=SupportsResponse.OPTIONAL
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
     )
     hass.services.async_register(
         DOMAIN, SERVICE_ASK, ask, schema=ASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL

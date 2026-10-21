@@ -269,6 +269,45 @@ class LookTool(llm.Tool):
             return {"error": str(err)}
 
 
+class RoutinesTool(llm.Tool):
+    name = "sentient_routines"
+    description = (
+        "List the household routines learned from history (e.g. 'the hallway light usually goes "
+        "on around 5:30pm on weekdays') and which ones the house now does by itself."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        return {"routines": [r.summary() for r in rt.learner.routines.values()]}
+
+
+class AdoptRoutineTool(llm.Tool):
+    name = "sentient_adopt_routine"
+    description = (
+        "Start (adopt=true) or stop (adopt=false) the house doing a learned routine by itself, "
+        "e.g. after someone says yes to 'want me to do that for you?', or 'stop turning the "
+        "hallway light on for me'. 'routine' is its id or words from it."
+    )
+    parameters = vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt", default=True): cv.boolean})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        routine = rt.learner.adopt(args["routine"], args.get("adopt", True))
+        if routine is None:
+            return {"error": "No learned routine matches that"}
+        return {"routine": routine.describe(), "house_does_it": routine.adopted}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -281,7 +320,8 @@ class SentientAPI(llm.API):
             api_prompt=self._prompt(llm_context),
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
-                   WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool()],
+                   WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
+                   RoutinesTool(), AdoptRoutineTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -307,6 +347,12 @@ class SentientAPI(llm.API):
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
+        routines = sorted(rt.learner.routines.values(), key=lambda r: r.support, reverse=True)[:8]
+        if routines:
+            lines.append("Household routines learned from history:")
+            lines.extend(
+                f"- {r.describe()}{' (the house does this now)' if r.adopted else ''}" for r in routines
+            )
         watches = rt.watches.watches
         if watches:
             lines.append("You are currently keeping an eye on (and reminders due):")

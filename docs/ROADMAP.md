@@ -34,7 +34,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Proactive remarks and questions with follow-up listening (0.6.0)
 - [ ] Morning and evening briefings
 
-## Stage 4 — Learning
-- [ ] Learn routines from history ("you usually ... around this time")
-- [ ] Suggest automations from repeated manual actions
+## Stage 4 — Learning *(in progress)*
+- [x] Learn routines from history with plain statistics — no AI (0.7.0)
+- [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
 - [ ] Weekly memory consolidation
