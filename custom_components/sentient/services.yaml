@@ -165,4 +165,10 @@ briefing:
       default: true
       selector:
         boolean:
+    priority:
+      default: normal
+      selector:
+        select:
+          options: [low, normal, urgent]
+          translation_key: priority
 tidy_memories:

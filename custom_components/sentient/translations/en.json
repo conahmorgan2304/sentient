@@ -371,6 +371,10 @@
         "speak": {
           "name": "Speak it",
           "description": "Off returns the facts without speaking or using the AI."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent speaks even in quiet hours, e.g. when someone pressed a button for it."
         }
       }
     },

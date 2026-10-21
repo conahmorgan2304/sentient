@@ -132,7 +132,7 @@ class Upkeep:
         return (response or {}).get("data")
 
     # ----- briefing -------------------------------------------------------------
-    async def async_speak_briefing(self) -> dict[str, Any]:
+    async def async_speak_briefing(self, priority: str = "normal") -> dict[str, Any]:
         rt = self._rt()
         facts = gather_briefing(self.hass, rt)
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
@@ -149,7 +149,7 @@ class Upkeep:
         message = str(text or "").strip()
         if not message:
             raise HomeAssistantError("The AI didn't write a briefing")
-        result = await rt.speech.async_say(message, "normal", None, source="briefing")
+        result = await rt.speech.async_say(message, priority, None, source="briefing")
         return {**result.as_dict(), "facts": facts}
 
     # ----- memory tidy -------------------------------------------------------------

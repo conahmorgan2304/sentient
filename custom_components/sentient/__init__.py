@@ -214,7 +214,7 @@ def _register_services(hass: HomeAssistant) -> None:
     async def briefing(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         if call.data.get("speak", True):
-            return await rt.upkeep.async_speak_briefing()
+            return await rt.upkeep.async_speak_briefing(call.data.get("priority", "normal"))
         return gather_briefing(hass, rt)
 
     async def tidy(call: ServiceCall) -> ServiceResponse:
@@ -252,7 +252,10 @@ def _register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_BRIEFING, briefing,
-        schema=vol.Schema({vol.Optional("speak", default=True): cv.boolean}),
+        schema=vol.Schema({
+            vol.Optional("speak", default=True): cv.boolean,
+            vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
+        }),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(DOMAIN, SERVICE_TIDY, tidy, supports_response=SupportsResponse.OPTIONAL)
