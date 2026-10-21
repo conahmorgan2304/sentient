@@ -182,7 +182,7 @@ class WatchesSensor(_Base):
         manager = self._entry.runtime_data.watches
         return {
             "watches": [
-                {**w.summary(), "ends": w.until, "entity_id": w.entity_id, "wakes_on": w.triggers}
+                {**w.summary(), "ends": w.until, "entity_id": w.entity_id, "wakes_on": w.triggers, "spot": w.spot}
                 for w in manager.watches
             ],
             "ai_checks_today": manager.ai_checks_today,

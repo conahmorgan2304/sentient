@@ -21,7 +21,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] On-demand camera questions by voice (`sentient_look`) (0.4.1)
 - [x] Wake a camera watch on a zone or object sensor (e.g. a Frigate zone) instead of the whole camera (0.5.0)
 - [x] Spoken reminders at a time, in the room people are in (0.5.0)
-- [ ] Crop the image itself to the zone
+- [x] Spots: teach a named area by voice; watches and looks that mention it send only that crop (0.10.0)
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [x] Doorbell visitor log: one AI look when the bell rings, kept quiet by default; parcel-left check after deliveries (0.9.0)
 

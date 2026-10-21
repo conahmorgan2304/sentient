@@ -75,6 +75,7 @@ class Watch:
     priority: str = "normal"
     speaker: str | None = None
     triggers: list[str] = field(default_factory=list)
+    spot: str | None = None
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     created: str = field(default_factory=lambda: dt_util.utcnow().isoformat())
     fired: int = 0
@@ -214,6 +215,7 @@ class WatchManager:
         self._busy: set[str] = set()
         self._unsubs: list = []
         self._timers: dict[str, Any] = {}
+        self.spots: Any = None  # set by the runtime
         self.ai_day: str = dt_util.now().date().isoformat()
         self.ai_checks_today = 0
 
@@ -282,6 +284,7 @@ class WatchManager:
         priority: str = "normal",
         speaker: str | None = None,
         wake_on: str | list[str] | None = None,
+        spot: str | None = None,
     ) -> Watch:
         is_camera = bool(question) or entity.startswith("camera.")
         entity_id = resolve_entity(self.hass, entity, "camera" if is_camera else None) or (
@@ -304,6 +307,14 @@ class WatchManager:
                     triggers.append(found)
             else:
                 triggers = camera_triggers(self.hass, entity_id, look_for)
+        spot_key = None
+        if kind == KIND_CAMERA and self.spots is not None:
+            if spot:
+                if self.spots.get(entity_id, spot) is None:
+                    raise HomeAssistantError(f"There's no spot called '{spot}' on that camera yet")
+                spot_key = spot
+            else:
+                spot_key = self.spots.find_in(entity_id, f"{what} {question or ''}")
         when = parse_until(until, minutes, DEFAULT_CAMERA_HOURS if kind == KIND_CAMERA else DEFAULT_STATE_HOURS)
         watch = Watch(
             what=" ".join(what.split())[:120] or entity_id,
@@ -320,6 +331,7 @@ class WatchManager:
             priority=priority,
             speaker=speaker,
             triggers=triggers,
+            spot=spot_key,
         )
         self._watches[watch.id] = watch
         self._save()
@@ -471,9 +483,7 @@ class WatchManager:
                 "description": {"description": "One short spoken sentence, or empty", "required": False,
                                 "selector": {"text": {}}},
             },
-            "attachments": [
-                {"media_content_id": f"media-source://camera/{watch.entity_id}", "media_content_type": "image/jpeg"}
-            ],
+            "attachments": [await self._attachment(watch.entity_id, watch.spot)],
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
@@ -499,7 +509,17 @@ class WatchManager:
         self.ai_checks_today += 1
         return True
 
-    async def async_look(self, camera: str, question: str) -> dict[str, Any]:
+    async def _attachment(self, camera: str, spot: str | None) -> dict[str, str]:
+        if self.spots is None:
+            return {"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}
+        key = None
+        if spot:
+            from .spots import _key
+
+            key = _key(spot)
+        return await self.spots.async_attachment(camera, key)
+
+    async def async_look(self, camera: str, question: str, spot: str | None = None) -> dict[str, Any]:
         """One on-demand look through a camera: 'what's going on in the garden?'."""
         entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
         if entity_id is None or not entity_id.startswith("camera."):
@@ -512,7 +532,9 @@ class WatchManager:
                 "if it's too dark or unclear, say so. No camera names, IDs or timestamps."
             ),
             "attachments": [
-                {"media_content_id": f"media-source://camera/{entity_id}", "media_content_type": "image/jpeg"}
+                await self._attachment(
+                    entity_id, spot or (self.spots.find_in(entity_id, question) if self.spots else None)
+                )
             ],
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):

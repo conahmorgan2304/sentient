@@ -35,6 +35,7 @@ from .presence import ActivityTracker
 from .learning import Learner
 from .notice import Noticer
 from .upkeep import Upkeep, gather_briefing
+from .spots import Spots
 from .visitors import Visitors
 from .watches import WatchManager
 from .speech import SpeechRouter
@@ -59,6 +60,7 @@ class SentientRuntime:
     learner: Learner
     upkeep: Upkeep
     visitors: Visitors
+    spots: Spots
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -94,6 +96,7 @@ WATCH_SCHEMA = vol.Schema(
         vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
         vol.Optional("speaker"): cv.string,
         vol.Optional("wake_on"): vol.Any(cv.entity_ids, cv.string),
+        vol.Optional("spot"): cv.string,
     }
 )
 ASK_SCHEMA = vol.Schema(
@@ -138,6 +141,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(tracker.async_stop)
     speech = SpeechRouter(hass, options, tracker)
     watches = WatchManager(hass, entry.entry_id, options, speech)
+    spots = Spots(hass, entry.entry_id, options)
+    await spots.async_load()
+    watches.spots = spots
     await watches.async_start()
     entry.async_on_unload(watches.async_stop)
     noticer = Noticer(hass, options, speech, memory, watches)
@@ -154,7 +160,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(visitors.async_stop)
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
-        noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors,
+        noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -174,6 +180,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.noticer.options = options
     entry.runtime_data.learner.options = options
     entry.runtime_data.visitors.options = options
+    entry.runtime_data.spots.options = options
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:

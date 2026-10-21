@@ -27,5 +27,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install pytest pytest-homeassistant-custom-component hassil home-assistant-intents
+      - run: pip install pytest pytest-homeassistant-custom-component hassil home-assistant-intents PyTurboJPEG
       - run: pytest -q

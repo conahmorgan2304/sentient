@@ -151,7 +151,8 @@ class WatchTool(llm.Tool):
         "Use 'until' for a clock time (e.g. '18:00') or 'minutes'. For a camera, 'wake_on' "
         "can name a zone or object sensor (e.g. 'front garden person occupancy') so it only "
         "looks when something enters that zone. Confirm briefly using the local time "
-        "returned; never read the id aloud. For a plain reminder at a time, use sentient_remind."
+        "returned; never read the id aloud. For a plain reminder at a time, use sentient_remind. "
+        "If a named spot (see sentient_spot) is mentioned, only that part of the picture is checked."
     )
     parameters = vol.Schema(
         {
@@ -168,6 +169,7 @@ class WatchTool(llm.Tool):
             vol.Optional("repeat"): cv.boolean,
             vol.Optional("priority"): vol.In(PRIORITIES),
             vol.Optional("wake_on"): cv.string,
+            vol.Optional("spot"): cv.string,
         }
     )
 
@@ -255,7 +257,9 @@ class LookTool(llm.Tool):
         "bins out?'. 'camera' can be the camera's name or its area. Answer the person in "
         "your own words from the result."
     )
-    parameters = vol.Schema({vol.Required("camera"): cv.string, vol.Required("question"): cv.string})
+    parameters = vol.Schema(
+        {vol.Required("camera"): cv.string, vol.Required("question"): cv.string, vol.Optional("spot"): cv.string}
+    )
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
@@ -264,7 +268,8 @@ class LookTool(llm.Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         try:
-            return await rt.watches.async_look(tool_input.tool_args["camera"], tool_input.tool_args["question"])
+            args = tool_input.tool_args
+            return await rt.watches.async_look(args["camera"], args["question"], args.get("spot"))
         except HomeAssistantError as err:
             return {"error": str(err)}
 
@@ -346,6 +351,42 @@ class VisitorsTool(llm.Tool):
         return {"visitors": rt.visitors.summary(10)}
 
 
+class SpotTool(llm.Tool):
+    name = "sentient_spot"
+    description = (
+        "Teach the house a named area inside a camera picture, e.g. 'on the garden camera, the "
+        "rabbit pen is a spot' — it finds it in the current picture and remembers where it is. "
+        "Later watches and looks that mention it only check that part of the picture. Use "
+        "forget=true to remove one, or no name to list the spots."
+    )
+    parameters = vol.Schema(
+        {vol.Optional("camera"): cv.string, vol.Optional("name"): cv.string, vol.Optional("forget"): cv.boolean}
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        if not args.get("name"):
+            return {"spots": rt.spots.listing()}
+        if args.get("forget"):
+            return {"forgotten": rt.spots.forget(args["name"])}
+        from .watches import resolve_entity
+
+        camera = resolve_entity(hass, args.get("camera") or "", "camera")
+        if camera is None or not camera.startswith("camera."):
+            return {"error": "Which camera is it on?"}
+        rt.watches.spend()
+        try:
+            spot = await rt.spots.async_learn(camera, args["name"])
+        except HomeAssistantError as err:
+            return {"error": str(err)}
+        return {"learned": spot["name"], "camera": hass.states.get(camera).name}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -359,7 +400,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

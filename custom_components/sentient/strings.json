@@ -295,6 +295,10 @@
         "wake_on": {
           "name": "Wake on",
           "description": "Camera watches: a zone or object sensor to wake on instead of the camera's own sensors."
+        },
+        "spot": {
+          "name": "Spot",
+          "description": "Camera watches: only check this named spot (taught by voice, e.g. 'the rabbit pen')."
         }
       }
     },
