@@ -56,6 +56,8 @@ SERVICE_CANCEL_WATCH = "cancel_watch"
 SERVICE_REMIND = "remind"
 SERVICE_ASK = "ask"
 SERVICE_LEARN = "learn"
+SERVICE_BRIEFING = "briefing"
+SERVICE_TIDY = "tidy_memories"
 
 # Events
 EVENT_SPOKE = f"{DOMAIN}_spoke"

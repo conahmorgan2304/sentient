@@ -308,6 +308,27 @@ class AdoptRoutineTool(llm.Tool):
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
 
+class BriefingTool(llm.Tool):
+    name = "sentient_briefing"
+    description = (
+        "Get what matters right now for a briefing or 'what's going on?': reminders due today, "
+        "what the house is keeping an eye on, routines coming up, windows or doors open, the "
+        "weather and what was said recently. Turn it into a few natural spoken sentences; "
+        "skip anything empty."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .upkeep import gather_briefing
+
+        return gather_briefing(hass, rt)
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -321,7 +342,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

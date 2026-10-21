@@ -19,12 +19,14 @@ from .const import (
     MEMORY_CATEGORIES,
     PRIORITIES,
     SERVICE_ASK,
+    SERVICE_BRIEFING,
     SERVICE_CANCEL_WATCH,
     SERVICE_FORGET,
     SERVICE_LEARN,
     SERVICE_REMIND,
     SERVICE_REMEMBER,
     SERVICE_SAY,
+    SERVICE_TIDY,
     SERVICE_WATCH,
 )
 from .llm_api import SentientAPI
@@ -32,6 +34,7 @@ from .memory import MemoryStore
 from .presence import ActivityTracker
 from .learning import Learner
 from .notice import Noticer
+from .upkeep import Upkeep, gather_briefing
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -53,6 +56,7 @@ class SentientRuntime:
     watches: WatchManager
     noticer: Noticer
     learner: Learner
+    upkeep: Upkeep
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -140,9 +144,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     learner = Learner(hass, entry.entry_id, options, speech, tracker)
     await learner.async_start()
     entry.async_on_unload(learner.async_stop)
+    upkeep = Upkeep(hass, lambda: entry.runtime_data)
+    upkeep.async_start()
+    entry.async_on_unload(upkeep.async_stop)
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
-        noticer=noticer, learner=learner,
+        noticer=noticer, learner=learner, upkeep=upkeep,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -198,6 +205,15 @@ def _register_services(hass: HomeAssistant) -> None:
         created = _runtime(hass).watches.add(data.pop("what"), data.pop("entity"), **data)
         return created.summary()
 
+    async def briefing(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        if call.data.get("speak", True):
+            return await rt.upkeep.async_speak_briefing()
+        return gather_briefing(hass, rt)
+
+    async def tidy(call: ServiceCall) -> ServiceResponse:
+        return await _runtime(hass).upkeep.async_tidy()
+
     async def learn(call: ServiceCall) -> ServiceResponse:
         routines = await _runtime(hass).learner.async_learn()
         return {"routines": [r.summary() for r in routines]}
@@ -228,6 +244,12 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_WATCH, watch, schema=WATCH_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
+    hass.services.async_register(
+        DOMAIN, SERVICE_BRIEFING, briefing,
+        schema=vol.Schema({vol.Optional("speak", default=True): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(DOMAIN, SERVICE_TIDY, tidy, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
     )

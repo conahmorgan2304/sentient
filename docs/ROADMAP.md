@@ -32,9 +32,9 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [ ] A bigger model only when the cheap one is unsure
 - [x] Daily limit on background camera checks (0.5.0)
 - [x] Proactive remarks and questions with follow-up listening (0.6.0)
-- [ ] Morning and evening briefings
+- [x] Briefings on request: facts for any voice agent, or spoken via `sentient.briefing` (0.8.0)
 
 ## Stage 4 — Learning *(in progress)*
 - [x] Learn routines from history with plain statistics — no AI (0.7.0)
 - [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
-- [ ] Weekly memory consolidation
+- [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)

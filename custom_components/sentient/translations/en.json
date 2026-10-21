@@ -340,6 +340,20 @@
     "learn": {
       "name": "Learn now",
       "description": "Look for routines in recent history straight away instead of waiting for tonight."
+    },
+    "briefing": {
+      "name": "Briefing",
+      "description": "A short briefing of what matters right now, spoken where people are.",
+      "fields": {
+        "speak": {
+          "name": "Speak it",
+          "description": "Off returns the facts without speaking or using the AI."
+        }
+      }
+    },
+    "tidy_memories": {
+      "name": "Tidy memories",
+      "description": "Merge duplicates and drop nonsense from memory now (also runs every Sunday night)."
     }
   }
 }

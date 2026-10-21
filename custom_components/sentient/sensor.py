@@ -66,7 +66,10 @@ class MemorySensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         items = sorted(self._entry.runtime_data.memory.items, key=lambda m: m.created, reverse=True)
-        return {"items": [{"id": m.id, "text": m.text, "category": m.category} for m in items[:50]]}
+        return {
+            "items": [{"id": m.id, "text": m.text, "category": m.category} for m in items[:50]],
+            "last_tidy": self._entry.runtime_data.upkeep.last_tidy,
+        }
 
 
 class LastSpokenSensor(_Base):
