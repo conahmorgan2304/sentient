@@ -21,6 +21,9 @@ CONF_AI_TASK_ENTITY = "ai_task_entity"
 CONF_CAMERA_COOLDOWN = "camera_cooldown"
 CONF_FALLBACK_SPEAKERS = "fallback_speakers"
 CONF_DAILY_AI_LIMIT = "daily_ai_limit"
+CONF_NOTICE_ENTITIES = "notice_entities"
+CONF_CHATTINESS = "chattiness"
+CONF_HOUSE_RULES = "house_rules"
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"
@@ -31,6 +34,8 @@ DEFAULT_SUPPRESS_SECONDS = 60
 DEFAULT_PROMPT_MEMORIES = 25
 DEFAULT_ALL_OCCUPIED = True
 DEFAULT_DAILY_AI_LIMIT = 100  # background camera checks per day
+DEFAULT_CHATTINESS = "quiet"
+CHATTINESS_LIMITS = {"off": 0, "quiet": 2, "normal": 4, "chatty": 8}  # remarks per hour
 DEFAULT_CAMERA_COOLDOWN = 60  # seconds between AI looks at the same camera watch
 
 # Speech priorities
@@ -46,6 +51,7 @@ SERVICE_FORGET = "forget"
 SERVICE_WATCH = "watch"
 SERVICE_CANCEL_WATCH = "cancel_watch"
 SERVICE_REMIND = "remind"
+SERVICE_ASK = "ask"
 
 # Events
 EVENT_SPOKE = f"{DOMAIN}_spoke"
@@ -53,6 +59,7 @@ EVENT_HELD = f"{DOMAIN}_held"
 EVENT_MEMORY_CHANGED = f"{DOMAIN}_memory_changed"
 EVENT_WATCH_CHANGED = f"{DOMAIN}_watch_changed"
 EVENT_WATCH_FIRED = f"{DOMAIN}_watch_fired"
+EVENT_NOTICED = f"{DOMAIN}_noticed"
 
 # Memory
 MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note"]

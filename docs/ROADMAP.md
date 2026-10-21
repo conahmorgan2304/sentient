@@ -25,10 +25,13 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [ ] Doorbell / visitor / delivery awareness built on Frigate zones
 
-## Stage 3 — Speaking up
-- [ ] Event triage: free rules first, then the cheapest model, and a bigger model only when needed
+## Stage 3 — Speaking up *(in progress)*
+- [x] Noticing: chosen entities → free rules (quiet hours, hush, hourly limit, jitter, batching) → AI decides whether to speak (0.6.0)
+- [x] House rules every voice must follow (0.6.0)
+- [x] `sentient.ask`: ask out loud and open the mic for the reply (0.6.0)
+- [ ] A bigger model only when the cheap one is unsure
 - [x] Daily limit on background camera checks (0.5.0)
-- [ ] Proactive remarks and questions with follow-up listening, e.g. "Fancy a brew?"
+- [x] Proactive remarks and questions with follow-up listening (0.6.0)
 - [ ] Morning and evening briefings
 
 ## Stage 4 — Learning

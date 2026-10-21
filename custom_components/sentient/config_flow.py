@@ -11,6 +11,11 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CHATTINESS_LIMITS,
+    CONF_CHATTINESS,
+    CONF_HOUSE_RULES,
+    CONF_NOTICE_ENTITIES,
+    DEFAULT_CHATTINESS,
     CONF_DAILY_AI_LIMIT,
     CONF_FALLBACK_SPEAKERS,
     DEFAULT_DAILY_AI_LIMIT,
@@ -70,6 +75,15 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_SUPPRESS_SECONDS, **d(CONF_SUPPRESS_SECONDS, DEFAULT_SUPPRESS_SECONDS)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=600, step=5, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_NOTICE_ENTITIES, **d(CONF_NOTICE_ENTITIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_CHATTINESS, **d(CONF_CHATTINESS, DEFAULT_CHATTINESS)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=list(CHATTINESS_LIMITS), translation_key="chattiness")
+            ),
+            vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
             ),
             vol.Optional(CONF_AI_TASK_ENTITY, **d(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")

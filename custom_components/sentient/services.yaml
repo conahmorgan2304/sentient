@@ -133,3 +133,28 @@ remind:
         select:
           options: [low, normal, urgent]
           translation_key: priority
+ask:
+  fields:
+    question:
+      required: true
+      example: "Fancy a brew? Shall I put the kettle on?"
+      selector:
+        text:
+    priority:
+      default: normal
+      selector:
+        select:
+          options: [low, normal, urgent]
+          translation_key: priority
+    speaker:
+      example: kitchen
+      selector:
+        text:
+    extra_prompt:
+      selector:
+        text:
+          multiline: true
+    preannounce:
+      default: false
+      selector:
+        boolean:

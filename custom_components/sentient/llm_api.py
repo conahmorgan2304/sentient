@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
 
 from .const import (
+    CONF_HOUSE_RULES,
     CONF_PERSONA,
     CONF_PROMPT_MEMORIES,
     DEFAULT_PERSONA,
@@ -294,6 +295,8 @@ class SentientAPI(llm.API):
             "every voice and automation in the house.",
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')}.",
         ]
+        if rules := (opts.get(CONF_HOUSE_RULES) or "").strip():
+            lines.append(f"House rules you must always follow:\n{rules}")
         room = self._room_of_device(llm_context.device_id)
         if room:
             lines.append(f"The person talking to you is in the {room}.")

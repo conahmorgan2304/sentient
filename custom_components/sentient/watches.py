@@ -431,7 +431,7 @@ class WatchManager:
         last = dt_util.parse_datetime(watch.last_checked) if watch.last_checked else None
         if last and dt_util.utcnow() - last < self._cooldown():
             return
-        if not self._spend():
+        if not self.spend():
             watch.last_result = "skipped: daily AI limit reached"
             self._save()
             return
@@ -484,7 +484,7 @@ class WatchManager:
             answer = answer.strip().lower() in {"true", "yes"}
         return bool(answer), (result.get("description") or "").strip() or None
 
-    def _spend(self) -> bool:
+    def spend(self) -> bool:
         """Count one background AI check; False once today's limit is used up."""
         today = dt_util.now().date().isoformat()
         if today != self.ai_day:
@@ -513,7 +513,7 @@ class WatchManager:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        self._spend()  # someone asked, so always look; it still counts towards today's total
+        self.spend()  # someone asked, so always look; it still counts towards today's total
         self._save()
         response = await self.hass.services.async_call(
             "ai_task", "generate_data", data, blocking=True, return_response=True

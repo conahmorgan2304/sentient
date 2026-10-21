@@ -13,6 +13,7 @@ One place decides *whether*, *where* and *how* the house speaks:
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 import logging
@@ -49,6 +50,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _DUPLICATE_WINDOW = timedelta(seconds=120)
 _BUSY_STATES = {"listening", "processing", "responding"}
+_START_CONVERSATION = 2  # AssistSatelliteEntityFeature.START_CONVERSATION
 
 
 @dataclass
@@ -114,6 +116,7 @@ class SpeechRouter:
         self.options = options
         self.tracker = tracker
         self._recent: dict[str, datetime] = {}
+        self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
 
     # ----- configuration helpers -------------------------------------------------
@@ -212,18 +215,17 @@ class SpeechRouter:
                 return entity_id
         return None
 
-    # ----- the main entry point ---------------------------------------------------
-    async def async_say(
-        self,
-        message: str,
-        priority: str = "normal",
-        targets: list[str] | None = None,
-        source: str | None = None,
-    ) -> SpeechResult:
-        text = clean_message(message, self.banned)
-        if not text:
-            return self._held("empty", message, source)
+    # ----- the main entry points ---------------------------------------------------
+    def recently_triggered(self) -> str | None:
+        return self._recently_triggered()
 
+    def recent_said(self, limit: int = 5) -> list[str]:
+        return [text for _, text in list(self._said)[:limit]]
+
+    def _gate(self, text: str, priority: str, source: str | None) -> SpeechResult | None:
+        """Shared rules; returns a held result, or None when it may speak."""
+        if not text:
+            return self._held("empty", text, source)
         if priority != PRIORITY_URGENT:
             if self.quiet_now():
                 return self._held("quiet_hours", text, source)
@@ -234,22 +236,34 @@ class SpeechRouter:
                 # low priority never interrupts something said in the last minute
                 if any(dt_util.utcnow() - t < timedelta(seconds=60) for t in self._recent.values()):
                     return self._held("busy", text, source)
-
-        key = text.lower()
-        last = self._recent.get(key)
+        last = self._recent.get(text.lower())
         if last and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
             return self._held("duplicate", text, source)
+        return None
 
+    def _remember_said(self, text: str) -> None:
+        now = dt_util.utcnow()
+        self._recent = {k: v for k, v in self._recent.items() if now - v < _DUPLICATE_WINDOW}
+        self._recent[text.lower()] = now
+        self._said.appendleft((now, text))
+
+    async def async_say(
+        self,
+        message: str,
+        priority: str = "normal",
+        targets: list[str] | None = None,
+        source: str | None = None,
+    ) -> SpeechResult:
+        text = clean_message(message, self.banned)
+        if (held := self._gate(text, priority, source)) is not None:
+            return held
         speakers = targets or self.pick_speaker()
         if not speakers:
             return self._held("no_speaker", text, source)
 
         async with self._lock:
             await self._wait_idle(speakers)
-            self._recent = {
-                k: v for k, v in self._recent.items() if dt_util.utcnow() - v < _DUPLICATE_WINDOW
-            }
-            self._recent[key] = dt_util.utcnow()
+            self._remember_said(text)
             await self.hass.services.async_call(
                 "assist_satellite",
                 "announce",
@@ -261,6 +275,54 @@ class SpeechRouter:
             EVENT_SPOKE, {"message": text, "speakers": speakers, "priority": priority, "source": source}
         )
         return SpeechResult(True, "spoken", text, speakers)
+
+    async def async_ask(
+        self,
+        question: str,
+        priority: str = "normal",
+        targets: list[str] | None = None,
+        source: str | None = None,
+        extra_prompt: str | None = None,
+        preannounce: bool = False,
+    ) -> SpeechResult:
+        """Ask out loud and open the microphone, so the reply goes to that speaker's voice agent.
+
+        Only one speaker can listen, so it's the busiest room's. Speakers that can't
+        start a conversation get the question as a plain announcement instead.
+        """
+        text = clean_message(question, self.banned)
+        if (held := self._gate(text, priority, source)) is not None:
+            return held
+        candidates = targets or self.pick_speaker()
+        listening = [
+            s for s in candidates
+            if (st := self.hass.states.get(s)) is not None
+            and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
+        ]
+        if not listening:
+            return await self.async_say(text, priority, candidates, source)
+        speaker = listening[0]
+        prompt = (
+            f'You have just asked the person: "{text}". Handle their reply: if they say yes, '
+            "do it with your tools and confirm in a few words; if no, acknowledge briefly."
+        )
+        if extra_prompt:
+            prompt += " " + extra_prompt
+        async with self._lock:
+            await self._wait_idle([speaker])
+            self._remember_said(text)
+            await self.hass.services.async_call(
+                "assist_satellite",
+                "start_conversation",
+                {"start_message": text, "extra_system_prompt": prompt, "preannounce": preannounce},
+                target={"entity_id": speaker},
+                blocking=True,
+            )
+        self.hass.bus.async_fire(
+            EVENT_SPOKE,
+            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True},
+        )
+        return SpeechResult(True, "asked", text, [speaker])
 
     async def _wait_idle(self, speakers: list[str], timeout: float = 15) -> None:
         """Don't talk over a conversation that's already happening."""

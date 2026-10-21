@@ -26,7 +26,10 @@
           "ai_task_entity": "AI for camera checks",
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
-          "daily_ai_limit": "Camera checks per day"
+          "daily_ai_limit": "Camera checks per day",
+          "notice_entities": "Things to notice",
+          "chattiness": "How chatty",
+          "house_rules": "House rules"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -37,7 +40,10 @@
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
-          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered."
+          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
+          "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
+          "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'"
         }
       }
     },
@@ -72,7 +78,10 @@
           "ai_task_entity": "AI for camera checks",
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
-          "daily_ai_limit": "Camera checks per day"
+          "daily_ai_limit": "Camera checks per day",
+          "notice_entities": "Things to notice",
+          "chattiness": "How chatty",
+          "house_rules": "House rules"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -83,7 +92,10 @@
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
-          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered."
+          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
+          "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
+          "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'"
         }
       },
       "memories": {
@@ -136,6 +148,14 @@
         "person": "Person",
         "routine": "Routine",
         "note": "Note"
+      }
+    },
+    "chattiness": {
+      "options": {
+        "off": "Off",
+        "quiet": "Quiet",
+        "normal": "Normal",
+        "chatty": "Chatty"
       }
     }
   },
@@ -277,6 +297,32 @@
         "priority": {
           "name": "Priority",
           "description": "Urgent (default) still speaks during quiet hours."
+        }
+      }
+    },
+    "ask": {
+      "name": "Ask",
+      "description": "Ask a question out loud and listen for the answer, in the room where people are.",
+      "fields": {
+        "question": {
+          "name": "Question",
+          "description": "e.g. 'Fancy a brew? Shall I put the kettle on?'"
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent ignores quiet hours and hush periods."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to ask. Leave empty to follow people."
+        },
+        "extra_prompt": {
+          "name": "Extra instructions",
+          "description": "Extra guidance for the voice agent handling the reply."
+        },
+        "preannounce": {
+          "name": "Chime first",
+          "description": "Play the chime before asking."
         }
       }
     }

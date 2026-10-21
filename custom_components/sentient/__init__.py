@@ -18,6 +18,7 @@ from .const import (
     DOMAIN,
     MEMORY_CATEGORIES,
     PRIORITIES,
+    SERVICE_ASK,
     SERVICE_CANCEL_WATCH,
     SERVICE_FORGET,
     SERVICE_REMIND,
@@ -28,6 +29,7 @@ from .const import (
 from .llm_api import SentientAPI
 from .memory import MemoryStore
 from .presence import ActivityTracker
+from .notice import Noticer
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -47,6 +49,7 @@ class SentientRuntime:
     speech: SpeechRouter
     tracker: ActivityTracker
     watches: WatchManager
+    noticer: Noticer
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -84,6 +87,15 @@ WATCH_SCHEMA = vol.Schema(
         vol.Optional("wake_on"): vol.Any(cv.entity_ids, cv.string),
     }
 )
+ASK_SCHEMA = vol.Schema(
+    {
+        vol.Required("question"): cv.string,
+        vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
+        vol.Optional("speaker"): cv.string,
+        vol.Optional("extra_prompt"): cv.string,
+        vol.Optional("preannounce", default=False): cv.boolean,
+    }
+)
 REMIND_SCHEMA = vol.Schema(
     {
         vol.Required("message"): cv.string,
@@ -119,8 +131,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     watches = WatchManager(hass, entry.entry_id, options, speech)
     await watches.async_start()
     entry.async_on_unload(watches.async_stop)
+    noticer = Noticer(hass, options, speech, memory, watches)
+    noticer.async_start()
+    entry.async_on_unload(noticer.async_stop)
     entry.runtime_data = SentientRuntime(
-        options=options, memory=memory, speech=speech, tracker=tracker, watches=watches
+        options=options, memory=memory, speech=speech, tracker=tracker, watches=watches, noticer=noticer
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -137,6 +152,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech.options = options
     entry.runtime_data.tracker.options = options
     entry.runtime_data.watches.options = options
+    entry.runtime_data.noticer.options = options
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:
@@ -174,6 +190,18 @@ def _register_services(hass: HomeAssistant) -> None:
         created = _runtime(hass).watches.add(data.pop("what"), data.pop("entity"), **data)
         return created.summary()
 
+    async def ask(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        targets = None
+        if speaker := call.data.get("speaker"):
+            found = rt.speech.find_speaker(speaker)
+            targets = [found] if found else None
+        result = await rt.speech.async_ask(
+            call.data["question"], call.data["priority"], targets, source="service",
+            extra_prompt=call.data.get("extra_prompt"), preannounce=call.data["preannounce"],
+        )
+        return result.as_dict()
+
     async def remind(call: ServiceCall) -> ServiceResponse:
         created = _runtime(hass).watches.add_reminder(
             call.data["message"], until=call.data.get("at"), minutes=call.data.get("minutes"),
@@ -187,6 +215,9 @@ def _register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, SERVICE_WATCH, watch, schema=WATCH_SCHEMA, supports_response=SupportsResponse.OPTIONAL
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_ASK, ask, schema=ASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
     hass.services.async_register(
         DOMAIN, SERVICE_REMIND, remind, schema=REMIND_SCHEMA, supports_response=SupportsResponse.OPTIONAL
