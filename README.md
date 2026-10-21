@@ -1,5 +1,7 @@
 # Sentient
 
+<p align="center"><img src="docs/images/sentient.jpg" alt="Sentient" width="420"></p>
+
 **An evolving AI brain for Home Assistant.**
 
 Sentient gives your home one shared brain. Every voice assistant and automation in the house uses the same memory, follows the same house rules about when and where to speak, and gets smarter the longer it runs.
