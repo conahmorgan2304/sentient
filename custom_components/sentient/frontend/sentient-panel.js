@@ -371,7 +371,7 @@
           <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the rabbit pen" value="${esc(this._spName || "")}" autocomplete="off"></form>
           <div class="row"><button class="btn sm" data-act="spfind">FIND IT WITH AI</button>
             <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DRAW IT"}</button>
-            ${this._draft_box ? '<button class="btn sm" data-act="spsave">SAVE SPOT</button>' : ""}</div>
+            ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${this._draft_box ? "" : " disabled"}>SAVE SPOT</button>` : ""}</div>
           <div class="spmsg" id="spmsg">${esc(this._spMsg || "")}</div>
           <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
           ${here.map((sp) => `<div class="r"><ha-icon icon="mdi:selection-marker"></ha-icon><b>${esc(sp.name)}</b>
@@ -397,7 +397,10 @@
           const d = this._draft_box;
           Object.assign(el.style, { left: d[0] * 100 + "%", top: d[1] * 100 + "%", width: (d[2] - d[0]) * 100 + "%", height: (d[3] - d[1]) * 100 + "%" });
         });
-        snap.addEventListener("pointerup", () => { if (this._dragFrom) { this._dragFrom = null; this._drawSpots(); } });
+        const end = () => { this._dragFrom = null; const b = this._$("spsave"); if (b && this._draft_box) b.disabled = false; };
+        snap.addEventListener("pointerup", end);
+        snap.addEventListener("pointercancel", end);
+        snap.addEventListener("lostpointercapture", end);
       }
     }
 
@@ -412,6 +415,7 @@
           this._spots = res.spots; this._spName = ""; say(`Found ${res.result.name}.`);
         } else if (kind === "save") {
           if (!name) return say("Give the spot a name first.");
+          if (!this._draft_box) return say("Drag on the picture to mark it first.");
           const res = await this._hass.callWS({ type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box });
           this._spots = res.spots; this._spName = ""; this._draft_box = null; this._drawing = false; say(`Saved ${res.result.name}.`);
         }
@@ -600,7 +604,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .r.edit{border-color:rgba(0,255,247,.5);background:rgba(0,255,247,.08)}
 .r.edit input{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;outline:none}
 .btn{flex:none;font-size:10px;font-weight:700;letter-spacing:.16em;padding:8px 16px;border-radius:10px;color:#041016;background:linear-gradient(90deg,#00c8ff,#00fff7);box-shadow:0 0 12px rgba(0,255,247,.35)}
-.btn.sm{padding:6px 12px} .btn.ghost{color:#7fefff;background:none;border:1px solid rgba(0,255,247,.35);box-shadow:none}
+.btn.sm{padding:6px 12px} .btn[disabled]{opacity:.35;cursor:default} .btn.ghost{color:#7fefff;background:none;border:1px solid rgba(0,255,247,.35);box-shadow:none}
 .bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(0,255,247,.15);position:sticky;bottom:0}
 #status{flex:1;font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.6)}
 #status.ok{color:#3dffa8} #status.warn{color:#ffbe55} #status.bad{color:#ff7088;letter-spacing:.02em;font-weight:400;font-size:12px}
