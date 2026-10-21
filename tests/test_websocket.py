@@ -57,3 +57,18 @@ async def test_memories_list_and_edit(hass: HomeAssistant, hass_ws_client) -> No
     assert entry.runtime_data.memory.get(m.id).category == "fact"
     await ws.send_json({"id": 3, "type": "sentient/memory/update", "memory_id": "nope", "text": "x"})
     assert (await ws.receive_json())["error"]["code"] == "not_found"
+
+
+async def test_spots_over_websocket(hass: HomeAssistant, hass_ws_client) -> None:
+    entry = await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/spots/set", "camera": "camera.garden", "name": "The rabbit pen", "box": [0.6, 0.5, 0.2, 0.9]})
+    res = await ws.receive_json()
+    assert res["success"], res
+    assert res["result"]["spots"][0]["box"] == [0.2, 0.5, 0.6, 0.9]
+    assert entry.runtime_data.spots.find_in("camera.garden", "is the rabbit pen shut") == "rabbit pen"
+    await ws.send_json({"id": 2, "type": "sentient/spots/set", "camera": "camera.garden", "name": "dot", "box": [0.1, 0.1, 0.105, 0.105]})
+    assert (await ws.receive_json())["error"]["code"] == "failed"
+    await ws.send_json({"id": 3, "type": "sentient/spots/forget", "name": "rabbit pen"})
+    res = await ws.receive_json()
+    assert res["result"]["result"] is True and res["result"]["spots"] == []

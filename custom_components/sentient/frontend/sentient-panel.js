@@ -202,6 +202,7 @@
     async _openSettings() {
       this._drawSide();
       this._loadMemories();
+      this._loadSpots();
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -219,6 +220,7 @@
         `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
       this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + item("memories", "mdi:brain", "Memories", count !== "" ? `${count} remembered` : "")
+        + item("spots", "mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
@@ -236,6 +238,7 @@
 
     _drawBody() {
       if (this._group === "memories") { this._form = null; this._drawMemories(); return; }
+      if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -325,6 +328,97 @@
       if (this._editing) { const i = body.querySelector("form.edit input"); if (i) i.focus(); }
     }
 
+
+    // ---------- camera spots ----------
+    async _loadSpots() {
+      try { this._spots = (await this._hass.callWS({ type: "sentient/spots" })).spots; } catch (e) { this._spots = []; }
+      if (this._view === "settings") { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
+    }
+
+    _cameras() {
+      return Object.values(this._hass.states).filter((s) => s.entity_id.startsWith("camera.") && s.state !== "unavailable")
+        .map((s) => ({ id: s.entity_id, name: s.attributes.friendly_name || s.entity_id }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    _snapUrl(cam) {
+      const st = this._hass.states[cam];
+      const pic = st && st.attributes.entity_picture;
+      return pic ? `${pic}${pic.includes("?") ? "&" : "?"}t=${this._snapT || 0}` : "";
+    }
+
+    _drawSpots() {
+      if (this._view !== "settings" || this._group !== "spots") return;
+      const cams = this._cameras();
+      const spots = this._spots || [];
+      if (!this._cam || !cams.find((c) => c.id === this._cam)) {
+        const withSpot = spots.find((sp) => cams.find((c) => c.id === sp.camera));
+        this._cam = withSpot ? withSpot.camera : (cams[0] && cams[0].id);
+      }
+      const here = spots.filter((sp) => sp.camera === this._cam);
+      const box = (b, label, cls) => `<div class="box ${cls || ""}" style="left:${b[0] * 100}%;top:${b[1] * 100}%;width:${(b[2] - b[0]) * 100}%;height:${(b[3] - b[1]) * 100}%">${label ? `<span>${esc(label)}</span>` : ""}</div>`;
+      const body = this._$("body");
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:selection-marker"></ha-icon><div><div class="bt">CAMERA SPOTS</div>
+          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive". Watches and questions that mention it send the AI just that part: sharper answers, cheaper checks.</div></div></div>
+        <div class="spotgrid"><div>
+          <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+            <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
+          <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
+            ${here.map((sp) => box(sp.box, sp.name)).join("")}${this._draft_box ? box(this._draft_box, this._spName || "new spot", "new") : ""}</div>
+          <div class="hint">${this._drawing ? "DRAG ON THE PICTURE TO MARK THE SPOT" : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO AI NEEDED"}</div>
+        </div><div>
+          <div class="h"><span class="t">TEACH A SPOT</span><i></i></div>
+          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the rabbit pen" value="${esc(this._spName || "")}" autocomplete="off"></form>
+          <div class="row"><button class="btn sm" data-act="spfind">FIND IT WITH AI</button>
+            <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DRAW IT"}</button>
+            ${this._draft_box ? '<button class="btn sm" data-act="spsave">SAVE SPOT</button>' : ""}</div>
+          <div class="spmsg" id="spmsg">${esc(this._spMsg || "")}</div>
+          <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
+          ${here.map((sp) => `<div class="r"><ha-icon icon="mdi:selection-marker"></ha-icon><b>${esc(sp.name)}</b>
+              <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONE YET</div>'}
+          <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
+          <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
+            <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
+          <div class="spmsg ans" id="spans">${esc(this._lookAns || "")}</div>
+        </div></div>`;
+      this._$("spcam") && this._$("spcam").addEventListener("change", (ev) => { this._cam = ev.target.value; this._draft_box = null; this._lookAns = ""; this._drawSpots(); });
+      const nm = this._$("spname");
+      if (nm) nm.addEventListener("input", (ev) => { this._spName = ev.target.value; });
+      const snap = this._$("snap");
+      if (snap && this._drawing) {
+        const pos = (ev) => { const r = snap.getBoundingClientRect(); return [Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height))]; };
+        snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); snap.setPointerCapture(ev.pointerId); this._dragFrom = pos(ev); });
+        snap.addEventListener("pointermove", (ev) => {
+          if (!this._dragFrom) return;
+          const [x, y] = pos(ev), [a, b] = this._dragFrom;
+          this._draft_box = [Math.min(a, x), Math.min(b, y), Math.max(a, x), Math.max(b, y)];
+          let el = snap.querySelector(".box.new");
+          if (!el) { el = document.createElement("div"); el.className = "box new"; snap.appendChild(el); }
+          const d = this._draft_box;
+          Object.assign(el.style, { left: d[0] * 100 + "%", top: d[1] * 100 + "%", width: (d[2] - d[0]) * 100 + "%", height: (d[3] - d[1]) * 100 + "%" });
+        });
+        snap.addEventListener("pointerup", () => { if (this._dragFrom) { this._dragFrom = null; this._drawSpots(); } });
+      }
+    }
+
+    async _spotDo(kind) {
+      const name = (this._spName || "").trim();
+      const say = (t) => { this._spMsg = t; const m = this._$("spmsg"); if (m) m.textContent = t; };
+      try {
+        if (kind === "find") {
+          if (!name) return say("Give the spot a name first.");
+          say(`Looking for ${name}…`);
+          const res = await this._hass.callWS({ type: "sentient/spots/learn", camera: this._cam, name });
+          this._spots = res.spots; this._spName = ""; say(`Found ${res.result.name}.`);
+        } else if (kind === "save") {
+          if (!name) return say("Give the spot a name first.");
+          const res = await this._hass.callWS({ type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box });
+          this._spots = res.spots; this._spName = ""; this._draft_box = null; this._drawing = false; say(`Saved ${res.result.name}.`);
+        }
+      } catch (e) { say(e.message || String(e)); }
+      this._drawSide(); this._drawSpots();
+    }
+
     // ---------- events ----------
     _click(ev) {
       const el = ev.target.closest("[data-act]");
@@ -341,12 +435,31 @@
       else if (act === "reset") this._drawBody();
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
       else if (act === "noedit") { this._editing = null; this._drawMemories(); }
+      else if (act === "snap") { this._snapT = Date.now(); this._drawSpots(); }
+      else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) this._draft_box = null; this._drawSpots(); }
+      else if (act === "spfind") this._spotDo("find");
+      else if (act === "spsave") this._spotDo("save");
+      else if (act === "spforget") {
+        if (!window.confirm(`Forget the spot “${id}”?`)) return;
+        this._hass.callWS({ type: "sentient/spots/forget", name: id }).then((r) => { this._spots = r.spots; this._drawSide(); this._drawSpots(); }, (e) => window.alert(e.message || e));
+      }
     }
 
     async _submit(ev) {
       const form = ev.target;
       if (!form.dataset || !form.dataset.form) return;
       ev.preventDefault();
+      if (form.dataset.form === "spot") { this._spotDo(this._drawing && this._draft_box ? "save" : "find"); return; }
+      if (form.dataset.form === "look") {
+        const q = form.elements.q.value.trim() || form.elements.q.placeholder, spot = form.elements.spot.value;
+        const out = this._$("spans"); out.textContent = "LOOKING…";
+        try {
+          const res = await this._hass.callWS({ type: "sentient/look", camera: this._cam, question: q, ...(spot ? { spot } : {}) });
+          this._lookAns = res.result.answer || "No answer.";
+        } catch (e) { this._lookAns = e.message || String(e); }
+        out.textContent = this._lookAns;
+        return;
+      }
       const text = form.elements.text.value.trim(), category = form.elements.category.value;
       if (!text) return;
       try {
@@ -518,6 +631,16 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   --ha-color-surface-default:#0c1424;--ha-color-on-neutral-quiet:#e6f5fa;--ha-color-on-neutral-normal:#e6f5fa;color-scheme:dark;
   color:#e6f5fa}
 .formwrap ha-form{display:block;max-width:880px}
+.spotgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap} .row select{flex:1;min-width:0}
+.snap{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,247,.3);background:#000;aspect-ratio:16/9;user-select:none;touch-action:none}
+.snap img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.snap.drawing{cursor:crosshair;border-color:#00fff7;box-shadow:0 0 16px rgba(0,255,247,.35)}
+.box{position:absolute;border:2px solid #00fff7;border-radius:6px;box-shadow:0 0 10px rgba(0,255,247,.6), inset 0 0 18px rgba(0,255,247,.15);pointer-events:none}
+.box span{position:absolute;left:-2px;top:-22px;font-size:10px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:6px;background:#00fff7;color:#041016;white-space:nowrap;text-transform:uppercase}
+.box.new{border-style:dashed;border-color:#ffbe55;box-shadow:0 0 10px rgba(255,190,85,.5)} .box.new span{background:#ffbe55}
+.spmsg{min-height:16px;font-size:12px;color:#7fefff;margin:4px 2px} .spmsg.ans{font-size:13.5px;line-height:1.45;color:#e6f5fa}
+@media (max-width: 1100px){ .spotgrid{grid-template-columns:1fr} }
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}

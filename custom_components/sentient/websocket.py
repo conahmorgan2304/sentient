@@ -13,6 +13,7 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
@@ -145,6 +146,11 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_settings)
     websocket_api.async_register_command(hass, ws_update_memory)
     websocket_api.async_register_command(hass, ws_list_memories)
+    websocket_api.async_register_command(hass, ws_list_spots)
+    websocket_api.async_register_command(hass, ws_learn_spot)
+    websocket_api.async_register_command(hass, ws_set_spot)
+    websocket_api.async_register_command(hass, ws_forget_spot)
+    websocket_api.async_register_command(hass, ws_look)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/settings", vol.Optional("language"): str})
@@ -260,4 +266,85 @@ def ws_list_memories(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
             "categories": MEMORY_CATEGORIES,
             "admin": connection.user.is_admin,
         },
+    )
+
+
+# ----- camera spots --------------------------------------------------------------
+def _spots_payload(entry) -> dict[str, Any]:
+    spots = entry.runtime_data.spots
+    return {"spots": [dict(s) for s in spots.spots.values()]}
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/spots"})
+@callback
+def ws_list_spots(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], _spots_payload(entry))
+
+
+async def _spot_call(hass: HomeAssistant, connection, msg: dict[str, Any], job) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    try:
+        result = await job(entry.runtime_data)
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "failed", str(err))
+        return
+    connection.send_result(msg["id"], {**_spots_payload(entry), "result": result})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/spots/learn", vol.Required("camera"): cv.entity_id, vol.Required("name"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_learn_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    await _spot_call(hass, connection, msg, lambda rt: rt.spots.async_learn(msg["camera"], msg["name"]))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "sentient/spots/set",
+        vol.Required("camera"): cv.entity_id,
+        vol.Required("name"): str,
+        vol.Required("box"): vol.All([vol.Coerce(float)], vol.Length(min=4, max=4)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_set_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    async def job(rt):
+        return rt.spots.set(msg["camera"], msg["name"], msg["box"])
+
+    await _spot_call(hass, connection, msg, job)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/spots/forget", vol.Required("name"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_forget_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    async def job(rt):
+        return rt.spots.forget(msg["name"])
+
+    await _spot_call(hass, connection, msg, job)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "sentient/look",
+        vol.Required("camera"): cv.entity_id,
+        vol.Required("question"): str,
+        vol.Optional("spot"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_look(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Ask the AI about a camera (or one spot of it) right now."""
+    await _spot_call(
+        hass, connection, msg, lambda rt: rt.watches.async_look(msg["camera"], msg["question"], msg.get("spot"))
     )

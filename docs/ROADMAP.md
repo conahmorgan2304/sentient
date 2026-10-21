@@ -43,3 +43,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Built-in sidebar panel, not an editable dashboard (0.13.0)
 - [x] House health: offline devices, low batteries, updates (0.14.0)
 - [x] Settings tab in the panel: every option plus a memory manager (0.15.0)
+- [x] Camera spots page: AI find or draw by hand, outlines on the live picture, ask a camera (0.16.0)

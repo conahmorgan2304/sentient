@@ -48,6 +48,18 @@ class Spots:
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"spots": self.spots}, 2)
 
+    def set(self, camera: str, name: str, box: list[float]) -> dict[str, Any]:
+        """Remember a spot drawn by hand (box as fractions: left, top, right, bottom)."""
+        left, top, right, bottom = (min(1.0, max(0.0, float(v))) for v in box)
+        left, right = sorted((left, right))
+        top, bottom = sorted((top, bottom))
+        if not name.strip() or right - left < 0.02 or bottom - top < 0.02:
+            raise HomeAssistantError("That spot is too small")
+        spot = {"name": name.strip(), "camera": camera, "box": [left, top, right, bottom]}
+        self.spots[_key(name)] = spot
+        self._save()
+        return spot
+
     def listing(self) -> list[dict[str, Any]]:
         return [{"name": s["name"], "camera": s["camera"]} for s in self.spots.values()]
 
