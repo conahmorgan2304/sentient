@@ -308,3 +308,14 @@ async def test_diagnostics_redacts_personal_bits(hass: HomeAssistant) -> None:
     assert diag["options"]["persona"] == "**REDACTED**"
     assert diag["memory"] == {"count": 1, "categories": ["preference"]}
     assert "Conah" not in str(diag)
+
+
+async def test_said_log_survives_restart(hass: HomeAssistant) -> None:
+    from homeassistant.core import State
+    from pytest_homeassistant_custom_component.common import mock_restore_cache
+
+    mock_restore_cache(hass, [State("sensor.nova_last_spoken", "The washing's done.",
+                                    {"log": [{"time": "2026-10-21T10:00:00+01:00", "said": "The washing's done."}]})])
+    await _setup(hass)
+    st = hass.states.get("sensor.nova_last_spoken")
+    assert st.state == "The washing's done." and st.attributes["log"][0]["said"] == "The washing's done."

@@ -46,9 +46,14 @@
     _build() {
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
-        <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span><button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
+        <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
+          <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
+          <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button>
+          <button class="cog" id="cog" title="Settings"><ha-icon icon="mdi:cog-outline"></ha-icon></button></div>
+        <div class="reply" id="reply" hidden></div>
         <div class="page"><div id="head" class="card head"></div>
-          <div class="cols"><div id="mem" class="card col"></div><div id="rout" class="col stack"></div>
+          <div class="cols"><div class="card col"><div id="mem"></div>
+            <form class="add" id="addf"><ha-icon icon="mdi:plus"></ha-icon><input id="addm" placeholder="Add a memory…" autocomplete="off"></form></div><div id="rout" class="col stack"></div>
             <div class="col stack"><div id="watch" class="card"></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
@@ -61,6 +66,17 @@
         const done = () => { brief.classList.remove("busy"); brief.querySelector("span").textContent = "BRIEFING"; };
         this._hass.callService("sentient", "briefing", { priority: "urgent" }).then(() => setTimeout(done, 4000), (e) => { done(); window.alert(e.message || e); });
       });
+      this.shadowRoot.getElementById("cog").addEventListener("click", () => {
+        history.pushState(null, "", "/config/integrations/integration/sentient");
+        window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+      });
+      this.shadowRoot.getElementById("addf").addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const input = this.shadowRoot.getElementById("addm"), text = input.value.trim();
+        if (!text) return;
+        this._hass.callService("sentient", "remember", { text }).then(() => { input.value = ""; }, (e) => window.alert(e.message || e));
+      });
+      this.shadowRoot.getElementById("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => {
         const el = ev.target.closest("[data-act]");
         if (!el) return;
@@ -140,6 +156,38 @@
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
+    async _agent() {
+      if (this._agentId !== undefined) return this._agentId;
+      try {
+        const res = await this._hass.callWS({ type: "assist_pipeline/pipeline/list" });
+        const pipe = (res.pipelines || []).find((p) => p.id === res.preferred_pipeline);
+        this._agentId = pipe ? pipe.conversation_engine : null;
+      } catch (e) { this._agentId = null; }
+      return this._agentId;
+    }
+
+    async _ask() {
+      const input = this.shadowRoot.getElementById("ask"), reply = this.shadowRoot.getElementById("reply");
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = ""; reply.hidden = false;
+      reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a thinking">THINKING…</span>`;
+      try {
+        const msg = { type: "conversation/process", text, language: this._hass.language };
+        const agent = await this._agent();
+        if (agent) msg.agent_id = agent;
+        if (this._cid) msg.conversation_id = this._cid;
+        const res = await this._hass.callWS(msg);
+        this._cid = res.conversation_id;
+        const speech = (((res.response || {}).speech || {}).plain || {}).speech || "Done.";
+        reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a">${esc(speech)}</span><a class="x" id="rx">✕</a>`;
+      } catch (e) {
+        reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a err">${esc(e.message || e)}</span><a class="x" id="rx">✕</a>`;
+      }
+      const rx = this.shadowRoot.getElementById("rx");
+      if (rx) rx.addEventListener("click", () => { reply.hidden = true; this._cid = null; });
+    }
+
     _h(title, pill, tight) {
       return `<div class="h${tight ? " tight" : ""}"><span class="t">${title}</span><i></i>${pill ? `<em>${pill}</em>` : ""}</div>`;
     }
@@ -154,6 +202,19 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .top .ttl{flex:1;font-size:14px;font-weight:600;letter-spacing:.42em;color:#00fff7;text-shadow:0 0 8px rgba(0,255,247,.5)}
 .brief{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.16em;padding:6px 12px;border-radius:12px;color:#7fefff;border:1px solid rgba(0,255,247,.5);background:rgba(0,255,247,.08);box-shadow:0 0 10px rgba(0,255,247,.18)}
 .brief ha-icon{--mdc-icon-size:14px;color:#00fff7} .brief.busy{opacity:.7}
+.top .ttl{flex:none}
+.ask{flex:1;display:flex;align-items:center;gap:8px;max-width:640px;margin:0 auto;padding:6px 12px;border-radius:14px;border:1px solid rgba(0,255,247,.28);background:rgba(0,255,247,.05)}
+.ask ha-icon,.add ha-icon{--mdc-icon-size:16px;color:#00fff7;flex:none}
+.ask input,.add input{flex:1;min-width:0;background:none;border:none;outline:none;color:#e6f5fa;font:inherit;font-size:13px}
+.ask input::placeholder,.add input::placeholder{color:rgba(150,220,235,.45)}
+.cog{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#7fefff}
+.cog:hover{background:rgba(0,255,247,.1)} .cog ha-icon{--mdc-icon-size:18px}
+.reply{display:flex;align-items:flex-start;gap:12px;max-width:1564px;margin:12px auto 0;padding:12px 16px;border-radius:16px;border:1px solid rgba(0,255,247,.3);background:rgba(0,255,247,.06);box-shadow:0 0 14px rgba(0,255,247,.12)}
+.reply[hidden]{display:none}
+.reply .q{flex:none;max-width:35%;font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.7)}
+.reply .a{flex:1;font-size:14px;line-height:1.45;color:#e6f5fa} .reply .a.thinking{color:#00fff7;letter-spacing:.2em;font-size:11px;font-weight:700}
+.reply .a.err{color:#ff8fa3}
+.add{display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 10px;border-radius:10px;border:1px dashed rgba(0,255,247,.3)}
 .page{max-width:1600px;margin:0 auto;padding:18px}
 .card{position:relative;border-radius:20px;padding:14px 16px;overflow:hidden;
   background:radial-gradient(circle at 20% 0%, rgba(0,255,255,0.09), transparent 45%),linear-gradient(160deg, rgba(10,15,25,0.96), rgba(18,26,50,0.92));
@@ -190,6 +251,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
 .e{padding:18px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} }
+@media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center} }
 `;
 

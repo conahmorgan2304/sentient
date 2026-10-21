@@ -12,6 +12,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
@@ -72,7 +73,7 @@ class MemorySensor(_Base):
         }
 
 
-class LastSpokenSensor(_Base):
+class LastSpokenSensor(_Base, RestoreEntity):
     """The last thing said, plus a short log of what was said or held back."""
 
     _attr_icon = "mdi:account-voice"
@@ -83,6 +84,13 @@ class LastSpokenSensor(_Base):
         self._log: list[dict[str, Any]] = []
 
     async def async_added_to_hass(self) -> None:
+        # what was said survives a restart
+        if (last := await self.async_get_last_state()) is not None:
+            if last.state not in ("unknown", "unavailable"):
+                self._value = last.state
+            log = last.attributes.get("log")
+            if isinstance(log, list):
+                self._log = [i for i in log if isinstance(i, dict)][:20]
         self.async_on_remove(self.hass.bus.async_listen(EVENT_SPOKE, self._spoke))
         self.async_on_remove(self.hass.bus.async_listen(EVENT_HELD, self._held))
         self.async_on_remove(self.hass.bus.async_listen(EVENT_NOTICED, self._noticed))
