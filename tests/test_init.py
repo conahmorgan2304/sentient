@@ -155,3 +155,18 @@ async def test_llm_api_shares_memory(hass: HomeAssistant) -> None:
     assert out["saved"] == "The boys go to bed at 9"
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_recall", tool_args={"query": "boys bed"}))
     assert out["memories"][0]["text"] == "The boys go to bed at 9"
+
+
+async def test_hush_only_after_real_run(hass: HomeAssistant) -> None:
+    """An automation that has never run (e.g. after a restart) must not hush speech."""
+    from homeassistant.util import dt as dt_util
+
+    await _setup(hass, {**OPTIONS, "suppress_entities": ["automation.doorbell"]})
+    async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("assist_satellite.hallway", "idle")
+    hass.states.async_set("automation.doorbell", "on", {"last_triggered": None})
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "One"}, blocking=True, return_response=True)
+    assert res["spoken"]
+    hass.states.async_set("automation.doorbell", "on", {"last_triggered": dt_util.utcnow().isoformat()})
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "Two"}, blocking=True, return_response=True)
+    assert res["reason"] == "hushed_by:automation.doorbell"

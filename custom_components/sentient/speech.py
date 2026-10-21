@@ -237,8 +237,8 @@ class SpeechRouter:
             if state is None:
                 continue
             last = state.attributes.get("last_triggered")
+            # only a real run counts; a restart or toggle must not hush the house
             when = dt_util.parse_datetime(last) if isinstance(last, str) else last
-            when = when or state.last_changed
             if when and dt_util.utcnow() - when < timedelta(seconds=seconds):
                 return entity_id
         return None
