@@ -24,6 +24,7 @@ from .const import (
 )
 from .llm_api import SentientAPI
 from .memory import MemoryStore
+from .presence import ActivityTracker
 from .speech import SpeechRouter
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ class SentientRuntime:
     options: dict[str, Any]
     memory: MemoryStore
     speech: SpeechRouter
+    tracker: ActivityTracker
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -77,8 +79,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
+    tracker = ActivityTracker(hass, options)
+    await tracker.async_start()
+    entry.async_on_unload(tracker.async_stop)
     entry.runtime_data = SentientRuntime(
-        options=options, memory=memory, speech=SpeechRouter(hass, options)
+        options=options, memory=memory, speech=SpeechRouter(hass, options, tracker), tracker=tracker
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -93,6 +98,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     options = _entry_options(entry)
     entry.runtime_data.options = options
     entry.runtime_data.speech.options = options
+    entry.runtime_data.tracker.options = options
 
 
 def _runtime(hass: HomeAssistant) -> SentientRuntime:

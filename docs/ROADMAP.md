@@ -8,6 +8,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] LLM API: memories in the prompt, plus remember / recall / forget / announce tools
 - [x] Speech router: quiet hours, word filter, duplicates, hush periods, room-following speaker choice
 - [x] Room awareness for the person talking
+- [x] Activity-scored rooms: decaying motion history, voice-interaction boost, pass-through areas, every-occupied-room mode, seeded from the recorder (0.2.0)
 - [x] Memory and last-spoken sensors
 - [ ] Dashboard card (core, feed and stats) shipped with the integration
 - [ ] Memory manager in the options flow (view, edit, delete)

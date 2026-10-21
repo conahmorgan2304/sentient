@@ -15,14 +15,17 @@ CONF_BANNED_WORDS = "banned_words"
 CONF_SUPPRESS_ENTITIES = "suppress_entities"
 CONF_SUPPRESS_SECONDS = "suppress_seconds"
 CONF_PROMPT_MEMORIES = "prompt_memories"
+CONF_PASS_THROUGH_AREAS = "pass_through_areas"
+CONF_ALL_OCCUPIED = "all_occupied"
 
 DEFAULT_PERSONA = "Sentient"
 DEFAULT_QUIET_START = "21:00:00"
 DEFAULT_QUIET_END = "08:00:00"
-DEFAULT_MOTION_WINDOW = 3  # minutes
+DEFAULT_MOTION_WINDOW = 10  # minutes of activity history used to find people
 DEFAULT_BANNED_WORDS = "sir, madam"
 DEFAULT_SUPPRESS_SECONDS = 60
 DEFAULT_PROMPT_MEMORIES = 25
+DEFAULT_ALL_OCCUPIED = True
 
 # Speech priorities
 PRIORITY_LOW = "low"

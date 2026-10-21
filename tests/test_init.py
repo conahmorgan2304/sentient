@@ -99,31 +99,120 @@ async def test_say_follows_motion_and_cleans(hass: HomeAssistant) -> None:
     assert res["speakers"] == ["assist_satellite.hallway"]
 
 
-async def test_two_rooms_with_motion_picks_newest(hass: HomeAssistant) -> None:
-    """Living room has had motion on for ages; kitchen just started -> kitchen."""
-    from datetime import timedelta
-    from unittest.mock import patch
-    from homeassistant.util import dt as dt_util
-
-    await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"]})
-    calls = async_mock_service(hass, "assist_satellite", "announce")
+async def _rooms(hass: HomeAssistant, rooms) -> dict[str, str]:
+    """Create areas with a satellite and a motion sensor each; returns name -> area id."""
     areas = ar.async_get(hass)
     ents = er.async_get(hass)
-    for room, sat, sensor in (("Kitchen", "assist_satellite.kitchen", "binary_sensor.kitchen_motion"),
-                              ("Living Room", "assist_satellite.living", "binary_sensor.living_motion")):
+    ids = {}
+    for room, sat, sensor in rooms:
         area = areas.async_create(room)
+        ids[room] = area.id
         for eid in (sat, sensor):
             domain, obj = eid.split(".")
             entry = ents.async_get_or_create(domain, "test", obj, suggested_object_id=obj)
             ents.async_update_entity(entry.entity_id, area_id=area.id)
         hass.states.async_set(sat, "idle")
-    start = dt_util.utcnow()
-    with patch("homeassistant.core.dt_util.utcnow", return_value=start - timedelta(minutes=5)):
-        hass.states.async_set("binary_sensor.living_motion", "on", {"device_class": "motion"})
+        hass.states.async_set(sensor, "off", {"device_class": "motion"})
+    return ids
+
+
+ROOMS = (
+    ("Kitchen", "assist_satellite.kitchen", "binary_sensor.kitchen_motion"),
+    ("Hallway", "assist_satellite.hallway", "binary_sensor.hallway_motion"),
+    ("Living Room", "assist_satellite.living", "binary_sensor.living_motion"),
+)
+
+
+class _Clock:
+    """Set states 'n minutes ago', then come back to the present."""
+
+    def __init__(self, freezer) -> None:
+        from homeassistant.util import dt as dt_util
+
+        self.freezer = freezer
+        self.now = dt_util.utcnow()
+        freezer.move_to(self.now)
+
+    def at(self, minutes_ago: float) -> None:
+        from datetime import timedelta
+
+        self.freezer.move_to(self.now - timedelta(minutes=minutes_ago))
+
+    def back(self) -> None:
+        self.freezer.move_to(self.now)
+
+
+async def test_sitting_still_beats_passer_by(hass: HomeAssistant, freezer) -> None:
+    """Kitchen had steady motion that has now cleared; someone just walked down the hall."""
+    clock = _Clock(freezer)
+    entry = await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.hallway"],
+                                "default_speaker": "assist_satellite.hallway", "motion_window": 10})
+    ids = await _rooms(hass, ROOMS[:2])
+    hass.config_entries.async_update_entry(entry, options={**OPTIONS, "motion_window": 10,
+        "speakers": ["assist_satellite.kitchen", "assist_satellite.hallway"],
+        "default_speaker": "assist_satellite.hallway", "pass_through_areas": [ids["Hallway"]]})
+    await hass.async_block_till_done()
+    async_mock_service(hass, "assist_satellite", "announce")
+    clock.at(6)
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    clock.at(2)
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    clock.at(0.5)
+    hass.states.async_set("binary_sensor.hallway_motion", "on", {"device_class": "motion"})
+    clock.back()
     res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
     assert res["speakers"] == ["assist_satellite.kitchen"]
-    assert calls
+    likely = hass.states.get("sensor.nova_likely_room")
+    assert likely is not None
+
+
+async def test_talking_to_a_speaker_marks_the_room(hass: HomeAssistant, freezer) -> None:
+    """Living room motion is busier, but someone just spoke to the kitchen speaker."""
+    clock = _Clock(freezer)
+    await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],
+                        "motion_window": 10, "all_occupied": False})
+    await _rooms(hass, (ROOMS[0], ROOMS[2]))
+    async_mock_service(hass, "assist_satellite", "announce")
+    clock.at(4)
+    hass.states.async_set("binary_sensor.living_motion", "on", {"device_class": "motion"})
+    clock.at(1)
+    hass.states.async_set("assist_satellite.kitchen", "listening")
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    clock.back()
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
+    assert res["speakers"] == ["assist_satellite.kitchen"]
+
+
+async def test_two_occupied_rooms_both_hear(hass: HomeAssistant, freezer) -> None:
+    """Someone in the kitchen and someone in the living room: say it in both."""
+    clock = _Clock(freezer)
+    await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],
+                        "motion_window": 10})
+    await _rooms(hass, (ROOMS[0], ROOMS[2]))
+    calls = async_mock_service(hass, "assist_satellite", "announce")
+    clock.at(5)
+    hass.states.async_set("binary_sensor.living_motion", "on", {"device_class": "motion"})
+    clock.at(4)
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    clock.back()
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
+    assert sorted(res["speakers"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
+    assert sorted(calls[-1].data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
+
+
+async def test_nobody_anywhere_uses_default(hass: HomeAssistant, freezer) -> None:
+    clock = _Clock(freezer)
+    await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],
+                        "default_speaker": "assist_satellite.living", "motion_window": 10})
+    await _rooms(hass, (ROOMS[0], ROOMS[2]))
+    async_mock_service(hass, "assist_satellite", "announce")
+    clock.at(9)
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    clock.at(8.9)
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    clock.back()
+    res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
+    assert res["speakers"] == ["assist_satellite.living"]
 
 
 async def test_quiet_hours_hold_unless_urgent(hass: HomeAssistant) -> None:
@@ -170,3 +259,22 @@ async def test_hush_only_after_real_run(hass: HomeAssistant) -> None:
     hass.states.async_set("automation.doorbell", "on", {"last_triggered": dt_util.utcnow().isoformat()})
     res = await hass.services.async_call(DOMAIN, "say", {"message": "Two"}, blocking=True, return_response=True)
     assert res["reason"] == "hushed_by:automation.doorbell"
+
+
+async def test_restart_remembers_from_history(recorder_mock, hass: HomeAssistant, freezer) -> None:
+    """After a restart the scores are rebuilt from the recorder, not from restart time."""
+    from homeassistant.components.recorder.util import get_instance
+    from pytest_homeassistant_custom_component.components.recorder.common import async_wait_recording_done
+
+    clock = _Clock(freezer)
+    await _rooms(hass, (ROOMS[0], ROOMS[2]))
+    clock.at(6)
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    clock.at(1)
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    clock.back()
+    await async_wait_recording_done(hass)
+    entry = await _setup(hass, {**OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.living"],
+                                "default_speaker": "assist_satellite.living", "motion_window": 10})
+    assert entry.runtime_data.tracker.scores().get(entry.runtime_data.speech._area_of("assist_satellite.kitchen"), 0) > 100
+    assert get_instance(hass) is not None

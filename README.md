@@ -17,8 +17,8 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
   - strip words you never want used ("sir", ...);
   - drop duplicates;
   - stay quiet for a set time after chosen automations, e.g. your doorbell flow;
-  - speak in the room where someone was last seen. Speakers and motion sensors are matched by area, so there's nothing to map by hand.
-- **Room awareness.** The voice assistant is told which room the person talking to it is in.
+  - speak where people actually are. Each room gets an activity score from the last few minutes of motion, with a big boost when someone has just spoken to a speaker there. Hallways and landings can be marked as pass-through so a passer-by doesn't steal the message. By default every occupied room hears it. Speakers and sensors are matched by area, and the history is rebuilt from the recorder after a restart.
+- **Room awareness.** The voice assistant is told which room the person talking to it is in, and a *Likely room* sensor shows where Sentient thinks people are (with every room's score).
 - **Sensors.** `sensor.<name>_memories` (with the list) and `sensor.<name>_last_spoken` (with a log of what was said or held back and why).
 
 ## Install (HACS, custom repository)

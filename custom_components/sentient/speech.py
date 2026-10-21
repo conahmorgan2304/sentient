@@ -7,7 +7,7 @@ One place decides *whether*, *where* and *how* the house speaks:
 * duplicate suppression
 * a short hush after chosen automations/scripts (e.g. the doorbell flow), so a
   background remark doesn't talk over a more important announcement
-* the speaker in the room with the most recent motion, otherwise the default
+* the speaker in the busiest room (see presence.py), otherwise the default
 """
 
 from __future__ import annotations
@@ -19,24 +19,21 @@ import logging
 import re
 from typing import Any
 
-from homeassistant.const import STATE_ON
-from homeassistant.core import HomeAssistant, State
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ALL_OCCUPIED,
+    DEFAULT_ALL_OCCUPIED,
     CONF_BANNED_WORDS,
     CONF_DEFAULT_SPEAKER,
-    CONF_MOTION_WINDOW,
     CONF_QUIET_END,
     CONF_QUIET_START,
     CONF_SPEAKERS,
     CONF_SUPPRESS_ENTITIES,
     CONF_SUPPRESS_SECONDS,
     DEFAULT_BANNED_WORDS,
-    DEFAULT_MOTION_WINDOW,
     DEFAULT_QUIET_END,
     DEFAULT_QUIET_START,
     DEFAULT_SUPPRESS_SECONDS,
@@ -45,10 +42,10 @@ from .const import (
     PRIORITY_LOW,
     PRIORITY_URGENT,
 )
+from .presence import ActivityTracker, area_of
 
 _LOGGER = logging.getLogger(__name__)
 
-_PRESENCE_CLASSES = {"motion", "occupancy", "presence"}
 _DUPLICATE_WINDOW = timedelta(seconds=120)
 _BUSY_STATES = {"listening", "processing", "responding"}
 
@@ -109,9 +106,12 @@ def clean_message(message: str, banned: list[str]) -> str:
 class SpeechRouter:
     """Decides whether, where and how to speak."""
 
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any]) -> None:
+    def __init__(
+        self, hass: HomeAssistant, options: dict[str, Any], tracker: ActivityTracker | None = None
+    ) -> None:
         self.hass = hass
         self.options = options
+        self.tracker = tracker
         self._recent: dict[str, datetime] = {}
         self._lock = asyncio.Lock()
 
@@ -134,70 +134,26 @@ class SpeechRouter:
 
     # ----- room awareness -------------------------------------------------------
     def _area_of(self, entity_id: str) -> str | None:
-        ent_reg = er.async_get(self.hass)
-        entry = ent_reg.async_get(entity_id)
-        if entry is None:
-            return None
-        if entry.area_id:
-            return entry.area_id
-        if entry.device_id:
-            device = dr.async_get(self.hass).async_get(entry.device_id)
-            if device:
-                return device.area_id
-        return None
-
-    def _presence_sensors(self, area_id: str) -> list[State]:
-        """Motion/occupancy sensors in an area, directly or through their device."""
-        ent_reg = er.async_get(self.hass)
-        entries = list(er.async_entries_for_area(ent_reg, area_id))
-        for device in dr.async_entries_for_area(dr.async_get(self.hass), area_id):
-            entries.extend(
-                e for e in er.async_entries_for_device(ent_reg, device.id) if e.area_id in (None, area_id)
-            )
-        found: dict[str, State] = {}
-        for entry in entries:
-            if entry.domain != "binary_sensor" or entry.entity_id in found:
-                continue
-            state = self.hass.states.get(entry.entity_id)
-            if state is not None and state.attributes.get("device_class") in _PRESENCE_CLASSES:
-                found[entry.entity_id] = state
-        return list(found.values())
-
-    def _presence(self, area_id: str) -> tuple[bool, datetime] | None:
-        """(motion active now, when it last changed) for the freshest sensor in an area.
-
-        Rooms with motion *now* beat rooms where it has cleared; among those,
-        the room where motion started most recently wins — that's where the
-        person has just walked into.
-        """
-        best: tuple[bool, datetime] | None = None
-        for state in self._presence_sensors(area_id):
-            score = (state.state == STATE_ON, state.last_changed)
-            if best is None or score > best:
-                best = score
-        return best
+        return area_of(self.hass, entity_id)
 
     def pick_speaker(self) -> list[str]:
-        """The speaker in the room the person most recently moved into, else the default."""
-        window = timedelta(minutes=float(self.options.get(CONF_MOTION_WINDOW, DEFAULT_MOTION_WINDOW)))
-        best: tuple[tuple[bool, datetime], str] | None = None
-        for speaker in self.speakers:
-            state = self.hass.states.get(speaker)
-            if state is None or state.state == "unavailable":
-                continue
+        """Speakers where people are right now (busiest first), else the default."""
+        live = [
+            s for s in self.speakers
+            if (st := self.hass.states.get(s)) is not None and st.state != "unavailable"
+        ]
+        by_area: dict[str, str] = {}
+        for speaker in live:
             area = self._area_of(speaker)
-            if not area:
-                continue
-            presence = self._presence(area)
-            if presence is None:
-                continue
-            active, changed = presence
-            if not active and dt_util.utcnow() - changed > window:
-                continue
-            if best is None or presence > best[0]:
-                best = (presence, speaker)
-        if best:
-            return [best[1]]
+            if area and area not in by_area:
+                by_area[area] = speaker
+        if self.tracker is not None:
+            if self.options.get(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED):
+                areas = self.tracker.occupied_areas(set(by_area))
+            else:
+                areas = [a] if (a := self.tracker.best_area(set(by_area))) else []
+            if areas:
+                return [by_area[a] for a in areas]
         default = self.options.get(CONF_DEFAULT_SPEAKER)
         if default:
             return [default]

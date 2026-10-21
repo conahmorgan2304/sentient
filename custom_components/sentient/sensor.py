@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from datetime import timedelta
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
@@ -19,7 +23,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -102,3 +106,44 @@ class LastSpokenSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"log": self._log}
+
+
+class LikelyRoomSensor(_Base):
+    """Where Sentient thinks people are, with the score for each room."""
+
+    _attr_icon = "mdi:home-account"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "likely_room")
+
+    async def async_added_to_hass(self) -> None:
+        # local arithmetic only, so a gentle refresh to show decay is fine
+        self.async_on_remove(
+            async_track_time_interval(self.hass, self._tick, timedelta(seconds=30))
+        )
+
+    @callback
+    def _tick(self, _now) -> None:
+        self.async_write_ha_state()
+
+    def _name(self, area_id: str | None) -> str | None:
+        if not area_id:
+            return None
+        area = ar.async_get(self.hass).async_get_area(area_id)
+        return area.name if area else area_id
+
+    @property
+    def native_value(self) -> str | None:
+        rt = self._entry.runtime_data
+        speakers = rt.speech.pick_speaker()
+        area = rt.tracker.best_area()
+        return self._name(area) or (self._name(rt.speech._area_of(speakers[0])) if speakers else None)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        rt = self._entry.runtime_data
+        scores = sorted(rt.tracker.scores().items(), key=lambda kv: kv[1], reverse=True)
+        return {
+            "scores": {self._name(a): v for a, v in scores},
+            "speaker": (rt.speech.pick_speaker() or [None])[0],
+        }

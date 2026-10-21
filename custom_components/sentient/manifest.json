@@ -1,14 +1,20 @@
 {
   "domain": "sentient",
   "name": "Sentient",
-  "codeowners": ["@conahmorgan2304"],
+  "codeowners": [
+    "@conahmorgan2304"
+  ],
   "config_flow": true,
   "dependencies": [],
-  "after_dependencies": ["assist_satellite", "conversation"],
+  "after_dependencies": [
+    "assist_satellite",
+    "conversation",
+    "recorder"
+  ],
   "documentation": "https://github.com/conahmorgan2304/sentient",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [],
-  "version": "0.1.2"
+  "version": "0.2.0"
 }
