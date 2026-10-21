@@ -3,7 +3,7 @@
 (() => {
   if (customElements.get("sentient-panel")) return;
 
-  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors"];
+  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health"];
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const left = (iso, fallback) => {
@@ -54,7 +54,7 @@
         <div class="page"><div id="head" class="card head"></div>
           <div class="cols"><div class="card col"><div id="mem"></div>
             <form class="add" id="addf"><ha-icon icon="mdi:plus"></ha-icon><input id="addm" placeholder="Add a memory…" autocomplete="off"></form></div><div id="rout" class="col stack"></div>
-            <div class="col stack"><div id="watch" class="card"></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>`;
+            <div class="col stack"><div id="health" class="card"></div><div id="watch" class="card"></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
       this.shadowRoot.getElementById("menu").appendChild(menu);
@@ -139,6 +139,15 @@
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
       }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>');
+
+      // house health
+      const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
+      const healthRows = issues.slice(0, 5).map((i) => i.kind === "offline"
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE</u></div>`
+        : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
+        + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
+      R("health").innerHTML = this._h("HOUSE HEALTH", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "ALL GOOD")
+        + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
@@ -241,6 +250,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .h em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.14em;padding:3px 9px;border-radius:10px;color:#7fefff;border:1px solid rgba(0,255,247,.45);background:rgba(0,255,247,.08);white-space:nowrap}
 .r{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:5px;border-radius:10px;border:1px solid rgba(0,255,247,.10);background:rgba(0,255,247,.035)}
 .r ha-icon{--mdc-icon-size:16px;color:#00fff7;flex:none} .r.dim{opacity:.62} .r.dim ha-icon{color:#5aa9b8}
+.r.bad{border-color:rgba(255,90,120,.35);background:rgba(255,80,110,.06)} .r.bad ha-icon,.r.bad u{color:#ff7088}
+.r.warn{border-color:rgba(255,190,85,.35);background:rgba(255,180,60,.05)} .r.warn ha-icon,.r.warn u{color:#ffbe55}
 .r b{font-weight:400;font-size:12.5px;color:rgba(230,245,250,.93);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .r b.wrap{white-space:normal}
 .r s{text-decoration:none;flex:none;font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:8px;color:#7fefff;border:1px solid rgba(0,255,247,.35)}

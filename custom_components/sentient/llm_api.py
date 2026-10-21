@@ -432,6 +432,8 @@ class SentientAPI(llm.API):
             lines.extend(
                 f"- {r.describe()}{' (the house does this now)' if r.adopted else ''}" for r in routines
             )
+        if problems := rt.health.describe():
+            lines.append("House health problems right now: " + "; ".join(problems[:6]) + ".")
         if visits := rt.visitors.today():
             lines.append(f"Visitors to the door today: {len(visits)}. Use sentient_visitors for details.")
         watches = rt.watches.watches

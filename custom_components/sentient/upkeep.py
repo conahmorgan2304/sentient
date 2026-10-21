@@ -119,9 +119,10 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
 
     if "system" in want:
         system: dict[str, Any] = {}
-        updates = [s.name for s in hass.states.async_all("update") if s.state == "on"]
-        if updates:
-            system["updates_available"] = updates[:8]
+        if problems := rt.health.describe():
+            system["problems"] = problems[:8]
+        if rt.health.updates:
+            system["updates_available"] = rt.health.updates[:8]
         for entity_id in opts.get(CONF_BRIEFING_SYSTEM) or []:
             if (st := hass.states.get(entity_id)) is not None:
                 unit = st.attributes.get("unit_of_measurement") or ""

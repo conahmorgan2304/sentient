@@ -38,7 +38,9 @@
           "parcel_alerts": "Say when a parcel is left",
           "face_sensor": "Recognised name from",
           "sidebar_panel": "Show in the sidebar",
-          "chat_agent": "Chat agent for the sidebar page"
+          "chat_agent": "Chat agent for the sidebar page",
+          "battery_threshold": "Low battery below",
+          "health_ignore": "Ignore for house health"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -61,7 +63,8 @@
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
-          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline."
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off."
         }
       }
     },
@@ -109,7 +112,9 @@
           "parcel_alerts": "Say when a parcel is left",
           "face_sensor": "Recognised name from",
           "sidebar_panel": "Show in the sidebar",
-          "chat_agent": "Chat agent for the sidebar page"
+          "chat_agent": "Chat agent for the sidebar page",
+          "battery_threshold": "Low battery below",
+          "health_ignore": "Ignore for house health"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -132,7 +137,8 @@
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
-          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline."
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off."
         }
       },
       "memories": {
@@ -192,6 +198,9 @@
       },
       "visitors": {
         "name": "Visitors"
+      },
+      "health": {
+        "name": "House health"
       }
     }
   },

@@ -16,7 +16,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
-from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
+from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_HEALTH_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
 
 
 async def async_setup_entry(
@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -256,3 +256,29 @@ class VisitorsSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {"recent": list(self._entry.runtime_data.visitors.log)[:10]}
+
+
+class HealthSensor(_Base):
+    """Number of house problems: devices offline and batteries running low."""
+
+    _attr_icon = "mdi:home-heart"
+    _attr_native_unit_of_measurement = "problems"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "health")
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_HEALTH_CHANGED, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> int:
+        return len(self._entry.runtime_data.health.issues)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        health = self._entry.runtime_data.health
+        return {"issues": health.issues[:30], "updates": health.updates}

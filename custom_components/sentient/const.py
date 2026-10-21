@@ -83,6 +83,9 @@ FRONTEND_URL = "/sentient_frontend"
 PANEL_URL_PATH = "sentient"
 CONF_SIDEBAR = "sidebar_panel"
 CONF_CHAT_AGENT = "chat_agent"
+CONF_BATTERY_THRESHOLD = "battery_threshold"
+CONF_HEALTH_IGNORE = "health_ignore"
+DEFAULT_BATTERY_THRESHOLD = 20
 DEFAULT_SIDEBAR = True
 
 # Events
@@ -94,6 +97,7 @@ EVENT_WATCH_FIRED = f"{DOMAIN}_watch_fired"
 EVENT_NOTICED = f"{DOMAIN}_noticed"
 EVENT_ROUTINES_CHANGED = f"{DOMAIN}_routines_changed"
 EVENT_VISITOR = f"{DOMAIN}_visitor"
+EVENT_HEALTH_CHANGED = f"{DOMAIN}_health_changed"
 
 # Memory
 MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note"]
