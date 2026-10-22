@@ -195,3 +195,14 @@ hush:
           min: 0
           max: 720
           unit_of_measurement: min
+run_routine:
+  fields:
+    name:
+      required: true
+      example: "goodnight"
+      selector:
+        text:
+    speak:
+      example: true
+      selector:
+        boolean:

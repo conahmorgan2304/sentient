@@ -527,6 +527,26 @@ class ShushTool(_Tool):
         return {"shushed": name, "until": mute["until"]}
 
 
+class RunRoutineTool(_Tool):
+    name = "sentient_run_routine"
+    description = (
+        "Run one of the household's named routines (e.g. 'goodnight', 'good morning', 'leaving'). "
+        "Returns what to tell the person — say it in your reply (the house doesn't announce it)."
+    )
+    parameters = vol.Schema({vol.Required("name"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        result = await rt.shortcuts.async_run(tool_input.tool_args["name"], llm_context.context)
+        if not result.get("error"):
+            rt.timeline.add("mode", f"Ran {result['routine']} (by voice)", result.get("said") or None)
+        return result
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -540,7 +560,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -578,6 +598,11 @@ class SentientAPI(llm.API):
             lines.append("Household routines learned from history:")
             lines.extend(
                 f"- {r.describe()}{' (the house does this now)' if r.adopted else ''}" for r in routines
+            )
+        if rt.shortcuts.items:
+            lines.append(
+                "Named routines you can run with sentient_run_routine: "
+                + ", ".join(s.name for s in rt.shortcuts.items.values()) + "."
             )
         if problems := rt.health.describe():
             lines.append("House health problems right now: " + "; ".join(problems[:6]) + ".")

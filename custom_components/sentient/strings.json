@@ -509,6 +509,20 @@
           "description": "How long to stay hushed."
         }
       }
+    },
+    "run_routine": {
+      "name": "Run routine",
+      "description": "Run a named routine (set up on the sidebar page's Settings → Routines).",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The routine's name or one of its other names."
+        },
+        "speak": {
+          "name": "Speak",
+          "description": "Say the result where people are."
+        }
+      }
     }
   }
 }

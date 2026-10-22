@@ -237,6 +237,7 @@
       this._loadSpots();
       this._loadMotion();
       this._loadMutes(true);
+      this._loadShortcuts();
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -255,9 +256,11 @@
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
       this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + item("memories", "mdi:brain", "Memories", count !== "" ? `${count} remembered` : "")
         + item("spots", "mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into")
+        + item("shortcuts", "mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…")
         + item("mutes", "mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention")
         + item("motion", "mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
+        + item("backup", "mdi:backup-restore", "Backup", "Download or restore everything")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
 
@@ -277,6 +280,8 @@
       if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
       if (this._group === "motion") { this._form = null; this._drawMotion(); return; }
       if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
+      if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
+      if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -461,6 +466,91 @@
       this._drawSide(); this._drawSpots();
     }
 
+
+
+    // ---------- named routines ----------
+    async _loadShortcuts() {
+      try { this._sc = (await this._hass.callWS({ type: "sentient/shortcuts" })).items; } catch (e) { this._sc = []; }
+      if (this._view === "settings") { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
+    }
+
+    _drawShortcuts() {
+      const rows = (this._sc || []).map((r) => `<div class="card ml"><div class="r"><ha-icon icon="mdi:playlist-play"></ha-icon><b>${esc(r.name)}</b>
+            <s>${r.actions.length} STEP${r.actions.length === 1 ? "" : "S"}</s>
+            <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
+            <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Delete">✕</a></div>
+          <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
+          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
+          ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
+          <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
+        <div class="mllist">${rows || '<div class="e">NO ROUTINES YET</div>'}</div><div id="scedit"></div>
+        <div class="bar"><span id="status"></span><button class="btn" data-act="scadd">+ NEW ROUTINE</button></div>`;
+    }
+
+    _openShortcutForm(item) {
+      this._scEdit = item;
+      const wrap = this._$("scedit");
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "EDIT" : "NEW"} ROUTINE</span><i></i></div>
+        <div id="scformwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">CANCEL</button><button class="btn sm" data-act="scsave">SAVE</button></div></div>`;
+      wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const LABELS = { name: "Name", aliases: "Other ways of asking (comma separated)", say: "Say when done",
+        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", actions: "Actions" };
+      const schema = [
+        { name: "name", required: true, selector: { text: {} } },
+        { name: "aliases", selector: { text: {} } },
+        { name: "say", selector: { text: {} } },
+        { name: "check_open", selector: { boolean: {} } },
+        { name: "check_lights", selector: { boolean: {} } },
+        { name: "actions", selector: { action: {} } },
+      ];
+      loadForm().then((ok) => {
+        const fw = this._$("scformwrap");
+        if (!fw || this._scEdit !== item) return;
+        if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
+        const form = document.createElement("ha-form");
+        form.hass = this._hass; form.schema = schema; form.data = this._scDraft;
+        form.computeLabel = (sc) => LABELS[sc.name] || sc.name;
+        form.addEventListener("value-changed", (ev) => { this._scDraft = { ...ev.detail.value }; form.data = this._scDraft; });
+        fw.innerHTML = ""; fw.appendChild(form); this._form = form;
+      });
+    }
+
+    // ---------- backup ----------
+    _drawBackup() {
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:backup-restore"></ha-icon><div><div class="bt">BACKUP</div>
+          <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
+        <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
+        <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
+          <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO SETTINGS</u>
+          <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
+        <div class="spmsg" id="bkmsg"></div>`;
+      this._$("bkfile").addEventListener("change", (ev) => this._restore(ev.target.files[0]));
+    }
+
+    async _download() {
+      const data = await this._hass.callWS({ type: "sentient/export" });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `sentient-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      this._$("bkmsg").textContent = `Saved ${data.memories.length} memories, ${data.spots.length} spots, ${data.motion_lights.rules.length} motion lights and ${data.routines.length} routines.`;
+    }
+
+    async _restore(file) {
+      const msg = this._$("bkmsg");
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (!window.confirm(`Restore ${file.name}? It adds to what's here and doesn't delete anything.`)) return;
+        const res = await this._hass.callWS({ type: "sentient/import", data, settings: this._$("bkset").checked });
+        msg.textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
+        this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
+      } catch (e) { msg.textContent = e.message || String(e); }
+    }
 
     // ---------- shushed ----------
     async _loadMutes(quiet, extra) {
@@ -681,7 +771,7 @@
       else if (act === "goto") { this._group = id; this._show("settings", true); }
       else if (act === "group") {
         if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
-        this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._drawSide(); this._drawBody();
+        this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null; this._drawSide(); this._drawBody();
       } else if (act === "save") this._save();
       else if (act === "reset") this._drawBody();
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
@@ -696,6 +786,22 @@
         this._hass.callWS({ type: "sentient/digest", hours: 24 }).catch((e) => window.alert(e.message || e))
           .finally(() => { this._digBusy = false; this._drawTimeline(); });
       }
+      else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, actions: [] }; this._openShortcutForm({}); }
+      else if (act === "scedit") { const r = (this._sc || []).find((x) => x.id === id); if (r) { this._scDraft = { ...r }; this._openShortcutForm(r); } }
+      else if (act === "sccancel") { this._scEdit = null; this._form = null; this._drawShortcuts(); }
+      else if (act === "scsave") {
+        const item = {};
+        ["id", "name", "aliases", "say", "check_open", "check_lights", "actions"].forEach((k) => { if (this._scDraft[k] !== undefined && this._scDraft[k] !== null) item[k] = this._scDraft[k]; });
+        this._hass.callWS({ type: "sentient/shortcuts/save", item }).then((r) => { this._sc = r.items; this._scEdit = null; this._form = null; this._drawSide(); this._drawShortcuts(); },
+          (e) => { const m = this._$("scmsg"); if (m) m.textContent = e.message || String(e); });
+      } else if (act === "scdel") {
+        if (!window.confirm(`Delete the routine “${text}”?`)) return;
+        this._hass.callWS({ type: "sentient/shortcuts/delete", item_id: id }).then((r) => { this._sc = r.items; this._drawSide(); this._drawShortcuts(); });
+      } else if (act === "scrun") {
+        const r = (this._sc || []).find((x) => x.id === id);
+        this._hass.callService("sentient", "run_routine", { name: r ? r.name : id }).then(() => this._loadShortcuts(), (e) => window.alert(e.message || e));
+      } else if (act === "bkdown") this._download().catch((e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      else if (act === "bkup") this._$("bkfile").click();
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }

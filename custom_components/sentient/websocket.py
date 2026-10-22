@@ -174,6 +174,11 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_timeline)
     websocket_api.async_register_command(hass, ws_digest)
     websocket_api.async_register_command(hass, ws_mutes)
+    websocket_api.async_register_command(hass, ws_shortcuts)
+    websocket_api.async_register_command(hass, ws_shortcut_save)
+    websocket_api.async_register_command(hass, ws_shortcut_delete)
+    websocket_api.async_register_command(hass, ws_export)
+    websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
     websocket_api.async_register_command(hass, ws_motion_night)
@@ -487,3 +492,81 @@ def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     elif msg.get("remove"):
         mutes.remove(msg["remove"])
     connection.send_result(msg["id"], {"mutes": mutes.listing()})
+
+
+# ----- named routines -------------------------------------------------------------
+@websocket_api.websocket_command({vol.Required("type"): "sentient/shortcuts"})
+@callback
+def ws_shortcuts(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], {"items": entry.runtime_data.shortcuts.listing()})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/shortcuts/save", vol.Required("item"): dict})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_shortcut_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    item = dict(msg["item"])
+    try:
+        if item.get("actions"):
+            from homeassistant.helpers.script import async_validate_actions_config
+
+            await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(item["actions"]))
+        entry.runtime_data.shortcuts.upsert(item)
+    except (vol.Invalid, ValueError, HomeAssistantError) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"items": entry.runtime_data.shortcuts.listing()})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/shortcuts/delete", vol.Required("item_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_shortcut_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    entry.runtime_data.shortcuts.remove(msg["item_id"])
+    connection.send_result(msg["id"], {"items": entry.runtime_data.shortcuts.listing()})
+
+
+# ----- backup ------------------------------------------------------------------------
+@websocket_api.websocket_command({vol.Required("type"): "sentient/export"})
+@websocket_api.require_admin
+@callback
+def ws_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .backup import export_all
+
+    connection.send_result(msg["id"], export_all(hass, entry))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/import", vol.Required("data"): dict, vol.Optional("settings", default=False): bool}
+)
+@websocket_api.require_admin
+@callback
+def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .backup import import_all
+
+    try:
+        result = import_all(hass, entry, msg["data"], msg["settings"])
+    except (KeyError, TypeError, ValueError) as err:
+        connection.send_error(msg["id"], "invalid", f"That doesn't look like a Sentient backup ({err})")
+        return
+    connection.send_result(msg["id"], result)

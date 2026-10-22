@@ -54,3 +54,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Daily digest; timeline keeps health baseline across restarts and names rooms (0.24.0)
 - [x] Welcome home with what happened while you were out (0.25.0)
 - [x] Speaking volume and media ducking, shush, automatic safety alerts (0.26.0)
+- [x] Named routines (goodnight, morning…) and backup/restore (0.27.0)

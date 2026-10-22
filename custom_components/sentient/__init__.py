@@ -50,6 +50,7 @@ from .notifier import Notifier
 from .welcome import Welcome
 from .mutes import Mutes
 from .critical import CriticalAlerts
+from .shortcuts import Shortcuts
 from .visitors import Visitors
 from .watches import WatchManager
 from .speech import SpeechRouter
@@ -82,6 +83,7 @@ class SentientRuntime:
     welcome: Welcome
     mutes: Mutes
     critical: CriticalAlerts
+    shortcuts: Shortcuts
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -217,13 +219,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     critical = CriticalAlerts(hass, options, lambda: entry.runtime_data)
     critical.async_start()
     entry.async_on_unload(critical.async_stop)
+    shortcuts = Shortcuts(hass, entry.entry_id)
+    await shortcuts.async_load()
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
     entry.async_on_unload(welcome.async_stop)
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
-        motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical,
+        motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
@@ -401,6 +405,21 @@ def _register_services(hass: HomeAssistant) -> None:
         DOMAIN, SERVICE_REMEMBER, remember, schema=REMEMBER_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
+    async def run_routine(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        result = await rt.shortcuts.async_run(call.data["name"], call.context)
+        if result.get("said") and call.data.get("speak", True):
+            await rt.speech.async_say(result["said"], "urgent", source="routine")
+        if not result.get("error"):
+            rt.timeline.add("mode", f"Ran {result['routine']}", result.get("said") or None)
+        return result
+
+    hass.services.async_register(
+        DOMAIN, "run_routine", run_routine,
+        schema=vol.Schema({vol.Required("name"): cv.string, vol.Optional("speak", default=True): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+
     async def hush_service(call: ServiceCall) -> ServiceResponse:
         from datetime import timedelta
 
