@@ -59,6 +59,7 @@ from .const import (
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
     CONF_FACE_SENSOR,
+    CONF_DOORSTEP_SENSORS,
     CONF_FALLBACK_SPEAKERS,
     CONF_HEALTH_IGNORE,
     CONF_HOUSE_RULES,
@@ -100,7 +101,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_SUGGEST_ROUTINES, CONF_WELCOME, CONF_WELCOME_PEOPLE,
     ]),
     ("door", "Door & cameras", "mdi:doorbell-video", "Doorbell log, parcels, faces and camera checks.", [
-        CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS,
+        CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
         CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN, CONF_DAILY_AI_LIMIT,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [

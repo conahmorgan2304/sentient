@@ -99,3 +99,55 @@ async def test_recognised_name_is_used_when_fresh(hass: HomeAssistant) -> None:
     assert said[-1].data["message"] == "Conah's at the door."
     log = hass.states.get("sensor.nova_visitors").attributes["recent"]
     assert log[0]["name"] == "Conah"
+
+
+async def test_doorstep_visit_without_ring_checks_for_parcel_once(hass: HomeAssistant, freezer) -> None:
+    await _setup(hass, doorstep_sensors=["binary_sensor.front_garden_person"])
+    hass.states.async_set("binary_sensor.front_garden_person", "off")
+    await hass.async_block_till_done()
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    ai = _ai(hass, [
+        {"parcel_left": True, "description": "A small brown box."},
+        {"parcel_left": True, "description": "A small brown box."},
+        {"parcel_left": False},
+        {"parcel_left": True, "description": "Some post"},
+    ])
+
+    async def visit(minutes: int) -> None:
+        hass.states.async_set("binary_sensor.front_garden_person", "on")
+        await hass.async_block_till_done()
+        hass.states.async_set("binary_sensor.front_garden_person", "off")
+        await hass.async_block_till_done()
+        freezer.tick(timedelta(seconds=11))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        freezer.tick(timedelta(minutes=minutes))
+
+    await visit(3)
+    assert len(ai) == 1 and "without" in ai[0].data["instructions"]
+    assert [c.data["message"] for c in said] == ["A parcel's been left at the front door."]
+    log = hass.states.get("sensor.nova_visitors").attributes["recent"]
+    assert log[0]["description"] == "someone left A small brown box without ringing"
+    await visit(3)  # same parcel still there: not said again
+    await visit(3)  # taken in
+    await visit(3)  # new post
+    assert len(ai) == 4
+    assert len(said) == 2
+
+
+async def test_doorstep_check_skipped_after_a_ring_and_when_parcels_off(hass: HomeAssistant, freezer) -> None:
+    await _setup(hass, doorstep_sensors=["binary_sensor.front_garden_person"])
+    hass.states.async_set("binary_sensor.front_garden_person", "off")
+    await hass.async_block_till_done()
+    ai = _ai(hass, [{"kind": "visitor", "description": "A man in a red coat"}])
+    with patch("custom_components.sentient.visitors.asyncio.sleep"):
+        hass.states.async_set("binary_sensor.doorbell", "on")
+        await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.front_garden_person", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.front_garden_person", "off")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=11))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(ai) == 1  # only the doorbell look

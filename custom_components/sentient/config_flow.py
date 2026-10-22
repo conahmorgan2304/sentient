@@ -27,6 +27,7 @@ from .const import (
     CONF_BRIEFINGS,
     DEFAULT_BRIEFING_SECTIONS,
     CONF_FACE_SENSOR,
+    CONF_DOORSTEP_SENSORS,
     CONF_ANNOUNCE_VISITORS,
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
@@ -181,6 +182,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_ANNOUNCE_VISITORS, **d(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS)): selector.BooleanSelector(),
             vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),
+            vol.Optional(CONF_DOORSTEP_SENSORS, **d(CONF_DOORSTEP_SENSORS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
             vol.Required(CONF_BATTERY_THRESHOLD, **d(CONF_BATTERY_THRESHOLD, DEFAULT_BATTERY_THRESHOLD)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.BOX)
             ),

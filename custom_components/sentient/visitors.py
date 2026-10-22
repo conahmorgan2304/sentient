@@ -6,6 +6,11 @@ driver holding a small parcel". By default it says nothing about who is
 there; voice agents can answer "who came earlier?" from the log. If the
 visitor looked like a delivery, it looks again a few minutes later and can
 say that a parcel has been left.
+
+Optional doorstep sensors (e.g. a Frigate zone's person occupancy) catch the
+deliveries that don't ring: when a visit there ends and the bell wasn't
+pressed, one look checks for a parcel or post left behind. It only speaks
+when a parcel appears that wasn't there at the last look.
 """
 
 from __future__ import annotations
@@ -28,6 +33,7 @@ from .const import (
     CONF_ANNOUNCE_VISITORS,
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
+    CONF_DOORSTEP_SENSORS,
     CONF_FACE_SENSOR,
     CONF_PARCEL_ALERTS,
     DEFAULT_ANNOUNCE_VISITORS,
@@ -47,6 +53,9 @@ STORAGE_VERSION = 1
 COOLDOWN = timedelta(seconds=60)
 PARCEL_RECHECK = 180  # seconds after a delivery
 KEEP = 30
+DOORSTEP_SETTLE = 10  # seconds after a doorstep visit ends, so the visitor has stepped away
+DOORSTEP_COOLDOWN = timedelta(minutes=2)
+RANG_RECENTLY = timedelta(minutes=5)  # a doorbell visit already does its own parcel check
 FACE_FRESH = timedelta(minutes=2)
 _NO_NAME = {"", "none", "unknown", "unavailable", "no face", "no_face", "nobody", "null"}
 KINDS = ["delivery", "visitor", "neighbour", "child", "unknown", "nobody"]
@@ -67,10 +76,14 @@ class Visitors:
         self._last: datetime | None = None
         self._busy = False
         self._unsubs: list = []
+        self._doorstep_last: datetime | None = None
+        self._doorstep_pending = False
+        self.parcel_waiting = False  # a parcel was there at the last look
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
         self.log.extend(data.get("visits", [])[:KEEP])
+        self.parcel_waiting = bool(data.get("parcel_waiting"))
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed))
 
     @callback
@@ -80,7 +93,7 @@ class Visitors:
 
     @callback
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"visits": list(self.log)}, 2)
+        self._store.async_delay_save(lambda: {"visits": list(self.log), "parcel_waiting": self.parcel_waiting}, 2)
         self.hass.bus.async_fire(EVENT_VISITOR, {"count": len(self.log)})
 
     @property
@@ -90,6 +103,10 @@ class Visitors:
     @property
     def triggers(self) -> set[str]:
         return set(self.options.get(CONF_DOOR_TRIGGERS) or [])
+
+    @property
+    def doorstep(self) -> set[str]:
+        return set(self.options.get(CONF_DOORSTEP_SENSORS) or [])
 
     def today(self) -> list[dict[str, Any]]:
         start = dt_util.start_of_local_day()
@@ -120,10 +137,16 @@ class Visitors:
     @callback
     def _on_state_changed(self, event: Event[EventStateChangedData]) -> None:
         new = event.data["new_state"]
-        if new is None or new.entity_id not in self.triggers or not self.camera:
+        if new is None or not self.camera:
             return
         old = event.data["old_state"]
         if new.state in (STATE_UNAVAILABLE, STATE_UNKNOWN) or old is None or old.state == STATE_UNAVAILABLE:
+            return
+        if new.entity_id in self.doorstep:
+            if old.state == STATE_ON and new.state != STATE_ON:
+                self._doorstep_visit_ended()
+            return
+        if new.entity_id not in self.triggers:
             return
         if new.domain == "event":
             fired = old.state != new.state  # event entities change state to the time they fired
@@ -136,6 +159,69 @@ class Visitors:
             return
         self._last = now
         self.hass.async_create_task(self.async_visit(new.entity_id))
+
+    # ----- doorstep visits without the bell -------------------------------------
+    @callback
+    def _doorstep_visit_ended(self) -> None:
+        if not self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS) or self._doorstep_pending:
+            return
+        now = dt_util.utcnow()
+        if self._doorstep_last and now - self._doorstep_last < DOORSTEP_COOLDOWN:
+            return
+        if self._last and now - self._last < RANG_RECENTLY:
+            return  # the bell rang: that visit has its own parcel check
+        if any((st := self.hass.states.get(e)) and st.state == STATE_ON for e in self.doorstep):
+            return  # someone's still there
+        self._doorstep_pending = True
+
+        @callback
+        def _go(_now: datetime) -> None:
+            self.hass.async_create_task(self.async_doorstep_check())
+
+        async_call_later(self.hass, DOORSTEP_SETTLE, _go)
+
+    async def async_doorstep_check(self) -> bool | None:
+        """Look once for a parcel left by someone who didn't ring. Returns whether one is there."""
+        self._doorstep_pending = False
+        if self._busy or not self.camera or not self.watches.spend():
+            return None
+        self._doorstep_last = dt_util.utcnow()
+        self._busy = True
+        try:
+            result = await self._look(
+                "Sentient: anything left on the doorstep?",
+                "This is the doorstep just after someone walked up to the house and left without "
+                "ringing. Is a parcel, package, bag or post visibly left on the doorstep or by the "
+                "door? If so, describe it in a few plain words (e.g. 'a small brown box').",
+                {
+                    "parcel_left": {"description": "True if a parcel or post is visibly left", "required": True,
+                                    "selector": {"boolean": {}}},
+                    "description": {"description": "What was left, a few plain words", "required": False,
+                                    "selector": {"text": {}}},
+                },
+            )
+        except HomeAssistantError as err:
+            _LOGGER.warning("Sentient could not check the doorstep: %s", err)
+            return None
+        finally:
+            self._busy = False
+        there = bool(result.get("parcel_left"))
+        was = self.parcel_waiting
+        self.parcel_waiting = there
+        if there and not was:
+            what = (result.get("description") or "a parcel").strip().rstrip(".")
+            self.log.appendleft({
+                "name": None,
+                "time": dt_util.now().isoformat(),
+                "kind": "delivery",
+                "description": f"someone left {what} without ringing",
+                "parcel": True,
+                "parcel_left": True,
+                "trigger": "doorstep",
+            })
+            await self.speech.async_say("A parcel's been left at the front door.", "normal", None, source="visitors")
+        self._save()
+        return there
 
     # ----- looking ---------------------------------------------------------------
     async def _look(self, task: str, instructions: str, structure: dict) -> dict[str, Any]:
@@ -224,5 +310,6 @@ class Visitors:
             return
         if result.get("parcel_left"):
             visit["parcel_left"] = True
+            self.parcel_waiting = True
             self._save()
             await self.speech.async_say("A parcel's been left at the front door.", "normal", None, source="visitors")

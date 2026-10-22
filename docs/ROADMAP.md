@@ -60,3 +60,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Security check (tool, card, briefing, routine check) and scenes by description (0.29.0)
 - [x] Left-open nudges and a leaving check (0.30.0)
 - [x] Safety alerts: alarm triggered, tamper, extra entities, test button (0.30.1)
+- [x] Parcels left without a ring: one look after a doorstep visit ends, said only when something new appears (0.31.0)
