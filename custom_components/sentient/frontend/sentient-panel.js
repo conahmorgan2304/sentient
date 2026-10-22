@@ -165,13 +165,17 @@
             <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LET THE HOUSE DO IT"}</div></div>`;
         }).join("") || '<div class="card"><div class="e">NO ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
 
-      // watches
+      // watches (left alone while a reminder is being typed)
+      const act = this.shadowRoot.activeElement;
+      const typing = act && act.closest && act.closest('form[data-form="remind"]');
       const watches = this._attr("watches", "watches", []);
-      R("watch").innerHTML = this._h("WATCHES &amp; REMINDERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
+      if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REMINDERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
-      }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>');
+      }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
+        + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
+            <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
 
       // house health
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
@@ -453,6 +457,23 @@
       const form = ev.target;
       if (!form.dataset || !form.dataset.form) return;
       ev.preventDefault();
+      if (form.dataset.form === "remind") {
+        const message = form.elements.msg.value.trim(), when = form.elements.when.value.trim().toLowerCase();
+        if (!message) return;
+        const data = { message };
+        let m;
+        if ((m = when.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins|minutes?)?$/))) data.minutes = parseFloat(m[1]);
+        else if ((m = when.match(/^(\d+(?:\.\d+)?)\s*(h|hr|hrs|hours?)$/))) data.minutes = parseFloat(m[1]) * 60;
+        else if (when) data.at = when;
+        else data.minutes = 30;
+        try {
+          await this._hass.callService("sentient", "remind", data);
+          form.elements.msg.value = ""; form.elements.when.value = "";
+          if (this.shadowRoot.activeElement) this.shadowRoot.activeElement.blur();
+          this._render();
+        } catch (e) { window.alert(e.message || String(e)); }
+        return;
+      }
       if (form.dataset.form === "spot") { this._spotDo(this._drawing && this._draft_box ? "save" : "find"); return; }
       if (form.dataset.form === "look") {
         const q = form.elements.q.value.trim() || form.elements.q.placeholder, spot = form.elements.spot.value;
@@ -598,6 +619,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .chips span{font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:3px 8px;border-radius:9px;color:#7fefff;border:1px solid rgba(0,255,247,.3)}
 .add,.find{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:12px;border:1px dashed rgba(0,255,247,.35);background:rgba(0,255,247,.03)}
+.add .when{flex:none;width:120px;border-left:1px solid rgba(0,255,247,.2);padding-left:10px}
 .find{border-style:solid;border-color:rgba(0,255,247,.15)}
 .list .r{padding:9px 10px}
 .r.mem b{cursor:text} .r.mem b:hover{color:#fff}

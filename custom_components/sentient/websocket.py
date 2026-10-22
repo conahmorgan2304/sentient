@@ -21,6 +21,7 @@ from homeassistant.helpers.translation import async_get_translations
 from .config_flow import _briefing_schema, _speech_schema
 from .const import (
     CONF_AI_TASK_ENTITY,
+    CONF_SECOND_OPINION,
     CONF_ALL_OCCUPIED,
     CONF_ANNOUNCE_VISITORS,
     CONF_BANNED_WORDS,
@@ -81,7 +82,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("door", "Door & cameras", "mdi:doorbell-video", "Doorbell log, parcels, faces and camera checks.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS,
-        CONF_AI_TASK_ENTITY, CONF_CAMERA_COOLDOWN, CONF_DAILY_AI_LIMIT,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN, CONF_DAILY_AI_LIMIT,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
         CONF_BATTERY_THRESHOLD, CONF_HEALTH_IGNORE,

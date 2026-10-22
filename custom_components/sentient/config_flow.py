@@ -45,6 +45,7 @@ from .const import (
     CONF_FALLBACK_SPEAKERS,
     DEFAULT_DAILY_AI_LIMIT,
     CONF_AI_TASK_ENTITY,
+    CONF_SECOND_OPINION,
     CONF_CAMERA_COOLDOWN,
     DEFAULT_CAMERA_COOLDOWN,
     CONF_ALL_OCCUPIED,
@@ -136,6 +137,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(multiple=True)
             ),
             vol.Optional(CONF_AI_TASK_ENTITY, **d(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="ai_task")
+            ),
+            vol.Optional(CONF_SECOND_OPINION, **d(CONF_SECOND_OPINION)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
             vol.Required(CONF_CAMERA_COOLDOWN, **d(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)): selector.NumberSelector(

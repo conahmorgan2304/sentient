@@ -296,3 +296,35 @@ async def test_reminder_by_voice_and_cancel(hass: HomeAssistant) -> None:
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_cancel_watch", tool_args={"what": "washing"}))
     assert out["cancelled"] == "Check the washing."
     assert not entry.runtime_data.watches._timers
+
+
+async def test_unsure_answer_gets_second_opinion(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+        data={**OPTIONS, "ai_task_entity": "ai_task.small", "second_opinion_ai": "ai_task.big"},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    calls: list[ServiceCall] = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        if call.data["entity_id"] == "ai_task.small":
+            return {"conversation_id": "x", "data": {"answer": False, "unsure": True}}
+        return {"conversation_id": "x", "data": {"answer": True, "description": "A fox is by the pen."}}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    _garden_camera(hass)
+    await hass.services.async_call(
+        DOMAIN, "watch", {"what": "foxes", "entity": "camera.garden", "question": "Any foxes?", "repeat": True}, blocking=True
+    )
+    with patch("custom_components.sentient.watches.asyncio.sleep"):
+        hass.states.async_set("binary_sensor.garden_motion", "on", {"device_class": "motion"})
+        await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls] == ["ai_task.small", "ai_task.big"]
+    assert said[-1].data["message"] == "A fox is by the pen."
+    watches = entry.runtime_data.watches
+    assert watches.watches[0].second_opinions == 1 and watches.ai_checks_today == 2

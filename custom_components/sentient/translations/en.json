@@ -40,7 +40,8 @@
           "sidebar_panel": "Show in the sidebar",
           "chat_agent": "Chat agent for the sidebar page",
           "battery_threshold": "Low battery below",
-          "health_ignore": "Ignore for house health"
+          "health_ignore": "Ignore for house health",
+          "second_opinion_ai": "Second opinion AI"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -114,7 +115,8 @@
           "sidebar_panel": "Show in the sidebar",
           "chat_agent": "Chat agent for the sidebar page",
           "battery_threshold": "Low battery below",
-          "health_ignore": "Ignore for house health"
+          "health_ignore": "Ignore for house health",
+          "second_opinion_ai": "Second opinion AI"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -138,7 +140,8 @@
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
           "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
-          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off."
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
+          "second_opinion_ai": "Optional: a bigger model asked only when the usual one says the picture is too dark or unclear to be sure. Counts towards the daily limit."
         }
       },
       "memories": {

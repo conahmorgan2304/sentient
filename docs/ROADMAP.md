@@ -29,7 +29,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Noticing: chosen entities → free rules (quiet hours, hush, hourly limit, jitter, batching) → AI decides whether to speak (0.6.0)
 - [x] House rules every voice must follow (0.6.0)
 - [x] `sentient.ask`: ask out loud and open the mic for the reply (0.6.0)
-- [ ] A bigger model only when the cheap one is unsure
+- [x] A bigger model only when the cheap one is unsure: optional second-opinion AI for camera watches (0.17.0)
 - [x] Daily limit on background camera checks (0.5.0)
 - [x] Proactive remarks and questions with follow-up listening (0.6.0)
 - [x] Briefings on request: facts for any voice agent, or spoken via `sentient.briefing` (0.8.0)
@@ -44,3 +44,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] House health: offline devices, low batteries, updates (0.14.0)
 - [x] Settings tab in the panel: every option plus a memory manager (0.15.0)
 - [x] Camera spots page: AI find or draw by hand, outlines on the live picture, ask a camera (0.16.0)
+- [x] Set reminders from the page (0.17.0)

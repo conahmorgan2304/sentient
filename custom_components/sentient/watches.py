@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AI_TASK_ENTITY,
+    CONF_SECOND_OPINION,
     CONF_CAMERA_COOLDOWN,
     CONF_DAILY_AI_LIMIT,
     DEFAULT_CAMERA_COOLDOWN,
@@ -80,6 +81,7 @@ class Watch:
     created: str = field(default_factory=lambda: dt_util.utcnow().isoformat())
     fired: int = 0
     checks: int = 0
+    second_opinions: int = 0
     last_checked: str | None = None
     last_result: str | None = None
 
@@ -100,6 +102,7 @@ class Watch:
             "minutes_left": max(0, round((self.until_dt - dt_util.utcnow()).total_seconds() / 60)),
             "times_fired": self.fired,
             "checks": self.checks,
+            "second_opinions": self.second_opinions,
             "last_result": self.last_result,
         }
 
@@ -457,7 +460,11 @@ class WatchManager:
             await asyncio.sleep(1)
             watch.last_checked = dt_util.utcnow().isoformat()
             watch.checks += 1
-            answer, description = await self._async_ask(watch)
+            answer, description, unsure = await self._async_ask(watch)
+            second = self.options.get(CONF_SECOND_OPINION)
+            if unsure and second and second != self.options.get(CONF_AI_TASK_ENTITY) and self.spend():
+                answer, description, _unsure = await self._async_ask(watch, second)
+                watch.second_opinions += 1
             watch.last_result = description or ("yes" if answer else "no")
             self._save()
             if answer:
@@ -469,7 +476,7 @@ class WatchManager:
         finally:
             self._busy.discard(watch.id)
 
-    async def _async_ask(self, watch: Watch) -> tuple[bool, str | None]:
+    async def _async_ask(self, watch: Watch, ai_entity: str | None = None) -> tuple[bool, str | None, bool]:
         data: dict[str, Any] = {
             "task_name": f"Sentient watch: {watch.what}"[:100],
             "instructions": (
@@ -482,21 +489,23 @@ class WatchManager:
                            "selector": {"boolean": {}}},
                 "description": {"description": "One short spoken sentence, or empty", "required": False,
                                 "selector": {"text": {}}},
+                "unsure": {"description": "True if the picture is too dark, blurry or ambiguous to be sure",
+                           "required": False, "selector": {"boolean": {}}},
             },
             "attachments": [await self._attachment(watch.entity_id, watch.spot)],
         }
-        if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
+        if ai_entity := ai_entity or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         response = await self.hass.services.async_call(
             "ai_task", "generate_data", data, blocking=True, return_response=True
         )
         result = (response or {}).get("data") or {}
         if isinstance(result, str):  # model ignored the structure
-            return result.strip().lower().startswith(("yes", "true")), None
-        answer = result.get("answer")
-        if isinstance(answer, str):
-            answer = answer.strip().lower() in {"true", "yes"}
-        return bool(answer), (result.get("description") or "").strip() or None
+            return result.strip().lower().startswith(("yes", "true")), None, False
+        def flag(value: Any) -> bool:
+            return value.strip().lower() in {"true", "yes"} if isinstance(value, str) else bool(value)
+
+        return flag(result.get("answer")), (result.get("description") or "").strip() or None, flag(result.get("unsure"))
 
     def spend(self) -> bool:
         """Count one background AI check; False once today's limit is used up."""
