@@ -46,6 +46,10 @@ from .const import (
     DEFAULT_DAILY_AI_LIMIT,
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
+    CONF_NOTIFY_TARGETS,
+    CONF_NOTIFY_WHEN,
+    NOTIFY_KINDS,
+    DEFAULT_NOTIFY_WHEN,
     CONF_CAMERA_COOLDOWN,
     DEFAULT_CAMERA_COOLDOWN,
     CONF_ALL_OCCUPIED,
@@ -135,6 +139,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_HEALTH_IGNORE, **d(CONF_HEALTH_IGNORE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Optional(CONF_NOTIFY_TARGETS, **d(CONF_NOTIFY_TARGETS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="notify", multiple=True)
+            ),
+            vol.Optional(CONF_NOTIFY_WHEN, **d(CONF_NOTIFY_WHEN, DEFAULT_NOTIFY_WHEN)): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=NOTIFY_KINDS, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="notify_when"
+                )
             ),
             vol.Optional(CONF_AI_TASK_ENTITY, **d(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")

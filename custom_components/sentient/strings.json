@@ -116,7 +116,9 @@
           "chat_agent": "Chat agent for the sidebar page",
           "battery_threshold": "Low battery below",
           "health_ignore": "Ignore for house health",
-          "second_opinion_ai": "Second opinion AI"
+          "second_opinion_ai": "Second opinion AI",
+          "notify_targets": "Phones to notify",
+          "notify_when": "Send to phones"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -141,7 +143,9 @@
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
           "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
           "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
-          "second_opinion_ai": "Optional: a bigger model asked only when the usual one says the picture is too dark or unclear to be sure. Counts towards the daily limit."
+          "second_opinion_ai": "Optional: a bigger model asked only when the usual one says the picture is too dark or unclear to be sure. Counts towards the daily limit.",
+          "notify_targets": "Notify entities, e.g. the Home Assistant app on each phone or watch.",
+          "notify_when": "Each kind is sent at most once in ten minutes."
         }
       },
       "memories": {
@@ -245,6 +249,16 @@
         "system": "System health",
         "todo": "To-do lists",
         "calendar": "Calendar (next 24 hours)"
+      }
+    },
+    "notify_when": {
+      "options": {
+        "urgent": "Urgent announcements",
+        "held_quiet": "Things held back in quiet hours",
+        "unheard": "Things nobody could hear (no speaker available)",
+        "visitors": "Doorbell visitors and parcels",
+        "watches": "Watches and reminders going off",
+        "health": "House health problems"
       }
     }
   },

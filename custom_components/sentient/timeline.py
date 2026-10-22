@@ -72,12 +72,13 @@ class Timeline:
 
     # ----- recording -----------------------------------------------------------------
     @callback
-    def add(self, kind: str, text: str, detail: str | None = None) -> None:
+    def add(self, kind: str, text: str, detail: str | None = None, **extra: Any) -> None:
         if not text:
             return
         item = {"time": dt_util.utcnow().isoformat(), "kind": kind, "text": text}
         if detail:
             item["detail"] = detail
+        item.update({k: v for k, v in extra.items() if v is not None})
         self.items.appendleft(item)
         self._store.async_delay_save(lambda: {"items": list(self.items)}, 10)
         self.hass.bus.async_fire(EVENT_TIMELINE, item)
@@ -89,13 +90,13 @@ class Timeline:
         for sp in d.get("speakers") or []:
             st = self.hass.states.get(sp)
             rooms.append(st.name if st else sp)
-        self.add("said", d.get("message", ""), ", ".join(rooms) or None)
+        self.add("said", d.get("message", ""), ", ".join(rooms) or None, priority=d.get("priority"), source=d.get("source"))
 
     @callback
     def _held(self, event: Event) -> None:
         d = event.data
         reason = str(d.get("reason") or "").split(":")[0].replace("_", " ")
-        self.add("held", d.get("message", ""), f"held back: {reason}" if reason else None)
+        self.add("held", d.get("message", ""), f"held back: {reason}" if reason else None, reason=d.get("reason"), source=d.get("source"))
 
     @callback
     def _noticed(self, event: Event) -> None:
@@ -112,7 +113,10 @@ class Timeline:
         visit = log[0]
         self._seen_visit = visit.get("time")
         who = f"{visit['name']} — " if visit.get("name") else ""
-        self.add("visitor", f"{who}{visit.get('description') or 'Someone at the door'}", visit.get("kind"))
+        self.add(
+            "visitor", f"{who}{visit.get('description') or 'Someone at the door'}", visit.get("kind"),
+            parcel=bool(visit.get("parcel_left")) or None,
+        )
 
     @callback
     def _watch(self, event: Event) -> None:

@@ -48,3 +48,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Motion lights: after dark, quiet hours per light, late-night dimming, hands off manual use (0.18.0)
 - [x] Motion lights: optional lux sensor, voice tool, live overview card (0.19.0)
 - [x] Timeline tab and voice tool: what the house did and noticed (0.20.0)
+- [x] Phone notifications for chosen kinds of timeline entries (0.21.0)
