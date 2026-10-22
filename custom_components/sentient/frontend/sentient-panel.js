@@ -172,7 +172,7 @@
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
           <div class="sub">${this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${this._attr("likely_room", "ai_checks_today", 0)} AI CHECKS TODAY</div>
-          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._chimeChip()}</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
           <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS TODAY")}${stat(st("health"), "PROBLEMS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
@@ -200,6 +200,8 @@
       }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
+
+      if (this._sc === undefined) { this._sc = null; this._loadShortcuts(); }
 
       // energy (every 10 minutes)
       if (Date.now() - (this._enAt || 0) > 600000) {
@@ -344,6 +346,7 @@
         if (this._form) this._form.data = this._draft;
         this._dirty = false;
         this._status("SAVED ✓", "ok");
+        this._enAt = 0; this._en = null;  // energy card follows its on/off setting
       } catch (e) {
         this._status(e.message || String(e), "bad");
       }
@@ -479,6 +482,7 @@
     async _loadShortcuts() {
       try { this._sc = (await this._hass.callWS({ type: "sentient/shortcuts" })).items; } catch (e) { this._sc = []; }
       if (this._view === "settings") { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
+      else this._render();  // routine buttons on the overview
     }
 
     _drawShortcuts() {
@@ -598,11 +602,11 @@
 
     _drawEnergy() {
       const el = this._$("energy"), en = this._en;
-      if (!el || !en || !(en.devices || []).length) { if (el) el.hidden = true; return; }
+      if (!el || !en || en.enabled === false || !(en.devices || []).length) { if (el) el.hidden = true; return; }
       el.hidden = false;
       const top = en.devices.slice(0, 5), max = Math.max(0.01, ...top.map((d) => Math.max(d.kwh, d.usual)));
       const pct = en.usual_kwh > 0 ? Math.round((en.total_kwh / en.usual_kwh) * 100) : null;
-      el.innerHTML = this._h("ENERGY TODAY", `${en.total_kwh} KWH${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
+      el.innerHTML = this._h("ENERGY TODAY", `${en.total_kwh} KWH${en.cost_today != null ? ` · £${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
@@ -1098,7 +1102,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tli.k-visitor .dot{border-color:rgba(61,255,168,.5)} .tli.k-visitor .dot ha-icon{color:#3dffa8} .tli.k-light .dot ha-icon{color:#ffd76a} .tli.k-critical .dot{border-color:#ff5a78;background:rgba(255,80,110,.15)} .tli.k-critical .dot ha-icon{color:#ff5a78}
 .modes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .mode{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:5px 11px;border-radius:12px;color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.25)}
-.mode ha-icon{--mdc-icon-size:14px} .mode.lit{color:#00fff7;border-color:rgba(0,255,247,.55)} .mode.on{color:#041016;background:#ffbe55;border-color:#ffbe55;box-shadow:0 0 12px rgba(255,190,85,.45)}
+.mode ha-icon{--mdc-icon-size:14px} .mode.lit{color:#00fff7;border-color:rgba(0,255,247,.55)} .mode.run{color:#e6f5fa;border-color:rgba(0,255,247,.4);background:rgba(0,255,247,.06)} .mode.on{color:#041016;background:#ffbe55;border-color:#ffbe55;box-shadow:0 0 12px rgba(255,190,85,.45)}
 .digest{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(0,255,247,.35);background:rgba(0,255,247,.06)}
 .digest>ha-icon{--mdc-icon-size:22px;color:#00fff7;flex:none} .digest .dt{flex:1;min-width:0}
 .digest .dt b{display:block;font-weight:400;font-size:13.5px;line-height:1.45;color:#e6f5fa} .digest .dt i{display:block;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.6);margin-top:4px}

@@ -54,6 +54,8 @@ from .const import (
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
     CONF_CRITICAL,
+    CONF_ENERGY,
+    CONF_ENERGY_PRICE,
     CONF_CRITICAL_IGNORE,
     CONF_WELCOME_PEOPLE,
     DEFAULT_CHIME,
@@ -113,6 +115,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
             vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
+            vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="p/kWh", mode=selector.NumberSelectorMode.BOX)
+            ),
             vol.Optional(CONF_CRITICAL_IGNORE, **d(CONF_CRITICAL_IGNORE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),

@@ -563,7 +563,10 @@ class EnergyTool(_Tool):
         from .energy import async_report, describe
 
         report = await async_report(hass)
+        if not report.get("enabled", True):
+            return {"error": report["note"]}
         return {
+            "cost_today_gbp": report.get("cost_today"),
             "up_to": report.get("up_to"),
             "total_kwh_today": report.get("total_kwh"),
             "usual_by_now": report.get("usual_kwh"),

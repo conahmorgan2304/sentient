@@ -56,3 +56,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Speaking volume and media ducking, shush, automatic safety alerts (0.26.0)
 - [x] Named routines (goodnight, morning…) and backup/restore (0.27.0)
 - [x] Energy: today vs usual from Energy-dashboard devices, card, briefing, voice tool, unusual-use notes (0.28.0)
+- [x] Energy on/off and cost; routine buttons on the overview (0.28.1)

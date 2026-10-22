@@ -30,6 +30,8 @@ from .const import (
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
     CONF_CRITICAL,
+    CONF_ENERGY,
+    CONF_ENERGY_PRICE,
     CONF_CRITICAL_IGNORE,
     CONF_WELCOME_PEOPLE,
     CONF_NOTIFY_WHEN,
@@ -101,6 +103,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("safety", "Safety alerts", "mdi:fire-alert", "Smoke, CO, gas and leaks — always said everywhere.", [
         CONF_CRITICAL, CONF_CRITICAL_IGNORE,
+    ]),
+    ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
+        CONF_ENERGY, CONF_ENERGY_PRICE,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
         CONF_BATTERY_THRESHOLD, CONF_HEALTH_IGNORE,

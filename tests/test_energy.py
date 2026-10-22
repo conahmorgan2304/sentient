@@ -38,3 +38,21 @@ async def test_report_flags_unusual(hass: HomeAssistant, freezer) -> None:
     assert heater["name"] == "Heater" and heater["kwh"] == 5.4 and heater["usual"] == 0.9
     assert [u["name"] for u in report["unusual"]] == ["Heater"]
     assert energy.describe(report) == ["Heater has used 5.4 kWh today, about 6.0× its usual"]
+
+
+async def test_energy_can_be_turned_off(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import llm
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={"persona": "Nova", "speakers": [], "energy_insight": False})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    report = await energy.async_report(hass)
+    assert report["enabled"] is False and report["devices"] == []
+    api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    res = await api.async_call_tool(llm.ToolInput(tool_name="sentient_energy", tool_args={}))
+    assert "turned off" in getattr(res, "data", res)["error"]

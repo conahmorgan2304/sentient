@@ -39,7 +39,24 @@ async def _devices(hass: HomeAssistant) -> dict[str, str]:
     return out
 
 
+def enabled(hass: HomeAssistant) -> bool:
+    from .const import CONF_ENERGY, DOMAIN
+
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    return not entries or bool(entries[0].runtime_data.options.get(CONF_ENERGY, True))
+
+
+def _price(hass: HomeAssistant) -> float | None:
+    from .const import CONF_ENERGY_PRICE, DOMAIN
+
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    value = entries[0].runtime_data.options.get(CONF_ENERGY_PRICE) if entries else None
+    return float(value) if value else None
+
+
 async def async_report(hass: HomeAssistant) -> dict[str, Any]:
+    if not enabled(hass):
+        return {"enabled": False, "devices": [], "unusual": [], "note": "Energy insight is turned off in Sentient's settings"}
     devices = await _devices(hass)
     if not devices:
         return {"devices": [], "note": "No devices on the Energy dashboard"}
@@ -77,7 +94,10 @@ async def async_report(hass: HomeAssistant) -> dict[str, Any]:
     out.sort(key=lambda i: i["kwh"], reverse=True)
     total = round(sum(i["kwh"] for i in out), 2)
     total_usual = round(sum(i["usual"] for i in out), 2)
+    price = _price(hass)
     return {
+        "enabled": True,
+        "cost_today": round(total * price / 100, 2) if price else None,
         "up_to": upto.strftime("%H:%M"),
         "total_kwh": total,
         "usual_kwh": total_usual,

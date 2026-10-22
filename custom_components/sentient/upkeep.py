@@ -125,6 +125,7 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
             report = await async_report(hass)
             if report.get("devices"):
                 out["energy_today"] = {
+                    **({"cost_so_far": f"£{report['cost_today']:.2f}"} if report.get("cost_today") else {}),
                     "kwh_so_far": report["total_kwh"],
                     "usual_by_now": report["usual_kwh"],
                     "biggest": [f"{d['name']} {d['kwh']} kWh" for d in report["devices"][:3]],
@@ -218,8 +219,10 @@ class Upkeep:
 
     async def _async_energy_check(self, local: datetime) -> None:
         """Once an hour: put anything newly using far more than usual on the timeline."""
-        from .energy import async_report
+        from .energy import async_report, enabled
 
+        if not enabled(self.hass):
+            return
         day = local.date().isoformat()
         if getattr(self, "_energy_day", None) != day:
             self._energy_day, self._energy_flagged = day, set()
