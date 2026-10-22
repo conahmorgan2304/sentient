@@ -18,4 +18,4 @@ Home Assistant custom integration (domain `sentient`). An evolving AI "brain" sh
 - British English in user-facing strings.
 - Keep `strings.json` and `translations/en.json` identical.
 - Bump `manifest.json` version for every release; HACS uses GitHub releases/tags.
-- Releases: push a tag `v<manifest version>` (e.g. `git tag v0.34.4 && git push origin v0.34.4`); `.github/workflows/release.yml` publishes the GitHub release that HACS reads.
+- Releases: bumping `version` in manifest.json and pushing to main is enough — `.github/workflows/release.yml` creates the `v<version>` tag and GitHub release that HACS reads.
