@@ -106,7 +106,13 @@ class NightWatch:
     def async_start(self) -> None:
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed))
         self._unsubs.append(async_track_time_change(self.hass, self._nightly, hour=3, minute=50, second=0))
-        self.hass.async_create_background_task(self.async_learn(), "sentient_night_watch_learn")
+        from homeassistant.helpers.start import async_at_started
+
+        @callback
+        def _started(_hass: HomeAssistant) -> None:  # once every door sensor exists
+            self.hass.async_create_background_task(self.async_learn(), "sentient_night_watch_learn")
+
+        self._unsubs.append(async_at_started(self.hass, _started))
 
     @callback
     def async_stop(self) -> None:

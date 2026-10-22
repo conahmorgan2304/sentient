@@ -29,7 +29,7 @@ def test_warmup_rate_and_comfort() -> None:
         states += [_clim(_t(day, 5, 0), 16.5, 15), _clim(_t(day, 6, 0), 16.2, 18), _clim(_t(day, 7, 0), 17.4, 18),
                    _clim(_t(day, 7, 30), 18.0, 18), _clim(_t(day, 22, 30), 18.2, 15)]
     rate, n = warmup_rate(states)
-    assert n == 3 and abs(rate - 1.2) < 0.01
+    assert n == 3 and rate == 1.2
     assert comfort_target(states) == 18
 
 

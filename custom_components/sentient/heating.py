@@ -86,7 +86,7 @@ def warmup_rate(states: list[State]) -> tuple[float | None, int]:
             start = None
     if not rates:
         return None, 0
-    return round(median(rates), 2), len(rates)
+    return round(median(rates), 1), len(rates)
 
 
 def comfort_target(states: list[State]) -> float | None:
@@ -199,7 +199,13 @@ class Heating:
         self._unsubs.append(async_track_time_change(self.hass, self._tick, second=5))
         last = dt_util.parse_datetime(self.last_run) if self.last_run else None
         if last is None or dt_util.utcnow() - last > timedelta(hours=26):
-            self.hass.async_create_background_task(self.async_learn(), "sentient_heating_learn")
+            from homeassistant.helpers.start import async_at_started
+
+            @callback
+            def _started(_hass: HomeAssistant) -> None:  # once every thermostat exists
+                self.hass.async_create_background_task(self.async_learn(), "sentient_heating_learn")
+
+            self._unsubs.append(async_at_started(self.hass, _started))
 
     @callback
     def async_stop(self) -> None:
@@ -341,7 +347,7 @@ class Heating:
         for p in self.report()["zones"]:
             if not p.get("warms_per_hour"):
                 continue
-            line = f"{p['name']} warms about {p['warms_per_hour']:g}° an hour"
+            line = f"{p['name']} warms about {p['warms_per_hour']:.1f}° an hour"
             if p.get("comfortable_at"):
                 line += f" and is usually set to {p['comfortable_at']:g}°"
             lines.append(line + ".")
