@@ -277,7 +277,8 @@
         "said": "What was said recently",
         "system": "System health",
         "todo": "To-do lists",
-        "calendar": "Calendar (next 24 hours)"
+        "calendar": "Calendar (next 24 hours)",
+        "energy": "Electricity used today (and anything unusual)"
       }
     },
     "notify_when": {

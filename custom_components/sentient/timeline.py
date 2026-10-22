@@ -33,7 +33,7 @@ from .presence import area_of
 STORAGE_VERSION = 1
 KEEP = 400
 EVENT_TIMELINE = f"{DOMAIN}_timeline"
-KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical"]
+KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy"]
 
 
 class Timeline:

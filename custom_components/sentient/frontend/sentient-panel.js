@@ -98,7 +98,7 @@
         <div class="page" id="ov"><div id="head" class="card head"></div>
           <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div id="rout" class="col stack"></div>
-            <div class="col stack"><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
+            <div class="col stack"><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
@@ -200,6 +200,13 @@
       }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
+
+      // energy (every 10 minutes)
+      if (Date.now() - (this._enAt || 0) > 600000) {
+        this._enAt = Date.now();
+        this._hass.callWS({ type: "sentient/energy" }).then((r) => { this._en = r; this._drawEnergy(); }, () => {});
+      }
+      this._drawEnergy();
 
       // motion lights
       if (Date.now() - (this._mlAt || 0) > 20000) { this._mlAt = Date.now(); this._loadMotion(); }
@@ -589,6 +596,19 @@
       return `<button class="mode chime${on ? " lit" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${on ? "mdi:bell-ring-outline" : "mdi:bell-off-outline"}"></ha-icon>CHIME ${on ? "ON" : "OFF"}</button>`;
     }
 
+    _drawEnergy() {
+      const el = this._$("energy"), en = this._en;
+      if (!el || !en || !(en.devices || []).length) { if (el) el.hidden = true; return; }
+      el.hidden = false;
+      const top = en.devices.slice(0, 5), max = Math.max(0.01, ...top.map((d) => Math.max(d.kwh, d.usual)));
+      const pct = en.usual_kwh > 0 ? Math.round((en.total_kwh / en.usual_kwh) * 100) : null;
+      el.innerHTML = this._h("ENERGY TODAY", `${en.total_kwh} KWH${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
+        + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
+            <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
+            <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
+        + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
+    }
+
     _drawMlCard() {
       const el = this._$("mlc"), ml = this._ml;
       if (!el || !ml || !ml.rules.length) { if (el) el.hidden = true; return; }
@@ -731,7 +751,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       this._$("tldig").innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
@@ -1082,6 +1102,12 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .digest{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(0,255,247,.35);background:rgba(0,255,247,.06)}
 .digest>ha-icon{--mdc-icon-size:22px;color:#00fff7;flex:none} .digest .dt{flex:1;min-width:0}
 .digest .dt b{display:block;font-weight:400;font-size:13.5px;line-height:1.45;color:#e6f5fa} .digest .dt i{display:block;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.6);margin-top:4px}
+.en{display:grid;grid-template-columns:120px minmax(0,1fr) 54px;align-items:center;gap:8px;margin-bottom:7px;font-size:11.5px}
+.en span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(230,245,250,.9)} .en u{text-decoration:none;text-align:right;font-weight:700;font-size:10.5px;color:#7fefff}
+.bar2{position:relative;height:7px;border-radius:4px;background:rgba(0,255,247,.08)} .bar2 i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,#00a8ff,#00fff7)}
+.bar2 b{position:absolute;top:-3px;width:2px;height:13px;background:rgba(255,255,255,.7);border-radius:1px}
+.en.hot .bar2 i{background:linear-gradient(90deg,#ff9a3d,#ff5a78)} .en.hot u{color:#ff7088}
+.tli.k-energy .dot ha-icon{color:#ffbe55}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:12px} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}

@@ -547,6 +547,31 @@ class RunRoutineTool(_Tool):
         return result
 
 
+class EnergyTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_energy"
+    description = (
+        "Electricity used today by the devices on the Energy dashboard, compared with the past week at "
+        "the same time of day: biggest users and anything using far more than usual. For 'what's using "
+        "all the electricity?', 'has the heater been on a lot today?'."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .energy import async_report, describe
+
+        report = await async_report(hass)
+        return {
+            "up_to": report.get("up_to"),
+            "total_kwh_today": report.get("total_kwh"),
+            "usual_by_now": report.get("usual_kwh"),
+            "top": report.get("devices", [])[:6],
+            "unusual": describe(report),
+        }
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -560,7 +585,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

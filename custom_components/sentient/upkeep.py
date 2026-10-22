@@ -118,6 +118,21 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
     if "said" in want and (said := rt.speech.recent_said(3)):
         out["said_recently"] = said
 
+    if "energy" in want:
+        from .energy import async_report, describe
+
+        try:
+            report = await async_report(hass)
+            if report.get("devices"):
+                out["energy_today"] = {
+                    "kwh_so_far": report["total_kwh"],
+                    "usual_by_now": report["usual_kwh"],
+                    "biggest": [f"{d['name']} {d['kwh']} kWh" for d in report["devices"][:3]],
+                    "unusual": describe(report),
+                }
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Energy section skipped: %s", err)
+
     if "system" in want:
         system: dict[str, Any] = {}
         if problems := rt.health.describe():
@@ -195,9 +210,30 @@ class Upkeep:
     def _every_minute(self, now: datetime) -> None:
         rt = self._rt()
         local = dt_util.as_local(now)
+        if local.minute == 7 and 8 <= local.hour <= 22:
+            self.hass.async_create_background_task(self._async_energy_check(local), "sentient_energy")
         if (digest_at := rt.options.get(CONF_DIGEST_TIME)) and local.strftime("%H:%M") == str(digest_at)[:5]:
             self.hass.async_create_background_task(self._async_digest_quietly(), "sentient_digest")
         self._maybe_briefing(rt, now)
+
+    async def _async_energy_check(self, local: datetime) -> None:
+        """Once an hour: put anything newly using far more than usual on the timeline."""
+        from .energy import async_report
+
+        day = local.date().isoformat()
+        if getattr(self, "_energy_day", None) != day:
+            self._energy_day, self._energy_flagged = day, set()
+        try:
+            report = await async_report(self.hass)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Energy check skipped: %s", err)
+            return
+        for item in report.get("unusual", []):
+            if item["name"] in self._energy_flagged:
+                continue
+            self._energy_flagged.add(item["name"])
+            times = f"about {item['times_usual']}× its usual" if item.get("times_usual") else "far more than usual"
+            self._rt().timeline.add("energy", f"{item['name']} has used {item['kwh']} kWh today — {times}")
 
     async def _async_digest_quietly(self) -> None:
         try:
@@ -208,7 +244,7 @@ class Upkeep:
     async def async_digest(self, hours: float = 24) -> dict[str, Any]:
         """A few sentences on what the house did and noticed — written to the timeline."""
         rt = self._rt()
-        items = list(reversed(rt.timeline.since(hours, ["said", "held", "visitor", "watch", "light", "health", "mode"], 150)))
+        items = list(reversed(rt.timeline.since(hours, ["said", "held", "visitor", "watch", "light", "health", "mode", "energy", "critical"], 150)))
         if not items:
             text = "A quiet day — nothing to report."
         else:

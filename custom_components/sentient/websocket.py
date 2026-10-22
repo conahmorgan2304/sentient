@@ -178,6 +178,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_shortcut_save)
     websocket_api.async_register_command(hass, ws_shortcut_delete)
     websocket_api.async_register_command(hass, ws_export)
+    websocket_api.async_register_command(hass, ws_energy)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -570,3 +571,14 @@ def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         connection.send_error(msg["id"], "invalid", f"That doesn't look like a Sentient backup ({err})")
         return
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/energy"})
+@websocket_api.async_response
+async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .energy import async_report
+
+    try:
+        connection.send_result(msg["id"], await async_report(hass))
+    except Exception as err:  # noqa: BLE001
+        connection.send_error(msg["id"], "failed", str(err))
