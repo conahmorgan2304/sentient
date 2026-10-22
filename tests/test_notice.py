@@ -137,3 +137,17 @@ async def test_ask_service_and_house_rules_in_prompt(hass: HomeAssistant) -> Non
     ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
     api = await llm.async_get_api(hass, "sentient", ctx)
     assert "Never say the house is empty." in api.api_prompt
+
+
+def test_finished_remark_contradiction() -> None:
+    from datetime import datetime
+
+    from custom_components.sentient.notice import Change, contradicts
+
+    start = Change(entity_id="sensor.kettle_status", name="Kettle Status", area="Kitchen", old="standby",
+                   new="heating", unit="", when=datetime.now())
+    done = Change(entity_id="sensor.kettle_status", name="Kettle Status", area="Kitchen", old="heating",
+                  new="standby", unit="", when=datetime.now())
+    assert contradicts("The kettle has finished boiling.", [start])
+    assert not contradicts("The kettle has finished boiling.", [done])
+    assert not contradicts("The kettle is heating up.", [start])

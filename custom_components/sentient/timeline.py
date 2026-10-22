@@ -157,8 +157,8 @@ class Timeline:
     def _health(self, event: Event) -> None:
         now: dict[str, str] = event.data.get("problems") or {}
         if self._starting(event):
-            # just after a restart devices aren't flagged offline yet; don't log them as recovered
-            now = {**{k: v for k, v in (self._problems or {}).items() if k.startswith("offline:")}, **now}
+            # just after a restart sensors are still coming back; don't log anything as recovered
+            now = {**(self._problems or {}), **now}
         before, self._problems = self._problems, dict(now)
         self._save()
         if before is None:

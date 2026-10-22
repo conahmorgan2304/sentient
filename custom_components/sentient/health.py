@@ -119,6 +119,13 @@ class HouseHealth:
             have = low_by_device.get(key)
             if have is None or (item["level"] is not None and (have["level"] is None or item["level"] < have["level"])):
                 low_by_device[key] = item
+        # a battery sensor that's briefly unavailable (e.g. just after a restart) keeps its last reading
+        for old in self.issues:
+            if old["kind"] != "battery" or any(i["name"] == old["name"] for i in low_by_device.values()):
+                continue
+            st = self.hass.states.get(old["entity_id"])
+            if st is None or st.state in ("unavailable", "unknown"):
+                low_by_device[old["entity_id"]] = old
         low = list(low_by_device.values())
 
         updates = sorted(
