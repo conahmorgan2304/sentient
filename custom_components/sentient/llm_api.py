@@ -575,6 +575,62 @@ class EnergyTool(_Tool):
         }
 
 
+class SecurityTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_security"
+    description = (
+        "Is the house secure? Lists doors, windows, gates and garage doors that are open, locks that are "
+        "unlocked, and the alarm's state. Read-only — it never locks, unlocks, arms or disarms anything. "
+        "For 'is everything locked up?', 'have I left a window open?'."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .security import check
+
+        return check(hass)
+
+
+class ScenesTool(_Tool):
+    name = "sentient_scene"
+    description = (
+        "Set the mood: with no 'name', lists the home's scenes and named routines with what's in them, so "
+        "you can pick the best one for a request like 'something cosy for movie night'. With 'name', "
+        "turns that scene on (or runs that routine)."
+    )
+    parameters = vol.Schema({vol.Optional("name"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        scenes = [st for st in hass.states.async_all("scene")]
+        name = (tool_input.tool_args.get("name") or "").strip()
+        if not name:
+            listing = []
+            for st in scenes:
+                members = st.attributes.get("entity_id") or []
+                listing.append({
+                    "name": st.name,
+                    "contains": [hass.states.get(e).name if hass.states.get(e) else e for e in members][:8],
+                })
+            routines = [s.name for s in rt.shortcuts.items.values()] if rt else []
+            return {"scenes": listing, "routines": routines}
+        low = name.lower()
+        match = next((st for st in scenes if st.entity_id == name or st.name.lower() == low), None) or next(
+            (st for st in scenes if low in st.name.lower()), None
+        )
+        if match:
+            await hass.services.async_call("scene", "turn_on", {"entity_id": match.entity_id}, blocking=True,
+                                           context=llm_context.context)
+            return {"scene_on": match.name}
+        if rt and rt.shortcuts.find(name):
+            return await rt.shortcuts.async_run(name, llm_context.context)
+        return {"error": f"No scene or routine called {name}"}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -588,7 +644,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

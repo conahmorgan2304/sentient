@@ -282,7 +282,8 @@
         "system": "System health",
         "todo": "To-do lists",
         "calendar": "Calendar (next 24 hours)",
-        "energy": "Electricity used today (and anything unusual)"
+        "energy": "Electricity used today (and anything unusual)",
+        "security": "Anything open or unlocked"
       }
     },
     "notify_when": {

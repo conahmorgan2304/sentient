@@ -118,6 +118,11 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
     if "said" in want and (said := rt.speech.recent_said(3)):
         out["said_recently"] = said
 
+    if "security" in want:
+        from .security import check
+
+        out["security"] = check(hass)["summary"]
+
     if "energy" in want:
         from .energy import async_report, describe
 

@@ -184,6 +184,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_shortcut_delete)
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_energy)
+    websocket_api.async_register_command(hass, ws_security)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -587,3 +588,11 @@ async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         connection.send_result(msg["id"], await async_report(hass))
     except Exception as err:  # noqa: BLE001
         connection.send_error(msg["id"], "failed", str(err))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/security"})
+@callback
+def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .security import check
+
+    connection.send_result(msg["id"], check(hass))

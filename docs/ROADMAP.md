@@ -57,3 +57,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Named routines (goodnight, morning…) and backup/restore (0.27.0)
 - [x] Energy: today vs usual from Energy-dashboard devices, card, briefing, voice tool, unusual-use notes (0.28.0)
 - [x] Energy on/off and cost; routine buttons on the overview (0.28.1)
+- [x] Security check (tool, card, briefing, routine check) and scenes by description (0.29.0)

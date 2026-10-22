@@ -37,6 +37,7 @@ class Shortcut:
     aliases: str = ""  # other ways of asking, comma separated
     check_open: bool = False
     check_lights: bool = False
+    check_locks: bool = False
     say: str = ""
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     last_run: str | None = None
@@ -115,6 +116,13 @@ class Shortcuts:
             ]
             if open_now:
                 notes.append(_join(open_now) + (" is" if len(open_now) == 1 else " are") + " still open")
+        if item.check_locks:
+            from .security import check
+
+            unlocked = check(self.hass)["unlocked"]
+            if unlocked:
+                names = [u["name"] for u in unlocked]
+                notes.append(_join(names) + (" is" if len(names) == 1 else " are") + " unlocked")
         if item.check_lights:
             lit = [st.name for st in self.hass.states.async_all("light") if st.state == "on"]
             if lit:

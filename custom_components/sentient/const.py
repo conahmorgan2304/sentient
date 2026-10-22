@@ -57,7 +57,7 @@ CONF_BRIEFING_SYSTEM = "briefing_system"
 CONF_BRIEFING_TIME = "briefing_time"
 BRIEFING_SECTIONS = [
     "time", "weather", "reminders", "watches", "routines", "open",
-    "visitors", "said", "system", "todo", "calendar", "energy",
+    "visitors", "said", "system", "todo", "calendar", "energy", "security",
 ]
 DEFAULT_BRIEFING_SECTIONS = ["time", "weather", "reminders", "watches", "routines", "open", "visitors"]
 

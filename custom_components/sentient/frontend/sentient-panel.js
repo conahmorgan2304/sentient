@@ -44,7 +44,7 @@
       if (!this.shadowRoot) this._build();
       if (this._form) this._form.hass = hass;
       const ids = this._ids();
-      const sig = KEYS.map((k) => { const s = ids[k] && hass.states[ids[k]]; return s ? s.last_updated : ""; }).join("|");
+      const sig = KEYS.map((k) => { const s = ids[k] && hass.states[ids[k]]; return s ? s.last_updated : ""; }).join("|") + "#" + this._security().key;
       if (sig !== this._sig) {
         const memChanged = ids.memories && hass.states[ids.memories] && hass.states[ids.memories].last_updated !== this._memSig;
         this._sig = sig;
@@ -96,7 +96,7 @@
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div>
-          <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
+          <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div id="rout" class="col stack"></div>
             <div class="col stack"><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
@@ -209,6 +209,8 @@
         this._hass.callWS({ type: "sentient/energy" }).then((r) => { this._en = r; this._drawEnergy(); }, () => {});
       }
       this._drawEnergy();
+
+      this._drawSecurity();
 
       // motion lights
       if (Date.now() - (this._mlAt || 0) > 20000) { this._mlAt = Date.now(); this._loadMotion(); }
@@ -491,7 +493,7 @@
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
             <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Delete">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
-          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
+          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
@@ -507,13 +509,14 @@
         <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">CANCEL</button><button class="btn sm" data-act="scsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = { name: "Name", aliases: "Other ways of asking (comma separated)", say: "Say when done",
-        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", actions: "Actions" };
+        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", check_locks: "First check for anything unlocked", actions: "Actions" };
       const schema = [
         { name: "name", required: true, selector: { text: {} } },
         { name: "aliases", selector: { text: {} } },
         { name: "say", selector: { text: {} } },
         { name: "check_open", selector: { boolean: {} } },
         { name: "check_lights", selector: { boolean: {} } },
+        { name: "check_locks", selector: { boolean: {} } },
         { name: "actions", selector: { action: {} } },
       ];
       loadForm().then((ok) => {
@@ -611,6 +614,40 @@
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
         + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
+    }
+
+    _security() {
+      if (this._secCache && Date.now() - this._secCache.t < 2000 && this._secCache.h === this._hass) return this._secCache.v;
+      const v = this._securityNow();
+      this._secCache = { t: Date.now(), h: this._hass, v };
+      return v;
+    }
+
+    _securityNow() {
+      const OPEN = ["door", "window", "garage_door", "opening"], open = [], unlocked = [], alarms = [];
+      for (const st of Object.values(this._hass.states)) {
+        const [d] = st.entity_id.split(".");
+        const dc = st.attributes.device_class, name = st.attributes.friendly_name || st.entity_id;
+        if (d === "binary_sensor" && st.state === "on" && OPEN.includes(dc)) open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
+        else if (d === "cover" && ["open", "opening"].includes(st.state) && ["garage", "gate", "door"].includes(dc)) open.push({ name, icon: "mdi:garage-open" });
+        else if (d === "lock" && ["unlocked", "open", "opening", "jammed"].includes(st.state)) unlocked.push({ name });
+        else if (d === "alarm_control_panel") alarms.push({ name, state: st.state });
+      }
+      return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
+    }
+
+    _drawSecurity() {
+      const el = this._$("sec");
+      if (!el) return;
+      const { open, unlocked, alarms } = this._security();
+      const bad = open.length + unlocked.length;
+      const alarm = alarms[0];
+      const armed = alarm && alarm.state.startsWith("armed");
+      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "ALL SHUT")
+        + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
+        + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
+        + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
+        + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-off-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
     }
 
     _drawMlCard() {
@@ -810,12 +847,12 @@
         this._hass.callWS({ type: "sentient/digest", hours: 24 }).catch((e) => window.alert(e.message || e))
           .finally(() => { this._digBusy = false; this._drawTimeline(); });
       }
-      else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, actions: [] }; this._openShortcutForm({}); }
+      else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, actions: [] }; this._openShortcutForm({}); }
       else if (act === "scedit") { const r = (this._sc || []).find((x) => x.id === id); if (r) { this._scDraft = { ...r }; this._openShortcutForm(r); } }
       else if (act === "sccancel") { this._scEdit = null; this._form = null; this._drawShortcuts(); }
       else if (act === "scsave") {
         const item = {};
-        ["id", "name", "aliases", "say", "check_open", "check_lights", "actions"].forEach((k) => { if (this._scDraft[k] !== undefined && this._scDraft[k] !== null) item[k] = this._scDraft[k]; });
+        ["id", "name", "aliases", "say", "check_open", "check_lights", "check_locks", "actions"].forEach((k) => { if (this._scDraft[k] !== undefined && this._scDraft[k] !== null) item[k] = this._scDraft[k]; });
         this._hass.callWS({ type: "sentient/shortcuts/save", item }).then((r) => { this._sc = r.items; this._scEdit = null; this._form = null; this._drawSide(); this._drawShortcuts(); },
           (e) => { const m = this._$("scmsg"); if (m) m.textContent = e.message || String(e); });
       } else if (act === "scdel") {
