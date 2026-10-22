@@ -232,3 +232,19 @@ async def test_link_is_learned_offered_and_done(hass: HomeAssistant, freezer) ->
         hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door"})
         await hass.async_block_till_done()
         assert len(turned_on) == 1
+
+
+def test_things_switched_together_are_not_a_link() -> None:
+    from custom_components.sentient.learning import find_links
+
+    left: list[State] = []
+    right: list[State] = []
+    for ago in range(10, 0, -1):
+        day = TODAY - timedelta(days=ago)
+        on = _local(day, 18, 30)
+        left += [State("light.left", "on", last_changed=on), State("light.left", "off", last_changed=on + timedelta(hours=4))]
+        right += [State("light.right", "on", last_changed=on + timedelta(seconds=1)),
+                  State("light.right", "off", last_changed=on + timedelta(hours=4, seconds=1))]
+    found = find_links({"light.left": ("left light", None, left)}, {"light.right": ("right light", right)},
+                       lambda t: True, today=_local(TODAY, 12, 0))
+    assert not found

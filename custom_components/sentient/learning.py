@@ -65,6 +65,7 @@ _SUPPORTED = {
     "cover": ("open", "closed"),
 }
 LINK_LAG = 120  # seconds: the follow-up has to come this soon after
+LINK_SAME_ACTION = 3  # seconds: closer than this, both were one action (a group, "all lights off")
 LINK_MIN_SEEN = 4
 LINK_MIN_CONF = 0.7
 MAX_LINKS = 12
@@ -300,7 +301,10 @@ def find_links(
                         continue
                     lags: dict[datetime, float] = {}
                     for t in eligible:
-                        after = [(d - t).total_seconds() for d in done if 0 < (d - t).total_seconds() <= LINK_LAG]
+                        gaps = [(d - t).total_seconds() for d in done]
+                        if any(abs(g) < LINK_SAME_ACTION for g in gaps):
+                            continue  # changed together: one action, not a habit
+                        after = [g for g in gaps if LINK_SAME_ACTION <= g <= LINK_LAG]
                         if after:
                             lags[t] = min(after)
                     for dark in (False, True):
