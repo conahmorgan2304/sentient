@@ -726,7 +726,8 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .ask{flex:1;display:flex;align-items:center;gap:8px;max-width:640px;margin:0 auto;padding:6px 12px;border-radius:14px;border:1px solid rgba(0,255,247,.28);background:rgba(0,255,247,.05)}
 .ask ha-icon,.add ha-icon,.find ha-icon{--mdc-icon-size:16px;color:#00fff7;flex:none}
 input,select{font:inherit;font-size:13px;color:#e6f5fa}
-.ask input,.add input,.find input{flex:1;min-width:0;background:none;border:none;outline:none}
+.ask input,.add input,.find input{flex:1;min-width:0;width:0;background:none;border:none;outline:none}
+.cols>*,.set>*{min-width:0}
 input::placeholder{color:rgba(150,220,235,.45)}
 select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:5px 8px;outline:none}
 .reply{display:flex;align-items:flex-start;gap:12px;max-width:1564px;margin:12px auto 0;padding:12px 16px;border-radius:16px;border:1px solid rgba(0,255,247,.3);background:rgba(0,255,247,.06);box-shadow:0 0 14px rgba(0,255,247,.12)}
@@ -853,7 +854,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tg input:checked+i{background:rgba(0,255,247,.35)} .tg input:checked+i::after{left:18px;background:#00fff7;box-shadow:0 0 6px #00fff7}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
-@media (max-width: 720px){ .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
+@media (max-width: 720px){ .page{padding:12px} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
   .set{grid-template-columns:1fr} .side{position:static;flex-direction:row;overflow-x:auto} .sh{display:none} .nav span{display:none} .tabs span{display:none} }
 `;
 
