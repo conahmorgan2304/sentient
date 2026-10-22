@@ -431,6 +431,35 @@ class MotionLightsTool(_Tool):
         return {"light": st.name if st else rule.light, "follows_motion": rule.enabled}
 
 
+class TimelineTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_timeline"
+    description = (
+        "What the house did and noticed recently, newest first: what it said or held back, doorbell "
+        "visitors, watches and reminders going off, motion lights, devices going offline. Use for "
+        "'what happened while I was out?', 'did anything happen overnight?'."
+    )
+    parameters = vol.Schema({vol.Optional("hours", default=12): vol.Coerce(float)})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        hours = max(0.5, min(72.0, float(tool_input.tool_args.get("hours", 12))))
+        items = rt.timeline.since(hours, ["said", "visitor", "watch", "light", "health"], 40)
+        from .watches import local_when
+
+        return {
+            "hours": hours,
+            "events": [
+                {"when": local_when(dt_util.parse_datetime(i["time"])), "what": i["text"], **({"detail": i["detail"]} if i.get("detail") else {})}
+                for i in items
+            ],
+        }
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -444,7 +473,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

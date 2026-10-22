@@ -128,7 +128,13 @@ class HouseHealth:
         if issues != self.issues or updates != self.updates:
             self.issues = issues
             self.updates = updates
-            self.hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"count": len(issues)})
+            self.hass.bus.async_fire(
+                EVENT_HEALTH_CHANGED, {
+                    "count": len(issues),
+                    "problems": {f"{i['kind']}:{i['name']}": line for i, line in zip(issues, self.describe())},
+                    "updates": updates,
+                }
+            )
         return issues
 
     def _connectivity(self, entity_ids: list[str]) -> list:

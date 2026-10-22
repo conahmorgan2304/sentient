@@ -51,13 +51,17 @@
     set panel(p) { this._panel = p; }
     set route(r) {
       this._route = r;
-      const want = r && String(r.path || "").startsWith("/settings") ? "settings" : "overview";
+      const path = String((r && r.path) || "");
+      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : "overview";
       if (this.shadowRoot && want !== this._view) this._show(want, false);
       else if (!this.shadowRoot) this._view = want;
     }
 
     connectedCallback() { this._tick = setInterval(() => this._render(), 30000); }
-    disconnectedCallback() { clearInterval(this._tick); }
+    disconnectedCallback() {
+      clearInterval(this._tick);
+      if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
+    }
 
     _ids() {
       if (this._idCache && this._idCache.n === Object.keys(this._hass.entities || {}).length) return this._idCache.ids;
@@ -81,6 +85,7 @@
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
+            <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>TIMELINE</span></button>
             <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>SETTINGS</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
@@ -89,6 +94,8 @@
           <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div id="rout" class="col stack"></div>
             <div class="col stack"><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
+        <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
+          <div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
@@ -124,11 +131,13 @@
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
       this._$("ov").hidden = view !== "overview";
       this._$("set").hidden = view !== "settings";
+      this._$("tl").hidden = view !== "timeline";
       if (push && this._route) {
         const base = this._route.prefix || "/sentient";
-        history.replaceState(history.state, "", view === "settings" ? `${base}/settings` : base);
+        history.replaceState(history.state, "", view === "overview" ? base : `${base}/${view}`);
       }
       if (view === "settings") this._openSettings();
+      else if (view === "timeline") this._openTimeline();
       else this._render();
     }
 
@@ -574,6 +583,51 @@
       }
     }
 
+
+    // ---------- timeline ----------
+    async _openTimeline() {
+      if (!this._tlSub && this._hass.connection) {
+        this._tlSub = this._hass.connection.subscribeEvents((ev) => {
+          if (!this._tlItems) return;
+          this._tlItems.unshift(ev.data);
+          if (this._view === "timeline") this._drawTimeline();
+        }, "sentient_timeline");
+      }
+      try { this._tlItems = (await this._hass.callWS({ type: "sentient/timeline", hours: 72, limit: 400 })).items; }
+      catch (e) { this._tlItems = []; }
+      this._drawTimeline();
+    }
+
+    _drawTimeline() {
+      const KIND = {
+        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], noticed: ["mdi:radar", "NOTICED"],
+        visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"],
+      };
+      const want = this._tlKind || "all";
+      const items = (this._tlItems || []).filter((i) => want === "all" || i.kind === want);
+      const counts = {};
+      (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
+      this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
+        .map(([k, label, n]) => `<button class="${k === want ? "on" : ""}" data-act="tlkind" data-id="${k}">${label} <b>${n}</b></button>`).join("");
+      this._$("tlcount").textContent = "LAST 3 DAYS";
+      const dayName = (d) => {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const that = new Date(d); that.setHours(0, 0, 0, 0);
+        const diff = Math.round((today - that) / 864e5);
+        return diff === 0 ? "TODAY" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+      };
+      let last = "", html = "";
+      for (const i of items) {
+        const d = dayName(i.time);
+        if (d !== last) { html += `<div class="day">${d}</div>`; last = d; }
+        const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
+        html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${icon}"></ha-icon></span>
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${label}</s></div>`;
+      }
+      this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
+    }
+
     // ---------- events ----------
     _click(ev) {
       const el = ev.target.closest("[data-act]");
@@ -594,6 +648,7 @@
       else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) this._draft_box = null; this._drawSpots(); }
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
+      else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
         this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
         this._openMotionForm({});
@@ -852,9 +907,22 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tg i{position:absolute;inset:0;border-radius:9px;background:rgba(150,220,235,.2);transition:.2s;pointer-events:none}
 .tg i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#9bb;transition:.2s}
 .tg input:checked+i{background:rgba(0,255,247,.35)} .tg input:checked+i::after{left:18px;background:#00fff7;box-shadow:0 0 6px #00fff7}
+.tlp{max-width:1100px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filters button{font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:5px 10px;border-radius:10px;color:rgba(150,220,235,.7);border:1px solid rgba(0,255,247,.18)}
+.filters button b{font-weight:700;color:#7fefff;margin-left:4px} .filters button.on{color:#041016;background:#00fff7;border-color:#00fff7} .filters button.on b{color:#041016}
+.day{font-size:10px;font-weight:700;letter-spacing:.3em;color:#00fff7;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(0,255,247,.18)}
+.tli{display:grid;grid-template-columns:48px 30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 4px;position:relative}
+.tli .tm{font-size:11px;font-weight:700;color:rgba(150,220,235,.7);text-align:right}
+.tli .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,255,247,.35);background:rgba(0,255,247,.06)}
+.tli .dot ha-icon{--mdc-icon-size:15px;color:#00fff7}
+.tli .tx{min-width:0} .tli .tx b{display:block;font-weight:400;font-size:13px;color:#e6f5fa} .tli .tx i{display:block;font-style:normal;font-size:11px;color:rgba(150,220,235,.6);margin-top:1px}
+.tli s{text-decoration:none;font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:8px;color:#7fefff;border:1px solid rgba(0,255,247,.3)}
+.tli.k-held,.tli.k-noticed{opacity:.65} .tli.k-health .dot{border-color:rgba(255,190,85,.5)} .tli.k-health .dot ha-icon{color:#ffbe55}
+.tli.k-visitor .dot{border-color:rgba(61,255,168,.5)} .tli.k-visitor .dot ha-icon{color:#3dffa8} .tli.k-light .dot ha-icon{color:#ffd76a}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
-@media (max-width: 720px){ .page{padding:12px} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
+@media (max-width: 720px){ .page{padding:12px} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
   .set{grid-template-columns:1fr} .side{position:static;flex-direction:row;overflow-x:auto} .sh{display:none} .nav span{display:none} .tabs span{display:none} }
 `;
 

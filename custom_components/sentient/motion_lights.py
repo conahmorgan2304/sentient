@@ -34,6 +34,7 @@ STORAGE_VERSION = 1
 DEFAULT_NIGHT_START = "23:00"
 DEFAULT_NIGHT_END = "06:00"
 EVENT_MOTION_LIGHTS = f"{DOMAIN}_motion_lights"
+EVENT_MOTION_LIGHT = f"{DOMAIN}_motion_light"
 
 
 @dataclass
@@ -226,6 +227,10 @@ class MotionLights:
     def _note(self, rule: MotionRule, what: str) -> None:
         rule.last, rule.last_time = what, dt_util.utcnow().isoformat()
         self._save()
+        st = self.hass.states.get(rule.light)
+        self.hass.bus.async_fire(
+            EVENT_MOTION_LIGHT, {"light": rule.light, "name": st.name if st else rule.light, "what": what}
+        )
 
     def _motion_now(self, rule: MotionRule) -> bool:
         return any((st := self.hass.states.get(e)) is not None and st.state == STATE_ON for e in rule.motion)

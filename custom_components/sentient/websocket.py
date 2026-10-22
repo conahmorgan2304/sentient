@@ -153,6 +153,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_forget_spot)
     websocket_api.async_register_command(hass, ws_look)
     websocket_api.async_register_command(hass, ws_motion_list)
+    websocket_api.async_register_command(hass, ws_timeline)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
     websocket_api.async_register_command(hass, ws_motion_night)
@@ -422,3 +423,17 @@ def ws_motion_night(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         return
     ml.set_night(msg["start"], msg["end"])
     connection.send_result(msg["id"], ml.listing())
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/timeline", vol.Optional("hours", default=48): vol.Coerce(float),
+     vol.Optional("kinds"): [str], vol.Optional("limit", default=300): int}
+)
+@callback
+def ws_timeline(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    items = entry.runtime_data.timeline.since(msg["hours"], msg.get("kinds"), msg["limit"])
+    connection.send_result(msg["id"], {"items": items})
