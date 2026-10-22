@@ -25,6 +25,7 @@ from .const import (
     CONF_NOTIFY_TARGETS,
     CONF_CHIME,
     CONF_DIGEST_TIME,
+    CONF_MORNING_BRIEFING,
     CONF_WELCOME,
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
@@ -92,7 +93,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,
-        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_DIGEST_TIME,
+        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_SUGGEST_ROUTINES, CONF_WELCOME, CONF_WELCOME_PEOPLE,

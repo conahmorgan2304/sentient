@@ -29,6 +29,7 @@ from .const import (
     CONF_BRIEFING_SYSTEM,
     CONF_BRIEFING_TIME,
     CONF_DIGEST_TIME,
+    CONF_MORNING_BRIEFING,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
     CONF_BRIEFINGS,
@@ -200,6 +201,7 @@ class Upkeep:
 
     @callback
     def async_start(self) -> None:
+        self._started = dt_util.utcnow()
         # Sundays at 03:45
         self._unsubs = [
             async_track_time_change(self.hass, self._weekly, hour=3, minute=45, second=0),
@@ -275,10 +277,25 @@ class Upkeep:
     @callback
     def _maybe_briefing(self, rt, now: datetime) -> None:
         """The optional daily briefing: only if someone's about and it isn't quiet hours."""
-        at = rt.options.get(CONF_BRIEFING_TIME)
-        if not at or not rt.options.get(CONF_BRIEFINGS, True):
+        if not rt.options.get(CONF_BRIEFINGS, True):
             return
         local = dt_util.as_local(now)
+        if (
+            rt.options.get(CONF_MORNING_BRIEFING)
+            and getattr(self, "_morning_day", None) != local.date().isoformat()
+            and 5 <= local.hour < 12
+            and dt_util.utcnow() - getattr(self, "_started", dt_util.utcnow()) > timedelta(minutes=10)
+            and not rt.speech.quiet_now()
+            and rt.tracker is not None
+            and rt.tracker.best_area() is not None
+        ):
+            # the first sign of someone up and about after quiet hours
+            self._morning_day = local.date().isoformat()
+            self.hass.async_create_background_task(self._async_scheduled(), "sentient_morning_briefing")
+            return
+        at = rt.options.get(CONF_BRIEFING_TIME)
+        if not at:
+            return
         if local.strftime("%H:%M") != str(at)[:5]:
             return
         if rt.speech.quiet_now() or (rt.tracker is not None and rt.tracker.best_area() is None):
