@@ -8,7 +8,7 @@ Sentient gives your home one shared brain. Every voice assistant and automation 
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
-> Status: early development (v0.1). Stage 1 of the roadmap is in.
+> **Status: beta.** In daily use in one house; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
 
 ## What it does today
 
@@ -68,8 +68,16 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 | Service | What it does |
 |---|---|
 | `sentient.say` | Speak through the house. `priority`: `low` never interrupts, `urgent` ignores quiet hours. `speaker`: a room name, speaker name or entity id; leave empty to follow the person. Returns what happened. |
-| `sentient.remember` | Add a memory. |
-| `sentient.forget` | Remove a memory by id or by matching text. |
+| `sentient.ask` | Ask out loud and open the mic for the answer. |
+| `sentient.remember` / `sentient.forget` | Add or remove a memory. |
+| `sentient.watch` / `sentient.cancel_watch` / `sentient.remind` | Watches and spoken reminders. |
+| `sentient.briefing` | Speak a briefing, or return its facts. |
+| `sentient.run_routine` | Run a named routine. |
+| `sentient.hush` | Stop everything but urgent messages for a while. |
+| `sentient.learn` / `sentient.adopt_routine` / `sentient.forget_routine` | Re-learn now; let the house do a learned routine; delete one for good. |
+| `sentient.weekly_report` / `sentient.tidy_memories` | The weekly report; tidy memories now. |
+
+Every service is also listed, with its fields, under Developer tools → Actions.
 
 ## Roadmap
 
