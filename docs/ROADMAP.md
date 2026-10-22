@@ -59,3 +59,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Energy on/off and cost; routine buttons on the overview (0.28.1)
 - [x] Security check (tool, card, briefing, routine check) and scenes by description (0.29.0)
 - [x] Left-open nudges and a leaving check (0.30.0)
+- [x] Safety alerts: alarm triggered, tamper, extra entities, test button (0.30.1)

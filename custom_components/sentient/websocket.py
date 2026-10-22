@@ -37,6 +37,7 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_CRITICAL_IGNORE,
+    CONF_CRITICAL_EXTRA,
     CONF_WELCOME_PEOPLE,
     CONF_NOTIFY_WHEN,
     CONF_ALL_OCCUPIED,
@@ -106,7 +107,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN,
     ]),
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
-        CONF_CRITICAL, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
+        CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,
@@ -189,6 +190,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_energy)
     websocket_api.async_register_command(hass, ws_security)
+    websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -600,3 +602,14 @@ def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .security import check
 
     connection.send_result(msg["id"], check(hass))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/critical/test"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_critical_test(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], await entry.runtime_data.critical.async_test())

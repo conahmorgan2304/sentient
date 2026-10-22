@@ -34,6 +34,7 @@ CONF_LEFT_OPEN_IGNORE = "left_open_ignore"
 CONF_LEAVING_CHECK = "leaving_check"
 CONF_ENERGY_PRICE = "energy_price"
 CONF_CRITICAL_IGNORE = "critical_ignore"
+CONF_CRITICAL_EXTRA = "critical_extra"
 CONF_WELCOME_PEOPLE = "welcome_people"
 DEFAULT_CHIME = True
 CONF_NOTIFY_WHEN = "notify_when"

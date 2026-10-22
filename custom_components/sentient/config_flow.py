@@ -61,6 +61,7 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_CRITICAL_IGNORE,
+    CONF_CRITICAL_EXTRA,
     CONF_WELCOME_PEOPLE,
     DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
@@ -130,8 +131,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="p/kWh", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Optional(CONF_CRITICAL_EXTRA, **d(CONF_CRITICAL_EXTRA, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["binary_sensor", "input_boolean"], multiple=True)
+            ),
             vol.Optional(CONF_CRITICAL_IGNORE, **d(CONF_CRITICAL_IGNORE, [])): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+                selector.EntitySelectorConfig(domain=["binary_sensor", "alarm_control_panel"], multiple=True)
             ),
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),

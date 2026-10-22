@@ -88,3 +88,16 @@ async def test_smoke_alert_everywhere_and_repeats(hass: HomeAssistant, freezer) 
     await hass.async_block_till_done()
     assert len(said) == 2
     assert entry.runtime_data.timeline.items[0]["text"] == "Kitchen smoke has cleared"
+
+
+async def test_alarm_triggered_and_extra(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, {"critical_extra": ["input_boolean.panic"]})
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("alarm_control_panel.house", "armed_away", {"friendly_name": "House alarm"})
+    hass.states.async_set("input_boolean.panic", "off", {"friendly_name": "Panic button"})
+    await hass.async_block_till_done()
+    hass.states.async_set("alarm_control_panel.house", "triggered", {"friendly_name": "House alarm"})
+    hass.states.async_set("input_boolean.panic", "on", {"friendly_name": "Panic button"})
+    await hass.async_block_till_done()
+    msgs = [c.data["message"] for c in said]
+    assert "The house alarm has gone off!" in msgs and "Alert: Panic button!" in msgs
