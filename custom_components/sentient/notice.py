@@ -128,6 +128,8 @@ class Noticer:
         new = event.data["new_state"]
         if new is None or new.entity_id not in self.entities or self.per_hour <= 0:
             return
+        if self.speech.mutes is not None and self.speech.mutes.entity_muted(new.entity_id):
+            return
         old = event.data["old_state"]
         if old is None or old.state in _IGNORED or new.state in _IGNORED or old.state == new.state:
             return  # appearing at start-up, coming back from unavailable, or attribute-only

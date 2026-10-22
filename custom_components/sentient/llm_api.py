@@ -493,6 +493,40 @@ class QuietTool(_Tool):
         return out or {"hushed": entry.runtime_data.speech.hushed(), "guest_mode": entry.runtime_data.speech.guest_mode}
 
 
+class ShushTool(_Tool):
+    name = "sentient_shush"
+    description = (
+        "Stop the house mentioning something: 'stop telling me about the washing machine' (what='washing "
+        "machine' or its entity id), optionally for some hours ('for tonight' ≈ 12). undo=true lets it talk "
+        "about it again (no 'what' clears every shush). No arguments lists what's shushed. Urgent and "
+        "safety alerts always get through."
+    )
+    parameters = vol.Schema(
+        {vol.Optional("what"): cv.string, vol.Optional("hours"): vol.Coerce(float), vol.Optional("undo"): cv.boolean}
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        if args.get("undo"):
+            removed = rt.mutes.remove(args.get("what"))
+            rt.timeline.add("mode", f"Unshushed: {args.get('what') or 'everything'}")
+            return {"unshushed": removed}
+        if not args.get("what"):
+            return {"shushed": rt.mutes.listing()}
+        from .watches import resolve_entity
+
+        target = resolve_entity(hass, args["what"]) or args["what"]
+        mute = rt.mutes.add(target, args.get("hours"))
+        name = hass.states.get(target).name if hass.states.get(target) else target
+        rt.timeline.add("mode", f"Shushed: {name}", f"for {args['hours']:g} hours" if args.get("hours") else "until unshushed")
+        return {"shushed": name, "until": mute["until"]}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -506,7 +540,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

@@ -236,6 +236,7 @@
       this._loadMemories();
       this._loadSpots();
       this._loadMotion();
+      this._loadMutes(true);
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -254,6 +255,7 @@
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
       this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + item("memories", "mdi:brain", "Memories", count !== "" ? `${count} remembered` : "")
         + item("spots", "mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into")
+        + item("mutes", "mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention")
         + item("motion", "mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
@@ -274,6 +276,7 @@
       if (this._group === "memories") { this._form = null; this._drawMemories(); return; }
       if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
       if (this._group === "motion") { this._form = null; this._drawMotion(); return; }
+      if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -459,6 +462,21 @@
     }
 
 
+    // ---------- shushed ----------
+    async _loadMutes(quiet, extra) {
+      try { this._mutes = (await this._hass.callWS({ type: "sentient/mutes", ...(extra || {}) })).mutes; } catch (e) { this._mutes = []; }
+      if (this._view === "settings") { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
+    }
+
+    _drawMutes() {
+      const rows = (this._mutes || []).map((m) => `<div class="r"><ha-icon icon="${m.kind === "entity" ? "mdi:volume-off" : "mdi:text-box-remove-outline"}"></ha-icon>
+          <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSHUSHED"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SHUSHED</div>
+          <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
+        ${rows || '<div class="e">NOTHING SHUSHED</div>'}
+        ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}`;
+    }
+
     // ---------- motion lights ----------
     async _loadMotion() {
       try { this._ml = await this._hass.callWS({ type: "sentient/motion_lights" }); } catch (e) { this._ml = { rules: [] }; }
@@ -623,7 +641,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       this._$("tldig").innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
@@ -678,6 +696,8 @@
         this._hass.callWS({ type: "sentient/digest", hours: 24 }).catch((e) => window.alert(e.message || e))
           .finally(() => { this._digBusy = false; this._drawTimeline(); });
       }
+      else if (act === "unmute") this._loadMutes(false, { remove: id });
+      else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
         this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
@@ -949,7 +969,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tli .tx{min-width:0} .tli .tx b{display:block;font-weight:400;font-size:13px;color:#e6f5fa} .tli .tx i{display:block;font-style:normal;font-size:11px;color:rgba(150,220,235,.6);margin-top:1px}
 .tli s{text-decoration:none;font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:8px;color:#7fefff;border:1px solid rgba(0,255,247,.3)}
 .tli.k-held,.tli.k-noticed{opacity:.65} .tli.k-health .dot{border-color:rgba(255,190,85,.5)} .tli.k-health .dot ha-icon{color:#ffbe55}
-.tli.k-visitor .dot{border-color:rgba(61,255,168,.5)} .tli.k-visitor .dot ha-icon{color:#3dffa8} .tli.k-light .dot ha-icon{color:#ffd76a}
+.tli.k-visitor .dot{border-color:rgba(61,255,168,.5)} .tli.k-visitor .dot ha-icon{color:#3dffa8} .tli.k-light .dot ha-icon{color:#ffd76a} .tli.k-critical .dot{border-color:#ff5a78;background:rgba(255,80,110,.15)} .tli.k-critical .dot ha-icon{color:#ff5a78}
 .modes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .mode{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:5px 11px;border-radius:12px;color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.25)}
 .mode ha-icon{--mdc-icon-size:14px} .mode.lit{color:#00fff7;border-color:rgba(0,255,247,.55)} .mode.on{color:#041016;background:#ffbe55;border-color:#ffbe55;box-shadow:0 0 12px rgba(255,190,85,.45)}

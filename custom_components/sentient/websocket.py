@@ -26,6 +26,11 @@ from .const import (
     CONF_CHIME,
     CONF_DIGEST_TIME,
     CONF_WELCOME,
+    CONF_SPEAK_VOLUME,
+    CONF_NIGHT_VOLUME,
+    CONF_DUCK_MEDIA,
+    CONF_CRITICAL,
+    CONF_CRITICAL_IGNORE,
     CONF_WELCOME_PEOPLE,
     CONF_NOTIFY_WHEN,
     CONF_ALL_OCCUPIED,
@@ -72,7 +77,8 @@ from .const import (
 # (id, title, icon, blurb, keys) — the order the Settings tab shows them in
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
-        CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_ALL_OCCUPIED,
+        CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
+        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALL_OCCUPIED,
         CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down and how rooms are worked out.", [
@@ -92,6 +98,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN,
+    ]),
+    ("safety", "Safety alerts", "mdi:fire-alert", "Smoke, CO, gas and leaks — always said everywhere.", [
+        CONF_CRITICAL, CONF_CRITICAL_IGNORE,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
         CONF_BATTERY_THRESHOLD, CONF_HEALTH_IGNORE,
@@ -164,6 +173,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_motion_list)
     websocket_api.async_register_command(hass, ws_timeline)
     websocket_api.async_register_command(hass, ws_digest)
+    websocket_api.async_register_command(hass, ws_mutes)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
     websocket_api.async_register_command(hass, ws_motion_night)
@@ -462,3 +472,18 @@ async def ws_digest(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         connection.send_error(msg["id"], "failed", str(err))
         return
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/mutes", vol.Optional("remove"): str, vol.Optional("clear"): bool})
+@callback
+def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    mutes = entry.runtime_data.mutes
+    if msg.get("clear"):
+        mutes.remove(None)
+    elif msg.get("remove"):
+        mutes.remove(msg["remove"])
+    connection.send_result(msg["id"], {"mutes": mutes.listing()})

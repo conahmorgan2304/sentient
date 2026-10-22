@@ -50,6 +50,11 @@ from .const import (
     CONF_CHIME,
     CONF_DIGEST_TIME,
     CONF_WELCOME,
+    CONF_SPEAK_VOLUME,
+    CONF_NIGHT_VOLUME,
+    CONF_DUCK_MEDIA,
+    CONF_CRITICAL,
+    CONF_CRITICAL_IGNORE,
     CONF_WELCOME_PEOPLE,
     DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
@@ -100,6 +105,17 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="conversation")
             ),
             vol.Required(CONF_CHIME, **d(CONF_CHIME, DEFAULT_CHIME)): selector.BooleanSelector(),
+            vol.Optional(CONF_SPEAK_VOLUME, **d(CONF_SPEAK_VOLUME)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.SLIDER)
+            ),
+            vol.Optional(CONF_NIGHT_VOLUME, **d(CONF_NIGHT_VOLUME)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.SLIDER)
+            ),
+            vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
+            vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_CRITICAL_IGNORE, **d(CONF_CRITICAL_IGNORE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),
             vol.Required(CONF_QUIET_END, **d(CONF_QUIET_END, DEFAULT_QUIET_END)): selector.TimeSelector(),

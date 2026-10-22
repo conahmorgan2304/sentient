@@ -24,7 +24,9 @@ _REPEAT = timedelta(minutes=10)
 def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
     """The notification title for a timeline item, or None if it shouldn't be sent."""
     kind = item.get("kind")
-    if kind == "said" and "urgent" in kinds and item.get("priority") == "urgent":
+    if kind == "critical" and "critical" in kinds:
+        return "ALERT"
+    if kind == "said" and "urgent" in kinds and item.get("priority") == "urgent" and item.get("source") != "critical":
         return "Announcement"
     if kind == "held":
         reason = str(item.get("reason") or "")

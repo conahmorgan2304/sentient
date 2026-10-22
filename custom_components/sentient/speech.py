@@ -42,10 +42,14 @@ from .const import (
     EVENT_HELD,
     EVENT_SPOKE,
     CONF_CHIME,
+    CONF_SPEAK_VOLUME,
+    CONF_NIGHT_VOLUME,
+    CONF_DUCK_MEDIA,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
 )
+from .delivery import delivered
 from .presence import ActivityTracker, area_of
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,12 +125,23 @@ class SpeechRouter:
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
-        self.guest_mode = False  # visitors in: no remarks or offers, keep personal things private
+        self.guest_mode = False
+        self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
 
     # ----- configuration helpers -------------------------------------------------
     @property
     def speakers(self) -> list[str]:
         return list(self.options.get(CONF_SPEAKERS) or [])
+
+    def volume_now(self) -> float | None:
+        """Speaker volume for speaking now (0..1), or None to leave it alone."""
+        key = CONF_NIGHT_VOLUME if self.quiet_hours_now() and self.options.get(CONF_NIGHT_VOLUME) else CONF_SPEAK_VOLUME
+        value = self.options.get(key)
+        return float(value) / 100 if value else None
+
+    @property
+    def duck_level(self) -> float | None:
+        return 0.15 if self.options.get(CONF_DUCK_MEDIA, True) else None
 
     @property
     def chime(self) -> bool:
@@ -199,10 +214,11 @@ class SpeechRouter:
     def find_speaker(self, name: str) -> str | None:
         """Match an entity id, area name or speaker name to a configured speaker."""
         needle = name.strip().lower()
-        if name in self.speakers:
+        every = self.speakers + [s for s in self.options.get(CONF_FALLBACK_SPEAKERS) or [] if s not in self.speakers]
+        if name in every:
             return name
         areas = ar.async_get(self.hass)
-        for speaker in self.speakers:
+        for speaker in every:
             area_id = self._area_of(speaker)
             area = areas.async_get_area(area_id) if area_id else None
             state = self.hass.states.get(speaker)
@@ -248,6 +264,8 @@ class SpeechRouter:
         if not text:
             return self._held("empty", text, source)
         if priority != PRIORITY_URGENT:
+            if self.mutes is not None and (muted := self.mutes.text_muted(text)):
+                return self._held(f"muted:{muted}", text, source)
             if self.hushed():
                 return self._held("hushed", text, source)
             if self.quiet_now():
@@ -260,7 +278,7 @@ class SpeechRouter:
                 if any(dt_util.utcnow() - t < timedelta(seconds=60) for t in self._recent.values()):
                     return self._held("busy", text, source)
         last = self._recent.get(text.lower())
-        if last and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
+        if source != "critical" and last and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
             return self._held("duplicate", text, source)
         return None
 
@@ -287,13 +305,14 @@ class SpeechRouter:
         async with self._lock:
             await self._wait_idle(speakers)
             self._remember_said(text)
-            await self.hass.services.async_call(
-                "assist_satellite",
-                "announce",
-                {"message": text, "preannounce": self.chime},
-                target={"entity_id": speakers},
-                blocking=True,
-            )
+            async with delivered(self.hass, speakers, self.volume_now(), self.duck_level):
+                await self.hass.services.async_call(
+                    "assist_satellite",
+                    "announce",
+                    {"message": text, "preannounce": self.chime},
+                    target={"entity_id": speakers},
+                    blocking=True,
+                )
         self.hass.bus.async_fire(
             EVENT_SPOKE, {"message": text, "speakers": speakers, "priority": priority, "source": source}
         )

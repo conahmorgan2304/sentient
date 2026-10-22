@@ -122,7 +122,12 @@
           "notify_when": "Send to phones",
           "chime": "Chime before speaking",
           "welcome_home": "Welcome people home",
-          "welcome_people": "People to welcome"
+          "welcome_people": "People to welcome",
+          "speak_volume": "Speaking volume",
+          "night_volume": "Speaking volume in quiet hours",
+          "duck_media": "Turn music and TV down while speaking",
+          "critical_alerts": "Safety alerts",
+          "critical_ignore": "Ignore these safety sensors"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -152,7 +157,11 @@
           "notify_when": "Each kind is sent at most once in ten minutes.",
           "chime": "Off: announcements and questions start straight away, without the speaker's chime.",
           "welcome_home": "When someone gets back after 20 minutes or more, say \"Welcome back\" in the room they're in — plus what's worth knowing from while they were out (visitors, things that finished, problems). Never in quiet hours, hush or guest mode.",
-          "welcome_people": "Empty means everyone."
+          "welcome_people": "Empty means everyone.",
+          "speak_volume": "Optional: the speaker's volume while Sentient talks, put back afterwards. Empty leaves it alone.",
+          "night_volume": "Optional: a quieter level for anything said in quiet hours (urgent messages only).",
+          "duck_media": "Anything playing in the same room is turned down while Sentient talks, then turned back up.",
+          "critical_alerts": "Smoke, carbon monoxide, gas and water-leak sensors are found automatically. Said on every speaker, through quiet hours, hush and guest mode, repeated twice while still on, and sent to phones."
         }
       },
       "memories": {
@@ -279,7 +288,8 @@
         "visitors": "Doorbell visitors and parcels",
         "watches": "Watches and reminders going off",
         "health": "House health problems",
-        "digest": "The daily digest"
+        "digest": "The daily digest",
+        "critical": "Safety alerts (smoke, CO, gas, leaks)"
       }
     }
   },
