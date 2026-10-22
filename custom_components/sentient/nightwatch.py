@@ -42,6 +42,7 @@ NEAR_MIN = 45  # an opening within this many minutes of the same time counts as 
 RARE_SHARE = 0.1  # opened at this time on fewer than 10% of days...
 RARE_COUNT = 1  # ...and no more than once
 INSIDE_BEFORE = timedelta(minutes=10)
+INSIDE_MOVES = 2  # separate movements inside in that time
 REPEAT = timedelta(minutes=10)
 OPEN_CLASSES = {"door", "window", "garage_door", "opening", "gate"}
 
@@ -136,16 +137,20 @@ class NightWatch:
 
     # ----- deciding -----------------------------------------------------------------
     def someone_inside(self, before: datetime) -> str | None:
-        """An inside sensor that saw real movement in the last few minutes (someone up and about)."""
+        """Someone up and about inside in the last few minutes — more than a single passing blip
+        (a cat crossing one sensor isn't someone getting up to leave)."""
         tracker = self._rt().tracker
-        for entity_id in inside_sensors(self.hass, self.options):
-            st = self.hass.states.get(entity_id)
-            if st is None:
-                continue
-            last = tracker.last_active(entity_id) if tracker is not None else None
-            if st.state == "on" or (last is not None and before - last <= INSIDE_BEFORE):
+        if tracker is None:
+            return None
+        sensors = inside_sensors(self.hass, self.options)
+        moves = tracker.movements_since(sensors, before - INSIDE_BEFORE)
+        if moves < INSIDE_MOVES:
+            return None
+        for entity_id in sensors:
+            last = tracker.last_active(entity_id)
+            if last is not None and before - last <= INSIDE_BEFORE and (st := self.hass.states.get(entity_id)):
                 return st.name
-        return None
+        return "inside"
 
     def judge(self, entity_id: str, when: datetime) -> dict[str, Any]:
         rt = self._rt()

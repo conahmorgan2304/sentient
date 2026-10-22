@@ -96,20 +96,33 @@ def comfort_target(states: list[State]) -> float | None:
     return max(held, key=held.get) if held else None
 
 
+UP_EVENTS = 3  # movements...
+UP_ROOMS = 2  # ...in at least this many sensors...
+UP_SPAN = timedelta(minutes=15)  # ...within this long: people up, not a cat or someone turning over
+
+
 def usual_wake(sensors: dict[str, list[State]]) -> dict[str, int | None]:
-    """Median minute-of-day of the first movement inside, weekdays and weekends."""
-    first: dict[Any, int] = {}
-    for states in sensors.values():
+    """Median time the house gets going in the morning, weekdays and weekends.
+
+    The first moment there are several movements in more than one place within a quarter of an
+    hour — a single blip in the night (a pet, someone turning over) doesn't count.
+    """
+    by_day: dict[Any, list[tuple[datetime, str]]] = {}
+    for entity_id, states in sensors.items():
         for st in states:
             if st.state != "on":
                 continue
             local = dt_util.as_local(st.last_changed)
-            if not WAKE_FROM <= local.time() < WAKE_UNTIL:
-                continue
-            minute = local.hour * 60 + local.minute
-            day = local.date()
-            if day not in first or minute < first[day]:
-                first[day] = minute
+            if WAKE_FROM <= local.time() < WAKE_UNTIL:
+                by_day.setdefault(local.date(), []).append((local, entity_id))
+    first: dict[Any, int] = {}
+    for day, events in by_day.items():
+        events.sort()
+        for i, (t, _e) in enumerate(events):
+            burst = [e for (u, e) in events[i:] if u - t <= UP_SPAN]
+            if len(burst) >= UP_EVENTS and len(set(burst)) >= UP_ROOMS:
+                first[day] = t.hour * 60 + t.minute
+                break
     out: dict[str, int | None] = {}
     for label, keep in (("weekdays", lambda d: d.weekday() < 5), ("weekends", lambda d: d.weekday() >= 5)):
         mins = [m for d, m in first.items() if keep(d)]

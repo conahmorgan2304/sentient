@@ -40,7 +40,13 @@ def test_usual_wake() -> None:
         minute = 6 * 60 + 35 if d.weekday() < 5 else 8 * 60 + 10
         when = d.replace(hour=minute // 60, minute=minute % 60)
         sensors["binary_sensor.kitchen"] += [State("binary_sensor.kitchen", "on", last_changed=when),
-                                            State("binary_sensor.kitchen", "off", last_changed=when + timedelta(minutes=2))]
+                                            State("binary_sensor.kitchen", "off", last_changed=when + timedelta(minutes=2)),
+                                            State("binary_sensor.kitchen", "on", last_changed=when + timedelta(minutes=6))]
+        sensors.setdefault("binary_sensor.landing", []).append(
+            State("binary_sensor.landing", "on", last_changed=when + timedelta(minutes=3)))
+        # a cat at 4:40 every night: one blip, not people up
+        cat = d.replace(hour=4, minute=40)
+        sensors["binary_sensor.kitchen"].insert(0, State("binary_sensor.kitchen", "on", last_changed=cat))
     wake = usual_wake(sensors)
     assert wake == {"weekdays": 6 * 60 + 35, "weekends": 8 * 60 + 10}
 
@@ -125,6 +131,9 @@ async def test_night_watch_alerts_only_when_nobody_was_up(hass: HomeAssistant, f
 
     # 6:50 on a weekday, someone up inside: the usual leaving for work — nothing
     hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})
+    freezer.move_to(dt_util.as_utc(_t(21, 6, 46)))
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 6, 48)))
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 6, 51)))
@@ -134,8 +143,12 @@ async def test_night_watch_alerts_only_when_nobody_was_up(hass: HomeAssistant, f
 
     # unusual time but someone was up inside first: noted, not said
     hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})
+    freezer.move_to(dt_util.as_utc(_t(21, 3, 10)))
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 3, 12)))
-    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion", "x": 1})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door"})
     await hass.async_block_till_done()
     assert len(said) == 1
@@ -150,3 +163,17 @@ async def test_weekly_report(hass: HomeAssistant) -> None:
     res = await hass.services.async_call(DOMAIN, "weekly_report", {}, blocking=True, return_response=True)
     assert "This week it spoke" in res["summary"] and res["new_memories"]
     assert entry.runtime_data.timeline.items[0]["kind"] == "learned"
+
+
+async def test_a_single_blip_inside_is_not_someone_up(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 1, 0)))
+    entry = await _setup(hass, night_watch_announce=True, night_watch_entities=["binary_sensor.back_gate"])
+    nw = entry.runtime_data.night_watch
+    nw.history, nw.days_known = {"binary_sensor.back_gate": []}, 28
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})  # the cat
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    freezer.move_to(dt_util.as_utc(_t(21, 1, 4)))
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
+    await hass.async_block_till_done()
+    assert len(said) == 1

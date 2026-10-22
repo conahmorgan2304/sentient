@@ -186,6 +186,13 @@ class ActivityTracker:
         end = intervals[-1][1]
         return dt_util.utcnow() if end is None else end
 
+    def movements_since(self, entity_ids: list[str], since: datetime) -> int:
+        """How many separate movements these sensors have seen since a time (one still going counts)."""
+        return sum(
+            1 for e in entity_ids for start, end in self._intervals.get(e, [])
+            if start >= since or end is None or end >= since
+        )
+
     def note_voice(self, area_id: str, when: datetime | None = None) -> None:
         self._voice.append((area_id, when or dt_util.utcnow()))
         self._prune()
