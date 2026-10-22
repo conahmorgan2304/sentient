@@ -178,13 +178,15 @@
           "briefing_todo": "To-do lists",
           "briefing_calendars": "Calendars",
           "briefing_system": "System sensors to report",
-          "briefing_time": "Daily briefing at"
+          "briefing_time": "Daily briefing at",
+          "digest_time": "Daily digest at"
         },
         "data_description": {
           "briefings": "Off turns off the button, the voice tool and the service.",
           "briefing_weather": "Leave empty to use the first weather entity.",
           "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
-          "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours."
+          "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
+          "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken."
         }
       }
     }
@@ -272,7 +274,8 @@
         "unheard": "Things nobody could hear (no speaker available)",
         "visitors": "Doorbell visitors and parcels",
         "watches": "Watches and reminders going off",
-        "health": "House health problems"
+        "health": "House health problems",
+        "digest": "The daily digest"
       }
     }
   },

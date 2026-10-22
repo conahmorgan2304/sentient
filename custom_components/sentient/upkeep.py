@@ -28,6 +28,7 @@ from .const import (
     CONF_BRIEFING_SECTIONS,
     CONF_BRIEFING_SYSTEM,
     CONF_BRIEFING_TIME,
+    CONF_DIGEST_TIME,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
     CONF_BRIEFINGS,
@@ -192,8 +193,44 @@ class Upkeep:
 
     @callback
     def _every_minute(self, now: datetime) -> None:
-        """The optional daily briefing: only if someone's about and it isn't quiet hours."""
         rt = self._rt()
+        local = dt_util.as_local(now)
+        if (digest_at := rt.options.get(CONF_DIGEST_TIME)) and local.strftime("%H:%M") == str(digest_at)[:5]:
+            self.hass.async_create_background_task(self._async_digest_quietly(), "sentient_digest")
+        self._maybe_briefing(rt, now)
+
+    async def _async_digest_quietly(self) -> None:
+        try:
+            await self.async_digest()
+        except HomeAssistantError as err:
+            _LOGGER.debug("Daily digest skipped: %s", err)
+
+    async def async_digest(self, hours: float = 24) -> dict[str, Any]:
+        """A few sentences on what the house did and noticed — written to the timeline."""
+        rt = self._rt()
+        items = list(reversed(rt.timeline.since(hours, ["said", "held", "visitor", "watch", "light", "health", "mode"], 150)))
+        if not items:
+            text = "A quiet day — nothing to report."
+        else:
+            lines = []
+            for i in items:
+                when = dt_util.as_local(dt_util.parse_datetime(i["time"])).strftime("%H:%M")
+                lines.append(f"{when} [{i['kind']}] {i['text']}" + (f" ({i['detail']})" if i.get("detail") else ""))
+            result = await self._ai(
+                "Sentient: daily digest",
+                "Summarise this home's log in three or four short, friendly sentences for the family: "
+                "visitors, anything that went wrong or needs doing, notable things said. Skip routine "
+                "chatter and repeated items. Plain sentences, British English, no lists, no entity IDs. "
+                "Never say or imply the house is or was empty.\n\n" + "\n".join(lines),
+                None,
+            )
+            text = str(result or "").strip() or "Nothing worth mentioning."
+        rt.timeline.add("digest", text, f"last {int(hours)} hours")
+        return {"digest": text, "entries": len(items)}
+
+    @callback
+    def _maybe_briefing(self, rt, now: datetime) -> None:
+        """The optional daily briefing: only if someone's about and it isn't quiet hours."""
         at = rt.options.get(CONF_BRIEFING_TIME)
         if not at or not rt.options.get(CONF_BRIEFINGS, True):
             return

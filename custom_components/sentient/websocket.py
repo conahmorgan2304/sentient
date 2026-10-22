@@ -24,6 +24,7 @@ from .const import (
     CONF_SECOND_OPINION,
     CONF_NOTIFY_TARGETS,
     CONF_CHIME,
+    CONF_DIGEST_TIME,
     CONF_NOTIFY_WHEN,
     CONF_ALL_OCCUPIED,
     CONF_ANNOUNCE_VISITORS,
@@ -78,7 +79,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,
-        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME,
+        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_SUGGEST_ROUTINES,
@@ -160,6 +161,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_look)
     websocket_api.async_register_command(hass, ws_motion_list)
     websocket_api.async_register_command(hass, ws_timeline)
+    websocket_api.async_register_command(hass, ws_digest)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
     websocket_api.async_register_command(hass, ws_motion_night)
@@ -443,3 +445,18 @@ def ws_timeline(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         return
     items = entry.runtime_data.timeline.since(msg["hours"], msg.get("kinds"), msg["limit"])
     connection.send_result(msg["id"], {"items": items})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/digest", vol.Optional("hours", default=24): vol.Coerce(float)})
+@websocket_api.async_response
+async def ws_digest(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    try:
+        result = await entry.runtime_data.upkeep.async_digest(msg["hours"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "failed", str(err))
+        return
+    connection.send_result(msg["id"], result)

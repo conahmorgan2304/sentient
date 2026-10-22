@@ -13,6 +13,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -27,11 +28,12 @@ from .const import (
     EVENT_WATCH_FIRED,
 )
 from .motion_lights import EVENT_MOTION_LIGHT
+from .presence import area_of
 
 STORAGE_VERSION = 1
 KEEP = 400
 EVENT_TIMELINE = f"{DOMAIN}_timeline"
-KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode"]
+KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest"]
 
 
 class Timeline:
@@ -47,8 +49,10 @@ class Timeline:
         self._unsubs: list = []
 
     async def async_start(self) -> None:
+        self._started = dt_util.utcnow()
         data = await self._store.async_load() or {}
         self.items.extend(data.get("items", [])[:KEEP])
+        self._problems = data.get("problems")
         listen = self.hass.bus.async_listen
         self._unsubs += [
             listen(EVENT_SPOKE, self._spoke),
@@ -82,16 +86,22 @@ class Timeline:
             item["detail"] = detail
         item.update({k: v for k, v in extra.items() if v is not None})
         self.items.appendleft(item)
-        self._store.async_delay_save(lambda: {"items": list(self.items)}, 10)
+        self._save()
         self.hass.bus.async_fire(EVENT_TIMELINE, item)
+
+    @callback
+    def _save(self) -> None:
+        self._store.async_delay_save(lambda: {"items": list(self.items), "problems": self._problems}, 10)
 
     @callback
     def _spoke(self, event: Event) -> None:
         d = event.data
         rooms = []
         for sp in d.get("speakers") or []:
+            area = area_of(self.hass, sp)
+            area_entry = ar.async_get(self.hass).async_get_area(area) if area else None
             st = self.hass.states.get(sp)
-            rooms.append(st.name if st else sp)
+            rooms.append(area_entry.name if area_entry else (st.name if st else sp))
         self.add("said", d.get("message", ""), ", ".join(rooms) or None, priority=d.get("priority"), source=d.get("source"))
 
     @callback
@@ -146,9 +156,13 @@ class Timeline:
     @callback
     def _health(self, event: Event) -> None:
         now: dict[str, str] = event.data.get("problems") or {}
+        if self._starting(event):
+            # just after a restart devices aren't flagged offline yet; don't log them as recovered
+            now = {**{k: v for k, v in (self._problems or {}).items() if k.startswith("offline:")}, **now}
         before, self._problems = self._problems, dict(now)
+        self._save()
         if before is None:
-            return  # first check after start: nothing to compare with
+            return  # very first check: nothing to compare with
         for key, line in now.items():
             if key not in before:
                 self.add("health", line)
@@ -156,6 +170,9 @@ class Timeline:
             if key not in now:
                 name = key.split(":", 1)[1]
                 self.add("health", f"{name} is back to normal" if key.startswith("offline") else f"{name}: battery fine again")
+
+    def _starting(self, _event: Event) -> bool:
+        return dt_util.utcnow() - self._started < timedelta(minutes=12)
 
     # ----- reading -----------------------------------------------------------------------
     def since(self, hours: float = 24, kinds: list[str] | None = None, limit: int = 100) -> list[dict[str, Any]]:

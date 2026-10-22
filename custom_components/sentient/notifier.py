@@ -36,6 +36,8 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
         return "Parcel left" if item.get("parcel") else "At the door"
     if kind == "watch" and "watches" in kinds:
         return "Watch"
+    if kind == "digest" and "digest" in kinds:
+        return "Daily digest"
     if kind == "health" and "health" in kinds:
         return "House health"
     return None

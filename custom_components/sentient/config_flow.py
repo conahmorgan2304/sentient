@@ -48,6 +48,7 @@ from .const import (
     CONF_SECOND_OPINION,
     CONF_NOTIFY_TARGETS,
     CONF_CHIME,
+    CONF_DIGEST_TIME,
     DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
     NOTIFY_KINDS,
@@ -197,6 +198,7 @@ def _briefing_schema(current: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
             ),
             vol.Optional(CONF_BRIEFING_TIME, **d(CONF_BRIEFING_TIME)): selector.TimeSelector(),
+            vol.Optional(CONF_DIGEST_TIME, **d(CONF_DIGEST_TIME)): selector.TimeSelector(),
         }
     )
 
