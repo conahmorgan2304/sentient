@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check the tag matches manifest.json
+        run: |
+          want="${GITHUB_REF_NAME#v}"
+          have=$(python3 -c "import json;print(json.load(open('custom_components/sentient/manifest.json'))['version'])")
+          [ "$want" = "$have" ] || { echo "Tag $want doesn't match manifest $have"; exit 1; }
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
