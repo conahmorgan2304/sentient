@@ -196,6 +196,7 @@ class Learner:
         self.last_run: str | None = None
         self._unsubs: list = []
         self._asked_today: str | None = None
+        self.skip = None  # callable giving entities another feature already runs
 
     # ----- lifecycle --------------------------------------------------------------
     async def async_start(self) -> None:
@@ -233,7 +234,9 @@ class Learner:
 
     @property
     def entities(self) -> list[str]:
-        return list(self.options.get(CONF_LEARN_ENTITIES) or [])
+        """Lights and switches to learn from — not ones motion lights already run."""
+        skip = self.skip() if self.skip else set()
+        return [e for e in self.options.get(CONF_LEARN_ENTITIES) or [] if e not in skip]
 
     # ----- learning ----------------------------------------------------------------
     @callback

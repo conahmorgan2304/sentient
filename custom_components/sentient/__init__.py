@@ -44,6 +44,7 @@ from .notice import Noticer
 from .upkeep import Upkeep, gather_briefing
 from .health import HouseHealth
 from .spots import Spots
+from .motion_lights import MotionLights
 from .visitors import Visitors
 from .watches import WatchManager
 from .speech import SpeechRouter
@@ -70,6 +71,7 @@ class SentientRuntime:
     visitors: Visitors
     spots: Spots
     health: HouseHealth
+    motion_lights: MotionLights
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -187,9 +189,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     visitors = Visitors(hass, entry.entry_id, options, speech, watches)
     await visitors.async_start()
     entry.async_on_unload(visitors.async_stop)
+    motion_lights = MotionLights(hass, entry.entry_id, speech)
+    await motion_lights.async_load()
+    motion_lights.async_start()
+    entry.async_on_unload(motion_lights.async_stop)
+    learner.skip = lambda: motion_lights.managed_lights
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
+        motion_lights=motion_lights,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)

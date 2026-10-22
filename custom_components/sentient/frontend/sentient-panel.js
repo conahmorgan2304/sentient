@@ -105,6 +105,12 @@
       this._$("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
+      this.shadowRoot.addEventListener("change", (ev) => {
+        const id = ev.target.dataset && ev.target.dataset.mltoggle;
+        if (!id) return;
+        const r = (this._ml.rules || []).find((x) => x.id === id);
+        if (r) this._motionDo("sentient/motion_lights/save", { rule: { id, light: r.light, motion: r.motion, enabled: ev.target.checked } }).then(() => this._drawMotion());
+      });
       this.shadowRoot.addEventListener("input", (ev) => { if (ev.target.id === "mfind") { this._find = ev.target.value; this._drawMemories(); } });
       this.shadowRoot.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape" && this._editing) { this._editing = null; this._drawMemories(); }
@@ -134,7 +140,10 @@
       const room = this._st("likely_room");
       const persona = this._attr("likely_room", "persona", "Sentient");
       R("ttl").textContent = String(persona).toUpperCase();
-      if (this._view === "settings") return;
+      if (this._view === "settings") {
+        if (this._group === "motion" && !this._mlEdit && Date.now() - (this._mlAt || 0) > 10000) { this._mlAt = Date.now(); this._loadMotion(); }
+        return;
+      }
 
       if (!room) {
         R("head").innerHTML = `<div class="e">SENTIENT IS STARTING — OR ISN'T SET UP YET</div>`;
@@ -207,6 +216,7 @@
       this._drawSide();
       this._loadMemories();
       this._loadSpots();
+      this._loadMotion();
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -225,6 +235,7 @@
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
       this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + item("memories", "mdi:brain", "Memories", count !== "" ? `${count} remembered` : "")
         + item("spots", "mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into")
+        + item("motion", "mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
@@ -243,6 +254,7 @@
     _drawBody() {
       if (this._group === "memories") { this._form = null; this._drawMemories(); return; }
       if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
+      if (this._group === "motion") { this._form = null; this._drawMotion(); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -427,6 +439,118 @@
       this._drawSide(); this._drawSpots();
     }
 
+
+    // ---------- motion lights ----------
+    async _loadMotion() {
+      try { this._ml = await this._hass.callWS({ type: "sentient/motion_lights" }); } catch (e) { this._ml = { rules: [] }; }
+      if (this._view === "settings") { this._drawSide(); if (this._group === "motion" && !this._mlEdit) this._drawMotion(); }
+    }
+
+    _name(id) { const s = this._hass.states[id]; return s ? (s.attributes.friendly_name || id) : id; }
+
+    _areaOf(id) {
+      const e = (this._hass.entities || {})[id];
+      if (!e) return null;
+      if (e.area_id) return e.area_id;
+      const d = e.device_id && (this._hass.devices || {})[e.device_id];
+      return d ? d.area_id : null;
+    }
+
+    _motionNear(light) {
+      const area = this._areaOf(light);
+      if (!area) return [];
+      return Object.keys(this._hass.states).filter((id) => id.startsWith("binary_sensor.") && this._areaOf(id) === area
+        && ["motion", "occupancy", "presence"].includes(this._hass.states[id].attributes.device_class));
+    }
+
+    _drawMotion() {
+      if (this._view !== "settings" || this._group !== "motion") return;
+      const ml = this._ml || { rules: [] };
+      const pill = (on, text, cls) => `<span class="pill ${on ? cls || "on" : ""}">${text}</span>`;
+      const rows = ml.rules.map((r) => {
+        const st = this._hass.states[r.light];
+        const lit = st && st.state === "on";
+        const chips = [
+          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORES QUIET HOURS",
+          r.only_dark ? "SUNSET → SUNRISE" : "ANY TIME",
+          `OFF AFTER ${r.off_after} MIN`,
+          r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
+        ].filter(Boolean);
+        return `<div class="card ml${r.enabled ? "" : " off"}"><div class="r"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}" class="${lit ? "lit" : ""}"></ha-icon>
+            <b>${esc(this._name(r.light))}</b><s>${r.managing ? (r.timer ? "ON · COUNTING DOWN" : "ON BY MOTION") : lit ? "ON" : "OFF"}</s>
+            <label class="tg" title="${r.enabled ? "On" : "Off"}"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label>
+            <a class="x" data-act="mledit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="mldel" data-id="${esc(r.id)}" data-text="${esc(this._name(r.light))}" title="Remove">✕</a></div>
+          <div class="mlsub"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.motion.map((m) => esc(this._name(m))).join(" · ")}</div>
+          <div class="chips left">${chips.map((c) => `<span>${c}</span>`).join("")}</div>
+          ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
+      }).join("");
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOTION LIGHTS</div>
+          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
+          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "DAYLIGHT")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
+        <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
+          <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
+          <button class="btn ghost sm" type="submit">SAVE</button></form>
+        <div class="mllist">${rows || '<div class="e">NO MOTION LIGHTS YET</div>'}</div>
+        <div id="mledit"></div>
+        <div class="bar"><span id="status"></span><button class="btn" data-act="mladd">+ ADD A MOTION LIGHT</button></div>`;
+      if (this._mlEdit) this._openMotionForm(this._mlEdit);
+    }
+
+    _openMotionForm(rule) {
+      this._mlEdit = rule;
+      const wrap = this._$("mledit");
+      if (!wrap) return;
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "EDIT" : "NEW"} MOTION LIGHT</span><i></i></div>
+        <div id="mlformwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
+      wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const LABELS = {
+        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
+        only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
+        brightness: "Brightness", night_brightness: "Late-night brightness",
+      };
+      const HELP = {
+        motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
+        respect_quiet: "Off: this light still comes on in quiet hours (handy for landings and stairs).",
+        night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
+      };
+      const schema = [
+        { name: "light", required: true, selector: { entity: { domain: ["light", "switch"] } } },
+        { name: "motion", required: true, selector: { entity: { domain: "binary_sensor", multiple: true } } },
+        { name: "enabled", selector: { boolean: {} } },
+        { name: "respect_quiet", selector: { boolean: {} } },
+        { name: "only_dark", selector: { boolean: {} } },
+        { name: "off_after", selector: { number: { min: 0.5, max: 60, step: 0.5, unit_of_measurement: "min", mode: "box" } } },
+        { name: "brightness", selector: { number: { min: 1, max: 100, unit_of_measurement: "%", mode: "slider" } } },
+        { name: "night_brightness", selector: { number: { min: 0, max: 100, unit_of_measurement: "%", mode: "slider" } } },
+      ];
+      loadForm().then((ok) => {
+        const fw = this._$("mlformwrap");
+        if (!fw || this._mlEdit !== rule) return;
+        if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
+        const form = document.createElement("ha-form");
+        form.hass = this._hass; form.schema = schema; form.data = this._mlDraft;
+        form.computeLabel = (sc) => LABELS[sc.name] || sc.name;
+        form.computeHelper = (sc) => HELP[sc.name] || "";
+        form.addEventListener("value-changed", (ev) => {
+          const v = { ...ev.detail.value };
+          if (v.light && v.light !== this._mlDraft.light && !(v.motion || []).length) v.motion = this._motionNear(v.light);
+          this._mlDraft = v; form.data = v;
+        });
+        fw.innerHTML = ""; fw.appendChild(form); this._form = form;
+      });
+    }
+
+    async _motionDo(type, data, msgEl) {
+      try {
+        this._ml = await this._hass.callWS({ type, ...data });
+        return true;
+      } catch (e) {
+        const m = this._$(msgEl || "status"); if (m) { m.textContent = e.message || String(e); m.className = "bad"; }
+        return false;
+      }
+    }
+
     // ---------- events ----------
     _click(ev) {
       const el = ev.target.closest("[data-act]");
@@ -438,7 +562,7 @@
       else if (act === "goto") { this._group = id; this._show("settings", true); }
       else if (act === "group") {
         if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
-        this._dirty = false; this._group = id; this._editing = null; this._drawSide(); this._drawBody();
+        this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._drawSide(); this._drawBody();
       } else if (act === "save") this._save();
       else if (act === "reset") this._drawBody();
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
@@ -447,6 +571,24 @@
       else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) this._draft_box = null; this._drawSpots(); }
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
+      else if (act === "mladd") {
+        this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, motion: [] };
+        this._openMotionForm({});
+      } else if (act === "mledit") {
+        const r = (this._ml.rules || []).find((x) => x.id === id);
+        if (r) { this._mlDraft = { ...r }; this._openMotionForm(r); }
+      } else if (act === "mlcancel") { this._mlEdit = null; this._form = null; this._drawMotion(); }
+      else if (act === "mlsave") {
+        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "only_dark", "off_after", "brightness", "night_brightness"];
+        const rule = {};
+        keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
+        this._motionDo("sentient/motion_lights/save", { rule }, "mlmsg").then((ok) => {
+          if (ok) { this._mlEdit = null; this._form = null; this._drawSide(); this._drawMotion(); }
+        });
+      } else if (act === "mldel") {
+        if (!window.confirm(`Stop ${text} following motion?`)) return;
+        this._motionDo("sentient/motion_lights/delete", { rule_id: id }).then(() => { this._drawSide(); this._drawMotion(); });
+      }
       else if (act === "spforget") {
         if (!window.confirm(`Forget the spot “${id}”?`)) return;
         this._hass.callWS({ type: "sentient/spots/forget", name: id }).then((r) => { this._spots = r.spots; this._drawSide(); this._drawSpots(); }, (e) => window.alert(e.message || e));
@@ -457,6 +599,11 @@
       const form = ev.target;
       if (!form.dataset || !form.dataset.form) return;
       ev.preventDefault();
+      if (form.dataset.form === "mlnight") {
+        const ok = await this._motionDo("sentient/motion_lights/night", { start: form.elements.start.value, end: form.elements.end.value });
+        if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW SAVED ✓"; st.className = "ok"; } }
+        return;
+      }
       if (form.dataset.form === "remind") {
         const message = form.elements.msg.value.trim(), when = form.elements.when.value.trim().toLowerCase();
         if (!message) return;
@@ -667,6 +814,19 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .box.new{border-style:dashed;border-color:#ffbe55;box-shadow:0 0 10px rgba(255,190,85,.5)} .box.new span{background:#ffbe55}
 .spmsg{min-height:16px;font-size:12px;color:#7fefff;margin:4px 2px} .spmsg.ans{font-size:13.5px;line-height:1.45;color:#e6f5fa}
 @media (max-width: 1100px){ .spotgrid{grid-template-columns:1fr} }
+.pill{font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:3px 8px;border-radius:9px;color:rgba(150,220,235,.5);border:1px solid rgba(150,220,235,.2)}
+.pill.on{color:#00fff7;border-color:rgba(0,255,247,.5)} .pill.warn{color:#ffbe55;border-color:rgba(255,190,85,.5)}
+.night{flex-wrap:wrap} .night span{font-size:12px;color:rgba(150,220,235,.8)} .night input[type=time]{flex:none;width:auto;background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:4px 8px;color-scheme:dark}
+.mllist{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;margin-top:6px}
+.ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55}
+.ml ha-icon.lit{color:#ffd76a;filter:drop-shadow(0 0 6px rgba(255,215,106,.7))}
+.mlsub{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(150,220,235,.75);margin:2px 0 8px} .mlsub ha-icon{--mdc-icon-size:14px;color:#5fd8e6}
+.chips.left{justify-content:flex-start}
+.mlform{margin-top:14px;border-color:rgba(0,255,247,.55)} .row.end{justify-content:flex-end;margin-top:10px} .row.end .spmsg{flex:1;color:#ff7088}
+.tg{position:relative;flex:none;width:34px;height:18px;cursor:pointer} .tg input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.tg i{position:absolute;inset:0;border-radius:9px;background:rgba(150,220,235,.2);transition:.2s;pointer-events:none}
+.tg i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#9bb;transition:.2s}
+.tg input:checked+i{background:rgba(0,255,247,.35)} .tg input:checked+i::after{left:18px;background:#00fff7;box-shadow:0 0 6px #00fff7}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}

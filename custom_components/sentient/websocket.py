@@ -152,6 +152,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_spot)
     websocket_api.async_register_command(hass, ws_forget_spot)
     websocket_api.async_register_command(hass, ws_look)
+    websocket_api.async_register_command(hass, ws_motion_list)
+    websocket_api.async_register_command(hass, ws_motion_save)
+    websocket_api.async_register_command(hass, ws_motion_delete)
+    websocket_api.async_register_command(hass, ws_motion_night)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/settings", vol.Optional("language"): str})
@@ -349,3 +353,70 @@ async def ws_look(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     await _spot_call(
         hass, connection, msg, lambda rt: rt.watches.async_look(msg["camera"], msg["question"], msg.get("spot"))
     )
+
+
+# ----- motion lights ---------------------------------------------------------------
+def _motion(hass: HomeAssistant, connection, msg: dict[str, Any]):
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return None
+    return entry.runtime_data.motion_lights
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/motion_lights"})
+@callback
+def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if (ml := _motion(hass, connection, msg)) is not None:
+        connection.send_result(msg["id"], ml.listing())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "sentient/motion_lights/save",
+        vol.Required("rule"): {
+            vol.Optional("id"): str,
+            vol.Required("light"): cv.entity_id,
+            vol.Required("motion"): vol.All(cv.ensure_list, [cv.entity_id]),
+            vol.Optional("enabled"): bool,
+            vol.Optional("respect_quiet"): bool,
+            vol.Optional("only_dark"): bool,
+            vol.Optional("off_after"): vol.Coerce(float),
+            vol.Optional("brightness"): vol.Coerce(int),
+            vol.Optional("night_brightness"): vol.Coerce(int),
+        },
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_motion_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if (ml := _motion(hass, connection, msg)) is None:
+        return
+    try:
+        ml.upsert(dict(msg["rule"]))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], ml.listing())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/motion_lights/delete", vol.Required("rule_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_motion_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if (ml := _motion(hass, connection, msg)) is None:
+        return
+    ml.remove(msg["rule_id"])
+    connection.send_result(msg["id"], ml.listing())
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/motion_lights/night", vol.Required("start"): str, vol.Required("end"): str}
+)
+@websocket_api.require_admin
+@callback
+def ws_motion_night(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if (ml := _motion(hass, connection, msg)) is None:
+        return
+    ml.set_night(msg["start"], msg["end"])
+    connection.send_result(msg["id"], ml.listing())

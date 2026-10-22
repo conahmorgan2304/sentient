@@ -45,3 +45,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Settings tab in the panel: every option plus a memory manager (0.15.0)
 - [x] Camera spots page: AI find or draw by hand, outlines on the live picture, ask a camera (0.16.0)
 - [x] Set reminders from the page (0.17.0)
+- [x] Motion lights: after dark, quiet hours per light, late-night dimming, hands off manual use (0.18.0)
