@@ -129,7 +129,10 @@
           "critical_alerts": "Safety alerts",
           "critical_ignore": "Ignore these safety sensors",
           "energy_insight": "Energy insight",
-          "energy_price": "Electricity price"
+          "energy_price": "Electricity price",
+          "left_open_minutes": "Mention doors and windows left open after",
+          "left_open_ignore": "Don't mention these",
+          "leaving_check": "Check when everyone goes out"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -165,7 +168,9 @@
           "duck_media": "Anything playing in the same room is turned down while Sentient talks, then turned back up.",
           "critical_alerts": "Smoke, carbon monoxide, gas and water-leak sensors are found automatically. Said on every speaker, through quiet hours, hush and guest mode, repeated twice while still on, and sent to phones.",
           "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
-          "energy_price": "Optional: your unit rate, to show today's cost."
+          "energy_price": "Optional: your unit rate, to show today's cost.",
+          "left_open_minutes": "Said once (then every half hour while still open), within quiet hours and shushes as usual. 0 turns it off.",
+          "leaving_check": "When the last person leaves, anything open or unlocked goes on the timeline and to phones (\"Left open\")."
         }
       },
       "memories": {
@@ -295,7 +300,8 @@
         "watches": "Watches and reminders going off",
         "health": "House health problems",
         "digest": "The daily digest",
-        "critical": "Safety alerts (smoke, CO, gas, leaks)"
+        "critical": "Safety alerts (smoke, CO, gas, leaks)",
+        "security": "Things left open when everyone goes out"
       }
     }
   },

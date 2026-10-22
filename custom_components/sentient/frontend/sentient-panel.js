@@ -792,7 +792,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       this._$("tldig").innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
@@ -1148,7 +1148,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .bar2{position:relative;height:7px;border-radius:4px;background:rgba(0,255,247,.08)} .bar2 i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,#00a8ff,#00fff7)}
 .bar2 b{position:absolute;top:-3px;width:2px;height:13px;background:rgba(255,255,255,.7);border-radius:1px}
 .en.hot .bar2 i{background:linear-gradient(90deg,#ff9a3d,#ff5a78)} .en.hot u{color:#ff7088}
-.tli.k-energy .dot ha-icon{color:#ffbe55}
+.tli.k-energy .dot ha-icon{color:#ffbe55} .tli.k-security .dot ha-icon{color:#ff7088}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:12px} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}

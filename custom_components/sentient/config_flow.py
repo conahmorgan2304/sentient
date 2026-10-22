@@ -55,6 +55,9 @@ from .const import (
     CONF_DUCK_MEDIA,
     CONF_CRITICAL,
     CONF_ENERGY,
+    CONF_LEFT_OPEN_MINUTES,
+    CONF_LEFT_OPEN_IGNORE,
+    CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_CRITICAL_IGNORE,
     CONF_WELCOME_PEOPLE,
@@ -115,6 +118,13 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
             vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
+            vol.Required(CONF_LEFT_OPEN_MINUTES, **d(CONF_LEFT_OPEN_MINUTES, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_LEFT_OPEN_IGNORE, **d(CONF_LEFT_OPEN_IGNORE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_LEAVING_CHECK, **d(CONF_LEAVING_CHECK, True)): selector.BooleanSelector(),
             vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
             vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="p/kWh", mode=selector.NumberSelectorMode.BOX)
