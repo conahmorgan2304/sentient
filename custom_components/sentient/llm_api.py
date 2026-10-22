@@ -304,7 +304,7 @@ class RoutinesTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        return {"routines": [r.summary() for r in rt.learner.routines.values()]}
+        return {"routines": [r.summary() for r in rt.learner.all()]}
 
 
 class AdoptRoutineTool(_Tool):
@@ -677,9 +677,9 @@ class SentientAPI(llm.API):
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
-        routines = sorted(rt.learner.routines.values(), key=lambda r: r.support, reverse=True)[:8]
+        routines = sorted(rt.learner.all(), key=lambda r: (r.adopted, r.support), reverse=True)[:10]
         if routines:
-            lines.append("Household routines learned from history:")
+            lines.append("Household routines and habits learned from history:")
             lines.extend(
                 f"- {r.describe()}{' (the house does this now)' if r.adopted else ''}" for r in routines
             )

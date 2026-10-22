@@ -219,7 +219,7 @@ class RoutinesSensor(_Base):
 
     @property
     def native_value(self) -> int:
-        return len(self._entry.runtime_data.learner.routines)
+        return len(self._entry.runtime_data.learner.all())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -227,7 +227,7 @@ class RoutinesSensor(_Base):
         return {
             "routines": [
                 {**r.summary(), "entity_id": r.entity_id, "offered": bool(r.suggested), "declined": r.declined}
-                for r in learner.routines.values()
+                for r in sorted(learner.all(), key=lambda r: (r.adopted, r.support), reverse=True)
             ],
             "last_learned": learner.last_run,
         }

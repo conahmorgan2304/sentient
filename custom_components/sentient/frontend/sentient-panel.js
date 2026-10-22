@@ -179,7 +179,7 @@
       // routines
       const routines = this._attr("routines", "routines", []);
       const on = routines.filter((r) => r.adopted).length;
-      R("rout").innerHTML = `<div class="card">${this._h("ROUTINES", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}</div>` +
+      R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}</div>` +
         (routines.slice(0, 8).map((r) => {
           const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";

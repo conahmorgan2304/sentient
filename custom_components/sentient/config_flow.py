@@ -36,6 +36,7 @@ from .const import (
     DEFAULT_PARCEL_ALERTS,
     CONF_LEARN_ENTITIES,
     CONF_SUGGEST_ROUTINES,
+    CONF_LINK_TRIGGERS,
     DEFAULT_SUGGEST_ROUTINES,
     CHATTINESS_LIMITS,
     CONF_CHATTINESS,
@@ -169,6 +170,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="person", multiple=True)
+            ),
+            vol.Optional(CONF_LINK_TRIGGERS, **d(CONF_LINK_TRIGGERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["binary_sensor", "media_player", "input_boolean", "switch", "light"], multiple=True)
             ),
             vol.Required(CONF_SUGGEST_ROUTINES, **d(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)): selector.BooleanSelector(),
             vol.Optional(CONF_DOOR_CAMERA, **d(CONF_DOOR_CAMERA)): selector.EntitySelector(

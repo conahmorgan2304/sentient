@@ -36,7 +36,7 @@ def export_all(hass: HomeAssistant, entry) -> dict[str, Any]:
         "shushed": [m for m in rt.mutes.items],
         "learned_choices": [
             {"id": r.id, "adopted": r.adopted, "declined": r.declined}
-            for r in rt.learner.routines.values() if r.adopted or r.declined
+            for r in rt.learner.all() if r.adopted or r.declined
         ],
         "settings": {k: v for k, v in {**entry.data, **entry.options}.items()},
     }
@@ -100,7 +100,7 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
         rt.mutes._save()
 
     for choice in data.get("learned_choices", []):
-        routine = rt.learner.routines.get(choice.get("id"))
+        routine = rt.learner.get(choice.get("id"))
         if routine is not None:
             routine.adopted = bool(choice.get("adopted"))
             routine.declined = bool(choice.get("declined"))

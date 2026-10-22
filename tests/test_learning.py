@@ -148,3 +148,87 @@ async def test_offers_once_when_someone_is_home(hass: HomeAssistant, freezer) ->
     msg = convo[0].data["start_message"]
     assert msg.startswith("I've noticed the hallway light usually goes on around 5:") and "from now on?" in msg
     assert "sentient_adopt_routine" in convo[0].data["extra_system_prompt"]
+
+
+def _door_and_light(days: int = 10, lit_days: int = 8):
+    door: list[State] = [State("binary_sensor.back_door", "off", last_changed=_local(TODAY - timedelta(days=15), 0, 0))]
+    light: list[State] = [State("light.kitchen", "off", last_changed=_local(TODAY - timedelta(days=15), 0, 0))]
+    for ago in range(days, 0, -1):
+        day = TODAY - timedelta(days=ago)
+        for h in (12, 21):
+            door.append(State("binary_sensor.back_door", "on", last_changed=_local(day, h, 0)))
+            door.append(State("binary_sensor.back_door", "off", last_changed=_local(day, h, 2)))
+        if ago <= lit_days:
+            light.append(State("light.kitchen", "on", last_changed=_local(day, 21, 0) + timedelta(seconds=30)))
+            light.append(State("light.kitchen", "off", last_changed=_local(day, 23, 30)))
+    return door, light
+
+
+def test_finds_a_link_after_dark() -> None:
+    from custom_components.sentient.learning import find_links
+
+    door, light = _door_and_light()
+    dark = lambda t: dt_util.as_local(t).hour >= 18 or dt_util.as_local(t).hour < 7  # noqa: E731
+    found = find_links(
+        {"binary_sensor.back_door": ("back door", "door", door), "light.lamp": ("lamp", None, [])},
+        {"light.kitchen": ("kitchen light", light)},
+        dark,
+        today=_local(TODAY, 12, 0),
+    )
+    assert len(found) == 1
+    link = found[0]
+    assert link.dark and link.cause_state == "on" and link.state == "on" and link.seen == 8
+    assert link.describe() == "When the back door opens after dark, the kitchen light usually goes on within a minute."
+    # without darkness it isn't reliable enough (daytime openings don't light it)
+    assert not find_links({"binary_sensor.back_door": ("back door", "door", door)},
+                          {"light.kitchen": ("kitchen light", light)}, lambda t: False, today=_local(TODAY, 12, 0))
+
+
+def test_rare_coincidence_is_not_a_link() -> None:
+    from custom_components.sentient.learning import find_links
+
+    door, light = _door_and_light(lit_days=3)
+    found = find_links({"binary_sensor.back_door": ("back door", "door", door)},
+                       {"light.kitchen": ("kitchen light", light)}, lambda t: True, today=_local(TODAY, 12, 0))
+    assert not found
+
+
+async def test_link_is_learned_offered_and_done(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_local(TODAY, 12, 0)))
+    door, light = _door_and_light()
+    hass.states.async_set("binary_sensor.back_door", "off", {"device_class": "door", "friendly_name": "Back door"})
+    hass.states.async_set("light.kitchen", "off", {"friendly_name": "Kitchen light"})
+    hass.states.async_set("assist_satellite.kitchen", "idle", {"supported_features": 3})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        "persona": "Nova", "speakers": ["assist_satellite.kitchen"], "default_speaker": "assist_satellite.kitchen",
+        "quiet_start": "00:00:00", "quiet_end": "00:00:00", "learn_entities": ["light.kitchen"],
+        "suggest_routines": False,
+    })
+    entry.add_to_hass(hass)
+    history = {"binary_sensor.back_door": door, "light.kitchen": light}
+    with patch("custom_components.sentient.learning.Learner._async_history", return_value=history), \
+         patch("custom_components.sentient.learning.Learner.is_dark", lambda self, t: dt_util.as_local(t).hour >= 18):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        learner = entry.runtime_data.learner
+        await learner.async_learn()
+        assert len(learner.links) == 1
+        link = next(iter(learner.links.values()))
+        assert learner.next_to_offer() is link
+        sensor = hass.states.get("sensor.nova_routines")
+        assert any(r.get("kind") == "link" for r in sensor.attributes["routines"])
+        ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
+        api = await llm.async_get_api(hass, "sentient", ctx)
+        assert "When the back door opens after dark" in api.api_prompt
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_adopt_routine", tool_args={"routine": link.id}))
+        assert out["house_does_it"] is True
+        turned_on = async_mock_service(hass, "light", "turn_on")
+        freezer.move_to(dt_util.as_utc(_local(TODAY, 13, 0)))
+        hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door"})
+        await hass.async_block_till_done()
+        assert not turned_on  # daytime: left alone
+        hass.states.async_set("binary_sensor.back_door", "off", {"device_class": "door"})
+        freezer.move_to(dt_util.as_utc(_local(TODAY, 21, 0)))
+        hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door"})
+        await hass.async_block_till_done()
+        assert len(turned_on) == 1

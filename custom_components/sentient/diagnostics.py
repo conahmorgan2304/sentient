@@ -27,9 +27,9 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "ai_checks_today": rt.watches.ai_checks_today,
         "noticing": [async_redact_data(d, {"changes", "message"}) for d in list(rt.noticer.decisions)[:10]],
         "routines": [
-            {"entity_id": r.entity_id, "state": r.state, "days": r.days, "support": r.support,
+            {"entity_id": r.entity_id, "state": r.state, "days": getattr(r, "days", "link"), "support": r.support,
              "adopted": r.adopted, "declined": r.declined, "offered": bool(r.suggested)}
-            for r in rt.learner.routines.values()
+            for r in rt.learner.all()
         ],
         "last_learned": rt.learner.last_run,
         "visitors_today": len(rt.visitors.today()),
