@@ -26,7 +26,15 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_COMFORT_TEMP, CONF_HEATING_ENTITIES, CONF_LEARN_ENTITIES, CONF_PREHEAT, DOMAIN
+from .const import (
+    CONF_COMFORT_TEMP,
+    CONF_HEATING_ENTITIES,
+    CONF_LEARN_ENTITIES,
+    CONF_PREHEAT,
+    CONF_WARM_BY_WEEKDAYS,
+    CONF_WARM_BY_WEEKENDS,
+    DOMAIN,
+)
 from .presence import inside_sensors
 
 if TYPE_CHECKING:
@@ -280,7 +288,12 @@ class Heating:
         return self.zones.get(entity_id, {}).get("comfort")
 
     def wake_minute(self, day: datetime) -> int | None:
-        return self.wake.get("weekdays" if day.weekday() < 5 else "weekends")
+        """When it should be warm by: the time set in the settings, else the learned getting-up time."""
+        weekday = day.weekday() < 5
+        if set_by := self.options.get(CONF_WARM_BY_WEEKDAYS if weekday else CONF_WARM_BY_WEEKENDS):
+            h, m = (int(x) for x in str(set_by).split(":")[:2])
+            return h * 60 + m
+        return self.wake.get("weekdays" if weekday else "weekends")
 
     def plan(self, entity_id: str, now: datetime | None = None) -> dict[str, Any]:
         now = dt_util.as_local(now or dt_util.now())
@@ -299,7 +312,7 @@ class Heating:
         day = now if (self.wake_minute(now) or 0) > now.hour * 60 + now.minute else now + timedelta(days=1)
         wake = self.wake_minute(day)
         if wake is not None:
-            out["people_usually_up"] = clock(wake)
+            out["warm_by"] = clock(wake)
             if rate and comfort and cur is not None and cur < comfort:
                 minutes = round((comfort - cur) / rate * 60)
                 out["needs_to_start"] = clock((wake - minutes) % 1440)
@@ -310,6 +323,10 @@ class Heating:
         return {
             "preheat": bool(self.options.get(CONF_PREHEAT)),
             "usually_up": {k: clock(v) for k, v in self.wake.items()},
+            "warm_by": {
+                "weekdays": str(self.options.get(CONF_WARM_BY_WEEKDAYS) or "")[:5] or None,
+                "weekends": str(self.options.get(CONF_WARM_BY_WEEKENDS) or "")[:5] or None,
+            },
             "zones": [self.plan(e) for e in self.entities],
             "warming_now": [self.zones_name(e) for e in self._boosted],
             "last_learned": self.last_run,

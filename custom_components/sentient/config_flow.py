@@ -12,6 +12,8 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_COMFORT_TEMP,
+    CONF_WARM_BY_WEEKDAYS,
+    CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
     CONF_INSIDE_SENSORS,
     CONF_NIGHT_WATCH,
@@ -147,6 +149,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_COMFORT_TEMP, **d(CONF_COMFORT_TEMP)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=10, max=26, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Optional(CONF_WARM_BY_WEEKDAYS, **d(CONF_WARM_BY_WEEKDAYS)): selector.TimeSelector(),
+            vol.Optional(CONF_WARM_BY_WEEKENDS, **d(CONF_WARM_BY_WEEKENDS)): selector.TimeSelector(),
             vol.Optional(CONF_INSIDE_SENSORS, **d(CONF_INSIDE_SENSORS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),

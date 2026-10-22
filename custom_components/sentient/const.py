@@ -137,6 +137,8 @@ CONF_HEATING_ENTITIES = "heating_entities"
 CONF_PREHEAT = "preheat"
 CONF_COMFORT_TEMP = "comfort_temp"
 CONF_INSIDE_SENSORS = "inside_sensors"
+CONF_WARM_BY_WEEKDAYS = "warm_by_weekdays"
+CONF_WARM_BY_WEEKENDS = "warm_by_weekends"
 
 # night watch
 CONF_NIGHT_WATCH = "night_watch"

@@ -636,16 +636,17 @@
       const zones = (h.zones || []).filter((z) => z.warms_per_hour || z.comfortable_at);
       if (!zones.length && !nw.on) { el.hidden = true; return; }
       el.hidden = false;
-      const up = h.usually_up || {};
+      const up = { ...(h.usually_up || {}) }, wb = h.warm_by || {};
+      if (wb.weekdays) up.weekdays = wb.weekdays; if (wb.weekends) up.weekends = wb.weekends;
       const upTxt = [up.weekdays && `WEEKDAYS ${up.weekdays}`, up.weekends && `WEEKENDS ${up.weekends}`].filter(Boolean).join(" · ");
       const zoneRows = zones.map((z) => `<div class="r"><ha-icon icon="mdi:radiator"></ha-icon><b>${esc(z.name)}</b>
           <u>${z.now != null ? z.now + "° NOW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "LEARNING"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
-          ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.people_usually_up)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
+          ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.warm_by)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
           <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
         + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NOTHING UNUSUAL IN THE LAST 3 DAYS</div>') : "";
-      el.innerHTML = this._h("HEATING &amp; NIGHT WATCH", upTxt ? "UP " + upTxt : "") + zoneRows + nwRows;
+      el.innerHTML = this._h("HEATING &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
 
     _security() {

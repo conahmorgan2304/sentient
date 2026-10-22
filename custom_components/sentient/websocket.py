@@ -21,6 +21,8 @@ from homeassistant.helpers.translation import async_get_translations
 from .config_flow import _briefing_schema, _speech_schema
 from .const import (
     CONF_COMFORT_TEMP,
+    CONF_WARM_BY_WEEKDAYS,
+    CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
     CONF_INSIDE_SENSORS,
     CONF_NIGHT_WATCH,
@@ -115,7 +117,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
     ]),
     ("heating", "Heating", "mdi:radiator", "What it learns about the heating, and warming up before people are up.", [
-        CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_COMFORT_TEMP,
+        CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
     ]),
     ("door", "Door & cameras", "mdi:doorbell-video", "Doorbell log, parcels, faces and camera checks.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,

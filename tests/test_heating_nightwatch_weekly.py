@@ -93,7 +93,7 @@ async def test_preheat_warms_early_then_restores_schedule(hass: HomeAssistant, f
     set_temp = async_mock_service(hass, "climate", "set_temperature")
     set_preset = async_mock_service(hass, "climate", "set_preset_mode")
     plan = heating.plan("climate.heating")
-    assert plan["needs_to_start"] == "04:40" and plan["people_usually_up"] == "06:40"
+    assert plan["needs_to_start"] == "04:40" and plan["warm_by"] == "06:40"
     for minute in (4 * 60 + 20, 4 * 60 + 36):
         when = dt_util.as_utc(_t(21, minute // 60, minute % 60).replace(second=5))
         freezer.move_to(when)
@@ -192,3 +192,14 @@ async def test_a_single_blip_inside_is_not_someone_up(hass: HomeAssistant, freez
     hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
     await hass.async_block_till_done()
     assert len(said) == 1
+
+
+async def test_warm_by_setting_beats_learned_time(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 3, 0)))
+    hass.states.async_set("climate.heating", "auto", {"current_temperature": 16.0, "temperature": 15})
+    entry = await _setup(hass, heating_entities=["climate.heating"], warm_by_weekdays="06:15:00")
+    heating = entry.runtime_data.heating
+    heating.zones = {"climate.heating": {"rate": 1.0, "episodes": 5, "comfort": 18.0}}
+    heating.wake = {"weekdays": 7 * 60 + 30}
+    plan = heating.plan("climate.heating")
+    assert plan["warm_by"] == "06:15" and plan["needs_to_start"] == "04:15"

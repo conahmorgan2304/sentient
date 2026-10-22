@@ -148,7 +148,9 @@
           "night_watch": "Night watch",
           "night_watch_entities": "Doors and gates to watch",
           "night_watch_announce": "Say alerts out loud, even in quiet hours",
-          "night_watch_speakers": "Say alerts on"
+          "night_watch_speakers": "Say alerts on",
+          "warm_by_weekdays": "Warm by (weekdays)",
+          "warm_by_weekends": "Warm by (weekends)"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -198,7 +200,9 @@
           "night_watch": "Learns when each door, gate and window normally opens. An opening at a time it never usually does, with nobody moving inside first, is an alert. If someone was up inside (leaving for work, say), it's only noted.",
           "night_watch_entities": "Leave empty for every door, window, gate and garage door sensor.",
           "night_watch_announce": "An unusual opening with nobody up is said straight away, through quiet hours, hush and guest mode — it could be someone who shouldn't be there.",
-          "night_watch_speakers": "Leave empty for every speaker."
+          "night_watch_speakers": "Leave empty for every speaker.",
+          "warm_by_weekdays": "Optional: when it should be warm on weekdays. Leave empty to use the learned getting-up time.",
+          "warm_by_weekends": "Optional: the same for Saturdays and Sundays."
         }
       },
       "memories": {
