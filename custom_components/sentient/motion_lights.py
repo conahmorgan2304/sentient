@@ -287,7 +287,7 @@ class MotionLights:
             return  # someone else's light
         if rule.only_dark and not self._dark(rule):
             return
-        if rule.respect_quiet and self.speech.quiet_now():
+        if rule.respect_quiet and self.speech.quiet_hours_now():
             self._note(rule, "stayed off: quiet hours")
             return
         late = self.late_night() and rule.night_brightness > 0
@@ -338,6 +338,6 @@ class MotionLights:
             "night_start": self.night_start,
             "night_end": self.night_end,
             "dark": self._dark(),
-            "quiet": self.speech.quiet_now(),
+            "quiet": self.speech.quiet_hours_now(),
             "late_night": self.late_night(),
         }

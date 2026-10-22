@@ -460,6 +460,39 @@ class TimelineTool(_Tool):
         }
 
 
+class QuietTool(_Tool):
+    name = "sentient_quiet"
+    description = (
+        "Hush the house ('be quiet for an hour': minutes=60, 'you can talk again': minutes=0) — it then "
+        "says nothing that isn't urgent. guests=true/false turns guest mode on or off: no remarks or "
+        "routine offers, and personal household details stay private."
+    )
+    parameters = vol.Schema({vol.Optional("minutes"): vol.Coerce(float), vol.Optional("guests"): cv.boolean})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from datetime import timedelta
+
+        from .switch import hush, set_guest_mode
+        from .watches import local_when
+
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if not entries:
+            return {"error": "Sentient is not loaded"}
+        entry, args = entries[0], tool_input.tool_args
+        out: dict[str, Any] = {}
+        if "minutes" in args:
+            minutes = max(0.0, min(720.0, float(args["minutes"])))
+            until = dt_util.utcnow() + timedelta(minutes=minutes) if minutes else None
+            hush(hass, entry, until)
+            out["hushed_until"] = local_when(until) if until else None
+        if "guests" in args:
+            set_guest_mode(hass, entry, bool(args["guests"]))
+            out["guest_mode"] = bool(args["guests"])
+        return out or {"hushed": entry.runtime_data.speech.hushed(), "guest_mode": entry.runtime_data.speech.guest_mode}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -473,7 +506,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
@@ -492,7 +525,14 @@ class SentientAPI(llm.API):
         room = self._room_of_device(llm_context.device_id)
         if room:
             lines.append(f"The person talking to you is in the {room}.")
-        if rt.speech.quiet_now():
+        if rt.speech.guest_mode:
+            lines.append(
+                "Guests are visiting: don't bring up personal household details, routines or memories "
+                "unless someone explicitly asks."
+            )
+        if rt.speech.hushed():
+            lines.append("The house has been asked to stay quiet: keep replies short and don't announce anything.")
+        elif rt.speech.quiet_now():
             lines.append("It is quiet hours: keep replies short and don't announce elsewhere unless urgent.")
         memories = rt.memory.recent(int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)))
         if memories:

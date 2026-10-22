@@ -53,7 +53,7 @@ from .speech import SpeechRouter
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -381,6 +381,26 @@ def _register_services(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, SERVICE_REMEMBER, remember, schema=REMEMBER_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    async def hush_service(call: ServiceCall) -> ServiceResponse:
+        from datetime import timedelta
+
+        from homeassistant.util import dt as dt_util
+
+        from .switch import hush
+
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if not entries:
+            raise vol.Invalid("Sentient is not set up")
+        minutes = float(call.data["minutes"])
+        until = dt_util.utcnow() + timedelta(minutes=minutes) if minutes > 0 else None
+        hush(hass, entries[0], until)
+        return {"hushed_until": until.isoformat() if until else None}
+
+    hass.services.async_register(
+        DOMAIN, "hush", hush_service,
+        schema=vol.Schema({vol.Required("minutes"): vol.All(vol.Coerce(float), vol.Range(min=0, max=720))}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(

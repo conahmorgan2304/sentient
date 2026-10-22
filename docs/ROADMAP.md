@@ -49,3 +49,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Motion lights: optional lux sensor, voice tool, live overview card (0.19.0)
 - [x] Timeline tab and voice tool: what the house did and noticed (0.20.0)
 - [x] Phone notifications for chosen kinds of timeline entries (0.21.0)
+- [x] Hush and guest mode: switches, service, voice tool, page buttons (0.22.0)

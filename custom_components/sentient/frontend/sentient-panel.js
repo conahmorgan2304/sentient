@@ -5,7 +5,7 @@
 (() => {
   if (customElements.get("sentient-panel")) return;
 
-  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health"];
+  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode"];
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
@@ -167,6 +167,7 @@
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
           <div class="sub">${this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${this._attr("likely_room", "ai_checks_today", 0)} AI CHECKS TODAY</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}</div>
           <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS TODAY")}${stat(st("health"), "PROBLEMS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
@@ -460,6 +461,14 @@
       else this._drawMlCard();
     }
 
+    _modeChip(key, icon, offLabel, onLabel) {
+      const st = this._st(key);
+      if (!st) return "";
+      const on = st.state === "on";
+      const until = on && st.attributes.until ? ` · TILL ${hm(st.attributes.until)}` : "";
+      return `<button class="mode${on ? " on" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${icon}"></ha-icon>${on ? onLabel + until : offLabel}</button>`;
+    }
+
     _drawMlCard() {
       const el = this._$("mlc"), ml = this._ml;
       if (!el || !ml || !ml.rules.length) { if (el) el.hidden = true; return; }
@@ -600,7 +609,7 @@
 
     _drawTimeline() {
       const KIND = {
-        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], noticed: ["mdi:radar", "NOTICED"],
+        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
         light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"],
       };
@@ -648,6 +657,7 @@
       else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) this._draft_box = null; this._drawSpots(); }
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
+      else if (act === "mode") { this._hass.callService("switch", "toggle", { entity_id: id }); }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
         this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
@@ -920,6 +930,9 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tli s{text-decoration:none;font-size:8.5px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:8px;color:#7fefff;border:1px solid rgba(0,255,247,.3)}
 .tli.k-held,.tli.k-noticed{opacity:.65} .tli.k-health .dot{border-color:rgba(255,190,85,.5)} .tli.k-health .dot ha-icon{color:#ffbe55}
 .tli.k-visitor .dot{border-color:rgba(61,255,168,.5)} .tli.k-visitor .dot ha-icon{color:#3dffa8} .tli.k-light .dot ha-icon{color:#ffd76a}
+.modes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.mode{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:5px 11px;border-radius:12px;color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.25)}
+.mode ha-icon{--mdc-icon-size:14px} .mode.on{color:#041016;background:#ffbe55;border-color:#ffbe55;box-shadow:0 0 12px rgba(255,190,85,.45)}
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:12px} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}

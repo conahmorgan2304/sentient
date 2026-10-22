@@ -369,7 +369,7 @@ class Learner:
 
     async def _async_offer(self, local: datetime) -> None:
         routine = self.next_to_offer()
-        if routine is None:
+        if routine is None or self.speech.guest_mode or self.speech.hushed():
             return
         if self.tracker is not None and self.tracker.best_area() is None:
             return  # nobody obviously about; try again later

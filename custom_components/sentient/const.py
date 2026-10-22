@@ -103,6 +103,7 @@ EVENT_NOTICED = f"{DOMAIN}_noticed"
 EVENT_ROUTINES_CHANGED = f"{DOMAIN}_routines_changed"
 EVENT_VISITOR = f"{DOMAIN}_visitor"
 EVENT_HEALTH_CHANGED = f"{DOMAIN}_health_changed"
+EVENT_MODE_CHANGED = f"{DOMAIN}_mode_changed"
 
 # Memory
 MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note"]

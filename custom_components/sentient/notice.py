@@ -167,6 +167,8 @@ class Noticer:
     # ----- deciding -------------------------------------------------------------
     def _free_rules(self) -> str | None:
         """Reasons not to even ask the AI."""
+        if self.speech.guest_mode:
+            return "guest_mode"
         if self.speech.quiet_now():
             return "quiet_hours"
         if blocker := self.speech.recently_triggered():

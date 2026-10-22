@@ -20,6 +20,7 @@ from .const import (
     DOMAIN,
     EVENT_HEALTH_CHANGED,
     EVENT_HELD,
+    EVENT_MODE_CHANGED,
     EVENT_NOTICED,
     EVENT_SPOKE,
     EVENT_VISITOR,
@@ -30,7 +31,7 @@ from .motion_lights import EVENT_MOTION_LIGHT
 STORAGE_VERSION = 1
 KEEP = 400
 EVENT_TIMELINE = f"{DOMAIN}_timeline"
-KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health"]
+KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode"]
 
 
 class Timeline:
@@ -57,6 +58,7 @@ class Timeline:
             listen(EVENT_WATCH_FIRED, self._watch),
             listen(EVENT_MOTION_LIGHT, self._light),
             listen(EVENT_HEALTH_CHANGED, self._health),
+            listen(EVENT_MODE_CHANGED, self._mode),
         ]
 
     @callback
@@ -127,6 +129,17 @@ class Timeline:
     def _light(self, event: Event) -> None:
         d = event.data
         self.add("light", f"{d.get('name')}: {d.get('what')}")
+
+    @callback
+    def _mode(self, event: Event) -> None:
+        d = event.data
+        if "guest_mode" in d:
+            self.add("mode", "Guest mode on" if d["guest_mode"] else "Guest mode off")
+        elif d.get("hush") and d.get("until"):
+            until = dt_util.as_local(dt_util.parse_datetime(d["until"]))
+            self.add("mode", f"Hushed until {until:%H:%M}")
+        elif "hush" in d:
+            self.add("mode", "Talking again")
 
     @callback
     def _health(self, event: Event) -> None:

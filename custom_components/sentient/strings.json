@@ -209,6 +209,14 @@
       "health": {
         "name": "House health"
       }
+    },
+    "switch": {
+      "hush": {
+        "name": "Hush"
+      },
+      "guest_mode": {
+        "name": "Guest mode"
+      }
     }
   },
   "selector": {
@@ -466,6 +474,16 @@
         "adopt": {
           "name": "Adopt",
           "description": "On to start, off to stop."
+        }
+      }
+    },
+    "hush": {
+      "name": "Hush",
+      "description": "Say nothing that isn't urgent for a while. 0 minutes stops hushing.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "How long to stay hushed."
         }
       }
     }

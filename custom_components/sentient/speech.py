@@ -118,6 +118,8 @@ class SpeechRouter:
         self._recent: dict[str, datetime] = {}
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
+        self.hush_until: datetime | None = None  # "be quiet for an hour"
+        self.guest_mode = False  # visitors in: no remarks or offers, keep personal things private
 
     # ----- configuration helpers -------------------------------------------------
     @property
@@ -129,7 +131,19 @@ class SpeechRouter:
         raw = self.options.get(CONF_BANNED_WORDS, DEFAULT_BANNED_WORDS) or ""
         return [w.strip() for w in raw.split(",") if w.strip()]
 
+    def hushed(self) -> bool:
+        if self.hush_until is None:
+            return False
+        if dt_util.utcnow() >= self.hush_until:
+            self.hush_until = None
+            return False
+        return True
+
     def quiet_now(self) -> bool:
+        """Quiet hours, or hushed by someone."""
+        return self.hushed() or self.quiet_hours_now()
+
+    def quiet_hours_now(self) -> bool:
         return in_quiet_hours(
             dt_util.now(),
             _parse_time(self.options.get(CONF_QUIET_START), DEFAULT_QUIET_START),
@@ -227,6 +241,8 @@ class SpeechRouter:
         if not text:
             return self._held("empty", text, source)
         if priority != PRIORITY_URGENT:
+            if self.hushed():
+                return self._held("hushed", text, source)
             if self.quiet_now():
                 return self._held("quiet_hours", text, source)
             blocker = self._recently_triggered()

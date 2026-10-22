@@ -185,3 +185,13 @@ adopt_routine:
     adopt:
       selector:
         boolean:
+hush:
+  fields:
+    minutes:
+      required: true
+      example: 60
+      selector:
+        number:
+          min: 0
+          max: 720
+          unit_of_measurement: min
