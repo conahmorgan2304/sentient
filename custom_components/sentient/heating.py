@@ -26,7 +26,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_COMFORT_TEMP, CONF_HEATING_ENTITIES, CONF_PREHEAT, DOMAIN
+from .const import CONF_COMFORT_TEMP, CONF_HEATING_ENTITIES, CONF_LEARN_ENTITIES, CONF_PREHEAT, DOMAIN
 from .presence import inside_sensors
 
 if TYPE_CHECKING:
@@ -101,22 +101,43 @@ UP_ROOMS = 2  # ...in at least this many sensors...
 UP_SPAN = timedelta(minutes=15)  # ...within this long: people up, not a cat or someone turning over
 
 
-def usual_wake(sensors: dict[str, list[State]]) -> dict[str, int | None]:
+REJOIN = timedelta(seconds=15)  # "on" again this soon after "off" is the same movement (flapping sensors)
+
+
+def usual_wake(
+    sensors: dict[str, list[State]], switched: dict[str, list[datetime]] | None = None
+) -> dict[str, int | None]:
     """Median time the house gets going in the morning, weekdays and weekends.
 
-    The first moment there are several movements in more than one place within a quarter of an
-    hour — a single blip in the night (a pet, someone turning over) doesn't count.
+    Best evidence: the first light or switch someone turned on by hand (pets can't). On days
+    without one, the first moment there are several movements in more than one place within a
+    quarter of an hour — a lone blip in the night (a pet, someone turning over) doesn't count.
     """
     by_day: dict[Any, list[tuple[datetime, str]]] = {}
     for entity_id, states in sensors.items():
+        last_off: datetime | None = None
         for st in states:
+            if st.state == "off":
+                last_off = st.last_changed
+                continue
             if st.state != "on":
                 continue
+            if last_off is not None and st.last_changed - last_off < REJOIN:
+                continue  # a flap, not a new movement
             local = dt_util.as_local(st.last_changed)
             if WAKE_FROM <= local.time() < WAKE_UNTIL:
                 by_day.setdefault(local.date(), []).append((local, entity_id))
     first: dict[Any, int] = {}
+    for times in (switched or {}).values():
+        for t in times:
+            local = dt_util.as_local(t)
+            if WAKE_FROM <= local.time() < WAKE_UNTIL:
+                minute = local.hour * 60 + local.minute
+                if minute < first.get(local.date(), 1440):
+                    first[local.date()] = minute
     for day, events in by_day.items():
+        if day in first:
+            continue
         events.sort()
         for i, (t, _e) in enumerate(events):
             burst = [e for (u, e) in events[i:] if u - t <= UP_SPAN]
@@ -151,6 +172,7 @@ class Heating:
         self._boosted: dict[str, dict[str, Any]] = {}
         self._done_day: dict[str, str] = {}
         self._unsubs: list = []
+        self.learner = None  # set by the runtime: tells it which changes automations made
 
     @property
     def entities(self) -> list[str]:
@@ -199,8 +221,38 @@ class Heating:
             )
         )
 
+    async def _async_switched_on(self) -> dict[str, list[datetime]]:
+        """When people (not automations) turned lights and switches on."""
+        ids = [e for e in self.options.get(CONF_LEARN_ENTITIES) or [] if e.split(".", 1)[0] in ("light", "switch")]
+        if self.learner is not None and self.learner.skip:
+            ids = [e for e in ids if e not in self.learner.skip()]
+        if not ids:
+            return {}
+        hist = await self._async_history(ids)
+        automated: dict[str, set[int]] = {}
+        if self.learner is not None:
+            try:
+                automated = await self.learner._async_automated(ids)
+            except Exception:  # noqa: BLE001
+                automated = {}
+        out: dict[str, list[datetime]] = {}
+        for e, states in hist.items():
+            prev = None
+            for st in states:
+                if st.state == "on" and prev == "off":
+                    stamp = round(st.last_changed.timestamp())
+                    if not ({stamp - 1, stamp, stamp + 1} & automated.get(e, set())):
+                        out.setdefault(e, []).append(st.last_changed)
+                if st.state in ("on", "off"):
+                    prev = st.state
+        return out
+
     async def async_learn(self) -> dict[str, Any]:
         inside = inside_sensors(self.hass, self.options)
+        try:
+            switched = await self._async_switched_on()
+        except Exception:  # noqa: BLE001
+            switched = {}
         try:
             hist = await self._async_history([*self.entities, *inside])
         except Exception:  # noqa: BLE001 - best effort
@@ -215,7 +267,7 @@ class Heating:
                 "episodes": episodes or old.get("episodes", 0),
                 "comfort": comfort_target(states) or old.get("comfort"),
             }
-        wake = usual_wake({e: hist.get(e, []) for e in inside})
+        wake = usual_wake({e: hist.get(e, []) for e in inside}, switched)
         self.wake = {k: v if v is not None else self.wake.get(k) for k, v in wake.items()}
         self.last_run = dt_util.utcnow().isoformat()
         self._save()

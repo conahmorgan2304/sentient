@@ -49,6 +49,20 @@ def test_usual_wake() -> None:
         sensors["binary_sensor.kitchen"].insert(0, State("binary_sensor.kitchen", "on", last_changed=cat))
     wake = usual_wake(sensors)
     assert wake == {"weekdays": 6 * 60 + 35, "weekends": 8 * 60 + 10}
+    # a light switched on by hand is the better evidence when there is one
+    lights = {"light.kitchen": [_t(day, 6, 20) for day in range(12, 26) if _t(day, 0, 0).weekday() < 5]}
+    assert usual_wake(sensors, lights)["weekdays"] == 6 * 60 + 20
+
+
+def test_flapping_sensor_is_not_people_up() -> None:
+    states = []
+    for day in range(12, 26):
+        base = _t(day, 4, 40)
+        for k in range(6):  # off for a second, on again: one long movement, not six
+            states += [State("binary_sensor.lounge", "off", last_changed=base + timedelta(minutes=k)),
+                       State("binary_sensor.lounge", "on", last_changed=base + timedelta(minutes=k, seconds=1))]
+    other = [State("binary_sensor.landing", "on", last_changed=_t(day, 4, 42)) for day in range(12, 26)]
+    assert usual_wake({"binary_sensor.lounge": states, "binary_sensor.landing": other})["weekdays"] is None
 
 
 async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
@@ -57,7 +71,7 @@ async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
     hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door", "friendly_name": "Back gate"})
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
         "persona": "Nova", "speakers": ["assist_satellite.bedroom"], "default_speaker": "assist_satellite.bedroom",
-        "quiet_start": "21:00:00", "quiet_end": "08:00:00", "inside_sensors": ["binary_sensor.kitchen_motion"],
+        "quiet_start": "21:00:00", "quiet_end": "08:00:00", "inside_sensors": ["binary_sensor.kitchen_motion", "binary_sensor.landing_motion"],
         **extra,
     })
     entry.add_to_hass(hass)
@@ -132,8 +146,8 @@ async def test_night_watch_alerts_only_when_nobody_was_up(hass: HomeAssistant, f
     # 6:50 on a weekday, someone up inside: the usual leaving for work — nothing
     hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})
     freezer.move_to(dt_util.as_utc(_t(21, 6, 46)))
-    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
-    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.landing_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.landing_motion", "off", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 6, 48)))
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 6, 51)))
@@ -145,8 +159,8 @@ async def test_night_watch_alerts_only_when_nobody_was_up(hass: HomeAssistant, f
     hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})
     freezer.move_to(dt_util.as_utc(_t(21, 3, 10)))
     hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
-    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
-    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.landing_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.landing_motion", "off", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 3, 12)))
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door"})
@@ -171,8 +185,9 @@ async def test_a_single_blip_inside_is_not_someone_up(hass: HomeAssistant, freez
     nw = entry.runtime_data.night_watch
     nw.history, nw.days_known = {"binary_sensor.back_gate": []}, 28
     said = async_mock_service(hass, "assist_satellite", "announce")
-    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})  # the cat
-    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    for _ in range(4):  # the cat, or a sensor flickering: lots of movement, but only in one place
+        hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+        hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
     freezer.move_to(dt_util.as_utc(_t(21, 1, 4)))
     hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
     await hass.async_block_till_done()

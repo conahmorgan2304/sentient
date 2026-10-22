@@ -26,6 +26,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_LEARN_ENTITIES,
     CONF_NIGHT_WATCH,
     CONF_NIGHT_WATCH_ANNOUNCE,
     CONF_NIGHT_WATCH_ENTITIES,
@@ -42,7 +43,7 @@ NEAR_MIN = 45  # an opening within this many minutes of the same time counts as 
 RARE_SHARE = 0.1  # opened at this time on fewer than 10% of days...
 RARE_COUNT = 1  # ...and no more than once
 INSIDE_BEFORE = timedelta(minutes=10)
-INSIDE_MOVES = 2  # separate movements inside in that time
+INSIDE_ROOMS = 2  # sensors with fresh movement in that time
 REPEAT = timedelta(minutes=10)
 OPEN_CLASSES = {"door", "window", "garage_door", "opening", "gate"}
 
@@ -137,20 +138,25 @@ class NightWatch:
 
     # ----- deciding -----------------------------------------------------------------
     def someone_inside(self, before: datetime) -> str | None:
-        """Someone up and about inside in the last few minutes — more than a single passing blip
-        (a cat crossing one sensor isn't someone getting up to leave)."""
+        """Someone up and about inside in the last few minutes: fresh movement in two different
+        places, or a light or switch turned on by hand. A pet crossing one sensor, or a sensor
+        that flickers all night, isn't someone getting up to leave."""
+        since = before - INSIDE_BEFORE
+        for entity_id in self.options.get(CONF_LEARN_ENTITIES) or []:
+            st = self.hass.states.get(entity_id)
+            if (
+                st is not None and st.domain in ("light", "switch") and st.state == "on"
+                and since <= st.last_changed <= before and st.context.parent_id is None
+            ):
+                return st.name
         tracker = self._rt().tracker
         if tracker is None:
             return None
-        sensors = inside_sensors(self.hass, self.options)
-        moves = tracker.movements_since(sensors, before - INSIDE_BEFORE)
-        if moves < INSIDE_MOVES:
+        movers = tracker.fresh_movers(inside_sensors(self.hass, self.options), since)
+        if len(movers) < INSIDE_ROOMS:
             return None
-        for entity_id in sensors:
-            last = tracker.last_active(entity_id)
-            if last is not None and before - last <= INSIDE_BEFORE and (st := self.hass.states.get(entity_id)):
-                return st.name
-        return "inside"
+        names = [st.name for e in movers if (st := self.hass.states.get(e))]
+        return " and ".join(sorted(names)[:2]) or "inside"
 
     def judge(self, entity_id: str, when: datetime) -> dict[str, Any]:
         rt = self._rt()

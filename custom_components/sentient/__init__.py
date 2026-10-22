@@ -239,6 +239,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     shortcuts = Shortcuts(hass, entry.entry_id)
     await shortcuts.async_load()
     heating = Heating(hass, entry.entry_id, options, timeline)
+    heating.learner = learner
     await heating.async_start()
     entry.async_on_unload(heating.async_stop)
     night_watch = NightWatch(hass, options, lambda: entry.runtime_data)
