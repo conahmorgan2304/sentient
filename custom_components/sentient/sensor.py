@@ -229,6 +229,7 @@ class RoutinesSensor(_Base):
                 {**r.summary(), "entity_id": r.entity_id, "offered": bool(r.suggested), "declined": r.declined}
                 for r in sorted(learner.all(), key=lambda r: (r.adopted, r.support), reverse=True)
             ],
+            "deleted": [{"id": k, "routine": v} for k, v in learner.dismissed.items()],
             "last_learned": learner.last_run,
         }
 

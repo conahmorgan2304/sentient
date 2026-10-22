@@ -510,6 +510,20 @@
       "name": "Tidy memories",
       "description": "Merge duplicates and drop nonsense from memory now (also runs every Sunday night)."
     },
+    "forget_routine": {
+      "name": "Delete learned routine",
+      "description": "Delete a learned routine or habit for good — the house stops doing it and never learns or offers it again. With Restore on, bring deleted ones back (one, or all if Routine is empty).",
+      "fields": {
+        "routine": {
+          "name": "Routine",
+          "description": "Routine id or words from it."
+        },
+        "restore": {
+          "name": "Restore",
+          "description": "Bring deleted ones back instead."
+        }
+      }
+    },
     "adopt_routine": {
       "name": "Adopt routine",
       "description": "Have the house do a learned routine by itself, or stop. Leave Adopt empty to toggle.",

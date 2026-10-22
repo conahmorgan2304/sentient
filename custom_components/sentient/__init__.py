@@ -19,6 +19,7 @@ from .const import (
     MEMORY_CATEGORIES,
     PRIORITIES,
     SERVICE_ADOPT,
+    SERVICE_FORGET_ROUTINE,
     SERVICE_ASK,
     SERVICE_BRIEFING,
     SERVICE_CANCEL_WATCH,
@@ -338,6 +339,16 @@ def _register_services(hass: HomeAssistant) -> None:
             raise vol.Invalid("No learned routine matches that")
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
+    async def forget_routine(call: ServiceCall) -> ServiceResponse:
+        learner = _runtime(hass).learner
+        if call.data.get("restore"):
+            back = learner.undismiss(call.data.get("routine") or None)
+            return {"restored": back, "note": "They can be learned again from the next nightly check."}
+        item = learner.dismiss(call.data.get("routine") or "")
+        if item is None:
+            raise vol.Invalid("No learned routine matches that")
+        return {"deleted": item.describe()}
+
     async def briefing(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         if call.data.get("speak", True):
@@ -389,6 +400,11 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_ADOPT, adopt_routine,
         schema=vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt"): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_FORGET_ROUTINE, forget_routine,
+        schema=vol.Schema({vol.Optional("routine"): cv.string, vol.Optional("restore", default=False): cv.boolean}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(

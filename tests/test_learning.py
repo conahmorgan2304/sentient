@@ -248,3 +248,35 @@ def test_things_switched_together_are_not_a_link() -> None:
     found = find_links({"light.left": ("left light", None, left)}, {"light.right": ("right light", right)},
                        lambda t: True, today=_local(TODAY, 12, 0))
     assert not found
+
+
+async def test_deleted_routine_stays_deleted_until_restored(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_local(TODAY, 12, 0)))
+    rnd = random.Random(7)
+    history = {"light.hallway": _history("light.hallway", {a: (17, 30 + rnd.randint(-5, 5)) for a in range(1, 15)})}
+    hass.states.async_set("light.hallway", "off", {"friendly_name": "Hallway light"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        "persona": "Nova", "speakers": [], "quiet_start": "00:00:00", "quiet_end": "00:00:00",
+        "learn_entities": ["light.hallway"], "suggest_routines": False,
+    })
+    entry.add_to_hass(hass)
+    with patch("custom_components.sentient.learning.Learner._async_history", return_value=history):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        learner = entry.runtime_data.learner
+        await learner.async_learn()
+        on = next(r for r in learner.routines.values() if r.state == "on")
+        res = await hass.services.async_call(DOMAIN, "forget_routine", {"routine": on.id}, blocking=True, return_response=True)
+        assert res["deleted"].startswith("The hallway light usually goes on")
+        await learner.async_learn()
+        assert on.id not in learner.routines
+        await hass.async_block_till_done()
+        assert hass.states.get("sensor.nova_routines").attributes["deleted"][0]["id"] == on.id
+        ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
+        api = await llm.async_get_api(hass, "sentient", ctx)
+        assert "goes on around 5" not in api.api_prompt
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_forget_routine", tool_args={"routine": "nothing like it"}))
+        assert "deleted" in out or "error" in out
+        await hass.services.async_call(DOMAIN, "forget_routine", {"restore": True}, blocking=True, return_response=True)
+        await learner.async_learn()
+        assert on.id in learner.routines

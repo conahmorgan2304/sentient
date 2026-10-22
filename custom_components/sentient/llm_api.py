@@ -329,6 +329,27 @@ class AdoptRoutineTool(_Tool):
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
 
+class ForgetRoutineTool(_Tool):
+    name = "sentient_forget_routine"
+    description = (
+        "Delete a learned routine or habit for good when someone doesn't want it ('forget that the "
+        "kitchen light goes on at six', 'that's not a routine, delete it'). The house stops doing it "
+        "and never learns or offers it again. 'routine' is its id or words from it."
+    )
+    parameters = vol.Schema({vol.Required("routine"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        item = rt.learner.dismiss(tool_input.tool_args["routine"])
+        if item is None:
+            return {"error": "No learned routine matches that"}
+        return {"deleted": item.describe()}
+
+
 class BriefingTool(_Tool):
     name = "sentient_briefing"
     description = (
@@ -644,7 +665,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

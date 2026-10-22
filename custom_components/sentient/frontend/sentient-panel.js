@@ -179,13 +179,15 @@
       // routines
       const routines = this._attr("routines", "routines", []);
       const on = routines.filter((r) => r.adopted).length;
-      R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}</div>` +
+      const gone = this._attr("routines", "deleted", []);
+      const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} DELETED · BRING BACK</a>` : "";
+      R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}${back}</div>` +
         (routines.slice(0, 8).map((r) => {
           const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
           return `<div class="card rt ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}">
-            <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s></div>
+            <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>
             <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LET THE HOUSE DO IT"}</div></div>`;
         }).join("") || '<div class="card"><div class="e">NO ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
 
@@ -829,6 +831,8 @@
       if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
+      else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
+      else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { this._group = id; this._show("settings", true); }
       else if (act === "group") {
         if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
@@ -1046,6 +1050,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt{cursor:pointer;padding:10px 12px} .rt .r{margin:0} .rt:active{transform:scale(.99)}
 .rt.on{border-color:rgba(61,255,168,.55)} .rt.on s{color:#3dffa8;border-color:#3dffa8}
 .rt.off s{color:rgba(255,120,140,.85);border-color:rgba(255,120,140,.6)}
+.rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
 .e{padding:18px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
 /* settings */

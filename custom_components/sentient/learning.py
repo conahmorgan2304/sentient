@@ -343,6 +343,7 @@ class Learner:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.routines")
         self.routines: dict[str, Routine] = {}
         self.links: dict[str, Link] = {}
+        self.dismissed: dict[str, str] = {}  # id -> what it said; never learned or offered again
         self.last_run: str | None = None
         self._unsubs: list = []
         self._asked_today: str | None = None
@@ -363,6 +364,7 @@ class Learner:
             except TypeError:
                 continue
             self.links[link.id] = link
+        self.dismissed = dict(data.get("dismissed") or {})
         self.last_run = data.get("last_run")
         self._asked_today = data.get("asked_day")
         self._unsubs.append(async_track_time_change(self.hass, self._nightly, hour=3, minute=30, second=0))
@@ -383,6 +385,7 @@ class Learner:
             lambda: {
                 "routines": [r.as_dict() for r in self.routines.values()],
                 "links": [l.as_dict() for l in self.links.values()],
+                "dismissed": self.dismissed,
                 "last_run": self.last_run,
                 "asked_day": self._asked_today,
             },
@@ -393,6 +396,25 @@ class Learner:
     def all(self) -> list[Routine | Link]:
         """Learned routines and links together."""
         return [*self.routines.values(), *self.links.values()]
+
+    def dismiss(self, id_or_words: str) -> Routine | Link | None:
+        """Delete a learned routine or habit for good: it stops, and is never learned or offered again."""
+        item = self._find(id_or_words)
+        if item is None:
+            return None
+        self.routines.pop(item.id, None)
+        self.links.pop(item.id, None)
+        self.dismissed[item.id] = item.describe()
+        self._save()
+        return item
+
+    def undismiss(self, item_id: str | None = None) -> list[str]:
+        """Let deleted ones be learned again (one, or all); they come back at the next nightly check."""
+        ids = [item_id] if item_id else list(self.dismissed)
+        back = [self.dismissed.pop(i) for i in ids if i in self.dismissed]
+        if back:
+            self._save()
+        return back
 
     def get(self, item_id: str) -> Routine | Link | None:
         return self.routines.get(item_id) or self.links.get(item_id)
@@ -475,6 +497,8 @@ class Learner:
             for routine in find_routines(
                 entity_id, name, history.get(entity_id, []), automated=automated.get(entity_id)
             ):
+                if routine.id in self.dismissed:
+                    continue
                 old = self.routines.get(routine.id)
                 if old is not None:
                     routine.adopted, routine.declined, routine.suggested = old.adopted, old.declined, old.suggested
@@ -530,6 +554,8 @@ class Learner:
         )
         fresh: dict[str, Link] = {}
         for link in found:
+            if link.id in self.dismissed:
+                continue
             if old := self.links.get(link.id):
                 link.adopted, link.declined, link.suggested, link.learned = old.adopted, old.declined, old.suggested, old.learned
             fresh[link.id] = link

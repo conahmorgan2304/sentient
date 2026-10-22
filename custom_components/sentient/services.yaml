@@ -185,6 +185,14 @@ adopt_routine:
     adopt:
       selector:
         boolean:
+forget_routine:
+  fields:
+    routine:
+      selector:
+        text:
+    restore:
+      selector:
+        boolean:
 hush:
   fields:
     minutes:

@@ -38,6 +38,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Learn routines from history with plain statistics — no AI (0.7.0)
 - [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
 - [x] Learn links — what people do straight after something else ("when the back door opens after dark, the kitchen light goes on"), offered and done on request (0.32.0)
+- [x] Delete learned routines and habits for good (✕ on the page, by voice or `sentient.forget_routine`), with a bring-back (0.33.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
 
 ## Stage 5 — Its own page
