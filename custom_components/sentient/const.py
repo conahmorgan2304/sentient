@@ -131,3 +131,20 @@ MEMORY_STORAGE_VERSION = 1
 MEMORY_MAX_ITEMS = 500
 
 LLM_API_ID = DOMAIN
+
+# heating that learns
+CONF_HEATING_ENTITIES = "heating_entities"
+CONF_PREHEAT = "preheat"
+CONF_COMFORT_TEMP = "comfort_temp"
+CONF_INSIDE_SENSORS = "inside_sensors"
+
+# night watch
+CONF_NIGHT_WATCH = "night_watch"
+CONF_NIGHT_WATCH_ENTITIES = "night_watch_entities"
+CONF_NIGHT_WATCH_ANNOUNCE = "night_watch_announce"
+CONF_NIGHT_WATCH_SPEAKERS = "night_watch_speakers"
+DEFAULT_NIGHT_WATCH = True
+
+# weekly report
+CONF_WEEKLY_REPORT = "weekly_report"
+DEFAULT_WEEKLY_REPORT = True

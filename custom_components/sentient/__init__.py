@@ -54,6 +54,9 @@ from .critical import CriticalAlerts
 from .shortcuts import Shortcuts
 from .left_open import LeftOpen
 from .visitors import Visitors
+from .feedback import Feedback
+from .heating import Heating
+from .nightwatch import NightWatch
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -87,6 +90,9 @@ class SentientRuntime:
     critical: CriticalAlerts
     shortcuts: Shortcuts
     left_open: LeftOpen
+    feedback: Feedback
+    heating: Heating
+    night_watch: NightWatch
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -195,10 +201,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     watches.spots = spots
     await watches.async_start()
     entry.async_on_unload(watches.async_stop)
+    feedback = Feedback(hass, entry.entry_id)
+    await feedback.async_load()
     noticer = Noticer(hass, options, speech, memory, watches)
+    noticer.feedback = feedback
     noticer.async_start()
     entry.async_on_unload(noticer.async_stop)
     learner = Learner(hass, entry.entry_id, options, speech, tracker)
+    learner.feedback = feedback
     await learner.async_start()
     entry.async_on_unload(learner.async_stop)
     upkeep = Upkeep(hass, lambda: entry.runtime_data)
@@ -219,6 +229,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     mutes = Mutes(hass, entry.entry_id)
     await mutes.async_load()
     speech.mutes = mutes
+    mutes.feedback = feedback
     critical = CriticalAlerts(hass, options, lambda: entry.runtime_data)
     critical.async_start()
     entry.async_on_unload(critical.async_stop)
@@ -227,6 +238,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(left_open.async_stop)
     shortcuts = Shortcuts(hass, entry.entry_id)
     await shortcuts.async_load()
+    heating = Heating(hass, entry.entry_id, options, timeline)
+    await heating.async_start()
+    entry.async_on_unload(heating.async_stop)
+    night_watch = NightWatch(hass, options, lambda: entry.runtime_data)
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
     entry.async_on_unload(welcome.async_stop)
@@ -234,7 +249,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
+        feedback=feedback, heating=heating, night_watch=night_watch,
     )
+    night_watch.async_start()
+    entry.async_on_unload(night_watch.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -284,6 +302,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.welcome.options = options
     entry.runtime_data.critical.options = options
     entry.runtime_data.left_open.options = options
+    entry.runtime_data.heating.options = options
+    entry.runtime_data.night_watch.options = options
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
     if "frontend" in hass.config.components:
@@ -359,8 +379,18 @@ def _register_services(hass: HomeAssistant) -> None:
         return await _runtime(hass).upkeep.async_tidy()
 
     async def learn(call: ServiceCall) -> ServiceResponse:
-        routines = await _runtime(hass).learner.async_learn()
-        return {"routines": [r.summary() for r in routines]}
+        rt = _runtime(hass)
+        await rt.learner.async_learn()
+        heating = await rt.heating.async_learn()
+        await rt.night_watch.async_learn()
+        return {
+            "routines": [r.summary() for r in rt.learner.all()],
+            "heating": heating,
+            "night_watch": rt.night_watch.describe(),
+        }
+
+    async def weekly_report(call: ServiceCall) -> ServiceResponse:
+        return _runtime(hass).upkeep.weekly_report()
 
     async def ask(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
@@ -407,6 +437,7 @@ def _register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({vol.Optional("routine"): cv.string, vol.Optional("restore", default=False): cv.boolean}),
         supports_response=SupportsResponse.OPTIONAL,
     )
+    hass.services.async_register(DOMAIN, "weekly_report", weekly_report, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
     )

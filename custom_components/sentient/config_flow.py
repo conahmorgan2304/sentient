@@ -11,6 +11,17 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_COMFORT_TEMP,
+    CONF_HEATING_ENTITIES,
+    CONF_INSIDE_SENSORS,
+    CONF_NIGHT_WATCH,
+    CONF_NIGHT_WATCH_ANNOUNCE,
+    CONF_NIGHT_WATCH_ENTITIES,
+    CONF_NIGHT_WATCH_SPEAKERS,
+    CONF_PREHEAT,
+    CONF_WEEKLY_REPORT,
+    DEFAULT_NIGHT_WATCH,
+    DEFAULT_WEEKLY_REPORT,
     CONF_BATTERY_THRESHOLD,
     CONF_HEALTH_IGNORE,
     DEFAULT_BATTERY_THRESHOLD,
@@ -129,6 +140,25 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),
             vol.Required(CONF_LEAVING_CHECK, **d(CONF_LEAVING_CHECK, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_HEATING_ENTITIES, **d(CONF_HEATING_ENTITIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="climate", multiple=True)
+            ),
+            vol.Required(CONF_PREHEAT, **d(CONF_PREHEAT, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_COMFORT_TEMP, **d(CONF_COMFORT_TEMP)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=10, max=26, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_INSIDE_SENSORS, **d(CONF_INSIDE_SENSORS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_NIGHT_WATCH, **d(CONF_NIGHT_WATCH, DEFAULT_NIGHT_WATCH)): selector.BooleanSelector(),
+            vol.Optional(CONF_NIGHT_WATCH_ENTITIES, **d(CONF_NIGHT_WATCH_ENTITIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_NIGHT_WATCH_ANNOUNCE, **d(CONF_NIGHT_WATCH_ANNOUNCE, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_NIGHT_WATCH_SPEAKERS, **d(CONF_NIGHT_WATCH_SPEAKERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="assist_satellite", multiple=True)
+            ),
+            vol.Required(CONF_WEEKLY_REPORT, **d(CONF_WEEKLY_REPORT, DEFAULT_WEEKLY_REPORT)): selector.BooleanSelector(),
             vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
             vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="p/kWh", mode=selector.NumberSelectorMode.BOX)

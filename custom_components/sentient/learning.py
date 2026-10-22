@@ -348,6 +348,7 @@ class Learner:
         self._unsubs: list = []
         self._asked_today: str | None = None
         self.skip = None  # callable giving entities another feature already runs
+        self.feedback = None  # set by the runtime: declines teach it what not to offer
 
     # ----- lifecycle --------------------------------------------------------------
     async def async_start(self) -> None:
@@ -405,6 +406,10 @@ class Learner:
         self.routines.pop(item.id, None)
         self.links.pop(item.id, None)
         self.dismissed[item.id] = item.describe()
+        if self.feedback is not None:
+            from .feedback import DELETED
+
+            self.feedback.record(item.entity_id, DELETED, "deleted a learned routine", "offers")
         self._save()
         return item
 
@@ -586,6 +591,10 @@ class Learner:
         if routine is not None:
             routine.adopted = adopted
             routine.declined = not adopted
+            if not adopted and self.feedback is not None:
+                from .feedback import DECLINED
+
+                self.feedback.record(routine.entity_id, DECLINED, "declined a learned routine", "offers")
             self._save()
         return routine
 
@@ -630,7 +639,11 @@ class Learner:
         await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True)
 
     def next_to_offer(self) -> Routine | Link | None:
-        options = [r for r in self.all() if not (r.adopted or r.declined or r.suggested)]
+        options = [
+            r for r in self.all()
+            if not (r.adopted or r.declined or r.suggested)
+            and not (self.feedback is not None and self.feedback.offers_blocked(r.entity_id))
+        ]
         return max(options, key=lambda r: (r.support, r.seen), default=None)
 
     async def _async_offer(self, local: datetime) -> None:

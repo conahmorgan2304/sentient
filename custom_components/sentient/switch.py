@@ -137,6 +137,10 @@ def hush(hass: HomeAssistant, entry, until) -> None:
     """Hush until a time (None stops it) and refresh the switch when it ends."""
     speech = entry.runtime_data.speech
     speech.hush_until = until
+    if until is not None and (fb := getattr(entry.runtime_data, "feedback", None)) is not None:
+        if ids := fb.hushed():
+            names = [st.name if (st := hass.states.get(e)) else e for e in ids]
+            entry.runtime_data.timeline.add("mode", "Noted: hushed straight after a remark", ", ".join(names))
     if (unsub := _HUSH_TIMERS.pop(entry.entry_id, None)) is not None:
         unsub()
     if until is not None:

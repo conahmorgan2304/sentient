@@ -350,6 +350,61 @@ class ForgetRoutineTool(_Tool):
         return {"deleted": item.describe()}
 
 
+class HeatingTool(_Tool):
+    name = "sentient_heating"
+    description = (
+        "What the house has learned about the heating: how fast each zone warms up, the temperature it's "
+        "usually set to, when people usually get up, when it would need to start to be warm by then, and "
+        "whether it warms up early by itself. Read-only."
+    )
+    parameters = vol.Schema({})
+    annotations = _read_only()
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        return rt.heating.report() if rt is not None else {"error": "Sentient is not loaded"}
+
+
+class NightWatchTool(_Tool):
+    name = "sentient_night_watch"
+    description = (
+        "The night watch: which doors and gates it watches, recent openings at unusual times (and whether "
+        "anyone was up inside first), and whether it says alerts out loud. For 'did anything happen in the "
+        "night?' or 'was that gate opening anything to worry about?'. Read-only."
+    )
+    parameters = vol.Schema({})
+    annotations = _read_only()
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        return rt.night_watch.describe() if rt is not None else {"error": "Sentient is not loaded"}
+
+
+class WeeklyTool(_Tool):
+    name = "sentient_weekly_report"
+    description = (
+        "What the house learned and noticed this week: new habits, what it does for people now, what it's "
+        "learned to keep quiet about, heating, night watch, new memories and how much it spoke. For "
+        "'what have you learned this week?'. Summarise it in a few sentences."
+    )
+    parameters = vol.Schema({})
+    annotations = _read_only()
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .weekly import build
+
+        return build(rt)
+
+
 class BriefingTool(_Tool):
     name = "sentient_briefing"
     description = (
@@ -538,7 +593,7 @@ class ShushTool(_Tool):
             rt.timeline.add("mode", f"Unshushed: {args.get('what') or 'everything'}")
             return {"unshushed": removed}
         if not args.get("what"):
-            return {"shushed": rt.mutes.listing()}
+            return {"shushed": rt.mutes.listing(), "learned_from_feedback": rt.feedback.listing()}
         from .watches import resolve_entity
 
         target = resolve_entity(hass, args["what"]) or args["what"]
@@ -665,7 +720,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

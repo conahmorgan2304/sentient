@@ -39,6 +39,8 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
 - [x] Learn links — what people do straight after something else ("when the back door opens after dark, the kitchen light goes on"), offered and done on request (0.32.0)
 - [x] Delete learned routines and habits for good (✕ on the page, by voice or `sentient.forget_routine`), with a bring-back (0.33.0)
+- [x] Learning from feedback: shushes, hushes straight after a remark and declined routines make it quieter about those things by itself, fading over a month (0.34.0)
+- [x] Weekly report: what it learned and noticed this week (0.34.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
 
 ## Stage 5 — Its own page
@@ -63,3 +65,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Left-open nudges and a leaving check (0.30.0)
 - [x] Safety alerts: alarm triggered, tamper, extra entities, test button (0.30.1)
 - [x] Parcels left without a ring: one look after a doorstep visit ends, said only when something new appears (0.31.0)
+- [x] Heating that learns: warm-up rate, usual temperature, getting-up times; optional warm-up before people are up, back on the thermostat's schedule afterwards (0.34.0)
+- [x] Night watch: doors and gates opening at times they never normally do with nobody up inside — alert, optionally out loud through quiet hours (0.34.0)

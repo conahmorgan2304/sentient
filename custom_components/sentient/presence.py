@@ -178,6 +178,14 @@ class ActivityTracker:
             intervals[-1][1] = new.last_changed
         self._prune()
 
+    def last_active(self, entity_id: str) -> datetime | None:
+        """When this sensor last saw movement (now, if it still does) within the window."""
+        intervals = self._intervals.get(entity_id)
+        if not intervals:
+            return None
+        end = intervals[-1][1]
+        return dt_util.utcnow() if end is None else end
+
     def note_voice(self, area_id: str, when: datetime | None = None) -> None:
         self._voice.append((area_id, when or dt_util.utcnow()))
         self._prune()
@@ -234,3 +242,26 @@ class ActivityTracker:
             return None
         area, score = max(scored.items(), key=lambda kv: kv[1])
         return area if score >= MIN_SCORE else None
+
+
+def inside_sensors(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
+    """Motion/occupancy sensors inside the house.
+
+    The user's choice if they made one; otherwise sensors in rooms on the same floors as the
+    speakers (and pass-through areas) — so garden and camera sensors don't count as "inside".
+    """
+    from homeassistant.helpers import area_registry as ar
+
+    from .const import CONF_INSIDE_SENSORS
+
+    if chosen := options.get(CONF_INSIDE_SENSORS):
+        return list(chosen)
+    areas = ar.async_get(hass)
+    speaker_areas = {a for s in options.get(CONF_SPEAKERS) or [] if (a := area_of(hass, s))}
+    floors = {f for a in speaker_areas if (area := areas.async_get_area(a)) and (f := area.floor_id)}
+    inside = set(speaker_areas) | set(options.get(CONF_PASS_THROUGH_AREAS) or [])
+    inside |= {a.id for a in areas.async_list_areas() if a.floor_id and a.floor_id in floors}
+    return [
+        st.entity_id for st in hass.states.async_all("binary_sensor")
+        if ActivityTracker.is_presence(st) and area_of(hass, st.entity_id) in inside
+    ]

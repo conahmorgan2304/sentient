@@ -117,6 +117,7 @@ class Noticer:
         self.decisions: deque[dict[str, Any]] = deque(maxlen=20)
         self._flush_unsub = None
         self._unsub = None
+        self.feedback = None  # set by the runtime
 
     # ----- settings -------------------------------------------------------------
     @property
@@ -149,6 +150,8 @@ class Noticer:
             return
         if self.speech.mutes is not None and self.speech.mutes.entity_muted(new.entity_id):
             return
+        if self.feedback is not None and self.feedback.remark_level(new.entity_id) == "quiet":
+            return  # learned from feedback: nobody wants to hear about this
         old = event.data["old_state"]
         if old is None or old.state in _IGNORED or new.state in _IGNORED or old.state == new.state:
             return  # appearing at start-up, coming back from unavailable, or attribute-only
@@ -231,6 +234,8 @@ class Noticer:
         record["message"] = decision.get("message")
         if speak:
             self._remarks.append(dt_util.utcnow())
+            if self.feedback is not None:
+                self.feedback.remarked([c.entity_id for c in changes])
             message = decision["message"].strip()
             if decision.get("question"):
                 result = await self.speech.async_ask(message, source="notice")
@@ -264,6 +269,16 @@ class Noticer:
         memories = self.memory.recent(15)
         if memories:
             lines.append("What you know about the household:\n" + "\n".join(f"- {m.text}" for m in memories))
+        if self.feedback is not None:
+            reluctant = [
+                (st.name if (st := self.hass.states.get(e)) else e)
+                for e in sorted(self.entities) if self.feedback.remark_level(e) == "important_only"
+            ]
+            if reluctant:
+                lines.append(
+                    "People have made it clear they don't want to hear about these unless it really matters "
+                    "(needs action, safety, money): " + ", ".join(reluctant) + "."
+                )
         said = self.speech.recent_said(6)
         if said:
             lines.append("What you've said recently (don't repeat yourself):\n" + "\n".join(f"- {s}" for s in said))

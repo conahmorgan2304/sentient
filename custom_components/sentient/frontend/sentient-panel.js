@@ -98,7 +98,7 @@
         <div class="page" id="ov"><div id="head" class="card head"></div>
           <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div id="rout" class="col stack"></div>
-            <div class="col stack"><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
+            <div class="col stack"><div id="energy" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
@@ -211,6 +211,13 @@
         this._hass.callWS({ type: "sentient/energy" }).then((r) => { this._en = r; this._drawEnergy(); }, () => {});
       }
       this._drawEnergy();
+
+      // heating & night watch (every 5 minutes)
+      if (Date.now() - (this._insAt || 0) > 300000) {
+        this._insAt = Date.now();
+        this._hass.callWS({ type: "sentient/insights" }).then((r) => { this._ins = r; this._drawInsights(); }, () => {});
+      }
+      this._drawInsights();
 
       this._drawSecurity();
 
@@ -570,7 +577,7 @@
 
     // ---------- shushed ----------
     async _loadMutes(quiet, extra) {
-      try { this._mutes = (await this._hass.callWS({ type: "sentient/mutes", ...(extra || {}) })).mutes; } catch (e) { this._mutes = []; }
+      try { const r = await this._hass.callWS({ type: "sentient/mutes", ...(extra || {}) }); this._mutes = r.mutes; this._learnedQuiet = r.learned || []; } catch (e) { this._mutes = []; this._learnedQuiet = []; }
       if (this._view === "settings") { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
     }
 
@@ -580,7 +587,11 @@
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SHUSHED</div>
           <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
         ${rows || '<div class="e">NOTHING SHUSHED</div>'}
-        ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}`;
+        ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}
+        <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDBACK</div>
+          <div class="bs">What the house has picked up from shushes, hushing it straight after a remark, and declined or deleted routines. It fades by itself over a month or so; ✕ forgets it now.</div></div></div>
+        ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline"}"></ha-icon>
+          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Forget this">✕</a></div>`).join("") || '<div class="e">NOTHING YET</div>'}`;
     }
 
     // ---------- motion lights ----------
@@ -616,6 +627,25 @@
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
         + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
+    }
+
+    _drawInsights() {
+      const el = this._$("ins"), r = this._ins;
+      if (!el || !r) { if (el) el.hidden = true; return; }
+      const h = r.heating || {}, nw = r.night_watch || {};
+      const zones = (h.zones || []).filter((z) => z.warms_per_hour || z.comfortable_at);
+      if (!zones.length && !nw.on) { el.hidden = true; return; }
+      el.hidden = false;
+      const up = h.usually_up || {};
+      const upTxt = [up.weekdays && `WEEKDAYS ${up.weekdays}`, up.weekends && `WEEKENDS ${up.weekends}`].filter(Boolean).join(" · ");
+      const zoneRows = zones.map((z) => `<div class="r"><ha-icon icon="mdi:radiator"></ha-icon><b>${esc(z.name)}</b>
+          <u>${z.now != null ? z.now + "° NOW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "LEARNING"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
+          ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.people_usually_up)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
+      const recent = (nw.recent_unusual || []).slice(0, 3);
+      const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
+          <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
+        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NOTHING UNUSUAL IN THE LAST 3 DAYS</div>') : "";
+      el.innerHTML = this._h("HEATING &amp; NIGHT WATCH", upTxt ? "UP " + upTxt : "") + zoneRows + nwRows;
     }
 
     _security() {
@@ -795,10 +825,12 @@
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
         light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"],
+        heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "THIS WEEK"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       this._$("tldig").innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
-        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "SUMMARISE 24H"}</button>`;
+        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "SUMMARISE 24H"}</button>
+        <button class="btn sm ghost" data-act="weekly">THIS WEEK</button>`;
       const want = this._tlKind || "all";
       const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : i.kind === want));
       const counts = {};
@@ -831,6 +863,7 @@
       if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
+      else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { this._group = id; this._show("settings", true); }
@@ -846,6 +879,9 @@
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
       else if (act === "mode") { this._hass.callService("switch", "toggle", { entity_id: id }); }
+      else if (act === "weekly") {
+        this._hass.callWS({ type: "sentient/weekly" }).then(() => { this._tlKind = "learned"; this._drawTimeline(); }, (e) => window.alert(e.message || e));
+      }
       else if (act === "digest") {
         this._digBusy = true; this._drawTimeline();
         this._hass.callWS({ type: "sentient/digest", hours: 24 }).catch((e) => window.alert(e.message || e))

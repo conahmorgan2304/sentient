@@ -139,7 +139,16 @@
           "left_open_minutes": "Mention doors and windows left open after",
           "left_open_ignore": "Don't mention these",
           "leaving_check": "Check when everyone goes out",
-          "critical_extra": "Also treat these as safety alerts"
+          "critical_extra": "Also treat these as safety alerts",
+          "heating_entities": "Heating to learn",
+          "preheat": "Warm up before people are up",
+          "comfort_temp": "Warm-up temperature",
+          "inside_sensors": "Motion sensors inside",
+          "weekly_report": "Weekly report",
+          "night_watch": "Night watch",
+          "night_watch_entities": "Doors and gates to watch",
+          "night_watch_announce": "Say alerts out loud, even in quiet hours",
+          "night_watch_speakers": "Say alerts on"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -180,7 +189,16 @@
           "energy_price": "Optional: your unit rate, to show today's cost.",
           "left_open_minutes": "Said once (then every half hour while still open), within quiet hours and shushes as usual. 0 turns it off.",
           "leaving_check": "When the last person leaves, anything open or unlocked goes on the timeline and to phones (\"Left open\").",
-          "critical_extra": "Anything else that should always be said everywhere when it turns on, e.g. a panic button or a freezer-too-warm sensor. An alarm panel going off is always included."
+          "critical_extra": "Anything else that should always be said everywhere when it turns on, e.g. a panic button or a freezer-too-warm sensor. An alarm panel going off is always included.",
+          "heating_entities": "Thermostats to learn from. Leave empty for every one in the house. It learns how fast each warms up and the temperature it's usually set to.",
+          "preheat": "Start the heating early so it's at the usual temperature by the time people normally get up. A thermostat with its own schedule is put back on it afterwards, and one that's switched off is left off.",
+          "comfort_temp": "Optional: the temperature to warm up to. Leave empty to use the one it's usually set to during the day.",
+          "inside_sensors": "Optional: which motion sensors mean someone's inside. Leave empty to use the ones on the same floors as the speakers (garden and camera sensors don't count). Used for night watch and getting-up times.",
+          "weekly_report": "On Sunday evenings, put what the house learned and noticed this week on the timeline (sent to phones if digests are).",
+          "night_watch": "Learns when each door, gate and window normally opens. An opening at a time it never usually does, with nobody moving inside first, is an alert. If someone was up inside (leaving for work, say), it's only noted.",
+          "night_watch_entities": "Leave empty for every door, window, gate and garage door sensor.",
+          "night_watch_announce": "An unusual opening with nobody up is said straight away, through quiet hours, hush and guest mode — it could be someone who shouldn't be there.",
+          "night_watch_speakers": "Leave empty for every speaker."
         }
       },
       "memories": {
@@ -561,6 +579,10 @@
           "description": "Say the result where people are."
         }
       }
+    },
+    "weekly_report": {
+      "name": "Weekly report",
+      "description": "Put together what the house learned and noticed in the last week, and keep it on the timeline."
     }
   }
 }

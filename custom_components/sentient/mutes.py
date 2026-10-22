@@ -24,6 +24,7 @@ class Mutes:
         self.hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.mutes")
         self.items: list[dict[str, Any]] = []
+        self.feedback = None  # set by the runtime: shushing teaches it what not to mention
 
     async def async_load(self) -> None:
         self.items = (await self._store.async_load() or {}).get("items", [])
@@ -46,17 +47,28 @@ class Mutes:
         mute = {"id": uuid.uuid4().hex[:6], "what": what.lower() if kind == "words" else what, "kind": kind, "until": until}
         self.items = [m for m in self._live() if m["what"] != mute["what"]] + [mute]
         self._save()
+        if self.feedback is not None and kind == "entity":
+            from .feedback import SHUSHED
+
+            self.feedback.record(what, SHUSHED, "shushed for a while" if hours else "shushed")
         return mute
 
     def remove(self, what: str | None = None) -> int:
         """Unmute by id, entity or words; None clears everything."""
         before = len(self.items)
         if what is None:
-            self.items = []
+            gone, self.items = self.items, []
         else:
             key = what.strip().lower()
-            self.items = [m for m in self.items if key not in (m["id"], m["what"].lower())]
+            gone = [m for m in self.items if key in (m["id"], m["what"].lower())]
+            self.items = [m for m in self.items if m not in gone]
         self._save()
+        if self.feedback is not None:
+            from .feedback import SHUSHED
+
+            for m in gone:  # they want to hear about it again
+                if m["kind"] == "entity":
+                    self.feedback.record(m["what"], -SHUSHED, "unshushed")
         return before - len(self.items)
 
     def entity_muted(self, entity_id: str) -> bool:

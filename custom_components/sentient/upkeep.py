@@ -123,6 +123,8 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
         from .security import check
 
         out["security"] = check(hass)["summary"]
+    if overnight := rt.night_watch.overnight(12):
+        out["unusual_overnight"] = overnight
 
     if "energy" in want:
         from .energy import async_report, describe
@@ -220,6 +222,8 @@ class Upkeep:
         local = dt_util.as_local(now)
         if local.minute == 7 and 8 <= local.hour <= 22:
             self.hass.async_create_background_task(self._async_energy_check(local), "sentient_energy")
+        if local.weekday() == 6 and local.hour == 18 and local.minute == 30 and rt.options.get("weekly_report", True):
+            self.weekly_report()
         if (digest_at := rt.options.get(CONF_DIGEST_TIME)) and local.strftime("%H:%M") == str(digest_at)[:5]:
             self.hass.async_create_background_task(self._async_digest_quietly(), "sentient_digest")
         self._maybe_briefing(rt, now)
@@ -244,6 +248,15 @@ class Upkeep:
             self._energy_flagged.add(item["name"])
             times = f"about {item['times_usual']}× its usual" if item.get("times_usual") else "far more than usual"
             self._rt().timeline.add("energy", f"{item['name']} has used {item['kwh']} kWh today — {times}")
+
+    def weekly_report(self) -> dict[str, Any]:
+        """What the house learned and noticed this week — kept on the timeline."""
+        from .weekly import build, summary
+
+        report = build(self._rt())
+        text = summary(report)
+        self._rt().timeline.add("learned", text, "this week")
+        return {"summary": text, **report}
 
     async def _async_digest_quietly(self) -> None:
         try:

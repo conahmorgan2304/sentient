@@ -27,7 +27,7 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
     if kind == "critical" and "critical" in kinds:
         return "ALERT"
     if kind == "security" and "security" in kinds:
-        return "Left open"
+        return "Night watch" if item.get("alert") else "Left open"
     if kind == "said" and "urgent" in kinds and item.get("priority") == "urgent" and item.get("source") != "critical":
         return "Announcement"
     if kind == "held":
@@ -42,6 +42,8 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
         return "Watch"
     if kind == "digest" and "digest" in kinds:
         return "Daily digest"
+    if kind == "learned" and "digest" in kinds:
+        return "This week"
     if kind == "health" and "health" in kinds:
         return "House health"
     return None

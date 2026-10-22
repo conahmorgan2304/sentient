@@ -20,6 +20,15 @@ from homeassistant.helpers.translation import async_get_translations
 
 from .config_flow import _briefing_schema, _speech_schema
 from .const import (
+    CONF_COMFORT_TEMP,
+    CONF_HEATING_ENTITIES,
+    CONF_INSIDE_SENSORS,
+    CONF_NIGHT_WATCH,
+    CONF_NIGHT_WATCH_ANNOUNCE,
+    CONF_NIGHT_WATCH_ENTITIES,
+    CONF_NIGHT_WATCH_SPEAKERS,
+    CONF_PREHEAT,
+    CONF_WEEKLY_REPORT,
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
     CONF_NOTIFY_TARGETS,
@@ -100,6 +109,13 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_WELCOME, CONF_WELCOME_PEOPLE,
+        CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT,
+    ]),
+    ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
+        CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
+    ]),
+    ("heating", "Heating", "mdi:radiator", "What it learns about the heating, and warming up before people are up.", [
+        CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_COMFORT_TEMP,
     ]),
     ("door", "Door & cameras", "mdi:doorbell-video", "Doorbell log, parcels, faces and camera checks.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
@@ -186,6 +202,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_timeline)
     websocket_api.async_register_command(hass, ws_digest)
     websocket_api.async_register_command(hass, ws_mutes)
+    websocket_api.async_register_command(hass, ws_insights)
+    websocket_api.async_register_command(hass, ws_weekly)
     websocket_api.async_register_command(hass, ws_shortcuts)
     websocket_api.async_register_command(hass, ws_shortcut_save)
     websocket_api.async_register_command(hass, ws_shortcut_delete)
@@ -494,7 +512,10 @@ async def ws_digest(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     connection.send_result(msg["id"], result)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "sentient/mutes", vol.Optional("remove"): str, vol.Optional("clear"): bool})
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/mutes", vol.Optional("remove"): str, vol.Optional("clear"): bool,
+    vol.Optional("unlearn"): str, vol.Optional("unlearn_all"): bool,
+})
 @callback
 def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -506,7 +527,12 @@ def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         mutes.remove(None)
     elif msg.get("remove"):
         mutes.remove(msg["remove"])
-    connection.send_result(msg["id"], {"mutes": mutes.listing()})
+    feedback = entry.runtime_data.feedback
+    if msg.get("unlearn_all"):
+        feedback.reset(None)
+    elif msg.get("unlearn"):
+        feedback.reset(msg["unlearn"])
+    connection.send_result(msg["id"], {"mutes": mutes.listing(), "learned": feedback.listing()})
 
 
 # ----- named routines -------------------------------------------------------------
@@ -615,3 +641,27 @@ async def ws_critical_test(hass: HomeAssistant, connection, msg: dict[str, Any])
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
     connection.send_result(msg["id"], await entry.runtime_data.critical.async_test())
+
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/insights"})
+@callback
+def ws_insights(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """What the house has learned about heating and its doors at night."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not loaded")
+        return
+    rt = entry.runtime_data
+    connection.send_result(msg["id"], {"heating": rt.heating.report(), "night_watch": rt.night_watch.describe()})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/weekly"})
+@callback
+def ws_weekly(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Make the weekly 'what I learned' report now (also kept on the timeline)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not loaded")
+        return
+    connection.send_result(msg["id"], entry.runtime_data.upkeep.weekly_report())
