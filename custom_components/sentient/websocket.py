@@ -384,6 +384,8 @@ def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
             vol.Optional("off_after"): vol.Coerce(float),
             vol.Optional("brightness"): vol.Coerce(int),
             vol.Optional("night_brightness"): vol.Coerce(int),
+            vol.Optional("lux_sensor"): vol.Any(None, cv.entity_id),
+            vol.Optional("lux_below"): vol.Coerce(float),
         },
     }
 )

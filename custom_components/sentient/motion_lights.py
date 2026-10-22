@@ -48,6 +48,8 @@ class MotionRule:
     off_after: float = 3  # minutes after the last movement
     brightness: int = 100  # percent; ignored for switches
     night_brightness: int = 10  # percent late at night; 0 = no dimming
+    lux_sensor: str | None = None  # optional: dark means this reads below lux_below
+    lux_below: float = 30
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     last: str | None = None  # what happened last, for the page
     last_time: str | None = None
@@ -140,6 +142,40 @@ class MotionLights:
         self.night_end = _time(end, DEFAULT_NIGHT_END).strftime("%H:%M")
         self._save()
 
+    def find(self, name: str) -> MotionRule | None:
+        """A rule by id, entity id or (part of) the light's name."""
+        text = name.strip().lower()
+        best = None
+        for rule in self.rules.values():
+            st = self.hass.states.get(rule.light)
+            label = (st.name if st else rule.light).lower()
+            if text in (rule.id, rule.light.lower(), label):
+                return rule
+            if text and (text in label or label in text or text in rule.light):
+                best = best or rule
+        return best
+
+    def set_enabled(self, rule: MotionRule, enabled: bool) -> None:
+        rule.enabled = enabled
+        if not enabled:
+            self._release(rule.light)
+        self._save()
+
+    def describe(self) -> list[dict[str, Any]]:
+        out = []
+        for rule in self.rules.values():
+            st = self.hass.states.get(rule.light)
+            out.append({
+                "light": st.name if st else rule.light,
+                "on": rule.enabled,
+                "stays_off_in_quiet_hours": rule.respect_quiet,
+                "only_after_dark": rule.only_dark,
+                "off_after_minutes": rule.off_after,
+                "late_night_brightness": rule.night_brightness or None,
+                "last": rule.last,
+            })
+        return out
+
     @property
     def managed_lights(self) -> set[str]:
         return {r.light for r in self.rules.values()}
@@ -175,7 +211,13 @@ class MotionLights:
             now or dt_util.now(), _time(self.night_start, DEFAULT_NIGHT_START), _time(self.night_end, DEFAULT_NIGHT_END)
         )
 
-    def _dark(self) -> bool:
+    def _dark(self, rule: MotionRule | None = None) -> bool:
+        if rule is not None and rule.lux_sensor:
+            st = self.hass.states.get(rule.lux_sensor)
+            try:
+                return float(st.state) < float(rule.lux_below)  # type: ignore[union-attr]
+            except (AttributeError, TypeError, ValueError):
+                pass  # sensor missing or unknown: fall back to the sun
         sun = self.hass.states.get("sun.sun")
         if sun is not None:
             return sun.state == "below_horizon"
@@ -238,7 +280,7 @@ class MotionLights:
             self._ours.pop(rule.light, None)
         if light.state == STATE_ON:
             return  # someone else's light
-        if rule.only_dark and not self._dark():
+        if rule.only_dark and not self._dark(rule):
             return
         if rule.respect_quiet and self.speech.quiet_now():
             self._note(rule, "stayed off: quiet hours")

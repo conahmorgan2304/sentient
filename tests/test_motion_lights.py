@@ -121,3 +121,30 @@ async def test_websocket_crud(hass: HomeAssistant, hass_ws_client) -> None:
     await ws.send_json({"id": 4, "type": "sentient/motion_lights/delete", "rule_id": rule_id})
     assert (await ws.receive_json())["result"]["rules"] == []
     assert entry.runtime_data.motion_lights.managed_lights == set()
+
+
+async def test_lux_sensor_and_voice_tool(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.helpers import llm
+
+    entry = await _setup(hass, freezer, 13)
+    hass.states.async_set("sun.sun", "above_horizon")
+    hass.states.async_set("sensor.landing_lux", "80")
+    on = async_mock_service(hass, "light", "turn_on")
+    ml = entry.runtime_data.motion_lights
+    ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "lux_sensor": "sensor.landing_lux", "lux_below": 40})
+    hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"})
+    await _motion(hass, True)
+    assert not on  # bright enough
+    await _motion(hass, False)
+    hass.states.async_set("sensor.landing_lux", "12")
+    await _motion(hass, True)
+    assert len(on) == 1  # dark on the landing even in daytime
+    await _motion(hass, False)
+
+    api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="test", context=None, language="en", assistant=None, device_id=None))
+    res = await api.async_call_tool(llm.ToolInput(tool_name="sentient_motion_lights", tool_args={"light": "landing", "on": False}))
+    data = getattr(res, "data", res)
+    assert data["follows_motion"] is False and not ml.find("landing").enabled
+    hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"})
+    await _motion(hass, True)
+    assert len(on) == 1

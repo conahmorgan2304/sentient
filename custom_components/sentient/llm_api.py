@@ -404,6 +404,33 @@ class SpotTool(_Tool):
         return {"learned": spot["name"], "camera": hass.states.get(camera).name}
 
 
+class MotionLightsTool(_Tool):
+    name = "sentient_motion_lights"
+    description = (
+        "Lights that come on with movement after dark. With no light, lists them. With a light and "
+        "on=false/true, stops or restarts that light following motion, e.g. 'stop the landing light "
+        "coming on with motion'."
+    )
+    parameters = vol.Schema({vol.Optional("light"): cv.string, vol.Optional("on"): cv.boolean})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        ml = rt.motion_lights
+        if not args.get("light") or "on" not in args:
+            return {"motion_lights": ml.describe()}
+        rule = ml.find(args["light"])
+        if rule is None:
+            return {"error": "No motion light matches that", "motion_lights": [d["light"] for d in ml.describe()]}
+        ml.set_enabled(rule, bool(args["on"]))
+        st = hass.states.get(rule.light)
+        return {"light": st.name if st else rule.light, "follows_motion": rule.enabled}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -417,7 +444,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool()],
+                   RoutinesTool(), AdoptRoutineTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:
