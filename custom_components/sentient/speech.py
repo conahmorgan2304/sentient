@@ -41,6 +41,8 @@ from .const import (
     DEFAULT_SUPPRESS_SECONDS,
     EVENT_HELD,
     EVENT_SPOKE,
+    CONF_CHIME,
+    DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
 )
@@ -125,6 +127,11 @@ class SpeechRouter:
     @property
     def speakers(self) -> list[str]:
         return list(self.options.get(CONF_SPEAKERS) or [])
+
+    @property
+    def chime(self) -> bool:
+        """Play the satellite's chime before speaking."""
+        return bool(self.options.get(CONF_CHIME, DEFAULT_CHIME))
 
     @property
     def banned(self) -> list[str]:
@@ -283,7 +290,7 @@ class SpeechRouter:
             await self.hass.services.async_call(
                 "assist_satellite",
                 "announce",
-                {"message": text},
+                {"message": text, "preannounce": self.chime},
                 target={"entity_id": speakers},
                 blocking=True,
             )
@@ -299,7 +306,7 @@ class SpeechRouter:
         targets: list[str] | None = None,
         source: str | None = None,
         extra_prompt: str | None = None,
-        preannounce: bool = False,
+        preannounce: bool | None = None,
     ) -> SpeechResult:
         """Ask out loud and open the microphone, so the reply goes to that speaker's voice agent.
 
@@ -330,7 +337,11 @@ class SpeechRouter:
             await self.hass.services.async_call(
                 "assist_satellite",
                 "start_conversation",
-                {"start_message": text, "extra_system_prompt": prompt, "preannounce": preannounce},
+                {
+                    "start_message": text,
+                    "extra_system_prompt": prompt,
+                    "preannounce": self.chime if preannounce is None else preannounce,
+                },
                 target={"entity_id": speaker},
                 blocking=True,
             )

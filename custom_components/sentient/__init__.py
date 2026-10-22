@@ -120,7 +120,7 @@ ASK_SCHEMA = vol.Schema(
         vol.Optional("priority", default="normal"): vol.In(PRIORITIES),
         vol.Optional("speaker"): cv.string,
         vol.Optional("extra_prompt"): cv.string,
-        vol.Optional("preannounce", default=False): cv.boolean,
+        vol.Optional("preannounce"): cv.boolean,
     }
 )
 REMIND_SCHEMA = vol.Schema(
@@ -331,7 +331,7 @@ def _register_services(hass: HomeAssistant) -> None:
             targets = [found] if found else None
         result = await rt.speech.async_ask(
             call.data["question"], call.data["priority"], targets, source="service",
-            extra_prompt=call.data.get("extra_prompt"), preannounce=call.data["preannounce"],
+            extra_prompt=call.data.get("extra_prompt"), preannounce=call.data.get("preannounce"),
         )
         return result.as_dict()
 

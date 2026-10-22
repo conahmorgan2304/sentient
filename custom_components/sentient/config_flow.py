@@ -47,6 +47,8 @@ from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
     CONF_NOTIFY_TARGETS,
+    CONF_CHIME,
+    DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
     NOTIFY_KINDS,
     DEFAULT_NOTIFY_WHEN,
@@ -94,6 +96,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_CHAT_AGENT, **d(CONF_CHAT_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
+            vol.Required(CONF_CHIME, **d(CONF_CHIME, DEFAULT_CHIME)): selector.BooleanSelector(),
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),
             vol.Required(CONF_QUIET_END, **d(CONF_QUIET_END, DEFAULT_QUIET_END)): selector.TimeSelector(),

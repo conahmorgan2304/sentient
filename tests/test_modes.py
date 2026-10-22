@@ -46,3 +46,19 @@ async def test_hush_and_guest_mode(hass: HomeAssistant, freezer) -> None:
     assert not speech.guest_mode
     texts = [i["text"] for i in entry.runtime_data.timeline.items if i["kind"] == "mode"]
     assert texts[0] == "Guest mode off" and "Guest mode on" in texts and "Talking again" in texts
+
+
+async def test_chime_setting_and_switch(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    await hass.services.async_call(DOMAIN, "say", {"message": "One"}, blocking=True)
+    assert said[-1].data["preannounce"] is True
+    await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.nova_chime"}, blocking=True)
+    await hass.async_block_till_done()
+    assert entry.options["chime"] is False and hass.states.get("switch.nova_chime").state == "off"
+    await hass.services.async_call(DOMAIN, "say", {"message": "Two"}, blocking=True)
+    assert said[-1].data["preannounce"] is False

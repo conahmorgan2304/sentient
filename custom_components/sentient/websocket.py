@@ -23,6 +23,7 @@ from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
     CONF_NOTIFY_TARGETS,
+    CONF_CHIME,
     CONF_NOTIFY_WHEN,
     CONF_ALL_OCCUPIED,
     CONF_ANNOUNCE_VISITORS,
@@ -68,7 +69,7 @@ from .const import (
 # (id, title, icon, blurb, keys) — the order the Settings tab shows them in
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
-        CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_ALL_OCCUPIED,
+        CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_ALL_OCCUPIED,
         CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down and how rooms are worked out.", [

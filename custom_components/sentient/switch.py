@@ -14,7 +14,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import SentientConfigEntry
-from .const import DOMAIN, EVENT_MODE_CHANGED
+from .const import CONF_CHIME, DOMAIN, EVENT_MODE_CHANGED
 
 DEFAULT_HUSH_MINUTES = 60
 
@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -101,6 +101,32 @@ class GuestSwitch(_ModeSwitch):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         set_guest_mode(self.hass, self._entry, False)
+
+
+class ChimeSwitch(_ModeSwitch):
+    """The speakers' chime before Sentient speaks (the same as the setting)."""
+
+    _attr_icon = "mdi:bell-ring-outline"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "chime")
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.speech.chime
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self._set(False)
+
+    def _set(self, on: bool) -> None:
+        entry = self._entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_CHIME: on})
+        entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_CHIME: on}
+        self.async_write_ha_state()
+        self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"chime": on})
 
 
 _HUSH_TIMERS: dict[str, Any] = {}

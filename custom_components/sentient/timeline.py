@@ -133,7 +133,9 @@ class Timeline:
     @callback
     def _mode(self, event: Event) -> None:
         d = event.data
-        if "guest_mode" in d:
+        if "chime" in d:
+            self.add("mode", "Chime on" if d["chime"] else "Chime off")
+        elif "guest_mode" in d:
             self.add("mode", "Guest mode on" if d["guest_mode"] else "Guest mode off")
         elif d.get("hush") and d.get("until"):
             until = dt_util.as_local(dt_util.parse_datetime(d["until"]))
