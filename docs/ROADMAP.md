@@ -52,3 +52,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Hush and guest mode: switches, service, voice tool, page buttons (0.22.0)
 - [x] Chime on/off: setting, switch and page button (0.23.0)
 - [x] Daily digest; timeline keeps health baseline across restarts and names rooms (0.24.0)
+- [x] Welcome home with what happened while you were out (0.25.0)

@@ -47,6 +47,7 @@ from .spots import Spots
 from .motion_lights import MotionLights
 from .timeline import Timeline
 from .notifier import Notifier
+from .welcome import Welcome
 from .visitors import Visitors
 from .watches import WatchManager
 from .speech import SpeechRouter
@@ -76,6 +77,7 @@ class SentientRuntime:
     motion_lights: MotionLights
     timeline: Timeline
     notifier: Notifier
+    welcome: Welcome
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -205,10 +207,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     motion_lights.async_start()
     entry.async_on_unload(motion_lights.async_stop)
     learner.skip = lambda: motion_lights.managed_lights
+    welcome = Welcome(hass, options, lambda: entry.runtime_data)
+    welcome.async_start()
+    entry.async_on_unload(welcome.async_stop)
     entry.runtime_data = SentientRuntime(
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
-        motion_lights=motion_lights, timeline=timeline, notifier=notifier,
+        motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome,
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
@@ -256,6 +261,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.spots.options = options
     entry.runtime_data.health.options = options
     entry.runtime_data.notifier.options = options
+    entry.runtime_data.welcome.options = options
+    entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
     if "frontend" in hass.config.components:
         from homeassistant.components import frontend

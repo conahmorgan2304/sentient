@@ -49,6 +49,8 @@ from .const import (
     CONF_NOTIFY_TARGETS,
     CONF_CHIME,
     CONF_DIGEST_TIME,
+    CONF_WELCOME,
+    CONF_WELCOME_PEOPLE,
     DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
     NOTIFY_KINDS,
@@ -125,6 +127,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_LEARN_ENTITIES, **d(CONF_LEARN_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["light", "switch", "fan", "input_boolean", "cover"], multiple=True)
+            ),
+            vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="person", multiple=True)
             ),
             vol.Required(CONF_SUGGEST_ROUTINES, **d(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)): selector.BooleanSelector(),
             vol.Optional(CONF_DOOR_CAMERA, **d(CONF_DOOR_CAMERA)): selector.EntitySelector(

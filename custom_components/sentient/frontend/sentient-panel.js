@@ -629,7 +629,7 @@
       this._$("tldig").innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
         <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "SUMMARISE 24H"}</button>`;
       const want = this._tlKind || "all";
-      const items = (this._tlItems || []).filter((i) => want === "all" || i.kind === want);
+      const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : i.kind === want));
       const counts = {};
       (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
       this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]

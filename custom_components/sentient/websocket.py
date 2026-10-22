@@ -25,6 +25,8 @@ from .const import (
     CONF_NOTIFY_TARGETS,
     CONF_CHIME,
     CONF_DIGEST_TIME,
+    CONF_WELCOME,
+    CONF_WELCOME_PEOPLE,
     CONF_NOTIFY_WHEN,
     CONF_ALL_OCCUPIED,
     CONF_ANNOUNCE_VISITORS,
@@ -82,7 +84,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
-        CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_SUGGEST_ROUTINES,
+        CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_SUGGEST_ROUTINES, CONF_WELCOME, CONF_WELCOME_PEOPLE,
     ]),
     ("door", "Door & cameras", "mdi:doorbell-video", "Doorbell log, parcels, faces and camera checks.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS,

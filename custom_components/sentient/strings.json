@@ -120,7 +120,9 @@
           "second_opinion_ai": "Second opinion AI",
           "notify_targets": "Phones to notify",
           "notify_when": "Send to phones",
-          "chime": "Chime before speaking"
+          "chime": "Chime before speaking",
+          "welcome_home": "Welcome people home",
+          "welcome_people": "People to welcome"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -148,7 +150,9 @@
           "second_opinion_ai": "Optional: a bigger model asked only when the usual one says the picture is too dark or unclear to be sure. Counts towards the daily limit.",
           "notify_targets": "Notify entities, e.g. the Home Assistant app on each phone or watch.",
           "notify_when": "Each kind is sent at most once in ten minutes.",
-          "chime": "Off: announcements and questions start straight away, without the speaker's chime."
+          "chime": "Off: announcements and questions start straight away, without the speaker's chime.",
+          "welcome_home": "When someone gets back after 20 minutes or more, say \"Welcome back\" in the room they're in — plus what's worth knowing from while they were out (visitors, things that finished, problems). Never in quiet hours, hush or guest mode.",
+          "welcome_people": "Empty means everyone."
         }
       },
       "memories": {
