@@ -82,6 +82,7 @@ class CameraSecurity:
         self._loiter_timers: dict[str, Any] = {}
         self._last_alert: dict[str, datetime] = {}
         self.journeys: list[dict[str, Any]] = []
+        self._last_route: tuple[str, datetime] | None = None
         self._unsub = None
 
     @property
@@ -167,13 +168,29 @@ class CameraSecurity:
             self._journey_timer()
             self._journey_timer = None
         journey, self._journey = self._journey, []
-        if len({s for _, s in journey}) < 2:
+        stops: list[str] = []  # each place once, in the order first reached
+        for _, s in journey:
+            if s not in stops:
+                stops.append(s)
+        if len(stops) < 2:
             return
-        route = " → ".join(place(self.hass, s) for _, s in journey)
+        inside = set(self.options.get(CONF_CAMSEC_INSIDE) or [])
+        rt = self._rt()
+        if not rt.speech.quiet_hours_now():
+            # in the day, people passing outside or pottering in the garden aren't news: only someone
+            # coming in from outside to inside the boundary is worth a line
+            if not inside or stops[0] in inside or not any(s in inside for s in stops):
+                return
+        names = [place(self.hass, s) for s in stops]
+        route = " → ".join(names[:6]) + (" → …" if len(names) > 6 else "")
+        now = dt_util.utcnow()
+        if (last := self._last_route) and last[0] == route and now - last[1] < timedelta(minutes=20):
+            return  # the same trip again: once is enough
+        self._last_route = (route, now)
         mins = max(1, round((journey[-1][0] - journey[0][0]).total_seconds() / 60))
         start = dt_util.as_local(journey[0][0])
         self.journeys = [{"time": journey[0][0].isoformat(), "route": route}, *self.journeys][:30]
-        self._rt().timeline.add("noticed", f"Someone walked {route}", f"{start:%H:%M}, over {mins} minute{'s' if mins != 1 else ''}")
+        rt.timeline.add("noticed", f"Someone walked {route}", f"{start:%H:%M}, over {mins} minute{'s' if mins != 1 else ''}")
 
     # ----- alerting ------------------------------------------------------------------------
     @callback

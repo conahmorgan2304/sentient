@@ -62,6 +62,34 @@ async def test_daytime_journey_through_the_gate_is_logged_not_alerted(hass: Home
     assert not any(i.get("alert") for i in items) and not said
 
 
+async def test_daytime_pottering_is_not_logged_and_long_trips_are_short(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 14, 0)))
+    entry = await _setup(hass)
+    async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door"})
+    # garden → shed → garden → shed…: someone pottering about inside, not news in the day
+    for _ in range(3):
+        await _see(hass, "garden_person")
+        await _see(hass, "garden_person", False)
+        await _see(hass, "shed_person")
+        await _see(hass, "shed_person", False)
+        freezer.tick(timedelta(seconds=30))
+    freezer.tick(timedelta(minutes=4))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert not any(i["text"].startswith("Someone walked") for i in entry.runtime_data.timeline.items)
+    # in from the gate, back and forth a lot: one short line, each place once
+    for s in ("gate_person", "garden_person", "shed_person", "garden_person", "shed_person", "gate_person"):
+        await _see(hass, s)
+        await _see(hass, s, False)
+        freezer.tick(timedelta(seconds=20))
+    freezer.tick(timedelta(minutes=4))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    walked = [i["text"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Someone walked")]
+    assert walked == ["Someone walked Gate → Garden → Shed"]
+
+
 async def test_in_the_garden_without_the_gate_opening_is_an_alert(hass: HomeAssistant, freezer) -> None:
     freezer.move_to(dt_util.as_utc(_t(21, 14, 0)))
     entry = await _setup(hass)

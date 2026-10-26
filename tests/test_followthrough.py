@@ -76,3 +76,18 @@ async def test_heating_turned_up_by_hand_goes_back_after_the_limit(hass: HomeAss
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert presets and presets[0].data["preset_mode"] == "auto"
+
+
+async def test_an_announcement_is_not_someone_asking(hass: HomeAssistant, freezer) -> None:
+    await _setup(hass)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("switch.popup", "on", {"friendly_name": "Popup"})
+    async_mock_service(hass, "switch", "turn_off")
+    # the satellite reading out an announcement goes to "responding" — nobody spoke to it
+    hass.states.async_set("assist_satellite.kitchen", "responding")
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.popup"}, blocking=True, context=Context())
+    freezer.tick(timedelta(seconds=21))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert not said

@@ -26,9 +26,11 @@ _LOGGER = logging.getLogger(__name__)
 
 VOICE_RECENT = timedelta(seconds=90)
 CHECK_AFTER = 20  # seconds
-DOMAINS = {"light", "switch", "fan", "climate", "cover", "lock", "media_player", "input_boolean",
+# real devices only: helpers (input_boolean…) have no batteries to go flat
+DOMAINS = {"light", "switch", "fan", "climate", "cover", "lock", "media_player",
            "vacuum", "water_heater", "humidifier", "valve"}
-VOICE_STATES = {"listening", "processing", "responding"}
+# someone speaking to it — not "responding", which is also the satellite reading out an announcement
+VOICE_STATES = {"listening", "processing"}
 _OFF = {"off", "closed", "locked", "idle", "standby", "docked", "paused"}
 
 
