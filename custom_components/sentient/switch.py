@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -127,6 +127,34 @@ class ChimeSwitch(_ModeSwitch):
         entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_CHIME: on}
         self.async_write_ha_state()
         self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"chime": on})
+
+
+class MediaSpeakersSwitch(_ModeSwitch):
+    """Echos and other media players as speakers (the same as the setting)."""
+
+    _attr_icon = "mdi:speaker-multiple"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "media_speakers")
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.speech.media_on
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self._set(False)
+
+    def _set(self, on: bool) -> None:
+        from .const import CONF_MEDIA_SPEAKERS
+
+        entry = self._entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_MEDIA_SPEAKERS: on})
+        entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_MEDIA_SPEAKERS: on}
+        self.async_write_ha_state()
+        self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"media_speakers": on})
 
 
 class PartySwitch(_ModeSwitch):

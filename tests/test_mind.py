@@ -340,3 +340,23 @@ async def test_routine_with_details(hass: HomeAssistant) -> None:
     assert out["said"].startswith("Hoovering the kitchen and hallway")
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
     assert "Hoover rooms (details: rooms = which rooms" in api.api_prompt
+
+
+async def test_echos_can_be_switched_off(hass: HomeAssistant, monkeypatch) -> None:
+    import custom_components.sentient.speech as speech_mod
+
+    async def no_wait(_s):
+        return None
+
+    other = MockConfigEntry(domain="alexa_media")
+    other.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create("media_player", "alexa_media", "echo1", suggested_object_id="bathroom_echo",
+                                           config_entry=other)
+    await _setup(hass, speakers=["assist_satellite.kitchen", "media_player.bathroom_echo"])
+    hass.states.async_set("media_player.bathroom_echo", "idle")
+    sat = async_mock_service(hass, "assist_satellite", "announce")
+    alexa = async_mock_service(hass, "notify", "alexa_media")
+    monkeypatch.setattr(speech_mod.asyncio, "sleep", no_wait)
+    await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.nova_echo_speakers"}, blocking=True)
+    await hass.services.async_call(DOMAIN, "say", {"message": "Alarm.", "speaker": "media_player.bathroom_echo"}, blocking=True)
+    assert not alexa and sat  # said on a voice speaker instead

@@ -179,7 +179,8 @@
           "drive_camera": "Drive camera",
           "drive_triggers": "Look when these settle",
           "full_volume_speakers": "Full volume on these speakers",
-          "tts_entity": "Voice for other speakers"
+          "tts_entity": "Voice for other speakers",
+          "media_speakers": "Use Echos and other media players"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -261,7 +262,8 @@
           "drive_triggers": "Motion or car sensors that see the drive. Empty: the camera's own motion and car sensors.",
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
-          "speakers": "Assist speakers or media players (Echos through Alexa Media Player)."
+          "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
+          "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards."
         }
       },
       "memories": {
@@ -348,6 +350,9 @@
       },
       "party_mode": {
         "name": "Light show"
+      },
+      "media_speakers": {
+        "name": "Echo speakers"
       }
     }
   },

@@ -143,7 +143,9 @@ class Timeline:
     @callback
     def _mode(self, event: Event) -> None:
         d = event.data
-        if "chime" in d:
+        if "media_speakers" in d:
+            self.add("mode", "Echo speakers on" if d["media_speakers"] else "Echo speakers off")
+        elif "chime" in d:
             self.add("mode", "Chime on" if d["chime"] else "Chime off")
         elif "guest_mode" in d:
             self.add("mode", "Guest mode on" if d["guest_mode"] else "Guest mode off")

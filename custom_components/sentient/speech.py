@@ -48,6 +48,7 @@ from .const import (
     CONF_ROOM_VOLUME,
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
+    CONF_MEDIA_SPEAKERS,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
@@ -144,8 +145,16 @@ class SpeechRouter:
 
     # ----- configuration helpers -------------------------------------------------
     @property
+    def media_on(self) -> bool:
+        """Media players (Echos…) are used as speakers; off keeps to the voice speakers."""
+        return bool(self.options.get(CONF_MEDIA_SPEAKERS, True))
+
+    def usable(self, entity_ids: list[str] | None) -> list[str]:
+        return [e for e in entity_ids or [] if self.media_on or not e.startswith("media_player.")]
+
+    @property
     def speakers(self) -> list[str]:
-        return list(self.options.get(CONF_SPEAKERS) or [])
+        return self.usable(self.options.get(CONF_SPEAKERS))
 
     def volume_now(self) -> float | None:
         """Speaker volume for speaking now (0..1), or None to leave it alone."""
@@ -200,7 +209,7 @@ class SpeechRouter:
             s for s in self.speakers
             if (st := self.hass.states.get(s)) is not None and st.state != "unavailable"
         ]
-        backup = set(self.options.get(CONF_FALLBACK_SPEAKERS) or [])
+        backup = set(self.usable(self.options.get(CONF_FALLBACK_SPEAKERS)))
         self.nobody_about = False
         if self.tracker is not None:
             for group in ([s for s in live if s not in backup], [s for s in live if s in backup]):
@@ -209,7 +218,7 @@ class SpeechRouter:
                     return chosen
             self.nobody_about = True
         default = self.options.get(CONF_DEFAULT_SPEAKER)
-        if default:
+        if default and self.usable([default]):
             return [default]
         return self.speakers[:1]
 
@@ -230,7 +239,7 @@ class SpeechRouter:
     def find_speaker(self, name: str) -> str | None:
         """Match an entity id, area name or speaker name to a configured speaker."""
         needle = name.strip().lower()
-        every = self.speakers + [s for s in self.options.get(CONF_FALLBACK_SPEAKERS) or [] if s not in self.speakers]
+        every = self.speakers + [s for s in self.usable(self.options.get(CONF_FALLBACK_SPEAKERS)) if s not in self.speakers]
         if name in every:
             return name
         areas = ar.async_get(self.hass)
@@ -322,6 +331,7 @@ class SpeechRouter:
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
+        targets = self.usable(targets) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker()
         if not speakers:
             return self._held("no_speaker", text, source)
@@ -421,7 +431,7 @@ class SpeechRouter:
         text = clean_message(question, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
-        candidates = targets or self.pick_speaker()
+        candidates = self.usable(targets) or self.pick_speaker()
         listening = [
             s for s in candidates
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
