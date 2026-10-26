@@ -346,6 +346,6 @@ class MindSensor(_Base):
             "wondering": curious["wondering"],
             "asked": curious["asked"],
             "follow_ups": rt.loops.listing(),
-            "to_pass_on": [q["text"] for q in rt.followyou.queue],
+            "to_pass_on": [q["text"] for q in rt.followyou.queue if q.get("source") != "thought"],
             "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
         }

@@ -178,6 +178,6 @@ class Alarms:
         for a in self.items.items.values():
             nxt = next_ring(a, now)
             out.append({"id": a["id"], "name": a["name"], "time": str(a.get("time"))[:5], "days": a.get("days") or [],
-                        "description": a.get("description") or "", "on": a.get("enabled", True),
+                        "description": a.get("description") or "", "on": a.get("enabled", True), "silent": bool(a.get("silent")),
                         "next": nxt.isoformat() if nxt else None})
         return sorted(out, key=lambda x: x["next"] or "9")

@@ -105,11 +105,11 @@ class Foresight:
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Foresight couldn't read the forecast: %s", err)
         if rt is not None:
-            alarms = [a for a in rt.alarms.listing() if a.get("next") and a["on"]
+            alarms = [a for a in rt.alarms.listing() if a.get("next") and a["on"] and not a.get("silent")
                       and start <= dt_util.as_local(dt_util.parse_datetime(a["next"])) < end + timedelta(hours=-4)]
             if alarms:
                 out["alarms_tomorrow"] = [f"{a['time']} {a['name']}" for a in alarms]
-            tonight = [a for a in rt.alarms.listing() if a.get("next") and a["on"]
+            tonight = [a for a in rt.alarms.listing() if a.get("next") and a["on"] and not a.get("silent")
                        and now <= dt_util.as_local(dt_util.parse_datetime(a["next"])) < start]
             if tonight:
                 out["already_said_tonight_by_alarms"] = [f"{a['time']} {a['name']}" for a in tonight]
