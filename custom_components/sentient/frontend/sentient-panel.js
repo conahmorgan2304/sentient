@@ -1296,9 +1296,9 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   #ov .col::-webkit-scrollbar{width:6px} #ov .col::-webkit-scrollbar-thumb{background:rgba(0,255,247,.28);border-radius:3px}
 }
 .h{display:flex;align-items:center;gap:10px;margin-bottom:10px} .h.tight{margin:0}
-.h .t{font-size:12px;font-weight:700;letter-spacing:.32em;color:#00fff7;text-shadow:0 0 6px rgba(0,255,247,.5)}
+.h .t{flex:none;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.26em;color:#00fff7;text-shadow:0 0 6px rgba(0,255,247,.5)}
 .h i{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.45),transparent)}
-.h em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.14em;padding:3px 9px;border-radius:10px;color:#7fefff;border:1px solid rgba(0,255,247,.45);background:rgba(0,255,247,.08);white-space:nowrap}
+.h em{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.14em;padding:3px 9px;border-radius:10px;color:#7fefff;border:1px solid rgba(0,255,247,.45);background:rgba(0,255,247,.08);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .r{display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:5px;border-radius:10px;border:1px solid rgba(0,255,247,.10);background:rgba(0,255,247,.035)}
 .r ha-icon{--mdc-icon-size:16px;color:#00fff7;flex:none} .r.dim{opacity:.62} .r.dim ha-icon{color:#5aa9b8}
 .r.bad{border-color:rgba(255,90,120,.35);background:rgba(255,80,110,.06)} .r.bad ha-icon,.r.bad u{color:#ff7088}

@@ -321,7 +321,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     upkeep = Upkeep(hass, lambda: entry.runtime_data)
     upkeep.async_start()
     entry.async_on_unload(upkeep.async_stop)
-    health = HouseHealth(hass, options, lambda: entry.runtime_data)
+    health = HouseHealth(hass, options, lambda: getattr(entry, "runtime_data", None))
     health.async_start()
     entry.async_on_unload(health.async_stop)
     visitors = Visitors(hass, entry.entry_id, options, speech, watches)
