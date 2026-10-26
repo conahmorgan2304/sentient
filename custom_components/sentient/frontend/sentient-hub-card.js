@@ -12,6 +12,9 @@
      nodes:                 the voice speakers to show (default: every assist_satellite)
        - entity: assist_satellite.kitchen_speaker_assist_satellite
          name: Kitchen
+     house:                 facts row (default: lights on, doors & windows open, inside and outside temperature; false hides it)
+       - entity: sensor.x
+         name: Something
      system: {cpu: sensor.x, memory: sensor.y, memory_total_mb: 16384, disk: sensor.z, nvr: sensor.w,
               temperature: sensor.t, boot: sensor.b}
 */
@@ -56,7 +59,8 @@
       const spoke = ids.last_spoken && h.states[ids.last_spoken];
       if (spoke && spoke.last_updated !== this._spokeSig) { this._spokeSig = spoke.last_updated; if (!first) this._fetch(); }
       const sig = [...KEYS.map((k) => (ids[k] && h.states[ids[k]] ? h.states[ids[k]].last_updated : "")),
-        ...this._nodes().map((n) => (h.states[n.entity] || {}).state), ...Object.values(this._sys()).map((e) => (h.states[e] || {}).state)].join("|");
+        ...this._nodes().map((n) => (h.states[n.entity] || {}).state), ...Object.values(this._sys()).map((e) => (h.states[e] || {}).state),
+        JSON.stringify(this._glance().map((g) => g.val))].join("|");
       if (sig !== this._sig) { this._sig = sig; this._draw(); }
     }
 
@@ -101,6 +105,46 @@
       if (s.memory) out.memory = s.memory;
       if (s.nvr) out.nvr = s.nvr;
       pick("boot", ["_last_boot"]);
+      return out;
+    }
+
+    _glance() {
+      // counting across every entity is cheap but not free: at most every 5 seconds
+      if (this._gl && Date.now() - this._gl.at < 5000) return this._gl.v;
+      this._gl = { at: Date.now(), v: this._glanceNow() };
+      return this._gl.v;
+    }
+
+    _glanceNow() {
+      const S = this._hass.states, cfg = this._cfg.house;
+      if (Array.isArray(cfg)) {
+        return cfg.map((x) => {
+          const st = S[x.entity];
+          const unit = st && st.attributes.unit_of_measurement ? st.attributes.unit_of_measurement : "";
+          return { icon: x.icon || (st && st.attributes.icon) || "mdi:information-outline", val: st ? st.state + unit : "–", label: String(x.name || (st && st.attributes.friendly_name) || x.entity).toUpperCase(), more: x.entity };
+        });
+      }
+      if (cfg === false) return [];
+      const reg = this._hass.entities || {};
+      const real = (e) => !(reg[e] && (reg[e].hidden || reg[e].entity_category));
+      const lights = Object.values(S).filter((s) => s.entity_id.startsWith("light.") && s.state === "on" && real(s.entity_id)
+        && !Array.isArray(s.attributes.entity_id));
+      const OPENING = ["door", "window", "garage_door", "opening"];
+      const open = Object.values(S).filter((s) => s.entity_id.startsWith("binary_sensor.") && s.state === "on" && OPENING.includes(s.attributes.device_class));
+      const climate = Object.values(S).find((s) => s.entity_id.startsWith("climate.") && s.attributes.current_temperature != null);
+      const weather = Object.values(S).find((s) => s.entity_id.startsWith("weather.") && s.attributes.temperature != null);
+      const out = [
+        { icon: "mdi:lightbulb-group", val: lights.length, label: "LIGHTS ON", cls: lights.length ? "on" : "" },
+        { icon: open.length ? "mdi:door-open" : "mdi:door-closed-lock", val: open.length ? open.length : "ALL SHUT", label: open.length ? "OPEN" : "DOORS & WINDOWS",
+          cls: open.length ? "warn" : "ok", more: open.length === 1 ? open[0].entity_id : null },
+      ];
+      if (climate) {
+        const tgt = climate.attributes.temperature;
+        out.push({ icon: climate.attributes.hvac_action === "heating" ? "mdi:fire" : "mdi:home-thermometer-outline",
+          val: `${Math.round(climate.attributes.current_temperature * 10) / 10}°`, label: tgt != null ? `INSIDE · SET ${tgt}°` : "INSIDE",
+          cls: climate.attributes.hvac_action === "heating" ? "heat" : "", more: climate.entity_id });
+      }
+      if (weather) out.push({ icon: "mdi:weather-partly-cloudy", val: `${Math.round(weather.attributes.temperature)}°`, label: "OUTSIDE", more: weather.entity_id });
       return out;
     }
 
@@ -187,6 +231,9 @@
         + tile("mdi:radar", w ? w.state : "0", "WATCHING", w && +w.state ? "on" : "", w && w.entity_id)
         + tile(problems ? "mdi:alert-outline" : "mdi:shield-check-outline", problems ? problems : "OK", problems ? "PROBLEMS" : "HEALTH", problems ? "warn" : "ok", hl && hl.entity_id);
 
+      // the house right now: counted from the house's own entities (or the ones in `house:`)
+      const glance = this._glance();
+
       // feed: the latest few, one line each
       const feed = (this._items || []).filter((i) => FEED[i.kind] && !(i.kind === "noticed" && /decided it wasn't worth/.test(i.detail || "")))
         .slice(0, this._rows).map((i) => {
@@ -229,6 +276,7 @@
           <div class="quick">${quick}</div>
           ${next ? `<div class="next"><ha-icon icon="${next.icon}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
           <div class="tiles">${tiles}</div>
+          ${glance.length ? `<div class="glance">${glance.map((g) => `<div class="gl${g.cls ? " " + g.cls : ""}"${g.more ? ` data-act="more" data-id="${esc(g.more)}"` : ""}><ha-icon icon="${g.icon}"></ha-icon><div><b>${esc(g.val)}</b><span>${g.label}</span></div></div>`).join("")}</div>` : ""}
           <div class="fh"><span>FEED</span><i></i><button class="more" data-act="feed">ALL</button></div>
           <div class="feed">${feed}</div>
           ${bars.length ? `<div class="sys">${bars.join("")}</div>` : ""}
@@ -304,6 +352,12 @@
   .tile[data-act]{cursor:pointer} .tile ha-icon{--mdc-icon-size:16px;color:#5fd8e6} .tile b{font-size:18px;font-weight:700;color:#e9ffff;line-height:1.1}
   .tile span{font-size:8.5px;font-weight:800;letter-spacing:.14em;color:rgba(150,220,235,.6)}
   .tile.on{border-color:rgba(0,255,247,.45)} .tile.ok ha-icon{color:#3dffa8} .tile.warn{border-color:rgba(255,190,85,.5)} .tile.warn ha-icon,.tile.warn b{color:#ffbe55}
+  .glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px;z-index:1}
+  .gl{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.025);min-width:0}
+  .gl[data-act]{cursor:pointer} .gl ha-icon{--mdc-icon-size:19px;color:#5fd8e6;flex:none} .gl div{display:flex;flex-direction:column;min-width:0}
+  .gl b{font-size:15px;font-weight:700;color:#e9ffff;line-height:1.1;white-space:nowrap} .gl span{font-size:8px;font-weight:800;letter-spacing:.12em;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gl.on ha-icon{color:#ffd76a} .gl.ok ha-icon{color:#3dffa8} .gl.ok b{font-size:11px;letter-spacing:.1em} .gl.warn{border-color:rgba(255,190,85,.45)} .gl.warn ha-icon,.gl.warn b{color:#ffbe55}
+  .gl.heat ha-icon{color:#ff9a3d}
   .fh{display:flex;align-items:center;gap:8px;font-size:9.5px;font-weight:800;letter-spacing:.24em;color:#00fff7;z-index:1} .fh i{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.4),transparent)}
   .more{all:unset;cursor:pointer;font-size:9px;letter-spacing:.16em;color:rgba(150,220,235,.7);padding:2px 8px;border:1px solid rgba(0,255,247,.2);border-radius:8px}
   .feed{display:flex;flex-direction:column;gap:4px;z-index:1;min-height:0;overflow:hidden;flex:1}
