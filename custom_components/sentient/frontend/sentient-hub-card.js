@@ -8,7 +8,7 @@
 
    Options (all optional):
      height: 688            fixed height in px (otherwise it sizes to fit)
-     feed_rows: 4           how many feed lines
+     feed_rows: 4           most feed lines (with a fixed height it shows as many whole lines as fit, up to this)
      nodes:                 the voice speakers to show (default: every assist_satellite)
        - entity: assist_satellite.kitchen_speaker_assist_satellite
          name: Kitchen
@@ -38,7 +38,7 @@
   class SentientHubCard extends HTMLElement {
     setConfig(c) {
       this._cfg = c || {};
-      this._rows = parseInt(this._cfg.feed_rows, 10) || 4;
+      this._rows = parseInt(this._cfg.feed_rows, 10) || (parseInt(this._cfg.height, 10) ? 12 : 4);
       this._sig = null;
     }
     static getStubConfig() { return {}; }
@@ -281,6 +281,12 @@
           <div class="feed">${feed}</div>
           ${bars.length ? `<div class="sys">${bars.join("")}</div>` : ""}
         </ha-card>`;
+      // with a fixed height the feed fills the space left: drop whole lines that don't fit
+      if (fixed) requestAnimationFrame(() => {
+        const fd = this.shadowRoot.querySelector(".feed");
+        if (!fd) return;
+        for (let i = 0; i < 20 && fd.scrollHeight > fd.clientHeight + 1 && fd.children.length > 1; i++) fd.lastElementChild.remove();
+      });
     }
 
     _click(e) {
