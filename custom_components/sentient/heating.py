@@ -21,7 +21,8 @@ import logging
 from statistics import median
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.core import HomeAssistant, State, callback
+from homeassistant.const import EVENT_CALL_SERVICE
+from homeassistant.core import Context, Event, HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -29,6 +30,8 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_COMFORT_TEMP,
     CONF_HEATING_ENTITIES,
+    CONF_HEATING_LIMIT,
+    DEFAULT_HEATING_LIMIT,
     CONF_LEARN_ENTITIES,
     CONF_PREHEAT,
     CONF_WARM_BY_WEEKDAYS,
@@ -181,6 +184,7 @@ class Heating:
         self._done_day: dict[str, str] = {}
         self._unsubs: list = []
         self.learner = None  # set by the runtime: tells it which changes automations made
+        self.own_contexts: set[str] = set()
 
     @property
     def entities(self) -> list[str]:
@@ -197,6 +201,7 @@ class Heating:
         self._boosted = data.get("boosted", {})
         self._unsubs.append(async_track_time_change(self.hass, self._nightly, hour=3, minute=40, second=0))
         self._unsubs.append(async_track_time_change(self.hass, self._tick, second=5))
+        self._unsubs.append(self.hass.bus.async_listen(EVENT_CALL_SERVICE, self._on_call))
         last = dt_util.parse_datetime(self.last_run) if self.last_run else None
         if last is None or dt_util.utcnow() - last > timedelta(hours=26):
             from homeassistant.helpers.start import async_at_started
@@ -398,8 +403,11 @@ class Heating:
         }
         self._save()
         try:
+            context = Context()
+            self.own_contexts.add(context.id)
             await self.hass.services.async_call(
-                "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True
+                "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True,
+                context=context,
             )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Sentient could not preheat %s: %s", entity_id, err)
@@ -416,15 +424,67 @@ class Heating:
         st = self.hass.states.get(entity_id)
         if st is None or st.state == "off":
             return
+        context = Context()
+        self.own_contexts.add(context.id)
         try:
+            if boost.get("was_off"):
+                await self.hass.services.async_call(
+                    "climate", "turn_off", {"entity_id": entity_id}, blocking=True, context=context
+                )
+                self.timeline.add("heating", f"Turned {st.name} back off", boost.get("why") or "time limit")
+                return
             preset = boost.get("preset")
             if preset and preset in (st.attributes.get("preset_modes") or []) and st.attributes.get("preset_mode") != preset:
                 await self.hass.services.async_call(
-                    "climate", "set_preset_mode", {"entity_id": entity_id, "preset_mode": preset}, blocking=True
+                    "climate", "set_preset_mode", {"entity_id": entity_id, "preset_mode": preset}, blocking=True,
+                    context=context,
                 )
+                if boost.get("why"):
+                    self.timeline.add("heating", f"Put {st.name} back on its schedule", boost["why"])
             elif not preset and boost.get("temperature") is not None and _num(st.attributes.get("temperature")) == boost.get("set_to"):
                 await self.hass.services.async_call(
-                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": boost["temperature"]}, blocking=True
+                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": boost["temperature"]}, blocking=True,
+                    context=context,
                 )
+                if boost.get("why"):
+                    self.timeline.add("heating", f"Put {st.name} back to {boost['temperature']:g}°", boost["why"])
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Sentient could not put %s back on its schedule: %s", entity_id, err)
+
+    # ----- time limit on heating turned up by hand or by voice ----------------------------
+    @callback
+    def _on_call(self, event: Event) -> None:
+        if event.data.get("domain") != "climate" or event.context.id in self.own_contexts or event.context.parent_id:
+            return  # the house's own changes, automations and scripts aren't limited
+        hours = _num(self.options.get(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)) or 0
+        if hours <= 0:
+            return
+        service = event.data.get("service")
+        data = event.data.get("service_data") or {}
+        ids = data.get("entity_id") or []
+        ids = [ids] if isinstance(ids, str) else list(ids)
+        for entity_id in ids:
+            if entity_id not in self.entities:
+                continue
+            st = self.hass.states.get(entity_id)
+            if st is None:
+                continue
+            raising = (
+                (service == "set_temperature" and (_num(data.get("temperature")) or 0) > (_num(st.attributes.get("temperature")) or 99))
+                or (service == "turn_on" and st.state == "off")
+                or (service == "set_hvac_mode" and data.get("hvac_mode") not in (None, "off") and st.state == "off")
+            )
+            if not raising:
+                continue
+            until = dt_util.utcnow() + timedelta(hours=hours)
+            old = self._boosted.get(entity_id)
+            self._boosted[entity_id] = {
+                "preset": old["preset"] if old else st.attributes.get("preset_mode"),
+                "temperature": old["temperature"] if old else st.attributes.get("temperature"),
+                "set_to": _num(data.get("temperature")),
+                "was_off": old.get("was_off") if old else st.state == "off",
+                "until": until.isoformat(),
+                "why": f"after {hours:g} hours, as asked in the settings",
+            }
+            self._save()
+            self.timeline.add("heating", f"{st.name} turned up — back to normal in {hours:g} hours", "time limit")

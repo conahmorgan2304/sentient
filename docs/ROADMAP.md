@@ -67,3 +67,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Parcels left without a ring: one look after a doorstep visit ends, said only when something new appears (0.31.0)
 - [x] Heating that learns: warm-up rate, usual temperature, getting-up times; optional warm-up before people are up, back on the thermostat's schedule afterwards (0.34.0)
 - [x] Night watch: doors and gates opening at times they never normally do with nobody up inside — alert, optionally out loud through quiet hours (0.34.0)
+- [x] Fixes from a week of real use: night watch only in quiet hours and knows the house is up (door then gate is one trip), motion lights ignore lights reporting back, house health ignores entities that never have a reading, phone layout, says so when a voice request didn't happen, heating turned up goes back after a set time, no offers it can't carry out (0.35.0)

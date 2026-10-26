@@ -27,6 +27,8 @@ from .const import (
 
 OFFLINE_AFTER = timedelta(minutes=10)
 CHECK_EVERY = timedelta(minutes=5)
+LOOK_BACK = timedelta(days=7)  # an entity that hasn't had a real reading in this long isn't evidence
+RECHECK = timedelta(hours=6)
 
 
 class HouseHealth:
@@ -38,6 +40,9 @@ class HouseHealth:
         self.issues: list[dict[str, Any]] = []
         self.updates: list[str] = []
         self._unsub = None
+        self._never: dict[str, datetime] = {}  # entity -> until when it counts as "never has a reading"
+        self._checked: dict[str, datetime] = {}  # entity -> when its history was last looked at
+        self._checking = False
 
     @callback
     def async_start(self) -> None:
@@ -68,14 +73,17 @@ class HouseHealth:
         for entry in ent_reg.entities.values():
             if not entry.device_id or entry.disabled_by:
                 continue
-            if entry.entity_category is None:
+            if entry.entity_category is None and entry.domain != "update":
                 by_device.setdefault(entry.device_id, []).append(entry.entity_id)
             if entry.domain == "binary_sensor":
                 links.setdefault(entry.device_id, []).append(entry.entity_id)
         offline = []
+        unverified: list[str] = []
         for device_id, entity_ids in by_device.items():
             if device_id in ignore or any(e in ignore for e in entity_ids):
                 continue
+            # entities that are always unavailable (e.g. a "last seen" sensor that never got a value) aren't evidence
+            entity_ids = [e for e in entity_ids if not (e in self._never and self._never[e] > now)]
             states = [self.hass.states.get(e) for e in entity_ids]
             states = [s for s in states if s is not None]
             if not states:
@@ -89,11 +97,20 @@ class HouseHealth:
                 since = max(s.last_changed for s in states)
             if now - since < OFFLINE_AFTER:
                 continue
+            if not link:
+                stale = [e for e in entity_ids if now - self._checked.get(e, datetime.min.replace(tzinfo=now.tzinfo)) > RECHECK]
+                if stale:  # look at their history first; reported on a later check if they really went offline
+                    unverified.extend(stale)
+                    continue
             device = dev_reg.async_get(device_id)
             if device is None or device.disabled_by:
                 continue
             name = device.name_by_user or device.name or entity_ids[0]
             offline.append({"kind": "offline", "name": name, "since": since.isoformat(), "device_id": device_id})
+
+        if unverified and not self._checking:
+            self._checking = True
+            self.hass.async_create_task(self._async_verify(unverified), eager_start=False)
 
         # batteries — one line per device (the lowest reading)
         low_by_device: dict[str, dict[str, Any]] = {}
@@ -143,6 +160,36 @@ class HouseHealth:
                 }
             )
         return issues
+
+    async def _async_verify(self, entity_ids: list[str]) -> None:
+        """Which of these unavailable entities had a real reading in the last week?"""
+        now = dt_util.utcnow()
+        try:
+            if "recorder" in self.hass.config.components:
+                from homeassistant.components.recorder import get_instance, history
+
+                rows = await get_instance(self.hass).async_add_executor_job(
+                    lambda: history.get_significant_states(
+                        self.hass, now - LOOK_BACK, None, entity_ids, significant_changes_only=True, minimal_response=True
+                    )
+                )
+                for e in entity_ids:
+                    real = any(
+                        (st.state if hasattr(st, "state") else st.get("state")) not in ("unavailable", "unknown", None)
+                        for st in rows.get(e, [])
+                    )
+                    if real:
+                        self._never.pop(e, None)
+                    else:
+                        self._never[e] = now + RECHECK
+            for e in entity_ids:
+                self._checked[e] = now
+        except Exception:  # noqa: BLE001 - fall back to counting them
+            for e in entity_ids:
+                self._checked[e] = now
+        finally:
+            self._checking = False
+        self.async_check()
 
     def _connectivity(self, entity_ids: list[str]) -> list:
         """Connectivity sensors among a device's entities (any category)."""

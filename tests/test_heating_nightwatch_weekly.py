@@ -203,3 +203,45 @@ async def test_warm_by_setting_beats_learned_time(hass: HomeAssistant, freezer) 
     heating.wake = {"weekdays": 7 * 60 + 30}
     plan = heating.plan("climate.heating")
     assert plan["warm_by"] == "06:15" and plan["needs_to_start"] == "04:15"
+
+
+async def test_up_for_an_hour_then_out_the_door_and_gate_is_not_an_alert(hass: HomeAssistant, freezer) -> None:
+    """Saturday 06:55: up since about six, in the kitchen for the last while, out of the front door then the gate."""
+    hass.states.async_set("binary_sensor.front_door", "off", {"device_class": "door", "friendly_name": "Front door"})
+    freezer.move_to(dt_util.as_utc(_t(24, 5, 50)))  # a Saturday
+    entry = await _setup(hass, night_watch_announce=True,
+                         night_watch_entities=["binary_sensor.back_gate", "binary_sensor.front_door"])
+    nw = entry.runtime_data.night_watch
+    nw.history, nw.days_known = {"binary_sensor.back_gate": [], "binary_sensor.front_door": []}, 28
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    for minute, sensor in [(6, "landing"), (8, "kitchen"), (14, "kitchen"), (20, "landing"), (27, "kitchen"),
+                           (33, "kitchen"), (41, "kitchen"), (48, "kitchen")]:
+        freezer.move_to(dt_util.as_utc(_t(24, 6, minute)))
+        hass.states.async_set(f"binary_sensor.{sensor}_motion", "on", {"device_class": "motion"})
+        freezer.move_to(dt_util.as_utc(_t(24, 6, minute)) + timedelta(seconds=40))
+        hass.states.async_set(f"binary_sensor.{sensor}_motion", "off", {"device_class": "motion"})
+    freezer.move_to(dt_util.as_utc(_t(24, 6, 55)))
+    hass.states.async_set("binary_sensor.front_door", "on", {"device_class": "door", "friendly_name": "Front door"})
+    await hass.async_block_till_done()
+    freezer.move_to(dt_util.as_utc(_t(24, 6, 56)))
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
+    await hass.async_block_till_done()
+    assert not said
+    assert not any(i.get("alert") for i in entry.runtime_data.timeline.items)
+
+
+async def test_gate_then_back_door_with_nobody_up_is_said_once(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("binary_sensor.back_door", "off", {"device_class": "door", "friendly_name": "Back door"})
+    freezer.move_to(dt_util.as_utc(_t(21, 1, 0)))
+    entry = await _setup(hass, night_watch_announce=True,
+                         night_watch_entities=["binary_sensor.back_gate", "binary_sensor.back_door"])
+    nw = entry.runtime_data.night_watch
+    nw.history, nw.days_known = {}, 28
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
+    await hass.async_block_till_done()
+    freezer.move_to(dt_util.as_utc(_t(21, 1, 1)))
+    hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door", "friendly_name": "Back door"})
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    assert sum(1 for i in entry.runtime_data.timeline.items if i.get("alert")) == 2

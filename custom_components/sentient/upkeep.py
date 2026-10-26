@@ -255,7 +255,9 @@ class Upkeep:
 
         report = build(self._rt())
         text = summary(report)
-        self._rt().timeline.add("learned", text, "this week")
+        recent = self._rt().timeline.since(0.17, ["learned"], 1)
+        if not recent:  # pressing the button again straight away doesn't add it twice
+            self._rt().timeline.add("learned", text, "this week")
         return {"summary": text, **report}
 
     async def _async_digest_quietly(self) -> None:

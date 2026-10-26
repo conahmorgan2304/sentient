@@ -89,8 +89,22 @@ async def test_hands_off_a_light_someone_controls(hass: HomeAssistant, freezer) 
     await _motion(hass, False)
     # ours, then someone changes it by hand: no longer switched off
     await _motion(hass, True)
-    hass.states.async_set("light.landing", "on", context=on[-1].context)
+    hass.states.async_set("light.landing", "on", {"brightness": 255}, context=on[-1].context)
     await hass.async_block_till_done()
+    # the light reporting back a moment later, and reconnecting: still ours
+    hass.states.async_set("light.landing", "on", {"brightness": 250, "color_temp_kelvin": 3000}, context=Context())
+    hass.states.async_set("light.landing", "unavailable", context=Context())
+    await hass.async_block_till_done()
+    assert ml.listing()["rules"][0]["last"] != "taken over by hand"
+    hass.states.async_set("light.landing", "off")
+    await _motion(hass, False)
+    await _motion(hass, True)
+    hass.states.async_set("light.landing", "on", {"brightness": 255}, context=on[-1].context)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=40))
+    hass.states.async_set("light.landing", "on", {"brightness": 252, "color_temp_kelvin": 2700}, context=Context())
+    await hass.async_block_till_done()
+    assert ml.listing()["rules"][0]["last"] != "taken over by hand"
     hass.states.async_set("light.landing", "on", {"brightness": 40}, context=Context())
     await hass.async_block_till_done()
     await _motion(hass, False)

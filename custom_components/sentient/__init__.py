@@ -57,6 +57,7 @@ from .visitors import Visitors
 from .feedback import Feedback
 from .heating import Heating
 from .nightwatch import NightWatch
+from .followthrough import FollowThrough
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -93,6 +94,7 @@ class SentientRuntime:
     feedback: Feedback
     heating: Heating
     night_watch: NightWatch
+    followthrough: FollowThrough
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -243,6 +245,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await heating.async_start()
     entry.async_on_unload(heating.async_stop)
     night_watch = NightWatch(hass, options, lambda: entry.runtime_data)
+    followthrough = FollowThrough(hass, speech, timeline)
+    followthrough.async_start()
+    entry.async_on_unload(followthrough.async_stop)
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
     entry.async_on_unload(welcome.async_stop)
@@ -250,7 +255,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
-        feedback=feedback, heating=heating, night_watch=night_watch,
+        feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
     )
     night_watch.async_start()
     entry.async_on_unload(night_watch.async_stop)

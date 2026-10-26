@@ -4,7 +4,8 @@ No AI, nothing fixed about any house:
 
 * it learns from the last four weeks when each watched door, gate or window
   usually opens — weekdays and weekends separately;
-* an opening at a time it has (almost) never opened before is "unusual";
+* only in quiet hours (people come and go in the day); an opening at a time it has
+  (almost) never opened before is "unusual";
 * if somebody was moving about inside just before (someone up and leaving, like
   going to work at ten to seven), it's the household: noted on the timeline only;
 * if nobody was — the gate at 1am with the house asleep — it's an alert: on the
@@ -44,6 +45,11 @@ RARE_SHARE = 0.1  # opened at this time on fewer than 10% of days...
 RARE_COUNT = 1  # ...and no more than once
 INSIDE_BEFORE = timedelta(minutes=10)
 INSIDE_ROOMS = 2  # sensors with fresh movement in that time
+AWAKE_SPAN = timedelta(minutes=45)  # the house counts as up if, over this long...
+AWAKE_MOVES = 5  # ...there were this many separate movements inside...
+AWAKE_ROOMS = 2  # ...in at least this many places, and one in the last INSIDE_BEFORE
+REJOIN = timedelta(seconds=15)  # "on" again this soon after "off" is the same movement
+CHAIN = timedelta(minutes=3)  # a door then the gate: one trip out, judged once
 REPEAT = timedelta(minutes=10)
 OPEN_CLASSES = {"door", "window", "garage_door", "opening", "gate"}
 
@@ -87,6 +93,11 @@ class NightWatch:
         self.days_known = 0
         self.events: list[dict[str, Any]] = []  # recent unusual openings
         self._last_alert: dict[str, datetime] = {}
+        self._moves: list[tuple[datetime, str]] = []  # recent movements inside (flaps merged)
+        self._last_off: dict[str, datetime] = {}
+        self._inside: list[str] = []
+        self._inside_at: datetime | None = None
+        self._last_opening: tuple[datetime, str, bool] | None = None  # when, name, was it the household
         self._unsubs: list = []
 
     @property
@@ -143,26 +154,61 @@ class NightWatch:
         self.days_known = min(WINDOW_DAYS, (dt_util.utcnow() - min(firsts)).days) if firsts else 0
 
     # ----- deciding -----------------------------------------------------------------
+    def _inside_list(self) -> list[str]:
+        now = dt_util.utcnow()
+        if self._inside_at is None or now - self._inside_at > timedelta(minutes=10):
+            self._inside, self._inside_at = inside_sensors(self.hass, self.options), now
+        return self._inside
+
+    @callback
+    def _note_inside(self, entity_id: str, state: str, when: datetime) -> None:
+        if state == "off":
+            self._last_off[entity_id] = when
+            return
+        if state != "on":
+            return
+        if (off := self._last_off.get(entity_id)) is not None and when - off < REJOIN:
+            return  # flickering, not a new movement
+        self._moves.append((when, entity_id))
+        cutoff = when - timedelta(hours=2)
+        self._moves = [m for m in self._moves if m[0] >= cutoff]
+
     def someone_inside(self, before: datetime) -> str | None:
-        """Someone up and about inside in the last few minutes: fresh movement in two different
-        places, or a light or switch turned on by hand. A pet crossing one sensor, or a sensor
-        that flickers all night, isn't someone getting up to leave."""
+        """Is the household up? Any of:
+
+        * a light or switch turned on by hand in the last 45 minutes;
+        * the house has been busy — several movements in more than one place over the last
+          45 minutes — and someone moved inside in the last ten (up, getting ready, heading out);
+        * fresh movement in two places in the last ten minutes.
+
+        A cat crossing one sensor, or a sensor that flickers all night, is none of these.
+        """
         since = before - INSIDE_BEFORE
         for entity_id in self.options.get(CONF_LEARN_ENTITIES) or []:
             st = self.hass.states.get(entity_id)
             if (
                 st is not None and st.domain in ("light", "switch") and st.state == "on"
-                and since <= st.last_changed <= before and st.context.parent_id is None
+                and before - AWAKE_SPAN <= st.last_changed <= before and st.context.parent_id is None
             ):
                 return st.name
+        inside = set(self._inside_list())
+        recent = [(t, e) for t, e in self._moves if e in inside and before - AWAKE_SPAN <= t <= before]
+        lately = [e for t, e in recent if t >= since]
+        busy = len(recent) >= AWAKE_MOVES and len({e for _, e in recent}) >= AWAKE_ROOMS
+        still_on = [e for e in inside if (st := self.hass.states.get(e)) and st.state == "on"]
+        if busy and (lately or still_on):
+            names = [st.name for e in dict.fromkeys(e for _, e in reversed(recent)) if (st := self.hass.states.get(e))]
+            return " and ".join(names[:2]) or "inside"
+        if len(set(lately)) >= INSIDE_ROOMS:
+            names = [st.name for e in sorted(set(lately)) if (st := self.hass.states.get(e))]
+            return " and ".join(names[:2]) or "inside"
         tracker = self._rt().tracker
-        if tracker is None:
-            return None
-        movers = tracker.fresh_movers(inside_sensors(self.hass, self.options), since)
-        if len(movers) < INSIDE_ROOMS:
-            return None
-        names = [st.name for e in movers if (st := self.hass.states.get(e))]
-        return " and ".join(sorted(names)[:2]) or "inside"
+        if tracker is not None:
+            movers = tracker.fresh_movers(list(inside), since)
+            if len(movers) >= INSIDE_ROOMS:
+                names = [st.name for e in movers if (st := self.hass.states.get(e))]
+                return " and ".join(sorted(names)[:2]) or "inside"
+        return None
 
     def judge(self, entity_id: str, when: datetime) -> dict[str, Any]:
         rt = self._rt()
@@ -171,22 +217,40 @@ class NightWatch:
             unusual = usual["rare"]
         else:
             usual = {"times": None}
-            unusual = rt.speech.quiet_now()
+            unusual = True  # still learning: any opening in quiet hours
         return {"unusual": unusual, "inside": self.someone_inside(when), **usual}
 
     @callback
     def _on_state_changed(self, event: Event[EventStateChangedData]) -> None:
         new, old = event.data["new_state"], event.data["old_state"]
-        if new is None or old is None or not self.enabled or new.entity_id not in self.entities:
+        if new is None or old is None or not self.enabled:
+            return
+        if new.domain == "binary_sensor" and new.entity_id in self._inside_list():
+            self._note_inside(new.entity_id, new.state, new.last_changed)
+        if new.entity_id not in self.entities:
             return
         if new.state != "on" or old.state != "off":
             return
+        rt = self._rt()
+        if not rt.speech.quiet_hours_now():
+            self._last_opening = None
+            self.history.setdefault(new.entity_id, []).append(dt_util.as_local(new.last_changed))
+            return  # daytime and evenings: people come and go, nothing to watch for
         verdict = self.judge(new.entity_id, new.last_changed)
+        chained = self._last_opening
+        self._last_opening = None
+        if chained is not None and new.last_changed - chained[0] <= CHAIN:
+            # the second half of one trip (front door then gate, or gate then back door)
+            verdict["chained_to"] = chained[1]
+            if chained[2]:
+                verdict["inside"] = verdict["inside"] or f"came through the {chained[1].lower()} first"
+            else:
+                verdict["already_alerted"] = True
+        self._last_opening = (new.last_changed, new.name, bool(verdict["inside"]) or not verdict["unusual"])
         self.history.setdefault(new.entity_id, []).append(dt_util.as_local(new.last_changed))
         if not verdict["unusual"]:
             return
         local = dt_util.as_local(new.last_changed)
-        rt = self._rt()
         record = {"time": local.isoformat(), "entity_id": new.entity_id, "name": new.name, "inside": verdict["inside"]}
         self.events = [record, *self.events][:30]
         if verdict["inside"]:
@@ -194,6 +258,10 @@ class NightWatch:
                             f"someone was up inside first ({verdict['inside']}), so not alerting")
             return
         now = dt_util.utcnow()
+        if verdict.get("already_alerted"):
+            rt.timeline.add("security", f"{new.name} opened at {local:%H:%M}, straight after the {verdict['chained_to'].lower()}",
+                            "night watch", alert=True)
+            return
         if (last := self._last_alert.get(new.entity_id)) and now - last < REPEAT:
             return
         self._last_alert[new.entity_id] = now

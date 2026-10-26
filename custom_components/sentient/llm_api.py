@@ -753,6 +753,16 @@ class SentientAPI(llm.API):
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
+        offline = [i["name"] for i in rt.health.issues if i.get("kind") == "offline"]
+        if offline:
+            lines.append(
+                "Offline right now (commands to these won't work — say so instead of claiming it's done): "
+                + ", ".join(offline[:12]) + "."
+            )
+        lines.append(
+            "After controlling a device, only say it's done if the tool result says it worked; if a device is "
+            "unavailable or the action failed, say so plainly."
+        )
         routines = sorted(rt.learner.all(), key=lambda r: (r.adopted, r.support), reverse=True)[:10]
         if routines:
             lines.append("Household routines and habits learned from history:")
