@@ -92,6 +92,20 @@ from .const import (
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
+    CONF_ROOM_VOLUME,
+    CONF_FOLLOW_YOU,
+    CONF_FOLLOW_MINUTES,
+    DEFAULT_FOLLOW_MINUTES,
+    CONF_DRIVE_CAMERA,
+    CONF_DRIVE_SPOT,
+    CONF_DRIVE_TRIGGERS,
+    DEFAULT_DRIVE_SPOT,
+    CONF_CONVERSATIONS,
+    CONF_FOLLOW_UPS,
+    CONF_CURIOSITY,
+    CONF_REFLECTION,
+    CONF_REFLECTION_TIME,
+    DEFAULT_REFLECTION_TIME,
     CONF_CRITICAL,
     CONF_ENERGY,
     CONF_LEFT_OPEN_MINUTES,
@@ -157,6 +171,23 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=5, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.SLIDER)
             ),
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
+            vol.Required(CONF_ROOM_VOLUME, **d(CONF_ROOM_VOLUME, True)): selector.BooleanSelector(),
+            vol.Required(CONF_FOLLOW_YOU, **d(CONF_FOLLOW_YOU, True)): selector.BooleanSelector(),
+            vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_CONVERSATIONS, **d(CONF_CONVERSATIONS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_FOLLOW_UPS, **d(CONF_FOLLOW_UPS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_CURIOSITY, **d(CONF_CURIOSITY, True)): selector.BooleanSelector(),
+            vol.Required(CONF_REFLECTION, **d(CONF_REFLECTION, True)): selector.BooleanSelector(),
+            vol.Required(CONF_REFLECTION_TIME, **d(CONF_REFLECTION_TIME, DEFAULT_REFLECTION_TIME)): selector.TimeSelector(),
+            vol.Optional(CONF_DRIVE_CAMERA, **d(CONF_DRIVE_CAMERA)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera")
+            ),
+            vol.Required(CONF_DRIVE_SPOT, **d(CONF_DRIVE_SPOT, DEFAULT_DRIVE_SPOT)): selector.TextSelector(),
+            vol.Optional(CONF_DRIVE_TRIGGERS, **d(CONF_DRIVE_TRIGGERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
             vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
             vol.Required(CONF_LEFT_OPEN_MINUTES, **d(CONF_LEFT_OPEN_MINUTES, 0)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)

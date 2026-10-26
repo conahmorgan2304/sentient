@@ -17,6 +17,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import llm
 from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
@@ -820,6 +821,78 @@ class ScenesTool(_Tool):
         return {"error": f"No scene or routine called {name}"}
 
 
+class FollowUpTool(_Tool):
+    name = "sentient_follow_up"
+    description = (
+        "Check back on something later and tell people how it went — close the loop instead of forgetting. "
+        "Use when you start something that takes time (heating a room, a wash, a delivery due, a door someone "
+        "said they'd shut). Give 'minutes' and 'about' (a few words). To check a device, give 'entity' and "
+        "'state', or 'above'/'below' for numbers; optionally 'if_done' and 'if_not', the exact sentences to "
+        "say either way. Without an entity, 'if_done' (or 'about') is simply said then."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("minutes"): vol.Coerce(float),
+            vol.Required("about"): cv.string,
+            vol.Optional("entity"): cv.string,
+            vol.Optional("state"): cv.string,
+            vol.Optional("above"): vol.Coerce(float),
+            vol.Optional("below"): vol.Coerce(float),
+            vol.Optional("if_done"): cv.string,
+            vol.Optional("if_not"): cv.string,
+            vol.Optional("cancel"): cv.boolean,
+        }
+    )
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        a = tool_input.tool_args
+        if a.get("cancel"):
+            gone = rt.loops.cancel(a["about"])
+            return {"cancelled": gone} if gone else {"error": "No follow-up like that"}
+        entity = a.get("entity")
+        if entity and hass.states.get(entity) is None:
+            from .watches import resolve_entity
+
+            entity = resolve_entity(hass, entity)
+            if entity is None:
+                return {"error": f"I can't find {a['entity']}"}
+        speaker = None
+        if llm_context.device_id:
+            speaker = next((s for s in rt.speech.speakers
+                            if (e := er.async_get(hass).async_get(s)) and e.device_id == llm_context.device_id), None)
+        return {"follow_up": rt.loops.add(
+            a["minutes"], a["about"], entity, a.get("state"), a.get("above"), a.get("below"),
+            a.get("if_done"), a.get("if_not"), speaker,
+        )}
+
+
+class ConversationsTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_conversations"
+    description = (
+        "What was asked and said in earlier conversations, on any speaker in the house — for 'what was I "
+        "asking earlier?', 'what did you tell me about…', or picking up where someone left off in another "
+        "room. Optional 'query' words and 'days' (default 2)."
+    )
+    parameters = vol.Schema({vol.Optional("query"): cv.string, vol.Optional("days"): vol.Coerce(float)})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        if rt.speech.guest_mode:
+            return {"error": "Guests are visiting: earlier conversations stay private"}
+        a = tool_input.tool_args
+        return {"conversations": rt.conversations.search(a.get("query"), float(a.get("days") or 2))}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -827,16 +900,26 @@ class SentientAPI(llm.API):
         super().__init__(hass=hass, id=LLM_API_ID, name="Sentient")
 
     async def async_get_api_instance(self, llm_context: llm.LLMContext) -> llm.APIInstance:
+        conversation_id = None
+        try:
+            from homeassistant.components.conversation.chat_log import current_chat_log
+
+            if (chat := current_chat_log.get()) is not None:
+                conversation_id = chat.conversation_id
+        except ImportError:
+            pass
+        if conversation_id and (rt := _runtime(self.hass)) is not None:
+            rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         return llm.APIInstance(
             api=self,
-            api_prompt=self._prompt(llm_context),
+            api_prompt=self._prompt(llm_context, conversation_id),
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool()],
         )
 
-    def _prompt(self, llm_context: llm.LLMContext) -> str:
+    def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
         rt = _runtime(self.hass)
         if rt is None:
             return "Sentient (the house's long-term brain) is not loaded right now."
@@ -867,6 +950,16 @@ class SentientAPI(llm.API):
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
+        if not rt.speech.guest_mode and (talk := rt.conversations.prompt_lines(exclude=conversation_id)):
+            lines.append(
+                "Recent conversations on the house's speakers (any room) — pick up where they left off if it's "
+                "relevant; sentient_conversations has more:"
+            )
+            lines.extend(talk)
+        if drive := rt.drive.prompt_line():
+            lines.append(drive)
+        if rt.loops.items:
+            lines.append("Follow-ups you've set: " + "; ".join(f"{i['about']} at {i['at']}" for i in rt.loops.listing()[:6]) + ".")
         if spots := rt.spots.describe():
             lines.append(
                 "Named camera spots — for questions about these, call sentient_look with the spot; it picks "
@@ -909,6 +1002,10 @@ class SentientAPI(llm.API):
             "When someone asks you to keep an eye on something, or to tell them when something "
             "happens, use sentient_watch; to be reminded at a time, use sentient_remind. Never just "
             "promise to remember."
+        )
+        lines.append(
+            "When you start something that takes a while to show results (heating, a wash, a delivery), set a "
+            "sentient_follow_up so you check back and say how it went."
         )
         lines.append(
             "When someone tells you something worth knowing later, or asks you to "

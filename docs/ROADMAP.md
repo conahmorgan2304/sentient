@@ -73,3 +73,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Disco mode: disco, party, rainbow and chill light shows for chosen lights or a named room; lights go back exactly as they were (even after a restart); switch, voice and an action (0.38.0)
 - [x] Light shows: whole house ('everywhere'), lights to leave out, Halloween and Christmas styles, following the music from a loudness sensor, and a choice of which shows get an overview button (0.39.0)
 - [x] Quieter: no remarks about something a person just switched on; voice follow-through only after real speech; shorter camera journeys; hub and light-show dashboard cards (0.40.0)
+- [x] Feeling more alive: speaks up in a noisy room, messages follow people to the next room, follow-ups and closed-off watches, conversations remembered across speakers, daily curiosity, overnight reflection with morning thoughts, cars on the drive (0.41.0)
+- [x] Ready to share: setup guide, screenshots, brand images checked by the HACS action (0.41.0)

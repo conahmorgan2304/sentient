@@ -192,3 +192,22 @@ CONF_PARTY_SOUND = "party_sound"
 CONF_PARTY_SOUND_SWITCH = "party_sound_switch"
 CONF_PARTY_SHOW = "party_show"
 DEFAULT_PARTY_SHOW = ["disco"]
+
+# Room-aware volume, messages that follow people, the drive
+CONF_ROOM_VOLUME = "room_volume"
+CONF_FOLLOW_YOU = "follow_you"
+CONF_FOLLOW_MINUTES = "follow_minutes"
+DEFAULT_FOLLOW_MINUTES = 60
+CONF_DRIVE_CAMERA = "drive_camera"
+CONF_DRIVE_SPOT = "drive_spot"
+CONF_DRIVE_TRIGGERS = "drive_triggers"
+DEFAULT_DRIVE_SPOT = "drive"
+
+# The mind: conversations, follow-ups, curiosity, overnight reflection
+CONF_CONVERSATIONS = "conversation_memory"
+CONF_FOLLOW_UPS = "follow_ups"
+CONF_CURIOSITY = "curiosity"
+CONF_REFLECTION = "reflection"
+CONF_REFLECTION_TIME = "reflection_time"
+DEFAULT_REFLECTION_TIME = "04:30:00"
+EVENT_WATCH_EXPIRED = f"{DOMAIN}_watch_expired"

@@ -57,6 +57,17 @@ from .const import (
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
+    CONF_ROOM_VOLUME,
+    CONF_FOLLOW_YOU,
+    CONF_FOLLOW_MINUTES,
+    CONF_DRIVE_CAMERA,
+    CONF_DRIVE_SPOT,
+    CONF_DRIVE_TRIGGERS,
+    CONF_CONVERSATIONS,
+    CONF_FOLLOW_UPS,
+    CONF_CURIOSITY,
+    CONF_REFLECTION,
+    CONF_REFLECTION_TIME,
     CONF_CRITICAL,
     CONF_ENERGY,
     CONF_LEFT_OPEN_MINUTES,
@@ -114,7 +125,7 @@ from .const import (
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
-        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALL_OCCUPIED,
+        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ROOM_VOLUME, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down and how rooms are worked out.", [
@@ -151,6 +162,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
         CONF_PARTY_SOUND, CONF_PARTY_SOUND_SWITCH, CONF_PARTY_SHOW,
+    ]),
+    ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, and thinking over the day each night.", [
+        CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME,
+    ]),
+    ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
+        CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,

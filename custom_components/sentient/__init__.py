@@ -68,6 +68,11 @@ from .alarms import Alarms
 from .checks import CameraChecks
 from .camsecurity import CameraSecurity
 from .party import Party
+from .followyou import FollowYou, Loops
+from .conversations import Conversations
+from .curiosity import Curiosity
+from .reflection import Reflection
+from .drive import Drive
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -112,6 +117,12 @@ class SentientRuntime:
     checks: CameraChecks
     camsec: CameraSecurity
     party: Party
+    followyou: FollowYou
+    loops: Loops
+    conversations: Conversations
+    curiosity: Curiosity
+    reflection: Reflection
+    drive: Drive
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -292,6 +303,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     followthrough = FollowThrough(hass, speech, timeline)
     followthrough.async_start()
     entry.async_on_unload(followthrough.async_stop)
+    followyou = FollowYou(hass, entry.entry_id, options, get_rt)
+    loops = Loops(hass, entry.entry_id, options, get_rt)
+    conversations = Conversations(hass, entry.entry_id, options)
+    curiosity = Curiosity(hass, entry.entry_id, options, get_rt)
+    reflection = Reflection(hass, entry.entry_id, options, get_rt)
+    drive = Drive(hass, entry.entry_id, options, get_rt)
+    speech.on_unheard = followyou.unheard
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
     entry.async_on_unload(welcome.async_stop)
@@ -301,8 +319,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
         feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
-        party=party,
+        party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
+        reflection=reflection, drive=drive,
     )
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive):
+        await engine.async_start()
+        entry.async_on_unload(engine.async_stop)
     await party.async_start()
     entry.async_on_unload(party.async_stop)
     night_watch.async_start()
@@ -363,6 +385,9 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive"):
+        getattr(entry.runtime_data, name).options = options
+    entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
@@ -530,6 +555,50 @@ def _register_services(hass: HomeAssistant) -> None:
         DOMAIN, SERVICE_REMEMBER, remember, schema=REMEMBER_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
+    async def reflect(call: ServiceCall) -> ServiceResponse:
+        return await _runtime(hass).reflection.async_reflect()
+
+    async def drive_check(call: ServiceCall) -> ServiceResponse:
+        return await _runtime(hass).drive.async_check(force=True)
+
+    async def wonder(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        if call.data.get("question"):
+            rt.curiosity.wonder(call.data["question"], source="service")
+        if call.data.get("ask_now"):
+            return await rt.curiosity.async_ask(force=True)
+        return rt.curiosity.listing()
+
+    async def follow_up(call: ServiceCall) -> ServiceResponse:
+        d = call.data
+        return _runtime(hass).loops.add(
+            d["minutes"], d["about"], d.get("entity"), d.get("state"), d.get("above"), d.get("below"),
+            d.get("if_done"), d.get("if_not"), d.get("speaker"),
+        )
+
+    hass.services.async_register(DOMAIN, "reflect", reflect, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, "check_drive", drive_check, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(
+        DOMAIN, "wonder", wonder,
+        schema=vol.Schema({vol.Optional("question"): cv.string, vol.Optional("ask_now", default=False): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN, "follow_up", follow_up,
+        schema=vol.Schema({
+            vol.Required("minutes"): vol.All(vol.Coerce(float), vol.Range(min=1, max=1440)),
+            vol.Required("about"): cv.string,
+            vol.Optional("entity"): cv.entity_id,
+            vol.Optional("state"): cv.string,
+            vol.Optional("above"): vol.Coerce(float),
+            vol.Optional("below"): vol.Coerce(float),
+            vol.Optional("if_done"): cv.string,
+            vol.Optional("if_not"): cv.string,
+            vol.Optional("speaker"): cv.string,
+        }),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+
     async def run_routine(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         result = await rt.shortcuts.async_run(call.data["name"], call.context)

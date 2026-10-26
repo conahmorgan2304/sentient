@@ -45,11 +45,12 @@ from .const import (
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
+    CONF_ROOM_VOLUME,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
 )
-from .delivery import delivered
+from .delivery import RoomLevels, delivered, playing_nearby
 from .presence import ActivityTracker, area_of
 
 _LOGGER = logging.getLogger(__name__)
@@ -127,6 +128,9 @@ class SpeechRouter:
         self.hush_until: datetime | None = None  # "be quiet for an hour"
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
+        self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
+        self.nobody_about = False  # the last pick found nobody in any speaker's room
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
 
     # ----- configuration helpers -------------------------------------------------
@@ -188,11 +192,13 @@ class SpeechRouter:
             if (st := self.hass.states.get(s)) is not None and st.state != "unavailable"
         ]
         backup = set(self.options.get(CONF_FALLBACK_SPEAKERS) or [])
+        self.nobody_about = False
         if self.tracker is not None:
             for group in ([s for s in live if s not in backup], [s for s in live if s in backup]):
                 chosen = self._occupied(group)
                 if chosen:
                     return chosen
+            self.nobody_about = True
         default = self.options.get(CONF_DEFAULT_SPEAKER)
         if default:
             return [default]
@@ -276,9 +282,9 @@ class SpeechRouter:
             if self.mutes is not None and (muted := self.mutes.text_muted(text)):
                 return self._held(f"muted:{muted}", text, source)
             if self.hushed():
-                return self._held("hushed", text, source)
+                return self._held("hushed", text, source, priority)
             if self.quiet_now():
-                return self._held("quiet_hours", text, source)
+                return self._held("quiet_hours", text, source, priority)
             blocker = self._recently_triggered()
             if blocker:
                 return self._held(f"hushed_by:{blocker}", text, source)
@@ -310,11 +316,13 @@ class SpeechRouter:
         speakers = targets or self.pick_speaker()
         if not speakers:
             return self._held("no_speaker", text, source)
+        unheard = not targets and self.nobody_about
 
         async with self._lock:
             await self._wait_idle(speakers)
             self._remember_said(text)
-            async with delivered(self.hass, speakers, self.volume_now(), self.duck_level):
+            volume = await self._volumes(speakers)
+            async with delivered(self.hass, speakers, volume, self.duck_level):
                 await self.hass.services.async_call(
                     "assist_satellite",
                     "announce",
@@ -323,9 +331,30 @@ class SpeechRouter:
                     blocking=True,
                 )
         self.hass.bus.async_fire(
-            EVENT_SPOKE, {"message": text, "speakers": speakers, "priority": priority, "source": source}
+            EVENT_SPOKE,
+            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None},
         )
+        if unheard and self.on_unheard is not None:
+            self.on_unheard(text, priority, source, None)
         return SpeechResult(True, "spoken", text, speakers)
+
+    async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
+        """The level to speak at: the usual one, raised in a noisy room (not in quiet hours)."""
+        base = self.volume_now()
+        if not self.options.get(CONF_ROOM_VOLUME, True) or self.quiet_hours_now():
+            return base
+        listen = speakers
+        if self.duck_level is not None:  # music here is turned down anyway: no need to shout over it
+            busy = set(playing_nearby(self.hass, speakers))
+            listen = [s for s in speakers if not any(self._area_of(p) == self._area_of(s) for p in busy)]
+        try:
+            raised = await self.rooms.async_volumes(self.hass, listen, base)
+        except Exception as err:  # noqa: BLE001 - never stop the message for this
+            _LOGGER.debug("Room listen failed: %s", err)
+            return base
+        if not raised:
+            return base
+        return {s: raised.get(s, base) for s in speakers}
 
     async def async_ask(
         self,
@@ -389,7 +418,9 @@ class SpeechRouter:
                 return
             await asyncio.sleep(0.5)
 
-    def _held(self, reason: str, text: str, source: str | None) -> SpeechResult:
+    def _held(self, reason: str, text: str, source: str | None, priority: str | None = None) -> SpeechResult:
         _LOGGER.debug("Held speech (%s): %s", reason, text)
         self.hass.bus.async_fire(EVENT_HELD, {"message": text, "reason": reason, "source": source})
+        if reason in ("quiet_hours", "hushed") and priority and self.on_unheard is not None:
+            self.on_unheard(text, priority, source, reason)
         return SpeechResult(False, reason, text, [])

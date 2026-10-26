@@ -166,7 +166,18 @@
           "party_exclude": "Never use these lights",
           "party_sound": "Follow the sound from",
           "party_show": "Buttons on the overview",
-          "party_sound_switch": "Turn on while listening"
+          "party_sound_switch": "Turn on while listening",
+          "room_volume": "Speak up in a noisy room",
+          "follow_you": "Messages follow people",
+          "follow_minutes": "Keep messages to pass on for",
+          "conversation_memory": "Remember conversations",
+          "follow_ups": "Check back on things",
+          "curiosity": "Curiosity",
+          "reflection": "Overnight reflection",
+          "reflection_time": "Reflect at",
+          "drive_spot": "Drive spot",
+          "drive_camera": "Drive camera",
+          "drive_triggers": "Look when these settle"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -234,7 +245,18 @@
           "party_exclude": "Left out of every show, even 'everywhere' — tablet screens, a projector, a bedroom where someone sleeps.",
           "party_sound": "Optional: a loudness sensor in dB, such as a voice speaker's microphone through ESPHome's sound_level sensor. Disco, party, rainbow and Halloween then follow the music — louder is brighter, and each beat changes colour.",
           "party_show": "Which shows get a button on the overview. Leave empty for none; every show still works by voice.",
-          "party_sound_switch": "Optional: a switch that makes the loudness sensor report (so it isn't sending readings all day). It's turned on while a show follows the sound and off afterwards. Found automatically if it's on the same device and has 'loudness' in its name."
+          "party_sound_switch": "Optional: a switch that makes the loudness sensor report (so it isn't sending readings all day). It's turned on while a show follows the sound and off afterwards. Found automatically if it's on the same device and has 'loudness' in its name.",
+          "room_volume": "Speakers that can hear the room (a loudness sensor on the same device) have a one-second listen first and speak louder over a TV or chatter. Not in quiet hours.",
+          "follow_you": "Something said where nobody was about — or held back for quiet hours — is passed on the next time someone walks into a room with a speaker.",
+          "follow_minutes": "After this long an unheard message is dropped.",
+          "conversation_memory": "Keeps a short record of what was asked and said on every speaker, so another room can pick up where one left off. Kept two weeks; private while guests are in.",
+          "follow_ups": "Voices can set follow-ups (\"I'll check the room's warmed up in an hour\") and a watch that runs out with nothing seen is closed off out loud.",
+          "curiosity": "At most once a day, when someone's about, it asks about something it can't explain — a regular caller, a pattern it noticed overnight — and remembers the answer.",
+          "reflection": "One AI call each night over the day's log and conversations: new things worth remembering, a thought or two for the morning, and a question to ask.",
+          "reflection_time": "Best in the small hours.",
+          "drive_spot": "The camera spot that shows the drive (draw it on the Spots tab).",
+          "drive_camera": "Only needed if more than one camera has a spot with that name.",
+          "drive_triggers": "Motion or car sensors that see the drive. Empty: the camera's own motion and car sensors."
         }
       },
       "memories": {
@@ -301,6 +323,12 @@
       },
       "health": {
         "name": "House health"
+      },
+      "drive": {
+        "name": "Drive"
+      },
+      "mind": {
+        "name": "Mind"
       }
     },
     "switch": {
@@ -665,6 +693,70 @@
         "lights": {
           "name": "Lights",
           "description": "Use exactly these lights."
+        }
+      }
+    },
+    "reflect": {
+      "name": "Reflect now",
+      "description": "Think over the last day now, as it does overnight: new memories, morning thoughts and a question."
+    },
+    "check_drive": {
+      "name": "Check the drive",
+      "description": "Take one AI look at the drive spot now and update what's parked there."
+    },
+    "wonder": {
+      "name": "Wonder",
+      "description": "Add a question for curiosity to ask, or ask the next one now.",
+      "fields": {
+        "question": {
+          "name": "Question",
+          "description": "Something to ask the household once."
+        },
+        "ask_now": {
+          "name": "Ask now",
+          "description": "Ask the next question straight away."
+        }
+      }
+    },
+    "follow_up": {
+      "name": "Follow up",
+      "description": "Check back on something later and say how it went.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "When to check."
+        },
+        "about": {
+          "name": "About",
+          "description": "A few words on what it's about."
+        },
+        "entity": {
+          "name": "Entity",
+          "description": "Device to check then."
+        },
+        "state": {
+          "name": "State",
+          "description": "The state that means it worked."
+        },
+        "above": {
+          "name": "Above",
+          "description": "Worked if the value is at least this."
+        },
+        "below": {
+          "name": "Below",
+          "description": "Worked if the value is at most this."
+        },
+        "if_done": {
+          "name": "If done",
+          "description": "What to say if it worked."
+        },
+        "if_not": {
+          "name": "If not",
+          "description": "What to say if it didn't."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it (default: where people are)."
         }
       }
     }

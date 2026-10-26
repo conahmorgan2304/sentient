@@ -35,7 +35,13 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Timeline.** One running log of what the house did and noticed — what it said (and where), what it held back and why, remarks it decided against, doorbell visitors, watches and reminders going off, motion lights, devices going offline and coming back. A Timeline tab on the sidebar page shows the last three days live, with filters, and voice assistants can answer "what happened while I was out?". An optional briefing the first time someone's up and about in the morning (once a day, in that room). A **daily digest** (on demand from the Timeline tab, or at a time you set) has your AI sum the day up in a few sentences — kept on the timeline and optionally sent to phones.
 - **Phone notifications.** Pick the phones (any notify entity, e.g. the Home Assistant app) and what goes to them: urgent announcements, things held back in quiet hours, things nobody could hear, doorbell visitors and parcels, watches and reminders, house health problems. Each message at most once in ten minutes.
 - **Welcome home.** Optional: when someone gets back after 20 minutes or more, a "Welcome back" in the room they're in — with a sentence or two on what's worth knowing from while they were out (visitors, things that finished, problems), written by your AI from the timeline. Never in quiet hours, hush or guest mode, no names, once for people arriving together.
-- **Speaking to suit the room.** Optional speaking volume (and a quieter one for quiet hours), set on the speaker's own volume control and put back afterwards; anything playing in the same room is turned down while Sentient talks, then back up.
+- **Speaking to suit the room.** Optional speaking volume (and a quieter one for quiet hours), set on the speaker's own volume control and put back afterwards; anything playing in the same room is turned down while Sentient talks, then back up. A speaker that can hear the room (a loudness sensor on the same device — see [the ESPHome snippet](docs/SETUP.md#room-loudness-esphome)) has a one-second listen first and speaks up over a TV or a busy kitchen, learning each room's usual level as it goes.
+- **Messages follow you.** Something said where nobody was about — or held back for quiet hours (a watch, a reminder, a parcel) — is passed on the next time someone walks into a room with a speaker: "Earlier: the parcel's been left by the door." Dropped after a time you set.
+- **Closing loops.** Voices can set a follow-up ("I'll check the lounge has warmed up in an hour") and the house checks back and says how it went; a watch that runs out with nothing seen is closed off out loud ("no sign of the post — I've stopped keeping an eye out") rather than going quiet.
+- **Remembers conversations.** What was asked and said on every speaker is kept for two weeks, so the kitchen can pick up where the bedroom left off ("what was I asking earlier?"). Only conversations that use Sentient count, and it's kept private while guests are in.
+- **Curiosity.** At most once a day, in the daytime, when someone's about, it asks about something it can't explain — someone unnamed calling on the same weekday for weeks, or a question from its overnight reflection — and remembers the answer.
+- **Overnight reflection.** One AI call in the small hours thinks over the day's timeline and conversations: a few new things worth remembering (never private details), a thought or two passed on when someone's up in the morning (and in the morning briefing), and a question for curiosity. A quiet day costs nothing.
+- **The drive.** Draw a spot called "drive" on the camera that sees it: when the camera's motion or car sensors settle down, one AI look counts the cars and describes them. A *Drive* sensor, arrivals and departures on the timeline, and every voice can answer "is my car on the drive?".
 - **Shush.** "Stop telling me about the washing machine" (or "…for tonight") — that thing isn't noticed or mentioned until the time's up or it's unshushed; a Shushed page lists them. Urgent and safety alerts always get through.
 - **Safety alerts.** Smoke, carbon monoxide, gas, water-leak and tamper sensors are found automatically, and so is the alarm going off — plus anything else you add (a panic button, a freezer-too-warm sensor): said on every speaker through quiet hours, hush and guest mode, repeated twice while still on, logged and sent to phones. A test button on the settings page.
 - **Routines.** Named routines — "goodnight", "good morning", "leaving" — built with Home Assistant's own action editor on the Settings page, with other ways of asking, an optional line to say, and optional checks first ("the back door is still open, the landing light is still on"). Run by voice, a button on the sidebar page or `sentient.run_routine`.
@@ -54,7 +60,7 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Alarms.** Daily, weekday or one-off alarms and appointments with a description, what to say and actions ("5:45: downstairs lights and the kettle on"), plus actions the first time someone walks into a room afterwards. Can say what's on a calendar tomorrow ("Bins tonight: recycling") and stays quiet when there's nothing. Set by voice too: "wake me at 5:45 on weekdays".
 - **Camera checks.** A standing yes-or-no question for a camera when its sensor sees something — "is there a delivery van on the drive?" — to the timeline, phones and optionally out loud.
 - **Light shows.** "Disco mode in the living room", "Halloween lights everywhere" — the chosen lights, a room's, or every light in the house put on a show in one of six styles (disco, party, rainbow, chill, Halloween, Christmas). With a loudness sensor (for example a voice speaker's microphone through ESPHome's `sound_level` sensor) the lively ones follow the music: louder is brighter and beats change colour. They stop by themselves after a set time and every light goes back exactly as it was, even after a restart. Motion lights leave them alone meanwhile. You choose which shows get a button on the overview. A switch, a voice tool and a `sentient.party` action.
-- **Dashboard cards.** `custom:sentient-hub-card` — the house's voice at a glance with no name on it: a big tap-to-talk button that lights up while a speaker listens or talks, the last thing said, the speakers, quick buttons (briefing, hush, guests, your chosen light shows), what's next, the assistant's numbers (spoken, visitors, watching, memories, routines, health) and a feed that fills the space left. `custom:sentient-shows-card` — just the light-show buttons, and it hides itself when none are chosen. Both load with the integration.
+- **Dashboard cards.** `custom:sentient-hub-card` — the house's voice at a glance with no name on it: a big tap-to-talk button that lights up while a speaker listens or talks, the last thing said, the speakers, quick buttons (briefing, hush, guests, your chosen light shows), what's next, an overnight thought or what it's wondering, the assistant's numbers (spoken, visitors, watching, memories, routines, cars on the drive, health) and a feed that fills the space left. `custom:sentient-shows-card` — just the light-show buttons, and it hides itself when none are chosen. Both load with the integration.
 - **Camera security.** People followed from camera to camera ("gate → garden → shed"); an alert for someone in the garden when the gate and doors didn't open; anyone about at night with nobody up, or hanging around for minutes — with an optional AI description.
 - **Did it actually happen?** When something asked for by voice doesn't happen — the thermostat's battery is flat — the house says so on the speaker that was used. Heating turned up by voice or in the app goes back after a set time.
 - **Chime.** Choose whether speakers chime before Sentient talks — a setting, a `Chime` switch for automations (e.g. off at night) and a button on the sidebar page.
@@ -63,14 +69,24 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Its own sidebar page.** A built-in panel (named after your persona) shows house health, learned routines (tap to let the house do one), watches and reminders (✕ to cancel, plus a quick reminder box: "20m", "1h" or "18:30"), visitors, what was said or held back and why, and where people are — plus a briefing button and an Ask box. A **Settings** tab holds every option (the same pickers as the integration's settings, grouped: voice, quiet hours and rooms, briefings, noticing and learning, door and cameras, house health, this page), a full memory manager — search, add, edit in place and forget — and **Camera spots**: pick a camera, let the AI find a named spot or drag a box on the picture yourself, see every spot outlined, and ask the camera a question about the whole picture or one spot. It's part of the integration, so it isn't an editable dashboard; turn it off in the settings if you don't want it.
 - **Memory manager.** Settings → Sentient → Configure → *Memories*: see everything the house remembers, edit, forget or add by hand.
 - **Room awareness.** The voice assistant is told which room the person talking to it is in, and a *Likely room* sensor shows where Sentient thinks people are (with every room's score).
-- **Sensors.** `sensor.<name>_memories` (with the list) and `sensor.<name>_last_spoken` (with a log of what was said or held back and why).
+- **Sensors.** `sensor.<name>_memories` (with the list), `sensor.<name>_last_spoken` (with a log of what was said or held back and why), `sensor.<name>_drive` (cars on the drive) and `sensor.<name>_mind` (conversations today, with overnight thoughts, questions and follow-ups as attributes).
 
-## Install (HACS, custom repository)
+## Screenshots
 
-1. HACS → ⋮ → *Custom repositories* → add this repo's URL as an **Integration**.
+| Sidebar page | Hub card |
+|---|---|
+| <img src="docs/images/panel.png" alt="Sentient's sidebar page" width="420"> | <img src="docs/images/hub-card.png" alt="The hub card" width="300"> |
+
+## Install
+
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=conahmorgan2304&repository=sentient&category=integration)
+
+1. HACS → ⋮ → *Custom repositories* → add this repo's URL as an **Integration** (or use the button above).
 2. Install **Sentient**, then restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Sentient*. Give it a name, pick your speakers and set quiet hours.
 4. *Settings → Voice assistants →* your agent → *Control Home Assistant* → tick **Sentient** as well as **Assist**.
+
+The [setup guide](docs/SETUP.md) walks through the rest: an AI Task entity for camera and background jobs, rooms and motion sensors, the dashboard cards, camera spots, and the ESPHome loudness sensor for light shows and speaking up in a noisy room.
 
 ## Services
 
@@ -85,6 +101,11 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 | `sentient.hush` | Stop everything but urgent messages for a while. |
 | `sentient.learn` / `sentient.adopt_routine` / `sentient.forget_routine` | Re-learn now; let the house do a learned routine; delete one for good. |
 | `sentient.weekly_report` / `sentient.tidy_memories` | The weekly report; tidy memories now. |
+| `sentient.party` | Start or stop a light show. |
+| `sentient.follow_up` | Check back on something later and say how it went. |
+| `sentient.reflect` | Think over the last day now, as it does overnight. |
+| `sentient.wonder` | Add a question for curiosity, or ask the next one now. |
+| `sentient.check_drive` | One look at the drive now. |
 
 Every service is also listed, with its fields, under Developer tools → Actions.
 

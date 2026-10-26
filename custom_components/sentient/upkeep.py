@@ -108,6 +108,9 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
         if open_things:
             out["open_now"] = open_things
 
+    if (fy := getattr(rt, "followyou", None)) is not None and (thoughts := fy.pending_thoughts()):
+        out["overnight_thoughts"] = thoughts
+
     if "visitors" in want and (visits := rt.visitors.today()):
         out["visitors_today"] = [
             f"{dt_util.as_local(dt_util.parse_datetime(v['time'])).strftime('%-I:%M%p').lower()} "
@@ -363,6 +366,8 @@ class Upkeep:
         if not message:
             raise HomeAssistantError("The AI didn't write a briefing")
         result = await rt.speech.async_say(message, priority, None, source="briefing")
+        if result.spoken and facts.get("overnight_thoughts"):
+            rt.followyou.take_thoughts()  # said in the briefing: don't say them again
         return {**result.as_dict(), "facts": facts}
 
     # ----- memory tidy -------------------------------------------------------------

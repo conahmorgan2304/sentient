@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry), DriveSensor(entry), MindSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -283,3 +283,69 @@ class HealthSensor(_Base):
     def extra_state_attributes(self) -> dict[str, Any]:
         health = self._entry.runtime_data.health
         return {"issues": health.issues[:30], "updates": health.updates}
+
+
+class DriveSensor(_Base):
+    """Cars on the drive, from the AI's last look at the drive spot."""
+
+    _attr_icon = "mdi:car"
+    _attr_native_unit_of_measurement = "cars"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "drive")
+
+    async def async_added_to_hass(self) -> None:
+        from .drive import EVENT_DRIVE
+
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_DRIVE, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> int | None:
+        return self._entry.runtime_data.drive.describe().get("cars")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        d = self._entry.runtime_data.drive.describe()
+        return {"description": d.get("description"), "checked": d.get("checked_at"), "changed": d.get("changed_at"),
+                "set_up": self._entry.runtime_data.drive.spot() is not None}
+
+
+class MindSensor(_Base):
+    """What it's thinking: overnight thoughts, questions, follow-ups and conversations today."""
+
+    _attr_icon = "mdi:head-lightbulb-outline"
+    _attr_native_unit_of_measurement = "conversations"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "mind")
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
+
+    @callback
+    def _tick(self, _now) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> int:
+        return self._entry.runtime_data.conversations.count_today()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        rt = self._entry.runtime_data
+        last = rt.reflection.last or {}
+        curious = rt.curiosity.listing()
+        return {
+            "thoughts": last.get("thoughts") or [],
+            "learned_overnight": last.get("memories") or [],
+            "last_reflection": last.get("time"),
+            "wondering": curious["wondering"],
+            "asked": curious["asked"],
+            "follow_ups": rt.loops.listing(),
+            "to_pass_on": [q["text"] for q in rt.followyou.queue],
+            "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
+        }

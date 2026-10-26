@@ -18,7 +18,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          ignore: brands
 
   tests:
     runs-on: ubuntu-latest

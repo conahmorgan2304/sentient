@@ -39,6 +39,7 @@ from .const import (
     DOMAIN,
     EVENT_WATCH_CHANGED,
     EVENT_WATCH_FIRED,
+    EVENT_WATCH_EXPIRED,
 )
 
 if TYPE_CHECKING:
@@ -401,6 +402,8 @@ class WatchManager:
         for w in gone:
             self._watches.pop(w.id, None)
             _LOGGER.debug("Watch expired: %s", w.what)
+            if not w.fired and now - w.until_dt < timedelta(minutes=30):  # not one long gone over a restart
+                self.hass.bus.async_fire(EVENT_WATCH_EXPIRED, {"id": w.id, "what": w.what, "entity_id": w.entity_id})
         if gone:
             self._save()
 

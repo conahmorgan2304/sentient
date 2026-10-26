@@ -22,7 +22,7 @@
   if (customElements.get("sentient-hub-card")) return;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (d) => (d && !isNaN(d) ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
-  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines"];
+  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines", "drive", "mind"];
   const SHOWS = {
     disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
     chill: ["mdi:weather-night", "CHILL"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "XMAS"],
@@ -32,6 +32,7 @@
     security: ["mdi:shield-alert-outline", "#ff6b80"], health: ["mdi:heart-pulse", "#ffbe55"],
     visitor: ["mdi:doorbell-video", "#b48cff"], mode: ["mdi:tune-variant", "#00fff7"], watch: ["mdi:cctv", "#b48cff"],
     heating: ["mdi:radiator", "#ffb070"], learned: ["mdi:school-outline", "#3dffa8"],
+    mind: ["mdi:head-lightbulb-outline", "#ff9de2"], loop: ["mdi:sync", "#3dffa8"], drive: ["mdi:car", "#7fdcff"],
   };
   const LIVE = { listening: "listen", processing: "think", responding: "speak" };
 
@@ -226,12 +227,19 @@
       const vis = this._st("visitors"), w = this._st("watches"), hl = this._st("health");
       const problems = hl ? parseInt(hl.state, 10) || 0 : 0;
       const tile = (icon, val, lbl, cls, more) => `<div class="tile ${cls || ""}"${more ? ` data-act="more" data-id="${esc(more)}"` : ""}><ha-icon icon="${icon}"></ha-icon><b>${esc(val)}</b><span>${lbl}</span></div>`;
-      const memS = this._st("memories"), rou = this._st("routines");
+      const memS = this._st("memories"), rou = this._st("routines"), dr = this._st("drive"), mind = this._st("mind");
+      // a thought from overnight (this morning only), else what it's wondering about
+      const ma = (mind && mind.attributes) || {};
+      const fresh = ma.last_reflection && Date.now() - new Date(ma.last_reflection) < 16 * 3600e3;
+      const thought = fresh && (ma.thoughts || []).length ? ["THOUGHT", ma.thoughts[0]]
+        : (ma.wondering || []).length ? ["WONDERING", ma.wondering[0]] : (ma.follow_ups || []).length
+        ? ["CHECKING", `${ma.follow_ups[0].about} · ${ma.follow_ups[0].at}`] : null;
       const tiles = tile("mdi:message-text-outline", saidCount, "SPOKEN", "")
         + tile("mdi:doorbell-video", vis ? vis.state : "–", "DOOR", "", vis && vis.entity_id)
         + tile("mdi:radar", w ? w.state : "0", "WATCHING", w && +w.state ? "on" : "", w && w.entity_id)
         + tile("mdi:brain", memS ? memS.state : "–", "MEMORY", "", memS && memS.entity_id)
         + tile("mdi:calendar-sync-outline", rou ? rou.state : "–", "ROUTINES", "", rou && rou.entity_id)
+        + (dr && dr.attributes.set_up ? tile("mdi:car", dr.state === "unknown" ? "–" : dr.state, "DRIVE", +dr.state ? "on" : "", dr.entity_id) : "")
         + tile(problems ? "mdi:alert-outline" : "mdi:shield-check-outline", problems ? problems : "OK", problems ? "PROBLEMS" : "HEALTH", problems ? "warn" : "ok", hl && hl.entity_id);
 
       // the house right now: counted from the house's own entities (or the ones in `house:`)
@@ -279,6 +287,7 @@
           <div class="nodes">${nodeHtml}</div>
           <div class="quick">${quick}</div>
           ${next ? `<div class="next"><ha-icon icon="${next.icon}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
+          ${thought ? `<div class="next mind"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><span class="nl">${thought[0]}</span><span class="nt">${esc(thought[1])}</span></div>` : ""}
           <div class="tiles">${tiles}</div>
           ${glance.length ? `<div class="glance">${glance.map((g) => `<div class="gl${g.cls ? " " + g.cls : ""}"${g.more ? ` data-act="more" data-id="${esc(g.more)}"` : ""}><ha-icon icon="${g.icon}"></ha-icon><div><b>${esc(g.val)}</b><span>${g.label}</span></div></div>`).join("")}</div>` : ""}
           <div class="fh"><span>FEED</span><i></i><button class="more" data-act="feed">ALL</button></div>
@@ -364,7 +373,8 @@
   .next{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:12px;background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.3);z-index:1;min-width:0}
   .next ha-icon{--mdc-icon-size:17px;color:#b48cff;flex:none} .nl{font-size:9px;font-weight:800;letter-spacing:.2em;color:#b48cff;flex:none}
   .nt{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .next em{font-style:normal;font-size:10.5px;font-weight:700;color:#d9c8ff;letter-spacing:.08em}
-  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;z-index:1}
+  .next.mind{background:rgba(255,157,226,.06);border-color:rgba(255,157,226,.3)} .next.mind ha-icon,.next.mind .nl{color:#ff9de2}
+  .tiles{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px;z-index:1}
   .tile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:10px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.025);cursor:default;min-width:0}
   .tile[data-act]{cursor:pointer} .tile ha-icon{--mdc-icon-size:13px;color:#5fd8e6} .tile b{font-size:13px;font-weight:700;color:#e9ffff;line-height:1.1}
   .tile span{font-size:7.5px;font-weight:800;letter-spacing:.1em;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
