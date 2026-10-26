@@ -128,6 +128,8 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
         from .security import check
 
         out["security"] = check(hass)["summary"]
+    if (animals := getattr(rt, "animals", None)) is not None and (outside := animals.out_of_range()):
+        out["animals_outside"] = outside
     if overnight := rt.night_watch.overnight(12):
         out["unusual_overnight"] = overnight
 
@@ -208,6 +210,8 @@ def plain_briefing(facts: dict[str, Any]) -> str:
     if open_now := facts.get("open_now"):
         out.append(("The " if len(open_now) == 1 else "Open now: ") + ", ".join(open_now[:4])
                    + (" is open." if len(open_now) == 1 else "."))
+    if outside := facts.get("animals_outside"):
+        out.append(outside[0][:1].upper() + outside[0][1:] + ".")
     if thoughts := facts.get("overnight_thoughts"):
         out.append(str(thoughts[0]).rstrip(".") + ".")
     if visitors := facts.get("visitors_today"):

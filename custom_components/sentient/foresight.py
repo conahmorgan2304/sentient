@@ -42,7 +42,8 @@ def plain_heads_up(facts: dict[str, Any]) -> str:
     except (TypeError, ValueError):
         low = None
     if low is not None and low <= 1:
-        out.append("Frost's forecast for tomorrow morning, so the car may need defrosting.")
+        out.append("Frost's forecast for tomorrow morning, so the car may need defrosting"
+                   + (f" and the water in {facts['animals_living_outside_now'][0].rsplit(' ', 1)[0]} may freeze." if facts.get("animals_living_outside_now") else "."))
     early = [e for e in facts.get("calendar") or [] if e[:2].isdigit() and e[:5] < "09:30"]
     if early:
         when, _, what = early[0].partition(" ")
@@ -131,6 +132,8 @@ class Foresight:
                        and now <= dt_util.as_local(dt_util.parse_datetime(a["next"])) < start]
             if tonight:
                 out["already_said_tonight_by_alarms"] = [f"{a['time']} {a['name']}" for a in tonight]
+            if animals := rt.animals.readings():
+                out["animals_living_outside_now"] = animals
             reminders = [w.what for w in rt.watches.watches if w.kind == "reminder" and start <= dt_util.as_local(w.until_dt) < end]
             if reminders:
                 out["reminders_tomorrow"] = reminders
@@ -149,7 +152,8 @@ class Foresight:
             "instructions": (
                 "It's the evening. From these facts about tomorrow, decide whether the household needs a heads-up "
                 "tonight — something to do or prepare (an early appointment, frost so the car will need "
-                "defrosting, heavy rain so bring the washing in, a strong wind for the bins, very hot or cold). "
+                "defrosting, heavy rain so bring the washing in, a strong wind for the bins, very hot or cold; if "
+                "animals live outside and it'll freeze or be very hot, their water and bedding or shade). "
                 "Ordinary weather and ordinary days need nothing: then speak is false. Don't repeat anything an "
                 "alarm will already say tonight. If speaking, at most two short, natural sentences, British English, "
                 "no greetings, no names. " + personality_line(self.options)

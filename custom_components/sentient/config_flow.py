@@ -51,6 +51,14 @@ from .const import (
     CONF_HEALTH_IGNORE,
     DEFAULT_BATTERY_THRESHOLD,
     CONF_CHAT_AGENT,
+    CONF_VOICE_AGENT,
+    CONF_BACKUP_AGENT,
+    DEFAULT_BACKUP_AGENT,
+    CONF_ANIMAL_SENSORS,
+    CONF_ANIMAL_LOW,
+    CONF_ANIMAL_HIGH,
+    DEFAULT_ANIMAL_LOW,
+    DEFAULT_ANIMAL_HIGH,
     CONF_SIDEBAR,
     DEFAULT_SIDEBAR,
     BRIEFING_SECTIONS,
@@ -176,6 +184,21 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_DEFAULT_SPEAKER, **d(CONF_DEFAULT_SPEAKER)): _ONE_SPEAKER,
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
+            vol.Optional(CONF_VOICE_AGENT, **d(CONF_VOICE_AGENT)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="conversation")
+            ),
+            vol.Optional(CONF_BACKUP_AGENT, **d(CONF_BACKUP_AGENT, DEFAULT_BACKUP_AGENT)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="conversation")
+            ),
+            vol.Optional(CONF_ANIMAL_SENSORS, **d(CONF_ANIMAL_SENSORS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", device_class="temperature", multiple=True)
+            ),
+            vol.Required(CONF_ANIMAL_LOW, **d(CONF_ANIMAL_LOW, DEFAULT_ANIMAL_LOW)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=-10, max=20, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_ANIMAL_HIGH, **d(CONF_ANIMAL_HIGH, DEFAULT_ANIMAL_HIGH)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=15, max=45, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
+            ),
             vol.Optional(CONF_CHAT_AGENT, **d(CONF_CHAT_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),

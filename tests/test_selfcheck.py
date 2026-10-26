@@ -221,3 +221,96 @@ async def test_visitor_still_announced_when_capped(hass: HomeAssistant) -> None:
         visit = await entry.runtime_data.visitors.async_visit("test")
     assert not calls and visit is not None
     assert said[-1].data["message"] == "Someone's at the door."
+
+
+# ----- the voice backup --------------------------------------------------------------------
+from homeassistant.components import conversation  # noqa: E402
+from homeassistant.helpers import intent  # noqa: E402
+
+
+class _Agent(conversation.AbstractConversationAgent):
+    def __init__(self, reply=None, fail=False) -> None:
+        self.reply, self.fail, self.seen = reply, fail, []
+
+    @property
+    def supported_languages(self):
+        return "*"
+
+    async def async_process(self, user_input):
+        self.seen.append(user_input.text)
+        if self.fail:
+            raise HomeAssistantError("API quota exceeded")
+        response = intent.IntentResponse(language=user_input.language)
+        response.async_set_speech(self.reply)
+        return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
+
+
+async def _voice_setup(hass: HomeAssistant, main: _Agent, backup: _Agent):
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    assert await async_setup_component(hass, "conversation", {})
+    main_entry = MockConfigEntry(domain="test_main"); main_entry.add_to_hass(hass)
+    backup_entry = MockConfigEntry(domain="test_backup"); backup_entry.add_to_hass(hass)
+    conversation.async_set_agent(hass, main_entry, main)
+    conversation.async_set_agent(hass, backup_entry, backup)
+    entry = await _setup(hass, voice_agent=main_entry.entry_id, backup_agent=backup_entry.entry_id)
+    agent = next(s.entity_id for s in hass.states.async_all("conversation") if s.entity_id.startswith("conversation.nova"))
+    return entry, agent
+
+
+async def test_voice_goes_to_the_main_agent(hass: HomeAssistant) -> None:
+    from homeassistant.core import Context
+
+    main, backup = _Agent("Lights off."), _Agent("Backup here.")
+    _entry, agent = await _voice_setup(hass, main, backup)
+    assert agent == "conversation.nova_with_backup"
+    result = await conversation.async_converse(hass, "lights off", None, Context(), agent_id=agent)
+    assert result.response.speech["plain"]["speech"] == "Lights off." and not backup.seen
+
+
+async def test_voice_falls_back_when_the_ai_fails(hass: HomeAssistant) -> None:
+    from homeassistant.core import Context
+
+    main, backup = _Agent(fail=True), _Agent("Turned off the light.")
+    entry, agent = await _voice_setup(hass, main, backup)
+    result = await conversation.async_converse(hass, "lights off", None, Context(), agent_id=agent)
+    assert main.seen and backup.seen
+    assert result.response.speech["plain"]["speech"] == "Turned off the light."
+    assert entry.runtime_data.ai.fails_in_row == 1
+    assert any("backup agent" in i["text"] for i in entry.runtime_data.timeline.items)
+
+
+async def test_voice_says_plainly_when_both_fail(hass: HomeAssistant) -> None:
+    from homeassistant.core import Context
+
+    _entry, agent = await _voice_setup(hass, _Agent(fail=True), _Agent(fail=True))
+    result = await conversation.async_converse(hass, "what's the news", None, Context(), agent_id=agent)
+    assert "isn't answering" in result.response.speech["plain"]["speech"]
+
+
+# ----- animals ---------------------------------------------------------------------------------
+async def test_hutch_too_cold_then_back(hass: HomeAssistant) -> None:
+    attrs = {"device_class": "temperature", "unit_of_measurement": "°C", "friendly_name": "Rabbit hutch Temperature"}
+    hass.states.async_set("sensor.hutch", "10", attrs)
+    entry = await _setup(hass, animal_sensors=["sensor.hutch"], animal_low=3, animal_high=27)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("sensor.hutch", "2.4", attrs)
+    await hass.async_block_till_done()
+    assert said[-1].data["message"] == "It's down to 2 degrees in the rabbit hutch — worth checking the bedding."
+    hass.states.async_set("sensor.hutch", "1.8", attrs)
+    hass.states.async_set("sensor.hutch", "3.5", attrs)  # within the degree's grace: still cold
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    hass.states.async_set("sensor.hutch", "8", attrs)
+    hass.states.async_set("sensor.hutch", "29", attrs)
+    await hass.async_block_till_done()
+    assert "up to 29 degrees in the rabbit hutch" in said[-1].data["message"]
+    assert entry.runtime_data.animals.out_of_range() == ["the rabbit hutch 29° (too hot)"]
+
+
+async def test_frost_warning_mentions_the_animals(hass: HomeAssistant) -> None:
+    from custom_components.sentient.foresight import plain_heads_up
+
+    text = plain_heads_up({"weather": {"templow": -1}, "animals_living_outside_now": ["the rabbit hutch 4°"]})
+    assert text == "Frost's forecast for tomorrow morning, so the car may need defrosting and the water in the rabbit hutch may freeze."

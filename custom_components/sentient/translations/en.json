@@ -44,7 +44,12 @@
           "battery_threshold": "Low battery below",
           "health_ignore": "Ignore for house health",
           "second_opinion_ai": "Second opinion AI",
-          "chime": "Chime before speaking"
+          "chime": "Chime before speaking",
+          "voice_agent": "Main AI voice agent",
+          "backup_agent": "Backup agent",
+          "animal_sensors": "Animals' temperature sensors",
+          "animal_low": "Too cold below",
+          "animal_high": "Too hot above"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -70,7 +75,12 @@
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
           "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
-          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off."
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
+          "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
+          "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
+          "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
+          "animal_high": "Says once when it rises above this."
         }
       }
     },
@@ -190,7 +200,12 @@
           "wake_actions": "When someone's up, do",
           "appliances": "Appliances to follow",
           "appliance_announce": "Say when they finish",
-          "appliance_watts": "Running above"
+          "appliance_watts": "Running above",
+          "voice_agent": "Main AI voice agent",
+          "backup_agent": "Backup agent",
+          "animal_sensors": "Animals' temperature sensors",
+          "animal_low": "Too cold below",
+          "animal_high": "Too hot above"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -282,7 +297,12 @@
           "wake_actions": "e.g. the Echo speakers back on, the hallway light on low.",
           "appliances": "Washing machine, dryer, dishwasher, hoover — their power sensor or status. Leave empty to follow every robot vacuum and any power sensor named washing machine, dryer or dishwasher.",
           "appliance_announce": "Says “the washing machine's finished” where people are, and when one is taking far longer than usual. Plain words, no AI.",
-          "appliance_watts": "For power sensors: running while above this, finished once it's stayed below for five minutes."
+          "appliance_watts": "For power sensors: running while above this, finished once it's stayed below for five minutes.",
+          "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
+          "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
+          "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
+          "animal_high": "Says once when it rises above this."
         }
       },
       "memories": {
@@ -379,6 +399,11 @@
       },
       "media_speakers": {
         "name": "Echo speakers"
+      }
+    },
+    "conversation": {
+      "voice": {
+        "name": "With backup"
       }
     }
   },

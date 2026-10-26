@@ -101,6 +101,11 @@ from .const import (
     CONF_BRIEFINGS,
     CONF_CAMERA_COOLDOWN,
     CONF_CHAT_AGENT,
+    CONF_VOICE_AGENT,
+    CONF_BACKUP_AGENT,
+    CONF_ANIMAL_SENSORS,
+    CONF_ANIMAL_LOW,
+    CONF_ANIMAL_HIGH,
     CONF_CHATTINESS,
     CONF_DAILY_AI_LIMIT,
     CONF_APPLIANCES,
@@ -180,6 +185,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_DAILY_AI_LIMIT,
+    ]),
+    ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
+        CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
+    ]),
+    ("animals", "Animals", "mdi:rabbit", "Temperatures where animals live outside — a hutch, a kennel, a coop: a word when it's too cold or too hot, and frost warnings the evening before.", [
+        CONF_ANIMAL_SENSORS, CONF_ANIMAL_LOW, CONF_ANIMAL_HIGH,
     ]),
     ("appliances", "Appliances", "mdi:washing-machine", "How long things normally run: says when one's finished, or seems stuck — in plain words, no AI.", [
         CONF_APPLIANCES, CONF_APPLIANCE_ANNOUNCE, CONF_APPLIANCE_WATTS,
