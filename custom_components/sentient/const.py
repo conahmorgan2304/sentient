@@ -189,5 +189,6 @@ PARTY_STYLES = ["disco", "party", "rainbow", "chill", "halloween", "christmas"]
 CONF_PARTY_WHOLE_HOUSE = "party_whole_house"
 CONF_PARTY_EXCLUDE = "party_exclude"
 CONF_PARTY_SOUND = "party_sound"
+CONF_PARTY_SOUND_SWITCH = "party_sound_switch"
 CONF_PARTY_SHOW = "party_show"
 DEFAULT_PARTY_SHOW = ["disco"]

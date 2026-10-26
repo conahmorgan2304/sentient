@@ -121,7 +121,11 @@ async def test_by_voice_in_a_named_room(hass: HomeAssistant, freezer) -> None:
 
 async def test_everywhere_halloween_and_following_the_music(hass: HomeAssistant, freezer) -> None:
     hass.states.async_set("sensor.room_loudness", "50", {"unit_of_measurement": "dB"})
-    entry = await _setup(hass, freezer, party_lights=[], party_sound="sensor.room_loudness", party_exclude=["light.screen"])
+    hass.states.async_set("switch.report_loudness", "off")
+    entry = await _setup(hass, freezer, party_lights=[], party_sound="sensor.room_loudness",
+                         party_sound_switch="switch.report_loudness", party_exclude=["light.screen"])
+    sw_on = async_mock_service(hass, "switch", "turn_on")
+    sw_off = async_mock_service(hass, "switch", "turn_off")
     ents = er.async_get(hass)
     for oid in ("strip", "bulb", "screen", "everything"):
         ents.async_get_or_create("light", "test", oid, suggested_object_id=oid)
@@ -137,6 +141,8 @@ async def test_everywhere_halloween_and_following_the_music(hass: HomeAssistant,
     result = await party.async_party("halloween", None, party.lights_for("the whole house"))
     await hass.async_block_till_done()
     assert result["following_sound"] is True
+    assert sw_on and sw_on[0].data["entity_id"] == "switch.report_loudness"  # the sensor reports only now
+    hass.states.async_set("switch.report_loudness", "on")
     hues = {tuple(c.data["hs_color"]) for c in on if "hs_color" in c.data}
     assert hues <= {(25, 100), (280, 100), (110, 100)}  # orange, purple, green
     # a jump in loudness is a beat: lights change straight away
@@ -150,5 +156,7 @@ async def test_everywhere_halloween_and_following_the_music(hass: HomeAssistant,
     # christmas doesn't follow the music; chosen buttons show on the switch for the overview
     assert (await party.async_party("christmas", None, party.lights_for("everywhere")))["on"]
     assert party.listening is False
+    await hass.async_block_till_done()
+    assert sw_off  # christmas isn't listening, so reporting goes off again
     assert hass.states.get("switch.nova_light_show").attributes["style"] == "christmas"
     await party.async_end()

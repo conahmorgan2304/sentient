@@ -43,6 +43,7 @@ from .const import (
     CONF_PARTY_LIGHTS,
     CONF_PARTY_MINUTES,
     CONF_PARTY_SOUND,
+    CONF_PARTY_SOUND_SWITCH,
     CONF_PARTY_STYLE,
     CONF_PARTY_WHOLE_HOUSE,
     DEFAULT_PARTY_MINUTES,
@@ -117,6 +118,7 @@ class Party:
     async def async_start(self) -> None:
         """Put lights back if Home Assistant restarted in the middle of a show."""
         data = await self._store.async_load() or {}
+        await self._async_sound_switch(False)  # in case a show was cut short by a restart
         if saved := data.get("saved"):
             self._saved = saved
             self.lights = list(saved)
@@ -246,7 +248,35 @@ class Party:
             if (unsub := getattr(self, name)) is not None:
                 unsub()
                 setattr(self, name, None)
-        self.listening = False
+        if self.listening:
+            self.listening = False
+            self.hass.async_create_task(self._async_sound_switch(False), eager_start=False)
+
+    def _sound_switch(self) -> str | None:
+        """The switch that makes the loudness sensor report: the one set, or one on the same device."""
+        if chosen := self.options.get(CONF_PARTY_SOUND_SWITCH):
+            return chosen
+        sensor = self.options.get(CONF_PARTY_SOUND)
+        ents = er.async_get(self.hass)
+        if not sensor or (entry := ents.async_get(sensor)) is None or not entry.device_id:
+            return None
+        for other in er.async_entries_for_device(ents, entry.device_id):
+            if other.domain == "switch" and ("loudness" in other.entity_id or "sound_level" in other.entity_id):
+                return other.entity_id
+        return None
+
+    async def _async_sound_switch(self, on: bool) -> None:
+        if (switch := self._sound_switch()) is None or (st := self.hass.states.get(switch)) is None:
+            return
+        if (st.state == "on") == on or st.state == "unavailable":
+            return
+        try:
+            await self.hass.services.async_call(
+                "switch", "turn_on" if on else "turn_off", {"entity_id": switch},
+                blocking=False, context=Context(parent_id=self._parent.id),
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Could not switch %s: %s", switch, err)
 
     # ----- following the room's sound ---------------------------------------------------
     @callback
@@ -257,6 +287,7 @@ class Party:
         self._avg, self._last_beat = None, 0.0
         self._sound_unsub = async_track_state_change_event(self.hass, [sensor], self._heard)
         self.listening = True
+        self.hass.async_create_task(self._async_sound_switch(True), eager_start=False)
 
     @callback
     def _heard(self, event: Event) -> None:

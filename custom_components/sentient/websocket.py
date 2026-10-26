@@ -37,6 +37,7 @@ from .const import (
     CONF_PARTY_MINUTES,
     CONF_PARTY_SHOW,
     CONF_PARTY_SOUND,
+    CONF_PARTY_SOUND_SWITCH,
     CONF_PARTY_STYLE,
     CONF_PARTY_WHOLE_HOUSE,
     CONF_INSIDE_SENSORS,
@@ -149,7 +150,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
-        CONF_PARTY_SOUND, CONF_PARTY_SHOW,
+        CONF_PARTY_SOUND, CONF_PARTY_SOUND_SWITCH, CONF_PARTY_SHOW,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,

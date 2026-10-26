@@ -165,7 +165,8 @@
           "party_whole_house": "Use every light in the house",
           "party_exclude": "Never use these lights",
           "party_sound": "Follow the sound from",
-          "party_show": "Buttons on the overview"
+          "party_show": "Buttons on the overview",
+          "party_sound_switch": "Turn on while listening"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -232,7 +233,8 @@
           "party_whole_house": "Every light that can dim or change colour joins in (light groups, screens and backlights don't). Say 'disco mode everywhere' to do this just once.",
           "party_exclude": "Left out of every show, even 'everywhere' — tablet screens, a projector, a bedroom where someone sleeps.",
           "party_sound": "Optional: a loudness sensor in dB, such as a voice speaker's microphone through ESPHome's sound_level sensor. Disco, party, rainbow and Halloween then follow the music — louder is brighter, and each beat changes colour.",
-          "party_show": "Which shows get a button on the overview. Leave empty for none; every show still works by voice."
+          "party_show": "Which shows get a button on the overview. Leave empty for none; every show still works by voice.",
+          "party_sound_switch": "Optional: a switch that makes the loudness sensor report (so it isn't sending readings all day). It's turned on while a show follows the sound and off afterwards. Found automatically if it's on the same device and has 'loudness' in its name."
         }
       },
       "memories": {

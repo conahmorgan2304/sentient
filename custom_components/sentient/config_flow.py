@@ -22,6 +22,7 @@ from .const import (
     CONF_PARTY_MINUTES,
     CONF_PARTY_SHOW,
     CONF_PARTY_SOUND,
+    CONF_PARTY_SOUND_SWITCH,
     CONF_PARTY_STYLE,
     CONF_PARTY_WHOLE_HOUSE,
     DEFAULT_PARTY_SHOW,
@@ -213,6 +214,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_PARTY_SOUND, **d(CONF_PARTY_SOUND)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor")
+            ),
+            vol.Optional(CONF_PARTY_SOUND_SWITCH, **d(CONF_PARTY_SOUND_SWITCH)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="switch")
             ),
             vol.Optional(CONF_PARTY_SHOW, **d(CONF_PARTY_SHOW, DEFAULT_PARTY_SHOW)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=PARTY_STYLES, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="party_style")
