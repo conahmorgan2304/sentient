@@ -156,7 +156,7 @@ KINDS: dict[str, dict[str, Any]] = {
     "checks": {
         "title": "Camera checks",
         "icon": "mdi:cctv",
-        "blurb": "Standing questions for a camera, asked when its sensor sees something — 'is that a police car?'. "
+        "blurb": "Standing questions for a camera, asked when its sensor sees something — 'is there a delivery van?'. "
                  "A yes goes on the timeline and to phones, and can be said out loud.",
         "add": "+ NEW CAMERA CHECK",
         "defaults": {
@@ -178,7 +178,7 @@ KINDS: dict[str, dict[str, Any]] = {
         "labels": {
             "name": "Name", "enabled": "On", "camera": "Camera",
             "triggers": "Check when these see something (e.g. the camera's car or person sensor)",
-            "question": "Yes-or-no question (e.g. 'Is there a police car or van in the picture?')",
+            "question": "Yes-or-no question (e.g. 'Is there a delivery van in the picture?')",
             "spot": "Only this spot of the picture (optional)", "times": "Only between (empty = any time)",
             "say": "Say it out loud too", "speakers": "Say it on (empty = where people are)",
             "cooldown_minutes": "Then don't check again for",

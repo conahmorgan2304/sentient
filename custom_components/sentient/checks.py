@@ -1,5 +1,5 @@
 """Camera checks: a standing yes-or-no question for a camera, asked when its own sensor sees
-something — "is there a police car or van?" when the back camera spots a car. A yes goes on the
+something — "is there a delivery van?" when the front camera spots a car. A yes goes on the
 timeline (and so to phones) and can be said out loud. One AI look per trigger, with a cooldown,
 counted against the daily AI limit.
 """

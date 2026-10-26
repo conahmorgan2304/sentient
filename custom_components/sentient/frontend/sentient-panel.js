@@ -283,7 +283,7 @@
         + item("alarms", "mdi:alarm", "Alarms", this._it && this._it.alarms ? `${this._it.alarms.items.length} set` : "Alarms, appointments, routines")
         + item("offers", "mdi:hand-heart-outline", "Offers", this._it && this._it.offers ? `${this._it.offers.items.length} · fancy a brew?` : "Questions it asks — a brew?")
         + item("announce", "mdi:bullhorn-outline", "Announcements", this._it && this._it.announce ? `${this._it.announce.items.length} · doorbell, gate` : "Doorbell, gate…")
-        + item("checks", "mdi:cctv", "Camera checks", this._it && this._it.checks ? `${this._it.checks.items.length} watching` : "Police car at the back?")
+        + item("checks", "mdi:cctv", "Camera checks", this._it && this._it.checks ? `${this._it.checks.items.length} watching` : "Delivery van outside?")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
         + item("backup", "mdi:backup-restore", "Backup", "Download or restore everything")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");

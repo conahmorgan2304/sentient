@@ -131,23 +131,23 @@ async def test_alarm_by_voice(hass: HomeAssistant, freezer) -> None:
     assert out["cancelled"] == "Doctor's"
 
 
-async def test_camera_check_police_car(hass: HomeAssistant) -> None:
+async def test_camera_check_delivery_van(hass: HomeAssistant) -> None:
     entry = await _setup(hass)
     hass.states.async_set("camera.back", "idle", {"friendly_name": "Back"})
     hass.states.async_set("binary_sensor.back_car", "off")
     entry.runtime_data.lists["checks"].upsert({
-        "name": "Police at the back", "camera": "camera.back", "triggers": ["binary_sensor.back_car"],
-        "question": "Is there a police car or van?",
+        "name": "Van on the drive", "camera": "camera.back", "triggers": ["binary_sensor.back_car"],
+        "question": "Is there a delivery van?",
     })
 
     async def generate(call: ServiceCall):
-        return {"conversation_id": "x", "data": {"match": True, "description": "A police car parked by the fence."}}
+        return {"conversation_id": "x", "data": {"match": True, "description": "A white van parked on the drive."}}
 
     hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
     hass.states.async_set("binary_sensor.back_car", "on")
     await hass.async_block_till_done()
     items = list(entry.runtime_data.timeline.items)
-    assert items[0]["text"] == "Police at the back: A police car parked by the fence"
+    assert items[0]["text"] == "Van on the drive: A white van parked on the drive"
 
 
 async def test_bin_alarm_says_tomorrows_bin_or_stays_quiet(hass: HomeAssistant, freezer) -> None:
