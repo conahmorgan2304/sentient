@@ -101,6 +101,12 @@ async def test_by_voice_in_a_named_room(hass: HomeAssistant, freezer) -> None:
     ents.async_get_or_create("light", "test", "lr", suggested_object_id="living_strip")
     ents.async_update_entity("light.living_strip", area_id=room.id)
     hass.states.async_set("light.living_strip", "off", {"supported_color_modes": ["rgb"]})
+    ents.async_get_or_create("light", "test", "bl", suggested_object_id="switch_backlight")
+    ents.async_update_entity("light.switch_backlight", area_id=room.id, entity_category=er.EntityCategory.CONFIG)
+    hass.states.async_set("light.switch_backlight", "on", {"supported_color_modes": ["onoff"]})
+    ents.async_get_or_create("light", "test", "ol", suggested_object_id="old_bulb")
+    ents.async_update_entity("light.old_bulb", area_id=room.id)
+    hass.states.async_set("light.old_bulb", "on", {"supported_color_modes": ["onoff"]})
     async_mock_service(hass, "light", "turn_on")
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(
         platform="test", context=None, language="en", assistant="conversation", device_id=None,

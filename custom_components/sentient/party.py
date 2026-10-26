@@ -47,6 +47,11 @@ _RESTORE_ATTR = {
 }
 
 
+def _plain(state) -> bool:
+    """A light that can only go on and off: nothing to show, so it sits the party out."""
+    return set(state.attributes.get("supported_color_modes") or ["onoff"]) <= {"onoff"}
+
+
 def can_colour(state) -> bool:
     return bool(state is not None and COLOUR_MODES & set(state.attributes.get("supported_color_modes") or []))
 
@@ -108,10 +113,11 @@ class Party:
         ents, devs = er.async_get(self.hass), dr.async_get(self.hass)
         out = []
         for entry in ents.entities.values():
-            if entry.domain != "light" or entry.disabled_by or entry.hidden_by:
+            if entry.domain != "light" or entry.disabled_by or entry.hidden_by or entry.entity_category:
                 continue
             area_id = entry.area_id or (d.area_id if entry.device_id and (d := devs.async_get(entry.device_id)) else None)
-            if area_id == found.id and self.hass.states.get(entry.entity_id) is not None:
+            st = self.hass.states.get(entry.entity_id)
+            if area_id == found.id and st is not None and not _plain(st):
                 out.append(entry.entity_id)
         return sorted(out)
 
@@ -198,7 +204,7 @@ class Party:
         self._step += 1
         for light, hue in zip(self.lights, hues):
             st = self.hass.states.get(light)
-            if st is None or st.state == "unavailable":
+            if st is None or st.state == "unavailable" or _plain(st):
                 continue
             data: dict[str, Any] = {"entity_id": light}
             if can_colour(st):
