@@ -258,6 +258,10 @@ wonder:
       example: "Who is the man who comes on Tuesdays?"
       selector:
         text:
+    dismiss:
+      example: "visitors"
+      selector:
+        text:
     ask_now:
       default: false
       selector:

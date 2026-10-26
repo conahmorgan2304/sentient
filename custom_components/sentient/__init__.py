@@ -563,6 +563,8 @@ def _register_services(hass: HomeAssistant) -> None:
 
     async def wonder(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
+        if call.data.get("dismiss"):
+            rt.curiosity.dismiss(call.data["dismiss"])
         if call.data.get("question"):
             rt.curiosity.wonder(call.data["question"], source="service")
         if call.data.get("ask_now"):
@@ -580,7 +582,8 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "check_drive", drive_check, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, "wonder", wonder,
-        schema=vol.Schema({vol.Optional("question"): cv.string, vol.Optional("ask_now", default=False): cv.boolean}),
+        schema=vol.Schema({vol.Optional("question"): cv.string, vol.Optional("dismiss"): cv.string,
+                           vol.Optional("ask_now", default=False): cv.boolean}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(

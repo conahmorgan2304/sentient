@@ -111,18 +111,20 @@ class Reflection:
         known = [m.text for m in rt.memory.recent(60)]
         rules = (rt.options.get(CONF_HOUSE_RULES) or "").strip()
         instructions = (
-            f"You are {persona}, the mind of a family home, thinking over the last day overnight. "
+            f"You are {persona}, the mind of a family home, thinking over the last 24 hours. "
             "From the log and the conversations below, decide:\n"
             f"1. memories: up to {MAX_MEMORIES} durable facts people actually said that are worth knowing later "
             "(plans, people, preferences, things about the house). One short sentence each. Skip anything already "
             "known, anything that will be stale within a day, guesses, and anything private (health, money, "
             "passwords, account or card numbers). Usually there are none.\n"
             f"2. thoughts: up to {MAX_THOUGHTS} short, natural sentences worth saying to the family this morning — "
-            "something useful they'd want to know or a pattern worth pointing out. Only if genuinely worth it; "
+            "something useful they'd want to know or a pattern worth pointing out (say 'yesterday' or 'last night' for "
+            "things before this morning). Only if genuinely worth it; "
             "an empty list is normal. No greetings, no names, no forms of address.\n"
-            "3. question: at most one thing you're genuinely curious about that a person in the house could answer "
-            "and that would help you look after the house (e.g. who a regular caller is, what something is for). "
-            "Empty if nothing.\n"
+            "3. question: at most one specific thing you're genuinely curious about that a person in the house could "
+            "answer in a few words and that would help you look after the house — about one pattern, time, person or "
+            "device you saw (e.g. 'who's the man who calls on Tuesday mornings?', 'what's the garage light for at "
+            "7pm?'). Never a general or security worry, never something already known. Usually empty.\n"
             "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + "\n\nAlready known:\n" + "\n".join(f"- {k}" for k in known[:60])

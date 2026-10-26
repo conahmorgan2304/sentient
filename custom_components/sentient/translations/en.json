@@ -706,7 +706,7 @@
     },
     "wonder": {
       "name": "Wonder",
-      "description": "Add a question for curiosity to ask, or ask the next one now.",
+      "description": "Add a question for curiosity to ask, drop one, or ask the next one now.",
       "fields": {
         "question": {
           "name": "Question",
@@ -715,6 +715,10 @@
         "ask_now": {
           "name": "Ask now",
           "description": "Ask the next question straight away."
+        },
+        "dismiss": {
+          "name": "Dismiss",
+          "description": "Words from a question not to ask after all."
         }
       }
     },
