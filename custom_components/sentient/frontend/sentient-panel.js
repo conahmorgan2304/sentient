@@ -270,23 +270,52 @@
       this._drawBody();
     }
 
+    _phone() { return window.matchMedia("(max-width: 720px)").matches; }
+
     _drawSide() {
       const groups = (this._settings && this._settings.groups) || [];
-      const item = (id, icon, title, sub) =>
-        `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
+      const n = (k) => (this._it && this._it[k] ? this._it[k].items.length : null);
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
-      this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + item("memories", "mdi:brain", "Memories", count !== "" ? `${count} remembered` : "")
-        + item("spots", "mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into")
-        + item("shortcuts", "mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…")
-        + item("mutes", "mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention")
-        + item("motion", "mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement")
-        + item("alarms", "mdi:alarm", "Alarms", this._it && this._it.alarms ? `${this._it.alarms.items.length} set` : "Alarms, appointments, routines")
-        + item("offers", "mdi:hand-heart-outline", "Offers", this._it && this._it.offers ? `${this._it.offers.items.length} · fancy a brew?` : "Questions it asks — a brew?")
-        + item("announce", "mdi:bullhorn-outline", "Announcements", this._it && this._it.announce ? `${this._it.announce.items.length} · doorbell, gate` : "Doorbell, gate…")
-        + item("checks", "mdi:cctv", "Camera checks", this._it && this._it.checks ? `${this._it.checks.items.length} watching` : "Delivery van outside?")
-        + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
-        + item("backup", "mdi:backup-restore", "Backup", "Download or restore everything")
-        + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
+      // Every page the Settings tab has: id -> [icon, title, short line]
+      const pages = {
+        memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
+        mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
+        spots: ["mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into"],
+        shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
+        motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
+        alarms: ["mdi:alarm", "Alarms", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
+        offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
+        announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
+        checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
+        backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
+      };
+      groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
+      // The menus, in order; anything not listed lands in the last one
+      const menus = [
+        ["voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
+        ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec"]],
+        ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
+        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "motion", "heating", "energy"]],
+        ["brain", "mdi:brain", "Brain & system", ["memories", "noticing", "page", "backup"]],
+      ];
+      const placed = new Set(menus.flatMap((m) => m[3]));
+      Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][3].push(id); });
+      const mine = menus.find((m) => m[3].includes(this._group));
+      if (!this._openMenus) this._openMenus = new Set();
+      if (mine && this._menuFor !== this._group) { this._menuFor = this._group; if (!this._phone()) this._openMenus.add(mine[0]); }
+      const item = (id) => {
+        const [icon, title, sub] = pages[id];
+        return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
+      };
+      this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + menus.map(([mid, icon, title, ids]) => {
+        const list = ids.filter((id) => pages[id]);
+        if (!list.length) return "";
+        const open = this._openMenus.has(mid);
+        const here = mine && mine[0] === mid;
+        return `<div class="menu${open ? " open" : ""}${here ? " here" : ""}">
+          <button class="mh" data-act="menu" data-id="${mid}" aria-expanded="${open}"><ha-icon icon="${icon}"></ha-icon><span>${esc(title)}</span><u>${list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
+          <div class="mi">${list.map(item).join("")}</div></div>`;
+      }).join("") + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
 
     async _loadMemories() {
@@ -950,9 +979,16 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { this._group = id; this._show("settings", true); }
-      else if (act === "group") {
+      else if (act === "menu") {
+        if (!this._openMenus) this._openMenus = new Set();
+        if (this._openMenus.has(id)) this._openMenus.delete(id); else this._openMenus.add(id);
+        this._drawSide();
+      } else if (act === "group") {
         if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
-        this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null; this._drawSide(); this._drawBody();
+        this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null;
+        if (this._phone() && this._openMenus) this._openMenus.clear();
+        this._drawSide(); this._drawBody();
+        if (this._phone()) this._$("body").scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (act === "save") this._save();
       else if (act === "reset") this._drawBody();
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
@@ -1203,6 +1239,14 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .set{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 .side{position:sticky;top:74px;padding:12px;display:flex;flex-direction:column;gap:4px}
 .sh{font-size:11px;font-weight:700;letter-spacing:.32em;color:#00fff7;padding:4px 10px 10px;text-shadow:0 0 6px rgba(0,255,247,.5)}
+.menu{border-radius:14px;border:1px solid rgba(0,255,247,.08);background:rgba(0,255,247,.015)}
+.menu.here{border-color:rgba(0,255,247,.22)}
+.mh{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:14px;text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#bfefff}
+.mh ha-icon{--mdc-icon-size:19px;color:#5fd8e6;flex:none} .mh span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mh u{text-decoration:none;font-size:10px;letter-spacing:0;font-weight:600;color:rgba(150,220,235,.7);border:1px solid rgba(0,255,247,.2);border-radius:9px;padding:1px 7px}
+.mh .chev{--mdc-icon-size:18px;transition:transform .2s} .menu.open .chev{transform:rotate(180deg)}
+.mh:hover{background:rgba(0,255,247,.05)} .menu.here .mh>ha-icon:first-child{color:#00fff7}
+.mi{display:none;flex-direction:column;gap:2px;padding:0 6px 8px 14px} .menu.open .mi{display:flex}
 .nav{display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid transparent}
 .nav ha-icon{--mdc-icon-size:20px;color:#5fd8e6;flex:none}
 .nav span{display:flex;flex-direction:column;min-width:0} .nav b{font-weight:500;font-size:13.5px;color:#e6f5fa}
@@ -1324,7 +1368,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 @media (max-width: 720px){ .page{padding:10px} .top{padding:0 8px;gap:6px} .top .ttl{letter-spacing:.2em;font-size:12px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1} .tabs{margin-left:0} .tabs button{padding:6px 9px} .brief span{display:none} .brief{padding:6px 8px}
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
   .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
-  .set{grid-template-columns:1fr} .side{position:static;flex-direction:row;overflow-x:auto} .sh{display:none} .nav span{display:none} .tabs span{display:none} }
+  .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
 `;
 
   customElements.define("sentient-panel", SentientPanel);
