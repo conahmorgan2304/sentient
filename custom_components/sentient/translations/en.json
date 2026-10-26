@@ -159,9 +159,13 @@
           "camera_security_inside": "Inside the boundary",
           "camera_security_entries": "Ways in",
           "camera_security_describe": "Describe who it is",
-          "party_lights": "Disco lights",
+          "party_lights": "Show lights",
           "party_style": "Style",
-          "party_minutes": "Stop by itself after"
+          "party_minutes": "Stop by itself after",
+          "party_whole_house": "Use every light in the house",
+          "party_exclude": "Never use these lights",
+          "party_sound": "Follow the sound from",
+          "party_show": "Buttons on the overview"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -222,9 +226,13 @@
           "camera_security_inside": "The person sensors for places behind the gate or fence — the garden, the shed. Someone appearing there without a way in opening is an alert.",
           "camera_security_entries": "The gate and doors people should come through (e.g. the back gate and the back door).",
           "camera_security_describe": "One AI look at the camera for each alert ('a man in a dark hoodie trying the shed door').",
-          "party_lights": "The lights that join in. Leave empty to use the lights in the room of whoever asks (or say a room: 'disco mode in the living room').",
-          "party_style": "Disco: quick colour changes. Party: bright colours with short fades. Rainbow: a colour wheel across the lights. Chill: slow, dim colours.",
-          "party_minutes": "Then every light goes back exactly as it was. 0 keeps going until it's turned off."
+          "party_lights": "The lights that join in when not using the whole house. Leave empty to use the room of whoever asks (or say a room: 'disco mode in the living room').",
+          "party_style": "Disco: quick colour changes. Party: bright colours, short fades. Rainbow: a colour wheel. Chill: slow, dim colours. Halloween: flickering orange, purple and green. Christmas: red, green and warm white, twinkling.",
+          "party_minutes": "Then every light goes back exactly as it was. 0 keeps going until it's turned off.",
+          "party_whole_house": "Every light that can dim or change colour joins in (light groups, screens and backlights don't). Say 'disco mode everywhere' to do this just once.",
+          "party_exclude": "Left out of every show, even 'everywhere' — tablet screens, a projector, a bedroom where someone sleeps.",
+          "party_sound": "Optional: a loudness sensor in dB, such as a voice speaker's microphone through ESPHome's sound_level sensor. Disco, party, rainbow and Halloween then follow the music — louder is brighter, and each beat changes colour.",
+          "party_show": "Which shows get a button on the overview. Leave empty for none; every show still works by voice."
         }
       },
       "memories": {
@@ -304,7 +312,7 @@
         "name": "Chime"
       },
       "party_mode": {
-        "name": "Disco mode"
+        "name": "Light show"
       }
     }
   },
@@ -377,7 +385,9 @@
         "disco": "Disco",
         "party": "Party",
         "rainbow": "Rainbow",
-        "chill": "Chill"
+        "chill": "Chill",
+        "halloween": "Halloween",
+        "christmas": "Christmas"
       }
     }
   },
@@ -631,8 +641,8 @@
       "description": "Put together what the house learned and noticed in the last week, and keep it on the timeline."
     },
     "party": {
-      "name": "Disco mode",
-      "description": "Start or stop the light show. Lights go back exactly as they were when it stops.",
+      "name": "Light show",
+      "description": "Start or stop a light show (disco, Halloween, Christmas…). Lights go back exactly as they were when it stops.",
       "fields": {
         "on": {
           "name": "On",
@@ -640,7 +650,7 @@
         },
         "style": {
           "name": "Style",
-          "description": "Disco, party, rainbow or chill. Empty uses the setting."
+          "description": "Disco, party, rainbow, chill, Halloween or Christmas. Empty uses the setting."
         },
         "minutes": {
           "name": "Minutes",
@@ -648,7 +658,7 @@
         },
         "area": {
           "name": "Room",
-          "description": "Use this room's lights instead of the chosen disco lights."
+          "description": "Use this room's lights (or 'everywhere' for every light)."
         },
         "lights": {
           "name": "Lights",

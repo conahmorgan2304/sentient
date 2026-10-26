@@ -38,7 +38,7 @@ async def test_show_then_lights_go_back_as_they_were(hass: HomeAssistant, freeze
     result = await party.async_party("disco")
     await hass.async_block_till_done()
     assert result["on"] and result["style"] == "disco" and result["until"]
-    assert hass.states.get("switch.nova_disco_mode").state == "on"
+    assert hass.states.get("switch.nova_light_show").state == "on"
     lamp = [c for c in on if c.data["entity_id"] == "light.lamp"]
     ceiling = [c for c in on if c.data["entity_id"] == "light.ceiling"]
     assert "hs_color" in lamp[0].data  # colour light changes colour
@@ -60,7 +60,7 @@ async def test_show_then_lights_go_back_as_they_were(hass: HomeAssistant, freeze
     back = [c for c in on if c.data["entity_id"] == "light.lamp"][-1].data
     assert back["brightness"] == 120 and back["color_temp_kelvin"] == 2700
     assert any(c.data["entity_id"] == "light.ceiling" for c in off)
-    assert any(i["text"] == "Disco mode off" for i in entry.runtime_data.timeline.items)
+    assert any(i["text"] == "Light show off" for i in entry.runtime_data.timeline.items)
 
 
 async def test_motion_lights_leave_party_lights_alone(hass: HomeAssistant, freezer) -> None:
@@ -117,3 +117,38 @@ async def test_by_voice_in_a_named_room(hass: HomeAssistant, freezer) -> None:
     assert "error" in out  # no disco lights set and no room to go on
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_party", tool_args={"action": "stop"}))
     assert out["on"] is False
+
+
+async def test_everywhere_halloween_and_following_the_music(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("sensor.room_loudness", "50", {"unit_of_measurement": "dB"})
+    entry = await _setup(hass, freezer, party_lights=[], party_sound="sensor.room_loudness", party_exclude=["light.screen"])
+    ents = er.async_get(hass)
+    for oid in ("strip", "bulb", "screen", "everything"):
+        ents.async_get_or_create("light", "test", oid, suggested_object_id=oid)
+    hass.states.async_set("light.strip", "off", {"supported_color_modes": ["rgb"]})
+    hass.states.async_set("light.bulb", "off", {"supported_color_modes": ["brightness"]})
+    hass.states.async_set("light.screen", "on", {"supported_color_modes": ["brightness"]})
+    hass.states.async_set("light.everything", "on", {"supported_color_modes": ["xy"], "entity_id": ["light.strip", "light.bulb"]})
+    on = async_mock_service(hass, "light", "turn_on")
+    async_mock_service(hass, "light", "turn_off")
+    party = entry.runtime_data.party
+    # everywhere: real lights only — not the excluded screen, not the light group
+    assert party.lights_for("everywhere") == ["light.bulb", "light.strip"]
+    result = await party.async_party("halloween", None, party.lights_for("the whole house"))
+    await hass.async_block_till_done()
+    assert result["following_sound"] is True
+    hues = {tuple(c.data["hs_color"]) for c in on if "hs_color" in c.data}
+    assert hues <= {(25, 100), (280, 100), (110, 100)}  # orange, purple, green
+    # a jump in loudness is a beat: lights change straight away
+    on.clear()
+    hass.states.async_set("sensor.room_loudness", "51")
+    await hass.async_block_till_done()
+    assert not on  # just the room's level
+    hass.states.async_set("sensor.room_loudness", "62")
+    await hass.async_block_till_done()
+    assert on and on[-1].data["brightness_pct"] > 15
+    # christmas doesn't follow the music; chosen buttons show on the switch for the overview
+    assert (await party.async_party("christmas", None, party.lights_for("everywhere")))["on"]
+    assert party.listening is False
+    assert hass.states.get("switch.nova_light_show").attributes["style"] == "christmas"
+    await party.async_end()

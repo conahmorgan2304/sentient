@@ -486,10 +486,12 @@ class AlarmTool(_Tool):
 class PartyTool(_Tool):
     name = "sentient_party"
     description = (
-        "Disco mode: lights put on a colour show, then go back exactly as they were. Use for 'disco "
-        "mode', 'party lights', 'light show', 'chill lights' and 'stop the disco'. action 'start' (optional "
-        "style: disco, party, rainbow or chill; minutes; area = a room's lights instead of the chosen "
-        "ones), 'stop', or 'status'. Starting again while it's on changes the style or room."
+        "Light shows: lights put on a colour show, then go back exactly as they were. Use for 'disco "
+        "mode', 'party lights', 'light show', 'chill lights', 'Halloween lights', 'Christmas lights' and "
+        "'stop the disco'. action 'start' (optional style: disco, party, rainbow, chill, halloween or "
+        "christmas; minutes; area = a room's lights, or 'everywhere' for every light in the house), 'stop', "
+        "or 'status'. Starting again while it's on changes the style or room. If it says it's following the "
+        "sound, the lights react to the music in the room."
     )
     parameters = vol.Schema({
         vol.Required("action"): vol.In(["start", "stop", "status"]),

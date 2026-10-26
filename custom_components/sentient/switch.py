@@ -130,7 +130,7 @@ class ChimeSwitch(_ModeSwitch):
 
 
 class PartySwitch(_ModeSwitch):
-    """Disco mode: the chosen lights put on a show, then go back as they were."""
+    """Light show: the chosen lights put on a show, then go back as they were."""
 
     _attr_icon = "mdi:party-popper"
 
@@ -148,6 +148,8 @@ class PartySwitch(_ModeSwitch):
             "style": party.style if party.active else None,
             "until": party.until.isoformat() if party.active and party.until else None,
             "lights": list(party.lights) if party.active else [],
+            "following_sound": party.listening,
+            "buttons": list(party.options.get("party_show", ["disco"]) or []),
         }
 
     async def async_turn_on(self, **kwargs: Any) -> None:

@@ -230,6 +230,8 @@ party:
             - party
             - rainbow
             - chill
+            - halloween
+            - christmas
           translation_key: party_style
     minutes:
       example: 60

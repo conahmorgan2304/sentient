@@ -32,9 +32,13 @@ from .const import (
     CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
     CONF_HEATING_LIMIT,
+    CONF_PARTY_EXCLUDE,
     CONF_PARTY_LIGHTS,
     CONF_PARTY_MINUTES,
+    CONF_PARTY_SHOW,
+    CONF_PARTY_SOUND,
     CONF_PARTY_STYLE,
+    CONF_PARTY_WHOLE_HOUSE,
     CONF_INSIDE_SENSORS,
     CONF_NIGHT_WATCH,
     CONF_NIGHT_WATCH_ANNOUNCE,
@@ -143,8 +147,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
         CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
     ]),
-    ("party", "Disco mode", "mdi:party-popper", "Lights that put on a show, then go back exactly as they were.", [
-        CONF_PARTY_LIGHTS, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
+    ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
+        CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
+        CONF_PARTY_SOUND, CONF_PARTY_SHOW,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,

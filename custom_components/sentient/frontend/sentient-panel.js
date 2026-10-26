@@ -172,7 +172,7 @@
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
           <div class="sub">${this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${this._attr("likely_room", "ai_checks_today", 0)} AI CHECKS TODAY</div>
-          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._modeChip("party_mode", "mdi:party-popper", "DISCO", "DISCO ON")}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
           <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS TODAY")}${stat(st("health"), "PROBLEMS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
@@ -720,6 +720,22 @@
       return `<button class="mode${on ? " on" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${icon}"></ha-icon>${on ? onLabel + until : offLabel}</button>`;
     }
 
+    _showChips() {
+      const st = this._st("party_mode");
+      if (!st) return "";
+      const SHOWS = { disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
+        chill: ["mdi:weather-night", "CHILL"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "CHRISTMAS"] };
+      const on = st.state === "on", style = st.attributes.style;
+      const list = (st.attributes.buttons || []).filter((s) => SHOWS[s]);
+      if (on && style && !list.includes(style) && SHOWS[style]) list.push(style); // whatever is running can always be stopped here
+      return list.map((s) => {
+        const lit = on && style === s;
+        const until = lit && st.attributes.until ? ` · TILL ${hm(st.attributes.until)}` : "";
+        const ear = lit && st.attributes.following_sound ? ' <ha-icon icon="mdi:music-note"></ha-icon>' : "";
+        return `<button class="mode${lit ? " on" : ""}" data-act="show" data-id="${s}"><ha-icon icon="${SHOWS[s][0]}"></ha-icon>${SHOWS[s][1]}${lit ? " ON" + until : ""}${ear}</button>`;
+      }).join("");
+    }
+
     _chimeChip() {
       const st = this._st("chime");
       if (!st) return "";
@@ -1000,6 +1016,11 @@
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
       else if (act === "mode") { this._hass.callService("switch", "toggle", { entity_id: id }); }
+      else if (act === "show") {
+        const st = this._st("party_mode");
+        const stop = st && st.state === "on" && st.attributes.style === id;
+        this._hass.callService("sentient", "party", stop ? { on: false } : { style: id }).catch((e) => window.alert(e.message || e));
+      }
       else if (act === "weekly") {
         this._hass.callWS({ type: "sentient/weekly" }).then(() => { this._tlKind = "learned"; this._drawTimeline(); }, (e) => window.alert(e.message || e));
       }

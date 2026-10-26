@@ -17,9 +17,14 @@ from .const import (
     CONF_CAMSEC_ENTRIES,
     CONF_CAMSEC_INSIDE,
     CONF_CAMSEC_SENSORS,
+    CONF_PARTY_EXCLUDE,
     CONF_PARTY_LIGHTS,
     CONF_PARTY_MINUTES,
+    CONF_PARTY_SHOW,
+    CONF_PARTY_SOUND,
     CONF_PARTY_STYLE,
+    CONF_PARTY_WHOLE_HOUSE,
+    DEFAULT_PARTY_SHOW,
     DEFAULT_PARTY_MINUTES,
     DEFAULT_PARTY_STYLE,
     PARTY_STYLES,
@@ -193,7 +198,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "cover", "lock"], multiple=True)
             ),
             vol.Required(CONF_CAMSEC_DESCRIBE, **d(CONF_CAMSEC_DESCRIBE, True)): selector.BooleanSelector(),
+            vol.Required(CONF_PARTY_WHOLE_HOUSE, **d(CONF_PARTY_WHOLE_HOUSE, False)): selector.BooleanSelector(),
             vol.Optional(CONF_PARTY_LIGHTS, **d(CONF_PARTY_LIGHTS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
+            vol.Optional(CONF_PARTY_EXCLUDE, **d(CONF_PARTY_EXCLUDE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="light", multiple=True)
             ),
             vol.Required(CONF_PARTY_STYLE, **d(CONF_PARTY_STYLE, DEFAULT_PARTY_STYLE)): selector.SelectSelector(
@@ -201,6 +210,12 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_PARTY_MINUTES, **d(CONF_PARTY_MINUTES, DEFAULT_PARTY_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=600, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_PARTY_SOUND, **d(CONF_PARTY_SOUND)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor")
+            ),
+            vol.Optional(CONF_PARTY_SHOW, **d(CONF_PARTY_SHOW, DEFAULT_PARTY_SHOW)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=PARTY_STYLES, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="party_style")
             ),
             vol.Required(CONF_WEEKLY_REPORT, **d(CONF_WEEKLY_REPORT, DEFAULT_WEEKLY_REPORT)): selector.BooleanSelector(),
             vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
