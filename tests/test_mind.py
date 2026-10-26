@@ -235,3 +235,48 @@ async def test_full_volume_speakers(hass: HomeAssistant) -> None:
     await hass.services.async_call(DOMAIN, "say", {"message": "Someone's opened the gate."}, blocking=True)
     assert [(c.data["entity_id"], c.data["value"]) for c in numbers] == [
         ("number.kitchen_volume", 100), ("number.kitchen_volume", 53)]
+
+
+async def test_auto_off_by_time_and_empty_room(hass: HomeAssistant, freezer) -> None:
+    kitchen, _ = _kitchen(hass)
+    ents = er.async_get(hass)
+    ents.async_get_or_create("light", "test", "kl", suggested_object_id="kitchen_light")
+    ents.async_update_entity("light.kitchen_light", area_id=kitchen.id)
+    ents.async_get_or_create("light", "test", "ks", suggested_object_id="kitchen_screen")
+    ents.async_update_entity("light.kitchen_screen", area_id=kitchen.id)
+    entry = await _setup(hass)
+    hass.states.async_set("switch.coffee", "on", {"friendly_name": "Coffee machine"})
+    hass.states.async_set("light.kitchen_light", "on")
+    hass.states.async_set("light.kitchen_screen", "on")
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    lists = entry.runtime_data.lists["autooff"]
+    lists.upsert({"name": "Coffee machine", "entities": ["switch.coffee"], "on_minutes": 10})
+    lists.upsert({"name": "Kitchen", "areas": [kitchen.id], "motion": ["binary_sensor.kitchen_motion"], "empty_minutes": 20})
+    sw = async_mock_service(hass, "switch", "turn_off")
+    lights = async_mock_service(hass, "light", "turn_off")
+    freezer.tick(timedelta(minutes=11))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in sw] == ["switch.coffee"]
+    assert not lights  # someone's still moving about
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    freezer.tick(timedelta(minutes=21))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in lights] == ["light.kitchen_light"]  # not the tablet screen
+    assert all(c.context.parent_id for c in lights)
+
+
+async def test_silent_alarm_just_does_it(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=20, minute=59, second=30)))
+    entry = await _setup(hass)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    on = async_mock_service(hass, "switch", "turn_on")
+    entry.runtime_data.lists["alarms"].upsert({
+        "name": "Heated blanket on", "time": "21:00:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "silent": True, "actions": [{"action": "switch.turn_on", "target": {"entity_id": "switch.blanket"}}],
+    })
+    freezer.tick(timedelta(seconds=40))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert on and not said

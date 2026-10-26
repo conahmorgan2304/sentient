@@ -97,6 +97,13 @@ class Alarms:
             changes["enabled"] = False  # a one-off: done
         self.items.update(alarm["id"], **changes)
         local = dt_util.as_local(now)
+        if alarm.get("silent"):
+            rt.timeline.add("mode", alarm["name"], "schedule")
+            try:
+                await async_run_actions(self.hass, alarm.get("actions") or [], alarm["name"])
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
+            return {"spoken": False, "reason": "silent"}
         message = (alarm.get("message") or "").strip()
         if "{tomorrow:" in message or "{today:" in message:
             message = await self._fill_calendar(message, local)

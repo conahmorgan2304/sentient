@@ -749,7 +749,7 @@ def _items_payload(hass: HomeAssistant, entry, kind: str) -> dict[str, Any]:
     }
 
 
-_KIND = vol.In(["offers", "announce", "alarms", "checks"])
+_KIND = vol.In(["offers", "announce", "alarms", "checks", "autooff"])
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/items", vol.Required("kind"): _KIND})
@@ -828,6 +828,10 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
                 "urgent", [s for s in item.get("speakers") or [] if hass.states.get(s)] or None, source="alarm test",
             )
             result = result.as_dict()
+        elif kind == "autooff":
+            on = [e for e in rt.autooff.targets(item) if hass.states.get(e) and hass.states.get(e).state == "on"]
+            await rt.autooff.async_switch_off(item, on)
+            result = {"switched_off": on}
         else:
             result = await rt.checks.async_check(item, force=True)
     except Exception as err:  # noqa: BLE001

@@ -128,7 +128,7 @@ KINDS: dict[str, dict[str, Any]] = {
         "add": "+ NEW ALARM",
         "defaults": {
             "enabled": True, "time": "07:00:00", "days": [], "date": None, "description": "", "message": "",
-            "speakers": [], "actions": [], "room_area": None, "room_actions": [], "last_rang": None,
+            "speakers": [], "actions": [], "room_area": None, "room_actions": [], "last_rang": None, "silent": False,
         },
         "schema": [
             _sel("name", {"text": {}}, True),
@@ -139,6 +139,7 @@ KINDS: dict[str, dict[str, Any]] = {
             _sel("description", {"text": {}}),
             _sel("message", {"text": {"multiline": True}}),
             _sel("speakers", {"entity": {"domain": "assist_satellite", "multiple": True}}),
+            _sel("silent", {"boolean": {}}),
             _sel("actions", {"action": {}}),
             _sel("room_area", {"area": {}}),
             _sel("room_actions", {"action": {}}),
@@ -149,8 +150,40 @@ KINDS: dict[str, dict[str, Any]] = {
             "description": "Description (e.g. doctor's at the surgery)",
             "message": "What to say (empty = the name and description). {tomorrow:calendar.bins} says what's on that "
                        "calendar tomorrow — and the alarm stays quiet if nothing is", "speakers": "Say it on (empty = where people are)",
+            "silent": "Don't say anything — just do the actions (a schedule)",
             "actions": "When it goes off, do", "room_area": "Then, the first time someone walks into",
             "room_actions": "…do",
+        },
+    },
+    "autooff": {
+        "title": "Auto-off",
+        "icon": "mdi:timer-off-outline",
+        "blurb": "Switch things off by themselves: once they've been on a while (the coffee machine after 10 minutes), "
+                 "or when a room has been empty a while (lights after 20 minutes with no movement).",
+        "add": "+ NEW AUTO-OFF",
+        "defaults": {
+            "enabled": True, "entities": [], "areas": [], "on_minutes": 0, "motion": [], "empty_minutes": 20,
+            "times": "", "say": "", "last": None,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("entities", {"entity": {"domain": ["light", "switch", "fan", "climate", "media_player", "input_boolean"],
+                                         "multiple": True}}),
+            _sel("areas", {"area": {"multiple": True}}),
+            _sel("on_minutes", {"number": {"min": 0, "max": 1440, "unit_of_measurement": "min", "mode": "box"}}),
+            _sel("motion", {"entity": {"domain": "binary_sensor", "multiple": True}}),
+            _sel("empty_minutes", {"number": {"min": 1, "max": 600, "unit_of_measurement": "min", "mode": "box"}}),
+            _sel("times", {"text": {}}),
+            _sel("say", {"text": {}}),
+        ],
+        "labels": {
+            "name": "Name", "enabled": "On", "entities": "Switch these off",
+            "areas": "…and every light in these rooms (not screens or switch backlights)",
+            "on_minutes": "Once on for (0 = not by time)",
+            "motion": "Or when these see no movement (the room's motion sensors)",
+            "empty_minutes": "…for", "times": "Only between (empty = any time)",
+            "say": "Say when it does (optional)",
         },
     },
     "checks": {
@@ -210,7 +243,21 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
     if kind == "alarms":
         days = item.get("days") or []
         when = ("every day" if len(days) == 7 else ", ".join(DAY_NAMES[d] for d in DAYS if d in days)) if days else (item.get("date") or "once")
-        return f"{str(item.get('time') or '')[:5]} · {when}" + (f" · {item['description']}" if item.get("description") else "")
+        return f"{str(item.get('time') or '')[:5]} · {when}" + (f" · {item['description']}" if item.get("description") else "") + (" · silent" if item.get("silent") else "")
+    if kind == "autooff":
+        bits = []
+        if item.get("on_minutes"):
+            bits.append(f"after {item['on_minutes']:g} min on")
+        if item.get("motion"):
+            bits.append(f"after {item.get('empty_minutes') or 20:g} min with no movement")
+        if item.get("times"):
+            bits.append(item["times"])
+        what = [name_of(e) for e in item.get("entities") or []]
+        if item.get("areas"):
+            from homeassistant.helpers import area_registry as ar
+
+            what += [f"{a.name} lights" if (a := ar.async_get(hass).async_get_area(x)) else x for x in item["areas"]]
+        return " · ".join([", ".join(what[:3]) + ("…" if len(what) > 3 else "")] + bits)
     if kind == "checks":
         return f"{name_of(item.get('camera'))} · {item.get('question') or ''}" + (" · says it" if item.get("say") else "")
     return ""

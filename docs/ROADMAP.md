@@ -75,3 +75,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Quieter: no remarks about something a person just switched on; voice follow-through only after real speech; shorter camera journeys; hub and light-show dashboard cards (0.40.0)
 - [x] Feeling more alive: speaks up in a noisy room, messages follow people to the next room, follow-ups and closed-off watches, conversations remembered across speakers, daily curiosity, overnight reflection with morning thoughts, cars on the drive (0.41.0)
 - [x] Ready to share: setup guide, screenshots, brand images checked by the HACS action (0.41.0)
+- [x] Auto-off (on too long, or the room empty) and silent schedule alarms, so a house's everyday automations can live in Sentient (0.42.0)

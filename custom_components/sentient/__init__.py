@@ -73,6 +73,7 @@ from .conversations import Conversations
 from .curiosity import Curiosity
 from .reflection import Reflection
 from .drive import Drive
+from .autooff import AutoOff
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -123,6 +124,7 @@ class SentientRuntime:
     curiosity: Curiosity
     reflection: Reflection
     drive: Drive
+    autooff: AutoOff
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -298,6 +300,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     announcements = Announcements(hass, lists["announce"], get_rt)
     alarms = Alarms(hass, lists["alarms"], get_rt)
     checks = CameraChecks(hass, lists["checks"], get_rt)
+    autooff = AutoOff(hass, lists["autooff"], get_rt)
     camsec = CameraSecurity(hass, options, get_rt)
     party = Party(hass, entry.entry_id, options, get_rt)
     followthrough = FollowThrough(hass, speech, timeline)
@@ -320,7 +323,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
-        reflection=reflection, drive=drive,
+        reflection=reflection, drive=drive, autooff=autooff,
     )
     for engine in (followyou, loops, conversations, curiosity, reflection, drive):
         await engine.async_start()
@@ -329,7 +332,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(party.async_stop)
     night_watch.async_start()
     entry.async_on_unload(night_watch.async_stop)
-    for engine in (offers, announcements, alarms, checks, camsec):
+    for engine in (offers, announcements, alarms, checks, camsec, autooff):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
