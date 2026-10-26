@@ -227,10 +227,10 @@
       const problems = hl ? parseInt(hl.state, 10) || 0 : 0;
       const tile = (icon, val, lbl, cls, more) => `<div class="tile ${cls || ""}"${more ? ` data-act="more" data-id="${esc(more)}"` : ""}><ha-icon icon="${icon}"></ha-icon><b>${esc(val)}</b><span>${lbl}</span></div>`;
       const memS = this._st("memories"), rou = this._st("routines");
-      const tiles = tile("mdi:message-text-outline", saidCount, "SPOKEN TODAY", "")
-        + tile("mdi:doorbell-video", vis ? vis.state : "–", "AT THE DOOR", "", vis && vis.entity_id)
+      const tiles = tile("mdi:message-text-outline", saidCount, "SPOKEN", "")
+        + tile("mdi:doorbell-video", vis ? vis.state : "–", "DOOR", "", vis && vis.entity_id)
         + tile("mdi:radar", w ? w.state : "0", "WATCHING", w && +w.state ? "on" : "", w && w.entity_id)
-        + tile("mdi:brain", memS ? memS.state : "–", "REMEMBERS", "", memS && memS.entity_id)
+        + tile("mdi:brain", memS ? memS.state : "–", "MEMORY", "", memS && memS.entity_id)
         + tile("mdi:calendar-sync-outline", rou ? rou.state : "–", "ROUTINES", "", rou && rou.entity_id)
         + tile(problems ? "mdi:alert-outline" : "mdi:shield-check-outline", problems ? problems : "OK", problems ? "PROBLEMS" : "HEALTH", problems ? "warn" : "ok", hl && hl.entity_id);
 
@@ -364,10 +364,10 @@
   .next{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:12px;background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.3);z-index:1;min-width:0}
   .next ha-icon{--mdc-icon-size:17px;color:#b48cff;flex:none} .nl{font-size:9px;font-weight:800;letter-spacing:.2em;color:#b48cff;flex:none}
   .nt{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .next em{font-style:normal;font-size:10.5px;font-weight:700;color:#d9c8ff;letter-spacing:.08em}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;z-index:1}
-  .tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;border:1px solid rgba(0,255,247,.16);background:rgba(0,255,247,.03);cursor:default}
-  .tile[data-act]{cursor:pointer} .tile ha-icon{--mdc-icon-size:16px;color:#5fd8e6} .tile b{font-size:18px;font-weight:700;color:#e9ffff;line-height:1.1}
-  .tile span{font-size:8.5px;font-weight:800;letter-spacing:.14em;color:rgba(150,220,235,.6)}
+  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;z-index:1}
+  .tile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:10px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.025);cursor:default;min-width:0}
+  .tile[data-act]{cursor:pointer} .tile ha-icon{--mdc-icon-size:13px;color:#5fd8e6} .tile b{font-size:13px;font-weight:700;color:#e9ffff;line-height:1.1}
+  .tile span{font-size:7.5px;font-weight:800;letter-spacing:.1em;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .tile.on{border-color:rgba(0,255,247,.45)} .tile.ok ha-icon{color:#3dffa8} .tile.warn{border-color:rgba(255,190,85,.5)} .tile.warn ha-icon,.tile.warn b{color:#ffbe55}
   .glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px;z-index:1}
   .gl{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.025);min-width:0}
