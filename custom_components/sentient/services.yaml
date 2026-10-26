@@ -324,3 +324,9 @@ look_ahead:
       default: false
       selector:
         boolean:
+set_asleep:
+  fields:
+    asleep:
+      required: true
+      selector:
+        boolean:

@@ -5,7 +5,9 @@ rooms) and when:
 * once it has been on for a while (the coffee machine after 10 minutes), and/or
 * once the room's motion sensors have seen nothing for a while (lights after 20 minutes).
 Checked every 30 seconds from the states themselves, so a restart never leaves something on.
-Lights in a light show are left alone. Optionally says a line when it does it.
+Lights in a light show are left alone. Optionally says a line when it does it. If someone switches
+a light straight back on, the room wasn't empty after all: that room waits five minutes longer from
+then on (up to an hour), noted on the timeline.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
 
+from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Context, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
@@ -23,6 +26,10 @@ from .items import Items
 from .kinds import in_windows
 
 _LOGGER = logging.getLogger(__name__)
+
+BACK_ON_WITHIN = timedelta(minutes=3)
+LEARN_STEP = 5  # minutes added each time a room turns out not to be empty
+LEARN_MAX = 60
 
 OFF_STATES = {"off", "unavailable", "unknown", "idle", "standby", "paused"}
 
@@ -37,17 +44,47 @@ class AutoOff:
         self.items = items
         self._rt = runtime
         self._unsub = None
+        self._unsub_back = None
         self._parent = Context()
+        self._switched: dict[str, tuple[datetime, str]] = {}  # entity -> (when the house switched it off, item id)
 
     @callback
     def async_start(self) -> None:
         self._unsub = async_track_time_interval(self.hass, self._tick, timedelta(seconds=30))
+        self._unsub_back = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._back_on)
 
     @callback
     def async_stop(self) -> None:
         if self._unsub:
             self._unsub()
             self._unsub = None
+        if self._unsub_back:
+            self._unsub_back()
+            self._unsub_back = None
+
+    @callback
+    def _back_on(self, event) -> None:
+        """Someone switched it straight back on: the room wasn't empty — wait longer there from now on."""
+        new = event.data.get("new_state")
+        if new is None or new.entity_id not in self._switched or not is_on(new) or new.context.parent_id:
+            return
+        when, item_id = self._switched.pop(new.entity_id)
+        if dt_util.utcnow() - when > BACK_ON_WITHIN:
+            return
+        item = self.items.items.get(item_id)
+        if item is None or not item.get("motion"):
+            return
+        before = float(item.get("empty_minutes") or 20)
+        after = min(LEARN_MAX, before + LEARN_STEP)
+        if after == before:
+            return
+        self.items.update(item_id, empty_minutes=after)
+        rt = self._rt()
+        if rt is not None:
+            rt.timeline.add(
+                "learned", f"{new.name} was switched straight back on — {item['name']} now waits {after:g} min",
+                f"was {before:g} min",
+            )
 
     def targets(self, item: dict[str, Any]) -> list[str]:
         out = [e for e in item.get("entities") or [] if self.hass.states.get(e)]
@@ -115,6 +152,10 @@ class AutoOff:
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Auto-off couldn't switch off %s: %s", entity_id, err)
         self.items.update(item["id"], last=dt_util.utcnow().isoformat())
+        now = dt_util.utcnow()
+        self._switched = {e: v for e, v in self._switched.items() if now - v[0] < BACK_ON_WITHIN}
+        for e in entities:
+            self._switched[e] = (now, item["id"])
         rt = self._rt()
         if rt is None:
             return

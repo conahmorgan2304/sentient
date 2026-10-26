@@ -397,3 +397,58 @@ async def test_look_ahead_only_speaks_when_worth_it(hass: HomeAssistant) -> None
     _ai(hass, {"speak": False})
     out = await entry.runtime_data.foresight.async_look_ahead()
     assert not said and out["said"] is None
+
+
+async def test_auto_off_learns_to_wait_longer(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.core import Context
+
+    entry = await _setup(hass)
+    hass.states.async_set("light.lounge", "on", {"friendly_name": "Lounge light"})
+    hass.states.async_set("binary_sensor.lounge_motion", "off", {"device_class": "motion"})
+    lists = entry.runtime_data.lists["autooff"]
+    item = lists.upsert({"name": "Lounge", "entities": ["light.lounge"], "motion": ["binary_sensor.lounge_motion"], "empty_minutes": 20})
+    async_mock_service(hass, "light", "turn_off")
+    freezer.tick(timedelta(minutes=21))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    hass.states.async_set("light.lounge", "off", {"friendly_name": "Lounge light"}, context=Context(parent_id="x"))
+    freezer.tick(timedelta(seconds=40))
+    hass.states.async_set("light.lounge", "on", {"friendly_name": "Lounge light"}, context=Context())  # someone's still there
+    await hass.async_block_till_done()
+    assert lists.items[item["id"]]["empty_minutes"] == 25
+    assert entry.runtime_data.timeline.items[0]["kind"] == "learned"
+
+
+async def test_house_goes_to_sleep_and_wakes(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=23, minute=0, second=0)))
+    kitchen, _ = _kitchen(hass)
+    ents = er.async_get(hass)
+    hall = ar.async_get(hass).async_create("Hallway")
+    for oid, area in (("kitchen_motion", kitchen.id), ("hall_motion", hall.id)):
+        ents.async_get_or_create("binary_sensor", "test", oid, suggested_object_id=oid)
+        ents.async_update_entity(f"binary_sensor.{oid}", area_id=area)
+    entry = await _setup(hass, quiet_start="22:00:00", quiet_end="07:00:00",
+                         inside_sensors=["binary_sensor.kitchen_motion", "binary_sensor.hall_motion"],
+                         sleep_actions=[{"action": "switch.turn_off", "target": {"entity_id": "switch.screens"}}])
+    off = async_mock_service(hass, "switch", "turn_off")
+    for e in ("binary_sensor.kitchen_motion", "binary_sensor.hall_motion"):
+        hass.states.async_set(e, "off", {"device_class": "motion"})
+    freezer.tick(timedelta(minutes=21))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.nova_house").state == "asleep" and off
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=6, minute=50) + timedelta(days=1)))
+    hass.states.async_set("binary_sensor.hall_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.nova_house").state == "asleep"  # one room: a trip to the loo
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.nova_house").state == "awake"
+
+
+async def test_goodnight_routine_means_asleep(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    entry.runtime_data.shortcuts.upsert({"name": "Goodnight", "actions": []})
+    await entry.runtime_data.shortcuts.async_run("goodnight")
+    await hass.async_block_till_done()
+    assert entry.runtime_data.sleep.asleep

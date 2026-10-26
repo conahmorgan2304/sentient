@@ -65,6 +65,7 @@ class Shortcuts:
         self.hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.shortcuts")
         self.items: dict[str, Shortcut] = {}
+        self.on_run = None  # set by the runtime: called with a routine's name when it runs
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
@@ -168,6 +169,8 @@ class Shortcuts:
                 _LOGGER.warning("Routine %s failed: %s", item.name, err)
                 return {"routine": item.name, "error": str(err)}
         item.last_run = dt_util.utcnow().isoformat()
+        if self.on_run is not None:
+            self.on_run(item.name)
         self._save()
         said = item.say.strip()
         for k, v in variables.items():

@@ -96,6 +96,12 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_SLEEP,
+    CONF_SLEEP_MINUTES,
+    DEFAULT_SLEEP_MINUTES,
+    CONF_BEDTIME_ROUTINES,
+    CONF_SLEEP_ACTIONS,
+    CONF_WAKE_ACTIONS,
     CONF_FORESIGHT,
     CONF_FORESIGHT_TIME,
     DEFAULT_FORESIGHT_TIME,
@@ -192,6 +198,13 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_CURIOSITY, **d(CONF_CURIOSITY, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION, **d(CONF_REFLECTION, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION_TIME, **d(CONF_REFLECTION_TIME, DEFAULT_REFLECTION_TIME)): selector.TimeSelector(),
+            vol.Required(CONF_SLEEP, **d(CONF_SLEEP, True)): selector.BooleanSelector(),
+            vol.Required(CONF_SLEEP_MINUTES, **d(CONF_SLEEP_MINUTES, DEFAULT_SLEEP_MINUTES)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=120, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_BEDTIME_ROUTINES, **d(CONF_BEDTIME_ROUTINES, "")): selector.TextSelector(),
+            vol.Optional(CONF_SLEEP_ACTIONS, **d(CONF_SLEEP_ACTIONS, [])): selector.ActionSelector(),
+            vol.Optional(CONF_WAKE_ACTIONS, **d(CONF_WAKE_ACTIONS, [])): selector.ActionSelector(),
             vol.Required(CONF_FORESIGHT, **d(CONF_FORESIGHT, True)): selector.BooleanSelector(),
             vol.Required(CONF_FORESIGHT_TIME, **d(CONF_FORESIGHT_TIME, DEFAULT_FORESIGHT_TIME)): selector.TimeSelector(),
             vol.Optional(CONF_DRIVE_CAMERA, **d(CONF_DRIVE_CAMERA)): selector.EntitySelector(

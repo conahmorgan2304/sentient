@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry), DriveSensor(entry), MindSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry), DriveSensor(entry), MindSensor(entry), HouseSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -349,3 +349,35 @@ class MindSensor(_Base):
             "to_pass_on": [q["text"] for q in rt.followyou.queue if q.get("source") != "thought"],
             "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
         }
+
+
+class HouseSensor(_Base):
+    """Asleep or awake: when everyone went to bed, and when someone was up."""
+
+    _attr_icon = "mdi:home-heart"
+    _attr_device_class = "enum"
+    _attr_options = ["awake", "asleep"]
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "house")
+
+    async def async_added_to_hass(self) -> None:
+        from .sleep import EVENT_SLEEP
+
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_SLEEP, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def icon(self) -> str:
+        return "mdi:sleep" if self._entry.runtime_data.sleep.asleep else "mdi:home-heart"
+
+    @property
+    def native_value(self) -> str:
+        return "asleep" if self._entry.runtime_data.sleep.asleep else "awake"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"since": self._entry.runtime_data.sleep.since}

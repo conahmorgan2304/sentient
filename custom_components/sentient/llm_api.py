@@ -968,6 +968,8 @@ class SentientAPI(llm.API):
                 "Guests are visiting: don't bring up personal household details, routines or memories "
                 "unless someone explicitly asks."
             )
+        if rt.sleep.asleep:
+            lines.append(f"The house is asleep (since {rt.sleep.describe()['since']}): keep replies short and quiet.")
         if rt.speech.hushed():
             lines.append("The house has been asked to stay quiet: keep replies short and don't announce anything.")
         elif rt.speech.quiet_now():

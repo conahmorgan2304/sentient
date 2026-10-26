@@ -22,7 +22,7 @@
   if (customElements.get("sentient-hub-card")) return;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (d) => (d && !isNaN(d) ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
-  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines", "drive", "mind"];
+  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines", "drive", "mind", "house"];
   const SHOWS = {
     disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
     chill: ["mdi:weather-night", "CHILL"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "XMAS"],
@@ -191,7 +191,8 @@
       const states = nodes.map((n) => (S[n.entity] || {}).state);
       const live = states.map((s) => LIVE[s]).find(Boolean);
       const mode = live || "idle";
-      const label = { idle: "STANDING BY", listen: "LISTENING", think: "THINKING", speak: "SPEAKING" }[mode];
+      const asleep = (this._st("house") || {}).state === "asleep";
+      const label = { idle: asleep ? "HOUSE ASLEEP" : "STANDING BY", listen: "LISTENING", think: "THINKING", speak: "SPEAKING" }[mode];
       const said = this._st("last_spoken");
       const saidText = said && !["unknown", "unavailable", ""].includes(said.state) ? said.state : "";
       const room = String((this._st("likely_room") || {}).state || "").toLowerCase();

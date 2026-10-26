@@ -61,6 +61,11 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_SLEEP,
+    CONF_SLEEP_MINUTES,
+    CONF_BEDTIME_ROUTINES,
+    CONF_SLEEP_ACTIONS,
+    CONF_WAKE_ACTIONS,
     CONF_FORESIGHT,
     CONF_FORESIGHT_TIME,
     CONF_FOLLOW_YOU,
@@ -133,8 +138,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_TTS_ENTITY, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
     ]),
-    ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down and how rooms are worked out.", [
-        CONF_QUIET_START, CONF_QUIET_END, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
+    ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
+        CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
+        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [

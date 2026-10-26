@@ -182,7 +182,12 @@
           "tts_entity": "Voice for other speakers",
           "media_speakers": "Use Echos and other media players",
           "foresight": "A look at tomorrow",
-          "foresight_time": "Look ahead at"
+          "foresight_time": "Look ahead at",
+          "sleep_detection": "Know when the house is asleep",
+          "sleep_minutes": "Asleep after nothing's moved for",
+          "bedtime_routines": "Bedtime routines",
+          "sleep_actions": "When the house goes to sleep, do",
+          "wake_actions": "When someone's up, do"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -267,7 +272,11 @@
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
           "foresight": "Each evening one AI look at tomorrow's calendars, weather, alarms and reminders. Says something only when there's something to do tonight — frost before an early start, rain on washing day. Usually silent.",
-          "foresight_time": "Before quiet hours start."
+          "foresight_time": "Before quiet hours start.",
+          "sleep_detection": "Asleep after a bedtime routine, or in quiet hours once nothing inside has moved for a while. Awake in the morning when there's movement in two rooms (or a light switched on by hand). A House sensor shows it.",
+          "bedtime_routines": "Routines that mean everyone's gone to bed, comma separated. Empty: any routine with 'night' or 'bed' in its name.",
+          "sleep_actions": "e.g. tablet screens off, the Echo speakers switch off.",
+          "wake_actions": "e.g. the Echo speakers back on, the hallway light on low."
         }
       },
       "memories": {
@@ -340,6 +349,13 @@
       },
       "mind": {
         "name": "Mind"
+      },
+      "house": {
+        "name": "House",
+        "state": {
+          "awake": "Awake",
+          "asleep": "Asleep"
+        }
       }
     },
     "switch": {
@@ -799,6 +815,16 @@
         "speak": {
           "name": "Say it",
           "description": "Say it out loud if there is."
+        }
+      }
+    },
+    "set_asleep": {
+      "name": "Set asleep",
+      "description": "Tell the house it's asleep or awake (runs the bedtime or morning actions).",
+      "fields": {
+        "asleep": {
+          "name": "Asleep",
+          "description": "On for asleep, off for awake."
         }
       }
     }
