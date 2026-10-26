@@ -1293,6 +1293,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   #ov:not([hidden]){display:flex;flex-direction:column;height:calc(100vh - 56px);height:calc(100dvh - 56px)}
   #ov .cols{flex:1;min-height:0;align-items:stretch;margin-top:14px}
   #ov .col{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 6px 14px;margin:-2px -6px 0;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.28) transparent}
+  #ov .col>*,#ov .col .stack>*{flex-shrink:0}
   #ov .col::-webkit-scrollbar{width:6px} #ov .col::-webkit-scrollbar-thumb{background:rgba(0,255,247,.28);border-radius:3px}
 }
 .h{display:flex;align-items:center;gap:10px;margin-bottom:10px} .h.tight{margin:0}
