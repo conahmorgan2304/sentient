@@ -151,7 +151,14 @@
           "night_watch_speakers": "Say alerts on",
           "warm_by_weekdays": "Warm by (weekdays)",
           "warm_by_weekends": "Warm by (weekends)",
-          "heating_limit": "Turn heating back after"
+          "heating_limit": "Turn heating back after",
+          "personality": "Personality",
+          "personality_notes": "Personality notes",
+          "camera_security": "Camera security",
+          "camera_security_sensors": "Cameras' person sensors",
+          "camera_security_inside": "Inside the boundary",
+          "camera_security_entries": "Ways in",
+          "camera_security_describe": "Describe who it is"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -204,7 +211,14 @@
           "night_watch_speakers": "Leave empty for every speaker.",
           "warm_by_weekdays": "Optional: when it should be warm on weekdays. Leave empty to use the learned getting-up time.",
           "warm_by_weekends": "Optional: the same for Saturdays and Sundays.",
-          "heating_limit": "When someone turns the heating up or on by voice or in the app, put it back (to its schedule, or off) after this many hours. 0 never does."
+          "heating_limit": "When someone turns the heating up or on by voice or in the app, put it back (to its schedule, or off) after this many hours. 0 never does.",
+          "personality": "How the house sounds — in remarks, briefings, welcomes and to every voice assistant.",
+          "personality_notes": "Optional, in your own words, e.g. 'Fond of the cats. Teases gently about how much tea gets made.'",
+          "camera_security": "Follow people from camera to camera, and alert for someone in the garden when the gate and doors didn't open, or anyone about at night with nobody up. Alerts are said out loud in quiet hours if night watch does.",
+          "camera_security_sensors": "Each camera's (or zone's) person sensor, e.g. Frigate's 'Gate person occupancy'.",
+          "camera_security_inside": "The person sensors for places behind the gate or fence — the garden, the shed. Someone appearing there without a way in opening is an alert.",
+          "camera_security_entries": "The gate and doors people should come through (e.g. the back gate and the back door).",
+          "camera_security_describe": "One AI look at the camera for each alert ('a man in a dark hoodie trying the shed door')."
         }
       },
       "memories": {
@@ -338,6 +352,15 @@
         "digest": "The daily digest",
         "critical": "Safety alerts (smoke, CO, gas, leaks)",
         "security": "Things left open when everyone goes out"
+      }
+    },
+    "personality": {
+      "options": {
+        "calm": "Calm and to the point",
+        "dry": "Dry wit",
+        "warm": "Warm and friendly",
+        "cheeky": "Cheeky",
+        "composed": "Composed, like a butler"
       }
     }
   },

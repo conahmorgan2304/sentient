@@ -23,6 +23,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    personality_line,
     CONF_AI_TASK_ENTITY,
     CONF_BRIEFING_CALENDARS,
     CONF_BRIEFING_SECTIONS,
@@ -282,7 +283,7 @@ class Upkeep:
                 "Summarise this home's log in three or four short, friendly sentences for the family: "
                 "visitors, anything that went wrong or needs doing, notable things said. Skip routine "
                 "chatter and repeated items. Plain sentences, British English, no lists, no entity IDs. "
-                "Never say or imply the house is or was empty.\n\n" + "\n".join(lines),
+                "Never say or imply the house is or was empty. " + personality_line(rt.options) + "\n\n" + "\n".join(lines),
                 None,
             )
             text = str(result or "").strip() or "Nothing worth mentioning."
@@ -353,7 +354,7 @@ class Upkeep:
             "Sentient: briefing",
             f"You are {persona}, the brain of a family home. Write a spoken briefing of two to four short, "
             "natural sentences in British English from these facts. Lead with what needs doing; skip "
-            "anything empty; no lists, no IDs, no forms of address."
+            "anything empty; no lists, no IDs, no forms of address. " + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + f"\nFacts: {facts}",
             None,

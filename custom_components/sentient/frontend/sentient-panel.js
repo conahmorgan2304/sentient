@@ -258,6 +258,7 @@
       this._loadMotion();
       this._loadMutes(true);
       this._loadShortcuts();
+      ["alarms", "offers", "announce", "checks"].forEach((k) => this._loadItems(k));
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -279,6 +280,10 @@
         + item("shortcuts", "mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…")
         + item("mutes", "mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention")
         + item("motion", "mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement")
+        + item("alarms", "mdi:alarm", "Alarms", this._it && this._it.alarms ? `${this._it.alarms.items.length} set` : "Alarms, appointments, routines")
+        + item("offers", "mdi:hand-heart-outline", "Offers", this._it && this._it.offers ? `${this._it.offers.items.length} · fancy a brew?` : "Questions it asks — a brew?")
+        + item("announce", "mdi:bullhorn-outline", "Announcements", this._it && this._it.announce ? `${this._it.announce.items.length} · doorbell, gate` : "Doorbell, gate…")
+        + item("checks", "mdi:cctv", "Camera checks", this._it && this._it.checks ? `${this._it.checks.items.length} watching` : "Police car at the back?")
         + groups.map((g) => item(g.id, g.icon, g.title, g.blurb)).join("")
         + item("backup", "mdi:backup-restore", "Backup", "Download or restore everything")
         + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
@@ -302,6 +307,7 @@
       if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
+      if (["alarms", "offers", "announce", "checks"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -421,36 +427,58 @@
       }
       const here = spots.filter((sp) => sp.camera === this._cam);
       const box = (b, label, cls) => `<div class="box ${cls || ""}" style="left:${b[0] * 100}%;top:${b[1] * 100}%;width:${(b[2] - b[0]) * 100}%;height:${(b[3] - b[1]) * 100}%">${label ? `<span>${esc(label)}</span>` : ""}</div>`;
+      const poly = (pts, label, cls) => `<svg class="shape ${cls || ""}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${pts.map((p) => `${p[0] * 100},${p[1] * 100}`).join(" ")}"/></svg>`
+        + (label ? `<div class="box lbl" style="left:${Math.min(...pts.map((p) => p[0])) * 100}%;top:${Math.min(...pts.map((p) => p[1])) * 100}%;width:0;height:0;border:0;box-shadow:none"><span>${esc(label)}</span></div>` : "");
+      const mark = (sp) => (sp.points && sp.points.length >= 3 ? poly(sp.points, sp.name) : box(sp.box, sp.name));
+      const pts = this._pts || [];
+      const draft = this._shape
+        ? (pts.length ? poly(pts, this._spName || "new spot", "new") + pts.map((p) => `<i class="dotp" style="left:${p[0] * 100}%;top:${p[1] * 100}%"></i>`).join("") : "")
+        : (this._draft_box ? box(this._draft_box, this._spName || "new spot", "new") : "");
+      const ready = this._shape ? pts.length >= 3 : !!this._draft_box;
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:selection-marker"></ha-icon><div><div class="bt">CAMERA SPOTS</div>
-          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive". Watches and questions that mention it send the AI just that part: sharper answers, cheaper checks.</div></div></div>
+          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive" — and other names for it. Questions that mention it use the camera that can see it, and send the AI just that part. Draw a shape to leave out what's next to it (a neighbour's car).</div></div></div>
         <div class="spotgrid"><div>
           <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
             <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
           <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
-            ${here.map((sp) => box(sp.box, sp.name)).join("")}${this._draft_box ? box(this._draft_box, this._spName || "new spot", "new") : ""}</div>
-          <div class="hint">${this._drawing ? "DRAG ON THE PICTURE TO MARK THE SPOT" : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO AI NEEDED"}</div>
+            ${here.map(mark).join("")}${this._drawing ? draft : ""}</div>
+          <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN SAVE" : "DRAG ON THE PICTURE TO MARK THE SPOT") : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO AI NEEDED"}</div>
         </div><div>
           <div class="h"><span class="t">TEACH A SPOT</span><i></i></div>
-          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the rabbit pen" value="${esc(this._spName || "")}" autocomplete="off"></form>
+          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the drive" value="${esc(this._spName || "")}" autocomplete="off"></form>
+          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon><input name="aliases" id="spalias" placeholder="Also called, e.g. driveway, parking space" value="${esc(this._spAlias || "")}" autocomplete="off"></form>
           <div class="row"><button class="btn sm" data-act="spfind">FIND IT WITH AI</button>
             <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DRAW IT"}</button>
-            ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${this._draft_box ? "" : " disabled"}>SAVE SPOT</button>` : ""}</div>
+            ${this._drawing ? `<button class="btn ghost sm" data-act="spshape">${this._shape ? "BOX INSTEAD" : "SHAPE INSTEAD"}</button>` : ""}
+            ${this._drawing && this._shape && pts.length ? `<button class="btn ghost sm" data-act="spundo">UNDO POINT</button>` : ""}
+            ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${ready ? "" : " disabled"}>SAVE SPOT</button>` : ""}</div>
           <div class="spmsg" id="spmsg">${esc(this._spMsg || "")}</div>
           <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
-          ${here.map((sp) => `<div class="r"><ha-icon icon="mdi:selection-marker"></ha-icon><b>${esc(sp.name)}</b>
+          ${here.map((sp) => `<div class="r"><ha-icon icon="${sp.points ? "mdi:vector-polygon" : "mdi:selection-marker"}"></ha-icon><b>${esc(sp.name)}</b>
+              <input class="alias" data-alias="${esc(sp.name)}" value="${esc(sp.aliases || "")}" placeholder="also called…">
               <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONE YET</div>'}
           <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
           <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
             <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
           <div class="spmsg ans" id="spans">${esc(this._lookAns || "")}</div>
         </div></div>`;
-      this._$("spcam") && this._$("spcam").addEventListener("change", (ev) => { this._cam = ev.target.value; this._draft_box = null; this._lookAns = ""; this._drawSpots(); });
+      this._$("spcam") && this._$("spcam").addEventListener("change", (ev) => { this._cam = ev.target.value; this._draft_box = null; this._pts = []; this._lookAns = ""; this._drawSpots(); });
       const nm = this._$("spname");
       if (nm) nm.addEventListener("input", (ev) => { this._spName = ev.target.value; });
+      const al = this._$("spalias");
+      if (al) al.addEventListener("input", (ev) => { this._spAlias = ev.target.value; });
+      body.querySelectorAll("input.alias").forEach((inp) => inp.addEventListener("change", () => {
+        this._hass.callWS({ type: "sentient/spots/aliases", name: inp.dataset.alias, aliases: inp.value })
+          .then((r) => { this._spots = r.spots; }, (e) => window.alert(e.message || e));
+      }));
       const snap = this._$("snap");
       if (snap && this._drawing) {
         const pos = (ev) => { const r = snap.getBoundingClientRect(); return [Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height))]; };
+        if (this._shape) {
+          snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); this._pts = [...(this._pts || []), pos(ev)]; this._drawSpots(); });
+          return;
+        }
         snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); snap.setPointerCapture(ev.pointerId); this._dragFrom = pos(ev); });
         snap.addEventListener("pointermove", (ev) => {
           if (!this._dragFrom) return;
@@ -479,9 +507,12 @@
           this._spots = res.spots; this._spName = ""; say(`Found ${res.result.name}.`);
         } else if (kind === "save") {
           if (!name) return say("Give the spot a name first.");
-          if (!this._draft_box) return say("Drag on the picture to mark it first.");
-          const res = await this._hass.callWS({ type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box });
-          this._spots = res.spots; this._spName = ""; this._draft_box = null; this._drawing = false; say(`Saved ${res.result.name}.`);
+          const pts = this._pts || [];
+          if (this._shape ? pts.length < 3 : !this._draft_box) return say(this._shape ? "Tap at least three corners first." : "Drag on the picture to mark it first.");
+          const req = { type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box || [0, 0, 1, 1], aliases: this._spAlias || "" };
+          if (this._shape) req.points = pts;
+          const res = await this._hass.callWS(req);
+          this._spots = res.spots; this._spName = ""; this._spAlias = ""; this._draft_box = null; this._pts = []; this._drawing = false; say(`Saved ${res.result.name}.`);
         }
       } catch (e) { say(e.message || String(e)); }
       this._drawSide(); this._drawSpots();
@@ -536,6 +567,57 @@
         form.hass = this._hass; form.schema = schema; form.data = this._scDraft;
         form.computeLabel = (sc) => LABELS[sc.name] || sc.name;
         form.addEventListener("value-changed", (ev) => { this._scDraft = { ...ev.detail.value }; form.data = this._scDraft; });
+        fw.innerHTML = ""; fw.appendChild(form); this._form = form;
+      });
+    }
+
+    // ---------- alarms, offers, announcements, camera checks ----------
+    async _loadItems(kind, extra) {
+      this._it = this._it || {};
+      try { this._it[kind] = await this._hass.callWS({ type: "sentient/items", kind, ...(extra || {}) }); } catch (e) { this._it[kind] = { items: [], meta: null, err: e.message || String(e) }; }
+      if (this._view === "settings") { this._drawSide(); if (this._group === kind && !this._itEdit) this._drawItems(kind); }
+    }
+
+    _drawItems(kind) {
+      const data = (this._it || {})[kind];
+      const body = this._$("body");
+      if (!data || !data.meta) { body.innerHTML = `<div class="e">${esc((data && data.err) || "LOADING…")}</div>`; return; }
+      const m = data.meta;
+      const when = (it) => kind === "alarms" && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
+      const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${m.icon}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
+            <label class="tg" title="On or off"><input type="checkbox" data-ittoggle="${esc(it.id)}"${it.enabled === false ? "" : " checked"}><i></i></label>
+            <button class="btn ghost sm" data-act="ittest" data-id="${esc(it.id)}">TRY</button>
+            <a class="x" data-act="itedit" data-id="${esc(it.id)}" title="Edit">✎</a><a class="x" data-act="itdel" data-id="${esc(it.id)}" data-text="${esc(it.name)}" title="Delete">✕</a></div>
+          <div class="mlsub">${esc(it._summary || "")}</div>${it.last_answer ? `<div class="hint">LAST: ${esc(it.last_answer).toUpperCase()}</div>` : ""}</div>`).join("");
+      body.innerHTML = `<div class="bh"><ha-icon icon="${m.icon}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
+          <div class="bs">${esc(m.blurb)}</div></div></div>
+        <div class="mllist">${rows || '<div class="e">NONE YET</div>'}</div><div id="itedit"></div>
+        <div class="bar"><span id="status"></span><button class="btn" data-act="itadd">${esc(m.add)}</button></div>`;
+      body.querySelectorAll("input[data-ittoggle]").forEach((cb) => cb.addEventListener("change", () => {
+        const it = data.items.find((x) => x.id === cb.dataset.ittoggle);
+        if (!it) return;
+        this._hass.callWS({ type: "sentient/items/save", kind, item: { ...it, enabled: cb.checked } })
+          .then((r) => { this._it[kind] = r; this._drawItems(kind); }, (e) => window.alert(e.message || e));
+      }));
+    }
+
+    _openItemForm(kind, item) {
+      const data = this._it[kind];
+      this._itEdit = item;
+      this._itDraft = { ...data.meta.defaults, ...item };
+      const wrap = this._$("itedit");
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "EDIT" : "NEW"}</span><i></i></div>
+        <div id="itformwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        <div class="row end"><span class="spmsg" id="itmsg"></span><button class="btn ghost sm" data-act="itcancel">CANCEL</button><button class="btn sm" data-act="itsave">SAVE</button></div></div>`;
+      wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      loadForm().then((ok) => {
+        const fw = this._$("itformwrap");
+        if (!fw || this._itEdit !== item) return;
+        if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
+        const form = document.createElement("ha-form");
+        form.hass = this._hass; form.schema = data.meta.schema; form.data = this._itDraft;
+        form.computeLabel = (sc) => data.meta.labels[sc.name] || sc.name;
+        form.addEventListener("value-changed", (ev) => { this._itDraft = { ...ev.detail.value }; form.data = this._itDraft; });
         fw.innerHTML = ""; fw.appendChild(form); this._form = form;
       });
     }
@@ -876,7 +958,9 @@
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
       else if (act === "noedit") { this._editing = null; this._drawMemories(); }
       else if (act === "snap") { this._snapT = Date.now(); this._drawSpots(); }
-      else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) this._draft_box = null; this._drawSpots(); }
+      else if (act === "spdraw") { this._drawing = !this._drawing; if (!this._drawing) { this._draft_box = null; this._pts = []; } this._drawSpots(); }
+      else if (act === "spshape") { this._shape = !this._shape; this._draft_box = null; this._pts = []; this._drawSpots(); }
+      else if (act === "spundo") { this._pts = (this._pts || []).slice(0, -1); this._drawSpots(); }
       else if (act === "spfind") this._spotDo("find");
       else if (act === "spsave") this._spotDo("save");
       else if (act === "mode") { this._hass.callService("switch", "toggle", { entity_id: id }); }
@@ -887,6 +971,27 @@
         this._digBusy = true; this._drawTimeline();
         this._hass.callWS({ type: "sentient/digest", hours: 24 }).catch((e) => window.alert(e.message || e))
           .finally(() => { this._digBusy = false; this._drawTimeline(); });
+      }
+      else if (act === "itadd") { this._openItemForm(this._group, {}); }
+      else if (act === "itedit") { const it = ((this._it || {})[this._group] || { items: [] }).items.find((x) => x.id === id); if (it) this._openItemForm(this._group, it); }
+      else if (act === "itcancel") { this._itEdit = null; this._form = null; this._drawItems(this._group); }
+      else if (act === "itsave") {
+        const kind = this._group, msg = this._$("itmsg");
+        this._hass.callWS({ type: "sentient/items/save", kind, item: this._itDraft })
+          .then((r) => { this._it[kind] = r; this._itEdit = null; this._form = null; this._drawSide(); this._drawItems(kind); },
+            (e) => { if (msg) msg.textContent = e.message || String(e); });
+      } else if (act === "itdel") {
+        if (!window.confirm(`Delete ${text}?`)) return;
+        const kind = this._group;
+        this._hass.callWS({ type: "sentient/items/delete", kind, item_id: id }).then((r) => { this._it[kind] = r; this._drawSide(); this._drawItems(kind); });
+      } else if (act === "ittest") {
+        const kind = this._group, st = this._$("status");
+        if (st) st.textContent = "TRYING…";
+        this._hass.callWS({ type: "sentient/items/test", kind, item_id: id }).then((r) => {
+          this._it[kind] = r; this._drawItems(kind);
+          const res = r.result || {}, s2 = this._$("status");
+          if (s2) s2.textContent = res.match !== undefined ? (res.match ? "YES — " : "NO — ") + (res.seen || "") : res.spoken === false ? `HELD BACK: ${(res.reason || "").toUpperCase()}` : "DONE";
+        }, (e) => { const s2 = this._$("status"); if (s2) s2.textContent = e.message || String(e); });
       }
       else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, actions: [] }; this._openShortcutForm({}); }
       else if (act === "scedit") { const r = (this._sc || []).find((x) => x.id === id); if (r) { this._scDraft = { ...r }; this._openShortcutForm(r); } }
@@ -962,7 +1067,7 @@
         } catch (e) { window.alert(e.message || String(e)); }
         return;
       }
-      if (form.dataset.form === "spot") { this._spotDo(this._drawing && this._draft_box ? "save" : "find"); return; }
+      if (form.dataset.form === "spot") { this._spotDo(this._drawing && (this._draft_box || (this._pts || []).length >= 3) ? "save" : "find"); return; }
       if (form.dataset.form === "look") {
         const q = form.elements.q.value.trim() || form.elements.q.placeholder, spot = form.elements.spot.value;
         const out = this._$("spans"); out.textContent = "LOOKING…";
@@ -1167,6 +1272,12 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .snap.drawing{cursor:crosshair;border-color:#00fff7;box-shadow:0 0 16px rgba(0,255,247,.35)}
 .box{position:absolute;border:2px solid #00fff7;border-radius:6px;box-shadow:0 0 10px rgba(0,255,247,.6), inset 0 0 18px rgba(0,255,247,.15);pointer-events:none}
 .box span{position:absolute;left:-2px;top:-22px;font-size:10px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:6px;background:#00fff7;color:#041016;white-space:nowrap;text-transform:uppercase}
+.shape{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.shape polygon{fill:rgba(0,255,247,.12);stroke:#00fff7;stroke-width:.5;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px rgba(0,255,247,.7))}
+.shape.new polygon{fill:rgba(255,190,85,.12);stroke:#ffbe55;stroke-dasharray:4 3}
+.dotp{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#ffbe55;box-shadow:0 0 6px #ffbe55;pointer-events:none}
+.box.lbl span{top:-22px}
+.r input.alias{flex:1;min-width:80px;font-size:11.5px;background:rgba(0,0,0,.2);border:1px solid rgba(0,255,247,.18);border-radius:8px;padding:4px 8px;outline:none}
 .box.new{border-style:dashed;border-color:#ffbe55;box-shadow:0 0 10px rgba(255,190,85,.5)} .box.new span{background:#ffbe55}
 .spmsg{min-height:16px;font-size:12px;color:#7fefff;margin:4px 2px} .spmsg.ans{font-size:13.5px;line-height:1.45;color:#e6f5fa}
 @media (max-width: 1100px){ .spotgrid{grid-template-columns:1fr} }

@@ -21,6 +21,13 @@ from homeassistant.helpers.translation import async_get_translations
 from .config_flow import _briefing_schema, _speech_schema
 from .const import (
     CONF_COMFORT_TEMP,
+    CONF_CAMSEC,
+    CONF_CAMSEC_DESCRIBE,
+    CONF_CAMSEC_ENTRIES,
+    CONF_CAMSEC_INSIDE,
+    CONF_CAMSEC_SENSORS,
+    CONF_PERSONALITY,
+    CONF_PERSONALITY_NOTES,
     CONF_WARM_BY_WEEKDAYS,
     CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
@@ -100,7 +107,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALL_OCCUPIED,
-        CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
+        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
@@ -116,6 +123,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
         CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
+    ]),
+    ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
+        CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
     ]),
     ("heating", "Heating", "mdi:radiator", "What it learns about the heating, and warming up before people are up.", [
         CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
@@ -199,6 +209,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_list_spots)
     websocket_api.async_register_command(hass, ws_learn_spot)
     websocket_api.async_register_command(hass, ws_set_spot)
+    websocket_api.async_register_command(hass, ws_spot_aliases)
     websocket_api.async_register_command(hass, ws_forget_spot)
     websocket_api.async_register_command(hass, ws_look)
     websocket_api.async_register_command(hass, ws_motion_list)
@@ -206,6 +217,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_digest)
     websocket_api.async_register_command(hass, ws_mutes)
     websocket_api.async_register_command(hass, ws_insights)
+    websocket_api.async_register_command(hass, ws_items)
+    websocket_api.async_register_command(hass, ws_items_save)
+    websocket_api.async_register_command(hass, ws_items_delete)
+    websocket_api.async_register_command(hass, ws_items_test)
     websocket_api.async_register_command(hass, ws_weekly)
     websocket_api.async_register_command(hass, ws_shortcuts)
     websocket_api.async_register_command(hass, ws_shortcut_save)
@@ -380,13 +395,27 @@ async def ws_learn_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
         vol.Required("camera"): cv.entity_id,
         vol.Required("name"): str,
         vol.Required("box"): vol.All([vol.Coerce(float)], vol.Length(min=4, max=4)),
+        vol.Optional("points"): [vol.All([vol.Coerce(float)], vol.Length(min=2, max=2))],
+        vol.Optional("aliases"): str,
     }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_set_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     async def job(rt):
-        return rt.spots.set(msg["camera"], msg["name"], msg["box"])
+        return rt.spots.set(msg["camera"], msg["name"], msg["box"], msg.get("points"), msg.get("aliases"))
+
+    await _spot_call(hass, connection, msg, job)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/spots/aliases", vol.Required("name"): str, vol.Required("aliases"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_spot_aliases(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    async def job(rt):
+        return rt.spots.set_aliases(msg["name"], msg["aliases"])
 
     await _spot_call(hass, connection, msg, job)
 
@@ -656,7 +685,8 @@ def ws_insights(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not loaded")
         return
     rt = entry.runtime_data
-    connection.send_result(msg["id"], {"heating": rt.heating.report(), "night_watch": rt.night_watch.describe()})
+    connection.send_result(msg["id"], {"heating": rt.heating.report(), "night_watch": rt.night_watch.describe(),
+                                       "camera_security": rt.camsec.describe()})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/weekly"})
@@ -668,3 +698,109 @@ def ws_weekly(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not loaded")
         return
     connection.send_result(msg["id"], entry.runtime_data.upkeep.weekly_report())
+
+
+
+# ----- offers, announcements, alarms, camera checks ---------------------------------------
+def _items_payload(hass: HomeAssistant, entry, kind: str) -> dict[str, Any]:
+    from .kinds import KINDS, summary
+
+    meta = KINDS[kind]
+    items = entry.runtime_data.lists[kind].listing()
+    for item in items:
+        item["_summary"] = summary(kind, item, hass)
+    if kind == "alarms":
+        nexts = {a["id"]: a["next"] for a in entry.runtime_data.alarms.listing()}
+        for item in items:
+            item["_next"] = nexts.get(item["id"])
+    return {
+        "items": items,
+        "meta": {k: meta[k] for k in ("title", "icon", "blurb", "add", "schema", "labels", "defaults")},
+    }
+
+
+_KIND = vol.In(["offers", "announce", "alarms", "checks"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/items", vol.Required("kind"): _KIND})
+@callback
+def ws_items(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], _items_payload(hass, entry, msg["kind"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/items/save", vol.Required("kind"): _KIND, vol.Required("item"): dict}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    item = {k: v for k, v in dict(msg["item"]).items() if not k.startswith("_")}
+    try:
+        from homeassistant.helpers.script import async_validate_actions_config
+
+        for key in ("actions", "room_actions"):
+            if item.get(key):
+                await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(item[key]))
+        entry.runtime_data.lists[msg["kind"]].upsert(item)
+    except (vol.Invalid, ValueError, HomeAssistantError) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], _items_payload(hass, entry, msg["kind"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/items/delete", vol.Required("kind"): _KIND, vol.Required("item_id"): str}
+)
+@websocket_api.require_admin
+@callback
+def ws_items_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    entry.runtime_data.lists[msg["kind"]].remove(msg["item_id"])
+    connection.send_result(msg["id"], _items_payload(hass, entry, msg["kind"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/items/test", vol.Required("kind"): _KIND, vol.Required("item_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Try one now: ask the offer, say the announcement, ring the alarm, run the camera check."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    item = rt.lists[msg["kind"]].items.get(msg["item_id"])
+    if item is None:
+        connection.send_error(msg["id"], "not_found", "It's gone")
+        return
+    kind = msg["kind"]
+    try:
+        if kind == "offers":
+            result = await rt.offers.async_ask(item, (item.get("areas") or [None])[0])
+        elif kind == "announce":
+            result = await rt.announcements.async_announce(item)
+        elif kind == "alarms":
+            result = await rt.speech.async_say(
+                (item.get("message") or "").strip() or f"{item['name']}." + (f" {item['description']}." if item.get("description") else ""),
+                "urgent", [s for s in item.get("speakers") or [] if hass.states.get(s)] or None, source="alarm test",
+            )
+            result = result.as_dict()
+        else:
+            result = await rt.checks.async_check(item, force=True)
+    except Exception as err:  # noqa: BLE001
+        connection.send_error(msg["id"], "failed", str(err))
+        return
+    connection.send_result(msg["id"], {**_items_payload(hass, entry, kind), "result": result})

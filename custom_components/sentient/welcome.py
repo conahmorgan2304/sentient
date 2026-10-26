@@ -17,7 +17,7 @@ from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_PEOPLE
+from .const import personality_line, CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_PEOPLE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +92,8 @@ class Welcome:
                     "Someone has just come home. In at most two short spoken sentences, starting with "
                     "'Welcome back.', tell them what's worth knowing from this log of while they were out "
                     "(visitors, parcels, things that finished, problems). No names, no times unless useful, "
-                    "British English. Never say or imply the house was empty.\n\n" + "\n".join(lines)
+                    "British English. Never say or imply the house was empty. " + personality_line(self.options)
+                    + "\n\n" + "\n".join(lines)
                 ),
             }
             if ai := self.options.get(CONF_AI_TASK_ENTITY):

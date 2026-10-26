@@ -152,3 +152,29 @@ DEFAULT_NIGHT_WATCH = True
 # weekly report
 CONF_WEEKLY_REPORT = "weekly_report"
 DEFAULT_WEEKLY_REPORT = True
+
+# personality
+CONF_PERSONALITY = "personality"
+CONF_PERSONALITY_NOTES = "personality_notes"
+DEFAULT_PERSONALITY = "calm"
+PERSONALITIES = {
+    "calm": "calm, warm and to the point",
+    "dry": "quietly witty, with dry, understated British humour now and then — the answer always comes first, and never a joke about safety, security or anything upsetting",
+    "warm": "warm and friendly, like a kind member of the family who's glad to help",
+    "cheeky": "cheeky and playful, with light banter and the odd tease — but plain and serious about safety, security or anything upsetting",
+    "composed": "polite and composed, like a capable butler, never stiff and never using titles",
+}
+
+
+def personality_line(options: dict) -> str:
+    """One sentence about how the house should sound, for every prompt."""
+    style = PERSONALITIES.get(options.get(CONF_PERSONALITY) or DEFAULT_PERSONALITY, PERSONALITIES[DEFAULT_PERSONALITY])
+    notes = (options.get(CONF_PERSONALITY_NOTES) or "").strip()
+    return f"Your personality: {style}." + (f" {notes}" if notes else "")
+
+# camera security
+CONF_CAMSEC = "camera_security"
+CONF_CAMSEC_SENSORS = "camera_security_sensors"
+CONF_CAMSEC_INSIDE = "camera_security_inside"
+CONF_CAMSEC_ENTRIES = "camera_security_entries"
+CONF_CAMSEC_DESCRIBE = "camera_security_describe"

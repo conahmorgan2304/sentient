@@ -12,6 +12,15 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_COMFORT_TEMP,
+    CONF_CAMSEC,
+    CONF_CAMSEC_DESCRIBE,
+    CONF_CAMSEC_ENTRIES,
+    CONF_CAMSEC_INSIDE,
+    CONF_CAMSEC_SENSORS,
+    CONF_PERSONALITY,
+    CONF_PERSONALITY_NOTES,
+    DEFAULT_PERSONALITY,
+    PERSONALITIES,
     CONF_WARM_BY_WEEKDAYS,
     CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
@@ -167,6 +176,17 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_NIGHT_WATCH_SPEAKERS, **d(CONF_NIGHT_WATCH_SPEAKERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="assist_satellite", multiple=True)
             ),
+            vol.Required(CONF_CAMSEC, **d(CONF_CAMSEC, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_CAMSEC_SENSORS, **d(CONF_CAMSEC_SENSORS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Optional(CONF_CAMSEC_INSIDE, **d(CONF_CAMSEC_INSIDE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Optional(CONF_CAMSEC_ENTRIES, **d(CONF_CAMSEC_ENTRIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["binary_sensor", "cover", "lock"], multiple=True)
+            ),
+            vol.Required(CONF_CAMSEC_DESCRIBE, **d(CONF_CAMSEC_DESCRIBE, True)): selector.BooleanSelector(),
             vol.Required(CONF_WEEKLY_REPORT, **d(CONF_WEEKLY_REPORT, DEFAULT_WEEKLY_REPORT)): selector.BooleanSelector(),
             vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
             vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
@@ -196,6 +216,12 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_NOTICE_ENTITIES, **d(CONF_NOTICE_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_PERSONALITY, **d(CONF_PERSONALITY, DEFAULT_PERSONALITY)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=list(PERSONALITIES), translation_key="personality")
+            ),
+            vol.Optional(CONF_PERSONALITY_NOTES, **d(CONF_PERSONALITY_NOTES, "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
             ),
             vol.Required(CONF_CHATTINESS, **d(CONF_CHATTINESS, DEFAULT_CHATTINESS)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(CHATTINESS_LIMITS), translation_key="chattiness")

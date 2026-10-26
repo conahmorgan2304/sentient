@@ -53,7 +53,7 @@ async def test_teach_spot_then_crop(hass: HomeAssistant, tmp_path) -> None:
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_spot", tool_args={"camera": "garden", "name": "the rabbit pen"}))
     assert out == {"learned": "the rabbit pen", "camera": "Garden"}
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_spot", tool_args={}))
-    assert out["spots"] == [{"name": "the rabbit pen", "camera": "camera.garden"}]
+    assert out["spots"] == [{"name": "the rabbit pen", "camera": "camera.garden", "also_called": ""}]
 
     with patch("homeassistant.components.camera.async_get_image", return_value=CameraImage("image/jpeg", _jpeg())):
         out = await api.async_call_tool(llm.ToolInput(
@@ -71,3 +71,36 @@ async def test_teach_spot_then_crop(hass: HomeAssistant, tmp_path) -> None:
     )
     assert entry.runtime_data.watches.watches[0].spot == "rabbit pen"
     assert hass.states.get("sensor.nova_watches").attributes["watches"][0]["spot"] == "rabbit pen"
+
+
+async def test_spot_by_another_name_picks_its_camera_and_masks_the_shape(hass: HomeAssistant, tmp_path) -> None:
+    hass.config.media_dirs = {"local": str(tmp_path)}
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", data=OPTIONS, unique_id=DOMAIN)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("camera.front", "idle", {"friendly_name": "Front"})
+    hass.states.async_set("camera.gate", "idle", {"friendly_name": "Gate"})
+    spots = entry.runtime_data.spots
+    spots.set("camera.gate", "the drive", [0, 0, 1, 1], points=[[0.5, 0.5], [1, 0.5], [1, 1], [0.5, 1]],
+              aliases="driveway, parking space")
+    calls: list[ServiceCall] = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        return {"conversation_id": "x", "data": "Yes, a black car is parked there."}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    white = io.BytesIO()
+    Image.new("RGB", (400, 200), (255, 255, 255)).save(white, "JPEG")
+    with patch("homeassistant.components.camera.async_get_image", return_value=CameraImage("image/jpeg", white.getvalue())):
+        out = await entry.runtime_data.watches.async_look("front", "is there a car on the driveway?")
+    assert out["camera"] == "Gate" and out["spot"] == "the drive"
+    assert calls[0].data["attachments"][0]["media_content_id"].startswith("media-source://media_source/local/sentient/")
+    saved = Image.open(tmp_path / "sentient" / "drive_gate.jpg")
+    assert saved.getpixel((2, 2))[0] < 40  # outside the shape: blacked out
+    w, h = saved.size
+    assert saved.getpixel((w - 3, h - 3))[0] > 200  # inside: kept
+    ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
+    api = await llm.async_get_api(hass, "sentient", ctx)
+    assert "the drive (on the Gate camera; also called driveway, parking space)" in api.api_prompt

@@ -125,6 +125,7 @@ class SpeechRouter:
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
+        self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
 
@@ -239,7 +240,15 @@ class SpeechRouter:
         return ", ".join(parts)
 
     # ----- suppression ----------------------------------------------------------
+    def hold(self, seconds: float) -> None:
+        """Keep everyday chatter back for a little while (after the doorbell, the gate…)."""
+        until = dt_util.utcnow() + timedelta(seconds=seconds)
+        if self.hold_until is None or until > self.hold_until:
+            self.hold_until = until
+
     def _recently_triggered(self) -> str | None:
+        if self.hold_until is not None and dt_util.utcnow() < self.hold_until:
+            return "announcement"
         seconds = float(self.options.get(CONF_SUPPRESS_SECONDS, DEFAULT_SUPPRESS_SECONDS))
         for entity_id in self.options.get(CONF_SUPPRESS_ENTITIES) or []:
             state = self.hass.states.get(entity_id)

@@ -58,6 +58,13 @@ from .feedback import Feedback
 from .heating import Heating
 from .nightwatch import NightWatch
 from .followthrough import FollowThrough
+from .items import Items
+from .kinds import KINDS
+from .offers import Offers
+from .announce import Announcements
+from .alarms import Alarms
+from .checks import CameraChecks
+from .camsecurity import CameraSecurity
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -95,6 +102,12 @@ class SentientRuntime:
     heating: Heating
     night_watch: NightWatch
     followthrough: FollowThrough
+    lists: dict[str, Items]
+    offers: Offers
+    announcements: Announcements
+    alarms: Alarms
+    checks: CameraChecks
+    camsec: CameraSecurity
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -245,6 +258,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await heating.async_start()
     entry.async_on_unload(heating.async_stop)
     night_watch = NightWatch(hass, options, lambda: entry.runtime_data)
+    lists = {kind: Items(hass, entry.entry_id, kind, KINDS[kind]["defaults"]) for kind in KINDS}
+    for items in lists.values():
+        await items.async_load()
+    get_rt = lambda: entry.runtime_data  # noqa: E731
+    offers = Offers(hass, lists["offers"], get_rt)
+    announcements = Announcements(hass, lists["announce"], get_rt)
+    alarms = Alarms(hass, lists["alarms"], get_rt)
+    checks = CameraChecks(hass, lists["checks"], get_rt)
+    camsec = CameraSecurity(hass, options, get_rt)
     followthrough = FollowThrough(hass, speech, timeline)
     followthrough.async_start()
     entry.async_on_unload(followthrough.async_stop)
@@ -256,9 +278,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
         feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
+        lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
     )
     night_watch.async_start()
     entry.async_on_unload(night_watch.async_stop)
+    for engine in (offers, announcements, alarms, checks, camsec):
+        engine.async_start()
+        entry.async_on_unload(engine.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -310,6 +336,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.left_open.options = options
     entry.runtime_data.heating.options = options
     entry.runtime_data.night_watch.options = options
+    entry.runtime_data.camsec.options = options
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
     if "frontend" in hass.config.components:

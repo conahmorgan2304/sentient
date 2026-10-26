@@ -35,6 +35,7 @@ def export_all(hass: HomeAssistant, entry) -> dict[str, Any]:
         "routines": [{k: v for k, v in s.items() if k != "last_run"} for s in rt.shortcuts.listing()],
         "shushed": [m for m in rt.mutes.items],
         "deleted_routines": dict(rt.learner.dismissed),
+        "lists": {kind: items.listing() for kind, items in rt.lists.items()},
         "learned_choices": [
             {"id": r.id, "adopted": r.adopted, "declined": r.declined}
             for r in rt.learner.all() if r.adopted or r.declined
@@ -106,6 +107,14 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
             routine.adopted = bool(choice.get("adopted"))
             routine.declined = bool(choice.get("declined"))
             counts["learned_choices"] += 1
+    for kind, rows in (data.get("lists") or {}).items():
+        target = rt.lists.get(kind)
+        if target is None or not isinstance(rows, list):
+            continue
+        for row in rows:
+            if isinstance(row, dict) and row.get("name") and target.find(row["name"]) is None:
+                target.upsert({k: v for k, v in row.items() if k != "id"})
+                counts[kind] = counts.get(kind, 0) + 1
     deleted = data.get("deleted_routines") or {}
     if isinstance(deleted, dict) and deleted:
         for k, v in deleted.items():

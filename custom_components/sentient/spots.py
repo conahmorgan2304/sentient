@@ -48,36 +48,77 @@ class Spots:
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"spots": self.spots}, 2)
 
-    def set(self, camera: str, name: str, box: list[float]) -> dict[str, Any]:
-        """Remember a spot drawn by hand (box as fractions: left, top, right, bottom)."""
+    def set(
+        self, camera: str, name: str, box: list[float], points: list[list[float]] | None = None,
+        aliases: str | None = None,
+    ) -> dict[str, Any]:
+        """Remember a spot drawn by hand: a box (fractions: left, top, right, bottom), or a shape (points)."""
+        if points and len(points) >= 3:
+            pts = [[min(1.0, max(0.0, float(x))), min(1.0, max(0.0, float(y)))] for x, y in points]
+            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+            box = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            pts = None
         left, top, right, bottom = (min(1.0, max(0.0, float(v))) for v in box)
         left, right = sorted((left, right))
         top, bottom = sorted((top, bottom))
         if not name.strip() or right - left < 0.02 or bottom - top < 0.02:
             raise HomeAssistantError("That spot is too small")
+        old = self.spots.get(_key(name)) or {}
         spot = {"name": name.strip(), "camera": camera, "box": [left, top, right, bottom]}
+        if pts:
+            spot["points"] = pts
+        spot["aliases"] = (aliases if aliases is not None else old.get("aliases", "")).strip()
         self.spots[_key(name)] = spot
         self._save()
         return spot
 
-    def listing(self) -> list[dict[str, Any]]:
-        return [{"name": s["name"], "camera": s["camera"]} for s in self.spots.values()]
+    def set_aliases(self, name: str, aliases: str) -> dict[str, Any]:
+        spot = self.spots.get(_key(name))
+        if spot is None:
+            raise HomeAssistantError(f"There's no spot called {name}")
+        spot["aliases"] = aliases.strip()
+        self._save()
+        return spot
 
-    def find_in(self, camera: str, text: str | None) -> str | None:
-        """A spot on this camera whose name appears in the text, if any."""
+    def listing(self) -> list[dict[str, Any]]:
+        return [{"name": s["name"], "camera": s["camera"], "also_called": s.get("aliases", "")} for s in self.spots.values()]
+
+    @staticmethod
+    def _names(key: str, spot: dict[str, Any]) -> list[str]:
+        return [key] + [_key(a) for a in (spot.get("aliases") or "").split(",") if a.strip()]
+
+    def find_any(self, text: str | None, camera: str | None = None) -> str | None:
+        """A spot (on any camera, or just this one) whose name or another name for it appears in the text."""
         if not text:
             return None
         hay = f" {_key(text)} "
-        best = None
+        best, length = None, 0
         for key, spot in self.spots.items():
-            if spot["camera"] == camera and f" {key} " in hay and (best is None or len(key) > len(best)):
-                best = key
+            if camera and spot["camera"] != camera:
+                continue
+            for name in self._names(key, spot):
+                if name and f" {name} " in hay and len(name) > length:
+                    best, length = key, len(name)
         return best
+
+    def find_in(self, camera: str, text: str | None) -> str | None:
+        """A spot on this camera whose name (or another name for it) appears in the text, if any."""
+        return self.find_any(text, camera)
+
+    def describe(self) -> list[str]:
+        out = []
+        for spot in self.spots.values():
+            st = self.hass.states.get(spot["camera"])
+            cam = st.name if st else spot["camera"]
+            also = f"; also called {spot['aliases']}" if spot.get("aliases") else ""
+            out.append(f"{spot['name']} (on the {cam} camera{also})")
+        return out
 
     def get(self, camera: str, name: str | None) -> dict[str, Any] | None:
         if not name:
             return None
-        spot = self.spots.get(_key(name))
+        spot = self.spots.get(_key(name)) or self.spots.get(self.find_any(name) or "")
         return spot if spot and spot["camera"] == camera else None
 
     def forget(self, name: str) -> bool:
@@ -141,7 +182,9 @@ class Spots:
 
             image = await async_get_image(self.hass, camera)
             filename = f"{re.sub(r'[^a-z0-9]+', '_', spot_key)}_{camera.split('.', 1)[1]}.jpg"
-            await self.hass.async_add_executor_job(self._crop_to, image.content, spot["box"], media / "sentient" / filename)
+            await self.hass.async_add_executor_job(
+                self._crop_to, image.content, spot["box"], media / "sentient" / filename, spot.get("points")
+            )
         except Exception as err:  # noqa: BLE001 - a whole picture is a fine fallback
             _LOGGER.debug("Could not crop %s to %s: %s", camera, spot_key, err)
             return whole
@@ -151,11 +194,16 @@ class Spots:
         }
 
     @staticmethod
-    def _crop_to(content: bytes, box: list[float], path: Path) -> None:
-        from PIL import Image
+    def _crop_to(content: bytes, box: list[float], path: Path, points: list[list[float]] | None = None) -> None:
+        from PIL import Image, ImageDraw
 
         img = Image.open(io.BytesIO(content)).convert("RGB")
         w, h = img.size
+        if points and len(points) >= 3:
+            # black out everything outside the shape, so cars next door don't count
+            mask = Image.new("L", (w, h), 0)
+            ImageDraw.Draw(mask).polygon([(x * w, y * h) for x, y in points], fill=255)
+            img = Image.composite(img, Image.new("RGB", (w, h), (0, 0, 0)), mask)
         left, top, right, bottom = box
         mw, mh = (right - left) * MARGIN, (bottom - top) * MARGIN
         left, top = max(0.0, left - mw), max(0.0, top - mh)

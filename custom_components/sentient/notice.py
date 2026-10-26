@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    personality_line,
     CONF_AI_TASK_ENTITY,
     CONF_CHATTINESS,
     CONF_HOUSE_RULES,
@@ -248,6 +249,7 @@ class Noticer:
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         lines = [
             f"You are {persona}, the brain of a family home, deciding whether to speak up.",
+            personality_line(self.options),
             f"Local time: {dt_util.now():%A %d %B, %H:%M}.",
         ]
         if rules := (self.options.get(CONF_HOUSE_RULES) or "").strip():

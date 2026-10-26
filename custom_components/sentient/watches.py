@@ -529,8 +529,20 @@ class WatchManager:
         return await self.spots.async_attachment(camera, key)
 
     async def async_look(self, camera: str, question: str, spot: str | None = None) -> dict[str, Any]:
-        """One on-demand look through a camera: 'what's going on in the garden?'."""
-        entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
+        """One on-demand look through a camera: 'what's going on in the garden?'.
+
+        A spot named in the question (or by another name for it — "the drive", "the driveway")
+        decides the camera, whatever camera was asked for: it's the one that can see it.
+        """
+        spot_key = None
+        if self.spots is not None:
+            spot_key = self.spots.find_any(spot) if spot else None
+            spot_key = spot_key or self.spots.find_any(question) or self.spots.find_any(camera)
+        if spot_key:
+            entity_id = self.spots.spots[spot_key]["camera"]
+            spot = self.spots.spots[spot_key]["name"]
+        else:
+            entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
         if entity_id is None or not entity_id.startswith("camera."):
             raise HomeAssistantError(f"I can't find a camera called '{camera}'")
         data: dict[str, Any] = {
@@ -554,7 +566,10 @@ class WatchManager:
             "ai_task", "generate_data", data, blocking=True, return_response=True
         )
         answer = (response or {}).get("data")
-        return {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
+        out = {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
+        if spot:
+            out["spot"] = spot
+        return out
 
     async def _async_fire(self, watch: Watch, description: str | None, state: State | None) -> None:
         if watch.id not in self._watches:
