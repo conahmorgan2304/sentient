@@ -452,3 +452,18 @@ async def test_goodnight_routine_means_asleep(hass: HomeAssistant) -> None:
     await entry.runtime_data.shortcuts.async_run("goodnight")
     await hass.async_block_till_done()
     assert entry.runtime_data.sleep.asleep
+
+
+def test_usual_bedtime_and_getting_up() -> None:
+    from custom_components.sentient.sleep import Sleep
+
+    s = Sleep.__new__(Sleep)
+    tz = dt_util.get_default_time_zone()
+    from datetime import datetime as D
+
+    s.history = [
+        {"slept": D(2026, 10, d, 23, 10, tzinfo=tz).isoformat(), "woke": D(2026, 10, d + 1, 6, 40, tzinfo=tz).isoformat()}
+        for d in (1, 2, 3)
+    ] + [{"slept": D(2026, 10, 5, 0, 30, tzinfo=tz).isoformat(), "woke": D(2026, 10, 5, 7, 0, tzinfo=tz).isoformat()}]
+    usual = s.usual()
+    assert usual["up"] in ("06:40", "06:50") and usual["bedtime"] in ("23:10", "23:50")

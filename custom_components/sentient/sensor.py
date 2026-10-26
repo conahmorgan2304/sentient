@@ -380,4 +380,6 @@ class HouseSensor(_Base):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"since": self._entry.runtime_data.sleep.since}
+        sleep = self._entry.runtime_data.sleep
+        usual = sleep.usual()
+        return {"since": sleep.since, "usual_bedtime": usual["bedtime"], "usual_up": usual["up"]}

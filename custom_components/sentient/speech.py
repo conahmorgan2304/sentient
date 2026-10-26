@@ -331,7 +331,8 @@ class SpeechRouter:
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
-        targets = self.usable(targets) or None  # Echos switched off: their messages go where people are
+        if source != "critical":  # safety alerts always use every speaker
+            targets = self.usable(targets) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker()
         if not speakers:
             return self._held("no_speaker", text, source)

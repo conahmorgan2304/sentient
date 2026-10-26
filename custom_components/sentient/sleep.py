@@ -54,6 +54,7 @@ class Sleep:
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
         self.asleep, self.since = bool(data.get("asleep")), data.get("since")
+        self.history: list[dict[str, str]] = data.get("history", [])  # [{"slept": iso, "woke": iso}]
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
 
@@ -66,10 +67,31 @@ class Sleep:
     def enabled(self) -> bool:
         return bool(self.options.get(CONF_SLEEP, True))
 
+    def usual(self) -> dict[str, str | None]:
+        """Usual bedtime and getting-up time over the last three weeks (median, local)."""
+        from statistics import median
+
+        def mins(key: str, shift: int) -> list[float]:
+            out = []
+            for h in self.history:
+                if (t := dt_util.parse_datetime(h.get(key) or "")) is not None:
+                    local = dt_util.as_local(t)
+                    m = local.hour * 60 + local.minute
+                    out.append(m + (1440 if shift and m < 12 * 60 else 0))  # after midnight counts as late, not early
+            return out
+
+        def fmt(values: list[float]) -> str | None:
+            if len(values) < 3:
+                return None
+            m = int(median(values)) % 1440
+            return f"{m // 60:02d}:{m % 60:02d}"
+
+        return {"bedtime": fmt(mins("slept", 1)), "up": fmt(mins("woke", 0))}
+
     def describe(self) -> dict[str, Any]:
         since = dt_util.parse_datetime(self.since or "")
         return {"asleep": self.asleep, "since": dt_util.as_local(since).strftime("%H:%M") if since else None,
-                "since_at": self.since}
+                "since_at": self.since, **{f"usual_{k}": v for k, v in self.usual().items()}}
 
     # ----- going to sleep ----------------------------------------------------------------
     def is_bedtime_routine(self, name: str) -> bool:
@@ -123,7 +145,12 @@ class Sleep:
         self.asleep = asleep
         self.since = dt_util.utcnow().isoformat()
         self._moves = []
-        self._store.async_delay_save(lambda: {"asleep": self.asleep, "since": self.since}, 1)
+        if asleep:
+            self.history.append({"slept": self.since})
+        elif self.history and "woke" not in self.history[-1]:
+            self.history[-1]["woke"] = self.since
+        del self.history[:-21]
+        self._store.async_delay_save(lambda: {"asleep": self.asleep, "since": self.since, "history": self.history}, 1)
         rt = self._rt()
         if rt is not None:
             rt.timeline.add("mode", "House asleep" if asleep else "Up and about", why or None)

@@ -132,7 +132,8 @@ class CriticalAlerts:
     async def _say(self, rt, text: str) -> None:
         speech = rt.speech
         # everywhere, not just where people seem to be
-        speakers = list(dict.fromkeys(speech.speakers + list(speech.options.get("fallback_speakers") or [])))
+        # safety first: Echos too, even when they're switched off for everyday talk
+        speakers = list(dict.fromkeys(list(speech.options.get("speakers") or []) + list(speech.options.get("fallback_speakers") or [])))
         try:
             await speech.async_say(text, "urgent", speakers or None, source="critical")
         except Exception as err:  # noqa: BLE001

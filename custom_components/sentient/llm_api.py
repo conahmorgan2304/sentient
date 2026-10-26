@@ -968,6 +968,14 @@ class SentientAPI(llm.API):
                 "Guests are visiting: don't bring up personal household details, routines or memories "
                 "unless someone explicitly asks."
             )
+        usual = rt.sleep.usual()
+        if usual["bedtime"] or usual["up"]:
+            lines.append(
+                "The household usually " + " and ".join(
+                    x for x in (f"goes to bed around {usual['bedtime']}" if usual["bedtime"] else "",
+                                f"is up around {usual['up']}" if usual["up"] else "") if x
+                ) + "."
+            )
         if rt.sleep.asleep:
             lines.append(f"The house is asleep (since {rt.sleep.describe()['since']}): keep replies short and quiet.")
         if rt.speech.hushed():
