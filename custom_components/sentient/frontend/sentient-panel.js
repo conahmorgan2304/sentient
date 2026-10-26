@@ -563,7 +563,7 @@
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
             <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Delete">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
-          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
+          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
@@ -579,7 +579,8 @@
         <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">CANCEL</button><button class="btn sm" data-act="scsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = { name: "Name", aliases: "Other ways of asking (comma separated)", say: "Say when done",
-        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", check_locks: "First check for anything unlocked", actions: "Actions" };
+        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", check_locks: "First check for anything unlocked",
+        inputs: "Details it can be told — one per line, 'name: what it is' (e.g. 'rooms: which rooms — living room, kitchen'). Use them in actions as {{ rooms }}", actions: "Actions" };
       const schema = [
         { name: "name", required: true, selector: { text: {} } },
         { name: "aliases", selector: { text: {} } },
@@ -587,6 +588,7 @@
         { name: "check_open", selector: { boolean: {} } },
         { name: "check_lights", selector: { boolean: {} } },
         { name: "check_locks", selector: { boolean: {} } },
+        { name: "inputs", selector: { text: { multiline: true } } },
         { name: "actions", selector: { action: {} } },
       ];
       loadForm().then((ok) => {
@@ -1053,12 +1055,12 @@
           if (s2) s2.textContent = res.match !== undefined ? (res.match ? "YES — " : "NO — ") + (res.seen || "") : res.spoken === false ? `HELD BACK: ${(res.reason || "").toUpperCase()}` : "DONE";
         }, (e) => { const s2 = this._$("status"); if (s2) s2.textContent = e.message || String(e); });
       }
-      else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, actions: [] }; this._openShortcutForm({}); }
+      else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, inputs: "", actions: [] }; this._openShortcutForm({}); }
       else if (act === "scedit") { const r = (this._sc || []).find((x) => x.id === id); if (r) { this._scDraft = { ...r }; this._openShortcutForm(r); } }
       else if (act === "sccancel") { this._scEdit = null; this._form = null; this._drawShortcuts(); }
       else if (act === "scsave") {
         const item = {};
-        ["id", "name", "aliases", "say", "check_open", "check_lights", "check_locks", "actions"].forEach((k) => { if (this._scDraft[k] !== undefined && this._scDraft[k] !== null) item[k] = this._scDraft[k]; });
+        ["id", "name", "aliases", "say", "check_open", "check_lights", "check_locks", "inputs", "actions"].forEach((k) => { if (this._scDraft[k] !== undefined && this._scDraft[k] !== null) item[k] = this._scDraft[k]; });
         this._hass.callWS({ type: "sentient/shortcuts/save", item }).then((r) => { this._sc = r.items; this._scEdit = null; this._form = null; this._drawSide(); this._drawShortcuts(); },
           (e) => { const m = this._$("scmsg"); if (m) m.textContent = e.message || String(e); });
       } else if (act === "scdel") {

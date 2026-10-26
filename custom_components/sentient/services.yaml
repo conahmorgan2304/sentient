@@ -214,6 +214,10 @@ run_routine:
       example: true
       selector:
         boolean:
+    details:
+      example: '{"rooms": ["kitchen", "hallway"]}'
+      selector:
+        object:
 weekly_report:
 party:
   fields:

@@ -47,6 +47,7 @@ from .const import (
     CONF_DUCK_MEDIA,
     CONF_ROOM_VOLUME,
     CONF_FULL_VOLUME_SPEAKERS,
+    CONF_TTS_ENTITY,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
@@ -94,6 +95,13 @@ def in_quiet_hours(now: datetime, start: time, end: time) -> bool:
     if start < end:
         return start <= current < end
     return current >= start or current < end
+
+
+def _platform(hass: HomeAssistant, entity_id: str) -> str | None:
+    from homeassistant.helpers import entity_registry as er
+
+    entry = er.async_get(hass).async_get(entity_id)
+    return entry.platform if entry else None
 
 
 def clean_message(message: str, banned: list[str]) -> str:
@@ -324,13 +332,7 @@ class SpeechRouter:
             self._remember_said(text)
             volume = await self._volumes(speakers)
             async with delivered(self.hass, speakers, volume, self.duck_level):
-                await self.hass.services.async_call(
-                    "assist_satellite",
-                    "announce",
-                    {"message": text, "preannounce": self.chime},
-                    target={"entity_id": speakers},
-                    blocking=True,
-                )
+                await self._speak(text, speakers)
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None},
@@ -338,6 +340,41 @@ class SpeechRouter:
         if unheard and self.on_unheard is not None:
             self.on_unheard(text, priority, source, None)
         return SpeechResult(True, "spoken", text, speakers)
+
+    async def _speak(self, text: str, speakers: list[str]) -> None:
+        """Voice speakers announce; media players (an Echo, a smart speaker) are spoken to through
+        Alexa Media Player or a TTS engine. All at once, then wait until a media player should have finished,
+        so the volume isn't put back mid-sentence."""
+        sats = [s for s in speakers if s.startswith("assist_satellite.")]
+        players = [s for s in speakers if s.startswith("media_player.")]
+        calls = []
+        if sats:
+            calls.append(self.hass.services.async_call(
+                "assist_satellite", "announce", {"message": text, "preannounce": self.chime},
+                target={"entity_id": sats}, blocking=True,
+            ))
+        alexa = [p for p in players if _platform(self.hass, p) == "alexa_media"]
+        others = [p for p in players if p not in alexa]
+        if alexa and self.hass.services.has_service("notify", "alexa_media"):
+            calls.append(self.hass.services.async_call(
+                "notify", "alexa_media",
+                {"message": text, "target": alexa, "data": {"type": "announce" if self.chime else "tts"}},
+                blocking=True,
+            ))
+        if others and (tts := self.options.get(CONF_TTS_ENTITY)):
+            calls.append(self.hass.services.async_call(
+                "tts", "speak", {"media_player_entity_id": others, "message": text, "cache": True},
+                target={"entity_id": tts}, blocking=True,
+            ))
+        results = await asyncio.gather(*calls, return_exceptions=True)
+        errors = [r for r in results if isinstance(r, Exception)]
+        if errors and len(errors) == len(results):
+            raise errors[0]
+        for err in errors:
+            _LOGGER.warning("A speaker couldn't say it: %s", err)
+        if players:
+            # media players return straight away: give them time to say it before volumes go back
+            await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
 
     async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
         """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),
@@ -387,7 +424,7 @@ class SpeechRouter:
         candidates = targets or self.pick_speaker()
         listening = [
             s for s in candidates
-            if (st := self.hass.states.get(s)) is not None
+            if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
         if not listening:

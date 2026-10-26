@@ -295,3 +295,48 @@ async def test_cards_become_dashboard_resources(hass: HomeAssistant) -> None:
     await async_register_card_resources(hass, "1.0.1")
     urls = [r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items()]
     assert sorted(urls) == ["/sentient_frontend/sentient-hub-card.js?v=1.0.1", "/sentient_frontend/sentient-shows-card.js?v=1.0.1"]
+
+
+async def test_speaks_through_an_echo_too(hass: HomeAssistant, monkeypatch) -> None:
+    import custom_components.sentient.speech as speech_mod
+
+    async def no_wait(_s):
+        return None
+
+    other = MockConfigEntry(domain="alexa_media")
+    other.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create("media_player", "alexa_media", "echo1", suggested_object_id="bathroom_echo",
+                                           config_entry=other)
+    await _setup(hass, speakers=["assist_satellite.kitchen", "media_player.bathroom_echo"])
+    hass.states.async_set("media_player.bathroom_echo", "idle", {"supported_features": 318399})
+    sat = async_mock_service(hass, "assist_satellite", "announce")
+    alexa = async_mock_service(hass, "notify", "alexa_media")
+    start = async_mock_service(hass, "assist_satellite", "start_conversation")
+    monkeypatch.setattr(speech_mod.asyncio, "sleep", no_wait)
+    await hass.services.async_call(DOMAIN, "say", {"message": "Tea's up.", "speaker": "media_player.bathroom_echo"}, blocking=True)
+    assert not sat and alexa[-1].data["target"] == ["media_player.bathroom_echo"]
+    assert alexa[-1].data["data"]["type"] in ("announce", "tts")
+    # an Echo can't listen for an answer: a question is just said
+    await hass.services.async_call(DOMAIN, "ask", {"question": "Fancy a brew?", "speaker": "media_player.bathroom_echo"}, blocking=True)
+    assert not start and alexa[-1].data["message"] == "Fancy a brew?"
+
+
+async def test_routine_with_details(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    calls = async_mock_service(hass, "vacuum", "vacuum_clean_segment")
+    rt = entry.runtime_data
+    rt.shortcuts.upsert({
+        "name": "Hoover rooms", "inputs": "rooms: which rooms — living room, kitchen, hallway, dining room",
+        "say": "Hoovering the {rooms}.",
+        "actions": [{"action": "vacuum.vacuum_clean_segment", "target": {"entity_id": "vacuum.robot"},
+                     "data": {"segments": "{% set m = {'living room': 10, 'kitchen': 11, 'hallway': 12, 'dining room': 13} %}"
+                                          "{% set ns = namespace(s=[]) %}{% for x in ([rooms] if rooms is string else rooms) %}"
+                                          "{% if x | lower in m %}{% set ns.s = ns.s + [m[x | lower]] %}{% endif %}{% endfor %}{{ ns.s }}"}}],
+    })
+    out = await rt.shortcuts.async_run("hoover rooms")
+    assert "needs" in out and not calls
+    out = await rt.shortcuts.async_run("hoover rooms", details={"rooms": ["kitchen", "hallway"]})
+    assert calls[-1].data["segments"] == [11, 12]
+    assert out["said"].startswith("Hoovering the kitchen and hallway")
+    api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    assert "Hoover rooms (details: rooms = which rooms" in api.api_prompt

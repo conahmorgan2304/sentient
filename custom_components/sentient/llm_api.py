@@ -721,9 +721,11 @@ class RunRoutineTool(_Tool):
     name = "sentient_run_routine"
     description = (
         "Run one of the household's named routines (e.g. 'goodnight', 'good morning', 'leaving'). "
-        "Returns what to tell the person — say it in your reply (the house doesn't announce it)."
+        "Returns what to tell the person — say it in your reply (the house doesn't announce it). Some "
+        "routines take details (listed in your instructions, e.g. which rooms): pass them in 'details' as "
+        "{name: value}, a list for several."
     )
-    parameters = vol.Schema({vol.Required("name"): cv.string})
+    parameters = vol.Schema({vol.Required("name"): cv.string, vol.Optional("details"): dict})
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
@@ -731,7 +733,9 @@ class RunRoutineTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        result = await rt.shortcuts.async_run(tool_input.tool_args["name"], llm_context.context)
+        result = await rt.shortcuts.async_run(
+            tool_input.tool_args["name"], llm_context.context, tool_input.tool_args.get("details")
+        )
         if not result.get("error"):
             rt.timeline.add("mode", f"Ran {result['routine']} (by voice)", result.get("said") or None)
         return result
@@ -984,7 +988,11 @@ class SentientAPI(llm.API):
         if rt.shortcuts.items:
             lines.append(
                 "Named routines you can run with sentient_run_routine: "
-                + ", ".join(s.name for s in rt.shortcuts.items.values()) + "."
+                + "; ".join(
+                    s.name + (" (details: " + ", ".join(f"{k} = {w}" for k, w in s.input_names().items()) + ")"
+                              if s.input_names() else "")
+                    for s in rt.shortcuts.items.values()
+                ) + "."
             )
         if problems := rt.health.describe():
             lines.append("House health problems right now: " + "; ".join(problems[:6]) + ".")

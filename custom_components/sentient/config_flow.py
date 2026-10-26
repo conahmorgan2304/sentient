@@ -94,6 +94,7 @@ from .const import (
     CONF_DUCK_MEDIA,
     CONF_ROOM_VOLUME,
     CONF_FULL_VOLUME_SPEAKERS,
+    CONF_TTS_ENTITY,
     CONF_FOLLOW_YOU,
     CONF_FOLLOW_MINUTES,
     DEFAULT_FOLLOW_MINUTES,
@@ -146,8 +147,8 @@ from .const import (
     MEMORY_CATEGORIES,
 )
 
-_SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain="assist_satellite", multiple=True))
-_ONE_SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain="assist_satellite"))
+_SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["assist_satellite", "media_player"], multiple=True))
+_ONE_SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["assist_satellite", "media_player"]))
 
 
 def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
@@ -174,6 +175,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
             vol.Required(CONF_ROOM_VOLUME, **d(CONF_ROOM_VOLUME, True)): selector.BooleanSelector(),
             vol.Optional(CONF_FULL_VOLUME_SPEAKERS, **d(CONF_FULL_VOLUME_SPEAKERS, [])): _SPEAKER,
+            vol.Optional(CONF_TTS_ENTITY, **d(CONF_TTS_ENTITY)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="tts")
+            ),
             vol.Required(CONF_FOLLOW_YOU, **d(CONF_FOLLOW_YOU, True)): selector.BooleanSelector(),
             vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
@@ -219,7 +223,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_NIGHT_WATCH_ANNOUNCE, **d(CONF_NIGHT_WATCH_ANNOUNCE, False)): selector.BooleanSelector(),
             vol.Optional(CONF_NIGHT_WATCH_SPEAKERS, **d(CONF_NIGHT_WATCH_SPEAKERS, [])): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="assist_satellite", multiple=True)
+                selector.EntitySelectorConfig(domain=["assist_satellite", "media_player"], multiple=True)
             ),
             vol.Required(CONF_CAMSEC, **d(CONF_CAMSEC, False)): selector.BooleanSelector(),
             vol.Optional(CONF_CAMSEC_SENSORS, **d(CONF_CAMSEC_SENSORS, [])): selector.EntitySelector(

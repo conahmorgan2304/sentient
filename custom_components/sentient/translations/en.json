@@ -178,7 +178,8 @@
           "drive_spot": "Drive spot",
           "drive_camera": "Drive camera",
           "drive_triggers": "Look when these settle",
-          "full_volume_speakers": "Full volume on these speakers"
+          "full_volume_speakers": "Full volume on these speakers",
+          "tts_entity": "Voice for other speakers"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -258,7 +259,9 @@
           "drive_spot": "The camera spot that shows the drive (draw it on the Spots tab).",
           "drive_camera": "Only needed if more than one camera has a spot with that name.",
           "drive_triggers": "Motion or car sensors that see the drive. Empty: the camera's own motion and car sensors.",
-          "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then)."
+          "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
+          "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
+          "speakers": "Assist speakers or media players (Echos through Alexa Media Player)."
         }
       },
       "memories": {
@@ -665,6 +668,10 @@
         "speak": {
           "name": "Speak",
           "description": "Say the result where people are."
+        },
+        "details": {
+          "name": "Details",
+          "description": "For routines that take details, e.g. which rooms."
         }
       }
     },

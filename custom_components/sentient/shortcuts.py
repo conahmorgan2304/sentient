@@ -39,12 +39,22 @@ class Shortcut:
     check_lights: bool = False
     check_locks: bool = False
     say: str = ""
+    inputs: str = ""  # details it can be told, one per line: "rooms: which rooms"
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     last_run: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Shortcut:
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+    def input_names(self) -> dict[str, str]:
+        out = {}
+        for line in (self.inputs or "").splitlines():
+            key, _, what = line.partition(":")
+            key = re.sub(r"[^a-z0-9_]+", "_", key.strip().lower()).strip("_")
+            if key:
+                out[key] = what.strip()
+        return out
 
     def names(self) -> list[str]:
         return [_norm(self.name)] + [_norm(a) for a in self.aliases.split(",") if a.strip()]
@@ -130,24 +140,39 @@ class Shortcuts:
                 notes.append(_join(shown) + (" is" if len(lit) == 1 else " are") + " still on")
         return notes
 
-    async def async_run(self, name: str, context: Context | None = None) -> dict[str, Any]:
+    async def async_run(
+        self, name: str, context: Context | None = None, details: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         from homeassistant.util import dt as dt_util
 
         item = self.find(name)
         if item is None:
             return {"error": f"No routine called {name}", "routines": [s.name for s in self.items.values()]}
+        wanted = item.input_names()
+        variables = {k: None for k in wanted}
+        for key, value in (details or {}).items():
+            k = re.sub(r"[^a-z0-9_]+", "_", str(key).lower()).strip("_")
+            if k in wanted:
+                variables[k] = value
+        missing = [k for k, v in variables.items() if v in (None, "", [])]
+        if missing:
+            return {"routine": item.name, "error": "It needs to know: " + "; ".join(f"{k} ({wanted[k]})" for k in missing),
+                    "needs": {k: wanted[k] for k in missing}}
         notes = self.checks(item)  # before the actions, so "still on" means before it ran
         if item.actions:
             try:
                 sequence = await async_validate_actions_config(self.hass, cv.SCRIPT_SCHEMA(item.actions))
                 script = Script(self.hass, sequence, f"Sentient: {item.name}", DOMAIN, running_description="routine")
-                await script.async_run(context=context or Context())
+                await script.async_run(run_variables=variables, context=context or Context())
             except Exception as err:  # noqa: BLE001 - report it, don't crash the caller
                 _LOGGER.warning("Routine %s failed: %s", item.name, err)
                 return {"routine": item.name, "error": str(err)}
         item.last_run = dt_util.utcnow().isoformat()
         self._save()
-        parts = [item.say.strip()] if item.say.strip() else []
+        said = item.say.strip()
+        for k, v in variables.items():
+            said = said.replace("{" + k + "}", _join([str(x) for x in v]) if isinstance(v, list) and v else str(v))
+        parts = [said] if said else []
         parts += [n[0].upper() + n[1:] + "." for n in notes]
         return {"routine": item.name, "steps": len(item.actions), "said": " ".join(parts), "notes": notes}
 

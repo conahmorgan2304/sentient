@@ -654,7 +654,7 @@ def _register_services(hass: HomeAssistant) -> None:
 
     async def run_routine(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
-        result = await rt.shortcuts.async_run(call.data["name"], call.context)
+        result = await rt.shortcuts.async_run(call.data["name"], call.context, call.data.get("details"))
         if result.get("said") and call.data.get("speak", True):
             await rt.speech.async_say(result["said"], "urgent", source="routine")
         if not result.get("error"):
@@ -663,7 +663,8 @@ def _register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, "run_routine", run_routine,
-        schema=vol.Schema({vol.Required("name"): cv.string, vol.Optional("speak", default=True): cv.boolean}),
+        schema=vol.Schema({vol.Required("name"): cv.string, vol.Optional("speak", default=True): cv.boolean,
+                           vol.Optional("details"): dict}),
         supports_response=SupportsResponse.OPTIONAL,
     )
 
