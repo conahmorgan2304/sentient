@@ -42,6 +42,11 @@
     set hass(hass) {
       this._hass = hass;
       if (!this.shadowRoot) this._build();
+      if (!this._wizChecked && hass.user && hass.user.is_admin) {
+        this._wizChecked = true;
+        hass.callWS({ type: "sentient/wizard", language: hass.language }).then((w) => { if (w.show) this._openWizard(w); }, () => {});
+      }
+      if (this._wizForm) this._wizForm.hass = hass;
       if (this._form) this._form.hass = hass;
       const ids = this._ids();
       const sig = KEYS.map((k) => { const s = ids[k] && hass.states[ids[k]]; return s ? s.last_updated : ""; }).join("|") + "#" + this._security().key;
@@ -101,7 +106,8 @@
             <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
-        <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
+        <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
+        <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
       this._$("menu").appendChild(menu);
@@ -270,7 +276,7 @@
 
       // said & noticed
       const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u></div>`
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}</div>`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
@@ -335,7 +341,7 @@
         const [icon, title, sub] = pages[id];
         return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
       };
-      this._$("side").innerHTML = `<div class="sh">SETTINGS</div>` + menus.map(([mid, icon, title, ids]) => {
+      this._$("side").innerHTML = `<div class="sh">SETTINGS</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>SET-UP WIZARD</button>` + menus.map(([mid, icon, title, ids]) => {
         const list = ids.filter((id) => pages[id]);
         if (!list.length) return "";
         const open = this._openMenus.has(mid);
@@ -399,6 +405,112 @@
         wrap.appendChild(form);
         this._form = form;
       });
+    }
+
+    // ---------- set-up wizard ----------
+    async _openWizard(w) {
+      const el = this._$("wiz");
+      el.hidden = false;
+      this._$("wizc").innerHTML = '<div class="e">LOOKING AROUND THE HOUSE…</div>';
+      try {
+        w = w || await this._hass.callWS({ type: "sentient/wizard", language: this._hass.language });
+      } catch (e) {
+        this._$("wizc").innerHTML = `<div class="e">${esc(e.message || e)}</div><div class="wizbar"><button class="btn ghost" data-act="wizlater">CLOSE</button></div>`;
+        return;
+      }
+      this._wiz = { ...w, i: 0, draft: { ...w.data }, backupPipeline: true };
+      this._wizGo(0);
+    }
+
+    _closeWizard() { this._$("wiz").hidden = true; this._wizForm = null; }
+
+    _wizGo(i) {
+      const W = this._wiz, steps = W.steps, last = steps.length;  // one extra step at the end: test & finish
+      W.i = Math.max(0, Math.min(i, last));
+      const dots = [...steps, { title: "Test" }].map((s, n) => `<i class="${n === W.i ? "on" : n < W.i ? "done" : ""}"></i>`).join("");
+      const head = (icon, title, blurb) => `<div class="wizh"><div class="wizdots">${dots}</div><div class="wizn">STEP ${W.i + 1} OF ${last + 1}</div></div>
+        <div class="bh"><ha-icon icon="${icon}"></ha-icon><div><div class="bt">${esc(title).toUpperCase()}</div><div class="bs">${esc(blurb)}</div></div></div>`;
+      const c = this._$("wizc");
+      if (W.i === last) {
+        const persona = W.draft.persona || W.persona;
+        c.innerHTML = head("mdi:check-decagram-outline", "Test & finish", `That's it. Say hello on the speakers to check they work, then finish. Everything can be changed later under Settings.`)
+          + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the AI is down</span></label>` : "")
+          + `<div class="wizres" id="wizres"></div>
+          <div class="wizbar"><button class="btn ghost" data-act="wizback">BACK</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">FINISH</button></div>`;
+        const pipe = this._$("wizpipe");
+        if (pipe) pipe.addEventListener("change", () => { W.backupPipeline = pipe.checked; });
+        this._wizForm = null;
+        return;
+      }
+      const st = steps[W.i];
+      const suggested = st.schema.filter((sc) => (W.suggested || []).includes(sc.name)).length;
+      c.innerHTML = head(st.icon, st.title, st.blurb)
+        + (suggested ? `<div class="wizsug"><ha-icon icon="mdi:auto-fix"></ha-icon>FILLED IN FROM YOUR HOUSE — CHECK AND CHANGE ANYTHING</div>` : "")
+        + `<div class="formwrap" id="wizform"><div class="e">LOADING…</div></div>
+        <div class="wizbar">${W.i ? '<button class="btn ghost" data-act="wizback">BACK</button>' : '<button class="btn ghost" data-act="wizlater">LATER</button>'}<span id="wizst"></span><button class="btn" data-act="wiznext">NEXT</button></div>`;
+      loadForm().then((ok) => {
+        if (this._wiz !== W || W.i !== steps.indexOf(st)) return;
+        const wrap = this._$("wizform");
+        if (!ok) { wrap.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
+        const form = document.createElement("ha-form");
+        form.hass = this._hass;
+        form.schema = st.schema;
+        form.data = W.draft;
+        form.computeLabel = (sc) => W.labels[sc.name] || sc.name;
+        form.computeHelper = (sc) => W.helpers[sc.name] || "";
+        form.localizeValue = (key) => W.selector[key] || key.split(".").pop();
+        form.addEventListener("value-changed", (ev) => { W.draft = { ...ev.detail.value }; form.data = W.draft; });
+        wrap.innerHTML = "";
+        wrap.appendChild(form);
+        this._wizForm = form;
+      });
+    }
+
+    async _wizNext() {
+      const W = this._wiz, st = W.steps[W.i];
+      const data = {};
+      for (const sc of st.schema) { const v = W.draft[sc.name]; if (v !== undefined && v !== null && v !== "") data[sc.name] = v; }
+      const status = this._$("wizst");
+      if (status) { status.textContent = "SAVING…"; status.className = ""; }
+      try {
+        const res = await this._hass.callWS({ type: "sentient/wizard/save", step: st.id, data });
+        W.draft = { ...W.draft, ...res.data };
+        this._settings = null;  // the Settings tab reloads with these
+        this._wizGo(W.i + 1);
+      } catch (e) {
+        if (status) { status.textContent = String(e.message || e).toUpperCase(); status.className = "warn"; }
+      }
+    }
+
+    async _wizTest() {
+      const out = this._$("wizres");
+      out.innerHTML = '<div class="e">SAYING HELLO…</div>';
+      try {
+        const r = await this._hass.callWS({ type: "sentient/wizard/finish", test: true });
+        out.innerHTML = r.spoken
+          ? `<div class="r"><ha-icon icon="mdi:check-circle-outline"></ha-icon><b>Said on ${esc((r.speakers || []).map((s) => (this._hass.states[s] || {}).attributes ? this._hass.states[s].attributes.friendly_name || s : s).join(", "))}</b></div>`
+          : `<div class="r warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>Not said: ${esc(String(r.reason || "").replace(/_/g, " "))}</b></div>`;
+      } catch (e) {
+        out.innerHTML = `<div class="r bad"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${esc(e.message || e)}</b></div>`;
+      }
+    }
+
+    async _wizFinish() {
+      const W = this._wiz;
+      if (W.own_agent && W.backupPipeline) {
+        try {
+          const { pipelines } = await this._hass.callWS({ type: "assist_pipeline/pipeline/list" });
+          const main = W.draft.voice_agent;
+          for (const p of pipelines || []) {
+            if (!main || p.conversation_engine !== main) continue;
+            const { id, ...rest } = p;
+            await this._hass.callWS({ type: "assist_pipeline/pipeline/update", pipeline_id: id, ...rest, conversation_engine: W.own_agent });
+          }
+        } catch (e) { /* the pipeline can be changed by hand */ }
+      }
+      try { await this._hass.callWS({ type: "sentient/wizard/finish" }); } catch (e) { /* closes anyway */ }
+      this._closeWizard();
+      this._render();
     }
 
     _status(text, kind) {
@@ -1045,6 +1157,18 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { this._group = id; this._show("settings", true); }
+      else if (act === "wizard") this._openWizard();
+      else if (act === "wizback") this._wizGo(this._wiz.i - 1);
+      else if (act === "wiznext") this._wizNext();
+      else if (act === "wizlater") this._closeWizard();
+      else if (act === "wiztest") this._wizTest();
+      else if (act === "wizdone") this._wizFinish();
+      else if (act === "thumb") {
+        const up = id === "up";
+        this._thumbs = { ...(this._thumbs || {}), [text]: id };
+        this._hass.callWS({ type: "sentient/feedback/thumb", text, source: el.dataset.src || null, up }).then(() => this._render(), () => {});
+        this._render();
+      }
       else if (act === "menu") {
         if (!this._openMenus) this._openMenus = new Set();
         if (this._openMenus.has(id)) this._openMenus.delete(id); else this._openMenus.add(id);
@@ -1287,6 +1411,18 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .b i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#00a8ff,#00fff7);box-shadow:0 0 6px rgba(0,255,247,.6)}
 .cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;margin-top:16px;align-items:start}
 .stack{display:flex;flex-direction:column;gap:10px}
+.wiz{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px 16px;background:rgba(3,6,14,.78);backdrop-filter:blur(6px);overflow-y:auto}
+.wizc{width:100%;max-width:760px;padding:20px 22px}
+.wizh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.wizdots{display:flex;gap:6px} .wizdots i{width:22px;height:4px;border-radius:2px;background:rgba(0,255,247,.15)} .wizdots i.done{background:rgba(0,255,247,.5)} .wizdots i.on{background:#00fff7;box-shadow:0 0 8px rgba(0,255,247,.7)}
+.wizn{font-size:9.5px;font-weight:700;letter-spacing:.2em;color:rgba(150,220,235,.6)}
+.wizsug{display:flex;align-items:center;gap:8px;margin:12px 0 4px;padding:8px 12px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.14em;color:#7fefff;border:1px dashed rgba(0,255,247,.35);background:rgba(0,255,247,.05)} .wizsug ha-icon{--mdc-icon-size:16px;color:#00fff7}
+.wizbar{display:flex;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(0,255,247,.15)} .wizbar span{flex:1;font-size:10px;font-weight:700;letter-spacing:.14em} .wizbar span.warn{color:#ffb86b}
+.wizbar .btn ha-icon{--mdc-icon-size:14px;vertical-align:-2px}
+.wizchk{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:13px;line-height:1.4;color:#dff6fa;cursor:pointer} .wizchk input{-webkit-appearance:checkbox;appearance:auto;margin-top:3px;accent-color:#00fff7}
+.wizres{margin-top:12px}
+.wizbtn{display:flex;align-items:center;gap:8px;justify-content:center;width:100%;margin:2px 0 10px} .wizbtn ha-icon{--mdc-icon-size:16px}
+.th{width:22px;height:22px;opacity:.55} .th:hover{opacity:1;color:#00fff7} .th ha-icon{--mdc-icon-size:14px} .thd{text-decoration:none;font-size:12px}
 .hint.meter{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,255,247,.1)}
 /* Big screens (tablets, desktops): the overview fits the screen and each column scrolls on its own */
 @media (min-width: 1101px) and (min-height: 600px){

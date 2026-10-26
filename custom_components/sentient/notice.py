@@ -259,9 +259,9 @@ class Noticer:
         record["message"] = decision.get("message")
         if speak:
             self._remarks.append(dt_util.utcnow())
-            if self.feedback is not None:
-                self.feedback.remarked([c.entity_id for c in changes])
             message = decision["message"].strip()
+            if self.feedback is not None:
+                self.feedback.remarked([c.entity_id for c in changes], message)
             if decision.get("question"):
                 result = await self.speech.async_ask(message, source="notice")
             else:
@@ -305,6 +305,9 @@ class Noticer:
                     "People have made it clear they don't want to hear about these unless it really matters "
                     "(needs action, safety, money): " + ", ".join(reluctant) + "."
                 )
+        if self.feedback is not None and self.feedback.liked:
+            lines.append("Remarks people gave a thumbs up to (the kind of thing worth saying):\n"
+                         + "\n".join(f"- {t}" for t in self.feedback.liked[:5]))
         said = self.speech.recent_said(6)
         if said:
             lines.append("What you've said recently (don't repeat yourself):\n" + "\n".join(f"- {s}" for s in said))

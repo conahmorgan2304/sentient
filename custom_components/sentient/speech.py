@@ -300,6 +300,9 @@ class SpeechRouter:
         if priority != PRIORITY_URGENT:
             if self.mutes is not None and (muted := self.mutes.text_muted(text)):
                 return self._held(f"muted:{muted}", text, source)
+            feedback = getattr(self.mutes, "feedback", None) if self.mutes is not None else None
+            if feedback is not None and feedback.source_quiet(source):
+                return self._held("thumbs_down", text, source)
             if self.hushed():
                 return self._held("hushed", text, source, priority)
             if self.quiet_now():

@@ -261,6 +261,10 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
+    websocket_api.async_register_command(hass, ws_thumb)
+    from .wizard import async_register as _wizard
+
+    _wizard(hass)
     websocket_api.async_register_command(hass, ws_save_settings)
     websocket_api.async_register_command(hass, ws_update_memory)
     websocket_api.async_register_command(hass, ws_list_memories)
@@ -293,15 +297,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_motion_night)
 
 
-@websocket_api.websocket_command({vol.Required("type"): "sentient/settings", vol.Optional("language"): str})
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    entry = _entry(hass)
-    if entry is None:
-        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
-        return
-    lang = msg.get("language") or hass.config.language
+async def _labels(hass: HomeAssistant, lang: str) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """Field labels, helper lines and dropdown texts from the translations."""
     options = await async_get_translations(hass, lang, "options", {DOMAIN})
     selectors = await async_get_translations(hass, lang, "selector", {DOMAIN})
     prefix = f"component.{DOMAIN}.options.step."
@@ -313,6 +310,20 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
                 labels[key] = label
             if (helper := options.get(f"{prefix}{step}.data_description.{key}")) and key not in helpers:
                 helpers[key] = helper
+    # "chattiness.options.quiet" -> "Quiet", for the form's dropdowns
+    texts = {k.removeprefix(f"component.{DOMAIN}.selector."): v for k, v in selectors.items()}
+    return labels, helpers, texts
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/settings", vol.Optional("language"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    labels, helpers, selector_texts = await _labels(hass, msg.get("language") or hass.config.language)
     groups = [
         {
             "id": gid, "title": title, "icon": icon, "blurb": blurb,
@@ -327,8 +338,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             "data": _with_defaults(_current(entry)),
             "labels": labels,
             "helpers": helpers,
-            # "chattiness.options.quiet" -> "Quiet", for the form's dropdowns
-            "selector": {k.removeprefix(f"component.{DOMAIN}.selector."): v for k, v in selectors.items()},
+            "selector": selector_texts,
             "categories": MEMORY_CATEGORIES,
         },
     )
@@ -623,6 +633,25 @@ def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     elif msg.get("unlearn"):
         feedback.reset(msg["unlearn"])
     connection.send_result(msg["id"], {"mutes": mutes.listing(), "learned": feedback.listing()})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/feedback/thumb", vol.Required("text"): str, vol.Optional("source"): vol.Any(str, None),
+    vol.Required("up"): bool,
+})
+@callback
+def ws_thumb(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """A thumbs up or down on something it said."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    result = entry.runtime_data.feedback.thumb(msg["text"], msg.get("source"), msg["up"])
+    entry.runtime_data.timeline.add(
+        "learned", f"{'Thumbs up' if msg['up'] else 'Thumbs down'}: {msg['text'][:120]}",
+        ("about " + ", ".join(result["about"])) if result["about"] else None,
+    )
+    connection.send_result(msg["id"], result)
 
 
 # ----- named routines -------------------------------------------------------------

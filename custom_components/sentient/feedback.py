@@ -5,7 +5,10 @@ Signals, all free (no AI):
 * someone shushes a thing ("stop telling me about the washing machine");
 * someone hushes the house within a couple of minutes of a remark — taken as
   "not that again" for whatever the remark was about;
-* a learned routine or habit offered for something is declined or deleted.
+* a learned routine or habit offered for something is declined or deleted;
+* a thumbs down on something it said (the sidebar page) — about the things the remark was about, or,
+  for its own kinds of remark (appliances, morning thoughts, welcomes…), that kind. A thumbs up takes
+  a point off and is kept as an example of what people like hearing.
 
 Each signal adds to a score per thing, which fades by half every month, so
 nothing is held against it for ever. Unshushing takes the score back down.
@@ -36,6 +39,10 @@ NO_MORE_OFFERS = 2.0
 HUSH_AFTER_REMARK = timedelta(minutes=2)
 
 SHUSHED = 1.5
+THUMB = 1.0
+# kinds of remark a thumbs down can quieten as a whole (never safety, alarms, the doorbell or briefings asked for)
+QUIETENABLE = ("notice", "thought", "welcome", "appliance", "animals", "autooff", "learning", "curious",
+               "followup", "reflection", "offer:")
 HUSHED_AFTER = 1.0
 DECLINED = 1.0
 DELETED = 1.5
@@ -49,13 +56,17 @@ class Feedback:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.feedback")
         self.items: dict[str, dict[str, Any]] = {}  # "kind|entity_id" -> {score, updated, why}
         self.last_remark: tuple[datetime, list[str]] | None = None
+        self.about: dict[str, list[str]] = {}  # recent remark text -> what it was about
+        self.liked: list[str] = []  # remarks given a thumbs up
 
     async def async_load(self) -> None:
-        self.items = (await self._store.async_load() or {}).get("items", {})
+        data = await self._store.async_load() or {}
+        self.items = data.get("items", {})
+        self.liked = list(data.get("liked") or [])
 
     @callback
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"items": self.items}, 2)
+        self._store.async_delay_save(lambda: {"items": self.items, "liked": self.liked}, 2)
 
     @staticmethod
     def _faded(item: dict[str, Any], now: datetime) -> float:
@@ -91,8 +102,41 @@ class Feedback:
 
     # ----- signals ------------------------------------------------------------------
     @callback
-    def remarked(self, entity_ids: list[str]) -> None:
+    def remarked(self, entity_ids: list[str], text: str | None = None) -> None:
         self.last_remark = (dt_util.utcnow(), entity_ids)
+        if text:
+            self.about[" ".join(text.split())] = list(entity_ids)
+            while len(self.about) > 40:
+                self.about.pop(next(iter(self.about)))
+
+    @staticmethod
+    def quietenable(source: str | None) -> bool:
+        return bool(source) and source.startswith(QUIETENABLE)
+
+    def source_quiet(self, source: str | None) -> bool:
+        """A kind of remark people have given enough thumbs down to: not said any more."""
+        return self.quietenable(source) and self.score(f"source:{source}") >= QUIET - 0.05  # three thumbs down
+
+    @callback
+    def thumb(self, text: str, source: str | None, up: bool) -> dict[str, Any]:
+        """A thumbs up or down from the page on something that was said."""
+        text = " ".join((text or "").split())
+        weight = -THUMB if up else THUMB
+        why = "thumbs up" if up else "thumbs down"
+        if up and text:
+            self.liked = ([text] + [t for t in self.liked if t != text])[:8]
+        entities = self.about.get(text) or []
+        if entities:
+            for entity_id in entities:
+                self.record(entity_id, weight, why)
+            about = [st.name if (st := self.hass.states.get(e)) else e for e in entities]
+        elif self.quietenable(source):
+            self.record(f"source:{source}", weight, why)
+            about = [source]
+        else:
+            about = []
+        self._save()
+        return {"about": about, "up": up}
 
     @callback
     def hushed(self) -> list[str]:
@@ -117,12 +161,13 @@ class Feedback:
             if score < 0.5:
                 continue
             st = self.hass.states.get(entity_id)
+            name = st.name if st else (f"{entity_id[7:].replace(':', ' — ')} remarks" if entity_id.startswith("source:") else entity_id)
             if kind == "offers":
                 effect = "no more offers" if score >= NO_MORE_OFFERS else "fewer offers"
             else:
                 effect = "not mentioned" if score >= QUIET else "only if it matters" if score >= IMPORTANT_ONLY else "noted"
             out.append({
-                "key": key, "kind": kind, "entity_id": entity_id, "name": st.name if st else entity_id,
+                "key": key, "kind": kind, "entity_id": entity_id, "name": name,
                 "score": round(score, 1), "effect": effect, "why": item.get("why", []),
             })
         return sorted(out, key=lambda i: i["score"], reverse=True)
