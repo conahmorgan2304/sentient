@@ -16,6 +16,7 @@ from homeassistant.helpers import llm
 
 from .const import (
     DOMAIN,
+    EVENT_MODE_CHANGED,
     PARTY_STYLES,
     MEMORY_CATEGORIES,
     PRIORITIES,
@@ -354,6 +355,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
+    hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
     if "frontend" in hass.config.components:
