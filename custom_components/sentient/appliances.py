@@ -3,7 +3,7 @@
 Watches the appliances chosen in Settings — or, if none are chosen, every robot vacuum and any power
 sensor whose name says washing machine, dryer or dishwasher. An appliance is running while:
 * a power sensor reads more than a few watts (5 W by default) — finished once it has stayed below
-  that for five minutes (so a pause mid-wash doesn't count);
+  that for five minutes (so a pause mid-wash doesn't count; half a minute for short runs like a kettle);
 * anything else is in a working state (on, running, cleaning, washing, heating…) — finished when it
   goes back to rest.
 
@@ -44,7 +44,9 @@ RESTING = {"off", "idle", "standby", "docked", "stopped", "done", "complete", "c
 IGNORED = {"unavailable", "unknown"}
 ERROR = {"error", "fault", "stuck", "jammed"}
 MIN_RUN = timedelta(minutes=2)
-POWER_SETTLE = timedelta(minutes=5)
+POWER_SETTLE = timedelta(minutes=5)  # a long run (a wash) may pause: wait this long before calling it done
+SHORT_SETTLE = timedelta(seconds=30)  # a short run (a kettle) is done when it's done
+LONG_RUN = timedelta(minutes=15)
 KEEP_RUNS = 20
 STUCK_FACTOR = 1.5
 STUCK_EXTRA = timedelta(minutes=20)
@@ -163,7 +165,9 @@ class Appliances:
     def _tick(self, now: datetime) -> None:
         now = dt_util.as_utc(now)
         for entity_id, since in list(self._low.items()):
-            if now - since >= POWER_SETTLE:
+            started = dt_util.parse_datetime(self.running.get(entity_id) or "")
+            settle = POWER_SETTLE if started is None or since - started > LONG_RUN else SHORT_SETTLE
+            if now - since >= settle:
                 self._low.pop(entity_id, None)
                 if entity_id in self.running:
                     self._finish(entity_id, since)
