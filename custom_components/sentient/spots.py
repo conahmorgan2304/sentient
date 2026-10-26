@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
 
+from .ai import async_generate
 from .const import CONF_AI_TASK_ENTITY, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -147,9 +148,7 @@ class Spots:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        response = await async_generate(self.hass, data)
         result = (response or {}).get("data") or {}
         if not isinstance(result, dict) or not result.get("found"):
             raise HomeAssistantError(f"I couldn't see {name} on that camera")

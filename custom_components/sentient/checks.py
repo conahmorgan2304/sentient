@@ -15,6 +15,7 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import CONF_AI_TASK_ENTITY
 from .items import Items
 from .kinds import in_windows
@@ -73,7 +74,7 @@ class CameraChecks:
         camera = check.get("camera")
         if not camera or self.hass.states.get(camera) is None:
             return {"error": "That camera isn't available"}
-        if not force and not rt.watches.spend():
+        if not rt.watches.spend("camera checks", force=force):
             return {"skipped": "daily AI limit reached"}
         self._busy.add(check["id"])
         self.items.update(check["id"], last=dt_util.utcnow().isoformat())
@@ -92,7 +93,7 @@ class CameraChecks:
             }
             if ai := rt.options.get(CONF_AI_TASK_ENTITY):
                 data["entity_id"] = ai
-            response = await self.hass.services.async_call("ai_task", "generate_data", data, blocking=True, return_response=True)
+            response = await async_generate(self.hass, data)
             result = (response or {}).get("data") or {}
         except (HomeAssistantError, Exception) as err:  # noqa: BLE001
             _LOGGER.warning("Camera check %s failed: %s", check["name"], err)

@@ -21,6 +21,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_HOUSE_RULES,
@@ -102,7 +103,7 @@ class Reflection:
     async def async_reflect(self) -> dict[str, Any]:
         rt = self._rt()
         log, talk = self._material(rt)
-        result: dict[str, Any] = {"time": dt_util.utcnow().isoformat(), "memories": [], "thoughts": [], "question": None}
+        result: dict[str, Any] = {"time": dt_util.utcnow().isoformat(), "memories": [], "thoughts": [], "question": None, "lessons": []}
         if not log and not talk:
             result["note"] = "a quiet day: nothing to think over"
             self._keep(result)
@@ -125,6 +126,9 @@ class Reflection:
             "answer in a few words and that would help you look after the house — about one pattern, time, person or "
             "device you saw (e.g. 'who's the man who calls on Tuesday mornings?', 'what's the garage light for at "
             "7pm?'). Never a general or security worry, never something already known. Usually empty.\n"
+            "4. lessons: corrections people made to you in the conversations ('no, I meant the lamp', 'not that "
+            "room') worth remembering so it never happens again — one short sentence each, saying what was meant "
+            "(e.g. 'In the living room, \"the light\" means the lamp.'). Skip any already known. Usually none.\n"
             "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + "\n\nAlready known:\n" + "\n".join(f"- {k}" for k in known[:60])
@@ -141,14 +145,17 @@ class Reflection:
                              "selector": {"text": {"multiple": True}}},
                 "question": {"description": "One curious question, or empty", "required": False,
                              "selector": {"text": {}}},
+                "lessons": {"description": "Corrections worth remembering (often none)", "required": False,
+                            "selector": {"text": {"multiple": True}}},
             },
         }
         if ai_entity := rt.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        rt.watches.spend()
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        if not rt.watches.spend("overnight"):
+            result["note"] = "today's AI limit was used up: no reflection tonight"
+            self._keep(result)
+            return result
+        response = await async_generate(self.hass, data)
         out = (response or {}).get("data") or {}
         if not isinstance(out, dict):
             out = {}
@@ -165,6 +172,12 @@ class Reflection:
                 result["memories"].append(rt.memory.add(text, "fact", source="reflection").text)
             except ValueError:
                 pass
+        result["lessons"] = []
+        for text in _list(out.get("lessons"))[:3]:
+            try:
+                result["lessons"].append(rt.memory.add(text, "correction", source="reflection").text)
+            except ValueError:
+                pass
         result["thoughts"] = _list(out.get("thoughts"))[:MAX_THOUGHTS]
         question = " ".join(str(out.get("question") or "").split())
         if question and rt.curiosity.wonder(question, why="overnight reflection", source="reflection"):
@@ -179,6 +192,7 @@ class Reflection:
                 f"{len(result['memories'])} new memor{'y' if len(result['memories']) == 1 else 'ies'}" if result["memories"] else "",
                 " ".join(result["thoughts"]),
                 f"wondering: {result['question']}" if result["question"] else "",
+                f"learned from {len(result['lessons'])} correction{'s' if len(result['lessons']) > 1 else ''}" if result["lessons"] else "",
             ) if p
         )
         rt.timeline.add("mind", summary or "Thought over the day — nothing to add.", "overnight reflection")

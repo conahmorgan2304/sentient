@@ -133,6 +133,7 @@ class SpeechRouter:
         self.options = options
         self.tracker = tracker
         self._recent: dict[str, datetime] = {}
+        self.failures: dict[str, tuple[datetime, str]] = {}  # speaker group -> (when it last failed, why)
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
@@ -358,8 +359,9 @@ class SpeechRouter:
         so the volume isn't put back mid-sentence."""
         sats = [s for s in speakers if s.startswith("assist_satellite.")]
         players = [s for s in speakers if s.startswith("media_player.")]
-        calls = []
+        calls, labels = [], []
         if sats:
+            labels.append("the voice speakers")
             calls.append(self.hass.services.async_call(
                 "assist_satellite", "announce", {"message": text, "preannounce": self.chime},
                 target={"entity_id": sats}, blocking=True,
@@ -367,17 +369,25 @@ class SpeechRouter:
         alexa = [p for p in players if _platform(self.hass, p) == "alexa_media"]
         others = [p for p in players if p not in alexa]
         if alexa and self.hass.services.has_service("notify", "alexa_media"):
+            labels.append("the Echo speakers")
             calls.append(self.hass.services.async_call(
                 "notify", "alexa_media",
                 {"message": text, "target": alexa, "data": {"type": "announce" if self.chime else "tts"}},
                 blocking=True,
             ))
         if others and (tts := self.options.get(CONF_TTS_ENTITY)):
+            labels.append("the other speakers")
             calls.append(self.hass.services.async_call(
                 "tts", "speak", {"media_player_entity_id": others, "message": text, "cache": True},
                 target={"entity_id": tts}, blocking=True,
             ))
         results = await asyncio.gather(*calls, return_exceptions=True)
+        now = dt_util.utcnow()
+        for label, r in zip(labels, results):  # the self-check shows a group that keeps failing
+            if isinstance(r, Exception):
+                self.failures[label] = (now, (str(r) or type(r).__name__)[:160])
+            else:
+                self.failures.pop(label, None)
         errors = [r for r in results if isinstance(r, Exception)]
         if errors and len(errors) == len(results):
             raise errors[0]

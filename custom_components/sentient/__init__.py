@@ -15,6 +15,8 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
+from .ai import AIGate
+from .appliances import Appliances
 from .const import (
     DOMAIN,
     EVENT_MODE_CHANGED,
@@ -130,6 +132,8 @@ class SentientRuntime:
     autooff: AutoOff
     foresight: Foresight
     sleep: Sleep
+    ai: AIGate
+    appliances: Appliances
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -295,7 +299,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await tracker.async_start()
     entry.async_on_unload(tracker.async_stop)
     speech = SpeechRouter(hass, options, tracker)
+    ai = AIGate(hass, entry.entry_id, options)
+    await ai.async_start()
     watches = WatchManager(hass, entry.entry_id, options, speech)
+    watches.gate = ai
     spots = Spots(hass, entry.entry_id, options)
     await spots.async_load()
     watches.spots = spots
@@ -314,7 +321,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     upkeep = Upkeep(hass, lambda: entry.runtime_data)
     upkeep.async_start()
     entry.async_on_unload(upkeep.async_stop)
-    health = HouseHealth(hass, options)
+    health = HouseHealth(hass, options, lambda: entry.runtime_data)
     health.async_start()
     entry.async_on_unload(health.async_stop)
     visitors = Visitors(hass, entry.entry_id, options, speech, watches)
@@ -365,6 +372,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     drive = Drive(hass, entry.entry_id, options, get_rt)
     foresight = Foresight(hass, options, get_rt)
     sleep = Sleep(hass, entry.entry_id, options, get_rt)
+    appliances = Appliances(hass, entry.entry_id, options, get_rt)
+    noticer.skip = lambda: set(appliances.watched())  # appliances say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
@@ -378,8 +387,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
+        ai=ai, appliances=appliances,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -442,7 +452,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show

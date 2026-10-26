@@ -26,7 +26,7 @@
           "ai_task_entity": "AI for camera checks",
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
-          "daily_ai_limit": "Camera checks per day",
+          "daily_ai_limit": "AI calls per day",
           "notice_entities": "Things to notice",
           "chattiness": "How chatty",
           "house_rules": "House rules",
@@ -55,7 +55,7 @@
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
-          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
+          "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
@@ -106,7 +106,7 @@
           "ai_task_entity": "AI for camera checks",
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
-          "daily_ai_limit": "Camera checks per day",
+          "daily_ai_limit": "AI calls per day",
           "notice_entities": "Things to notice",
           "chattiness": "How chatty",
           "house_rules": "House rules",
@@ -187,7 +187,10 @@
           "sleep_minutes": "Asleep after nothing's moved for",
           "bedtime_routines": "Bedtime routines",
           "sleep_actions": "When the house goes to sleep, do",
-          "wake_actions": "When someone's up, do"
+          "wake_actions": "When someone's up, do",
+          "appliances": "Appliances to follow",
+          "appliance_announce": "Say when they finish",
+          "appliance_watts": "Running above"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -198,7 +201,7 @@
           "ai_task_entity": "Used by camera watches. Leave empty to use Home Assistant's preferred AI task.",
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
-          "daily_ai_limit": "Background camera checks stop for the day after this many. Questions you ask still get answered.",
+          "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
@@ -276,7 +279,10 @@
           "sleep_detection": "Asleep after a bedtime routine, or in quiet hours once nothing inside has moved for a while. Awake in the morning when there's movement in two rooms (or a light switched on by hand). A House sensor shows it.",
           "bedtime_routines": "Routines that mean everyone's gone to bed, comma separated. Empty: any routine with 'night' or 'bed' in its name.",
           "sleep_actions": "e.g. tablet screens off, the Echo speakers switch off.",
-          "wake_actions": "e.g. the Echo speakers back on, the hallway light on low."
+          "wake_actions": "e.g. the Echo speakers back on, the hallway light on low.",
+          "appliances": "Washing machine, dryer, dishwasher, hoover — their power sensor or status. Leave empty to follow every robot vacuum and any power sensor named washing machine, dryer or dishwasher.",
+          "appliance_announce": "Says “the washing machine's finished” where people are, and when one is taking far longer than usual. Plain words, no AI.",
+          "appliance_watts": "For power sensors: running while above this, finished once it's stayed below for five minutes."
         }
       },
       "memories": {
@@ -390,7 +396,8 @@
         "preference": "Preference",
         "person": "Person",
         "routine": "Routine",
-        "note": "Note"
+        "note": "Note",
+        "correction": "Correction"
       }
     },
     "chattiness": {

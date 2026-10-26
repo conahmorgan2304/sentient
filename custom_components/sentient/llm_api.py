@@ -86,6 +86,28 @@ class RememberTool(_Tool):
         return {"saved": memory.text, "id": memory.id}
 
 
+class CorrectionTool(_Tool):
+    name = "sentient_correction"
+    description = (
+        "When someone corrects you — 'no, I meant the lamp', 'not that one', 'that's the wrong room', "
+        "'I said the girls' room' — first put it right, then call this with one short lesson so it never "
+        "happens again, in any room or voice. Say what was meant, and where if it matters, e.g. "
+        "'In the living room, \"the light\" means the lamp, not the ceiling light.' or "
+        "'\"The big light\" means the ceiling light.' Not for ordinary facts — use sentient_remember for those."
+    )
+    parameters = vol.Schema({vol.Required("lesson"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        memory = rt.memory.add(tool_input.tool_args["lesson"], "correction", source=llm_context.platform)
+        rt.timeline.add("learned", f"Corrected: {memory.text}", "from a conversation")
+        return {"learned": memory.text}
+
+
 class RecallTool(_Tool):
     annotations = _read_only()
     name = "sentient_recall"
@@ -586,7 +608,7 @@ class SpotTool(_Tool):
         camera = resolve_entity(hass, args.get("camera") or "", "camera")
         if camera is None or not camera.startswith("camera."):
             return {"error": "Which camera is it on?"}
-        rt.watches.spend()
+        rt.watches.spend("question", force=True)
         try:
             spot = await rt.spots.async_learn(camera, args["name"])
         except HomeAssistantError as err:
@@ -941,7 +963,7 @@ class SentientAPI(llm.API):
             api=self,
             api_prompt=self._prompt(llm_context, conversation_id),
             llm_context=llm_context,
-            tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+            tools=[RememberTool(), CorrectionTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
@@ -982,7 +1004,12 @@ class SentientAPI(llm.API):
             lines.append("The house has been asked to stay quiet: keep replies short and don't announce anything.")
         elif rt.speech.quiet_now():
             lines.append("It is quiet hours: keep replies short and don't announce elsewhere unless urgent.")
-        memories = rt.memory.recent(int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)))
+        lessons = [m for m in rt.memory.items if m.category == "correction"][-15:]
+        if lessons:
+            lines.append("You've been corrected on these before — get them right first time:")
+            lines.extend(f"- {m.text}" for m in lessons)
+        memories = [m for m in rt.memory.recent(int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)) + len(lessons))
+                    if m.category != "correction"][: int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES))]
         if memories:
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
@@ -1045,6 +1072,12 @@ class SentientAPI(llm.API):
             "promise to remember."
         )
         lines.append("When someone asks why something happened or who did it, use sentient_why rather than guessing.")
+        lines.append("When someone corrects you, put it right and save the lesson with sentient_correction.")
+        if gate := getattr(rt, "ai", None):
+            if gate.failing or gate.capped:
+                lines.append("The house's background AI is unavailable right now, so its own remarks are in plain words.")
+        if running := rt.appliances.prompt_line():
+            lines.append(running)
         lines.append(
             "When you start something that takes a while to show results (heating, a wash, a delivery), set a "
             "sentient_follow_up so you check back and say how it went."

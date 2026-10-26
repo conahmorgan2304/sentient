@@ -28,6 +28,7 @@ from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     personality_line,
     CONF_AI_TASK_ENTITY,
@@ -116,6 +117,7 @@ class Noticer:
         self.speech = speech
         self.memory = memory
         self.watches = watches
+        self.skip: Any = None  # () -> entity ids handled elsewhere (appliances)
         self._pending: list[Change] = []
         self._last_seen: dict[str, datetime] = {}
         self._remarks: deque[datetime] = deque(maxlen=50)
@@ -153,6 +155,8 @@ class Noticer:
         new = event.data["new_state"]
         if new is None or new.entity_id not in self.entities or self.per_hour <= 0:
             return
+        if self.skip is not None and new.entity_id in self.skip():
+            return  # an appliance: it says when it's finished itself, in plain words
         if self.speech.mutes is not None and self.speech.mutes.entity_muted(new.entity_id):
             return
         if self.feedback is not None and self.feedback.remark_level(new.entity_id) == "quiet":
@@ -237,7 +241,7 @@ class Noticer:
         if reason := self._free_rules():
             record["result"] = f"skipped: {reason}"
             return record
-        if not self.watches.spend():
+        if not self.watches.spend("noticing"):
             record["result"] = "skipped: daily AI limit reached"
             return record
         try:
@@ -341,8 +345,6 @@ class Noticer:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        response = await async_generate(self.hass, data)
         result = (response or {}).get("data") or {}
         return result if isinstance(result, dict) else {}

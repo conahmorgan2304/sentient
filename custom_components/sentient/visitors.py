@@ -28,6 +28,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_ANNOUNCE_VISITORS,
@@ -183,7 +184,7 @@ class Visitors:
     async def async_doorstep_check(self) -> bool | None:
         """Look once for a parcel left by someone who didn't ring. Returns whether one is there."""
         self._doorstep_pending = False
-        if self._busy or not self.camera or not self.watches.spend():
+        if self._busy or not self.camera or not self.watches.spend("doorbell"):
             return None
         self._doorstep_last = dt_util.utcnow()
         self._busy = True
@@ -235,22 +236,18 @@ class Visitors:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        response = await async_generate(self.hass, data)
         result = (response or {}).get("data")
         return result if isinstance(result, dict) else {}
 
     async def async_visit(self, trigger: str | None = None) -> dict[str, Any] | None:
         if self._busy:
             return None
-        if not self.watches.spend():
-            _LOGGER.debug("Visitor not described: daily AI limit reached")
-            return None
+        look = self.watches.spend("doorbell")  # today's limit used up: still logged and said, in plain words
         self._busy = True
         try:
             await asyncio.sleep(1)
-            result = await self._look(
+            result = {} if not look else await self._look(
                 "Sentient: who's at the door",
                 "This is a doorbell camera picture taken as the bell rang. Describe who is at the door "
                 "in a few plain words (e.g. 'a delivery driver holding a small parcel', 'a man in a "
@@ -266,8 +263,8 @@ class Visitors:
                 },
             )
         except HomeAssistantError as err:
-            _LOGGER.warning("Sentient could not look at the door: %s", err)
-            return None
+            _LOGGER.info("Sentient couldn't look at the door, so it's plain: %s", err)
+            result = {}
         finally:
             self._busy = False
         kind = result.get("kind") if result.get("kind") in KINDS else "unknown"
@@ -284,7 +281,8 @@ class Visitors:
         self.log.appendleft(visit)
         self._save()
         if self.options.get(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS) and kind != "nobody":
-            line = f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
+            line = (f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
+                    if result.get("description") else "Someone's at the door.")
             await self.speech.async_say(line, "normal", None, source="visitors")
         if (kind == "delivery" or visit["parcel"]) and self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS):
             @callback
@@ -295,7 +293,7 @@ class Visitors:
         return visit
 
     async def _async_parcel_check(self, visit: dict[str, Any]) -> None:
-        if not self.watches.spend():
+        if not self.watches.spend("doorbell"):
             return
         try:
             result = await self._look(

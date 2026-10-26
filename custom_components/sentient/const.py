@@ -43,6 +43,9 @@ DEFAULT_NOTIFY_WHEN = ["critical", "security", "urgent", "unheard", "visitors"]
 CONF_CAMERA_COOLDOWN = "camera_cooldown"
 CONF_FALLBACK_SPEAKERS = "fallback_speakers"
 CONF_DAILY_AI_LIMIT = "daily_ai_limit"
+CONF_APPLIANCES = "appliances"
+CONF_APPLIANCE_ANNOUNCE = "appliance_announce"
+CONF_APPLIANCE_WATTS = "appliance_watts"
 CONF_NOTICE_ENTITIES = "notice_entities"
 CONF_CHATTINESS = "chattiness"
 CONF_HOUSE_RULES = "house_rules"
@@ -76,7 +79,8 @@ DEFAULT_BANNED_WORDS = "sir, madam"
 DEFAULT_SUPPRESS_SECONDS = 60
 DEFAULT_PROMPT_MEMORIES = 25
 DEFAULT_ALL_OCCUPIED = True
-DEFAULT_DAILY_AI_LIMIT = 100  # background camera checks per day
+DEFAULT_DAILY_AI_LIMIT = 100  # background AI calls per day (0 = no limit)
+DEFAULT_APPLIANCE_WATTS = 5
 DEFAULT_CHATTINESS = "quiet"
 DEFAULT_SUGGEST_ROUTINES = True
 DEFAULT_ANNOUNCE_VISITORS = False
@@ -126,7 +130,7 @@ EVENT_HEALTH_CHANGED = f"{DOMAIN}_health_changed"
 EVENT_MODE_CHANGED = f"{DOMAIN}_mode_changed"
 
 # Memory
-MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note"]
+MEMORY_CATEGORIES = ["fact", "preference", "person", "routine", "note", "correction"]
 MEMORY_STORAGE_VERSION = 1
 MEMORY_MAX_ITEMS = 500
 

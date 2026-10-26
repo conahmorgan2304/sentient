@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
+from .ai import AIUnavailable, async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_BRIEFING_CALENDARS,
@@ -30,6 +31,23 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
+
+def plain_heads_up(facts: dict[str, Any]) -> str:
+    """Tomorrow without the AI: only frost and an early start are worth a word."""
+    out: list[str] = []
+    weather = facts.get("weather") or {}
+    try:
+        low = float(weather.get("templow"))
+    except (TypeError, ValueError):
+        low = None
+    if low is not None and low <= 1:
+        out.append("Frost's forecast for tomorrow morning, so the car may need defrosting.")
+    early = [e for e in facts.get("calendar") or [] if e[:2].isdigit() and e[:5] < "09:30"]
+    if early:
+        when, _, what = early[0].partition(" ")
+        out.append(f"Early start tomorrow: {what or 'something'} at {when}.")
+    return " ".join(out)
 
 class Foresight:
     def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
@@ -145,9 +163,15 @@ class Foresight:
         }
         if ai := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
-        rt.watches.spend()
-        response = await self.hass.services.async_call("ai_task", "generate_data", data, blocking=True, return_response=True)
-        out = (response or {}).get("data") or {}
+        try:
+            if not rt.watches.spend("tomorrow"):
+                raise AIUnavailable("today's AI limit is used up")
+            response = await async_generate(self.hass, data)
+            out = (response or {}).get("data") or {}
+        except AIUnavailable as err:  # plain rules instead: frost, and an early start
+            _LOGGER.debug("Look at tomorrow in plain rules: %s", err)
+            plain = plain_heads_up(facts)
+            out = {"speak": bool(plain), "message": plain}
         message = " ".join(str(out.get("message") or "").split()) if isinstance(out, dict) else ""
         if isinstance(out, dict) and out.get("speak") in (True, "true", "yes") and message:
             result["said"] = message

@@ -103,6 +103,9 @@ from .const import (
     CONF_CHAT_AGENT,
     CONF_CHATTINESS,
     CONF_DAILY_AI_LIMIT,
+    CONF_APPLIANCES,
+    CONF_APPLIANCE_ANNOUNCE,
+    CONF_APPLIANCE_WATTS,
     CONF_DEFAULT_SPEAKER,
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
@@ -162,7 +165,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
-        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN, CONF_DAILY_AI_LIMIT,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN,
@@ -174,8 +177,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
         CONF_PARTY_SOUND, CONF_PARTY_SOUND_SWITCH, CONF_PARTY_SHOW,
     ]),
-    ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, and a look at tomorrow each evening.", [
+    ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
+        CONF_DAILY_AI_LIMIT,
+    ]),
+    ("appliances", "Appliances", "mdi:washing-machine", "How long things normally run: says when one's finished, or seems stuck — in plain words, no AI.", [
+        CONF_APPLIANCES, CONF_APPLIANCE_ANNOUNCE, CONF_APPLIANCE_WATTS,
     ]),
     ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
         CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS,

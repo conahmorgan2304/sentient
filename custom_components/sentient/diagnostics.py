@@ -24,7 +24,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
             async_redact_data({**w.summary(), "entity_id": w.entity_id, "wakes_on": w.triggers, "spot": w.spot}, TO_REDACT)
             for w in rt.watches.watches
         ],
-        "ai_checks_today": rt.watches.ai_checks_today,
+        "ai": rt.ai.describe(),
         "noticing": [async_redact_data(d, {"changes", "message"}) for d in list(rt.noticer.decisions)[:10]],
         "routines": [
             {"entity_id": r.entity_id, "state": r.state, "days": getattr(r, "days", "link"), "support": r.support,

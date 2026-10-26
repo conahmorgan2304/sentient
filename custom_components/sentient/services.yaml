@@ -27,7 +27,7 @@ remember:
       default: fact
       selector:
         select:
-          options: [fact, preference, person, routine, note]
+          options: [fact, preference, person, routine, note, correction]
           translation_key: category
 forget:
   fields:

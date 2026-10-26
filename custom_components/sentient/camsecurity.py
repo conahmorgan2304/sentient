@@ -26,6 +26,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_CAMSEC,
@@ -207,7 +208,7 @@ class CameraSecurity:
         local = dt_util.as_local(dt_util.utcnow())
         detail = None
         camera = camera_for(self.hass, sensor)
-        if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend():
+        if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
             detail = await self._describe(camera)
         rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True)
         if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
@@ -225,7 +226,7 @@ class CameraSecurity:
         if ai := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
         try:
-            response = await self.hass.services.async_call("ai_task", "generate_data", data, blocking=True, return_response=True)
+            response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("No description: %s", err)
             return None

@@ -15,7 +15,7 @@
     if (m == null) return "LIVE";
     return m >= 60 ? `${Math.floor(m / 60)}H ${m % 60}M` : `${m} MIN`;
   };
-  const CAT_ICON = { fact: "mdi:information-outline", preference: "mdi:heart-outline", person: "mdi:account-outline", routine: "mdi:calendar-clock", note: "mdi:note-text-outline" };
+  const CAT_ICON = { fact: "mdi:information-outline", preference: "mdi:heart-outline", person: "mdi:account-outline", routine: "mdi:calendar-clock", note: "mdi:note-text-outline", correction: "mdi:school-outline" };
 
   // ha-form is lazy-loaded by the frontend; opening a card editor pulls it (and the selectors) in.
   let formReady;
@@ -97,8 +97,8 @@
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div>
           <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
-            <div id="rout" class="col stack"></div>
-            <div class="col stack"><div id="mind" class="card"></div><div id="energy" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
+            <div class="col stack"><div id="mind" class="card"></div><div id="rout" class="stack"></div></div>
+            <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
@@ -169,11 +169,13 @@
         `<div class="b"><span>${esc(k).toUpperCase()}</span><div><i style="width:${Math.round((v / top) * 100)}%"></i></div></div>`).join("");
       const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${go}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
       const st = (k) => (this._st(k) ? this._st(k).state : "—");
+      const ai = ((this._st("mind") || {}).attributes || {}).ai || {};
+      const aiTxt = ai.failing ? "AI NOT ANSWERING · PLAIN WORDS" : ai.capped ? "AI LIMIT REACHED · PLAIN WORDS" : `AI ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} TODAY`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
-          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${this._attr("likely_room", "ai_checks_today", 0)} AI CHECKS TODAY</div>
+          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
           <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
-          <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS TODAY")}${stat(st("health"), "PROBLEMS")}</div></div>
+          <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI CALLS / ${ai.limit}` : "AI CALLS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
       // routines
@@ -182,7 +184,7 @@
       const gone = this._attr("routines", "deleted", []);
       const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} DELETED · BRING BACK</a>` : "";
       R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}${back}</div>` +
-        (routines.slice(0, 8).map((r) => {
+        (routines.slice(0, 6).map((r) => {
           const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
@@ -227,8 +229,13 @@
 
       // house health
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
+      const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE${i.since ? " · " + (Date.now() - new Date(i.since) > 864e5 ? day(i.since) : hm(i.since)) : ""}</u></div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
+        : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
+        : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
+        : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
+        : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
       R("health").innerHTML = this._h("HOUSE HEALTH", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "ALL GOOD")
@@ -244,22 +251,25 @@
         ...(mind.follow_ups || []).map((f) => `<div class="r"><ha-icon icon="mdi:sync"></ha-icon><b>Check back: ${esc(f.about)}</b><u>${esc(f.at)}</u>
           <a class="x" data-act="fux" data-id="${esc(f.id)}" data-text="${esc(f.about)}" title="Cancel">✕</a></div>`),
         ...(mind.to_pass_on || []).map((t) => `<div class="r dim"><ha-icon icon="mdi:account-arrow-right-outline"></ha-icon><b>${esc(t)}</b><u>TO PASS ON</u></div>`),
+        ...(mind.lessons || []).slice(-2).map((t) => `<div class="r dim"><ha-icon icon="mdi:school-outline"></ha-icon><b>${esc(t)}</b><u>LESSON</u></div>`),
         ...(mind.recent_conversations || []).slice(0, 3).map((c) => `<div class="r dim"><ha-icon icon="mdi:chat-outline"></ha-icon>
           <b>${esc(((c.conversation || [])[0] || "").replace(/^They: /, ""))}</b><u>${esc(String(c.when || "").split(" ").pop())}${c.room ? " · " + esc(c.room).toUpperCase() : ""}</u></div>`),
       ].join("");
       const mindCount = (mind.wondering || []).length + (mind.follow_ups || []).length;
       R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`)
-        + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>');
+        + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
+        + (ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
+      this._drawAppliances(mind.appliances || []);
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
-      R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 5).map((v) =>
+      R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 4).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">NO ONE AT THE DOOR YET</div>');
 
       // said & noticed
-      const log = this._attr("last_spoken", "log", []).slice(0, 6).map((l) => l.said
+      const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
         ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u></div>`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
@@ -313,7 +323,7 @@
         ["voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
         ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
         ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "motion", "party", "heating", "energy"]],
+        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "motion", "party", "heating", "energy"]],
         ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));
@@ -342,7 +352,7 @@
         this._memories = res.items; this._cats = res.categories; this._admin = res.admin;
       } catch (e) {
         this._memories = this._attr("memories", "items", []);
-        this._cats = ["fact", "preference", "person", "routine", "note"];
+        this._cats = ["fact", "preference", "person", "routine", "note", "correction"];
       }
       if (this._view === "settings") { this._drawSide(); if (this._group === "memories") this._drawMemories(); }
     }
@@ -776,6 +786,21 @@
         + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
     }
 
+    _drawAppliances(list) {
+      const el = this._$("apl");
+      if (!el) return;
+      if (!list.length) { el.hidden = true; return; }
+      el.hidden = false;
+      const dur = (m) => (m >= 60 ? `${Math.floor(m / 60)}H${m % 60 ? " " + (m % 60) + "M" : ""}` : `${m} MIN`);
+      const running = list.filter((a) => a.running).length;
+      el.innerHTML = this._h("APPLIANCES", running ? `${running} RUNNING` : "ALL IDLE") + list.slice(0, 6).map((a) => {
+        const icon = a.entity_id.startsWith("vacuum.") ? "mdi:robot-vacuum" : /dish/i.test(a.name) ? "mdi:dishwasher" : /dry/i.test(a.name) ? "mdi:tumble-dryer" : "mdi:washing-machine";
+        const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · DONE ~" + esc(a.done_about) : ""}`
+          : a.usual_minutes ? `USUALLY ${dur(a.usual_minutes)}` : `LEARNING · ${a.runs_seen}/3 RUNS`;
+        return `<div class="r${a.running ? " on" : " dim"}"><ha-icon icon="${icon}"></ha-icon><b>${esc(a.name)}</b><u>${tag}</u></div>`;
+      }).join("");
+    }
+
     _drawInsights() {
       const el = this._$("ins"), r = this._ins;
       if (!el || !r) { if (el) el.hidden = true; return; }
@@ -972,7 +997,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"], appliance: ["mdi:washing-machine", "APPLIANCE"],
         heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "THIS WEEK"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
@@ -1214,7 +1239,7 @@
   }
 
   const CSS = `
-:host{display:block;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden;color:#dff6fa;color-scheme:dark;-webkit-tap-highlight-color:transparent;font-family:var(--ha-font-family-body, Roboto, sans-serif);
+:host{display:block;height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior-y:contain;width:100%;max-width:100vw;overflow-x:hidden;color:#dff6fa;color-scheme:dark;-webkit-tap-highlight-color:transparent;font-family:var(--ha-font-family-body, Roboto, sans-serif);
   background:radial-gradient(ellipse at 20% 0%, rgba(0,255,255,0.07), transparent 50%), radial-gradient(ellipse at 90% 100%, rgba(0,140,255,0.06), transparent 50%), #070b16}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 input,textarea,select{-webkit-appearance:none;appearance:none}
@@ -1246,21 +1271,30 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .card{position:relative;border-radius:20px;padding:14px 16px;overflow:hidden;
   background:radial-gradient(circle at 20% 0%, rgba(0,255,255,0.09), transparent 45%),linear-gradient(160deg, rgba(10,15,25,0.96), rgba(18,26,50,0.92));
   border:1px solid rgba(0,255,255,0.28);box-shadow:0 0 14px rgba(0,255,255,0.14), inset 0 0 22px rgba(0,255,255,0.05)}
-.head{display:flex;align-items:center;gap:22px;min-height:200px}
-.head img{width:170px;height:170px;border-radius:18px;box-shadow:0 0 24px rgba(0,255,247,.35);flex:none;object-fit:cover}
+.head{display:flex;align-items:center;gap:20px}
+.head img{width:128px;height:128px;border-radius:18px;box-shadow:0 0 24px rgba(0,255,247,.35);flex:none;object-fit:cover}
 .m{flex:1;min-width:0}
-.ti{font-size:30px;font-weight:300;letter-spacing:.45em;color:#dff6fa;text-shadow:0 0 14px rgba(0,255,247,.6)}
+.ti{font-size:26px;font-weight:300;letter-spacing:.45em;color:#dff6fa;text-shadow:0 0 14px rgba(0,255,247,.6)}
 .sub{margin-top:4px;font-size:10px;font-weight:700;letter-spacing:.22em;color:rgba(150,220,235,.75)}
-.st{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-.s{flex:1;min-width:110px;padding:9px 10px;border-radius:12px;border:1px solid rgba(0,255,247,.22);background:rgba(0,255,247,.06)}
+.st{display:flex;gap:8px;margin-top:12px}
+.s{flex:1 1 0;min-width:0;padding:7px 9px;border-radius:12px;border:1px solid rgba(0,255,247,.22);background:rgba(0,255,247,.06)}
 .s[data-act]{cursor:pointer} .s[data-act]:hover{border-color:rgba(0,255,247,.55)}
-.s .n{font-size:22px;color:#fff;text-shadow:0 0 8px rgba(0,255,247,.5)} .s .l{font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.7);margin-top:2px}
-.rm{width:300px;flex:none} .rm .t{font-size:10px;font-weight:700;letter-spacing:.24em;color:#00fff7;margin-bottom:8px}
+.s .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s .n{font-size:20px;color:#fff;text-shadow:0 0 8px rgba(0,255,247,.5)} .s .l{font-size:8.5px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.7);margin-top:2px}
+.rm{width:250px;flex:none} .rm .t{font-size:10px;font-weight:700;letter-spacing:.24em;color:#00fff7;margin-bottom:8px}
 .b{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(180,220,235,.8)}
 .b span{width:92px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .b div{flex:1;height:6px;border-radius:3px;background:rgba(0,255,247,.1);overflow:hidden}
 .b i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#00a8ff,#00fff7);box-shadow:0 0 6px rgba(0,255,247,.6)}
 .cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;margin-top:16px;align-items:start}
 .stack{display:flex;flex-direction:column;gap:10px}
+.hint.meter{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,255,247,.1)}
+/* Big screens (tablets, desktops): the overview fits the screen and each column scrolls on its own */
+@media (min-width: 1101px) and (min-height: 600px){
+  #ov:not([hidden]){display:flex;flex-direction:column;height:calc(100vh - 56px);height:calc(100dvh - 56px)}
+  #ov .cols{flex:1;min-height:0;align-items:stretch;margin-top:14px}
+  #ov .col{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 6px 14px;margin:-2px -6px 0;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.28) transparent}
+  #ov .col::-webkit-scrollbar{width:6px} #ov .col::-webkit-scrollbar-thumb{background:rgba(0,255,247,.28);border-radius:3px}
+}
 .h{display:flex;align-items:center;gap:10px;margin-bottom:10px} .h.tight{margin:0}
 .h .t{font-size:12px;font-weight:700;letter-spacing:.32em;color:#00fff7;text-shadow:0 0 6px rgba(0,255,247,.5)}
 .h i{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.45),transparent)}
@@ -1413,7 +1447,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:10px} .top{padding:0 8px;gap:6px} .top .ttl{letter-spacing:.2em;font-size:12px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1} .tabs{margin-left:0} .tabs button{padding:6px 9px} .brief span{display:none} .brief{padding:6px 8px}
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
-  .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center}
+  .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
   .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
 `;
 

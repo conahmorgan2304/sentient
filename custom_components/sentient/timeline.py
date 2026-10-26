@@ -33,7 +33,7 @@ from .presence import area_of
 STORAGE_VERSION = 1
 KEEP = 400
 EVENT_TIMELINE = f"{DOMAIN}_timeline"
-KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy", "security", "mind", "loop", "drive"]
+KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy", "security", "mind", "loop", "drive", "appliance"]
 
 
 class Timeline:
@@ -170,8 +170,14 @@ class Timeline:
                 self.add("health", line)
         for key, line in before.items():
             if key not in now:
-                name = key.split(":", 1)[1]
-                self.add("health", f"{name} is back to normal" if key.startswith("offline") else f"{name}: battery fine again")
+                kind, name = key.split(":", 1)
+                back = {
+                    "offline": f"{name} is back to normal", "battery": f"{name}: battery fine again",
+                    "ai": "The AI is answering again", "speaker": f"Speaking on {name} again",
+                    "stuck": f"{name} is working again", "limit": None,
+                }.get(kind, f"{name} is fine again")
+                if back:
+                    self.add("health", back)
 
     def _starting(self, _event: Event) -> bool:
         return dt_util.utcnow() - self._started < timedelta(minutes=12)

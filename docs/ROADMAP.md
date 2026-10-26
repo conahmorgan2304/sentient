@@ -79,3 +79,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Echos and other media players as speakers, with an on/off setting and switch; routines that take details (rooms, times) (0.43.1)
 - [x] Mind card on the sidebar page, 'why did that happen?' for any voice, and an evening look at tomorrow (0.44.0)
 - [x] Asleep/awake for the whole house with bedtime and morning actions; auto-off learns from lights switched straight back on (0.45.0)
+- [x] AI meter and daily cap with plain-words fallback, self-check of its own parts, learning from corrections, appliances that say when they've finished or seem stuck; overview fits the screen on tablets (0.46.0)

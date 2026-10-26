@@ -80,6 +80,10 @@ from .const import (
     CONF_NOTICE_ENTITIES,
     DEFAULT_CHATTINESS,
     CONF_DAILY_AI_LIMIT,
+    CONF_APPLIANCES,
+    CONF_APPLIANCE_ANNOUNCE,
+    CONF_APPLIANCE_WATTS,
+    DEFAULT_APPLIANCE_WATTS,
     CONF_FALLBACK_SPEAKERS,
     DEFAULT_DAILY_AI_LIMIT,
     CONF_AI_TASK_ENTITY,
@@ -207,6 +211,13 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_WAKE_ACTIONS, **d(CONF_WAKE_ACTIONS, [])): selector.ActionSelector(),
             vol.Required(CONF_FORESIGHT, **d(CONF_FORESIGHT, True)): selector.BooleanSelector(),
             vol.Required(CONF_FORESIGHT_TIME, **d(CONF_FORESIGHT_TIME, DEFAULT_FORESIGHT_TIME)): selector.TimeSelector(),
+            vol.Optional(CONF_APPLIANCES, **d(CONF_APPLIANCES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "vacuum", "switch", "binary_sensor", "select", "climate", "water_heater", "media_player", "fan"], multiple=True)
+            ),
+            vol.Required(CONF_APPLIANCE_ANNOUNCE, **d(CONF_APPLIANCE_ANNOUNCE, True)): selector.BooleanSelector(),
+            vol.Required(CONF_APPLIANCE_WATTS, **d(CONF_APPLIANCE_WATTS, DEFAULT_APPLIANCE_WATTS)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=200, step=1, unit_of_measurement="W", mode=selector.NumberSelectorMode.BOX)
+            ),
             vol.Optional(CONF_DRIVE_CAMERA, **d(CONF_DRIVE_CAMERA)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="camera")
             ),

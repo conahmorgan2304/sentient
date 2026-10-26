@@ -22,6 +22,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_DRIVE_CAMERA,
@@ -140,10 +141,10 @@ class Drive:
         if not force:
             if self._last_look and now - self._last_look < COOLDOWN:
                 return self.describe()
-            if not rt.watches.spend():
+            if not rt.watches.spend("drive"):
                 return self.describe()
         else:
-            rt.watches.spend()
+            rt.watches.spend("drive", force=True)
         self._last_look = now
         from .spots import _key
 
@@ -167,9 +168,7 @@ class Drive:
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         try:
-            response = await self.hass.services.async_call(
-                "ai_task", "generate_data", data, blocking=True, return_response=True
-            )
+            response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Drive look failed: %s", err)
             return {"error": str(err)}

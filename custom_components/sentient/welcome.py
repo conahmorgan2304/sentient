@@ -14,9 +14,11 @@ from typing import Any, Callable
 
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.const import EVENT_STATE_CHANGED
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import personality_line, CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_PEOPLE
 
 _LOGGER = logging.getLogger(__name__)
@@ -98,11 +100,12 @@ class Welcome:
             }
             if ai := self.options.get(CONF_AI_TASK_ENTITY):
                 data["entity_id"] = ai
+            # plain version, used if the AI can't be (today's limit, an outage)
+            message = "Welcome back. While you were out: " + "; ".join(i["text"].rstrip(".") for i in items[-3:]) + "."
             try:
-                rt.watches.spend()
-                response = await self.hass.services.async_call(
-                    "ai_task", "generate_data", data, blocking=True, return_response=True
-                )
+                if not rt.watches.spend("welcome"):
+                    raise HomeAssistantError("today's AI limit is used up")
+                response = await async_generate(self.hass, data)
                 text = str((response or {}).get("data") or "").strip()
                 if text:
                     message = text

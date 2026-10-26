@@ -164,7 +164,7 @@ class LikelyRoomSensor(_Base):
             "speaker": (rt.speech.pick_speaker() or [None])[0],
             "quiet_hours": rt.speech.quiet_now(),
             "persona": rt.options.get("persona") or self._entry.title,
-            "ai_checks_today": rt.watches.ai_checks_today,
+            "ai_checks_today": rt.ai.used,
             "chat_agent": rt.options.get("chat_agent"),
         }
 
@@ -197,7 +197,7 @@ class WatchesSensor(_Base):
                 {**w.summary(), "ends": w.until, "entity_id": w.entity_id, "wakes_on": w.triggers, "spot": w.spot}
                 for w in manager.watches
             ],
-            "ai_checks_today": manager.ai_checks_today,
+            "ai_checks_today": self._entry.runtime_data.ai.used,
         }
 
 
@@ -348,6 +348,9 @@ class MindSensor(_Base):
             "follow_ups": rt.loops.listing(),
             "to_pass_on": [q["text"] for q in rt.followyou.queue if q.get("source") != "thought"],
             "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
+            "ai": rt.ai.describe(),
+            "lessons": [m.text for m in rt.memory.items if m.category == "correction"][-10:],
+            "appliances": rt.appliances.listing(),
         }
 
 

@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_track_point_in_utc_time, async_tra
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
@@ -221,7 +222,8 @@ class WatchManager:
         self._timers: dict[str, Any] = {}
         self.spots: Any = None  # set by the runtime
         self.ai_day: str = dt_util.now().date().isoformat()
-        self.ai_checks_today = 0
+        self._ai_checks = 0
+        self.gate: Any = None  # the runtime's AIGate: the meter and today's limit
 
     # ----- lifecycle ---------------------------------------------------------------
     async def async_start(self) -> None:
@@ -233,7 +235,7 @@ class WatchManager:
                 continue
             self._watches[watch.id] = watch
         if data.get("ai_day") == self.ai_day:
-            self.ai_checks_today = int(data.get("ai_checks", 0))
+            self._ai_checks = int(data.get("ai_checks", 0))
         now = dt_util.utcnow()
         for watch in [w for w in self._watches.values() if w.kind == KIND_REMINDER]:
             if watch.until_dt > now:
@@ -260,7 +262,7 @@ class WatchManager:
             lambda: {
                 "watches": [w.as_dict() for w in self._watches.values()],
                 "ai_day": self.ai_day,
-                "ai_checks": self.ai_checks_today,
+                "ai_checks": self._ai_checks,
             },
             2,
         )
@@ -453,7 +455,7 @@ class WatchManager:
         last = dt_util.parse_datetime(watch.last_checked) if watch.last_checked else None
         if last and dt_util.utcnow() - last < self._cooldown():
             return
-        if not self.spend():
+        if not self.spend("watches"):
             watch.last_result = "skipped: daily AI limit reached"
             self._save()
             return
@@ -465,7 +467,7 @@ class WatchManager:
             watch.checks += 1
             answer, description, unsure = await self._async_ask(watch)
             second = self.options.get(CONF_SECOND_OPINION)
-            if unsure and second and second != self.options.get(CONF_AI_TASK_ENTITY) and self.spend():
+            if unsure and second and second != self.options.get(CONF_AI_TASK_ENTITY) and self.spend("watches"):
                 answer, description, _unsure = await self._async_ask(watch, second)
                 watch.second_opinions += 1
             watch.last_result = description or ("yes" if answer else "no")
@@ -499,9 +501,7 @@ class WatchManager:
         }
         if ai_entity := ai_entity or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        response = await async_generate(self.hass, data)
         result = (response or {}).get("data") or {}
         if isinstance(result, str):  # model ignored the structure
             return result.strip().lower().startswith(("yes", "true")), None, False
@@ -510,15 +510,21 @@ class WatchManager:
 
         return flag(result.get("answer")), (result.get("description") or "").strip() or None, flag(result.get("unsure"))
 
-    def spend(self) -> bool:
-        """Count one background AI check; False once today's limit is used up."""
+    @property
+    def ai_checks_today(self) -> int:
+        return self.gate.used if self.gate is not None else self._ai_checks
+
+    def spend(self, purpose: str = "camera", force: bool = False) -> bool:
+        """Count one background AI check; False once today's limit is used up (never when forced)."""
+        if self.gate is not None:
+            return self.gate.spend(purpose, force)
         today = dt_util.now().date().isoformat()
         if today != self.ai_day:
-            self.ai_day, self.ai_checks_today = today, 0
+            self.ai_day, self._ai_checks = today, 0
         limit = int(self.options.get(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT))
-        if self.ai_checks_today >= limit:
+        if self._ai_checks >= limit:
             return False
-        self.ai_checks_today += 1
+        self._ai_checks += 1
         return True
 
     async def _attachment(self, camera: str, spot: str | None) -> dict[str, str]:
@@ -563,11 +569,9 @@ class WatchManager:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
-        self.spend()  # someone asked, so always look; it still counts towards today's total
+        self.spend("question", force=True)  # someone asked, so always look; it still counts towards today's total
         self._save()
-        response = await self.hass.services.async_call(
-            "ai_task", "generate_data", data, blocking=True, return_response=True
-        )
+        response = await async_generate(self.hass, data)
         answer = (response or {}).get("data")
         out = {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
         if spot:

@@ -9,7 +9,7 @@ blip doesn't count.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Callable
 
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant, callback
@@ -29,14 +29,18 @@ OFFLINE_AFTER = timedelta(minutes=10)
 CHECK_EVERY = timedelta(minutes=5)
 LOOK_BACK = timedelta(days=7)  # an entity that hasn't had a real reading in this long isn't evidence
 RECHECK = timedelta(hours=6)
+SPEECH_FAILED_FOR = timedelta(hours=6)  # a speaker that failed shows until it works again, or this long
+STUCK_ON = timedelta(hours=6)  # a motion sensor "on" this long is stuck
+STUCK_QUIET = timedelta(days=3)  # ...or one that's seen nothing this long while others have
 
 
 class HouseHealth:
     """Keeps a short list of problems worth knowing about."""
 
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any]) -> None:
+    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any] | None = None) -> None:
         self.hass = hass
         self.options = options
+        self._rt = rt_getter
         self.issues: list[dict[str, Any]] = []
         self.updates: list[str] = []
         self._unsub = None
@@ -148,7 +152,8 @@ class HouseHealth:
         updates = sorted(
             s.name for s in self.hass.states.async_all("update") if s.state == "on" and s.entity_id not in ignore
         )
-        issues = sorted(offline, key=lambda i: i["since"]) + sorted(low, key=lambda i: (i["level"] is None, i["level"] or 0))
+        issues = (self._self_check(now, ignore) + sorted(offline, key=lambda i: i["since"])
+                  + sorted(low, key=lambda i: (i["level"] is None, i["level"] or 0)))
         if issues != self.issues or updates != self.updates:
             self.issues = issues
             self.updates = updates
@@ -199,10 +204,51 @@ class HouseHealth:
             and st.attributes.get("device_class") == "connectivity"
         ]
 
+    def _self_check(self, now: datetime, ignore: set[str]) -> list[dict[str, Any]]:
+        """Sentient's own parts: the AI, the speakers it talks through, and the sensors it relies on."""
+        rt = self._rt() if self._rt else None
+        if rt is None:
+            return []
+        out: list[dict[str, Any]] = []
+        gate = getattr(rt, "ai", None)
+        if gate is not None:
+            if gate.failing:
+                out.append({"kind": "ai", "name": "The AI", "detail": gate.last_error, "since": gate.last_error_at})
+            if gate.capped:
+                out.append({"kind": "limit", "name": "AI calls", "level": gate.used, "since": gate.capped_at})
+        for label, (when, err) in list(getattr(rt.speech, "failures", {}).items()):
+            if now - when < SPEECH_FAILED_FOR:
+                out.append({"kind": "speaker", "name": label, "detail": err, "since": when.isoformat()})
+        from .presence import inside_sensors
+
+        sensors = [st for e in inside_sensors(self.hass, self.options)
+                   if e not in ignore and (st := self.hass.states.get(e)) is not None and st.state not in ("unavailable", "unknown")]
+        lively = any(now - st.last_changed < timedelta(hours=24) for st in sensors)
+        for st in sensors:
+            quiet = now - st.last_changed
+            if st.state == "on" and quiet > STUCK_ON:
+                out.append({"kind": "stuck", "name": st.name, "entity_id": st.entity_id, "since": st.last_changed.isoformat(), "on": True})
+            elif st.state == "off" and lively and quiet > STUCK_QUIET:
+                out.append({"kind": "stuck", "name": st.name, "entity_id": st.entity_id, "since": st.last_changed.isoformat()})
+        return out
+
     def describe(self) -> list[str]:
         out = []
+        now = dt_util.utcnow()
         for i in self.issues:
-            if i["kind"] == "offline":
+            if i["kind"] == "ai":
+                out.append("The AI hasn't answered the last few times — plain words for now")
+            elif i["kind"] == "limit":
+                out.append("Today's AI calls are used up — plain words until midnight")
+            elif i["kind"] == "speaker":
+                out.append(f"Couldn't speak on {i['name']}")
+            elif i["kind"] == "stuck":
+                since = dt_util.parse_datetime(i.get("since") or "") or now
+                if i.get("on"):
+                    out.append(f"{i['name']} has said there's movement for {round((now - since).total_seconds() / 3600)} hours")
+                else:
+                    out.append(f"{i['name']} hasn't seen anything for {max(1, (now - since).days)} days")
+            elif i["kind"] == "offline":
                 out.append(f"{i['name']} is offline")
             elif i["level"] is not None:
                 out.append(f"{i['name']} is at {i['level']}%")
