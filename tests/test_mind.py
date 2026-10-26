@@ -220,3 +220,18 @@ async def test_cars_on_the_drive(hass: HomeAssistant, freezer) -> None:
     assert rt.timeline.items[0]["text"] == "A car arrived on the drive — now silver estate, white van"
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
     assert "On the drive" in api.api_prompt and "white van" in api.api_prompt
+
+
+async def test_full_volume_speakers(hass: HomeAssistant) -> None:
+    _, dev = _kitchen(hass)
+    ents = er.async_get(hass)
+    ents.async_get_or_create("number", "esphome", "vol", suggested_object_id="kitchen_volume", device_id=dev.id)
+    ents.async_get_or_create("number", "esphome", "avol", suggested_object_id="kitchen_assistant_volume", device_id=dev.id)
+    await _setup(hass, full_volume_speakers=["assist_satellite.kitchen"])
+    hass.states.async_set("number.kitchen_volume", "53", {"max": 100})
+    hass.states.async_set("number.kitchen_assistant_volume", "100", {"max": 100})
+    numbers = async_mock_service(hass, "number", "set_value")
+    async_mock_service(hass, "assist_satellite", "announce")
+    await hass.services.async_call(DOMAIN, "say", {"message": "Someone's opened the gate."}, blocking=True)
+    assert [(c.data["entity_id"], c.data["value"]) for c in numbers] == [
+        ("number.kitchen_volume", 100), ("number.kitchen_volume", 53)]

@@ -46,6 +46,7 @@ from .const import (
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
     CONF_ROOM_VOLUME,
+    CONF_FULL_VOLUME_SPEAKERS,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
@@ -339,7 +340,17 @@ class SpeechRouter:
         return SpeechResult(True, "spoken", text, speakers)
 
     async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
-        """The level to speak at: the usual one, raised in a noisy room (not in quiet hours)."""
+        """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),
+        and full volume on the speakers chosen for that (outside quiet hours)."""
+        out = await self._room_volumes(speakers)
+        full = set(self.options.get(CONF_FULL_VOLUME_SPEAKERS) or []) & set(speakers)
+        if not full or self.quiet_hours_now():
+            return out
+        per = dict(out) if isinstance(out, dict) else {s: out for s in speakers}
+        per.update({s: 1.0 for s in full})
+        return per
+
+    async def _room_volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
         base = self.volume_now()
         if not self.options.get(CONF_ROOM_VOLUME, True) or self.quiet_hours_now():
             return base

@@ -93,6 +93,7 @@ from .const import (
     CONF_NIGHT_VOLUME,
     CONF_DUCK_MEDIA,
     CONF_ROOM_VOLUME,
+    CONF_FULL_VOLUME_SPEAKERS,
     CONF_FOLLOW_YOU,
     CONF_FOLLOW_MINUTES,
     DEFAULT_FOLLOW_MINUTES,
@@ -172,6 +173,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
             vol.Required(CONF_ROOM_VOLUME, **d(CONF_ROOM_VOLUME, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_FULL_VOLUME_SPEAKERS, **d(CONF_FULL_VOLUME_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_FOLLOW_YOU, **d(CONF_FOLLOW_YOU, True)): selector.BooleanSelector(),
             vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
