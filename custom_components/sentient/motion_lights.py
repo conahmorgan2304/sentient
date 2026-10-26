@@ -85,6 +85,7 @@ class MotionLights:
         self._sent: dict[str, datetime] = {}  # light -> when we last switched it
         self._timers: dict[str, CALLBACK_TYPE] = {}
         self._unsub: CALLBACK_TYPE | None = None
+        self.paused: set[str] = set()  # lights something else is running for now (disco mode)
 
     # ----- storage ---------------------------------------------------------------
     async def async_load(self) -> None:
@@ -163,6 +164,17 @@ class MotionLights:
         if not enabled:
             self._release(rule.light)
         self._save()
+
+    @callback
+    def pause(self, lights: list[str]) -> None:
+        """Leave these lights alone (and forget we were running them) until resumed."""
+        for light in lights:
+            self._release(light)
+        self.paused.update(lights)
+
+    @callback
+    def resume(self, lights: list[str]) -> None:
+        self.paused.difference_update(lights)
 
     def describe(self) -> list[dict[str, Any]]:
         out = []
@@ -288,6 +300,8 @@ class MotionLights:
 
     @callback
     def _on_motion(self, rule: MotionRule) -> None:
+        if rule.light in self.paused:
+            return
         self._cancel_timer(rule.light)
         light = self.hass.states.get(rule.light)
         if light is None:
@@ -309,14 +323,14 @@ class MotionLights:
 
     @callback
     def _on_still(self, rule: MotionRule) -> None:
-        if rule.light not in self._ours:
+        if rule.light not in self._ours or rule.light in self.paused:
             return
         self._cancel_timer(rule.light)
 
         @callback
         def _off(_now: datetime) -> None:
             self._timers.pop(rule.light, None)
-            if rule.light in self._ours and not self._motion_now(rule):
+            if rule.light in self._ours and rule.light not in self.paused and not self._motion_now(rule):
                 self._turn(rule, False)
                 self._note(rule, "off: no movement")
 

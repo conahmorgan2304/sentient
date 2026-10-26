@@ -483,6 +483,39 @@ class AlarmTool(_Tool):
         return {"set": item["name"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next")}
 
 
+class PartyTool(_Tool):
+    name = "sentient_party"
+    description = (
+        "Disco mode: lights put on a colour show, then go back exactly as they were. Use for 'disco "
+        "mode', 'party lights', 'light show', 'chill lights' and 'stop the disco'. action 'start' (optional "
+        "style: disco, party, rainbow or chill; minutes; area = a room's lights instead of the chosen "
+        "ones), 'stop', or 'status'. Starting again while it's on changes the style or room."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["start", "stop", "status"]),
+        vol.Optional("style"): cv.string, vol.Optional("minutes"): vol.Coerce(float), vol.Optional("area"): cv.string,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        a = tool_input.tool_args
+        if a["action"] == "status":
+            return rt.party.describe()
+        if a["action"] == "stop":
+            return await rt.party.async_end()
+        style = (a.get("style") or "").strip().lower() or None
+        lights = rt.party.lights_for(a.get("area"), llm_context.device_id) if a.get("area") else None
+        if a.get("area") and not lights:
+            return {"error": f"No lights found in {a['area']}"}
+        if lights is None and not rt.party.lights_for() and llm_context.device_id:
+            lights = rt.party.lights_for(None, llm_context.device_id)
+        return await rt.party.async_party(style, a.get("minutes"), lights)
+
+
 class BriefingTool(_Tool):
     name = "sentient_briefing"
     description = (
@@ -798,7 +831,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext) -> str:

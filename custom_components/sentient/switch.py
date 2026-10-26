@@ -1,4 +1,4 @@
-"""Switches: hush the house for a while, and guest mode."""
+"""Switches: hush the house for a while, guest mode, the chime and disco mode."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -127,6 +127,38 @@ class ChimeSwitch(_ModeSwitch):
         entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_CHIME: on}
         self.async_write_ha_state()
         self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"chime": on})
+
+
+class PartySwitch(_ModeSwitch):
+    """Disco mode: the chosen lights put on a show, then go back as they were."""
+
+    _attr_icon = "mdi:party-popper"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "party_mode")
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.party.active
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        party = self._entry.runtime_data.party
+        return {
+            "style": party.style if party.active else None,
+            "until": party.until.isoformat() if party.active and party.until else None,
+            "lights": list(party.lights) if party.active else [],
+        }
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        result = await self._entry.runtime_data.party.async_party()
+        if result.get("error"):
+            from homeassistant.exceptions import HomeAssistantError
+
+            raise HomeAssistantError(result["error"])
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._entry.runtime_data.party.async_end()
 
 
 _HUSH_TIMERS: dict[str, Any] = {}

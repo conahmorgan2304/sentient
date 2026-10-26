@@ -158,7 +158,10 @@
           "camera_security_sensors": "Cameras' person sensors",
           "camera_security_inside": "Inside the boundary",
           "camera_security_entries": "Ways in",
-          "camera_security_describe": "Describe who it is"
+          "camera_security_describe": "Describe who it is",
+          "party_lights": "Disco lights",
+          "party_style": "Style",
+          "party_minutes": "Stop by itself after"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -218,7 +221,10 @@
           "camera_security_sensors": "Each camera's (or zone's) person sensor, e.g. Frigate's 'Gate person occupancy'.",
           "camera_security_inside": "The person sensors for places behind the gate or fence — the garden, the shed. Someone appearing there without a way in opening is an alert.",
           "camera_security_entries": "The gate and doors people should come through (e.g. the back gate and the back door).",
-          "camera_security_describe": "One AI look at the camera for each alert ('a man in a dark hoodie trying the shed door')."
+          "camera_security_describe": "One AI look at the camera for each alert ('a man in a dark hoodie trying the shed door').",
+          "party_lights": "The lights that join in. Leave empty to use the lights in the room of whoever asks (or say a room: 'disco mode in the living room').",
+          "party_style": "Disco: quick colour changes. Party: bright colours with short fades. Rainbow: a colour wheel across the lights. Chill: slow, dim colours.",
+          "party_minutes": "Then every light goes back exactly as it was. 0 keeps going until it's turned off."
         }
       },
       "memories": {
@@ -296,6 +302,9 @@
       },
       "chime": {
         "name": "Chime"
+      },
+      "party_mode": {
+        "name": "Disco mode"
       }
     }
   },
@@ -361,6 +370,14 @@
         "warm": "Warm and friendly",
         "cheeky": "Cheeky",
         "composed": "Composed, like a butler"
+      }
+    },
+    "party_style": {
+      "options": {
+        "disco": "Disco",
+        "party": "Party",
+        "rainbow": "Rainbow",
+        "chill": "Chill"
       }
     }
   },
@@ -612,6 +629,32 @@
     "weekly_report": {
       "name": "Weekly report",
       "description": "Put together what the house learned and noticed in the last week, and keep it on the timeline."
+    },
+    "party": {
+      "name": "Disco mode",
+      "description": "Start or stop the light show. Lights go back exactly as they were when it stops.",
+      "fields": {
+        "on": {
+          "name": "On",
+          "description": "Off stops it and puts the lights back."
+        },
+        "style": {
+          "name": "Style",
+          "description": "Disco, party, rainbow or chill. Empty uses the setting."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Stop by itself after this long (0 = until turned off). Empty uses the setting."
+        },
+        "area": {
+          "name": "Room",
+          "description": "Use this room's lights instead of the chosen disco lights."
+        },
+        "lights": {
+          "name": "Lights",
+          "description": "Use exactly these lights."
+        }
+      }
     }
   }
 }

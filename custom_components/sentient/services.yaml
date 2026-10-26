@@ -215,3 +215,35 @@ run_routine:
       selector:
         boolean:
 weekly_report:
+party:
+  fields:
+    "on":
+      example: true
+      selector:
+        boolean:
+    style:
+      example: disco
+      selector:
+        select:
+          options:
+            - disco
+            - party
+            - rainbow
+            - chill
+          translation_key: party_style
+    minutes:
+      example: 60
+      selector:
+        number:
+          min: 0
+          max: 600
+          unit_of_measurement: min
+    area:
+      example: living room
+      selector:
+        area:
+    lights:
+      selector:
+        entity:
+          domain: light
+          multiple: true

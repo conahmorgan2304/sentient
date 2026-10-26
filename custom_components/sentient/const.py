@@ -178,3 +178,11 @@ CONF_CAMSEC_SENSORS = "camera_security_sensors"
 CONF_CAMSEC_INSIDE = "camera_security_inside"
 CONF_CAMSEC_ENTRIES = "camera_security_entries"
 CONF_CAMSEC_DESCRIBE = "camera_security_describe"
+
+# Disco mode
+CONF_PARTY_LIGHTS = "party_lights"
+CONF_PARTY_STYLE = "party_style"
+CONF_PARTY_MINUTES = "party_minutes"
+DEFAULT_PARTY_STYLE = "disco"
+DEFAULT_PARTY_MINUTES = 60
+PARTY_STYLES = ["disco", "party", "rainbow", "chill"]

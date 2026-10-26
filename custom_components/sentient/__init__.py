@@ -16,6 +16,7 @@ from homeassistant.helpers import llm
 
 from .const import (
     DOMAIN,
+    PARTY_STYLES,
     MEMORY_CATEGORIES,
     PRIORITIES,
     SERVICE_ADOPT,
@@ -65,6 +66,7 @@ from .announce import Announcements
 from .alarms import Alarms
 from .checks import CameraChecks
 from .camsecurity import CameraSecurity
+from .party import Party
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -108,6 +110,7 @@ class SentientRuntime:
     alarms: Alarms
     checks: CameraChecks
     camsec: CameraSecurity
+    party: Party
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -165,6 +168,15 @@ REMIND_SCHEMA = vol.Schema(
     }
 )
 CANCEL_WATCH_SCHEMA = vol.Schema({vol.Required("what"): cv.string})
+PARTY_SCHEMA = vol.Schema(
+    {
+        vol.Optional("on", default=True): cv.boolean,
+        vol.Optional("style"): vol.In(PARTY_STYLES),
+        vol.Optional("minutes"): vol.Coerce(float),
+        vol.Optional("area"): cv.string,
+        vol.Optional("lights"): cv.entity_ids,
+    }
+)
 
 
 def _entry_options(entry: ConfigEntry) -> dict[str, Any]:
@@ -267,6 +279,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     alarms = Alarms(hass, lists["alarms"], get_rt)
     checks = CameraChecks(hass, lists["checks"], get_rt)
     camsec = CameraSecurity(hass, options, get_rt)
+    party = Party(hass, entry.entry_id, options, get_rt)
     followthrough = FollowThrough(hass, speech, timeline)
     followthrough.async_start()
     entry.async_on_unload(followthrough.async_stop)
@@ -279,7 +292,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
         feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
+        party=party,
     )
+    await party.async_start()
+    entry.async_on_unload(party.async_stop)
     night_watch.async_start()
     entry.async_on_unload(night_watch.async_stop)
     for engine in (offers, announcements, alarms, checks, camsec):
@@ -337,6 +353,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.heating.options = options
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
+    entry.runtime_data.party.options = options
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
     if "frontend" in hass.config.components:
@@ -425,6 +442,15 @@ def _register_services(hass: HomeAssistant) -> None:
     async def weekly_report(call: ServiceCall) -> ServiceResponse:
         return _runtime(hass).upkeep.weekly_report()
 
+    async def party(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        if not call.data["on"]:
+            return await rt.party.async_end()
+        lights = call.data.get("lights") or (rt.party.lights_for(call.data["area"]) if call.data.get("area") else None)
+        if call.data.get("area") and not lights:
+            return {"error": f"No lights found in {call.data['area']}"}
+        return await rt.party.async_party(call.data.get("style"), call.data.get("minutes"), lights)
+
     async def ask(call: ServiceCall) -> ServiceResponse:
         rt = _runtime(hass)
         targets = None
@@ -471,6 +497,9 @@ def _register_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(DOMAIN, "weekly_report", weekly_report, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(
+        DOMAIN, "party", party, schema=PARTY_SCHEMA, supports_response=SupportsResponse.OPTIONAL
+    )
     hass.services.async_register(
         DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
     )
