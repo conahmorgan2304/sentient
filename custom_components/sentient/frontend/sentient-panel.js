@@ -5,7 +5,7 @@
 (() => {
   if (customElements.get("sentient-panel")) return;
 
-  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode"];
+  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode", "mind", "media_speakers"];
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
@@ -98,7 +98,7 @@
         <div class="page" id="ov"><div id="head" class="card head"></div>
           <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div id="rout" class="col stack"></div>
-            <div class="col stack"><div id="energy" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
+            <div class="col stack"><div id="mind" class="card"></div><div id="energy" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>`;
@@ -233,6 +233,23 @@
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
       R("health").innerHTML = this._h("HOUSE HEALTH", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "ALL GOOD")
         + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
+
+      // mind: what it's thinking, wondering, waiting to check and pass on
+      const mind = (this._st("mind") || {}).attributes || {};
+      const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
+      const mindRows = [
+        ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
+        ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
+          <button class="btn sm ghost" data-act="wonderask">ASK</button><a class="x" data-act="wonderx" data-text="${esc(q)}" title="Don't ask">✕</a></div>`),
+        ...(mind.follow_ups || []).map((f) => `<div class="r"><ha-icon icon="mdi:sync"></ha-icon><b>Check back: ${esc(f.about)}</b><u>${esc(f.at)}</u>
+          <a class="x" data-act="fux" data-id="${esc(f.id)}" data-text="${esc(f.about)}" title="Cancel">✕</a></div>`),
+        ...(mind.to_pass_on || []).map((t) => `<div class="r dim"><ha-icon icon="mdi:account-arrow-right-outline"></ha-icon><b>${esc(t)}</b><u>TO PASS ON</u></div>`),
+        ...(mind.recent_conversations || []).slice(0, 3).map((c) => `<div class="r dim"><ha-icon icon="mdi:chat-outline"></ha-icon>
+          <b>${esc(((c.conversation || [])[0] || "").replace(/^They: /, ""))}</b><u>${esc(String(c.when || "").split(" ").pop())}${c.room ? " · " + esc(c.room).toUpperCase() : ""}</u></div>`),
+      ].join("");
+      const mindCount = (mind.wondering || []).length + (mind.follow_ups || []).length;
+      R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`)
+        + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>');
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
@@ -995,6 +1012,9 @@
       const { act, id, text } = el.dataset;
       if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
+      else if (act === "wonderask") this._call("wonder", { ask_now: true });
+      else if (act === "wonderx") this._call("wonder", { dismiss: text });
+      else if (act === "fux") this._call("cancel_follow_up", { about: id }, `Stop checking: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);

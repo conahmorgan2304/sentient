@@ -61,6 +61,8 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_FORESIGHT,
+    CONF_FORESIGHT_TIME,
     CONF_FOLLOW_YOU,
     CONF_FOLLOW_MINUTES,
     CONF_DRIVE_CAMERA,
@@ -166,8 +168,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
         CONF_PARTY_SOUND, CONF_PARTY_SOUND_SWITCH, CONF_PARTY_SHOW,
     ]),
-    ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, and thinking over the day each night.", [
-        CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME,
+    ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, and a look at tomorrow each evening.", [
+        CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
     ]),
     ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
         CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS,

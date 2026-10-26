@@ -119,6 +119,11 @@ class AutoOff:
         if rt is None:
             return
         names = [st.name for e in entities if (st := self.hass.states.get(e))]
-        rt.timeline.add("light", f"{item['name']}: {', '.join(names)} off", "auto-off")
+        why = []
+        if item.get("motion"):
+            why.append(f"no movement for {float(item.get('empty_minutes') or 20):g} min")
+        if float(item.get("on_minutes") or 0) > 0:
+            why.append(f"on for {float(item['on_minutes']):g} min")
+        rt.timeline.add("light", f"{', '.join(names)} off", f"auto-off ({item['name']}): {' or '.join(why)}")
         if (say := (item.get("say") or "").strip()):
             await rt.speech.async_say(say, "low", None, source=f"autooff:{item['name']}")

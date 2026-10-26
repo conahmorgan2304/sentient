@@ -180,7 +180,9 @@
           "drive_triggers": "Look when these settle",
           "full_volume_speakers": "Full volume on these speakers",
           "tts_entity": "Voice for other speakers",
-          "media_speakers": "Use Echos and other media players"
+          "media_speakers": "Use Echos and other media players",
+          "foresight": "A look at tomorrow",
+          "foresight_time": "Look ahead at"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -263,7 +265,9 @@
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
-          "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards."
+          "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
+          "foresight": "Each evening one AI look at tomorrow's calendars, weather, alarms and reminders. Says something only when there's something to do tonight — frost before an early start, rain on washing day. Usually silent.",
+          "foresight_time": "Before quiet hours start."
         }
       },
       "memories": {
@@ -775,6 +779,26 @@
         "speaker": {
           "name": "Speaker",
           "description": "Where to say it (default: where people are)."
+        }
+      }
+    },
+    "cancel_follow_up": {
+      "name": "Cancel a follow-up",
+      "description": "Stop it checking back on something.",
+      "fields": {
+        "about": {
+          "name": "About",
+          "description": "Its id, or words from what it's about."
+        }
+      }
+    },
+    "look_ahead": {
+      "name": "Look ahead",
+      "description": "Look at tomorrow now and say whether there's anything worth a heads-up.",
+      "fields": {
+        "speak": {
+          "name": "Say it",
+          "description": "Say it out loud if there is."
         }
       }
     }

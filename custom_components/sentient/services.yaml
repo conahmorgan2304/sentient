@@ -311,3 +311,16 @@ follow_up:
     speaker:
       selector:
         text:
+cancel_follow_up:
+  fields:
+    about:
+      required: true
+      example: "the lounge warming up"
+      selector:
+        text:
+look_ahead:
+  fields:
+    speak:
+      default: false
+      selector:
+        boolean:

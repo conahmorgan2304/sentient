@@ -897,6 +897,29 @@ class ConversationsTool(_Tool):
         return {"conversations": rt.conversations.search(a.get("query"), float(a.get("days") or 2))}
 
 
+class WhyTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_why"
+    description = (
+        "Explain why something happened or changed — 'why did the landing light go off?', 'who turned the "
+        "heating up?', 'why did you say that?'. Give 'what' (a device, a room or words from what was said). "
+        "Returns when it last changed, whether a person (and in which app), an automation or the house did "
+        "it, and the house's own log around then. Answer in a sentence or two."
+    )
+    parameters = vol.Schema({vol.Required("what"): cv.string, vol.Optional("hours"): vol.Coerce(float)})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .explain import async_explain
+
+        a = tool_input.tool_args
+        return await async_explain(hass, rt, a["what"], float(a.get("hours") or 12))
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -920,7 +943,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
@@ -1011,6 +1034,7 @@ class SentientAPI(llm.API):
             "happens, use sentient_watch; to be reminded at a time, use sentient_remind. Never just "
             "promise to remember."
         )
+        lines.append("When someone asks why something happened or who did it, use sentient_why rather than guessing.")
         lines.append(
             "When you start something that takes a while to show results (heating, a wash, a delivery), set a "
             "sentient_follow_up so you check back and say how it went."

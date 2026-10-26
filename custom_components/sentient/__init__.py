@@ -75,6 +75,7 @@ from .curiosity import Curiosity
 from .reflection import Reflection
 from .drive import Drive
 from .autooff import AutoOff
+from .foresight import Foresight
 from .watches import WatchManager
 from .speech import SpeechRouter
 
@@ -126,6 +127,7 @@ class SentientRuntime:
     reflection: Reflection
     drive: Drive
     autooff: AutoOff
+    foresight: Foresight
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -359,6 +361,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     curiosity = Curiosity(hass, entry.entry_id, options, get_rt)
     reflection = Reflection(hass, entry.entry_id, options, get_rt)
     drive = Drive(hass, entry.entry_id, options, get_rt)
+    foresight = Foresight(hass, options, get_rt)
     speech.on_unheard = followyou.unheard
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
@@ -370,9 +373,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         feedback=feedback, heating=heating, night_watch=night_watch, followthrough=followthrough,
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
-        reflection=reflection, drive=drive, autooff=autooff,
+        reflection=reflection, drive=drive, autooff=autooff, foresight=foresight,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -435,7 +438,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
@@ -608,6 +611,14 @@ def _register_services(hass: HomeAssistant) -> None:
     async def reflect(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).reflection.async_reflect()
 
+    async def look_ahead(call: ServiceCall) -> ServiceResponse:
+        return await _runtime(hass).foresight.async_look_ahead(speak=call.data.get("speak", False))
+
+    hass.services.async_register(
+        DOMAIN, "look_ahead", look_ahead, schema=vol.Schema({vol.Optional("speak", default=False): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+
     async def drive_check(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).drive.async_check(force=True)
 
@@ -628,6 +639,14 @@ def _register_services(hass: HomeAssistant) -> None:
             d.get("if_done"), d.get("if_not"), d.get("speaker"),
         )
 
+    async def cancel_follow_up(call: ServiceCall) -> ServiceResponse:
+        gone = _runtime(hass).loops.cancel(call.data["about"])
+        return {"cancelled": gone}
+
+    hass.services.async_register(
+        DOMAIN, "cancel_follow_up", cancel_follow_up, schema=vol.Schema({vol.Required("about"): cv.string}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     hass.services.async_register(DOMAIN, "reflect", reflect, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, "check_drive", drive_check, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(

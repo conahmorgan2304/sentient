@@ -96,6 +96,9 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_FORESIGHT,
+    CONF_FORESIGHT_TIME,
+    DEFAULT_FORESIGHT_TIME,
     CONF_FOLLOW_YOU,
     CONF_FOLLOW_MINUTES,
     DEFAULT_FOLLOW_MINUTES,
@@ -189,6 +192,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_CURIOSITY, **d(CONF_CURIOSITY, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION, **d(CONF_REFLECTION, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION_TIME, **d(CONF_REFLECTION_TIME, DEFAULT_REFLECTION_TIME)): selector.TimeSelector(),
+            vol.Required(CONF_FORESIGHT, **d(CONF_FORESIGHT, True)): selector.BooleanSelector(),
+            vol.Required(CONF_FORESIGHT_TIME, **d(CONF_FORESIGHT_TIME, DEFAULT_FORESIGHT_TIME)): selector.TimeSelector(),
             vol.Optional(CONF_DRIVE_CAMERA, **d(CONF_DRIVE_CAMERA)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="camera")
             ),

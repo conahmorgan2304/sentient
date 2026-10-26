@@ -360,3 +360,40 @@ async def test_echos_can_be_switched_off(hass: HomeAssistant, monkeypatch) -> No
     await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.nova_echo_speakers"}, blocking=True)
     await hass.services.async_call(DOMAIN, "say", {"message": "Alarm.", "speaker": "media_player.bathroom_echo"}, blocking=True)
     assert not alexa and sat  # said on a voice speaker instead
+
+
+async def test_why_did_that_happen(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.core import Context
+
+    entry = await _setup(hass)
+    hass.states.async_set("light.landing", "on", {"friendly_name": "Landing light"})
+    entry.runtime_data.timeline.add("light", "Landing light off", "auto-off (Landing): no movement for 20 min")
+    hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"}, context=Context(parent_id="x"))
+    api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_why", tool_args={"what": "landing light"}))
+    assert out["by"].startswith("an automation") and "auto-off" in out["house_log"][0]
+    hass.states.async_set("light.landing", "on", {"friendly_name": "Landing light"}, context=Context())
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_why", tool_args={"what": "light.landing"}))
+    assert out["by"].startswith("the device itself")
+
+
+async def test_look_ahead_only_speaks_when_worth_it(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, briefing_calendars=[])
+    hass.states.async_set("weather.home", "sunny")
+
+    async def forecasts(call: ServiceCall):
+        from datetime import timedelta as td
+
+        tomorrow = (dt_util.now() + td(days=1)).replace(hour=12)
+        return {"weather.home": {"forecast": [{"datetime": tomorrow.isoformat(), "condition": "snowy", "temperature": 1, "templow": -4}]}}
+
+    hass.services.async_register("weather", "get_forecasts", forecasts, supports_response=SupportsResponse.ONLY)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    ai = _ai(hass, {"speak": True, "message": "Snow and frost tomorrow — the car will need defrosting."})
+    out = await entry.runtime_data.foresight.async_look_ahead()
+    assert out["facts"]["weather"]["condition"] == "snowy" and "snowy" in ai[0].data["instructions"]
+    assert said and out["said"].startswith("Snow and frost")
+    said.clear()
+    _ai(hass, {"speak": False})
+    out = await entry.runtime_data.foresight.async_look_ahead()
+    assert not said and out["said"] is None
