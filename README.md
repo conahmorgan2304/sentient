@@ -73,7 +73,7 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 
 ## Screenshots
 
-| Sidebar page | Hub card |
+| Sidebar page — settings | Hub card |
 |---|---|
 | <img src="docs/images/panel.png" alt="Sentient's sidebar page" width="420"> | <img src="docs/images/hub-card.png" alt="The hub card" width="300"> |
 

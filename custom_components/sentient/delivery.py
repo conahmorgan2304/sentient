@@ -95,7 +95,7 @@ def loudness_controls(hass: HomeAssistant, speaker: str) -> tuple[str, str | Non
 LISTEN_SECONDS = 1.2
 BOOST_PER_DB = 0.015  # +1.5% volume for every dB the room is above its usual level
 MAX_BOOST = 0.3
-BOOST_FROM_DB = 4  # a room this much above its usual level counts as noisy
+BOOST_FROM_DB = 6  # a room this much above its usual level counts as noisy
 
 
 def _db(hass: HomeAssistant, sensor: str) -> float | None:
