@@ -91,14 +91,15 @@ KINDS: dict[str, dict[str, Any]] = {
                  "hours, and can be skipped when a door was opened just before (someone going out).",
         "add": "+ NEW ANNOUNCEMENT",
         "defaults": {
-            "enabled": True, "entity": None, "to_state": "on", "messages": "", "speakers": [],
+            "enabled": True, "entity": None, "event_type": "", "to_state": "on", "messages": "", "speakers": [],
             "through_quiet": True, "skip_entity": None, "skip_seconds": 30, "actions": [],
             "cooldown_seconds": 15, "last": None,
         },
         "schema": [
             _sel("name", {"text": {}}, True),
             _sel("enabled", {"boolean": {}}),
-            _sel("entity", {"entity": {}}, True),
+            _sel("entity", {"entity": {}}),
+            _sel("event_type", {"text": {}}),
             _sel("to_state", {"text": {}}),
             _sel("messages", {"text": {"multiline": True}}),
             _sel("speakers", {"entity": {"domain": "assist_satellite", "multiple": True}}),
@@ -110,6 +111,7 @@ KINDS: dict[str, dict[str, Any]] = {
         ],
         "labels": {
             "name": "Name", "enabled": "On", "entity": "When this happens (doorbell, gate sensor…)",
+            "event_type": "…or when this event fires (e.g. doorbell_pressed), instead of the above",
             "to_state": "…and changes to (usually 'on'; ignored for buttons and doorbell events)",
             "messages": "What to say — one per line, picked at random",
             "speakers": "Say it on (empty = where people are)", "through_quiet": "Say it even in quiet hours",
@@ -199,7 +201,7 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
                 f"every {item.get('cooldown_hours') or 0:g} h"]
         return " · ".join(bits)
     if kind == "announce":
-        bits = [f"when {name_of(item.get('entity'))} {item.get('to_state') or 'on'}"]
+        bits = [f"on event {item['event_type']}" if item.get("event_type") else f"when {name_of(item.get('entity'))} {item.get('to_state') or 'on'}"]
         if item.get("through_quiet"):
             bits.append("through quiet hours")
         if item.get("skip_entity"):

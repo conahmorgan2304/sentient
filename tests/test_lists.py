@@ -176,3 +176,16 @@ async def test_bin_alarm_says_tomorrows_bin_or_stays_quiet(hass: HomeAssistant, 
     async_fire_time_changed(hass, when)
     await hass.async_block_till_done()
     assert len(said) == 1
+
+
+async def test_announcement_on_an_event(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 23, 30)))
+    entry = await _setup(hass)
+    entry.runtime_data.lists["announce"].upsert({
+        "name": "Doorbell", "event_type": "doorbell_pressed", "messages": "Someone is at the front door.",
+        "through_quiet": True,
+    })
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.bus.async_fire("doorbell_pressed", {"doorbell": "front_door"})
+    await hass.async_block_till_done()
+    assert [c.data["message"] for c in said] == ["Someone is at the front door."]

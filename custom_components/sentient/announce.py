@@ -8,6 +8,7 @@ other chatter back for a minute so nothing talks over it.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 from typing import Any, Callable
@@ -40,22 +41,46 @@ class Announcements:
         self.items = items
         self._rt = runtime
         self._unsub = None
+        self._event_unsubs: dict[str, Any] = {}
 
     @callback
     def async_start(self) -> None:
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed)
+        self.items.listeners.append(self._resubscribe)
+        self._resubscribe()
 
     @callback
     def async_stop(self) -> None:
         if self._unsub:
             self._unsub()
             self._unsub = None
+        for unsub in self._event_unsubs.values():
+            unsub()
+        self._event_unsubs.clear()
+        if self._resubscribe in self.items.listeners:
+            self.items.listeners.remove(self._resubscribe)
+
+    @callback
+    def _resubscribe(self) -> None:
+        """Listen for the events the announcements use (e.g. doorbell_pressed)."""
+        wanted = {str(i["event_type"]).strip() for i in self.items.enabled() if str(i.get("event_type") or "").strip()}
+        for et in list(self._event_unsubs):
+            if et not in wanted:
+                self._event_unsubs.pop(et)()
+        for et in wanted - set(self._event_unsubs):
+            @callback
+            def _on_event(event: Event, et: str = et) -> None:
+                for item in self.items.enabled():
+                    if str(item.get("event_type") or "").strip() == et:
+                        self._fire(item)
+
+            self._event_unsubs[et] = self.hass.bus.async_listen(et, _on_event)
 
     @callback
     def _changed(self, event: Event) -> None:
         entity_id = event.data.get("entity_id")
         for item in self.items.enabled():
-            if item.get("entity") == entity_id and fired(event.data.get("new_state"), event.data.get("old_state"), item.get("to_state")):
+            if not item.get("event_type") and item.get("entity") == entity_id and fired(event.data.get("new_state"), event.data.get("old_state"), item.get("to_state")):
                 self._fire(item)
 
     @callback
@@ -89,6 +114,7 @@ class Announcements:
         return result.as_dict()
 
     async def _actions(self, item: dict[str, Any]) -> None:
+        await asyncio.sleep(1.5)  # let the speaker start talking first; switching screens can hold it up
         try:
             await async_run_actions(self.hass, item["actions"], item["name"])
         except Exception as err:  # noqa: BLE001
