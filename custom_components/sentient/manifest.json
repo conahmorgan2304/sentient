@@ -7,6 +7,7 @@
     "frontend",
     "http",
     "logbook",
+    "lovelace",
     "panel_custom",
     "recorder",
     "websocket_api"
@@ -21,5 +22,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [],
-  "version": "0.42.0"
+  "version": "0.42.1"
 }

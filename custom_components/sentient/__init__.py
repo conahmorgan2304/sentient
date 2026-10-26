@@ -10,6 +10,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
@@ -225,9 +226,55 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         from homeassistant.loader import async_get_integration
 
         version = (await async_get_integration(hass, DOMAIN)).version
-        for card in ("sentient-shows-card", "sentient-hub-card"):
+        for card in CARDS:
             add_extra_js_url(hass, f"{FRONTEND_URL}/{card}.js?v={version}")
+
+        # also as dashboard resources: an app or browser holding an old copy of the page loads those
+        # with the dashboard, so the cards are never "not found" after an update
+        async def _resources(_event=None) -> None:
+            try:
+                await async_register_card_resources(hass, version)
+            except Exception as err:  # noqa: BLE001 - the extra JS above still works in most places
+                _LOGGER.debug("Couldn't add the cards as dashboard resources: %s", err)
+
+        if hass.is_running:
+            hass.async_create_task(_resources())
+        else:
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _resources)
     return True
+
+
+CARDS = ("sentient-shows-card", "sentient-hub-card")
+
+
+async def async_register_card_resources(hass: HomeAssistant, version: str) -> list[str]:
+    """Make sure each card is a module resource on the dashboards, at this version."""
+    try:
+        from homeassistant.components.lovelace.const import LOVELACE_DATA
+    except ImportError:
+        return []
+    data = hass.data.get(LOVELACE_DATA)
+    resources = getattr(data, "resources", None)
+    if resources is None or not hasattr(resources, "async_create_item"):
+        return []  # YAML-mode resources: nothing we can add
+    if not getattr(resources, "loaded", True):
+        await resources.async_load()
+        resources.loaded = True
+    done = []
+    for card in CARDS:
+        base = f"{FRONTEND_URL}/{card}.js"
+        url = f"{base}?v={version}"
+        mine = [r for r in resources.async_items() if str(r.get("url", "")).split("?")[0] == base]
+        if not mine:
+            await resources.async_create_item({"res_type": "module", "url": url})
+            done.append(url)
+            continue
+        for extra in mine[1:]:
+            await resources.async_delete_item(extra["id"])
+        if mine[0].get("url") != url:
+            await resources.async_update_item(mine[0]["id"], {"res_type": "module", "url": url})
+            done.append(url)
+    return done
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:

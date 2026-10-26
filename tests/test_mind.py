@@ -280,3 +280,18 @@ async def test_silent_alarm_just_does_it(hass: HomeAssistant, freezer) -> None:
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert on and not said
+
+
+async def test_cards_become_dashboard_resources(hass: HomeAssistant) -> None:
+    from homeassistant.setup import async_setup_component
+
+    from custom_components.sentient import async_register_card_resources
+    from homeassistant.components.lovelace.const import LOVELACE_DATA
+
+    assert await async_setup_component(hass, "lovelace", {})
+    added = await async_register_card_resources(hass, "1.0.0")
+    assert added == ["/sentient_frontend/sentient-shows-card.js?v=1.0.0", "/sentient_frontend/sentient-hub-card.js?v=1.0.0"]
+    assert await async_register_card_resources(hass, "1.0.0") == []  # already there
+    await async_register_card_resources(hass, "1.0.1")
+    urls = [r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items()]
+    assert sorted(urls) == ["/sentient_frontend/sentient-hub-card.js?v=1.0.1", "/sentient_frontend/sentient-shows-card.js?v=1.0.1"]
