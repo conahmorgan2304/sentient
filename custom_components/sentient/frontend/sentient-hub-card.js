@@ -1,8 +1,7 @@
 /* Sentient hub card — the house's voice at a glance, for a main dashboard. Ships with Sentient;
    add it as `type: custom:sentient-hub-card`. No name is shown anywhere.
 
-   What it shows: a core that lights up while a speaker listens, thinks or talks (tap it to open
-   Sentient's page); the last thing said; the voice speakers; quick buttons (briefing, hush, guests and
+   What it shows: a big talk button that lights up while a speaker listens, thinks or talks; the last thing said; the voice speakers; quick buttons (briefing, hush, guests and
    the light shows chosen in Sentient's settings); what's coming up next; today's numbers; a short
    feed; and, if set, the server's vitals.
 
@@ -12,7 +11,8 @@
      nodes:                 the voice speakers to show (default: every assist_satellite)
        - entity: assist_satellite.kitchen_speaker_assist_satellite
          name: Kitchen
-     house:                 facts row (default: lights on, doors & windows open, inside and outside temperature; false hides it)
+     talk_script: script.x  what the big button runs (default: Home Assistant's voice assistant, listening)
+     house:                 optional row of other facts, if wanted
        - entity: sensor.x
          name: Something
      system: {cpu: sensor.x, memory: sensor.y, memory_total_mb: 16384, disk: sensor.z, nvr: sensor.w,
@@ -22,7 +22,7 @@
   if (customElements.get("sentient-hub-card")) return;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (d) => (d && !isNaN(d) ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
-  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode"];
+  const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines"];
   const SHOWS = {
     disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
     chill: ["mdi:weather-night", "CHILL"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "XMAS"],
@@ -124,7 +124,7 @@
           return { icon: x.icon || (st && st.attributes.icon) || "mdi:information-outline", val: st ? st.state + unit : "–", label: String(x.name || (st && st.attributes.friendly_name) || x.entity).toUpperCase(), more: x.entity };
         });
       }
-      if (cfg === false) return [];
+      if (!Array.isArray(cfg)) return [];  // only when asked for: this card is about the assistant
       const reg = this._hass.entities || {};
       const real = (e) => !(reg[e] && (reg[e].hidden || reg[e].entity_category));
       const lights = Object.values(S).filter((s) => s.entity_id.startsWith("light.") && s.state === "on" && real(s.entity_id)
@@ -226,9 +226,12 @@
       const vis = this._st("visitors"), w = this._st("watches"), hl = this._st("health");
       const problems = hl ? parseInt(hl.state, 10) || 0 : 0;
       const tile = (icon, val, lbl, cls, more) => `<div class="tile ${cls || ""}"${more ? ` data-act="more" data-id="${esc(more)}"` : ""}><ha-icon icon="${icon}"></ha-icon><b>${esc(val)}</b><span>${lbl}</span></div>`;
-      const tiles = tile("mdi:doorbell-video", vis ? vis.state : "–", "AT THE DOOR", "", vis && vis.entity_id)
-        + tile("mdi:message-text-outline", saidCount, "SPOKEN", "")
+      const memS = this._st("memories"), rou = this._st("routines");
+      const tiles = tile("mdi:message-text-outline", saidCount, "SPOKEN TODAY", "")
+        + tile("mdi:doorbell-video", vis ? vis.state : "–", "AT THE DOOR", "", vis && vis.entity_id)
         + tile("mdi:radar", w ? w.state : "0", "WATCHING", w && +w.state ? "on" : "", w && w.entity_id)
+        + tile("mdi:brain", memS ? memS.state : "–", "REMEMBERS", "", memS && memS.entity_id)
+        + tile("mdi:calendar-sync-outline", rou ? rou.state : "–", "ROUTINES", "", rou && rou.entity_id)
         + tile(problems ? "mdi:alert-outline" : "mdi:shield-check-outline", problems ? problems : "OK", problems ? "PROBLEMS" : "HEALTH", problems ? "warn" : "ok", hl && hl.entity_id);
 
       // the house right now: counted from the house's own entities (or the ones in `house:`)
@@ -266,8 +269,9 @@
           <div class="top"><span>${up}</span><span class="dots">${nodes.map((_, i) => `<i class="${LIVE[states[i]] || (states[i] === "unavailable" ? "off" : "")}"></i>`).join("")}</span>
             <span class="${temp >= 75 ? "hot" : temp >= 60 ? "warm" : ""}">${temp != null ? Math.round(temp) + "°C" : ""}</span></div>
           <div class="mid">
-            <button class="orb ${mode}" data-act="open" title="Open"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+            <div class="talk"><button class="orb ${mode}" data-act="talk" title="Tap to talk"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
               <span class="nuc"><ha-icon icon="${mode === "speak" ? "mdi:waveform" : mode === "think" ? "mdi:dots-horizontal" : "mdi:microphone"}"></ha-icon></span></button>
+              <span class="tl">${mode === "idle" ? "TAP TO TALK" : label}</span></div>
             <div class="info"><div class="st">${label}</div>
               <div class="said">${saidText ? "“" + esc(saidText) + "”" : "<i>Nothing said yet</i>"}</div>
               ${said && saidText ? `<div class="when">${hm(new Date(said.last_changed))}</div>` : ""}</div>
@@ -294,7 +298,11 @@
       if (!el) return;
       const act = el.dataset.act, id = el.dataset.id, h = this._hass;
       const go = (path) => { history.pushState(null, "", path); window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } })); };
-      if (act === "open") go("/sentient");
+      if (act === "talk") {
+        if (this._cfg.talk_script) h.callService("script", "turn_on", { entity_id: this._cfg.talk_script });
+        else this.dispatchEvent(new CustomEvent("hass-action", { bubbles: true, composed: true,
+          detail: { config: { tap_action: { action: "assist", start_listening: true } }, action: "tap" } }));
+      } else if (act === "open") go("/sentient");
       else if (act === "feed") go("/sentient/timeline");
       else if (act === "toggle") h.callService("switch", "toggle", { entity_id: id });
       else if (act === "more") this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: id }, bubbles: true, composed: true }));
@@ -321,20 +329,23 @@
   .top .warm{color:#ffbe55} .top .hot{color:#ff6b80}
   .dots{display:flex;gap:5px} .dots i{width:6px;height:6px;border-radius:50%;background:rgba(0,255,247,.35)}
   .dots i.off{background:rgba(255,107,128,.6)} .dots i.listen,.dots i.speak,.dots i.think{background:#00fff7;box-shadow:0 0 8px #00fff7}
-  .mid{display:flex;align-items:center;gap:16px;z-index:1}
-  .orb{all:unset;cursor:pointer;position:relative;width:104px;height:104px;flex:none;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+  .mid{display:flex;align-items:center;gap:20px;z-index:1}
+  .talk{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+  .tl{font-size:9.5px;font-weight:800;letter-spacing:.24em;color:rgba(150,235,245,.75)}
+  .orb{all:unset;cursor:pointer;position:relative;width:168px;height:168px;flex:none;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+  .orb:active .nuc{transform:scale(.94)}
   .ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(0,255,247,.35)}
-  .r2{inset:12px;border-style:dashed;border-color:rgba(0,255,247,.25);animation:spin 30s linear infinite}
-  .r3{inset:24px;border-color:rgba(0,255,247,.55);box-shadow:0 0 18px rgba(0,255,247,.25)}
+  .r2{inset:18px;border-style:dashed;border-color:rgba(0,255,247,.25);animation:spin 30s linear infinite}
+  .r3{inset:38px;border-color:rgba(0,255,247,.55);box-shadow:0 0 18px rgba(0,255,247,.25)}
   .r1{border-top-color:#00fff7;animation:spin 8s linear infinite;filter:drop-shadow(0 0 5px #00fff7)}
-  .nuc{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 35%,rgba(0,255,247,.45),rgba(0,60,80,.6));
-    box-shadow:0 0 18px rgba(0,255,247,.45);animation:breathe 4s ease-in-out infinite} .nuc ha-icon{--mdc-icon-size:22px;color:#e9ffff}
+  .nuc{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 35%,rgba(0,255,247,.45),rgba(0,60,80,.6));
+    box-shadow:0 0 18px rgba(0,255,247,.45);animation:breathe 4s ease-in-out infinite} .nuc ha-icon{--mdc-icon-size:36px;color:#e9ffff}
   .orb.listen .r1{animation-duration:1.4s} .orb.listen .nuc{animation-duration:1s}
   .orb.think .r1{animation-duration:.7s;border-top-color:#c77dff;filter:drop-shadow(0 0 6px #c77dff)} .orb.think .nuc{background:radial-gradient(circle at 35% 35%,rgba(199,125,255,.55),rgba(50,20,80,.6));box-shadow:0 0 20px rgba(199,125,255,.5)}
   .orb.speak .r3{animation:pulse 1s ease-in-out infinite}
   @keyframes spin{to{transform:rotate(360deg)}} @keyframes breathe{50%{transform:scale(1.07);opacity:.85}} @keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 28px rgba(0,255,247,.55)}}
   .info{min-width:0;flex:1} .st{font-size:12px;font-weight:800;letter-spacing:.28em;color:#00fff7;text-shadow:0 0 8px rgba(0,255,247,.6);margin-bottom:6px}
-  .said{font-size:13.5px;line-height:1.35;color:#e6f7ff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden} .said i{color:rgba(150,210,225,.55)}
+  .said{font-size:15px;line-height:1.35;color:#e6f7ff;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden} .said i{color:rgba(150,210,225,.55)}
   .when{font-size:10px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin-top:4px}
   .nodes{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;z-index:1}
   .node{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:11px;border:1px solid rgba(0,255,247,.16);background:rgba(0,255,247,.03);
@@ -353,7 +364,7 @@
   .next{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:12px;background:rgba(180,140,255,.07);border:1px solid rgba(180,140,255,.3);z-index:1;min-width:0}
   .next ha-icon{--mdc-icon-size:17px;color:#b48cff;flex:none} .nl{font-size:9px;font-weight:800;letter-spacing:.2em;color:#b48cff;flex:none}
   .nt{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .next em{font-style:normal;font-size:10.5px;font-weight:700;color:#d9c8ff;letter-spacing:.08em}
-  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;z-index:1}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;z-index:1}
   .tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;border:1px solid rgba(0,255,247,.16);background:rgba(0,255,247,.03);cursor:default}
   .tile[data-act]{cursor:pointer} .tile ha-icon{--mdc-icon-size:16px;color:#5fd8e6} .tile b{font-size:18px;font-weight:700;color:#e9ffff;line-height:1.1}
   .tile span{font-size:8.5px;font-weight:800;letter-spacing:.14em;color:rgba(150,220,235,.6)}
