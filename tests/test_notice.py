@@ -64,7 +64,7 @@ async def test_change_batched_then_spoken(hass: HomeAssistant, freezer) -> None:
     await hass.async_block_till_done()
     assert not ai  # waits to batch
     await _settle(hass, freezer)
-    assert len(ai) == 1
+    assert len(ai) == 1 and said
     prompt = ai[0].data["instructions"]
     assert "Washing machine changed from running to finished" in prompt
     assert "Back door changed from off to on" in prompt
@@ -151,3 +151,29 @@ def test_finished_remark_contradiction() -> None:
     assert contradicts("The kettle has finished boiling.", [start])
     assert not contradicts("The kettle has finished boiling.", [done])
     assert not contradicts("The kettle is heating up.", [start])
+
+
+async def test_something_someone_just_started_is_not_news(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    entry = await _setup(hass, notice_entities=["sensor.kettle_status"])
+    device = dr.async_get(hass).async_get_or_create(config_entry_id=entry.entry_id, identifiers={("test", "kettle")})
+    ents = er.async_get(hass)
+    for domain, oid in (("sensor", "kettle_status"), ("switch", "kettle_start")):
+        ents.async_get_or_create(domain, "test", oid, suggested_object_id=oid, device_id=device.id)
+    hass.states.async_set("sensor.kettle_status", "standby", {"friendly_name": "Kettle"})
+    hass.states.async_set("switch.kettle_start", "off")
+    await hass.async_block_till_done()
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    ai = _ai(hass, {"speak": True, "message": "The kettle has finished boiling."})
+    freezer.tick(timedelta(minutes=5))
+    # the kettle's switch is pressed, then it starts heating: they know, so no AI and nothing said
+    hass.states.async_set("switch.kettle_start", "on")
+    hass.states.async_set("sensor.kettle_status", "heating", {"friendly_name": "Kettle"})
+    await _settle(hass, freezer)
+    assert not ai
+    # finishing is news
+    freezer.tick(timedelta(minutes=4))
+    hass.states.async_set("sensor.kettle_status", "standby", {"friendly_name": "Kettle"})
+    await _settle(hass, freezer)
+    assert len(ai) == 1 and said

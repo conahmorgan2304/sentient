@@ -11,7 +11,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Backup-only speakers, used only when no main speaker's room is occupied (0.5.0)
 - [x] Activity-scored rooms: decaying motion history, voice-interaction boost, pass-through areas, every-occupied-room mode, seeded from the recorder (0.2.0)
 - [x] Memory and last-spoken sensors
-- [ ] Dashboard card (core, feed and stats) shipped with the integration
+- [x] Dashboard card (core, feed and stats) shipped with the integration (0.40.0: custom:sentient-hub-card, custom:sentient-shows-card)
 - [x] Memory manager in the options flow (view, edit, delete) (0.3.0)
 
 ## Stage 2 — Watches *(in progress)*
@@ -72,3 +72,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Settings grouped into menus that fold away: voice & sound, cameras & video, security & safety, home & routines, brain & system (0.37.0)
 - [x] Disco mode: disco, party, rainbow and chill light shows for chosen lights or a named room; lights go back exactly as they were (even after a restart); switch, voice and an action (0.38.0)
 - [x] Light shows: whole house ('everywhere'), lights to leave out, Halloween and Christmas styles, following the music from a loudness sensor, and a choice of which shows get an overview button (0.39.0)
+- [x] Quieter: no remarks about something a person just switched on; voice follow-through only after real speech; shorter camera journeys; hub and light-show dashboard cards (0.40.0)

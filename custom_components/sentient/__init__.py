@@ -206,6 +206,14 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     from .websocket import async_register as _register_websocket
 
     _register_websocket(hass)
+    if "frontend" in hass.config.components and getattr(hass, "http", None) is not None:
+        # dashboard cards, ready for any dashboard (custom:sentient-hub-card, custom:sentient-shows-card)
+        from homeassistant.components.frontend import add_extra_js_url
+        from homeassistant.loader import async_get_integration
+
+        version = (await async_get_integration(hass, DOMAIN)).version
+        for card in ("sentient-shows-card", "sentient-hub-card"):
+            add_extra_js_url(hass, f"{FRONTEND_URL}/{card}.js?v={version}")
     return True
 
 

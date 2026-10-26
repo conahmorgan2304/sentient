@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
@@ -53,6 +53,10 @@ BATCH_SECONDS = 20
 NUMERIC_GAP = timedelta(minutes=15)
 OTHER_GAP = timedelta(seconds=30)
 _IGNORED = {STATE_UNAVAILABLE, STATE_UNKNOWN, None}
+_RESTING = {"off", "standby", "idle", "docked", "paused", "stopped", "done", "ready", "complete", "finished"}
+_GOING = {"on", "heating", "boiling", "running", "cleaning", "brewing", "playing", "washing", "drying", "cooking"}
+STARTED_BY_SOMEONE = timedelta(minutes=2)
+_CONTROLS = {"switch", "button", "input_button", "select", "input_boolean", "light", "fan", "media_player", "water_heater"}
 
 
 @dataclass
@@ -165,6 +169,8 @@ class Noticer:
             b = _number(new.state) or 0.0
             if abs(b - a) < max(0.5, abs(a) * 0.05):
                 return  # jitter
+        if old.state.lower() in _RESTING and new.state.lower() in _GOING and self._just_started(new.entity_id, now):
+            return  # someone just switched it on (by hand, an offer, a routine): they know already
         self._last_seen[new.entity_id] = now
         area_id = area_of(self.hass, new.entity_id)
         area = ar.async_get(self.hass).async_get_area(area_id) if area_id else None
@@ -181,6 +187,20 @@ class Noticer:
         )
         if self._flush_unsub is None:
             self._flush_unsub = async_call_later(self.hass, BATCH_SECONDS, self._flush)
+
+    def _just_started(self, entity_id: str, now: datetime) -> bool:
+        """Was a control on the same device (a kettle's switch, say) pressed a moment ago?"""
+        ents = er.async_get(self.hass)
+        entry = ents.async_get(entity_id)
+        if entry is None or not entry.device_id:
+            return False
+        for other in er.async_entries_for_device(ents, entry.device_id):
+            if other.entity_id == entity_id or other.domain not in _CONTROLS:
+                continue
+            st = self.hass.states.get(other.entity_id)
+            if st is not None and st.state not in _IGNORED and now - st.last_changed <= STARTED_BY_SOMEONE:
+                return True
+        return False
 
     @callback
     def _flush(self, _now: datetime) -> None:
