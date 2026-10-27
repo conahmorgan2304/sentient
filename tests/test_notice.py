@@ -117,7 +117,7 @@ async def test_hourly_limit_and_jitter(hass: HomeAssistant, freezer) -> None:
         await _settle(hass, freezer)
         freezer.tick(timedelta(seconds=31))
     # quiet = two remarks an hour; the third change never reaches the AI
-    assert len(ai) == 2
+    assert len([c for c in ai if c.data['task_name'] == 'Sentient: worth saying?']) == 2  # (other jobs may fall in the window)
 
 
 async def test_ask_service_and_house_rules_in_prompt(hass: HomeAssistant) -> None:

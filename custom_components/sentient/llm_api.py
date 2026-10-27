@@ -23,6 +23,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
 
 from .const import (
+    CONF_BRIEFING_WEATHER,
     personality_line,
     CONF_HOUSE_RULES,
     CONF_PERSONA,
@@ -1042,6 +1043,16 @@ class SentientAPI(llm.API):
             personality_line(opts),
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')}.",
         ]
+        weather_id = opts.get(CONF_BRIEFING_WEATHER)
+        weather = self.hass.states.get(weather_id) if weather_id else next(
+            (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
+        if weather is not None and weather.attributes.get("temperature") is not None:
+            unit = weather.attributes.get("temperature_unit") or "°C"
+            lines.append(
+                f"Outside right now: {round(float(weather.attributes['temperature']))}{unit}, "
+                f"{str(weather.state).replace('partlycloudy', 'partly cloudy').replace('-', ' ')}. This is the only "
+                "outside temperature: never give a room or thermostat temperature as the weather."
+            )
         if rules := (opts.get(CONF_HOUSE_RULES) or "").strip():
             lines.append(f"House rules you must always follow:\n{rules}")
         room = self._room_of_device(llm_context.device_id)
