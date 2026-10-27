@@ -1096,7 +1096,8 @@ class SentientAPI(llm.API):
             lines.append(
                 f"Outside right now: {round(float(weather.attributes['temperature']))}{unit}, "
                 f"{str(weather.state).replace('partlycloudy', 'partly cloudy').replace('-', ' ')}. This is the only "
-                "outside temperature: never give a room or thermostat temperature as the weather."
+                "outside temperature: never give a room or thermostat temperature as the weather. If another "
+                "tool gives a different current temperature, this one is right."
             )
         elif weather_id or self.hass.states.async_all("weather"):
             lines.append(
