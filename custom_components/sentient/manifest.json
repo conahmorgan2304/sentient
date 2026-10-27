@@ -2,7 +2,9 @@
   "domain": "sentient",
   "name": "Sentient",
   "after_dependencies": [
+    "assist_pipeline",
     "assist_satellite",
+    "camera",
     "conversation",
     "frontend",
     "http",
@@ -22,5 +24,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [],
-  "version": "0.49.1"
+  "version": "0.49.2"
 }
