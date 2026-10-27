@@ -469,3 +469,11 @@ def test_usual_bedtime_and_getting_up() -> None:
     ] + [{"slept": D(2026, 10, 5, 0, 30, tzinfo=tz).isoformat(), "woke": D(2026, 10, 5, 7, 0, tzinfo=tz).isoformat()}]
     usual = s.usual()
     assert usual["up"] in ("06:40", "06:50") and usual["bedtime"] in ("23:10", "23:50")
+
+
+def test_card_addresses_follow_the_files() -> None:
+    from custom_components.sentient import CARDS, _card_tags
+
+    tags = _card_tags()
+    assert set(tags) == set(CARDS) and all(len(t) == 10 for t in tags.values())
+    assert len(_card_tags(("sentient-panel",))["sentient-panel"]) == 10

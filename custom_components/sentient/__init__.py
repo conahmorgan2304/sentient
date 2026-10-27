@@ -268,6 +268,7 @@ CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
 def _card_tags(cards: tuple[str, ...] = CARDS) -> dict[str, str]:
     """A short fingerprint of each file, for its address."""
     import hashlib
+    from pathlib import Path
 
     out = {}
     for card in cards:
