@@ -48,6 +48,10 @@
           "voice_agent": "Main AI voice agent",
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
+          "away_lights_on": "Away lights",
+          "away_people": "Away when all of these are out",
+          "away_lights": "Lights to use",
+          "away_after": "Start after everyone's been out for",
           "animal_low": "Too cold below",
           "animal_high": "Too hot above",
           "screen": "Use the tablet screen",
@@ -82,6 +86,10 @@
           "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
           "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
           "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Stops and puts back what it switched on as soon as anyone's home. Also an 'Away lights' switch.",
+          "away_people": "Empty: everyone with a person entry.",
+          "away_lights": "Empty: every light in the house. Only lights that were used at that time last week come on.",
+          "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
@@ -211,6 +219,10 @@
           "voice_agent": "Main AI voice agent",
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
+          "away_lights_on": "Away lights",
+          "away_people": "Away when all of these are out",
+          "away_lights": "Lights to use",
+          "away_after": "Start after everyone's been out for",
           "animal_low": "Too cold below",
           "animal_high": "Too hot above",
           "screen": "Use the tablet screen",
@@ -312,6 +324,10 @@
           "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
           "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
           "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Stops and puts back what it switched on as soon as anyone's home. Also an 'Away lights' switch.",
+          "away_people": "Empty: everyone with a person entry.",
+          "away_lights": "Empty: every light in the house. Only lights that were used at that time last week come on.",
+          "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
@@ -425,6 +441,9 @@
       },
       "media_important_only": {
         "name": "Echos: alarms and reminders only"
+      },
+      "away_lights": {
+        "name": "Away lights"
       },
       "screen": {
         "name": "Tablet screen"

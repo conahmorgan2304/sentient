@@ -55,6 +55,11 @@ from .const import (
     CONF_BACKUP_AGENT,
     DEFAULT_BACKUP_AGENT,
     CONF_ANIMAL_SENSORS,
+    CONF_AWAY_LIGHTS_ON,
+    CONF_AWAY_PEOPLE,
+    CONF_AWAY_LIGHTS,
+    CONF_AWAY_AFTER,
+    DEFAULT_AWAY_AFTER,
     CONF_SCREEN,
     CONF_SCREEN_ACTIONS,
     CONF_SCREEN_CLEAR_ACTIONS,
@@ -205,6 +210,16 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_ANIMAL_HIGH, **d(CONF_ANIMAL_HIGH, DEFAULT_ANIMAL_HIGH)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=15, max=45, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_AWAY_LIGHTS_ON, **d(CONF_AWAY_LIGHTS_ON, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_AWAY_PEOPLE, **d(CONF_AWAY_PEOPLE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="person", multiple=True)
+            ),
+            vol.Optional(CONF_AWAY_LIGHTS, **d(CONF_AWAY_LIGHTS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
+            vol.Required(CONF_AWAY_AFTER, **d(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Optional(CONF_CHAT_AGENT, **d(CONF_CHAT_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")

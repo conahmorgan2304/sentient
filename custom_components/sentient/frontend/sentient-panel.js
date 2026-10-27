@@ -330,7 +330,7 @@
         ["voice", "mdi:account-voice", "Voice & sound", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
         ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
         ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "animals", "motion", "party", "heating", "energy"]],
+        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "animals", "away", "motion", "party", "heating", "energy"]],
         ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));

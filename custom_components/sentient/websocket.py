@@ -105,6 +105,10 @@ from .const import (
     CONF_VOICE_AGENT,
     CONF_BACKUP_AGENT,
     CONF_ANIMAL_SENSORS,
+    CONF_AWAY_LIGHTS_ON,
+    CONF_AWAY_PEOPLE,
+    CONF_AWAY_LIGHTS,
+    CONF_AWAY_AFTER,
     CONF_SCREEN,
     CONF_SCREEN_ACTIONS,
     CONF_SCREEN_CLEAR_ACTIONS,
@@ -204,6 +208,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
         CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS,
+    ]),
+    ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
+        CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,

@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), MediaImportantOnlySwitch(entry), ScreenSwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), MediaImportantOnlySwitch(entry), AwayLightsSwitch(entry), ScreenSwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -183,6 +183,38 @@ class MediaImportantOnlySwitch(_ModeSwitch):
         entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_MEDIA_IMPORTANT_ONLY: on}
         self.async_write_ha_state()
         self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"media_important_only": on})
+
+
+class AwayLightsSwitch(_ModeSwitch):
+    """Lights that copy last week while everyone's out (the same as the setting)."""
+
+    _attr_icon = "mdi:home-export-outline"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "away_lights")
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.away.enabled
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self._entry.runtime_data.away.describe()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self._set(False)
+
+    def _set(self, on: bool) -> None:
+        from .const import CONF_AWAY_LIGHTS_ON
+
+        entry = self._entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_AWAY_LIGHTS_ON: on})
+        entry.runtime_data.away.options = {**entry.runtime_data.away.options, CONF_AWAY_LIGHTS_ON: on}
+        self.async_write_ha_state()
+        self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"away_lights": on})
 
 
 class ScreenSwitch(_ModeSwitch):

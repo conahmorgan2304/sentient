@@ -347,6 +347,7 @@ class Learner:
         self.last_run: str | None = None
         self._unsubs: list = []
         self._asked_today: str | None = None
+        self.extra_automated = None  # () -> {entity: epoch seconds} changed by Sentient itself
         self.skip = None  # callable giving entities another feature already runs
         self.feedback = None  # set by the runtime: declines teach it what not to offer
 
@@ -495,6 +496,9 @@ class Learner:
         except Exception:  # noqa: BLE001 - fall back to the to-the-minute rule
             _LOGGER.debug("Could not read the logbook; using timing alone", exc_info=True)
             automated = {}
+        if self.extra_automated is not None:  # the house's own switching (away lights) isn't a habit either
+            for entity_id, stamps in self.extra_automated().items():
+                automated.setdefault(entity_id, set()).update(stamps)
         fresh: dict[str, Routine] = {}
         for entity_id in entity_ids:
             state = self.hass.states.get(entity_id)

@@ -84,3 +84,6 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Set-up wizard filled in from the house; thumbs up/down on remarks (0.48.0)
 - [x] One-call house check, voice action log and 'why didn't you say', watchdog for wear, fighting automations and frozen cameras (0.49.0)
 - [x] Tablet screen card: alerts with the camera, notices, morning card, idle glance; on/off setting and switch (0.50.0)
+- [x] The drive compares pictures before asking the AI; tools never crash a voice reply (0.51.0)
+- [x] Echos kept for alarms, reminders and safety alerts only; camera security quiet when the AI sees nobody (0.52.0)
+- [x] Away lights: last week replayed while everyone's out after dark, stops when anyone's home (0.53.0)
