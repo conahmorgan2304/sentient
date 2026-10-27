@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import logging
 import random
+import re
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_HOME
@@ -20,9 +21,11 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .presence import area_of
 from .const import CONF_AWAY_AFTER, CONF_AWAY_LIGHTS, CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, DEFAULT_AWAY_AFTER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+NOT_A_ROOM_LIGHT = re.compile(r"screen|led|ring|backlight|indicator|status|night ?light|all[_ ]lights|browser_mod|floodlight", re.I)
 
 WEEK = timedelta(days=7)
 JITTER_MINUTES = 12
@@ -76,8 +79,30 @@ class Away:
         from homeassistant.helpers import entity_registry as er
 
         reg = er.async_get(self.hass)
-        return [s.entity_id for s in self.hass.states.async_all("light")
-                if (e := reg.async_get(s.entity_id)) is None or (not e.hidden_by and not e.disabled_by)]
+        out = []
+        for st in self.hass.states.async_all("light"):
+            e = reg.async_get(st.entity_id)
+            if e is None or e.hidden_by or e.disabled_by or e.entity_category:
+                continue
+            if st.attributes.get("entity_id") or NOT_A_ROOM_LIGHT.search(f"{st.entity_id} {st.name}"):
+                continue  # groups ("all lights"), screens, LED rings, backlights
+            if area_of(self.hass, st.entity_id) is None:
+                continue
+            out.append(st.entity_id)
+        return out
+
+    def movement_inside(self, now: datetime) -> str | None:
+        """Someone moving about inside lately — people without a phone tracked, so not away after all."""
+        rt = self._rt()
+        sensors = rt.night_watch._inside_list() if rt is not None else []
+        recent = timedelta(minutes=max(30.0, float(self.options.get(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER) or 0)))
+        for entity_id in sensors:
+            st = self.hass.states.get(entity_id)
+            # on now, or changed within the window (so it was on at some point in it)
+            if st is not None and st.state not in ("unavailable", "unknown") and (
+                    st.state == "on" or st.last_changed >= now - recent):
+                return st.name
+        return None
 
     # ----- running ----------------------------------------------------------------------
     async def async_start(self) -> None:
@@ -124,7 +149,7 @@ class Away:
     def due(self, now: datetime) -> bool:
         minutes = float(self.options.get(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER) or 0)
         return (self.enabled and self.away_since is not None and now - self.away_since >= timedelta(minutes=minutes)
-                and self.dark())
+                and self.dark() and self.movement_inside(now) is None)
 
     @callback
     def _tick(self, now: datetime) -> None:
@@ -133,7 +158,9 @@ class Away:
     async def async_step(self, now: datetime) -> None:
         if not self.due(now):
             if self.active:
-                await self.async_finish("it's light" if self.away_since else "someone's home")
+                why = ("someone's home" if self.away_since is None else "someone's moving about inside"
+                       if self.movement_inside(now) else "it's light")
+                await self.async_finish(why)
             return
         if not self.active:
             self.active = True

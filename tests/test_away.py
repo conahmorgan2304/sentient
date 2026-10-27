@@ -80,3 +80,32 @@ async def test_away_lights_wait_for_dark(hass: HomeAssistant) -> None:
     hass.states.async_set("sun.sun", "below_horizon")
     assert not away.due(now + timedelta(minutes=10))  # only just gone out
     assert away.due(now + timedelta(minutes=31))
+
+
+async def test_away_lights_defaults_and_movement_inside(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+
+    hass.states.async_set("person.a", "not_home")
+    hass.states.async_set("sun.sun", "below_horizon")
+    area = ar.async_get(hass).async_create("Lounge")
+    ents = er.async_get(hass)
+    for oid in ("lounge", "hallway_screen", "kitchen_speaker_led_ring", "loose"):
+        ents.async_get_or_create("light", "test", oid, suggested_object_id=oid)
+        hass.states.async_set(f"light.{oid}", "off")
+    for oid in ("lounge", "hallway_screen", "kitchen_speaker_led_ring"):
+        ents.async_update_entity(f"light.{oid}", area_id=area.id)
+    hass.states.async_set("light.all_lights", "off", {"entity_id": ["light.lounge"]})
+    hass.states.async_set("binary_sensor.lounge_motion", "off", {"device_class": "motion"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        "persona": "Nova", "speakers": [], "away_lights_on": True, "away_after": 0,
+        "inside_sensors": ["binary_sensor.lounge_motion"],
+    })
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    away = entry.runtime_data.away
+    assert away.lights() == ["light.lounge"]  # no screens, LED rings, groups or lights without a room
+    now = dt_util.utcnow() + timedelta(hours=1)
+    assert away.due(now)
+    hass.states.async_set("binary_sensor.lounge_motion", "on", {"device_class": "motion"})
+    assert away.movement_inside(now) and not away.due(now)  # someone's in after all
