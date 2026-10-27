@@ -477,3 +477,46 @@ def test_card_addresses_follow_the_files() -> None:
     tags = _card_tags()
     assert set(tags) == set(CARDS) and all(len(t) == 10 for t in tags.values())
     assert len(_card_tags(("sentient-panel",))["sentient-panel"]) == 10
+
+
+async def test_drive_only_asks_the_ai_when_the_picture_changes(hass: HomeAssistant, freezer) -> None:
+    import io
+
+    from PIL import Image, ImageDraw
+
+    from custom_components.sentient.spots import Spots, changed_share
+
+    def picture(car: bool, light: int) -> bytes:
+        img = Image.new("RGB", (320, 240), (light, light, light))
+        draw = ImageDraw.Draw(img)
+        draw.rectangle((0, 160, 320, 240), fill=(light // 2,) * 3)  # the drive
+        if car:
+            draw.rectangle((60, 120, 220, 210), fill=(200, 30, 30))
+        out = io.BytesIO()
+        img.save(out, "JPEG")
+        return out.getvalue()
+
+    box = [0, 0, 1, 1]
+    empty_day = Spots.fingerprint_of(picture(False, 180), box)
+    empty_dusk = Spots.fingerprint_of(picture(False, 110), box)
+    with_car = Spots.fingerprint_of(picture(True, 180), box)
+    assert changed_share(empty_day, empty_dusk) < 0.06  # just darker: same drive
+    assert changed_share(empty_day, with_car) > 0.06
+
+    hass.states.async_set("camera.gate", "idle")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.spots.set("camera.gate", "Drive", [0.1, 0.4, 0.6, 0.9])
+    prints = iter([empty_day, empty_dusk, with_car])
+
+    async def fake(_camera, _key):
+        return next(prints)
+
+    rt.spots.async_fingerprint = fake
+    answers = iter([{"cars": 0}, {"cars": 1, "description": "red hatchback"}])
+    ai = _ai(hass, lambda _c: next(answers))
+    for _ in range(3):
+        await rt.drive.async_check()
+        freezer.tick(timedelta(minutes=10))
+    assert len(ai) == 2 and rt.drive.skipped == 1
+    assert rt.drive.describe()["cars"] == 1

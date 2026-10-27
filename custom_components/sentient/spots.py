@@ -27,6 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 STORAGE_VERSION = 1
 MARGIN = 0.12  # extra context around a spot, as a share of its size
 MIN_SIZE = 0.08  # never crop smaller than this share of the frame
+FINGERPRINT_SIZE = (32, 24)
 
 
 def _key(name: str) -> str:
@@ -193,7 +194,7 @@ class Spots:
         }
 
     @staticmethod
-    def _crop_to(content: bytes, box: list[float], path: Path, points: list[list[float]] | None = None) -> None:
+    def _crop(content: bytes, box: list[float], points: list[list[float]] | None = None):
         from PIL import Image, ImageDraw
 
         img = Image.open(io.BytesIO(content)).convert("RGB")
@@ -213,6 +214,45 @@ class Spots:
         if bottom - top < MIN_SIZE:
             centre = (top + bottom) / 2
             top, bottom = max(0.0, centre - MIN_SIZE / 2), min(1.0, centre + MIN_SIZE / 2)
-        crop = img.crop((int(left * w), int(top * h), int(right * w), int(bottom * h)))
+        return img.crop((int(left * w), int(top * h), int(right * w), int(bottom * h)))
+
+    @classmethod
+    def _crop_to(cls, content: bytes, box: list[float], path: Path, points: list[list[float]] | None = None) -> None:
+        crop = cls._crop(content, box, points)
         path.parent.mkdir(parents=True, exist_ok=True)
         crop.save(path, "JPEG", quality=90)
+
+    @classmethod
+    def fingerprint_of(cls, content: bytes, box: list[float], points: list[list[float]] | None = None) -> list[int]:
+        """A tiny grey thumbnail of the spot, for spotting change without the AI."""
+        small = cls._crop(content, box, points).convert("L").resize(FINGERPRINT_SIZE)
+        return list(small.getdata())
+
+    async def async_fingerprint(self, camera: str, spot_key: str | None) -> list[int] | None:
+        spot = self.spots.get(spot_key or "")
+        if spot is None or spot["camera"] != camera:
+            return None
+        try:
+            from homeassistant.components.camera import async_get_image
+
+            image = await async_get_image(self.hass, camera)
+            return await self.hass.async_add_executor_job(
+                self.fingerprint_of, image.content, spot["box"], spot.get("points")
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("No fingerprint for %s: %s", camera, err)
+            return None
+
+
+def changed_share(a: list[int] | None, b: list[int] | None) -> float:
+    """How much of the picture is different, ignoring overall brightness: 0 (same) to 1."""
+    if not a or not b or len(a) != len(b):
+        return 1.0
+
+    def norm(v: list[int]) -> list[float]:
+        mean = sum(v) / len(v)
+        spread = (sum((x - mean) ** 2 for x in v) / len(v)) ** 0.5 or 1.0
+        return [(x - mean) / spread for x in v]
+
+    na, nb = norm(a), norm(b)
+    return sum(1 for x, y in zip(na, nb) if abs(x - y) > 0.8) / len(na)

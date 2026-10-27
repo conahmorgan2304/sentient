@@ -159,7 +159,13 @@
 
     _idle() {
       const S = this._hass.states;
-      const said = this._attr("last_spoken", "log", []).find((l) => l.said);
+      // the latest thing said, while it's still news: questions for ten minutes, the rest for two hours
+      const said = this._attr("last_spoken", "log", []).find((l) => {
+        if (!l.said) return false;
+        const age = (Date.now() - new Date(l.time).getTime()) / 60000;
+        const asking = /^(offer|curious|learning)/.test(l.source || "") || /\?\s*$/.test(l.said);
+        return age < (asking ? 10 : 120);
+      });
       const watches = this._attr("watches", "watches", []);
       const next = watches.slice().sort((a, b) => String(a.ends).localeCompare(String(b.ends)))[0];
       const mind = (this._st("mind") || {}).attributes || {};

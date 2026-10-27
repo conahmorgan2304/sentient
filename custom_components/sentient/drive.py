@@ -5,8 +5,9 @@ camera's motion or car sensors settle down after activity, Sentient takes one AI
 spot: how many cars, and a few words on each. Arrivals and departures go on the timeline, the
 answer goes to every voice ("is my car on the drive?") and a sensor shows it.
 
-Cheap: one look per burst of activity at most, never more than once every few minutes, and it
-counts towards the daily AI limit. Nothing set up (no spot): it does nothing.
+Cheap: one look per burst of activity at most, never more than once every few minutes, and only
+when the drive actually looks different from last time (a quick picture comparison, no AI). Looks
+count towards the daily AI limit. Nothing set up (no spot): it does nothing.
 """
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 EVENT_DRIVE = f"{DOMAIN}_drive"
 SETTLE_SECONDS = 25  # after the last movement: the car's parked, the doors are shut
 COOLDOWN = timedelta(minutes=3)
+CHANGED = 0.06  # share of the drive picture that must look different before the AI is asked
 MAX_COOLDOWN = timedelta(hours=1)  # cars passing on the road: each look that finds nothing new waits twice as long
 _TRIGGER_WORDS = ("motion", "car", "vehicle", "occupancy", "all_occupancy")
 
@@ -52,6 +54,7 @@ class Drive:
         self._pending = None
         self._last_look = None
         self._same = 0  # looks in a row that found nothing new
+        self.skipped = 0  # looks saved because the picture hadn't changed
         self._triggers: set[str] = set()
 
     async def async_start(self) -> None:
@@ -140,15 +143,16 @@ class Drive:
         if rt is None or spot is None:
             return {"error": "No drive spot: draw one called 'drive' on the camera that can see it"}
         now = dt_util.utcnow()
-        if not force:
-            if self._last_look and now - self._last_look < self.cooldown():
-                return self.describe()
-            if not rt.watches.spend("drive"):
-                return self.describe()
-        else:
-            rt.watches.spend("drive", force=True)
+        if not force and self._last_look and now - self._last_look < self.cooldown():
+            return self.describe()
+        from .spots import _key, changed_share
+
+        fingerprint = await rt.spots.async_fingerprint(spot["camera"], _key(spot["name"]))
+        if (not force and fingerprint and self.state.get("fingerprint")
+                and changed_share(fingerprint, self.state["fingerprint"]) < CHANGED):
+            self.skipped += 1
+            return self.describe()  # the drive looks just as it did last time: no need to ask the AI
         self._last_look = now
-        from .spots import _key
 
         data: dict[str, Any] = {
             "task_name": "Sentient: the drive",
@@ -169,6 +173,8 @@ class Drive:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
+        if not rt.watches.spend("drive", force=force):
+            return self.describe()
         try:
             response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
@@ -197,6 +203,8 @@ class Drive:
                     text = "A car left the drive" + (f" — {description} still there" if cars and description else
                                                       " — it's clear now" if not cars else "")
                 rt.timeline.add("drive", text, f"{cars} on the drive")
+        if fingerprint:
+            self.state["fingerprint"] = fingerprint
         self._store.async_delay_save(lambda: {"state": self.state}, 2)
         self.hass.bus.async_fire(EVENT_DRIVE, self.describe())
         return self.describe()
