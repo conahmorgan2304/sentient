@@ -246,3 +246,25 @@ async def test_a_tool_with_missing_arguments_does_not_crash_the_voice(hass: Home
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden"}))
     assert "wrong arguments" in out["error"]
+
+
+async def test_announce_to_several_rooms_or_everywhere(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    areas = ar.async_get(hass)
+    ents = er.async_get(hass)
+    for oid, room in (("kitchen", "Kitchen"), ("landing", "Upstairs"), ("lounge", "Living room")):
+        ents.async_get_or_create("assist_satellite", "test", oid, suggested_object_id=oid)
+        ents.async_update_entity(f"assist_satellite.{oid}", area_id=areas.async_create(room).id)
+        hass.states.async_set(f"assist_satellite.{oid}", "idle", {"supported_features": 3})
+    await _setup(hass, speakers=["assist_satellite.kitchen", "assist_satellite.landing", "assist_satellite.lounge"],
+                 quiet_start="23:59:00", quiet_end="00:00:00")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_announce", tool_args={
+        "message": "Dinner's ready.", "speaker": "kitchen and upstairs"}))
+    assert out["spoken"] and sorted(said[-1].data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.landing"]
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_announce", tool_args={
+        "message": "Film's starting.", "speaker": "everywhere"}))
+    assert out["spoken"] and len(said[-1].data["entity_id"]) == 3

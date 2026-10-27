@@ -9,6 +9,7 @@ That gives every voice in the house one shared brain.
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -24,6 +25,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
 
 from .const import (
+    CONF_FALLBACK_SPEAKERS,
     CONF_BRIEFING_WEATHER,
     personality_line,
     CONF_HOUSE_RULES,
@@ -173,12 +175,16 @@ class ForgetTool(_Tool):
         return {"forgotten": removed.text if removed else None}
 
 
+EVERYWHERE = re.compile(r"(the )?(everywhere|every ?(one|body|room|speaker)s?|all( the)?( (speakers|rooms))?|(the )?whole house|all over( the house)?|house)")
+
+
 class AnnounceTool(_Tool):
     name = "sentient_announce"
     description = (
         "Say something out loud through the house's speakers, e.g. 'tell the kitchen "
-        "dinner is ready'. Leave 'speaker' empty to use the room where someone was last "
-        "seen. Respects quiet hours unless priority is urgent."
+        "dinner is ready'. 'speaker' can be one room, several ('kitchen and upstairs') or "
+        "'everywhere' for every speaker in the house. Leave it empty to use the room where someone "
+        "was last seen. Respects quiet hours unless priority is urgent."
     )
     parameters = vol.Schema(
         {
@@ -196,12 +202,21 @@ class AnnounceTool(_Tool):
             return {"error": "Sentient is not loaded"}
         args = tool_input.tool_args
         targets = None
-        if args.get("speaker"):
-            found = rt.speech.find_speaker(args["speaker"])
-            if found is None:
-                return {"spoken": False, "reason": f"no speaker matches '{args['speaker']}'",
-                        "speakers": rt.speech.describe_rooms()}
-            targets = [found]
+        if wanted := (args.get("speaker") or "").strip():
+            if EVERYWHERE.fullmatch(wanted.lower()):
+                targets = rt.speech.speakers + [s for s in rt.speech.usable(rt.options.get(CONF_FALLBACK_SPEAKERS))
+                                                if s not in rt.speech.speakers]
+            else:
+                targets = []
+                for part in re.split(r",|\band\b|&|\+", wanted):
+                    if not (part := part.strip()):
+                        continue
+                    found = rt.speech.find_speaker(part)
+                    if found is None:
+                        return {"spoken": False, "reason": f"no speaker matches '{part}'",
+                                "speakers": rt.speech.describe_rooms()}
+                    if found not in targets:
+                        targets.append(found)
         result = await rt.speech.async_say(
             args["message"], args.get("priority", "normal"), targets, source="conversation"
         )
