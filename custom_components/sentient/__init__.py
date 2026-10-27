@@ -241,14 +241,17 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         from homeassistant.loader import async_get_integration
 
         version = (await async_get_integration(hass, DOMAIN)).version
+        # each card's address only changes when that card's file does, so a browser's saved copy of
+        # the page keeps working across updates that don't touch the cards
+        tags = await hass.async_add_executor_job(_card_tags)
         for card in CARDS:
-            add_extra_js_url(hass, f"{FRONTEND_URL}/{card}.js?v={version}")
+            add_extra_js_url(hass, f"{FRONTEND_URL}/{card}.js?v={tags.get(card, version)}")
 
         # also as dashboard resources: an app or browser holding an old copy of the page loads those
         # with the dashboard, so the cards are never "not found" after an update
         async def _resources(_event=None) -> None:
             try:
-                await async_register_card_resources(hass, version)
+                await async_register_card_resources(hass, version, tags)
             except Exception as err:  # noqa: BLE001 - the extra JS above still works in most places
                 _LOGGER.debug("Couldn't add the cards as dashboard resources: %s", err)
 
@@ -262,7 +265,20 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
 
 
-async def async_register_card_resources(hass: HomeAssistant, version: str) -> list[str]:
+def _card_tags(cards: tuple[str, ...] = CARDS) -> dict[str, str]:
+    """A short fingerprint of each file, for its address."""
+    import hashlib
+
+    out = {}
+    for card in cards:
+        try:
+            out[card] = hashlib.md5((Path(__file__).parent / "frontend" / f"{card}.js").read_bytes()).hexdigest()[:10]  # noqa: S324
+        except OSError:
+            pass
+    return out
+
+
+async def async_register_card_resources(hass: HomeAssistant, version: str, tags: dict[str, str] | None = None) -> list[str]:
     """Make sure each card is a module resource on the dashboards, at this version."""
     try:
         from homeassistant.components.lovelace.const import LOVELACE_DATA
@@ -278,7 +294,7 @@ async def async_register_card_resources(hass: HomeAssistant, version: str) -> li
     done = []
     for card in CARDS:
         base = f"{FRONTEND_URL}/{card}.js"
-        url = f"{base}?v={version}"
+        url = f"{base}?v={(tags or {}).get(card, version)}"
         mine = [r for r in resources.async_items() if str(r.get("url", "")).split("?")[0] == base]
         if not mine:
             await resources.async_create_item({"res_type": "module", "url": url})
@@ -439,7 +455,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
         hass,
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name="sentient-panel",
-        module_url=f"{FRONTEND_URL}/sentient-panel.js?v={version}",
+        module_url=f"{FRONTEND_URL}/sentient-panel.js?v={(await hass.async_add_executor_job(_card_tags, ('sentient-panel',))).get('sentient-panel', version)}",
         sidebar_title=options.get(CONF_PERSONA) or entry.title,
         sidebar_icon="mdi:brain",
         require_admin=False,
