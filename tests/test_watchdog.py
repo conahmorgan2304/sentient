@@ -211,3 +211,15 @@ async def test_curiosity_never_asks_about_people(hass: HomeAssistant) -> None:
     cur = entry.runtime_data.curiosity
     assert not cur.wonder("Could you tell me who the regular visitors were yesterday?")
     assert cur.wonder("What's the garage light for at 7pm?")
+
+
+async def test_no_heating_offer_when_it_is_already_warming(hass: HomeAssistant) -> None:
+    hass.states.async_set("sensor.hall_temp", "17")
+    hass.states.async_set("climate.hall", "auto", {"temperature": 20, "current_temperature": 18.9})
+    entry = await _setup(hass)
+    offers = entry.runtime_data.offers
+    offer = {"id": "o1", "name": "Heating on", "below_entity": "sensor.hall_temp", "below": 19,
+             "actions": [{"action": "climate.set_temperature", "target": {"entity_id": "climate.hall"}, "data": {"temperature": 21}}]}
+    assert not offers.ready(offer)
+    hass.states.async_set("climate.hall", "auto", {"temperature": 18, "current_temperature": 18.9})
+    assert offers.ready(offer)

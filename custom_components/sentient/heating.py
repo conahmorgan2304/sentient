@@ -487,4 +487,5 @@ class Heating:
                 "why": f"after {hours:g} hours, as asked in the settings",
             }
             self._save()
-            self.timeline.add("heating", f"{st.name} turned up — back to normal in {hours:g} hours", "time limit")
+            if old is None:  # pressed again while already turned up: no new line
+                self.timeline.add("heating", f"{st.name} turned up — back to normal in {hours:g} hours", "time limit")

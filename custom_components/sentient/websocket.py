@@ -652,7 +652,8 @@ def ws_thumb(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
-    result = entry.runtime_data.feedback.thumb(msg["text"], msg.get("source"), msg["up"])
+    result = entry.runtime_data.feedback.thumb(msg["text"], msg.get("source"), msg["up"],
+                                               sorted(entry.runtime_data.noticer.entities))
     entry.runtime_data.timeline.add(
         "learned", f"{'Thumbs up' if msg['up'] else 'Thumbs down'}: {msg['text'][:120]}",
         ("about " + ", ".join(result["about"])) if result["about"] else None,

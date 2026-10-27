@@ -23,6 +23,7 @@ Everything learned is listed, and can be reset, on the Shushed settings page.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import re
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -41,7 +42,8 @@ HUSH_AFTER_REMARK = timedelta(minutes=2)
 SHUSHED = 1.5
 THUMB = 1.0
 # kinds of remark a thumbs down can quieten as a whole (never safety, alarms, the doorbell or briefings asked for)
-QUIETENABLE = ("notice", "thought", "welcome", "appliance", "animals", "autooff", "learning", "curious",
+_GENERIC = {"the", "sensor", "status", "power", "state", "living", "room"}
+QUIETENABLE = ("thought", "welcome", "appliance", "animals", "autooff", "learning", "curious",
                "followup", "reflection", "offer:")
 HUSHED_AFTER = 1.0
 DECLINED = 1.0
@@ -109,6 +111,18 @@ class Feedback:
             while len(self.about) > 40:
                 self.about.pop(next(iter(self.about)))
 
+    def _named_in(self, text: str, candidates: list[str]) -> list[str]:
+        """Which of these things the remark names ("the kettle…" -> the kettle's sensor)."""
+        words = set(re.findall(r"[a-z]+", text.lower()))
+        out = []
+        for entity_id in candidates:
+            st = self.hass.states.get(entity_id)
+            name = [w for w in re.findall(r"[a-z]+", (st.name if st else entity_id).lower())
+                    if len(w) > 2 and w not in _GENERIC]
+            if name and name[0] in words:
+                out.append(entity_id)
+        return out
+
     @staticmethod
     def quietenable(source: str | None) -> bool:
         return bool(source) and source.startswith(QUIETENABLE)
@@ -118,14 +132,14 @@ class Feedback:
         return self.quietenable(source) and self.score(f"source:{source}") >= QUIET - 0.05  # three thumbs down
 
     @callback
-    def thumb(self, text: str, source: str | None, up: bool) -> dict[str, Any]:
+    def thumb(self, text: str, source: str | None, up: bool, candidates: list[str] | None = None) -> dict[str, Any]:
         """A thumbs up or down from the page on something that was said."""
         text = " ".join((text or "").split())
         weight = -THUMB if up else THUMB
         why = "thumbs up" if up else "thumbs down"
         if up and text:
             self.liked = ([text] + [t for t in self.liked if t != text])[:8]
-        entities = self.about.get(text) or []
+        entities = self.about.get(text) or self._named_in(text, candidates or [])
         if entities:
             for entity_id in entities:
                 self.record(entity_id, weight, why)

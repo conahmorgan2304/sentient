@@ -116,3 +116,14 @@ async def test_thumbs_on_a_noticed_remark_count_against_what_it_was_about(hass: 
     await ws.send_json({"id": 2, "type": "sentient/feedback/thumb", "text": "The kettle's boiled.", "source": "notice", "up": True})
     await ws.receive_json()
     assert round(fb.score("switch.kettle"), 3) == 0 and fb.liked == ["The kettle's boiled."]
+
+
+async def test_thumbs_down_on_an_old_remark_finds_what_it_was_about(hass: HomeAssistant, hass_ws_client) -> None:
+    hass.states.async_set("sensor.kettle_status", "standby", {"friendly_name": "Kettle Status"})
+    entry = await _setup(hass, notice_entities=["sensor.kettle_status", "binary_sensor.bedroom_window"])
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/feedback/thumb", "text": "The kettle has started heating up.",
+                        "source": "notice", "up": False})
+    assert (await ws.receive_json())["result"]["about"] == ["Kettle Status"]
+    fb = entry.runtime_data.feedback
+    assert round(fb.score("sensor.kettle_status"), 2) == 1.0 and fb.score("source:notice") == 0

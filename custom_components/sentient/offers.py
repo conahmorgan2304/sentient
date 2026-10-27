@@ -26,6 +26,13 @@ _LOGGER = logging.getLogger(__name__)
 GAP = timedelta(minutes=5)  # never two offers on top of each other
 
 
+def reading_attr(st, name: str) -> float | None:
+    try:
+        return float(st.attributes.get(name))
+    except (TypeError, ValueError):
+        return None
+
+
 def reading(hass: HomeAssistant, entity_id: str | None) -> float | None:
     st = hass.states.get(entity_id) if entity_id else None
     if st is None:
@@ -95,7 +102,22 @@ class Offers:
             value = reading(self.hass, below_entity)
             if value is None or value >= float(offer["below"]):
                 return False
+        if self._already_warming(offer):
+            return False  # "shall I put the heating on?" when it's already set to warm up
         return True
+
+    def _already_warming(self, offer: dict[str, Any]) -> bool:
+        import json
+        import re
+
+        for entity_id in set(re.findall(r"climate\.[a-z0-9_]+", json.dumps(offer.get("actions") or []))):
+            st = self.hass.states.get(entity_id)
+            if st is None or st.state in ("off", "unavailable", "unknown"):
+                continue
+            target, current = reading_attr(st, "temperature"), reading_attr(st, "current_temperature")
+            if st.attributes.get("hvac_action") == "heating" or (target is not None and current is not None and target > current + 0.3):
+                return True
+        return False
 
     async def async_ask(self, offer: dict[str, Any], area: str | None = None) -> dict[str, Any]:
         rt = self._rt()

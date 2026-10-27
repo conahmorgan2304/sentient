@@ -112,6 +112,18 @@ class Appliances:
                  if self._is_power(s) and AUTO_NAMES.search(f"{s.entity_id} {s.name}")]
         return auto
 
+    def handled(self) -> set[str]:
+        """The appliances and every other entity on the same devices (a kettle's status sensor, say)."""
+        from homeassistant.helpers import entity_registry as er
+
+        reg = er.async_get(self.hass)
+        out = set(self.watched())
+        for entity_id in list(out):
+            entry = reg.async_get(entity_id)
+            if entry is not None and entry.device_id:
+                out |= {e.entity_id for e in er.async_entries_for_device(reg, entry.device_id)}
+        return out
+
     @staticmethod
     def _is_power(st: State) -> bool:
         return st.domain == "sensor" and (

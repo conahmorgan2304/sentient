@@ -405,7 +405,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     guard.async_start()
     entry.async_on_unload(guard.async_stop)
     conversations.guard = guard
-    noticer.skip = lambda: set(appliances.watched())  # appliances say "finished" themselves, without the AI
+    noticer.skip = appliances.handled  # appliances (and the rest of their device) say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
