@@ -197,6 +197,7 @@
           "full_volume_speakers": "Full volume on these speakers",
           "tts_entity": "Voice for other speakers",
           "media_speakers": "Use Echos and other media players",
+          "media_important_only": "Echos: alarms and reminders only",
           "foresight": "A look at tomorrow",
           "foresight_time": "Look ahead at",
           "sleep_detection": "Know when the house is asleep",
@@ -298,6 +299,7 @@
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
+          "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
           "foresight": "Each evening one AI look at tomorrow's calendars, weather, alarms and reminders. Says something only when there's something to do tonight — frost before an early start, rain on washing day. Usually silent.",
           "foresight_time": "Before quiet hours start.",
           "sleep_detection": "Asleep after a bedtime routine, or in quiet hours once nothing inside has moved for a while. Awake in the morning when there's movement in two rooms (or a light switched on by hand). A House sensor shows it.",
@@ -420,6 +422,9 @@
       },
       "media_speakers": {
         "name": "Echo speakers"
+      },
+      "media_important_only": {
+        "name": "Echos: alarms and reminders only"
       },
       "screen": {
         "name": "Tablet screen"

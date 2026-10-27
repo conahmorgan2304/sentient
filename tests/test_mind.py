@@ -364,6 +364,31 @@ async def test_echos_can_be_switched_off(hass: HomeAssistant, monkeypatch) -> No
     assert not alexa and sat  # said on a voice speaker instead
 
 
+async def test_echos_for_alarms_and_reminders_only(hass: HomeAssistant, monkeypatch) -> None:
+    import custom_components.sentient.speech as speech_mod
+
+    async def no_wait(_s):
+        return None
+
+    other = MockConfigEntry(domain="alexa_media")
+    other.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create("media_player", "alexa_media", "echo1", suggested_object_id="bathroom_echo",
+                                           config_entry=other)
+    entry = await _setup(hass, speakers=["assist_satellite.kitchen", "media_player.bathroom_echo"])
+    hass.states.async_set("media_player.bathroom_echo", "idle")
+    sat = async_mock_service(hass, "assist_satellite", "announce")
+    alexa = async_mock_service(hass, "notify", "alexa_media")
+    monkeypatch.setattr(speech_mod.asyncio, "sleep", no_wait)
+    await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.nova_echos_alarms_and_reminders_only"},
+                                   blocking=True)
+    speech = entry.runtime_data.speech
+    await speech.async_say("Someone's at the gate.", "normal", ["media_player.bathroom_echo"], source="announce:Gate")
+    assert not alexa and sat  # an announcement: voice speakers only
+    await speech.async_say("Take the bins out.", "urgent", ["media_player.bathroom_echo"], source="reminder:bins")
+    await speech.async_say("Time to get up.", "urgent", ["media_player.bathroom_echo"], source="alarm:Wake")
+    assert [c.data["message"] for c in alexa] == ["Take the bins out.", "Time to get up."]
+
+
 async def test_why_did_that_happen(hass: HomeAssistant, freezer) -> None:
     from homeassistant.core import Context
 

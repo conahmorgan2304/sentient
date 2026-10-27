@@ -49,6 +49,7 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_MEDIA_IMPORTANT_ONLY,
     DEFAULT_CHIME,
     PRIORITY_LOW,
     PRIORITY_URGENT,
@@ -61,6 +62,12 @@ _LOGGER = logging.getLogger(__name__)
 _DUPLICATE_WINDOW = timedelta(seconds=120)
 _BUSY_STATES = {"listening", "processing", "responding"}
 _START_CONVERSATION = 2  # AssistSatelliteEntityFeature.START_CONVERSATION
+# what still goes to the Echos when they're kept for important things only
+IMPORTANT_SOURCES = ("alarm:", "alarm test", "reminder:", "critical")
+
+
+def important(source: str | None) -> bool:
+    return str(source or "").startswith(IMPORTANT_SOURCES)
 
 
 @dataclass
@@ -150,8 +157,14 @@ class SpeechRouter:
         """Media players (Echos…) are used as speakers; off keeps to the voice speakers."""
         return bool(self.options.get(CONF_MEDIA_SPEAKERS, True))
 
-    def usable(self, entity_ids: list[str] | None) -> list[str]:
-        return [e for e in entity_ids or [] if self.media_on or not e.startswith("media_player.")]
+    @property
+    def media_important_only(self) -> bool:
+        """Echos only for alarms, reminders and safety alerts; everything else on the voice speakers."""
+        return bool(self.options.get(CONF_MEDIA_IMPORTANT_ONLY, False))
+
+    def usable(self, entity_ids: list[str] | None, important: bool = True) -> list[str]:
+        media = self.media_on and (important or not self.media_important_only)
+        return [e for e in entity_ids or [] if media or not e.startswith("media_player.")]
 
     @property
     def speakers(self) -> list[str]:
@@ -200,17 +213,18 @@ class SpeechRouter:
     def _area_of(self, entity_id: str) -> str | None:
         return area_of(self.hass, entity_id)
 
-    def pick_speaker(self) -> list[str]:
+    def pick_speaker(self, important: bool = True) -> list[str]:
         """Speakers where people are right now (busiest first), else the default.
 
         Backup-only speakers are used only when none of the main speakers' rooms
         has anyone in it.
         """
+        speakers = self.usable(self.options.get(CONF_SPEAKERS), important)
         live = [
-            s for s in self.speakers
+            s for s in speakers
             if (st := self.hass.states.get(s)) is not None and st.state != "unavailable"
         ]
-        backup = set(self.usable(self.options.get(CONF_FALLBACK_SPEAKERS)))
+        backup = set(self.usable(self.options.get(CONF_FALLBACK_SPEAKERS), important))
         self.nobody_about = False
         if self.tracker is not None:
             for group in ([s for s in live if s not in backup], [s for s in live if s in backup]):
@@ -219,9 +233,9 @@ class SpeechRouter:
                     return chosen
             self.nobody_about = True
         default = self.options.get(CONF_DEFAULT_SPEAKER)
-        if default and self.usable([default]):
+        if default and self.usable([default], important):
             return [default]
-        return self.speakers[:1]
+        return speakers[:1]
 
     def _occupied(self, speakers: list[str]) -> list[str]:
         by_area: dict[str, str] = {}
@@ -335,9 +349,10 @@ class SpeechRouter:
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
+        vital = important(source)
         if source != "critical":  # safety alerts always use every speaker
-            targets = self.usable(targets) or None  # Echos switched off: their messages go where people are
-        speakers = targets or self.pick_speaker()
+            targets = self.usable(targets, vital) or None  # Echos switched off: their messages go where people are
+        speakers = targets or self.pick_speaker(vital)
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
@@ -445,7 +460,8 @@ class SpeechRouter:
         text = clean_message(question, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
-        candidates = self.usable(targets) or self.pick_speaker()
+        vital = important(source)
+        candidates = self.usable(targets, vital) or self.pick_speaker(vital)
         listening = [
             s for s in candidates
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None

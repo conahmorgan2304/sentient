@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), ScreenSwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), MediaImportantOnlySwitch(entry), ScreenSwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -155,6 +155,34 @@ class MediaSpeakersSwitch(_ModeSwitch):
         entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_MEDIA_SPEAKERS: on}
         self.async_write_ha_state()
         self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"media_speakers": on})
+
+
+class MediaImportantOnlySwitch(_ModeSwitch):
+    """Echos only for alarms, reminders and safety alerts (the same as the setting)."""
+
+    _attr_icon = "mdi:alarm-bell"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "media_important_only")
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.speech.media_important_only
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self._set(False)
+
+    def _set(self, on: bool) -> None:
+        from .const import CONF_MEDIA_IMPORTANT_ONLY
+
+        entry = self._entry
+        self.hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_MEDIA_IMPORTANT_ONLY: on})
+        entry.runtime_data.speech.options = {**entry.runtime_data.speech.options, CONF_MEDIA_IMPORTANT_ONLY: on}
+        self.async_write_ha_state()
+        self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"media_important_only": on})
 
 
 class ScreenSwitch(_ModeSwitch):

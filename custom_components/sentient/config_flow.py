@@ -111,6 +111,7 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_MEDIA_SPEAKERS,
+    CONF_MEDIA_IMPORTANT_ONLY,
     CONF_SLEEP,
     CONF_SLEEP_MINUTES,
     DEFAULT_SLEEP_MINUTES,
@@ -219,6 +220,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_ROOM_VOLUME, **d(CONF_ROOM_VOLUME, True)): selector.BooleanSelector(),
             vol.Optional(CONF_FULL_VOLUME_SPEAKERS, **d(CONF_FULL_VOLUME_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_MEDIA_SPEAKERS, **d(CONF_MEDIA_SPEAKERS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_MEDIA_IMPORTANT_ONLY, **d(CONF_MEDIA_IMPORTANT_ONLY, False)): selector.BooleanSelector(),
             vol.Optional(CONF_TTS_ENTITY, **d(CONF_TTS_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="tts")
             ),

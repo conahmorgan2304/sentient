@@ -593,7 +593,8 @@ class WatchManager:
         self.hass.bus.async_fire(
             EVENT_WATCH_FIRED, {"id": watch.id, "what": watch.what, "message": message, "entity_id": watch.entity_id}
         )
-        await self.speech.async_say(message, watch.priority, targets, source=f"watch:{watch.what}")
+        kind = "reminder" if watch.kind == KIND_REMINDER else "watch"
+        await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")
 
     def _default_message(self, watch: Watch, state: State | None) -> str:
         if state is not None:

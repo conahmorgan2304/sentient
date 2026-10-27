@@ -41,7 +41,7 @@ NOTICE_FOR = timedelta(minutes=10)
 MORNING_UNTIL_HOUR = 11
 # what's said that's worth showing; chatter (remarks, thoughts, briefings) stays spoken only
 SHOWN = ("visitors", "announce:", "critical", "camera security", "night_watch", "left_open", "appliance",
-         "animals", "check:", "watch:", "alarm:", "followthrough")
+         "animals", "check:", "watch:", "reminder:", "alarm:", "followthrough")
 ALERTS = ("critical", "camera security", "night_watch")
 
 

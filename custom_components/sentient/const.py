@@ -229,6 +229,7 @@ EVENT_WATCH_EXPIRED = f"{DOMAIN}_watch_expired"
 CONF_FULL_VOLUME_SPEAKERS = "full_volume_speakers"
 CONF_TTS_ENTITY = "tts_entity"
 CONF_MEDIA_SPEAKERS = "media_speakers"
+CONF_MEDIA_IMPORTANT_ONLY = "media_important_only"  # Echos: alarms, reminders and safety alerts only
 CONF_FORESIGHT = "foresight"
 CONF_FORESIGHT_TIME = "foresight_time"
 DEFAULT_FORESIGHT_TIME = "19:30:00"
