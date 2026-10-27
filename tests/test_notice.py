@@ -177,3 +177,19 @@ async def test_something_someone_just_started_is_not_news(hass: HomeAssistant, f
     hass.states.async_set("sensor.kettle_status", "standby", {"friendly_name": "Kettle"})
     await _settle(hass, freezer)
     assert len(ai) == 1 and said
+
+
+async def test_weather_only_news_when_wet(hass: HomeAssistant, freezer) -> None:
+    await _setup(hass, notice_entities=["weather.home"])
+    hass.states.async_set("weather.home", "cloudy", {"friendly_name": "Weather"})
+    await hass.async_block_till_done()
+    async_mock_service(hass, "assist_satellite", "announce")
+    ai = _ai(hass, {"speak": True, "message": "It's raining."})
+    freezer.tick(timedelta(minutes=5))
+    hass.states.async_set("weather.home", "sunny", {"friendly_name": "Weather"})
+    await _settle(hass, freezer)
+    assert not ai  # brighter isn't news
+    freezer.tick(timedelta(minutes=30))
+    hass.states.async_set("weather.home", "rainy", {"friendly_name": "Weather"})
+    await _settle(hass, freezer)
+    assert len(ai) == 1

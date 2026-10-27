@@ -53,6 +53,7 @@ _LOGGER = logging.getLogger(__name__)
 BATCH_SECONDS = 20
 NUMERIC_GAP = timedelta(minutes=15)
 OTHER_GAP = timedelta(seconds=30)
+_WET_WEATHER = {"rainy", "pouring", "snowy", "snowy-rainy", "hail", "lightning", "lightning-rainy", "fog", "exceptional"}
 _IGNORED = {STATE_UNAVAILABLE, STATE_UNKNOWN, None}
 _RESTING = {"off", "standby", "idle", "docked", "paused", "stopped", "done", "ready", "complete", "finished"}
 _GOING = {"on", "heating", "boiling", "running", "cleaning", "brewing", "playing", "washing", "drying", "cooking"}
@@ -164,6 +165,8 @@ class Noticer:
         old = event.data["old_state"]
         if old is None or old.state in _IGNORED or new.state in _IGNORED or old.state == new.state:
             return  # appearing at start-up, coming back from unavailable, or attribute-only
+        if new.domain == "weather" and not ({old.state, new.state} & _WET_WEATHER):
+            return  # sunny ↔ cloudy isn't news; rain, snow, storms and fog starting or stopping are
         now = dt_util.utcnow()
         numeric = _number(new.state) is not None
         last = self._last_seen.get(new.entity_id)

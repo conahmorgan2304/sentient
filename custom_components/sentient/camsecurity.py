@@ -209,18 +209,31 @@ class CameraSecurity:
         detail = None
         camera = camera_for(self.hass, sensor)
         if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
-            detail = await self._describe(camera)
+            seen, detail = await self._describe(camera)
+            if seen is False:
+                # the AI looked and there's nobody there: a false alarm (a shadow, a cat, a coat on the line)
+                rt.timeline.add("noticed", f"{text} — but nobody was in the picture ({local:%H:%M})",
+                                "camera security: probably a false alarm")
+                return
         rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True)
         if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
             speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
             await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),
                                       "urgent", speakers, source="camera security")
 
-    async def _describe(self, camera: str) -> str | None:
+    async def _describe(self, camera: str) -> tuple[bool | None, str | None]:
+        """(is anyone actually there, one sentence on them). (None, None) if the AI couldn't look."""
         data: dict[str, Any] = {
             "task_name": "Sentient: who's there",
-            "instructions": "A home security camera just saw a person. In one short sentence, describe them and what "
-                            "they're doing (e.g. 'A man in a dark hoodie is trying the shed door'). No guesses at names.",
+            "instructions": "A home security camera thinks it just saw a person. Is there really a person in this "
+                            "picture? If so, in one short sentence describe them and what they're doing (e.g. 'A man "
+                            "in a dark hoodie is trying the shed door'). No guesses at names.",
+            "structure": {
+                "person": {"description": "Is a person actually visible?", "required": True,
+                           "selector": {"boolean": {}}},
+                "description": {"description": "One short sentence on them; empty if nobody", "required": False,
+                                "selector": {"text": {}}},
+            },
             "attachments": [{"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}],
         }
         if ai := self.options.get(CONF_AI_TASK_ENTITY):
@@ -229,9 +242,15 @@ class CameraSecurity:
             response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("No description: %s", err)
-            return None
-        text = str((response or {}).get("data") or "").strip()
-        return text or None
+            return None, None
+        result = (response or {}).get("data")
+        if not isinstance(result, dict):
+            text = str(result or "").strip()
+            return None, text or None
+        person = result.get("person")
+        seen = None if person is None else person in (True, "true", "yes", "True")
+        text = " ".join(str(result.get("description") or "").split()).strip()
+        return seen, (text if seen is not False and text else None)
 
     def describe(self) -> dict[str, Any]:
         return {

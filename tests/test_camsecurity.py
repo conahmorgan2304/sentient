@@ -105,3 +105,26 @@ async def test_anyone_at_night_with_nobody_up_is_said(hass: HomeAssistant, freez
     said = async_mock_service(hass, "assist_satellite", "announce")
     await _see(hass, "gate_person")
     assert said and said[0].data["message"].startswith("Heads up: someone is by the gate and nobody's up")
+
+
+async def test_ai_sees_nobody_so_no_alarm(hass: HomeAssistant, freezer) -> None:
+    from unittest.mock import patch
+
+    freezer.move_to(dt_util.as_utc(_t(21, 23, 30)))
+    entry = await _setup(hass)
+    hass.config_entries.async_update_entry(entry, options={**entry.data, "camera_security_describe": True})
+    await hass.async_block_till_done()
+    entry = hass.config_entries.async_get_entry(entry.entry_id)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    sec = entry.runtime_data.camsec
+    replies = iter([{"data": {"person": False}}, {"data": {"person": True, "description": "A man is at the shed door."}}])
+
+    async def fake(_hass, _data):
+        return next(replies)
+
+    with patch("custom_components.sentient.camsecurity.async_generate", fake), \
+            patch("custom_components.sentient.camsecurity.camera_for", lambda *_: "camera.shed"):
+        await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
+        assert not said and not any(i.get("alert") for i in entry.runtime_data.timeline.items)
+        await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
+    assert said and "A man is at the shed door." in said[-1].data["message"]
