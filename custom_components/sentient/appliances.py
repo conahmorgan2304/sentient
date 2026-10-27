@@ -43,7 +43,7 @@ RESTING = {"off", "idle", "standby", "docked", "stopped", "done", "complete", "c
            "paused", "charging", "charged", "end", "none", "0"}
 IGNORED = {"unavailable", "unknown"}
 ERROR = {"error", "fault", "stuck", "jammed"}
-MIN_RUN = timedelta(minutes=2)
+MIN_RUN = timedelta(minutes=1)
 POWER_SETTLE = timedelta(minutes=5)  # a long run (a wash) may pause: wait this long before calling it done
 SHORT_SETTLE = timedelta(seconds=30)  # a short run (a kettle) is done when it's done
 LONG_RUN = timedelta(minutes=15)
@@ -250,7 +250,7 @@ class Appliances:
             st = self.hass.states.get(entity_id)
             usual = self.usual(entity_id)
             item: dict[str, Any] = {
-                "entity_id": entity_id, "name": st.name if st else entity_id,
+                "entity_id": entity_id, "name": _friendly(st.name) if st else entity_id,
                 "running": entity_id in self.running, "usual_minutes": round(usual) if usual else None,
                 "runs_seen": len(self.runs.get(entity_id) or []),
             }
