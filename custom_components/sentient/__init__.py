@@ -18,6 +18,7 @@ from homeassistant.helpers import llm
 from .ai import AIGate
 from .animals import Animals
 from .watchdog import Watchdog
+from .guard import Guard
 from .appliances import Appliances
 from .const import (
     DOMAIN,
@@ -380,6 +381,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     animals = Animals(hass, options, get_rt)
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     conversations.timeline = timeline
+    guard = Guard(hass)
+    guard.async_start()
+    entry.async_on_unload(guard.async_stop)
+    conversations.guard = guard
     noticer.skip = lambda: set(appliances.watched())  # appliances say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard

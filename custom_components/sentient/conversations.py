@@ -60,6 +60,7 @@ class Conversations:
         self._ours: dict[str, dict[str, Any]] = {}  # conversation id -> room/device, for ones using Sentient
         self._unsubs: list = []
         self.timeline: Any = None  # set by the runtime: where voice actions are logged
+        self.guard: Any = None  # set by the runtime: puts back what a voice switched by mistake
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -112,7 +113,7 @@ class Conversations:
             return
         content = data.get("content") or {}
         if content.get("role") == "tool_result":
-            self._tool_result(content)
+            self._tool_result(content, conversation_id)
             return
         role, text = content.get("role"), content.get("content")
         if role not in ("user", "assistant") or not text or not isinstance(text, str):
@@ -129,11 +130,11 @@ class Conversations:
         del ep["turns"][:-12]
 
     @callback
-    def _tool_result(self, content: dict[str, Any]) -> None:
+    def _tool_result(self, content: dict[str, Any], conversation_id: str | None = None) -> None:
         """What a voice actually did: put each device action on the timeline, with what didn't work."""
         if self.timeline is None:
             return
-        name = str(content.get("tool_name") or "")
+        name = str(content.get("tool_name") or "").split("__")[-1]  # "assist__intent__HassTurnOff" -> "HassTurnOff"
         result = content.get("tool_result") or {}
         if name.startswith("sentient_"):
             if name not in SENTIENT_ACTIONS:
@@ -154,7 +155,18 @@ class Conversations:
             return
         verb = ACTION_WORDS.get(name) or re.sub(r"(?<!^)(?=[A-Z])", " ", name.removeprefix("Hass")).capitalize()
         detail = "by voice" + (f"; didn't work: {', '.join(bad)}" if bad else "")
-        self.timeline.add("voice", f"{verb} {', '.join((ok or bad)[:4])}", detail)
+        self.timeline.add("voice", f"{verb} {', '.join((ok or bad)[:4])}" + (f" and {len(ok) - 4} more" if len(ok) > 4 else ""), detail)
+        if self.guard is not None and name in ("HassTurnOn", "HassTurnOff", "HassToggle"):
+            ep = self._open.get(conversation_id or "") or {}
+            said = next((t["text"] for t in reversed(ep.get("turns", [])) if t["who"] == "them"), "")
+            if said:
+                self.hass.async_create_task(self._async_guard(said, data.get("success") or []), eager_start=False)
+
+    async def _async_guard(self, said: str, targets: list) -> None:
+        restored = await self.guard.async_put_back(said, targets)
+        if restored and self.timeline is not None:
+            self.timeline.add("voice", f"Put back {', '.join(restored[:4])}" + (f" and {len(restored) - 4} more" if len(restored) > 4 else ""),
+                              f"the voice switched more than was asked for (\"{_short(said, 60)}\")")
 
     @callback
     def _tidy(self, _now=None) -> None:

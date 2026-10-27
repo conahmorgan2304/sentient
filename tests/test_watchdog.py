@@ -144,3 +144,42 @@ async def test_frozen_camera(hass: HomeAssistant) -> None:
     with patch("homeassistant.components.camera.async_get_image", return_value=Image("image/jpeg", b"new")):
         await dog.async_check_cameras()
     assert not any(i["kind"] == "frozen" for i in dog.issues())
+
+
+async def test_guard_puts_back_what_the_voice_switched_by_mistake(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    areas, ents = ar.async_get(hass), er.async_get(hass)
+    garden, girls = areas.async_create("Garden"), areas.async_create("Girls room")
+    for obj, area in (("shed_light", garden.id), ("projector", girls.id), ("landing", None)):
+        ents.async_get_or_create("light", "test", obj, suggested_object_id=obj)
+        if area:
+            ents.async_update_entity(f"light.{obj}", area_id=area)
+    hass.states.async_set("light.shed_light", "on", {"friendly_name": "Shed light"})
+    hass.states.async_set("light.projector", "on", {"friendly_name": "girls projector Background"})
+    hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"})
+    entry = await _setup(hass)
+    calls = async_mock_service(hass, "homeassistant", "turn_on")
+    # the voice turned off everything
+    for e in ("light.shed_light", "light.projector"):
+        hass.states.async_set(e, "off", hass.states.get(e).attributes)
+    await hass.async_block_till_done()
+    conv = entry.runtime_data.conversations
+    conv._chat("c9", "content_added", {"content": {"role": "user", "content": "turn off the shed light"}})
+    targets = [{"name": n, "type": "entity", "id": e} for e, n in
+               (("light.shed_light", "Shed light"), ("light.projector", "girls projector Background"), ("light.landing", "Landing light"))]
+    conv._chat("c9", "content_added", {"content": {"role": "tool_result", "tool_name": "assist__intent__HassTurnOff",
+                                                   "tool_result": {"data": {"success": targets, "failed": []}}}})
+    await hass.async_block_till_done()
+    assert [c.data["entity_id"] for c in calls] == ["light.projector"]  # the landing was already off; the shed was asked for
+    texts = [i["text"] for i in entry.runtime_data.timeline.items if i["kind"] == "voice"]
+    assert texts[0] == "Put back girls projector Background"
+    assert texts[1].startswith("Turned off Shed light")
+
+
+async def test_guard_leaves_whole_house_requests_alone(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    targets = [{"name": f"L{n}", "type": "entity", "id": f"light.l{n}"} for n in range(5)]
+    assert entry.runtime_data.conversations.guard.mistakes("turn off all the lights", targets) == []
+    assert entry.runtime_data.conversations.guard.mistakes("lights off please", targets) == []  # nothing named: leave it
