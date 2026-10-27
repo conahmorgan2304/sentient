@@ -391,7 +391,9 @@ class Upkeep:
                 "Sentient: briefing",
                 f"You are {persona}, the brain of a family home. Write a spoken briefing of two to four short, "
                 "natural sentences in British English from these facts. Lead with what needs doing; skip "
-                "anything empty; no lists, no IDs, no forms of address. " + personality_line(rt.options)
+                "anything empty; no lists, no IDs, no forms of address. Mention system readings (computer "
+                "temperature, disk, memory) only when they're listed as problems, never as small talk. "
+                + personality_line(rt.options)
                 + (f"\nHouse rules:\n{rules}" if rules else "")
                 + f"\nFacts: {facts}",
                 None,

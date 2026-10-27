@@ -117,6 +117,22 @@ class Offers:
             target, current = reading_attr(st, "temperature"), reading_attr(st, "current_temperature")
             if st.attributes.get("hvac_action") == "heating" or (target is not None and current is not None and target > current + 0.3):
                 return True
+        # it's already set to what saying yes would set it to
+        for action in offer.get("actions") or []:
+            if not isinstance(action, dict) or str(action.get("action") or action.get("service")) != "climate.set_temperature":
+                continue
+            wanted = (action.get("data") or {}).get("temperature")
+            ids = (action.get("target") or {}).get("entity_id") or (action.get("data") or {}).get("entity_id") or []
+            for entity_id in [ids] if isinstance(ids, str) else ids:
+                st = self.hass.states.get(entity_id)
+                if st is None or st.state in ("off", "unavailable", "unknown") or wanted is None:
+                    continue
+                target = reading_attr(st, "temperature")
+                try:
+                    if target is not None and target >= float(wanted):
+                        return True
+                except (TypeError, ValueError):
+                    continue
         return False
 
     async def async_ask(self, offer: dict[str, Any], area: str | None = None) -> dict[str, Any]:

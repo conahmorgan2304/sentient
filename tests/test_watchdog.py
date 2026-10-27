@@ -223,3 +223,15 @@ async def test_no_heating_offer_when_it_is_already_warming(hass: HomeAssistant) 
     assert not offers.ready(offer)
     hass.states.async_set("climate.hall", "auto", {"temperature": 18, "current_temperature": 18.9})
     assert offers.ready(offer)
+
+
+async def test_no_heating_offer_when_already_set_that_high(hass: HomeAssistant) -> None:
+    hass.states.async_set("sensor.hall_temp", "17")
+    hass.states.async_set("climate.hall", "auto", {"temperature": 20, "current_temperature": 19.9})
+    entry = await _setup(hass)
+    offers = entry.runtime_data.offers
+    offer = {"id": "o1", "name": "Heating on", "below_entity": "sensor.hall_temp", "below": 19,
+             "actions": [{"action": "climate.set_temperature", "target": {"entity_id": "climate.hall"}, "data": {"temperature": 20}}]}
+    assert not offers.ready(offer)
+    hass.states.async_set("climate.hall", "auto", {"temperature": 18, "current_temperature": 19.9})
+    assert offers.ready(offer)

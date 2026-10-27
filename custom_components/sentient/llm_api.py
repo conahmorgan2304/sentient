@@ -1053,6 +1053,11 @@ class SentientAPI(llm.API):
                 f"{str(weather.state).replace('partlycloudy', 'partly cloudy').replace('-', ' ')}. This is the only "
                 "outside temperature: never give a room or thermostat temperature as the weather."
             )
+        elif weather_id or self.hass.states.async_all("weather"):
+            lines.append(
+                "The outside temperature isn't known right now (the weather hasn't updated). If asked, say so: "
+                "never give a room or thermostat temperature as the weather."
+            )
         if rules := (opts.get(CONF_HOUSE_RULES) or "").strip():
             lines.append(f"House rules you must always follow:\n{rules}")
         room = self._room_of_device(llm_context.device_id)
