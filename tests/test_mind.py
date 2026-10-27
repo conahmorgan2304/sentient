@@ -182,12 +182,12 @@ async def test_curiosity_asks_once_and_says_to_remember(hass: HomeAssistant) -> 
     entry = await _setup(hass)
     convo = async_mock_service(hass, "assist_satellite", "start_conversation")
     cur = entry.runtime_data.curiosity
-    assert cur.wonder("Who is the man who comes to the door on Tuesdays?")
-    assert not cur.wonder("Who is the man who comes to the door on Tuesdays?")
+    assert cur.wonder("What is the garage light for at 7pm?")
+    assert not cur.wonder("What is the garage light for at 7pm?")
     out = await cur.async_ask(force=True)
     assert out["asked"]
     assert "sentient_remember" in convo[-1].data["extra_system_prompt"]
-    assert not cur.wonder("Who is the man who comes to the door on Tuesdays?")  # asked: never again
+    assert not cur.wonder("What is the garage light for at 7pm?")  # asked: never again
 
 
 async def test_cars_on_the_drive(hass: HomeAssistant, freezer) -> None:

@@ -183,3 +183,31 @@ async def test_guard_leaves_whole_house_requests_alone(hass: HomeAssistant) -> N
     targets = [{"name": f"L{n}", "type": "entity", "id": f"light.l{n}"} for n in range(5)]
     assert entry.runtime_data.conversations.guard.mistakes("turn off all the lights", targets) == []
     assert entry.runtime_data.conversations.guard.mistakes("lights off please", targets) == []  # nothing named: leave it
+
+
+async def test_drive_backs_off_when_nothing_changes(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    drive = entry.runtime_data.drive
+    assert drive.cooldown() == timedelta(minutes=3)
+    drive._same = 3
+    assert drive.cooldown() == timedelta(minutes=24)
+    drive._same = 10
+    assert drive.cooldown() == timedelta(hours=1)
+
+
+async def test_phone_batteries_are_not_house_problems(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    er.async_get(hass).async_get_or_create("sensor", "mobile_app", "p1", suggested_object_id="phone_battery")
+    hass.states.async_set("sensor.phone_battery", "9", {"device_class": "battery"})
+    hass.states.async_set("sensor.door_battery", "5", {"device_class": "battery", "friendly_name": "Door battery"})
+    entry = await _setup(hass)
+    entry.runtime_data.health.async_check()
+    assert [i["name"] for i in entry.runtime_data.health.issues if i["kind"] == "battery"] == ["Door battery"]
+
+
+async def test_curiosity_never_asks_about_people(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    cur = entry.runtime_data.curiosity
+    assert not cur.wonder("Could you tell me who the regular visitors were yesterday?")
+    assert cur.wonder("What's the garage light for at 7pm?")

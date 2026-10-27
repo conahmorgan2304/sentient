@@ -121,6 +121,9 @@ class HouseHealth:
         for st in self.hass.states.async_all(("sensor", "binary_sensor")):
             if st.entity_id in ignore or st.attributes.get("device_class") != "battery":
                 continue
+            entry = ent_reg.async_get(st.entity_id)
+            if entry is not None and entry.platform == "mobile_app":
+                continue  # phones and tablets charge every day: not a house problem
             if st.domain == "sensor":
                 try:
                     level = float(st.state)

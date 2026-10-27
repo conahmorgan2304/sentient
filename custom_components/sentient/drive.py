@@ -37,6 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 EVENT_DRIVE = f"{DOMAIN}_drive"
 SETTLE_SECONDS = 25  # after the last movement: the car's parked, the doors are shut
 COOLDOWN = timedelta(minutes=3)
+MAX_COOLDOWN = timedelta(hours=1)  # cars passing on the road: each look that finds nothing new waits twice as long
 _TRIGGER_WORDS = ("motion", "car", "vehicle", "occupancy", "all_occupancy")
 
 
@@ -50,6 +51,7 @@ class Drive:
         self._unsub = None
         self._pending = None
         self._last_look = None
+        self._same = 0  # looks in a row that found nothing new
         self._triggers: set[str] = set()
 
     async def async_start(self) -> None:
@@ -139,7 +141,7 @@ class Drive:
             return {"error": "No drive spot: draw one called 'drive' on the camera that can see it"}
         now = dt_util.utcnow()
         if not force:
-            if self._last_look and now - self._last_look < COOLDOWN:
+            if self._last_look and now - self._last_look < self.cooldown():
                 return self.describe()
             if not rt.watches.spend("drive"):
                 return self.describe()
@@ -182,6 +184,7 @@ class Drive:
             return self.describe()
         description = " ".join(str(result.get("description") or "").split()).strip(" .")
         before = self.state.get("cars")
+        self._same = 0 if before is None or cars != before else self._same + 1
         if unsure and before is not None:
             self.state["checked"] = now.isoformat()  # keep what we knew; it's just dark
         else:
@@ -197,6 +200,9 @@ class Drive:
         self._store.async_delay_save(lambda: {"state": self.state}, 2)
         self.hass.bus.async_fire(EVENT_DRIVE, self.describe())
         return self.describe()
+
+    def cooldown(self) -> timedelta:
+        return min(MAX_COOLDOWN, COOLDOWN * (2 ** min(self._same, 6)))
 
     def describe(self) -> dict[str, Any]:
         if not self.state:

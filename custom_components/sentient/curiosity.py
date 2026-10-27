@@ -15,6 +15,7 @@ from collections import Counter
 from datetime import datetime, time, timedelta
 import hashlib
 import logging
+import re
 from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant, callback
@@ -23,6 +24,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_CURIOSITY, CONF_QUIET_START, DEFAULT_QUIET_START, DOMAIN
+
+PRIVATE = re.compile(r"\b(who (was|were|is|are|came|visited)|visitors?|foot traffic|strangers?|where .* went)\b", re.I)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +77,8 @@ class Curiosity:
         question = " ".join((question or "").split())
         if len(question) < 8:
             return False
+        if PRIVATE.search(question):
+            return False  # never about who people are, who visited or where they went
         key = _key(question)
         if key in self.asked or any(q["key"] == key for q in self.queue):
             return False
