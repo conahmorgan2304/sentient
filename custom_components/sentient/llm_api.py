@@ -8,6 +8,7 @@ That gives every voice in the house one shared brain.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -45,10 +46,39 @@ def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
     return entries[0].runtime_data if entries else None
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class _Tool(llm.Tool):
     """Every Sentient tool says which integration provides it."""
 
     integration = DOMAIN
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Check every tool's arguments first, and never let a tool crash the whole conversation.
+
+        Home Assistant passes the model's arguments straight through, so a missing one would raise
+        a KeyError and the voice would fail. Bad arguments go back to the model as an error it can fix.
+        """
+        super().__init_subclass__(**kwargs)
+        inner = cls.__dict__.get("async_call")
+        if inner is None:
+            return
+
+        async def async_call(self, hass, tool_input, llm_context):  # type: ignore[no-untyped-def]
+            try:
+                tool_input.tool_args = self.parameters(dict(tool_input.tool_args or {}))
+            except vol.Invalid as err:
+                return {"error": f"wrong arguments: {err}"}
+            try:
+                return await inner(self, hass, tool_input, llm_context)
+            except HomeAssistantError:
+                raise
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Sentient tool %s failed: %r", self.name, err)
+                return {"error": f"that didn't work ({type(err).__name__})"}
+
+        cls.async_call = async_call
 
 
 def _read_only() -> Any:

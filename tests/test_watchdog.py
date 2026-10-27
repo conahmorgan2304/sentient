@@ -235,3 +235,14 @@ async def test_no_heating_offer_when_already_set_that_high(hass: HomeAssistant) 
     assert not offers.ready(offer)
     hass.states.async_set("climate.hall", "auto", {"temperature": 18, "current_temperature": 19.9})
     assert offers.ready(offer)
+
+
+async def test_a_tool_with_missing_arguments_does_not_crash_the_voice(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.const import DOMAIN
+
+    await _setup(hass)
+    api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden"}))
+    assert "wrong arguments" in out["error"]
