@@ -60,7 +60,8 @@
       if (this._idCache && this._idCache.n === n) return this._idCache.ids;
       const ids = {};
       for (const e of Object.values(this._hass.entities || {})) {
-        if (e.platform === "sentient" && KEYS.includes(e.translation_key)) ids[e.translation_key] = e.entity_id;
+        // sensors only: the Tablet screen switch shares the "screen" key
+        if (e.platform === "sentient" && KEYS.includes(e.translation_key) && e.entity_id.startsWith("sensor.")) ids[e.translation_key] = e.entity_id;
       }
       this._idCache = { n, ids };
       return ids;
