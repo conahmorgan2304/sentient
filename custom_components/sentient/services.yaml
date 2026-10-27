@@ -330,3 +330,28 @@ set_asleep:
       required: true
       selector:
         boolean:
+show_on_screen:
+  fields:
+    message:
+      required: true
+      selector:
+        text:
+    camera:
+      selector:
+        entity:
+          domain: camera
+    minutes:
+      selector:
+        number:
+          min: 1
+          max: 240
+          unit_of_measurement: min
+    alert:
+      selector:
+        boolean:
+clear_screen:
+  fields:
+    card_id:
+      selector:
+        text:
+morning_card:

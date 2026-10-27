@@ -19,6 +19,7 @@ from .ai import AIGate
 from .animals import Animals
 from .watchdog import Watchdog
 from .guard import Guard
+from .screen import Screen
 from .appliances import Appliances
 from .const import (
     DOMAIN,
@@ -139,6 +140,7 @@ class SentientRuntime:
     appliances: Appliances
     animals: Animals
     watchdog: Watchdog
+    screen: Screen
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -257,7 +259,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
-CARDS = ("sentient-shows-card", "sentient-hub-card")
+CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
 
 
 async def async_register_card_resources(hass: HomeAssistant, version: str) -> list[str]:
@@ -380,6 +382,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     appliances = Appliances(hass, entry.entry_id, options, get_rt)
     animals = Animals(hass, options, get_rt)
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
+    screen = Screen(hass, options, get_rt)
     conversations.timeline = timeline
     guard = Guard(hass)
     guard.async_start()
@@ -399,9 +402,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
-        ai=ai, appliances=appliances, animals=animals, watchdog=watchdog,
+        ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -464,7 +467,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
@@ -644,6 +647,29 @@ def _register_services(hass: HomeAssistant) -> None:
         DOMAIN, "set_asleep", house_asleep, schema=vol.Schema({vol.Required("asleep"): cv.boolean}),
         supports_response=SupportsResponse.OPTIONAL,
     )
+
+    async def show_on_screen(call: ServiceCall) -> ServiceResponse:
+        return _runtime(hass).screen.show(
+            call.data["message"], "service", alert=call.data.get("alert", False), camera=call.data.get("camera"),
+            minutes=call.data.get("minutes"),
+        )
+
+    async def clear_screen(call: ServiceCall) -> None:
+        _runtime(hass).screen.dismiss(call.data.get("card_id"))
+
+    async def morning_card(call: ServiceCall) -> ServiceResponse:
+        rt = _runtime(hass)
+        rt.screen.morning = None
+        return await rt.screen.async_morning() or {}
+
+    hass.services.async_register(
+        DOMAIN, "show_on_screen", show_on_screen, supports_response=SupportsResponse.OPTIONAL,
+        schema=vol.Schema({vol.Required("message"): cv.string, vol.Optional("camera"): cv.entity_id,
+                           vol.Optional("minutes"): vol.Coerce(float), vol.Optional("alert"): cv.boolean}),
+    )
+    hass.services.async_register(DOMAIN, "clear_screen", clear_screen,
+                                 schema=vol.Schema({vol.Optional("card_id"): cv.string}))
+    hass.services.async_register(DOMAIN, "morning_card", morning_card, supports_response=SupportsResponse.OPTIONAL)
 
     async def look_ahead(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).foresight.async_look_ahead(speak=call.data.get("speak", False))

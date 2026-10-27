@@ -104,6 +104,9 @@ from .const import (
     CONF_VOICE_AGENT,
     CONF_BACKUP_AGENT,
     CONF_ANIMAL_SENSORS,
+    CONF_SCREEN,
+    CONF_SCREEN_ACTIONS,
+    CONF_SCREEN_CLEAR_ACTIONS,
     CONF_ANIMAL_LOW,
     CONF_ANIMAL_HIGH,
     CONF_CHATTINESS,
@@ -188,6 +191,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
         CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
+    ]),
+    ("screen", "Tablet screen", "mdi:tablet-dashboard", "What the Sentient screen card shows: alerts with the camera, notices, a morning card and the house at a glance. Actions can wake a tablet and switch it to that page.", [
+        CONF_SCREEN, CONF_SCREEN_ACTIONS, CONF_SCREEN_CLEAR_ACTIONS,
     ]),
     ("animals", "Animals", "mdi:rabbit", "Temperatures where animals live outside — a hutch, a kennel, a coop: a word when it's too cold or too hot, and frost warnings the evening before.", [
         CONF_ANIMAL_SENSORS, CONF_ANIMAL_LOW, CONF_ANIMAL_HIGH,

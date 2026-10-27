@@ -37,6 +37,7 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_QUIET_END,
     CONF_QUIET_START,
+    CONF_SCREEN,
     CONF_SLEEP,
     CONF_SPEAKERS,
     CONF_VOICE_AGENT,
@@ -68,8 +69,8 @@ STEPS: list[tuple[str, str, str, str, list[str]]] = [
      "Optional. The doorbell camera and what rings it, for visitors and parcels; a camera that sees the drive, for cars.",
      [CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS]),
     ("extras", "Extras", "mdi:star-four-points-outline",
-     "Optional. Appliances to follow (finished, or stuck), animals living outside, energy use and a morning briefing.",
-     [CONF_APPLIANCES, CONF_ANIMAL_SENSORS, CONF_ENERGY, CONF_MORNING_BRIEFING]),
+     "Optional. Appliances to follow (finished, or stuck), animals living outside, energy use, a morning briefing, and alerts on a tablet screen.",
+     [CONF_APPLIANCES, CONF_ANIMAL_SENSORS, CONF_ENERGY, CONF_MORNING_BRIEFING, CONF_SCREEN]),
 ]
 
 ANIMAL_NAMES = re.compile(r"hutch|kennel|coop|aviary|vivarium|terrarium|tank|stable|pen\b|run\b|kitten|puppy", re.I)

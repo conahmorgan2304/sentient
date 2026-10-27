@@ -290,11 +290,13 @@ async def test_cards_become_dashboard_resources(hass: HomeAssistant) -> None:
 
     assert await async_setup_component(hass, "lovelace", {})
     added = await async_register_card_resources(hass, "1.0.0")
-    assert added == ["/sentient_frontend/sentient-shows-card.js?v=1.0.0", "/sentient_frontend/sentient-hub-card.js?v=1.0.0"]
+    assert added == ["/sentient_frontend/sentient-shows-card.js?v=1.0.0", "/sentient_frontend/sentient-hub-card.js?v=1.0.0",
+                     "/sentient_frontend/sentient-screen-card.js?v=1.0.0"]
     assert await async_register_card_resources(hass, "1.0.0") == []  # already there
     await async_register_card_resources(hass, "1.0.1")
     urls = [r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items()]
-    assert sorted(urls) == ["/sentient_frontend/sentient-hub-card.js?v=1.0.1", "/sentient_frontend/sentient-shows-card.js?v=1.0.1"]
+    assert sorted(urls) == ["/sentient_frontend/sentient-hub-card.js?v=1.0.1", "/sentient_frontend/sentient-screen-card.js?v=1.0.1",
+                            "/sentient_frontend/sentient-shows-card.js?v=1.0.1"]
 
 
 async def test_speaks_through_an_echo_too(hass: HomeAssistant, monkeypatch) -> None:

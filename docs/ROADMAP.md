@@ -83,3 +83,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Voice backup agent (AI first, Home Assistant's own when the AI fails); animals' hutch/kennel temperatures with frost warnings (0.47.0)
 - [x] Set-up wizard filled in from the house; thumbs up/down on remarks (0.48.0)
 - [x] One-call house check, voice action log and 'why didn't you say', watchdog for wear, fighting automations and frozen cameras (0.49.0)
+- [x] Tablet screen card: alerts with the camera, notices, morning card, idle glance; on/off setting and switch (0.50.0)

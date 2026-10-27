@@ -55,6 +55,9 @@ from .const import (
     CONF_BACKUP_AGENT,
     DEFAULT_BACKUP_AGENT,
     CONF_ANIMAL_SENSORS,
+    CONF_SCREEN,
+    CONF_SCREEN_ACTIONS,
+    CONF_SCREEN_CLEAR_ACTIONS,
     CONF_ANIMAL_LOW,
     CONF_ANIMAL_HIGH,
     DEFAULT_ANIMAL_LOW,
@@ -190,6 +193,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_BACKUP_AGENT, **d(CONF_BACKUP_AGENT, DEFAULT_BACKUP_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
+            vol.Required(CONF_SCREEN, **d(CONF_SCREEN, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_SCREEN_ACTIONS, **d(CONF_SCREEN_ACTIONS, [])): selector.ActionSelector(),
+            vol.Optional(CONF_SCREEN_CLEAR_ACTIONS, **d(CONF_SCREEN_CLEAR_ACTIONS, [])): selector.ActionSelector(),
             vol.Optional(CONF_ANIMAL_SENSORS, **d(CONF_ANIMAL_SENSORS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class="temperature", multiple=True)
             ),

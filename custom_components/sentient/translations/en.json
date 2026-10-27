@@ -49,7 +49,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "animal_low": "Too cold below",
-          "animal_high": "Too hot above"
+          "animal_high": "Too hot above",
+          "screen": "Use the tablet screen",
+          "screen_actions": "When something appears",
+          "screen_clear_actions": "When it's all cleared"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -80,7 +83,10 @@
           "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
           "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
-          "animal_high": "Says once when it rises above this."
+          "animal_high": "Says once when it rises above this.",
+          "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
+          "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page."
         }
       }
     },
@@ -205,7 +211,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "animal_low": "Too cold below",
-          "animal_high": "Too hot above"
+          "animal_high": "Too hot above",
+          "screen": "Use the tablet screen",
+          "screen_actions": "When something appears",
+          "screen_clear_actions": "When it's all cleared"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -302,7 +311,10 @@
           "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
           "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
-          "animal_high": "Says once when it rises above this."
+          "animal_high": "Says once when it rises above this.",
+          "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
+          "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page."
         }
       },
       "memories": {
@@ -382,6 +394,15 @@
           "awake": "Awake",
           "asleep": "Asleep"
         }
+      },
+      "screen": {
+        "name": "Screen",
+        "state": {
+          "idle": "Idle",
+          "morning": "Morning",
+          "notice": "Notice",
+          "alert": "Alert"
+        }
       }
     },
     "switch": {
@@ -399,6 +420,9 @@
       },
       "media_speakers": {
         "name": "Echo speakers"
+      },
+      "screen": {
+        "name": "Tablet screen"
       }
     },
     "conversation": {
@@ -859,6 +883,42 @@
           "description": "On for asleep, off for awake."
         }
       }
+    },
+    "show_on_screen": {
+      "name": "Show on screen",
+      "description": "Put a card on the Sentient screen card.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "What to show."
+        },
+        "camera": {
+          "name": "Camera",
+          "description": "A camera to show with it."
+        },
+        "minutes": {
+          "name": "For",
+          "description": "How long (10 minutes if empty)."
+        },
+        "alert": {
+          "name": "Alert",
+          "description": "Show it as an alert."
+        }
+      }
+    },
+    "clear_screen": {
+      "name": "Clear the screen",
+      "description": "Take a card off the Sentient screen card, or everything.",
+      "fields": {
+        "card_id": {
+          "name": "Card",
+          "description": "The card's id, 'morning', or empty for everything."
+        }
+      }
+    },
+    "morning_card": {
+      "name": "Morning card",
+      "description": "Put this morning's card on the Sentient screen now."
     }
   }
 }

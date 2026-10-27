@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: SentientConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry), DriveSensor(entry), MindSensor(entry), HouseSensor(entry)])
+    async_add_entities([MemorySensor(entry), LastSpokenSensor(entry), LikelyRoomSensor(entry), WatchesSensor(entry), RoutinesSensor(entry), VisitorsSensor(entry), HealthSensor(entry), DriveSensor(entry), MindSensor(entry), HouseSensor(entry), ScreenSensor(entry)])
 
 
 class _Base(SensorEntity):
@@ -386,3 +386,32 @@ class HouseSensor(_Base):
         sleep = self._entry.runtime_data.sleep
         usual = sleep.usual()
         return {"since": sleep.since, "usual_bedtime": usual["bedtime"], "usual_up": usual["up"]}
+
+
+class ScreenSensor(_Base):
+    """What a wall tablet's Sentient screen shows: alert, notice, morning or idle."""
+
+    _attr_icon = "mdi:tablet-dashboard"
+    _attr_device_class = "enum"
+    _attr_options = ["idle", "morning", "notice", "alert"]
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "screen")
+
+    async def async_added_to_hass(self) -> None:
+        from .screen import EVENT_SCREEN
+
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_SCREEN, self._changed))
+
+    @callback
+    def _changed(self, _event: Event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> str:
+        return self._entry.runtime_data.screen.mode()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        d = self._entry.runtime_data.screen.describe()
+        return {"cards": d["cards"], "morning": d["morning"]}
