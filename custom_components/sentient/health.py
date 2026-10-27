@@ -46,6 +46,7 @@ class HouseHealth:
         self._unsub = None
         self._never: dict[str, datetime] = {}  # entity -> until when it counts as "never has a reading"
         self._checked: dict[str, datetime] = {}  # entity -> when its history was last looked at
+        self._went_off: dict[str, datetime] = {}  # entity -> when it last lost a real reading (from history)
         self._checking = False
 
     @callback
@@ -99,13 +100,16 @@ class HouseHealth:
                 continue
             else:
                 since = max(s.last_changed for s in states)
-            if now - since < OFFLINE_AFTER:
-                continue
+                # after a restart everything "changed" at start-up: history knows when it really went
+                if known := [self._went_off[e] for e in entity_ids if e in self._went_off]:
+                    since = min(since, max(known))
             if not link:
                 stale = [e for e in entity_ids if now - self._checked.get(e, datetime.min.replace(tzinfo=now.tzinfo)) > RECHECK]
                 if stale:  # look at their history first; reported on a later check if they really went offline
                     unverified.extend(stale)
                     continue
+            if now - since < OFFLINE_AFTER:
+                continue
             device = dev_reg.async_get(device_id)
             if device is None or device.disabled_by:
                 continue
@@ -182,10 +186,19 @@ class HouseHealth:
                     )
                 )
                 for e in entity_ids:
-                    real = any(
-                        (st.state if hasattr(st, "state") else st.get("state")) not in ("unavailable", "unknown", None)
-                        for st in rows.get(e, [])
-                    )
+                    real, was_real = False, False
+                    for st in rows.get(e, []):
+                        state = st.state if hasattr(st, "state") else st.get("state")
+                        is_real = state not in ("unavailable", "unknown", None)
+                        if was_real and not is_real:
+                            when = st.last_changed if hasattr(st, "last_changed") else st.get("last_changed")
+                            if isinstance(when, (int, float)):
+                                when = dt_util.utc_from_timestamp(when)
+                            elif isinstance(when, str):
+                                when = dt_util.parse_datetime(when)
+                            if when is not None:
+                                self._went_off[e] = when
+                        real, was_real = real or is_real, is_real
                     if real:
                         self._never.pop(e, None)
                     else:
