@@ -76,6 +76,7 @@ class Appliances:
         self._low: dict[str, datetime] = {}  # power sensor -> since when it's been low mid-run
         self._warned: set[str] = set()  # stuck already said for this run
         self.last: dict[str, dict[str, Any]] = {}  # entity -> last finished run
+        self.errors: dict[str, list[str]] = {}  # entity -> when it got stuck or finished away from its dock
         self._unsubs: list = []
 
     async def async_start(self) -> None:
@@ -83,6 +84,7 @@ class Appliances:
         self.runs = {k: list(v) for k, v in (data.get("runs") or {}).items()}
         self.running = dict(data.get("running") or {})
         self.last = dict(data.get("last") or {})
+        self.errors = {k: list(v) for k, v in (data.get("errors") or {}).items()}
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
         # anything that stopped while Home Assistant was off
@@ -98,7 +100,7 @@ class Appliances:
             self._unsubs.pop()()
 
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"runs": self.runs, "running": self.running, "last": self.last}, 5)
+        self._store.async_delay_save(lambda: {"runs": self.runs, "running": self.running, "last": self.last, "errors": self.errors}, 5)
 
     # ----- which, and whether it's working -----------------------------------------------
     def watched(self) -> list[str]:
@@ -142,6 +144,7 @@ class Appliances:
             return
         entity_id, now = new.entity_id, dt_util.utcnow()
         if new.state.lower() in ERROR and (old is None or old.state.lower() not in ERROR):
+            self._error(entity_id)
             self.hass.async_create_task(self._async_say(f"{_friendly(new.name)} seems to be stuck.", "stuck", entity_id),
                                         eager_start=False)
         working = self._working(new)
@@ -159,7 +162,15 @@ class Appliances:
             return
         if new.state.lower() in ERROR:
             return  # not finished: waiting to be helped
+        if new.domain == "vacuum" and new.state.lower() == "idle":
+            self._error(entity_id)  # stopped somewhere other than its dock
         self._finish(entity_id, now)
+
+    def _error(self, entity_id: str) -> None:
+        now = dt_util.utcnow()
+        self.errors[entity_id] = [t for t in self.errors.get(entity_id, [])
+                                  if now - dt_util.parse_datetime(t) < timedelta(days=14)][-20:] + [now.isoformat()]
+        self._save()
 
     @callback
     def _tick(self, now: datetime) -> None:

@@ -1,0 +1,146 @@
+"""House check, the voice action log, 'why didn't you say', wear, fights and frozen cameras."""
+
+from datetime import timedelta
+from unittest.mock import patch
+
+from homeassistant.core import Context, HomeAssistant
+from homeassistant.helpers import llm
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.sentient.const import DOMAIN, EVENT_HEALTH_CHANGED
+from custom_components.sentient.watchdog import drain_rate
+
+OPTIONS = {"persona": "Nova", "speakers": ["assist_satellite.kitchen"], "default_speaker": "assist_satellite.kitchen",
+           "quiet_start": "00:00:00", "quiet_end": "00:00:00"}
+
+
+async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={**OPTIONS, **extra})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def _api(hass):
+    return await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="test", context=None, language="en",
+                                                                 assistant="conversation", device_id=None))
+
+
+async def test_house_check_gathers_everything(hass: HomeAssistant) -> None:
+    hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door", "friendly_name": "Back door"})
+    hass.states.async_set("light.kitchen", "on", {"friendly_name": "Kitchen light"})
+    hass.states.async_set("climate.hall", "heat", {"temperature": 20, "current_temperature": 18, "friendly_name": "Heating"})
+    await _setup(hass)
+    out = await (await _api(hass)).async_call_tool(llm.ToolInput(tool_name="sentient_house_check", tool_args={}))
+    assert out["security"]["open"] == ["Back door"]
+    assert out["lights_and_fans_on"] == ["Kitchen light"]
+    assert out["thermostats"] == ["Heating: heat, set to 20°, now 18°"]
+    assert out["house"] == "awake"
+
+
+async def test_voice_actions_go_on_the_timeline(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    conv = entry.runtime_data.conversations
+    conv._chat("c1", "content_added", {"content": {"role": "tool_result", "tool_name": "HassTurnOff", "tool_result": {
+        "response_type": "action_done", "data": {"success": [{"name": "Kitchen light", "type": "entity", "id": "light.k"}],
+                                                 "failed": [{"name": "Landing light", "type": "entity", "id": "light.l"}]}}}})
+    conv._chat("c1", "content_added", {"content": {"role": "tool_result", "tool_name": "GetLiveContext", "tool_result": {"x": 1}}})
+    conv._chat("c1", "content_added", {"content": {"role": "tool_result", "tool_name": "sentient_remind",
+                                                   "tool_args": {"what": "bins out"}, "tool_result": {"ok": True}}})
+    voice = [i for i in entry.runtime_data.timeline.items if i["kind"] == "voice"]
+    assert [i["text"] for i in voice] == ["Remind: bins out", "Turned off Kitchen light"]
+    assert voice[1]["detail"] == "by voice; didn't work: Landing light"
+
+
+async def test_why_didnt_you_say(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    entry.runtime_data.noticer.decisions.appendleft({"time": "2026-10-27T14:02:00", "changes": ["Washing machine: running → off"],
+                                                     "result": "skipped: quiet_hours"})
+    out = await (await _api(hass)).async_call_tool(llm.ToolInput(
+        tool_name="sentient_why", tool_args={"what": "why didn't you tell me the washing machine finished"}))
+    assert out["noticed_but_not_said"] == ["14:02 noticed Washing machine: running → off — skipped: quiet_hours"]
+
+
+async def test_appliance_wearing_out(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    hass.states.async_set("vacuum.robot", "docked", {"friendly_name": "Robot"})
+    rt = entry.runtime_data
+    rt.appliances.runs["vacuum.robot"] = [40, 41, 39, 42, 40, 58, 60, 61]
+    now = dt_util.utcnow()
+    rt.appliances.errors["vacuum.robot"] = [(now - timedelta(days=d)).isoformat() for d in (1, 2, 3)]
+    texts = [i["text"] for i in rt.watchdog.issues()]
+    assert "Robot is taking longer to finish than it used to (about 60 min, was 40)" in texts
+    assert "Robot has got stuck or not made it back 3 times this week" in texts
+    rt.health.async_check()
+    assert any(i["kind"] == "wear" for i in rt.health.issues)
+
+
+async def test_battery_draining_faster(hass: HomeAssistant) -> None:
+    today = dt_util.now()
+    day = lambda n: (today - timedelta(days=n)).date().isoformat()  # noqa: E731
+    rows = [[day(n), 100 - (45 - n) * 0.5] for n in range(45, 14, -1)]  # 0.5%/day back then
+    level = rows[-1][1]
+    rows += [[day(n), level - (15 - n) * 2] for n in range(14, -1, -1)]  # 2%/day lately
+    assert round(drain_rate(rows, 0, 14, today), 1) == 2.0 and round(drain_rate(rows, 15, 45, today), 1) == 0.5
+    hass.states.async_set("sensor.door_battery", "60", {"device_class": "battery", "friendly_name": "Door battery"})
+    entry = await _setup(hass)
+    entry.runtime_data.watchdog.batteries["sensor.door_battery"] = rows
+    assert any("Door battery is running down about 4× faster" in i["text"] for i in entry.runtime_data.watchdog.issues())
+
+
+async def test_device_keeps_dropping_offline(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    dog = entry.runtime_data.watchdog
+    dog._offline = set()
+    for _ in range(4):
+        hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {"offline:Hall plug": "Hall plug is offline"}})
+        await hass.async_block_till_done()
+        hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {}})
+        await hass.async_block_till_done()
+    assert any(i["text"] == "Hall plug has dropped offline 4 times this week" for i in dog.issues())
+
+
+async def test_automations_fighting(hass: HomeAssistant) -> None:
+    hass.states.async_set("light.hall", "off", {"friendly_name": "Hall light"})
+    entry = await _setup(hass)
+    for n in range(3):
+        a, b = Context(), Context()
+        hass.bus.async_fire("automation_triggered", {"name": "Hall on at dusk", "entity_id": "automation.a"}, context=a)
+        hass.states.async_set("light.hall", "on", {"friendly_name": "Hall light"}, context=a)
+        hass.bus.async_fire("automation_triggered", {"name": "Lights off when empty", "entity_id": "automation.b"}, context=b)
+        hass.states.async_set("light.hall", "off", {"friendly_name": "Hall light"}, context=b)
+        await hass.async_block_till_done()
+    texts = [i["text"] for i in entry.runtime_data.watchdog.issues()]
+    assert any("Hall on at dusk and Lights off when empty keep switching Hall light back and forth" in t for t in texts)
+
+
+async def test_a_person_switching_is_not_a_fight(hass: HomeAssistant) -> None:
+    hass.states.async_set("light.hall", "off")
+    entry = await _setup(hass)
+    for _ in range(4):
+        a = Context()
+        hass.bus.async_fire("automation_triggered", {"name": "Hall on"}, context=a)
+        hass.states.async_set("light.hall", "on", context=a)
+        hass.states.async_set("light.hall", "off", context=Context(user_id="someone"))
+        await hass.async_block_till_done()
+    assert not entry.runtime_data.watchdog.issues()
+
+
+async def test_frozen_camera(hass: HomeAssistant) -> None:
+    from homeassistant.components.camera import Image
+
+    hass.states.async_set("camera.gate", "streaming", {"supported_features": 2, "friendly_name": "Gate"})
+    hass.states.async_set("camera.gate_person", "idle", {"supported_features": 0})
+    entry = await _setup(hass)
+    dog = entry.runtime_data.watchdog
+    with patch("homeassistant.components.camera.async_get_image", return_value=Image("image/jpeg", b"same")) as get:
+        await dog.async_check_cameras()
+        dog.cams["camera.gate"]["since"] = (dt_util.utcnow() - timedelta(hours=4)).isoformat()
+        await dog.async_check_cameras()
+    assert [c.args[1] for c in get.call_args_list] == ["camera.gate", "camera.gate"]  # snapshot cameras skipped
+    assert any(i["text"].startswith("Gate's picture hasn't changed for 4 hours") for i in dog.issues())
+    with patch("homeassistant.components.camera.async_get_image", return_value=Image("image/jpeg", b"new")):
+        await dog.async_check_cameras()
+    assert not any(i["kind"] == "frozen" for i in dog.issues())

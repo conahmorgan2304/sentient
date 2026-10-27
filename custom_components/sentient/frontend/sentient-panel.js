@@ -241,6 +241,7 @@
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
+        : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock"}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
@@ -1109,7 +1110,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"], appliance: ["mdi:washing-machine", "APPLIANCE"], animal: ["mdi:rabbit", "ANIMALS"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"], appliance: ["mdi:washing-machine", "APPLIANCE"], animal: ["mdi:rabbit", "ANIMALS"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"],
         heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "THIS WEEK"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");

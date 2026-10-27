@@ -16,7 +16,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 _WORD = re.compile(r"[a-z0-9']+")
-_SKIP = {"the", "a", "an", "why", "did", "go", "off", "on", "who", "turned", "turn", "what", "is", "was", "it", "you", "say", "that"}
+_SKIP = {"the", "a", "an", "why", "did", "go", "off", "on", "who", "turned", "turn", "what", "is", "was", "it", "you", "say",
+         "that", "didn't", "didnt", "not", "tell", "told", "me", "about", "when", "announce", "mention", "had", "has", "been"}
 
 
 async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 12) -> dict[str, Any]:
@@ -57,6 +58,16 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
             break
     if notes:
         out["house_log"] = notes
+    # things it noticed and decided not to say, and why (quiet hours, the hourly limit, not worth it…)
+    quiet = []
+    for d in list(getattr(rt.noticer, "decisions", []))[:60]:
+        text = " ".join(d.get("changes") or []).lower()
+        if words and any(w in text for w in words) and not str(d.get("result", "")).startswith("spoke"):
+            quiet.append(f"{str(d.get('time', ''))[11:16]} noticed {'; '.join(d.get('changes') or [])} — {d.get('result')}")
+        if len(quiet) >= 4:
+            break
+    if quiet:
+        out["noticed_but_not_said"] = quiet
     if not out:
         out["error"] = f"I can't find anything about {what}"
     return out

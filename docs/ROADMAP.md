@@ -82,3 +82,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] AI meter and daily cap with plain-words fallback, self-check of its own parts, learning from corrections, appliances that say when they've finished or seem stuck; overview fits the screen on tablets (0.46.0)
 - [x] Voice backup agent (AI first, Home Assistant's own when the AI fails); animals' hutch/kennel temperatures with frost warnings (0.47.0)
 - [x] Set-up wizard filled in from the house; thumbs up/down on remarks (0.48.0)
+- [x] One-call house check, voice action log and 'why didn't you say', watchdog for wear, fighting automations and frozen cameras (0.49.0)

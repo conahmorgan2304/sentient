@@ -924,9 +924,11 @@ class WhyTool(_Tool):
     name = "sentient_why"
     description = (
         "Explain why something happened or changed — 'why did the landing light go off?', 'who turned the "
-        "heating up?', 'why did you say that?'. Give 'what' (a device, a room or words from what was said). "
-        "Returns when it last changed, whether a person (and in which app), an automation or the house did "
-        "it, and the house's own log around then. Answer in a sentence or two."
+        "heating up?', 'why did you say that?' — or why something WASN'T said: 'why didn't you tell me the "
+        "washing had finished?'. Give 'what' (a device, a room or words from what was said). Returns when it last "
+        "changed, whether a person (and in which app), an automation or the house did it, the house's own log "
+        "around then (including anything held back and why), and things it noticed but chose not to say. "
+        "Answer from these facts in a sentence or two; never guess."
     )
     parameters = vol.Schema({vol.Required("what"): cv.string, vol.Optional("hours"): vol.Coerce(float)})
 
@@ -940,6 +942,66 @@ class WhyTool(_Tool):
 
         a = tool_input.tool_args
         return await async_explain(hass, rt, a["what"], float(a.get("hours") or 12))
+
+
+class HouseCheckTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_house_check"
+    description = (
+        "Everything about the house at once, for a broad request — 'get the house ready for a cold night', "
+        "'anything I need to sort before bed?', 'check the house', 'get ready for the morning'. Returns doors and "
+        "windows open and the alarm, lights and fans left on, the heating now and when it needs to start to be "
+        "warm tomorrow, tomorrow's weather, animals living outside, appliances running, today's biggest energy "
+        "users and anything offline or wearing out. Then do what's needed with your other tools (never the "
+        "alarm unless asked), and say in two or three sentences what you did and what still needs a person."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .security import check
+
+        sec = check(hass)
+        out: dict[str, Any] = {
+            "security": {"summary": sec["summary"], "open": [i["name"] for i in sec["open"]],
+                         "unlocked": [i["name"] for i in sec["unlocked"]],
+                         "alarm": [f"{a['name']}: {a['state']}" for a in sec["alarms"]]},
+            "house": "asleep" if rt.sleep.asleep else "awake",
+        }
+        on = [s.name for s in hass.states.async_all(("light", "fan"))
+              if s.state == "on" and not isinstance(s.attributes.get("entity_id"), list)]
+        out["lights_and_fans_on"] = on[:20]
+        out["heating"] = [{k: z[k] for k in ("name", "now", "comfortable_at", "warm_by", "needs_to_start") if z.get(k) is not None}
+                          for z in rt.heating.report()["zones"]]
+        for st in hass.states.async_all("climate"):
+            out.setdefault("thermostats", []).append(
+                f"{st.name}: {st.state}, set to {st.attributes.get('temperature')}°, now {st.attributes.get('current_temperature')}°")
+        try:
+            tomorrow = await rt.foresight.gather()
+            out["tomorrow"] = {k: v for k, v in tomorrow.items() if k in ("tomorrow", "weather", "calendar", "alarms_tomorrow")}
+        except Exception:  # noqa: BLE001
+            pass
+        if animals := rt.animals.readings():
+            out["animals_outside"] = animals
+        if running := [a for a in rt.appliances.listing() if a["running"]]:
+            out["appliances_running"] = [f"{a['name']} since {a['started']}" + (f", done about {a['done_about']}" if a.get("done_about") else "")
+                                         for a in running]
+        try:
+            from .energy import async_report, describe
+
+            report = await async_report(hass)
+            if report.get("devices"):
+                out["energy_today"] = {"biggest": [f"{d['name']} {d['kwh']} kWh" for d in report["devices"][:3]],
+                                       "unusual": describe(report)}
+        except Exception:  # noqa: BLE001
+            pass
+        if problems := rt.health.describe():
+            out["problems"] = problems[:8]
+        return out
 
 
 class SentientAPI(llm.API):
@@ -963,7 +1025,7 @@ class SentientAPI(llm.API):
             api=self,
             api_prompt=self._prompt(llm_context, conversation_id),
             llm_context=llm_context,
-            tools=[RememberTool(), CorrectionTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+            tools=[RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )

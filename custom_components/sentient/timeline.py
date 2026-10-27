@@ -33,7 +33,7 @@ from .presence import area_of
 STORAGE_VERSION = 1
 KEEP = 400
 EVENT_TIMELINE = f"{DOMAIN}_timeline"
-KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy", "security", "mind", "loop", "drive", "appliance", "animal"]
+KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy", "security", "mind", "loop", "drive", "appliance", "animal", "voice"]
 
 
 class Timeline:
@@ -174,7 +174,8 @@ class Timeline:
                 back = {
                     "offline": f"{name} is back to normal", "battery": f"{name}: battery fine again",
                     "ai": "The AI is answering again", "speaker": f"Speaking on {name} again",
-                    "stuck": f"{name} is working again", "limit": None,
+                    "stuck": f"{name} is working again", "limit": None, "wear": None, "fight": None,
+                    "frozen": f"{name.removesuffix(' frozen')}'s picture is moving again",
                 }.get(kind, f"{name} is fine again")
                 if back:
                     self.add("health", back)

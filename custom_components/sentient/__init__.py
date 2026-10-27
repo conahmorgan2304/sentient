@@ -17,6 +17,7 @@ from homeassistant.helpers import llm
 
 from .ai import AIGate
 from .animals import Animals
+from .watchdog import Watchdog
 from .appliances import Appliances
 from .const import (
     DOMAIN,
@@ -136,6 +137,7 @@ class SentientRuntime:
     ai: AIGate
     appliances: Appliances
     animals: Animals
+    watchdog: Watchdog
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -376,6 +378,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     sleep = Sleep(hass, entry.entry_id, options, get_rt)
     appliances = Appliances(hass, entry.entry_id, options, get_rt)
     animals = Animals(hass, options, get_rt)
+    watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
+    conversations.timeline = timeline
     noticer.skip = lambda: set(appliances.watched())  # appliances say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
@@ -390,9 +394,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
-        ai=ai, appliances=appliances, animals=animals,
+        ai=ai, appliances=appliances, animals=animals, watchdog=watchdog,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -455,7 +459,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show

@@ -35,6 +35,21 @@ def _short(text: str, limit: int = 160) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
+
+# Sentient tools that change something (the rest only read)
+SENTIENT_ACTIONS = {
+    "sentient_remember", "sentient_forget", "sentient_correction", "sentient_announce", "sentient_watch",
+    "sentient_remind", "sentient_cancel_watch", "sentient_adopt_routine", "sentient_forget_routine",
+    "sentient_accept_offer", "sentient_alarm", "sentient_party", "sentient_quiet", "sentient_shush",
+    "sentient_run_routine", "sentient_scene", "sentient_follow_up", "sentient_motion_lights", "sentient_spot",
+}
+ACTION_WORDS = {
+    "HassTurnOn": "Turned on", "HassTurnOff": "Turned off", "HassLightSet": "Set", "HassToggle": "Toggled",
+    "HassClimateSetTemperature": "Set the temperature of", "HassSetPosition": "Moved", "HassVacuumStart": "Started",
+    "HassVacuumReturnToBase": "Sent home", "HassMediaPause": "Paused", "HassMediaUnpause": "Resumed",
+    "HassSetVolume": "Set the volume of", "HassMediaNext": "Skipped on",
+}
+
 class Conversations:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
         self.hass = hass
@@ -44,6 +59,7 @@ class Conversations:
         self._open: dict[str, dict[str, Any]] = {}  # conversation id -> episode being written
         self._ours: dict[str, dict[str, Any]] = {}  # conversation id -> room/device, for ones using Sentient
         self._unsubs: list = []
+        self.timeline: Any = None  # set by the runtime: where voice actions are logged
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -95,6 +111,9 @@ class Conversations:
         if not kind.endswith("content_added") or not self.enabled:
             return
         content = data.get("content") or {}
+        if content.get("role") == "tool_result":
+            self._tool_result(content)
+            return
         role, text = content.get("role"), content.get("content")
         if role not in ("user", "assistant") or not text or not isinstance(text, str):
             return
@@ -108,6 +127,34 @@ class Conversations:
         ep["turns"].append({"who": "them" if role == "user" else "me", "text": _short(text, 400)})
         ep["last"] = dt_util.utcnow().isoformat()
         del ep["turns"][:-12]
+
+    @callback
+    def _tool_result(self, content: dict[str, Any]) -> None:
+        """What a voice actually did: put each device action on the timeline, with what didn't work."""
+        if self.timeline is None:
+            return
+        name = str(content.get("tool_name") or "")
+        result = content.get("tool_result") or {}
+        if name.startswith("sentient_"):
+            if name not in SENTIENT_ACTIONS:
+                return
+            err = result.get("error") if isinstance(result, dict) else None
+            args = content.get("tool_args") or {}
+            what = next((str(v) for v in args.values() if isinstance(v, str)), "") if isinstance(args, dict) else ""
+            self.timeline.add("voice", f"{name.removeprefix('sentient_').replace('_', ' ').capitalize()}"
+                              + (f": {_short(what, 80)}" if what else ""), f"by voice{'; failed: ' + str(err) if err else ''}")
+            return
+        data = result.get("data") if isinstance(result, dict) else None
+        if not isinstance(data, dict) or not ("success" in data or "failed" in data):
+            return  # a question, not an action
+        def names(items: Any) -> list[str]:
+            return [str(t.get("name")) for t in items or [] if isinstance(t, dict) and t.get("name")]
+        ok, bad = names(data.get("success")), names(data.get("failed"))
+        if not ok and not bad:
+            return
+        verb = ACTION_WORDS.get(name) or re.sub(r"(?<!^)(?=[A-Z])", " ", name.removeprefix("Hass")).capitalize()
+        detail = "by voice" + (f"; didn't work: {', '.join(bad)}" if bad else "")
+        self.timeline.add("voice", f"{verb} {', '.join((ok or bad)[:4])}", detail)
 
     @callback
     def _tidy(self, _now=None) -> None:
