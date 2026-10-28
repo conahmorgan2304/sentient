@@ -180,3 +180,17 @@ async def test_forgetting_off_and_names_only_from_chosen_cameras(hass: HomeAssis
     hass.states.async_set("sensor.frigate_corey_last_camera", "Front Door Doorbell", {"friendly_name": "Frigate Corey Last Camera"})
     await hass.async_block_till_done()
     assert [s["name"] for s in entry.runtime_data.faces.recent()] == ["Corey"]
+
+
+async def test_h265_camera_uses_frigates_preview(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
+    entry = await _setup(hass, tmp_path, **WATCH)
+    aioclient_mock.get(CLIP, content=b"\x00\x00\x00 ftypisom....hev1....")
+    aioclient_mock.get(CLIP.replace("clip.mp4", "preview.mp4"), content=b"\x00\x00\x00 ftypisom avc1 preview")
+    aioclient_mock.get(f"{URL}/api/events/ev1/snapshot.jpg?bbox=0", content=b"\xff\xd8 jpeg")
+    ai = _ai(hass, {"summary": "A woman walked through the gate", "kind": "visitor", "worth": True})
+    cw = entry.runtime_data.clipwatch
+    cw._message(_review())
+    await hass.async_block_till_done()
+    assert [a["media_content_type"] for a in ai[0].data["attachments"]] == ["video/mp4", "image/jpeg"]
+    assert "gate" in cw.hevc and cw.items[0]["summary"] == "A woman walked through the gate."
+    assert not list((tmp_path / "sentient").glob("clipwatch_*"))

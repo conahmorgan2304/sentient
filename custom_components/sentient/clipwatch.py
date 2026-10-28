@@ -63,6 +63,7 @@ COOLDOWN = timedelta(minutes=5)  # per camera
 MIN_SECONDS = 3
 MAX_SECONDS = 30
 MAX_BYTES = 25 * 1024 * 1024
+HEVC = (b"hev1", b"hvc1")
 KINDS = ["delivery", "visitor", "household", "passer-by", "animal", "vehicle", "suspicious", "nothing"]
 SCOPES, WHENS, NOTIFY, SOURCES = CLIP_SCOPES, CLIP_WHENS, CLIP_NOTIFY_MODES, CLIP_SOURCES
 
@@ -91,6 +92,7 @@ class ClipWatch:
         self.via: str | None = None
         self.skipped: dict[str, int] = {}
         self._stopped = False
+        self.hevc: set[str] = set()  # cameras that record H.265
 
     # ----- settings -----------------------------------------------------------------------
     @property
@@ -252,7 +254,7 @@ class ClipWatch:
                 return {"skipped": "today's clip allowance is used up"}
             self._last[camera] = now
             try:
-                answer = await self._ask_ai(camera, start, end)
+                answer = await self._ask_ai(camera, start, end, event)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Sentient couldn't watch a clip from %s: %s", camera, err)
                 return {"error": str(err)}
@@ -261,8 +263,9 @@ class ClipWatch:
             return {"error": "no answer"}
         return self._record(camera, start, event, review.get("id"), answer)
 
-    async def _download(self, path: str, name: str) -> str | None:
-        """Fetch something from Frigate into local media; its media-source id, or None."""
+    async def _download(self, path: str, name: str, refuse: tuple[bytes, ...] = ()) -> str | None:
+        """Fetch something from Frigate into local media; its media-source id, or None (also None when its
+        first bytes contain any of `refuse` — e.g. H.265 video, which the AI can't read)."""
         url, local = frigate_url(self.hass), (self.hass.config.media_dirs or {}).get("local")
         if not url or not local:
             return None
@@ -271,7 +274,7 @@ class ClipWatch:
             if resp.status != 200:
                 return None
             body = await resp.content.read(MAX_BYTES + 1)
-        if not body or len(body) > MAX_BYTES:
+        if not body or len(body) > MAX_BYTES or any(r in body[:400_000] for r in refuse):
             return None
 
         def write() -> None:
@@ -317,12 +320,26 @@ class ClipWatch:
                 break
         return out
 
-    async def _ask_ai(self, camera: str, start: float, end: float) -> dict[str, Any] | None:
+    async def _video(self, camera: str, start: float, end: float, name: str) -> str | None:
+        """The recording as H.264 the AI can read. Cameras that record H.265 get Frigate's own preview of the
+        same moments instead (small, already H.264 — no converting here, so no load on Home Assistant)."""
+        span = f"/api/{camera}/start/{int(start)}/end/{int(end) + 1}"
+        if camera not in self.hevc:
+            if media := await self._download(f"{span}/clip.mp4", name, refuse=HEVC):
+                return media
+            self.hevc.add(camera)
+        return await self._download(f"{span}/preview.mp4", name)
+
+    async def _ask_ai(self, camera: str, start: float, end: float, event: str | None = None) -> dict[str, Any] | None:
         name = f"clipwatch_{camera}.mp4"
-        media = await self._download(f"/api/{camera}/start/{int(start)}/end/{int(end) + 1}/clip.mp4", name)
+        media = await self._video(camera, start, end, name)
         if media is None:
             raise RuntimeError("the clip isn't available")
         attachments = [{"media_content_id": media, "media_content_type": "video/mp4"}]
+        if camera in self.hevc and event:  # the preview is small: add Frigate's best full-size still of it
+            still = await self._download(f"/api/events/{event}/snapshot.jpg?bbox=0", f"clipwatch_{camera}.jpg")
+            if still:
+                attachments.append({"media_content_id": still, "media_content_type": "image/jpeg"})
         structure: dict[str, Any] = {
             "summary": {"description": "One short sentence: what the person, animal or vehicle did", "required": True,
                         "selector": {"text": {}}},
@@ -337,6 +354,8 @@ class ClipWatch:
             "a dog past the gate.' Describe clothing and actions only. Never guess a stranger's name; no camera names, "
             "IDs or times. 'suspicious' is only for someone trying doors, looking into windows or cars, or lingering "
             "for no clear reason.")
+        if len(attachments) > 1:
+            instructions += " The clip is a small preview; a full-size still of the clearest moment follows it."
         refs: list[tuple[str, str]] = []
         looks = self.looks() if self.options.get(CONF_CLIP_WHOSE) else {}
         if self.options.get(CONF_CLIP_WHOSE):
@@ -348,7 +367,7 @@ class ClipWatch:
         if names:
             attachments += [{"media_content_id": m, "media_content_type": "image/webp"} for _, m in refs]
             if refs:
-                instructions += (" After the clip come reference face photos of the household, in this order: "
+                instructions += (" Then come reference face photos of the household, in this order: "
                                  + ", ".join(n for n, _ in refs) + ".")
             if looks:
                 instructions += " How household members often look when their face can't be seen: " + "; ".join(
@@ -372,6 +391,7 @@ class ClipWatch:
         finally:
             if not self.options.get(CONF_CLIP_KEEP):
                 self._remove(name)
+                self._remove(f"clipwatch_{camera}.jpg")
         answer = (response or {}).get("data")
         if not isinstance(answer, dict):
             return {"summary": str(answer or ""), "kind": "visitor", "worth": False}

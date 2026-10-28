@@ -73,7 +73,7 @@ class Clips:
             events = await resp.json()
         return events[0] if events else None
 
-    async def async_save_clip(self, event_id: str, camera: str) -> str | None:
+    async def async_save_clip(self, event_id: str, camera: str, span: tuple[float, float] | None = None) -> str | None:
         """Download the clip into local media; the media-source id for the AI task, or None."""
         url, local = self.frigate_url(), (self.hass.config.media_dirs or {}).get("local")
         if not url or not local:
@@ -84,6 +84,10 @@ class Clips:
             if resp.status != 200:
                 return None
             data = await resp.content.read(MAX_BYTES + 1)
+            if data and (b"hev1" in data[:400_000] or b"hvc1" in data[:400_000]) and span:
+                # H.265, which the AI can't read: Frigate's own small H.264 preview of the same moments instead
+                resp = await session.get(f"{url}/api/{self.camera_name(camera)}/start/{int(span[0])}/end/{int(span[1]) + 1}/preview.mp4")
+                data = await resp.content.read(MAX_BYTES + 1) if resp.status == 200 else b""
         if not data or len(data) > MAX_BYTES:
             return None
         name = f"clip_{self.camera_name(camera)}.mp4"
@@ -117,7 +121,8 @@ class Clips:
         if rt is not None and not rt.watches.spend("clips", force=force):
             return {"skipped": "daily AI limit reached"}
         try:
-            media = await self.async_save_clip(event["id"], camera)
+            start = float(event.get("start_time") or 0)
+            media = await self.async_save_clip(event["id"], camera, (start, float(event.get("end_time") or start + 20)) if start else None)
         except Exception as err:  # noqa: BLE001
             return {"error": f"couldn't fetch the clip: {err}"}
         if media is None:
