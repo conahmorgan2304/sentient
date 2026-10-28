@@ -337,9 +337,9 @@ class ClipWatch:
             raise RuntimeError("the clip isn't available")
         attachments = [{"media_content_id": media, "media_content_type": "video/mp4"}]
         if camera in self.hevc and event:  # the preview is small: add Frigate's best full-size still of it
-            still = await self._download(f"/api/events/{event}/snapshot.jpg?bbox=0", f"clipwatch_{camera}.jpg")
+            still = await self._download(f"/api/events/{event}/snapshot-clean.webp", f"clipwatch_{camera}.webp")
             if still:
-                attachments.append({"media_content_id": still, "media_content_type": "image/jpeg"})
+                attachments.append({"media_content_id": still, "media_content_type": "image/webp"})
         structure: dict[str, Any] = {
             "summary": {"description": "One short sentence: what the person, animal or vehicle did", "required": True,
                         "selector": {"text": {}}},
@@ -354,6 +354,7 @@ class ClipWatch:
             "a dog past the gate.' Describe clothing and actions only. Never guess a stranger's name; no camera names, "
             "IDs or times. 'suspicious' is only for someone trying doors, looking into windows or cars, or lingering "
             "for no clear reason.")
+        plain = (instructions, dict(structure))  # the video on its own, if the extras are refused
         if len(attachments) > 1:
             instructions += " The clip is a small preview; a full-size still of the clearest moment follows it."
         refs: list[tuple[str, str]] = []
@@ -387,11 +388,18 @@ class ClipWatch:
         if ai := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
         try:
-            response = await async_generate(self.hass, data)
+            try:
+                response = await async_generate(self.hass, data)
+            except Exception:  # noqa: BLE001 - an extra picture the AI won't take: try the clip alone once
+                if len(attachments) == 1:
+                    raise
+                names = []
+                data.update(instructions=plain[0], structure=plain[1], attachments=attachments[:1])
+                response = await async_generate(self.hass, data)
         finally:
             if not self.options.get(CONF_CLIP_KEEP):
                 self._remove(name)
-                self._remove(f"clipwatch_{camera}.jpg")
+                self._remove(f"clipwatch_{camera}.webp")
         answer = (response or {}).get("data")
         if not isinstance(answer, dict):
             return {"summary": str(answer or ""), "kind": "visitor", "worth": False}

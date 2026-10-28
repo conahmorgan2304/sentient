@@ -186,11 +186,30 @@ async def test_h265_camera_uses_frigates_preview(hass: HomeAssistant, aioclient_
     entry = await _setup(hass, tmp_path, **WATCH)
     aioclient_mock.get(CLIP, content=b"\x00\x00\x00 ftypisom....hev1....")
     aioclient_mock.get(CLIP.replace("clip.mp4", "preview.mp4"), content=b"\x00\x00\x00 ftypisom avc1 preview")
-    aioclient_mock.get(f"{URL}/api/events/ev1/snapshot.jpg?bbox=0", content=b"\xff\xd8 jpeg")
+    aioclient_mock.get(f"{URL}/api/events/ev1/snapshot-clean.webp", content=b"RIFF webp")
     ai = _ai(hass, {"summary": "A woman walked through the gate", "kind": "visitor", "worth": True})
     cw = entry.runtime_data.clipwatch
     cw._message(_review())
     await hass.async_block_till_done()
-    assert [a["media_content_type"] for a in ai[0].data["attachments"]] == ["video/mp4", "image/jpeg"]
+    assert [a["media_content_type"] for a in ai[0].data["attachments"]] == ["video/mp4", "image/webp"]
     assert "gate" in cw.hevc and cw.items[0]["summary"] == "A woman walked through the gate."
     assert not list((tmp_path / "sentient").glob("clipwatch_*"))
+
+
+async def test_extras_refused_then_the_clip_alone(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
+    entry = await _setup(hass, tmp_path, **WATCH)
+    aioclient_mock.get(CLIP, content=b"....hev1....")
+    aioclient_mock.get(CLIP.replace("clip.mp4", "preview.mp4"), content=b"avc1 preview")
+    aioclient_mock.get(f"{URL}/api/events/ev1/snapshot-clean.webp", content=b"RIFF webp")
+    calls = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        if len(call.data["attachments"]) > 1:
+            raise ValueError("Request contains an invalid argument.")
+        return {"conversation_id": "x", "data": {"summary": "A man walked past", "kind": "passer-by", "worth": False}}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    entry.runtime_data.clipwatch._message(_review())
+    await hass.async_block_till_done()
+    assert len(calls) == 2 and entry.runtime_data.clipwatch.items[0]["summary"] == "A man walked past."
