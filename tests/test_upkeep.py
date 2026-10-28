@@ -67,7 +67,7 @@ async def test_tidy_merges_and_removes_within_limits(hass: HomeAssistant) -> Non
     texts = [
         "The bins go out on Thursday nights.", "Bins: Thursday evening, put them out.",
         "There are two cats.", "The cats are called Milo and Luna.", "object in the shed has all its portions",
-        "The kitchen light is best at 60 percent in the evening.", "Conah has a Yamaha FZ6.",
+        "The kitchen light is best at 60 percent in the evening.", "Alex has a Yamaha FZ6.",
         "The rabbits live in the hutch by the shed.", "Dinner is usually at six.",
     ]
     ids = [mem.add(t).id for t in texts]

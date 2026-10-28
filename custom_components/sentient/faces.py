@@ -2,7 +2,7 @@
 
 Sentient doesn't recognise faces itself. Frigate does (its "<name> last camera" sensors), and so do some
 doorbells (a "last recognised face" sensor). When one of those names someone, Sentient notes it:
-"Corey seen at the gate, 17:32" goes on the timeline, and the voice can answer "has Corey come home?"
+"Sam seen at the gate, 17:32" goes on the timeline, and the voice can answer "has Sam come home?"
 or "when did Nan last come round?". Names are only ever said when someone asks — never announced, never
 guessed (an unknown face stays "someone"). On/off, and which people, in the settings. Off by default.
 

@@ -223,7 +223,7 @@ class Drive:
         return self.describe()
 
     def known(self) -> list[tuple[str, str]]:
-        """[(whose, what it looks like)] from the settings: one 'Corey: dark grey hatchback' per line."""
+        """[(whose, what it looks like)] from the settings: one 'Sam: dark grey hatchback' per line."""
         out = []
         for line in str(self.options.get(CONF_KNOWN_CARS) or "").splitlines():
             who, _, what = line.partition(":")

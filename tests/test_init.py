@@ -250,7 +250,7 @@ async def test_quiet_hours_hold_unless_urgent(hass: HomeAssistant) -> None:
 
 async def test_llm_api_shares_memory(hass: HomeAssistant) -> None:
     entry = await _setup(hass)
-    entry.runtime_data.memory.add("Conah prefers the kitchen light at 60 percent in the evening", "preference")
+    entry.runtime_data.memory.add("Alex prefers the kitchen light at 60 percent in the evening", "preference")
     ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
     api = await llm.async_get_api(hass, "sentient", ctx)
     assert "Nova" in api.api_prompt
@@ -302,12 +302,12 @@ async def test_diagnostics_redacts_personal_bits(hass: HomeAssistant) -> None:
     from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
 
     entry = await _setup(hass, {**OPTIONS, "house_rules": "Never say the house is empty."})
-    entry.runtime_data.memory.add("Conah likes tea", "preference")
+    entry.runtime_data.memory.add("Alex likes tea", "preference")
     diag = await async_get_config_entry_diagnostics(hass, entry)
     assert diag["options"]["house_rules"] == "**REDACTED**"
     assert diag["options"]["persona"] == "**REDACTED**"
     assert diag["memory"] == {"count": 1, "categories": ["preference"]}
-    assert "Conah" not in str(diag)
+    assert "Alex" not in str(diag)
 
 
 async def test_said_log_survives_restart(hass: HomeAssistant) -> None:

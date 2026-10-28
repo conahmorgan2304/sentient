@@ -113,21 +113,21 @@ async def test_frigate_summaries_need_no_ai(hass: HomeAssistant, tmp_path) -> No
 
 async def test_whose_from_looks_when_the_face_is_hidden(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
     entry = await _setup(hass, tmp_path, **WATCH, clip_whose=True,
-                         clip_looks="Conah: black motorbike helmet and riding jacket, on the motorbike")
-    aioclient_mock.get(f"{URL}/api/faces", json={"train": [], "Conah": ["Conah-1.webp"]})
-    aioclient_mock.get(f"{URL}/clips/faces/Conah/Conah-1.webp", content=b"RIFF webp")
+                         clip_looks="Alex: black motorbike helmet and riding jacket, on the motorbike")
+    aioclient_mock.get(f"{URL}/api/faces", json={"train": [], "Alex": ["Alex-1.webp"]})
+    aioclient_mock.get(f"{URL}/clips/faces/Alex/Alex-1.webp", content=b"RIFF webp")
     aioclient_mock.get(CLIP,
                        content=b"\x00 clip")
     ai = _ai(hass, {"summary": "Someone in a black helmet rode out of the gate on a motorbike", "kind": "household",
-                    "worth": False, "whose": "conah"})
+                    "worth": False, "whose": "alex"})
     cw = entry.runtime_data.clipwatch
     cw._message(_review())
     await hass.async_block_till_done()
     data = ai[0].data
     assert "motorbike helmet" in data["instructions"] and "whose" in data["structure"]
     assert [a["media_content_type"] for a in data["attachments"]] == ["video/mp4", "image/webp"]
-    assert cw.items[0]["whose"] == "Conah"
-    assert "(probably Conah)" in entry.runtime_data.timeline.items[0]["text"]
+    assert cw.items[0]["whose"] == "Alex"
+    assert "(probably Alex)" in entry.runtime_data.timeline.items[0]["text"]
 
 
 async def test_clip_watch_off(hass: HomeAssistant, tmp_path) -> None:
@@ -141,9 +141,9 @@ async def test_clip_watch_off(hass: HomeAssistant, tmp_path) -> None:
 async def test_strangers_forgotten(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
     now = time.time()
     old = f"{now - 90000:.1f}-abc123-{now - 90000:.1f}-unknown-0.31.webp"
-    new = f"{now - 600:.1f}-def456-{now - 600:.1f}-Corey-0.55.webp"
+    new = f"{now - 600:.1f}-def456-{now - 600:.1f}-Sam-0.55.webp"
     entry = await _setup(hass, tmp_path, face_forget_hours=24)
-    aioclient_mock.get(f"{URL}/api/faces", json={"train": [old, new], "Corey": ["c.webp"]})
+    aioclient_mock.get(f"{URL}/api/faces", json={"train": [old, new], "Sam": ["c.webp"]})
     aioclient_mock.post(f"{URL}/api/faces/train/delete", json={"success": True})
     out = await entry.runtime_data.faces.async_forget_old()
     assert out == {"forgotten": 1, "kept": 1}
@@ -156,12 +156,12 @@ async def test_not_someone_we_know_deletes_the_face(hass: HomeAssistant, aioclie
     entry = await _setup(hass, tmp_path, face_teach=True, face_teach_cameras=["camera.front_door_doorbell"],
                          notify_targets=["notify.my_phone"])
     phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
-    aioclient_mock.get(f"{URL}/api/faces", json={"train": [train], "Conah": [], "Corey": []})
+    aioclient_mock.get(f"{URL}/api/faces", json={"train": [train], "Alex": [], "Sam": []})
     aioclient_mock.get(f"{URL}/api/events", json=[{"id": "1793190000.5-abc123"}])
     aioclient_mock.post(f"{URL}/api/faces/train/delete", json={"success": True})
     await entry.runtime_data.faces.async_ask("front_door_doorbell")
     actions = phone[-1].data["data"]["actions"]
-    assert [a["title"] for a in actions] == ["Conah", "Corey", "Not someone we know"]  # three at most
+    assert [a["title"] for a in actions] == ["Alex", "Sam", "Not someone we know"]  # three at most
     hass.bus.async_fire("mobile_app_notification_action", {"action": actions[-1]["action"]})
     await hass.async_block_till_done()
     posted = [c for c in aioclient_mock.mock_calls if c[0] == "POST"]
@@ -169,17 +169,17 @@ async def test_not_someone_we_know_deletes_the_face(hass: HomeAssistant, aioclie
 
 
 async def test_forgetting_off_and_names_only_from_chosen_cameras(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
-    hass.states.async_set("sensor.frigate_corey_last_camera", "None", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "None", {"friendly_name": "Frigate Sam Last Camera"})
     hass.states.async_set("camera.front_door_doorbell", "idle", {"friendly_name": "Front door doorbell"})
     entry = await _setup(hass, tmp_path, faces=True, face_cameras=["camera.front_door_doorbell"])
     assert "skipped" in await entry.runtime_data.faces.async_forget_old()
     assert not aioclient_mock.mock_calls  # off: Frigate isn't touched
-    hass.states.async_set("sensor.frigate_corey_last_camera", "gate", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "gate", {"friendly_name": "Frigate Sam Last Camera"})
     await hass.async_block_till_done()
     assert entry.runtime_data.faces.recent() == []  # the gate isn't chosen
-    hass.states.async_set("sensor.frigate_corey_last_camera", "Front Door Doorbell", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "Front Door Doorbell", {"friendly_name": "Frigate Sam Last Camera"})
     await hass.async_block_till_done()
-    assert [s["name"] for s in entry.runtime_data.faces.recent()] == ["Corey"]
+    assert [s["name"] for s in entry.runtime_data.faces.recent()] == ["Sam"]
 
 
 async def test_h265_camera_uses_frigates_preview(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:

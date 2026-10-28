@@ -1,7 +1,7 @@
 """Long-term memory for Sentient.
 
 Memories are short, durable facts ("the rabbits live in the hutch by the shed",
-"Conah likes the kitchen light at 60% in the evening"). They are stored in Home
+"Alex likes the kitchen light at 60% in the evening"). They are stored in Home
 Assistant's own storage, shared by every voice and automation, and surfaced to
 any conversation agent that uses the Sentient LLM API.
 """

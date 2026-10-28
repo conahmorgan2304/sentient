@@ -83,25 +83,25 @@ async def test_rules_off(hass: HomeAssistant) -> None:
 
 
 async def test_faces_named_privately(hass: HomeAssistant) -> None:
-    hass.states.async_set("sensor.frigate_corey_last_camera", "None", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "None", {"friendly_name": "Frigate Sam Last Camera"})
     hass.states.async_set("sensor.frigate_nan_last_camera", "None", {"friendly_name": "Frigate Nan Last Camera"})
-    entry = await _setup(hass, faces=True, face_people=["Corey"])
+    entry = await _setup(hass, faces=True, face_people=["Sam"])
     said = async_mock_service(hass, "assist_satellite", "announce")
-    hass.states.async_set("sensor.frigate_corey_last_camera", "gate", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "gate", {"friendly_name": "Frigate Sam Last Camera"})
     hass.states.async_set("sensor.frigate_nan_last_camera", "gate", {"friendly_name": "Frigate Nan Last Camera"})
     await hass.async_block_till_done()
     rt = entry.runtime_data
-    assert [s["name"] for s in rt.faces.recent()] == ["Corey"]  # only the people chosen
-    assert any(i["text"] == "Corey seen at the gate" for i in rt.timeline.items)
+    assert [s["name"] for s in rt.faces.recent()] == ["Sam"]  # only the people chosen
+    assert any(i["text"] == "Sam seen at the gate" for i in rt.timeline.items)
     assert not said  # never announced
     api = await _api(hass)
-    assert "Corey at the gate" in api.api_prompt and "never announce it" in api.api_prompt
+    assert "Sam at the gate" in api.api_prompt and "never announce it" in api.api_prompt
 
 
 async def test_faces_off(hass: HomeAssistant) -> None:
-    hass.states.async_set("sensor.frigate_corey_last_camera", "None", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "None", {"friendly_name": "Frigate Sam Last Camera"})
     entry = await _setup(hass)
-    hass.states.async_set("sensor.frigate_corey_last_camera", "gate", {"friendly_name": "Frigate Corey Last Camera"})
+    hass.states.async_set("sensor.frigate_sam_last_camera", "gate", {"friendly_name": "Frigate Sam Last Camera"})
     await hass.async_block_till_done()
     assert entry.runtime_data.faces.recent() == []
     assert "Recognised by the cameras" not in (await _api(hass)).api_prompt
@@ -160,10 +160,10 @@ async def test_known_cars_named_from_the_same_look(hass: HomeAssistant) -> None:
     from homeassistant.core import ServiceCall, SupportsResponse
 
     hass.states.async_set("camera.gate", "idle")
-    entry = await _setup(hass, known_cars="Corey: dark grey hatchback\nNan: red Fiat")
+    entry = await _setup(hass, known_cars="Sam: dark grey hatchback\nNan: red Fiat")
     rt = entry.runtime_data
     rt.spots.set("camera.gate", "drive", [0.1, 0.4, 0.6, 0.9])
-    replies = iter([{"cars": 0}, {"cars": 1, "description": "dark grey hatchback", "whose": "Corey"}])
+    replies = iter([{"cars": 0}, {"cars": 1, "description": "dark grey hatchback", "whose": "Sam"}])
     calls = []
 
     async def generate(call: ServiceCall):
@@ -173,9 +173,9 @@ async def test_known_cars_named_from_the_same_look(hass: HomeAssistant) -> None:
     hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
     await rt.drive.async_check(force=True)
     await rt.drive.async_check(force=True)
-    assert "Corey — dark grey hatchback" in calls[-1].data["instructions"]
-    assert rt.timeline.items[0]["text"] == "Corey's car arrived on the drive — now dark grey hatchback"
-    assert "(Corey's)" in rt.drive.prompt_line()
+    assert "Sam — dark grey hatchback" in calls[-1].data["instructions"]
+    assert rt.timeline.items[0]["text"] == "Sam's car arrived on the drive — now dark grey hatchback"
+    assert "(Sam's)" in rt.drive.prompt_line()
 
 
 async def test_no_known_cars_no_names(hass: HomeAssistant) -> None:
@@ -226,7 +226,7 @@ async def test_event_clips_off(hass: HomeAssistant) -> None:
     assert "skipped" in await entry.runtime_data.clips.async_what_happened("camera.front_door")
 
 
-TRAIN = "1793190000.5-abc123-1793190001.2-Corey-0.62.webp"
+TRAIN = "1793190000.5-abc123-1793190001.2-Sam-0.62.webp"
 
 
 async def test_face_teaching_asks_the_phone_and_teaches_frigate(hass: HomeAssistant, aioclient_mock) -> None:
@@ -240,9 +240,9 @@ async def test_face_teaching_asks_the_phone_and_teaches_frigate(hass: HomeAssist
     phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
     tablet = async_mock_service(hass, "notify", "mobile_app_hallway_tablet")
     aioclient_mock.get("http://frigate:5000/api/faces", json={"train": [TRAIN, "999.1-zzz-1.0-unknown-0.3.webp"],
-                                                               "Conah": ["a.webp"], "Corey": ["b.webp"]})
+                                                               "Alex": ["a.webp"], "Sam": ["b.webp"]})
     aioclient_mock.get("http://frigate:5000/api/events", json=[{"id": "1793190000.5-abc123"}])
-    aioclient_mock.post("http://frigate:5000/api/faces/train/Corey/classify", json={"success": True})
+    aioclient_mock.post("http://frigate:5000/api/faces/train/Sam/classify", json={"success": True})
     with patch("custom_components.sentient.faces.SETTLE", 0):
         hass.states.async_set("binary_sensor.front_door_doorbell_person_occupancy", "off")
         await hass.async_block_till_done()
@@ -250,14 +250,14 @@ async def test_face_teaching_asks_the_phone_and_teaches_frigate(hass: HomeAssist
         await hass.async_block_till_done()
     assert phone and not tablet  # only the phone, never the tablets
     data = phone[-1].data["data"]
-    assert [a["title"] for a in data["actions"]] == ["Corey", "Conah", "Not someone we know"]  # Frigate's guess first
+    assert [a["title"] for a in data["actions"]] == ["Sam", "Alex", "Not someone we know"]  # Frigate's guess first
     assert data["image"] == "/api/frigate/notifications/1793190000.5-abc123/thumbnail.jpg"
     hass.bus.async_fire("mobile_app_notification_action", {"action": data["actions"][0]["action"]})
     await hass.async_block_till_done()
     posted = [c for c in aioclient_mock.mock_calls if c[0] == "POST"]
-    assert str(posted[-1][1]).endswith("/api/faces/train/Corey/classify") and posted[-1][2] == {"training_file": TRAIN}
+    assert str(posted[-1][1]).endswith("/api/faces/train/Sam/classify") and posted[-1][2] == {"training_file": TRAIN}
     rt = entry.runtime_data
-    assert rt.faces.taught == 1 and any("Corey's face" in i["text"] for i in rt.timeline.items)
+    assert rt.faces.taught == 1 and any("Sam's face" in i["text"] for i in rt.timeline.items)
     # asked once per face, and not again straight away
     assert "skipped" in await rt.faces.async_ask("front_door_doorbell")
 
@@ -268,12 +268,12 @@ async def test_face_teaching_typed_name_makes_a_new_person(hass: HomeAssistant, 
     entry = await _setup(hass, face_teach=True, face_teach_cameras=["camera.front_door_doorbell"],
                          notify_targets=["notify.my_phone"])
     phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
-    aioclient_mock.get("http://frigate:5000/api/faces", json={"train": [TRAIN], "Conah": []})
+    aioclient_mock.get("http://frigate:5000/api/faces", json={"train": [TRAIN], "Alex": []})
     aioclient_mock.get("http://frigate:5000/api/events", json=[{"id": "1793190000.5-abc123"}])
     aioclient_mock.post("http://frigate:5000/api/faces/Nan/create", json={"success": False})
     aioclient_mock.post("http://frigate:5000/api/faces/train/Nan/classify", json={"success": True})
     out = await entry.runtime_data.faces.async_ask("front_door_doorbell")
-    assert out["names"] == ["Conah"]
+    assert out["names"] == ["Alex"]
     other = phone[-1].data["data"]["actions"][1]
     assert other["title"] == "Someone else"
     hass.bus.async_fire("mobile_app_notification_action", {"action": "nope"})

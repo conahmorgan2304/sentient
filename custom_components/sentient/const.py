@@ -174,14 +174,14 @@ CONF_CLIP_WHEN = "clip_when"  # always / quiet / away / quiet_or_away
 CONF_CLIP_NOTIFY = "clip_notify"  # off / worth / suspicious / all
 CONF_CLIP_SOURCE = "clip_source"  # sentient / frigate
 CONF_CLIP_WHOSE = "clip_whose"  # compare with the household's face photos in the same call
-CONF_CLIP_LOOKS = "clip_looks"  # "Conah: motorbike helmet and riding jacket" — for when a face can't be seen
+CONF_CLIP_LOOKS = "clip_looks"  # "Alex: motorbike helmet and riding jacket" — for when a face can't be seen
 CONF_CLIP_DAYS = "clip_days"
 CONF_CLIP_KEEP = "clip_keep"
 CONF_BUDGET_CLIPS = "budget_clips"
 DEFAULT_BUDGET_CLIPS = 30
 CONF_RULES = "rules"  # "when this, do that" rules, and making them by voice
 CONF_RELEVANT_MEMORIES = "relevant_memories"  # pick memories that match what was asked, not just the newest
-CONF_KNOWN_CARS = "known_cars"  # "Corey: dark grey hatchback", one per line; empty = cars aren't named
+CONF_KNOWN_CARS = "known_cars"  # "Sam: dark grey hatchback", one per line; empty = cars aren't named
 CONF_EVENT_CLIPS = "event_clips"  # watch Frigate's clip of an event, not just a still
 CONF_PROMPT_RECENT = "prompt_recent"  # the last hour and busy rooms in the voice's context
 CONF_AWAY_PEOPLE = "away_people"

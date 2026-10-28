@@ -291,7 +291,7 @@ class ClipWatch:
             self.hass.async_add_executor_job(lambda: (Path(local) / "sentient" / name).unlink(missing_ok=True))
 
     def looks(self) -> dict[str, str]:
-        """'Conah: motorbike helmet and riding jacket' lines -> {name: look}."""
+        """'Alex: motorbike helmet and riding jacket' lines -> {name: look}."""
         out = {}
         for line in str(self.options.get(CONF_CLIP_LOOKS) or "").splitlines():
             name, _, look = line.partition(":")
