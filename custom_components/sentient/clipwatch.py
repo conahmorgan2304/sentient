@@ -285,10 +285,10 @@ class ClipWatch:
         await self.hass.async_add_executor_job(write)
         return f"media-source://media_source/local/sentient/{name}"
 
-    def _remove(self, name: str) -> None:
+    async def _remove(self, name: str) -> None:
         local = (self.hass.config.media_dirs or {}).get("local")
         if local:
-            self.hass.async_add_executor_job(lambda: (Path(local) / "sentient" / name).unlink(missing_ok=True))
+            await self.hass.async_add_executor_job(lambda: (Path(local) / "sentient" / name).unlink(missing_ok=True))
 
     def looks(self) -> dict[str, str]:
         """'Alex: motorbike helmet and riding jacket' lines -> {name: look}."""
@@ -398,8 +398,8 @@ class ClipWatch:
                 response = await async_generate(self.hass, data)
         finally:
             if not self.options.get(CONF_CLIP_KEEP):
-                self._remove(name)
-                self._remove(f"clipwatch_{camera}.webp")
+                await self._remove(name)
+                await self._remove(f"clipwatch_{camera}.webp")
         answer = (response or {}).get("data")
         if not isinstance(answer, dict):
             return {"summary": str(answer or ""), "kind": "visitor", "worth": False}

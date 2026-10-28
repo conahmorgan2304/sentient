@@ -216,7 +216,8 @@ async def test_event_clip_watched(hass: HomeAssistant, aioclient_mock, tmp_path)
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "front door"}))
     assert out["what_happened"] == "A courier left a parcel by the door and went."
     assert sent[0].data["attachments"][0]["media_content_type"] == "video/mp4"
-    assert (tmp_path / "sentient" / "clip_front_door.mp4").exists()
+    await hass.async_block_till_done()
+    assert not (tmp_path / "sentient" / "clip_front_door.mp4").exists()  # deleted once watched
 
 
 async def test_event_clips_off(hass: HomeAssistant) -> None:

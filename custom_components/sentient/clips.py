@@ -22,7 +22,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 from .ai import async_generate
-from .const import CONF_AI_TASK_ENTITY, CONF_EVENT_CLIPS, CONF_SMART_AI
+from .const import CONF_AI_TASK_ENTITY, CONF_CLIP_KEEP, CONF_EVENT_CLIPS, CONF_SMART_AI
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -141,6 +141,10 @@ class Clips:
             response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             return {"error": str(err)}
+        finally:
+            if not self.options.get(CONF_CLIP_KEEP) and (local := (self.hass.config.media_dirs or {}).get("local")):
+                name = media.rsplit("/", 1)[-1]
+                await self.hass.async_add_executor_job(lambda: (Path(local) / "sentient" / name).unlink(missing_ok=True))
         answer = str((response or {}).get("data") or "").strip()
         when = dt_util.as_local(dt_util.utc_from_timestamp(float(event.get("start_time") or 0)))
         self.last = {"camera": camera, "event": event["id"], "answer": answer, "time": when.isoformat()}
