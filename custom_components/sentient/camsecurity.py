@@ -216,6 +216,8 @@ class CameraSecurity:
                 rt.timeline.add("noticed", f"{text} — but nobody was in the picture ({local:%H:%M})",
                                 "camera security: probably a false alarm")
                 return
+        if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
+            self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text), "sentient_clip")
         rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True)
         if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
             speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None

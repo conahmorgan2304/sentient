@@ -30,6 +30,9 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_EVENT_CLIPS,
+    CONF_KNOWN_CARS,
+    CONF_RELEVANT_MEMORIES,
     CONF_RULES,
     CONF_FACES,
     CONF_FACE_PEOPLE,
@@ -211,7 +214,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
-        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
@@ -240,7 +243,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_APPLIANCES, CONF_APPLIANCE_ANNOUNCE, CONF_APPLIANCE_WATTS,
     ]),
     ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
-        CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS,
+        CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS, CONF_KNOWN_CARS,
     ]),
     ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
@@ -261,7 +264,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES,
+        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 

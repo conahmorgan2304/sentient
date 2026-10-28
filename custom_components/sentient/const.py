@@ -160,6 +160,9 @@ CONF_SMART_AI = "smart_ai_task"  # optional stronger AI for camera security and 
 CONF_FACES = "faces"  # names from face recognition (Frigate, doorbells); private, only when asked
 CONF_FACE_PEOPLE = "face_people"
 CONF_RULES = "rules"  # "when this, do that" rules, and making them by voice
+CONF_RELEVANT_MEMORIES = "relevant_memories"  # pick memories that match what was asked, not just the newest
+CONF_KNOWN_CARS = "known_cars"  # "Corey: dark grey hatchback", one per line; empty = cars aren't named
+CONF_EVENT_CLIPS = "event_clips"  # watch Frigate's clip of an event, not just a still
 CONF_PROMPT_RECENT = "prompt_recent"  # the last hour and busy rooms in the voice's context
 CONF_AWAY_PEOPLE = "away_people"
 CONF_AWAY_LIGHTS = "away_lights"

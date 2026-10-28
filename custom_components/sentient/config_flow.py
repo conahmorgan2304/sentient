@@ -33,6 +33,9 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_EVENT_CLIPS,
+    CONF_KNOWN_CARS,
+    CONF_RELEVANT_MEMORIES,
     CONF_RULES,
     CONF_FACES,
     CONF_FACE_PEOPLE,
@@ -330,6 +333,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_DRIVE_TRIGGERS, **d(CONF_DRIVE_TRIGGERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),
+            vol.Optional(CONF_KNOWN_CARS, **d(CONF_KNOWN_CARS, "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
             vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
             vol.Required(CONF_LEFT_OPEN_MINUTES, **d(CONF_LEFT_OPEN_MINUTES, 0)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
@@ -507,6 +513,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SMART_AI, **d(CONF_SMART_AI)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
+            vol.Required(CONF_EVENT_CLIPS, **d(CONF_EVENT_CLIPS, False)): selector.BooleanSelector(),
             vol.Required(CONF_CAMERA_COOLDOWN, **d(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=10, max=3600, step=10, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
             ),
@@ -518,6 +525,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_PROMPT_RECENT, **d(CONF_PROMPT_RECENT, True)): selector.BooleanSelector(),
             vol.Required(CONF_RULES, **d(CONF_RULES, False)): selector.BooleanSelector(),
+            vol.Required(CONF_RELEVANT_MEMORIES, **d(CONF_RELEVANT_MEMORIES, True)): selector.BooleanSelector(),
             vol.Optional(CONF_CONFIRM, **d(CONF_CONFIRM, [])): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(CONFIRM_KINDS), multiple=True,
                                               mode=selector.SelectSelectorMode.LIST, translation_key="confirm_kinds")

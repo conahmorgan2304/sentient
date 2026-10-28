@@ -149,6 +149,7 @@ class SentientRuntime:
     bins: Any
     faces: Any
     rules: Any
+    clips: Any
     watchdog: Watchdog
     screen: Screen
 
@@ -432,6 +433,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .faces import Faces
 
     faces = Faces(hass, entry.entry_id, options, get_rt)
+    from .clips import Clips
+
+    clips = Clips(hass, options, get_rt)
     learner.extra_automated = away.times
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
@@ -456,7 +460,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
-        selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules,
+        selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips,
     )
     for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces):
         await engine.async_start()
@@ -521,7 +525,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show

@@ -133,3 +133,94 @@ async def test_rules_page_lists_and_saves(hass: HomeAssistant, hass_ws_client) -
     await ws.send_json({"id": 2, "type": "sentient/items/save", "kind": "rules",
                         "item": {"name": "Door", "when_entity": "binary_sensor.back_door", "when_to": "on"}})
     assert (await ws.receive_json())["success"]
+
+
+async def test_relevant_memories_when_there_are_many(hass: HomeAssistant) -> None:
+    from homeassistant.components.conversation.chat_log import current_chat_log
+    from types import SimpleNamespace
+
+    entry = await _setup(hass, prompt_memories=4)
+    rt = entry.runtime_data
+    rt.memory.add("The rabbits are called Bun and Hop", "household")
+    for i in range(8):
+        rt.memory.add(f"Note number {i} about the kitchen", "household")
+    log = SimpleNamespace(content=[SimpleNamespace(role="user", content="what are the rabbits called?")], conversation_id="c")
+    token = current_chat_log.set(log)
+    try:
+        prompt = (await _api(hass)).api_prompt
+    finally:
+        current_chat_log.reset(token)
+    assert "Bun and Hop" in prompt  # matched what was asked, though it's the oldest
+    api = await _api(hass)
+    old = [m for m in rt.memory.recent(24) if m.category != "correction"][:4]
+    assert api.api._memories(rt, 4, False) == old  # off: exactly as before
+
+
+async def test_known_cars_named_from_the_same_look(hass: HomeAssistant) -> None:
+    from homeassistant.core import ServiceCall, SupportsResponse
+
+    hass.states.async_set("camera.gate", "idle")
+    entry = await _setup(hass, known_cars="Corey: dark grey hatchback\nNan: red Fiat")
+    rt = entry.runtime_data
+    rt.spots.set("camera.gate", "drive", [0.1, 0.4, 0.6, 0.9])
+    replies = iter([{"cars": 0}, {"cars": 1, "description": "dark grey hatchback", "whose": "Corey"}])
+    calls = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        return {"conversation_id": "x", "data": next(replies)}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    await rt.drive.async_check(force=True)
+    await rt.drive.async_check(force=True)
+    assert "Corey — dark grey hatchback" in calls[-1].data["instructions"]
+    assert rt.timeline.items[0]["text"] == "Corey's car arrived on the drive — now dark grey hatchback"
+    assert "(Corey's)" in rt.drive.prompt_line()
+
+
+async def test_no_known_cars_no_names(hass: HomeAssistant) -> None:
+    from homeassistant.core import ServiceCall, SupportsResponse
+
+    hass.states.async_set("camera.gate", "idle")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.spots.set("camera.gate", "drive", [0.1, 0.4, 0.6, 0.9])
+    calls = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        return {"conversation_id": "x", "data": {"cars": 1, "description": "dark grey hatchback"}}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    await rt.drive.async_check(force=True)
+    assert "whose" not in calls[-1].data["structure"] and "Known household" not in calls[-1].data["instructions"]
+
+
+async def test_event_clip_watched(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
+    from homeassistant.core import ServiceCall, SupportsResponse
+
+    hass.config.media_dirs = {"local": str(tmp_path)}
+    MockConfigEntry(domain="frigate", data={"url": "http://frigate:5000"}).add_to_hass(hass)
+    hass.states.async_set("camera.front_door", "idle", {"friendly_name": "Front door"})
+    entry = await _setup(hass, event_clips=True)
+    aioclient_mock.get("http://frigate:5000/api/events", json=[{"id": "abc.123", "start_time": 1793190000, "label": "person"}])
+    aioclient_mock.get("http://frigate:5000/api/events/abc.123/clip.mp4", content=b"\x00\x00\x00 ftypmp4 fake clip")
+    sent = []
+
+    async def generate(call: ServiceCall):
+        sent.append(call)
+        return {"conversation_id": "x", "data": "A courier left a parcel by the door and went."}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    api = await _api(hass)
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "front door"}))
+    assert out["what_happened"] == "A courier left a parcel by the door and went."
+    assert sent[0].data["attachments"][0]["media_content_type"] == "video/mp4"
+    assert (tmp_path / "sentient" / "clip_front_door.mp4").exists()
+
+
+async def test_event_clips_off(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    api = await _api(hass)
+    assert "sentient_what_happened" not in [t.name for t in api.tools]
+    assert "skipped" in await entry.runtime_data.clips.async_what_happened("camera.front_door")

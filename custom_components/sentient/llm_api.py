@@ -26,6 +26,7 @@ from homeassistant.util.json import JsonObjectType
 
 from .const import (
     CONF_FALLBACK_SPEAKERS,
+    CONF_RELEVANT_MEMORIES,
     CONF_CONFIRM,
     CONFIRM_KINDS,
     CONF_PROMPT_RECENT,
@@ -52,6 +53,11 @@ def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _clips_on(hass: HomeAssistant) -> bool:
+    rt = _runtime(hass)
+    return rt is not None and bool(rt.options.get("event_clips", False))
 
 
 def _rules_on(hass: HomeAssistant) -> bool:
@@ -183,6 +189,9 @@ class ForgetTool(_Tool):
         return {"forgotten": removed.text if removed else None}
 
 
+STOPWORDS = {"the", "and", "you", "what", "who", "how", "when", "where", "why", "are", "was", "has", "have", "with", "that",
+             "this", "for", "can", "does", "did", "there", "they", "them", "our", "your", "tell", "please", "about", "any",
+             "anything", "today", "now", "right", "just", "get", "got", "his", "her", "its", "into", "from", "out", "off"}
 RECENT_SKIP = {"held", "digest", "mind", "loop", "learned"}
 EVERYWHERE = re.compile(r"(the )?(everywhere|every ?(one|body|room|speaker)s?|all( the)?( (speakers|rooms))?|(the )?whole house|all over( the house)?|house)")
 
@@ -424,6 +433,29 @@ class RuleTool(_Tool):
         items.upsert(item)
         rt.timeline.add("mode", f"New rule: {args['name']}", text)
         return {"made": text}
+
+
+class WhatHappenedTool(_Tool):
+    name = "sentient_what_happened"
+    description = (
+        "Watch the latest recorded clip from a camera and say what actually happened — for 'what happened at the "
+        "door?', 'what was that in the garden?', 'who was at the gate just now?'. 'camera' is the camera's name or "
+        "area. Uses the event clip, not a live picture; for what's there right now, use sentient_look."
+    )
+    parameters = vol.Schema({vol.Required("camera"): cv.string, vol.Optional("question"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .watches import resolve_entity
+
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        camera = resolve_entity(hass, tool_input.tool_args["camera"], "camera")
+        if camera is None or not camera.startswith("camera."):
+            return {"error": f"no camera called '{tool_input.tool_args['camera']}'"}
+        return await rt.clips.async_what_happened(camera, tool_input.tool_args.get("question"), force=True)
 
 
 class LookTool(_Tool):
@@ -1167,7 +1199,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
@@ -1234,8 +1266,8 @@ class SentientAPI(llm.API):
         if lessons:
             lines.append("You've been corrected on these before — get them right first time:")
             lines.extend(f"- {m.text}" for m in lessons)
-        memories = [m for m in rt.memory.recent(int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)) + len(lessons))
-                    if m.category != "correction"][: int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES))]
+        memories = self._memories(rt, int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)),
+                                  bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
         if memories:
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
@@ -1317,6 +1349,33 @@ class SentientAPI(llm.API):
             + " when addressing people."
         )
         return "\n".join(lines)
+
+    @staticmethod
+    def _asked() -> str:
+        """What was just said to the voice (this turn's words are already in the chat log)."""
+        try:
+            from homeassistant.components.conversation.chat_log import current_chat_log
+
+            log = current_chat_log.get()
+            said = [c.content for c in (log.content if log else []) if getattr(c, "role", "") == "user" and c.content]
+            return " ".join(said[-2:])
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _memories(self, rt: Any, limit: int, relevant: bool) -> list[Any]:
+        """The newest memories — or, once there are more than fit, the ones that match what was asked plus the newest."""
+        everything = [m for m in rt.memory.items if m.category != "correction"]
+        newest = list(reversed(everything))
+        if not relevant or len(everything) <= limit or limit <= 0:
+            return [m for m in rt.memory.recent(limit + 20) if m.category != "correction"][:limit]
+        words = {w for w in re.findall(r"[a-z]{3,}", self._asked().lower()) if w not in STOPWORDS}
+        if not words:
+            return newest[:limit]
+        scored = sorted(((len(words & set(re.findall(r"[a-z]{3,}", m.text.lower()))), i, m) for i, m in enumerate(newest)),
+                        key=lambda t: (-t[0], t[1]))
+        matched = [m for score, _, m in scored if score > 0][: limit // 2]
+        rest = [m for m in newest if m not in matched][: limit - len(matched)]
+        return matched + rest
 
     def _recent_lines(self, rt: Any) -> list[str]:
         """The last hour at a glance, and where people seem to be — so 'what just happened?' needs no tool."""
