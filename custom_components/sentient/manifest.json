@@ -10,6 +10,7 @@
     "http",
     "logbook",
     "lovelace",
+    "mqtt",
     "panel_custom",
     "recorder",
     "websocket_api"
@@ -24,5 +25,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [],
-  "version": "0.61.4"
+  "version": "0.61.5"
 }
