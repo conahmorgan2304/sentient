@@ -740,11 +740,14 @@ def _register_services(hass: HomeAssistant) -> None:
             return await rt.pets.async_hutch(force=True)
         if what == "bins":
             return await rt.bins.async_check(force=True)
+        if what == "faces":
+            cams = rt.faces.teach_cameras()
+            return await rt.faces.async_ask(cams[0], force=True) if cams else {"error": "no camera chosen"}
         return await rt.pets.async_cat(force=True)
 
     hass.services.async_register(
         DOMAIN, "check_now", check_now, supports_response=SupportsResponse.OPTIONAL,
-        schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins"])}),
+        schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins", "faces"])}),
     )
 
     async def look_ahead(call: ServiceCall) -> ServiceResponse:

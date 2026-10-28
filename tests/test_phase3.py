@@ -224,3 +224,71 @@ async def test_event_clips_off(hass: HomeAssistant) -> None:
     api = await _api(hass)
     assert "sentient_what_happened" not in [t.name for t in api.tools]
     assert "skipped" in await entry.runtime_data.clips.async_what_happened("camera.front_door")
+
+
+TRAIN = "1793190000.5-abc123-1793190001.2-Corey-0.62.webp"
+
+
+async def test_face_teaching_asks_the_phone_and_teaches_frigate(hass: HomeAssistant, aioclient_mock) -> None:
+    import asyncio
+
+    MockConfigEntry(domain="frigate", data={"url": "http://frigate:5000"}).add_to_hass(hass)
+    hass.states.async_set("notify.my_phone", "unknown")
+    hass.states.async_set("binary_sensor.front_door_doorbell_person_occupancy", "on")
+    entry = await _setup(hass, face_teach=True, door_camera="camera.front_door_doorbell",
+                         notify_targets=["notify.my_phone"])
+    phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
+    tablet = async_mock_service(hass, "notify", "mobile_app_hallway_tablet")
+    aioclient_mock.get("http://frigate:5000/api/faces", json={"train": [TRAIN, "999.1-zzz-1.0-unknown-0.3.webp"],
+                                                               "Conah": ["a.webp"], "Corey": ["b.webp"]})
+    aioclient_mock.get("http://frigate:5000/api/events", json=[{"id": "1793190000.5-abc123"}])
+    aioclient_mock.post("http://frigate:5000/api/faces/train/Corey/classify", json={"success": True})
+    with patch("custom_components.sentient.faces.SETTLE", 0):
+        hass.states.async_set("binary_sensor.front_door_doorbell_person_occupancy", "off")
+        await hass.async_block_till_done()
+        await asyncio.sleep(0)
+        await hass.async_block_till_done()
+    assert phone and not tablet  # only the phone, never the tablets
+    data = phone[-1].data["data"]
+    assert [a["title"] for a in data["actions"]] == ["Corey", "Conah", "Someone else"]  # Frigate's guess first
+    assert data["image"] == "/api/frigate/notifications/1793190000.5-abc123/thumbnail.jpg"
+    hass.bus.async_fire("mobile_app_notification_action", {"action": data["actions"][0]["action"]})
+    await hass.async_block_till_done()
+    posted = [c for c in aioclient_mock.mock_calls if c[0] == "POST"]
+    assert str(posted[-1][1]).endswith("/api/faces/train/Corey/classify") and posted[-1][2] == {"training_file": TRAIN}
+    rt = entry.runtime_data
+    assert rt.faces.taught == 1 and any("Corey's face" in i["text"] for i in rt.timeline.items)
+    # asked once per face, and not again straight away
+    assert "skipped" in await rt.faces.async_ask("front_door_doorbell")
+
+
+async def test_face_teaching_typed_name_makes_a_new_person(hass: HomeAssistant, aioclient_mock) -> None:
+    MockConfigEntry(domain="frigate", data={"url": "http://frigate:5000"}).add_to_hass(hass)
+    hass.states.async_set("notify.my_phone", "unknown")
+    entry = await _setup(hass, face_teach=True, face_teach_cameras=["camera.front_door_doorbell"],
+                         notify_targets=["notify.my_phone"])
+    phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
+    aioclient_mock.get("http://frigate:5000/api/faces", json={"train": [TRAIN], "Conah": []})
+    aioclient_mock.get("http://frigate:5000/api/events", json=[{"id": "1793190000.5-abc123"}])
+    aioclient_mock.post("http://frigate:5000/api/faces/Nan/create", json={"success": False})
+    aioclient_mock.post("http://frigate:5000/api/faces/train/Nan/classify", json={"success": True})
+    out = await entry.runtime_data.faces.async_ask("front_door_doorbell")
+    assert out["names"] == ["Conah"]
+    other = phone[-1].data["data"]["actions"][-1]
+    hass.bus.async_fire("mobile_app_notification_action", {"action": "nope"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": other["action"], "reply_text": "nan"})
+    await hass.async_block_till_done()
+    paths = [str(c[1]) for c in aioclient_mock.mock_calls if c[0] == "POST"]
+    assert paths[-2].endswith("/faces/Nan/create") and paths[-1].endswith("/faces/train/Nan/classify")
+
+
+async def test_face_teaching_off(hass: HomeAssistant, aioclient_mock) -> None:
+    MockConfigEntry(domain="frigate", data={"url": "http://frigate:5000"}).add_to_hass(hass)
+    hass.states.async_set("notify.my_phone", "unknown")
+    hass.states.async_set("binary_sensor.front_door_doorbell_person_occupancy", "on")
+    entry = await _setup(hass, door_camera="camera.front_door_doorbell", notify_targets=["notify.my_phone"])
+    phone = async_mock_service(hass, "notify", "mobile_app_my_phone")
+    hass.states.async_set("binary_sensor.front_door_doorbell_person_occupancy", "off")
+    await hass.async_block_till_done()
+    assert not phone and not aioclient_mock.mock_calls
+    assert "skipped" in await entry.runtime_data.faces.async_ask("front_door_doorbell")

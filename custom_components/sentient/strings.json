@@ -47,6 +47,8 @@
           "announce_visitors": "Say who is at the door",
           "faces": "Names from face recognition",
           "face_people": "Only these people",
+          "face_teach": "Ask on the phone who unnamed faces are",
+          "face_teach_cameras": "Learn faces from these cameras",
           "parcel_alerts": "Say when a parcel is left",
           "doorstep_sensors": "Check for parcels after visits seen by",
           "face_sensor": "Recognised name from",
@@ -114,6 +116,8 @@
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
           "faces": "When Frigate (or the doorbell) recognises someone, it goes on the timeline and the voice can answer \"has Corey come home?\". Names are never announced or guessed — only said when someone asks. Off by default.",
           "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
+          "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and a button per person. Tapping one teaches Frigate. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
+          "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
@@ -200,6 +204,8 @@
           "announce_visitors": "Say who is at the door",
           "faces": "Names from face recognition",
           "face_people": "Only these people",
+          "face_teach": "Ask on the phone who unnamed faces are",
+          "face_teach_cameras": "Learn faces from these cameras",
           "parcel_alerts": "Say when a parcel is left",
           "doorstep_sensors": "Check for parcels after visits seen by",
           "face_sensor": "Recognised name from",
@@ -343,6 +349,8 @@
           "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
           "faces": "When Frigate (or the doorbell) recognises someone, it goes on the timeline and the voice can answer \"has Corey come home?\". Names are never announced or guessed — only said when someone asks. Off by default.",
           "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
+          "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and a button per person. Tapping one teaches Frigate. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
+          "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
@@ -670,7 +678,8 @@
         "rain": "Rain warning",
         "hutch": "Hutch check",
         "cat": "Cat watch",
-        "bins": "Bins check"
+        "bins": "Bins check",
+        "faces": "Who's this? (face teaching)"
       }
     },
     "phone_buttons": {
@@ -1095,7 +1104,7 @@
     },
     "check_now": {
       "name": "Check now",
-      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch or the bins check.",
+      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch, the bins check, or a \"who's this?\" for the last face the door camera couldn't name.",
       "fields": {
         "what": {
           "name": "Which",

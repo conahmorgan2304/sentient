@@ -159,6 +159,8 @@ CONF_PHONE_APPS = "phone_apps"  # the companion app's notify actions (notify.mob
 CONF_SMART_AI = "smart_ai_task"  # optional stronger AI for camera security and the overnight think; empty = the usual one
 CONF_FACES = "faces"  # names from face recognition (Frigate, doorbells); private, only when asked
 CONF_FACE_PEOPLE = "face_people"
+CONF_FACE_TEACH = "face_teach"  # ask on the phone who an unnamed face was, and teach Frigate
+CONF_FACE_TEACH_CAMERAS = "face_teach_cameras"
 CONF_RULES = "rules"  # "when this, do that" rules, and making them by voice
 CONF_RELEVANT_MEMORIES = "relevant_memories"  # pick memories that match what was asked, not just the newest
 CONF_KNOWN_CARS = "known_cars"  # "Corey: dark grey hatchback", one per line; empty = cars aren't named

@@ -39,6 +39,8 @@ from .const import (
     CONF_RULES,
     CONF_FACES,
     CONF_FACE_PEOPLE,
+    CONF_FACE_TEACH,
+    CONF_FACE_TEACH_CAMERAS,
     CONF_SMART_AI,
     CONF_PHONE_BUTTONS,
     CONF_PHONE_APPS,
@@ -470,6 +472,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FACES, **d(CONF_FACES, False)): selector.BooleanSelector(),
             vol.Optional(CONF_FACE_PEOPLE, **d(CONF_FACE_PEOPLE, [])): selector.TextSelector(
                 selector.TextSelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_FACE_TEACH, **d(CONF_FACE_TEACH, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_FACE_TEACH_CAMERAS, **d(CONF_FACE_TEACH_CAMERAS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera", multiple=True)
             ),
             vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),
             vol.Optional(CONF_DOORSTEP_SENSORS, **d(CONF_DOORSTEP_SENSORS, [])): selector.EntitySelector(

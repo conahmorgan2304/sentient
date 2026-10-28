@@ -367,4 +367,5 @@ check_now:
             - hutch
             - cat
             - bins
+            - faces
           translation_key: check_now

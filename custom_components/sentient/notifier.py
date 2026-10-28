@@ -62,6 +62,17 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
     return None
 
 
+def phone_apps(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
+    """The companion-app notify services for the phones: the ones chosen, else the apps behind the phones
+    already picked for notifications — never the tablets or a watch."""
+    apps = [a.removeprefix("notify.") for a in options.get(CONF_PHONE_APPS) or []]
+    if not apps:
+        phones = {re.sub(r"_\d+$", "", t.removeprefix("notify.")) for t in options.get(CONF_NOTIFY_TARGETS) or []}
+        apps = [s for s in hass.services.async_services().get("notify", {})
+                if s.startswith("mobile_app_") and s.removeprefix("mobile_app_") in phones]
+    return [a for a in apps if hass.services.has_service("notify", a)]
+
+
 class Notifier:
     """Sends chosen timeline items to notify entities."""
 
@@ -90,12 +101,7 @@ class Notifier:
         """The companion-app notify actions to send this kind with buttons, or [] for a plain notification."""
         if kind not in (self.options.get(CONF_PHONE_BUTTONS) or []):
             return []
-        apps = [a.removeprefix("notify.") for a in self.options.get(CONF_PHONE_APPS) or []]
-        if not apps:  # the companion apps behind the phones already chosen for notifications — never the tablets
-            phones = {re.sub(r"_\d+$", "", t.removeprefix("notify.")) for t in self.options.get(CONF_NOTIFY_TARGETS) or []}
-            apps = [s for s in self.hass.services.async_services().get("notify", {})
-                    if s.startswith("mobile_app_") and s.removeprefix("mobile_app_") in phones]
-        return [a for a in apps if self.hass.services.has_service("notify", a)]
+        return phone_apps(self.hass, self.options)
 
     def _with_buttons(self, kind: str, item: dict[str, Any]) -> tuple[list[str], dict[str, Any]] | None:
         apps = self.buttons(kind)
