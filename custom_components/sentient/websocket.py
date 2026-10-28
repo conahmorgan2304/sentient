@@ -937,7 +937,9 @@ def _items_payload(hass: HomeAssistant, entry, kind: str) -> dict[str, Any]:
     }
 
 
-_KIND = vol.In(["offers", "announce", "alarms", "checks", "autooff"])
+from .kinds import KINDS as _ALL_KINDS  # noqa: E402
+
+_KIND = vol.In(list(_ALL_KINDS))  # every list kind, so a new one never needs adding here
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/items", vol.Required("kind"): _KIND})

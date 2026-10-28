@@ -121,3 +121,15 @@ async def test_stronger_ai_for_security_only_when_chosen(hass: HomeAssistant) ->
         sec.options = {**sec.options, "smart_ai_task": "ai_task.smart"}
         await sec._describe("camera.shed")
     assert sent == ["ai_task.usual", "ai_task.smart"]
+
+
+async def test_rules_page_lists_and_saves(hass: HomeAssistant, hass_ws_client) -> None:
+    hass.states.async_set("binary_sensor.back_door", "off", {"friendly_name": "Back door"})
+    await _setup(hass, rules=True)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/items", "kind": "rules"})
+    reply = await ws.receive_json()
+    assert reply["success"] and reply["result"]["meta"]["title"] == "Rules"
+    await ws.send_json({"id": 2, "type": "sentient/items/save", "kind": "rules",
+                        "item": {"name": "Door", "when_entity": "binary_sensor.back_door", "when_to": "on"}})
+    assert (await ws.receive_json())["success"]
