@@ -187,8 +187,25 @@ class Screen:
             return "morning"
         return "idle"
 
+    def coming_up(self, limit: int = 3) -> list[dict[str, Any]]:
+        """The next few things in the next 24 hours: alarms (bin night and the like) and reminders."""
+        rt = self._rt()
+        if rt is None:
+            return []
+        now = dt_util.utcnow()
+        soon = now + timedelta(hours=24)
+        out = []
+        for a in rt.alarms.listing():
+            at = dt_util.parse_datetime(a["next"] or "")
+            if a["on"] and not a["silent"] and at and now < at <= soon:
+                out.append({"what": a["name"], "at": dt_util.as_utc(at).isoformat(), "kind": "alarm"})
+        for w in rt.watches.watches:
+            if w.kind == "reminder" and now < w.until_dt <= soon:
+                out.append({"what": w.what, "at": w.until_dt.isoformat(), "kind": "reminder"})
+        return sorted(out, key=lambda i: i["at"])[:limit]
+
     def describe(self) -> dict[str, Any]:
-        return {"mode": self.mode(), "cards": self.cards, "morning": self.morning}
+        return {"mode": self.mode(), "cards": self.cards, "morning": self.morning, "coming_up": self.coming_up()}
 
     @callback
     def _changed(self, new: bool = False) -> None:

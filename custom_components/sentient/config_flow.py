@@ -31,6 +31,11 @@ from .const import (
     PARTY_STYLES,
     CONF_PERSONALITY,
     CONF_PERSONALITY_NOTES,
+    CONF_STYLE_FEEDBACK,
+    CONF_SUGGESTIONS,
+    CONF_CONFIRM,
+    CONFIRM_KINDS,
+    CONF_STYLE_NOTES,
     DEFAULT_PERSONALITY,
     PERSONALITIES,
     CONF_WARM_BY_WEEKDAYS,
@@ -201,6 +206,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_DEFAULT_SPEAKER, **d(CONF_DEFAULT_SPEAKER)): _ONE_SPEAKER,
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
+            vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
             vol.Optional(CONF_VOICE_AGENT, **d(CONF_VOICE_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
@@ -379,6 +385,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PERSONALITY_NOTES, **d(CONF_PERSONALITY_NOTES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),
+            vol.Required(CONF_STYLE_FEEDBACK, **d(CONF_STYLE_FEEDBACK, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_STYLE_NOTES, **d(CONF_STYLE_NOTES, "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
             vol.Required(CONF_CHATTINESS, **d(CONF_CHATTINESS, DEFAULT_CHATTINESS)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(CHATTINESS_LIMITS), translation_key="chattiness")
             ),
@@ -440,6 +450,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=0, max=100, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_PROMPT_RECENT, **d(CONF_PROMPT_RECENT, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_CONFIRM, **d(CONF_CONFIRM, [])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=list(CONFIRM_KINDS), multiple=True,
+                                              mode=selector.SelectSelectorMode.LIST, translation_key="confirm_kinds")
+            ),
             vol.Required(CONF_LOOK_CACHE, **d(CONF_LOOK_CACHE, DEFAULT_LOOK_CACHE)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=30, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),

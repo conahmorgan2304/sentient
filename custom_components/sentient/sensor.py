@@ -351,6 +351,8 @@ class MindSensor(_Base):
             "ai": rt.ai.describe(),
             "lessons": [m.text for m in rt.memory.items if m.category == "correction"][-10:],
             "appliances": rt.appliances.listing(),
+            "style_feedback": bool(rt.options.get("style_feedback", True)),
+            "style_notes": [n.strip() for n in str(rt.options.get("style_notes") or "").splitlines() if n.strip()],
         }
 
 
@@ -402,9 +404,11 @@ class ScreenSensor(_Base):
         from .screen import EVENT_SCREEN
 
         self.async_on_remove(self.hass.bus.async_listen(EVENT_SCREEN, self._changed))
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_WATCH_CHANGED, self._changed))
+        self.async_on_remove(async_track_time_interval(self.hass, self._changed, timedelta(minutes=5)))
 
     @callback
-    def _changed(self, _event: Event) -> None:
+    def _changed(self, _event: Any = None) -> None:
         self.async_write_ha_state()
 
     @property
@@ -414,4 +418,4 @@ class ScreenSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         d = self._entry.runtime_data.screen.describe()
-        return {"cards": d["cards"], "morning": d["morning"]}
+        return {"cards": d["cards"], "morning": d["morning"], "coming_up": d["coming_up"]}

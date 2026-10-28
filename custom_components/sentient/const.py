@@ -124,6 +124,15 @@ CONF_BUDGET_DRIVE = "budget_drive"  # per-feature daily AI caps; 0 = share the o
 CONF_BUDGET_NOTICING = "budget_noticing"
 CONF_BUDGET_CAMERAS = "budget_cameras"
 CONF_ROUTINE_EVIDENCE = "routine_evidence"  # routine offers say how often it's been seen
+CONF_SUGGESTIONS = "suggestions"  # the Sentient page offers things it could use
+CONF_CONFIRM = "confirm_kinds"  # the voice asks "shall I?" before these; empty = never
+CONFIRM_KINDS = {
+    "locks": "unlock or lock a door",
+    "garage": "open or close a garage door or gate",
+    "covers": "open or close blinds, curtains or shutters",
+    "heating": "turn the heating up by more than 2 degrees or set it above 22",
+    "appliances": "start an appliance (washing machine, dishwasher, dryer, vacuum)",
+}
 CONF_PROMPT_RECENT = "prompt_recent"  # the last hour and busy rooms in the voice's context
 CONF_AWAY_PEOPLE = "away_people"
 CONF_AWAY_LIGHTS = "away_lights"
@@ -184,6 +193,9 @@ DEFAULT_WEEKLY_REPORT = True
 # personality
 CONF_PERSONALITY = "personality"
 CONF_PERSONALITY_NOTES = "personality_notes"
+CONF_STYLE_FEEDBACK = "style_feedback"  # "say it differently" on things it said
+CONF_STYLE_NOTES = "style_notes"  # how people want things said, one per line
+MAX_STYLE_NOTES = 8
 DEFAULT_PERSONALITY = "calm"
 PERSONALITIES = {
     "calm": "calm, warm and to the point",
@@ -198,7 +210,11 @@ def personality_line(options: dict) -> str:
     """One sentence about how the house should sound, for every prompt."""
     style = PERSONALITIES.get(options.get(CONF_PERSONALITY) or DEFAULT_PERSONALITY, PERSONALITIES[DEFAULT_PERSONALITY])
     notes = (options.get(CONF_PERSONALITY_NOTES) or "").strip()
-    return f"Your personality: {style}." + (f" {notes}" if notes else "")
+    line = f"Your personality: {style}." + (f" {notes}" if notes else "")
+    said = [n.strip() for n in str(options.get(CONF_STYLE_NOTES) or "").splitlines() if n.strip()]
+    if said and options.get(CONF_STYLE_FEEDBACK, True):
+        line += " How the household has asked for things to be said: " + "; ".join(said[-MAX_STYLE_NOTES:]) + "."
+    return line
 
 # camera security
 CONF_CAMSEC = "camera_security"

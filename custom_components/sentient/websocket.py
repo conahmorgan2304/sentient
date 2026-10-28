@@ -28,6 +28,11 @@ from .const import (
     CONF_CAMSEC_SENSORS,
     CONF_PERSONALITY,
     CONF_PERSONALITY_NOTES,
+    CONF_STYLE_FEEDBACK,
+    CONF_SUGGESTIONS,
+    CONF_CONFIRM,
+    CONF_STYLE_NOTES,
+    MAX_STYLE_NOTES,
     CONF_WARM_BY_WEEKDAYS,
     CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
@@ -159,7 +164,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
-        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES,
+        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -226,7 +231,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_BATTERY_THRESHOLD, CONF_HEALTH_IGNORE,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES,
+        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES,
     ]),
 ]
 
@@ -283,9 +288,13 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_thumb)
+    websocket_api.async_register_command(hass, ws_style)
     from .wizard import async_register as _wizard
 
     _wizard(hass)
+    from .suggestions import async_register as _suggestions
+
+    _suggestions(hass)
     websocket_api.async_register_command(hass, ws_save_settings)
     websocket_api.async_register_command(hass, ws_update_memory)
     websocket_api.async_register_command(hass, ws_list_memories)
@@ -674,6 +683,31 @@ def ws_thumb(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         ("about " + ", ".join(result["about"])) if result["about"] else None,
     )
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/feedback/style", vol.Required("text"): str, vol.Required("note"): str,
+})
+@callback
+def ws_style(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """'Say it differently': a short note on how something should have been said, kept with the personality."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    opts = {**entry.data, **entry.options}
+    if not opts.get(CONF_STYLE_FEEDBACK, True):
+        connection.send_error(msg["id"], "off", "'Say it differently' is turned off in Sentient's settings")
+        return
+    note = " ".join(msg["note"].split()).strip(" .")[:120]
+    if not note:
+        connection.send_error(msg["id"], "invalid", "What should be different?")
+        return
+    notes = [n.strip() for n in str(opts.get(CONF_STYLE_NOTES) or "").splitlines() if n.strip()]
+    notes = [n for n in notes if n.lower() != note.lower()] + [note]
+    hass.config_entries.async_update_entry(entry, options={**opts, CONF_STYLE_NOTES: "\n".join(notes[-MAX_STYLE_NOTES:])})
+    entry.runtime_data.timeline.add("learned", f"Say it differently: {note}", f"about: {msg['text'][:100]}")
+    connection.send_result(msg["id"], {"notes": notes[-MAX_STYLE_NOTES:]})
 
 
 # ----- named routines -------------------------------------------------------------

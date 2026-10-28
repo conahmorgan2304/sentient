@@ -101,7 +101,7 @@
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div>
-          <div class="cols"><div class="col stack"><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
+          <div class="cols"><div class="col stack"><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div class="col stack"><div id="mind" class="card"></div><div id="rout" class="stack"></div></div>
             <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
@@ -183,6 +183,16 @@
           <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
           <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI CALLS / ${ai.limit}` : "AI CALLS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
+
+      // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
+      if (!this._sugAt || Date.now() - this._sugAt > 600000) {
+        this._sugAt = Date.now();
+        this._hass.callWS({ type: "sentient/suggestions" }).then((r) => { this._sug = r.items || []; this._render(); }, () => { this._sug = []; });
+      }
+      const sug = this._sug || [];
+      R("sug").hidden = !sug.length;
+      R("sug").innerHTML = sug.length ? this._h("SUGGESTIONS", `${sug.length}`) + sug.map((s) => `<div class="r"><ha-icon icon="mdi:lightbulb-auto-outline"></ha-icon><b class="wrap">${esc(s.text)}</b>
+          <button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button><a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
 
       // routines
       const routines = this._attr("routines", "routines", []);
@@ -280,9 +290,13 @@
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">NO ONE AT THE DOOR YET</div>');
 
-      // said & noticed
+      // said & noticed (left alone while a "say it differently" note is being typed)
+      const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
+      if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
       const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}</div>`
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
+          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
+            <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
@@ -1111,6 +1125,15 @@
       this._drawTimeline();
     }
 
+    async _restyleSave(text, note) {
+      try {
+        await this._hass.callWS({ type: "sentient/feedback/style", text, note });
+        this._thumbs = { ...(this._thumbs || {}), [text]: "styled" };
+      } catch (e) { /* turned off or not loaded: nothing to do */ }
+      this._restyle = null;
+      this._render();
+    }
+
     async _lastHour() {
       if (this._lh) { this._lh = null; this._render(); return; }
       try {
@@ -1166,6 +1189,14 @@
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
+      else if (act === "sugyes" || act === "sugno") {
+        this._sug = (this._sug || []).filter((s) => s.id !== id);
+        this._render();
+        this._hass.callWS({ type: "sentient/suggestions/act", suggestion: id, accept: act === "sugyes" }).catch(() => {});
+      }
+      else if (act === "restyle") { this._restyle = this._restyle === text ? null : text; this._render(); }
+      else if (act === "restylex") { this._restyle = null; this._render(); }
+      else if (act === "restyleset") this._restyleSave(text, id);
       else if (act === "wonderx") this._call("wonder", { dismiss: text });
       else if (act === "fux") this._call("cancel_follow_up", { about: id }, `Stop checking: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
@@ -1295,6 +1326,11 @@
       if (form.dataset.form === "mlnight") {
         const ok = await this._motionDo("sentient/motion_lights/night", { start: form.elements.start.value, end: form.elements.end.value });
         if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW SAVED ✓"; st.className = "ok"; } }
+        return;
+      }
+      if (form.dataset.form === "restyle") {
+        const note = (new FormData(form).get("note") || "").toString().trim();
+        if (note) this._restyleSave(form.dataset.text, note);
         return;
       }
       if (form.dataset.form === "remind") {
@@ -1543,6 +1579,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   color:#e6f5fa}
 .formwrap ha-form{display:block;max-width:880px}
 .spotgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+.restyle{flex-wrap:wrap;gap:6px} .restyle form{display:flex;gap:6px;flex:1;min-width:180px} .restyle input{flex:1;min-width:0;background:transparent;border:1px solid rgba(0,255,247,.3);border-radius:8px;color:inherit;padding:6px 8px}
 .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap} .row select{flex:1;min-width:0}
 .snap{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,247,.3);background:#000;aspect-ratio:16/9;user-select:none;touch-action:none}
 .snap img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}

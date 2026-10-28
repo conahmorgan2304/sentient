@@ -26,6 +26,8 @@ from homeassistant.util.json import JsonObjectType
 
 from .const import (
     CONF_FALLBACK_SPEAKERS,
+    CONF_CONFIRM,
+    CONFIRM_KINDS,
     CONF_PROMPT_RECENT,
     CONF_BRIEFING_WEATHER,
     personality_line,
@@ -1113,6 +1115,12 @@ class SentientAPI(llm.API):
             lines.append(f"The person talking to you is in the {room}.")
         if opts.get(CONF_PROMPT_RECENT, True):
             lines.extend(self._recent_lines(rt))
+        if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
+            lines.append(
+                "Ask first: before you " + "; or ".join(confirm) + ", say in a few words exactly what you're about "
+                "to do and ask \"shall I?\". Only do it after a clear yes in their reply; anything else, leave it. "
+                "Turning things off, stopping them or lowering the heating never needs asking."
+            )
         if rt.speech.guest_mode:
             lines.append(
                 "Guests are visiting: don't bring up personal household details, routines or memories "

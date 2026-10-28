@@ -19,6 +19,7 @@
   if (customElements.get("sentient-screen-card")) return;
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
+  const dayHm = (iso) => { const d = new Date(iso); if (isNaN(d)) return ""; const t = hm(iso); return d.toDateString() === new Date().toDateString() ? t : "TOMORROW " + t; };
   const KEYS = ["screen", "last_spoken", "watches", "visitors", "health", "house", "mind", "drive"];
   const SOURCE_ICON = [
     ["visitors", "mdi:doorbell-video"], ["announce:", "mdi:bullhorn-outline"], ["critical", "mdi:fire-alert"],
@@ -168,8 +169,9 @@
         const asking = /^(offer|curious|learning)/.test(l.source || "") || /\?\s*$/.test(l.said);
         return age < (asking ? 10 : 120);
       });
-      const watches = this._attr("watches", "watches", []);
+      const watches = this._attr("watches", "watches", []).filter((w) => w.kind !== "reminder");
       const next = watches.slice().sort((a, b) => String(a.ends).localeCompare(String(b.ends)))[0];
+      const soon = this._cfg.coming_up === false ? [] : this._attr("screen", "coming_up", []);
       const mind = (this._st("mind") || {}).attributes || {};
       const running = (mind.appliances || []).filter((a) => a.running);
       const problems = this._attr("health", "issues", []);
@@ -187,7 +189,8 @@
       return `<div class="idle"><div class="tiles">${tiles.map((t) => `<div class="tile ${t.cls || ""}"${t.more ? ` data-more="${esc(t.more)}"` : ""}><ha-icon icon="${t.icon}"></ha-icon><b>${esc(t.val)}</b><i>${esc(t.label)}</i></div>`).join("")}</div>
         <div class="lines">
           ${running.map((a) => `<div class="row"><ha-icon icon="mdi:washing-machine"></ha-icon><b>${esc(a.name)} running</b><u>${a.done_about ? "DONE ~" + esc(a.done_about) : ""}</u></div>`).join("")}
-          ${next ? `<div class="row"><ha-icon icon="${next.kind === "reminder" ? "mdi:bell-ring-outline" : "mdi:eye-outline"}"></ha-icon><b>${esc(next.what)}</b><u>${hm(next.ends)}</u></div>` : ""}
+          ${soon.length ? `<div class="soonh">COMING UP</div>` + soon.map((c) => `<div class="row"><ha-icon icon="${c.kind === "alarm" ? "mdi:alarm" : "mdi:bell-ring-outline"}"></ha-icon><b>${esc(c.what)}</b><u>${dayHm(c.at)}</u></div>`).join("") : ""}
+          ${next ? `<div class="row"><ha-icon icon="mdi:eye-outline"></ha-icon><b>${esc(next.what)}</b><u>${hm(next.ends)}</u></div>` : ""}
           ${problems.slice(0, 2).map((p) => `<div class="row warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${esc(p.text || p.name)}</b></div>`).join("")}
           ${said ? `<div class="row dim"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(said.said)}</b><u>${hm(said.time)}</u></div>` : ""}
         </div></div>`;
@@ -223,6 +226,7 @@
   const CSS = `
 .lhb{margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:1px solid rgba(0,255,247,.35);border-radius:999px;color:#7ff6ff;letter-spacing:.12em}
 .lhb ha-icon{--mdc-icon-size:16px}
+.soonh{font-size:10px;font-weight:700;letter-spacing:.24em;color:rgba(150,220,235,.6);margin:6px 0 2px}
 :host{display:block}
 ha-card{overflow:hidden;border-radius:22px;border:1px solid rgba(0,255,247,.25);color:#dff6fa;
   background:radial-gradient(ellipse at 50% 0%,rgba(0,255,247,.08),transparent 55%),linear-gradient(160deg,#070c16,#0e1627);box-shadow:0 0 28px rgba(0,255,255,.1)}

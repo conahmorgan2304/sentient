@@ -118,6 +118,7 @@ class SentientRuntime:
     shortcuts: Shortcuts
     left_open: LeftOpen
     feedback: Feedback
+    suggestions: Any
     heating: Heating
     night_watch: NightWatch
     followthrough: FollowThrough
@@ -336,6 +337,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(watches.async_stop)
     feedback = Feedback(hass, entry.entry_id)
     await feedback.async_load()
+    from .suggestions import Suggestions
+
+    suggestions = Suggestions(hass, entry.entry_id)
+    await suggestions.async_load()
     noticer = Noticer(hass, options, speech, memory, watches)
     noticer.feedback = feedback
     noticer.async_start()
@@ -423,7 +428,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         lists=lists, offers=offers, announcements=announcements, alarms=alarms, checks=checks, camsec=camsec,
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
-        ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away,
+        ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
     )
     for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away):
         await engine.async_start()
