@@ -65,6 +65,24 @@ def _rules_on(hass: HomeAssistant) -> bool:
     return rt is not None and bool(rt.options.get("rules", False))
 
 
+_ONES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+         "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+_TENS = {2: "twenty", 3: "thirty", 4: "forty", 5: "fifty"}
+
+
+def clock_words(when) -> str:
+    """11:49 -> "eleven forty-nine", 09:05 -> "nine oh five", 15:00 -> "three o'clock"."""
+    hour = when.hour % 12 or 12
+    m = when.minute
+    if m == 0:
+        return f"{_ONES[hour]} o'clock"
+    if m < 10:
+        return f"{_ONES[hour]} oh {_ONES[m]}"
+    if m < 20:
+        return f"{_ONES[hour]} {_ONES[m]}"
+    return f"{_ONES[hour]} {_TENS[m // 10]}" + (f"-{_ONES[m % 10]}" if m % 10 else "")
+
+
 class _Tool(llm.Tool):
     """Every Sentient tool says which integration provides it."""
 
@@ -1212,7 +1230,8 @@ class SentientAPI(llm.API):
             f"You are {persona}, the brain of this home. The same memory is shared by "
             "every voice and automation in the house.",
             personality_line(opts),
-            f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')}.",
+            f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')} — if asked the time, say this exact "
+            f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it.",
         ]
         weather_id = opts.get(CONF_BRIEFING_WEATHER)
         weather = self.hass.states.get(weather_id) if weather_id else next(

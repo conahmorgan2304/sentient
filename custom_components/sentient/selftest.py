@@ -71,7 +71,9 @@ def spoken_times(text: str) -> list[int]:
             continue
         out.append((hr % 12 * 60 + (n if way == "past" else -n)) % 720)
     for hour, rest in re.findall(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)[ -](o'clock|[a-z]+(?:[ -][a-z]+)?)\b", text.lower()):
-        if rest == "o'clock":
+        if rest.startswith("oh ") and (got := numbers(rest[3:])) and got[0] < 10:
+            out.append(HOURS[hour] % 12 * 60 + int(got[0]))
+        elif rest == "o'clock":
             out.append(HOURS[hour] % 12 * 60)
         elif rest.split(" ")[0].split("-")[0] in WORDS and (got := numbers(rest.replace("-", " "))) and got[0] < 60:
             out.append(HOURS[hour] % 12 * 60 + int(got[0]))

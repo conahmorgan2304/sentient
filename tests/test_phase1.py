@@ -128,3 +128,15 @@ async def test_routine_offers_say_how_often(hass: HomeAssistant) -> None:
     learner.options = {**learner.options, "routine_evidence": False}
     await learner._async_offer(dt_util.now())
     assert "of the last" not in asked[-1]
+
+
+def test_clock_words_and_self_test_hears_them() -> None:
+    from datetime import datetime
+
+    from custom_components.sentient.llm_api import clock_words
+    from custom_components.sentient.selftest import spoken_times
+
+    for hh, mm, words in [(11, 49, "eleven forty-nine"), (9, 5, "nine oh five"), (15, 0, "three o'clock"), (0, 12, "twelve twelve")]:
+        said = clock_words(datetime(2026, 10, 28, hh, mm))
+        assert said == words
+        assert (hh % 12) * 60 + mm in spoken_times(f"It's {said}.")
