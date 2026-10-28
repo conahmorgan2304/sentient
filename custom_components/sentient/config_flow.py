@@ -162,6 +162,14 @@ from .const import (
     CONF_PASS_THROUGH_AREAS,
     CONF_PERSONA,
     CONF_PROMPT_MEMORIES,
+    CONF_PROMPT_RECENT,
+    CONF_LOOK_CACHE,
+    DEFAULT_LOOK_CACHE,
+    CONF_CAMERA_PREFILTER,
+    CONF_BUDGET_DRIVE,
+    CONF_BUDGET_NOTICING,
+    CONF_BUDGET_CAMERAS,
+    CONF_ROUTINE_EVIDENCE,
     CONF_QUIET_END,
     CONF_QUIET_START,
     CONF_SPEAKERS,
@@ -431,6 +439,21 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_PROMPT_MEMORIES, **d(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=100, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_PROMPT_RECENT, **d(CONF_PROMPT_RECENT, True)): selector.BooleanSelector(),
+            vol.Required(CONF_LOOK_CACHE, **d(CONF_LOOK_CACHE, DEFAULT_LOOK_CACHE)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=30, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_CAMERA_PREFILTER, **d(CONF_CAMERA_PREFILTER, True)): selector.BooleanSelector(),
+            vol.Required(CONF_BUDGET_DRIVE, **d(CONF_BUDGET_DRIVE, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_BUDGET_NOTICING, **d(CONF_BUDGET_NOTICING, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_BUDGET_CAMERAS, **d(CONF_BUDGET_CAMERAS, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_ROUTINE_EVIDENCE, **d(CONF_ROUTINE_EVIDENCE, True)): selector.BooleanSelector(),
         }
     )
 

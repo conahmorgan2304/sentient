@@ -228,10 +228,13 @@ class Spots:
         small = cls._crop(content, box, points).convert("L").resize(FINGERPRINT_SIZE)
         return list(small.getdata())
 
-    async def async_fingerprint(self, camera: str, spot_key: str | None) -> list[int] | None:
+    async def async_fingerprint(self, camera: str, spot_key: str | None, whole: bool = False) -> list[int] | None:
+        """A tiny grey thumbnail of the spot — or, with *whole*, of the whole picture when there's no spot."""
         spot = self.spots.get(spot_key or "")
         if spot is None or spot["camera"] != camera:
-            return None
+            if not whole:
+                return None
+            spot = {"camera": camera, "box": [0.0, 0.0, 1.0, 1.0]}
         try:
             from homeassistant.components.camera import async_get_image
 

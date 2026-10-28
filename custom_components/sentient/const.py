@@ -117,6 +117,14 @@ CONF_BACKUP_AGENT = "backup_agent"
 DEFAULT_BACKUP_AGENT = "conversation.home_assistant"
 CONF_ANIMAL_SENSORS = "animal_sensors"
 CONF_AWAY_LIGHTS_ON = "away_lights_on"
+CONF_LOOK_CACHE = "look_cache_minutes"  # reuse a camera answer to the same question for this long (0 = never)
+DEFAULT_LOOK_CACHE = 3
+CONF_CAMERA_PREFILTER = "camera_prefilter"  # skip camera checks and watches when the picture hasn't changed
+CONF_BUDGET_DRIVE = "budget_drive"  # per-feature daily AI caps; 0 = share the overall limit
+CONF_BUDGET_NOTICING = "budget_noticing"
+CONF_BUDGET_CAMERAS = "budget_cameras"
+CONF_ROUTINE_EVIDENCE = "routine_evidence"  # routine offers say how often it's been seen
+CONF_PROMPT_RECENT = "prompt_recent"  # the last hour and busy rooms in the voice's context
 CONF_AWAY_PEOPLE = "away_people"
 CONF_AWAY_LIGHTS = "away_lights"
 CONF_AWAY_AFTER = "away_after"

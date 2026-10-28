@@ -134,6 +134,13 @@ from .const import (
     CONF_PASS_THROUGH_AREAS,
     CONF_PERSONA,
     CONF_PROMPT_MEMORIES,
+    CONF_PROMPT_RECENT,
+    CONF_LOOK_CACHE,
+    CONF_CAMERA_PREFILTER,
+    CONF_BUDGET_DRIVE,
+    CONF_BUDGET_NOTICING,
+    CONF_BUDGET_CAMERAS,
+    CONF_ROUTINE_EVIDENCE,
     CONF_QUIET_END,
     CONF_QUIET_START,
     CONF_SIDEBAR,
@@ -164,7 +171,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
-        CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_WELCOME, CONF_WELCOME_PEOPLE,
+        CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
         CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT,
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
@@ -178,7 +185,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
-        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN,
@@ -192,7 +199,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
-        CONF_DAILY_AI_LIMIT,
+        CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT,
     ]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
         CONF_VOICE_AGENT, CONF_BACKUP_AGENT,

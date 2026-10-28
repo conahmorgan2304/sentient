@@ -87,3 +87,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] The drive compares pictures before asking the AI; tools never crash a voice reply (0.51.0)
 - [x] Echos kept for alarms, reminders and safety alerts only; camera security quiet when the AI sees nobody (0.52.0)
 - [x] Away lights: last week replayed while everyone's out after dark, stops when anyone's home (0.53.0)
+- [x] Phase 1: the last hour in the voice's context, camera answers reused, camera looks skipped when nothing's changed, per-feature AI allowances, routine offers say how often, a 'last hour' button — all optional (0.54.0)

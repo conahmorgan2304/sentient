@@ -24,7 +24,15 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_AI_TASK_ENTITY, CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT, DOMAIN
+from .const import (
+    CONF_AI_TASK_ENTITY,
+    CONF_BUDGET_CAMERAS,
+    CONF_BUDGET_DRIVE,
+    CONF_BUDGET_NOTICING,
+    CONF_DAILY_AI_LIMIT,
+    DEFAULT_DAILY_AI_LIMIT,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +44,10 @@ HISTORY_DAYS = 14
 class AIUnavailable(HomeAssistantError):
     """The AI can't be used right now (today's limit, an error or a timeout)."""
 
+
+# features with their own (optional) daily allowance; safety, the doorbell and spoken questions never have one
+BUDGETS = {"drive": CONF_BUDGET_DRIVE, "noticing": CONF_BUDGET_NOTICING,
+           "camera checks": CONF_BUDGET_CAMERAS, "watches": CONF_BUDGET_CAMERAS}
 
 class AIGate:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
@@ -109,6 +121,8 @@ class AIGate:
         """Count one background call. False (and nothing counted) once today's limit is used up —
         unless `force`, for something a person asked for, which is always allowed."""
         self._roll()
+        if not force and self.over_budget(purpose):
+            return False  # this feature's own allowance is used up; the rest carry on
         if not force and self.capped:
             if self.capped_at is None:
                 self.capped_at = dt_util.utcnow().isoformat()
@@ -118,6 +132,23 @@ class AIGate:
         self.counts[purpose] = self.counts.get(purpose, 0) + 1
         self._save()
         return True
+
+    def over_budget(self, purpose: str) -> str | None:
+        """This feature has used its own daily allowance (if it has one): the setting's name, else None."""
+        key = BUDGETS.get(purpose)
+        cap = int(float(self.options.get(key) or 0)) if key else 0
+        if not cap:
+            return None
+        used = sum(n for p, n in self.counts.items() if BUDGETS.get(p) == key)
+        return key if used >= cap else None
+
+    def budgets(self) -> dict[str, dict[str, int]]:
+        out = {}
+        for key in dict.fromkeys(BUDGETS.values()):
+            if cap := int(float(self.options.get(key) or 0)):
+                out[key.removeprefix("budget_")] = {
+                    "used": sum(n for p, n in self.counts.items() if BUDGETS.get(p) == key), "cap": cap}
+        return out
 
     # ----- calling -------------------------------------------------------------------------
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
@@ -161,6 +192,7 @@ class AIGate:
             "limit": self.limit,
             "capped": self.capped,
             "by_purpose": dict(sorted(self.counts.items(), key=lambda kv: -kv[1])),
+            "budgets": self.budgets(),
             "failed_today": self.failed_today,
             "failing": self.failing,
             "last_error": self.last_error if self.failing else None,

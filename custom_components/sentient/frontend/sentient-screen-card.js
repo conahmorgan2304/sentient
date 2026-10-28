@@ -81,6 +81,7 @@
       this.shadowRoot.addEventListener("click", (ev) => {
         const x = ev.target.closest("[data-x]");
         if (x) { this._hass.callService("sentient", "clear_screen", { card_id: x.dataset.x }); return; }
+        if (ev.target.closest("[data-lh]")) { this._toggleLastHour(); return; }
         const more = ev.target.closest("[data-more]");
         if (more) this.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: more.dataset.more } }));
       });
@@ -110,6 +111,7 @@
       const main = this._$("main");
       if (mode === "alert" || mode === "notice") main.innerHTML = this._cards(cards);
       else if (mode === "morning" && morning) main.innerHTML = this._morning(morning);
+      else if (this._lh) main.innerHTML = this._lastHour();
       else main.innerHTML = this._idle();
       this._$("foot").innerHTML = this._foot();
       this._refreshCamera(true);
@@ -191,14 +193,36 @@
         </div></div>`;
     }
 
+    // "what happened this last hour?" — straight from the timeline, no AI; closes itself after a minute
+    async _toggleLastHour() {
+      clearTimeout(this._lhTimer);
+      if (this._lh) { this._lh = null; this._draw(); return; }
+      try {
+        const res = await this._hass.callWS({ type: "sentient/timeline", hours: 1, limit: 30 });
+        this._lh = (res.items || []).filter((i) => !["held", "digest"].includes(i.kind));
+      } catch (e) { this._lh = []; }
+      this._lhTimer = setTimeout(() => { this._lh = null; this._draw(); }, 60000);
+      this._draw();
+    }
+
+    _lastHour() {
+      const rows = this._lh.length ? this._lh.map((i) => `<div class="row"><ha-icon icon="${this._icon(i.source || i.kind)}"></ha-icon><b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("")
+        : '<div class="row dim"><b>Nothing in the last hour.</b></div>';
+      return `<div class="morning"><div class="mh"><span>THE LAST HOUR</span><a class="x" data-lh="1" title="Close">✕</a></div><div class="lines">${rows}</div></div>`;
+    }
+
     _foot() {
       const mode = (this._st("screen") || {}).state || "idle";
       const label = { alert: "ALERT", notice: "NOTICE", morning: "MORNING", idle: "ALL QUIET" }[mode] || "";
-      return `<span class="dot ${mode}"></span><span>${label}</span>`;
+      const btn = this._cfg.last_hour === false || mode !== "idle" ? ""
+        : `<a class="lhb" data-lh="1"><ha-icon icon="mdi:history"></ha-icon>${this._lh ? "BACK" : "LAST HOUR"}</a>`;
+      return `<span class="dot ${mode}"></span><span>${label}</span>${btn}`;
     }
   }
 
   const CSS = `
+.lhb{margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:1px solid rgba(0,255,247,.35);border-radius:999px;color:#7ff6ff;letter-spacing:.12em}
+.lhb ha-icon{--mdc-icon-size:16px}
 :host{display:block}
 ha-card{overflow:hidden;border-radius:22px;border:1px solid rgba(0,255,247,.25);color:#dff6fa;
   background:radial-gradient(ellipse at 50% 0%,rgba(0,255,247,.08),transparent 55%),linear-gradient(160deg,#070c16,#0e1627);box-shadow:0 0 28px rgba(0,255,255,.1)}

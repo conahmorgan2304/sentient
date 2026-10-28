@@ -34,6 +34,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ROUTINE_EVIDENCE,
     CONF_LEARN_ENTITIES,
     CONF_LINK_TRIGGERS,
     CONF_SUGGEST_ROUTINES,
@@ -123,11 +124,17 @@ class Routine:
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def evidence(self) -> str:
+        """'4 of the last 4 weekend days' — the plain numbers behind the offer."""
+        total = max(self.seen, round(self.seen / self.support)) if self.support else self.seen
+        noun = {"on weekdays": "weekdays", "at weekends": "weekend days"}.get(self.days, "days")
+        return f"{self.seen} of the last {total} {noun}"
+
     def summary(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "routine": self.describe(),
-            "how_sure": f"{round(self.support * 100)}% of days",
+            "how_sure": f"{round(self.support * 100)}% of days ({self.evidence()})",
             "adopted": self.adopted,
         }
 
@@ -656,14 +663,17 @@ class Learner:
             return
         if self.tracker is not None and self.tracker.best_area() is None:
             return  # nobody obviously about; try again later
+        evidence = self.options.get(CONF_ROUTINE_EVIDENCE, True)
         if isinstance(routine, Link):
             said = routine.describe()
-            question = f"I've noticed that {said[0].lower()}{said[1:-1]}. Want me to do that for you from now on?"
+            seen = f" ({routine.seen} times in the last two weeks)" if evidence else ""
+            question = f"I've noticed that {said[0].lower()}{said[1:-1]}{seen}. Want me to do that for you from now on?"
         else:
+            seen = f", {routine.evidence()}" if evidence else ""
             question = (
                 f"I've noticed the {routine.name} usually "
                 f"{'goes ' + routine.state if routine.state in ('on', 'off') else ('opens' if routine.state == 'open' else 'closes')}"
-                f" around {routine.when} {routine.days}. Want me to do that for you from now on?"
+                f" around {routine.when} {routine.days}{seen}. Want me to do that for you from now on?"
             )
         result = await self.speech.async_ask(
             question,

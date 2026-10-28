@@ -263,8 +263,13 @@
           <b>${esc(((c.conversation || [])[0] || "").replace(/^They: /, ""))}</b><u>${esc(String(c.when || "").split(" ").pop())}${c.room ? " · " + esc(c.room).toUpperCase() : ""}</u></div>`),
       ].join("");
       const mindCount = (mind.wondering || []).length + (mind.follow_ups || []).length;
+      // the last hour, on request: straight from the timeline, no AI
+      const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
+          <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NOTHING IN THE LAST HOUR</div>') : "";
       R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`)
         + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
+        + `<div class="row lh"><button class="btn sm ghost" data-act="lasthour"><ha-icon icon="mdi:history"></ha-icon> ${this._lh ? "HIDE THE LAST HOUR" : "WHAT HAPPENED THIS LAST HOUR?"}</button></div>`
+        + lastHour
         + (ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
       this._drawAppliances(mind.appliances || []);
 
@@ -1106,6 +1111,15 @@
       this._drawTimeline();
     }
 
+    async _lastHour() {
+      if (this._lh) { this._lh = null; this._render(); return; }
+      try {
+        const items = (await this._hass.callWS({ type: "sentient/timeline", hours: 1, limit: 30 })).items || [];
+        this._lh = items.filter((i) => !["held", "digest"].includes(i.kind));
+      } catch (e) { this._lh = []; }
+      this._render();
+    }
+
     _drawTimeline() {
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
@@ -1151,6 +1165,7 @@
       if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
+      else if (act === "lasthour") this._lastHour();
       else if (act === "wonderx") this._call("wonder", { dismiss: text });
       else if (act === "fux") this._call("cancel_follow_up", { about: id }, `Stop checking: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);

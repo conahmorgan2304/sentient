@@ -74,6 +74,9 @@ class CameraChecks:
         camera = check.get("camera")
         if not camera or self.hass.states.get(camera) is None:
             return {"error": "That camera isn't available"}
+        if not force and await rt.watches.unchanged(f"check:{check['id']}", camera, check.get("spot") or None):
+            self.items.update(check["id"], last=dt_util.utcnow().isoformat())
+            return {"skipped": "the picture hasn't changed since the last look"}
         if not rt.watches.spend("camera checks", force=force):
             return {"skipped": "daily AI limit reached"}
         self._busy.add(check["id"])

@@ -26,6 +26,7 @@ from homeassistant.util.json import JsonObjectType
 
 from .const import (
     CONF_FALLBACK_SPEAKERS,
+    CONF_PROMPT_RECENT,
     CONF_BRIEFING_WEATHER,
     personality_line,
     CONF_HOUSE_RULES,
@@ -175,6 +176,7 @@ class ForgetTool(_Tool):
         return {"forgotten": removed.text if removed else None}
 
 
+RECENT_SKIP = {"held", "digest", "mind", "loop", "learned"}
 EVERYWHERE = re.compile(r"(the )?(everywhere|every ?(one|body|room|speaker)s?|all( the)?( (speakers|rooms))?|(the )?whole house|all over( the house)?|house)")
 
 
@@ -1109,6 +1111,8 @@ class SentientAPI(llm.API):
         room = self._room_of_device(llm_context.device_id)
         if room:
             lines.append(f"The person talking to you is in the {room}.")
+        if opts.get(CONF_PROMPT_RECENT, True):
+            lines.extend(self._recent_lines(rt))
         if rt.speech.guest_mode:
             lines.append(
                 "Guests are visiting: don't bring up personal household details, routines or memories "
@@ -1213,6 +1217,21 @@ class SentientAPI(llm.API):
             + " when addressing people."
         )
         return "\n".join(lines)
+
+    def _recent_lines(self, rt: Any) -> list[str]:
+        """The last hour at a glance, and where people seem to be — so 'what just happened?' needs no tool."""
+        out: list[str] = []
+        areas = ar.async_get(self.hass)
+        busy = [a.name for a_id in rt.tracker.occupied_areas() if (a := areas.async_get_area(a_id))]
+        if busy:  # nothing convincing: say nothing (never that the house is empty)
+            out.append("Movement lately in: " + ", ".join(busy[:4]) + ".")
+        recent = [i for i in rt.timeline.since(1, None, 30) if i["kind"] not in RECENT_SKIP][:5]
+        if recent:
+            out.append("In the last hour (newest first; sentient_timeline has more):")
+            for item in recent:
+                when = dt_util.parse_datetime(item["time"])
+                out.append(f"- {dt_util.as_local(when):%H:%M} {item['text']}" if when else f"- {item['text']}")
+        return out
 
     def _room_of_device(self, device_id: str | None) -> str | None:
         if not device_id:

@@ -33,6 +33,9 @@ from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_SECOND_OPINION,
+    CONF_LOOK_CACHE,
+    CONF_CAMERA_PREFILTER,
+    DEFAULT_LOOK_CACHE,
     CONF_CAMERA_COOLDOWN,
     CONF_DAILY_AI_LIMIT,
     DEFAULT_CAMERA_COOLDOWN,
@@ -57,6 +60,7 @@ DEFAULT_STATE_HOURS = 12
 DEFAULT_CAMERA_HOURS = 2
 MAX_HOURS = 24 * 7
 _TRIGGER_CLASSES = {"motion", "occupancy", "presence"}
+PREFILTER_CHANGED = 0.06  # share of the picture that must look different before the AI is asked again
 _IGNORED = {STATE_UNAVAILABLE, STATE_UNKNOWN}
 
 
@@ -213,6 +217,9 @@ class WatchManager:
 
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any], speech: SpeechRouter) -> None:
         self.hass = hass
+        self._looks: dict[tuple[str, str, str], tuple[datetime, dict[str, Any]]] = {}  # recent camera answers
+        self._prints: dict[str, list[int]] = {}  # check/watch -> thumbnail at its last AI look
+        self.skipped = 0  # AI looks saved because the picture hadn't changed
         self.options = options
         self.speech = speech
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.watches")
@@ -455,14 +462,18 @@ class WatchManager:
         last = dt_util.parse_datetime(watch.last_checked) if watch.last_checked else None
         if last and dt_util.utcnow() - last < self._cooldown():
             return
-        if not self.spend("watches"):
-            watch.last_result = "skipped: daily AI limit reached"
-            self._save()
-            return
         self._busy.add(watch.id)
         try:
             # give the camera a moment so the subject is in frame
             await asyncio.sleep(1)
+            if await self.unchanged(f"watch:{watch.id}", watch.entity_id, watch.spot):
+                watch.last_result = "skipped: the picture hasn't changed"
+                self._save()
+                return
+            if not self.spend("watches"):
+                watch.last_result = "skipped: daily AI limit reached"
+                self._save()
+                return
             watch.last_checked = dt_util.utcnow().isoformat()
             watch.checks += 1
             answer, description, unsure = await self._async_ask(watch)
@@ -527,6 +538,26 @@ class WatchManager:
         self._ai_checks += 1
         return True
 
+    async def unchanged(self, key: str, camera: str, spot: str | None) -> bool:
+        """The picture (or the spot) looks just as it did at this check's last AI look — no need to ask again.
+
+        A quick local comparison of tiny thumbnails, ignoring overall brightness. Off in the settings, or
+        no picture to compare: always look.
+        """
+        if not self.options.get(CONF_CAMERA_PREFILTER, True) or self.spots is None:
+            return False
+        from .spots import _key, changed_share
+
+        fingerprint = await self.spots.async_fingerprint(camera, _key(spot) if spot else None, whole=True)
+        if fingerprint is None:
+            return False
+        before = self._prints.get(key)
+        if before is not None and changed_share(fingerprint, before) < PREFILTER_CHANGED:
+            self.skipped += 1
+            return True
+        self._prints[key] = fingerprint
+        return False
+
     async def _attachment(self, camera: str, spot: str | None) -> dict[str, str]:
         if self.spots is None:
             return {"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}
@@ -554,6 +585,10 @@ class WatchManager:
             entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
         if entity_id is None or not entity_id.startswith("camera."):
             raise HomeAssistantError(f"I can't find a camera called '{camera}'")
+        key = (entity_id, spot or "", " ".join(question.lower().split()).strip(" ?.!"))
+        minutes = float(self.options.get(CONF_LOOK_CACHE, DEFAULT_LOOK_CACHE) or 0)
+        if minutes > 0 and (hit := self._looks.get(key)) and dt_util.utcnow() - hit[0] < timedelta(minutes=minutes):
+            return {**hit[1], "seen_minutes_ago": round((dt_util.utcnow() - hit[0]).total_seconds() / 60, 1)}
         data: dict[str, Any] = {
             "task_name": f"Sentient look: {question}"[:100],
             "instructions": (
@@ -576,6 +611,10 @@ class WatchManager:
         out = {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
         if spot:
             out["spot"] = spot
+        if out["answer"]:
+            now = dt_util.utcnow()
+            self._looks = {k: v for k, v in self._looks.items() if now - v[0] < timedelta(minutes=30)}
+            self._looks[key] = (now, out)
         return out
 
     async def _async_fire(self, watch: Watch, description: str | None, state: State | None) -> None:
