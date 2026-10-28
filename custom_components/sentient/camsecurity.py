@@ -29,6 +29,7 @@ from homeassistant.util import dt as dt_util
 from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
+    CONF_SMART_AI,
     CONF_CAMSEC,
     CONF_CAMSEC_DESCRIBE,
     CONF_CAMSEC_ENTRIES,
@@ -236,7 +237,7 @@ class CameraSecurity:
             },
             "attachments": [{"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}],
         }
-        if ai := self.options.get(CONF_AI_TASK_ENTITY):
+        if ai := self.options.get(CONF_SMART_AI) or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
         try:
             response = await async_generate(self.hass, data)

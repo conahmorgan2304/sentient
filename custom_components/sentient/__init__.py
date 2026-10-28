@@ -147,6 +147,8 @@ class SentientRuntime:
     pets: Any
     autobackup: Any
     bins: Any
+    faces: Any
+    rules: Any
     watchdog: Watchdog
     screen: Screen
 
@@ -395,6 +397,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     alarms = Alarms(hass, lists["alarms"], get_rt)
     checks = CameraChecks(hass, lists["checks"], get_rt)
     autooff = AutoOff(hass, lists["autooff"], get_rt)
+    from .rules import Rules
+
+    rules = Rules(hass, lists["rules"], get_rt)
     camsec = CameraSecurity(hass, options, get_rt)
     party = Party(hass, entry.entry_id, options, get_rt)
     followthrough = FollowThrough(hass, speech, timeline)
@@ -424,6 +429,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .bins import Bins
 
     bins = Bins(hass, options, get_rt)
+    from .faces import Faces
+
+    faces = Faces(hass, entry.entry_id, options, get_rt)
     learner.extra_automated = away.times
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
@@ -448,16 +456,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
-        selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins,
+        selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
     entry.async_on_unload(party.async_stop)
     night_watch.async_start()
     entry.async_on_unload(night_watch.async_stop)
-    for engine in (offers, announcements, alarms, checks, camsec, autooff):
+    for engine in (offers, announcements, alarms, checks, camsec, autooff, rules):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
@@ -513,7 +521,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show

@@ -91,3 +91,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Phase 2: 'say it differently' on anything it said, suggestions on the Sentient page, 'coming up' on the tablet screen, ask 'shall I?' before chosen big actions — all optional (0.55.0)
 - [x] Self-test of the voice overnight, rain warnings, a dusk hutch check and a night cat watch, a 'check now' action — all optional, off by default (0.56.0)
 - [x] Bins check from the bin calendar and a camera spot, buttons on phone notifications (door camera, snooze reminders), battery run-out forecasts, an automatic weekly backup with one-tap restore — all optional (0.57.0)
+- [x] Phase 3: rules ('when this, do that') made on the page or by voice — read back and only saved after a yes, never touching the alarm or locks; names from Frigate's face recognition, private and never announced; an optional stronger AI for security and the overnight think — all off by default (0.58.0)

@@ -33,6 +33,10 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_RULES,
+    CONF_FACES,
+    CONF_FACE_PEOPLE,
+    CONF_SMART_AI,
     CONF_PHONE_BUTTONS,
     CONF_PHONE_APPS,
     PHONE_BUTTON_KINDS,
@@ -457,6 +461,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["sensor", "input_text", "text", "image"])
             ),
             vol.Required(CONF_ANNOUNCE_VISITORS, **d(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS)): selector.BooleanSelector(),
+            vol.Required(CONF_FACES, **d(CONF_FACES, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_FACE_PEOPLE, **d(CONF_FACE_PEOPLE, [])): selector.TextSelector(
+                selector.TextSelectorConfig(multiple=True)
+            ),
             vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),
             vol.Optional(CONF_DOORSTEP_SENSORS, **d(CONF_DOORSTEP_SENSORS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
@@ -496,6 +504,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SECOND_OPINION, **d(CONF_SECOND_OPINION)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
+            vol.Optional(CONF_SMART_AI, **d(CONF_SMART_AI)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="ai_task")
+            ),
             vol.Required(CONF_CAMERA_COOLDOWN, **d(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=10, max=3600, step=10, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
             ),
@@ -506,6 +517,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=0, max=100, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_PROMPT_RECENT, **d(CONF_PROMPT_RECENT, True)): selector.BooleanSelector(),
+            vol.Required(CONF_RULES, **d(CONF_RULES, False)): selector.BooleanSelector(),
             vol.Optional(CONF_CONFIRM, **d(CONF_CONFIRM, [])): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(CONFIRM_KINDS), multiple=True,
                                               mode=selector.SelectSelectorMode.LIST, translation_key="confirm_kinds")

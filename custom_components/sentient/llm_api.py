@@ -54,6 +54,11 @@ def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
 _LOGGER = logging.getLogger(__name__)
 
 
+def _rules_on(hass: HomeAssistant) -> bool:
+    rt = _runtime(hass)
+    return rt is not None and bool(rt.options.get("rules", False))
+
+
 class _Tool(llm.Tool):
     """Every Sentient tool says which integration provides it."""
 
@@ -336,6 +341,89 @@ class CancelWatchTool(_Tool):
             return {"error": "Sentient is not loaded"}
         removed = rt.watches.cancel(tool_input.tool_args["what"])
         return {"cancelled": removed.what if removed else None}
+
+
+class RuleTool(_Tool):
+    name = "sentient_make_rule"
+    description = (
+        "Make (or remove) a standing rule: 'when <something> <becomes on/opens/off/home>, <do something>', with "
+        "optional conditions — e.g. 'when the back door opens after dark, put the kitchen light on at 30%'. "
+        "First call with confirmed false: you get the rule back in plain words — read it back exactly and ask "
+        "'shall I set that up?'. Only after a clear yes, call again with the same details and confirmed true. "
+        "'do' is a list of actions like {action: 'light.turn_on', target: 'kitchen light', brightness_pct: 30}. "
+        "To delete one, give its name and remove true. Rules can never arm, disarm or unlock anything."
+    )
+    parameters = vol.Schema({
+        vol.Required("name"): cv.string,
+        vol.Optional("when"): cv.string,
+        vol.Optional("becomes"): cv.string,
+        vol.Optional("after_dark"): cv.boolean,
+        vol.Optional("between"): cv.string,
+        vol.Optional("only_if"): cv.string,
+        vol.Optional("only_if_is"): cv.string,
+        vol.Optional("do"): [vol.Schema({
+            vol.Required("action"): cv.string,
+            vol.Required("target"): cv.string,
+            vol.Optional("brightness_pct"): vol.Coerce(int),
+            vol.Optional("temperature"): vol.Coerce(float),
+        })],
+        vol.Optional("say"): cv.string,
+        vol.Optional("confirmed", default=False): cv.boolean,
+        vol.Optional("remove", default=False): cv.boolean,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .rules import describe, safe_actions, state_word
+        from .watches import resolve_entity
+
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        items = rt.lists["rules"]
+        if args.get("remove"):
+            found = items.find(args["name"])
+            if found is None:
+                return {"error": f"no rule called '{args['name']}'", "rules": [r["name"] for r in items.listing()]}
+            if not args.get("confirmed"):
+                return {"read_back": f"Delete the rule '{found['name']}': {describe(hass, found)}",
+                        "next": "Ask if they're sure; only after a yes, call again with remove true and confirmed true."}
+            items.remove(found["id"])
+            return {"removed": found["name"]}
+        when = resolve_entity(hass, args.get("when") or "")
+        if when is None:
+            return {"error": f"I can't find '{args.get('when')}' — ask which device they mean"}
+        actions = []
+        for a in args.get("do") or []:
+            domain = a["action"].split(".", 1)[0]
+            target = resolve_entity(hass, a["target"], domain) or resolve_entity(hass, a["target"])
+            if target is None:
+                return {"error": f"I can't find '{a['target']}' — ask which device they mean"}
+            data = {k: a[k] for k in ("brightness_pct", "temperature") if k in a}
+            actions.append({"action": a["action"], "target": {"entity_id": target}, **({"data": data} if data else {})})
+        if not actions and not args.get("say"):
+            return {"error": "the rule needs something to do or say"}
+        if why := safe_actions(actions):
+            return {"error": why, "say": "Say plainly that rules can't do that."}
+        item = {
+            "name": args["name"], "enabled": True, "when_entity": when, "when_to": state_word(args.get("becomes") or "on"),
+            "after_dark": bool(args.get("after_dark")), "times": args.get("between") or "",
+            "only_if": resolve_entity(hass, args["only_if"]) if args.get("only_if") else None,
+            "only_if_state": state_word(args.get("only_if_is") or "") if args.get("only_if") else "",
+            "actions": actions, "say": args.get("say") or "", "made_by": "voice",
+        }
+        text = describe(hass, item)
+        if not args.get("confirmed"):
+            return {"read_back": text, "next": "Read this back and ask 'shall I set that up?'. Only after a clear "
+                                               "yes, call sentient_make_rule again with exactly the same details and confirmed true."}
+        existing = items.find(args["name"])
+        if existing:
+            item["id"] = existing["id"]
+        items.upsert(item)
+        rt.timeline.add("mode", f"New rule: {args['name']}", text)
+        return {"made": text}
 
 
 class LookTool(_Tool):
@@ -1079,7 +1167,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
@@ -1160,6 +1248,8 @@ class SentientAPI(llm.API):
             lines.extend(talk)
         if drive := rt.drive.prompt_line():
             lines.append(drive)
+        if not rt.speech.guest_mode and (seen := rt.faces.prompt_line()):
+            lines.append(seen)
         if rt.loops.items:
             lines.append("Follow-ups you've set: " + "; ".join(f"{i['about']} at {i['at']}" for i in rt.loops.listing()[:6]) + ".")
         if spots := rt.spots.describe():

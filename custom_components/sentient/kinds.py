@@ -186,6 +186,37 @@ KINDS: dict[str, dict[str, Any]] = {
             "say": "Say when it does (optional)",
         },
     },
+    "rules": {
+        "title": "Rules",
+        "icon": "mdi:script-text-outline",
+        "blurb": "'When this happens, do that' — e.g. when the back door opens after dark, put the kitchen light on dim. "
+                 "Made here or by voice ('when the back door opens after dark, turn the kitchen light on'), read back "
+                 "first and only made after a yes.",
+        "add": "+ NEW RULE",
+        "defaults": {
+            "enabled": True, "when_entity": None, "when_to": "on", "after_dark": False, "times": "",
+            "only_if": None, "only_if_state": "", "actions": [], "say": "", "made_by": "", "last": None,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("when_entity", {"entity": {}}, True),
+            _sel("when_to", {"text": {}}),
+            _sel("after_dark", {"boolean": {}}),
+            _sel("times", {"text": {}}),
+            _sel("only_if", {"entity": {}}),
+            _sel("only_if_state", {"text": {}}),
+            _sel("actions", {"action": {}}),
+            _sel("say", {"text": {}}),
+        ],
+        "labels": {
+            "name": "Name", "enabled": "On", "when_entity": "When this…",
+            "when_to": "…changes to (e.g. on, open, home; empty = any change)",
+            "after_dark": "Only after dark", "times": "Only between (e.g. 18:00-23:00; empty = any time)",
+            "only_if": "Only if this…", "only_if_state": "…is (e.g. off)",
+            "actions": "Then do", "say": "And say (optional)",
+        },
+    },
     "checks": {
         "title": "Camera checks",
         "icon": "mdi:cctv",
@@ -260,4 +291,8 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
         return " · ".join([", ".join(what[:3]) + ("…" if len(what) > 3 else "")] + bits)
     if kind == "checks":
         return f"{name_of(item.get('camera'))} · {item.get('question') or ''}" + (" · says it" if item.get("say") else "")
+    if kind == "rules":
+        from .rules import describe
+
+        return describe(hass, item) + (" · made by voice" if item.get("made_by") == "voice" else "")
     return ""

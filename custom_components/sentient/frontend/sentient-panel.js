@@ -311,7 +311,7 @@
       this._loadMotion();
       this._loadMutes(true);
       this._loadShortcuts();
-      ["alarms", "offers", "announce", "checks", "autooff"].forEach((k) => this._loadItems(k));
+      ["alarms", "offers", "announce", "checks", "autooff", "rules"].forEach((k) => this._loadItems(k));
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -340,6 +340,7 @@
         offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
         announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
         autooff: ["mdi:timer-off-outline", "Auto-off", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
+        rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
       };
@@ -349,7 +350,7 @@
         ["voice", "mdi:account-voice", "Voice & sound", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
         ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
         ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
+        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
         ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));
@@ -390,7 +391,7 @@
       if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
-      if (["alarms", "offers", "announce", "checks", "autooff"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
+      if (["alarms", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");

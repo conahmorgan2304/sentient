@@ -73,11 +73,12 @@ async def test_reminder_with_snooze_button(hass: HomeAssistant) -> None:
     hass.states.async_set("notify.phone", "unknown")
     entry = await _setup(hass, notify_targets=["notify.phone"], notify_when=["watches"], phone_buttons=["reminders"])
     app = async_mock_service(hass, "notify", "mobile_app_phone")
+    tablet = async_mock_service(hass, "notify", "mobile_app_hallway_tablet")
     plain = async_mock_service(hass, "notify", "send_message")
     rt = entry.runtime_data
     rt.timeline.add("watch", "Take the bins out.", "Take the bins out", reminder=True)
     await hass.async_block_till_done()
-    assert not plain and app[-1].data["data"]["actions"][0]["title"] == "Snooze 10 min"
+    assert not plain and not tablet and app[-1].data["data"]["actions"][0]["title"] == "Snooze 10 min"
     action = app[-1].data["data"]["actions"][0]["action"]
     hass.bus.async_fire("mobile_app_notification_action", {"action": action})
     await hass.async_block_till_done()

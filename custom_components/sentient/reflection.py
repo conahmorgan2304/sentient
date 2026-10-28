@@ -24,6 +24,7 @@ from homeassistant.util import dt as dt_util
 from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
+    CONF_SMART_AI,
     CONF_HOUSE_RULES,
     CONF_PERSONA,
     CONF_QUIET_END,
@@ -149,7 +150,7 @@ class Reflection:
                             "selector": {"text": {"multiple": True}}},
             },
         }
-        if ai_entity := rt.options.get(CONF_AI_TASK_ENTITY):
+        if ai_entity := rt.options.get(CONF_SMART_AI) or rt.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         if not rt.watches.spend("overnight"):
             result["note"] = "today's AI limit was used up: no reflection tonight"

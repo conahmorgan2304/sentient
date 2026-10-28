@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+import re
 import uuid
 from typing import Any
 
@@ -90,7 +91,10 @@ class Notifier:
         if kind not in (self.options.get(CONF_PHONE_BUTTONS) or []):
             return []
         apps = [a.removeprefix("notify.") for a in self.options.get(CONF_PHONE_APPS) or []]
-        apps = apps or [s for s in self.hass.services.async_services().get("notify", {}) if s.startswith("mobile_app_")]
+        if not apps:  # the companion apps behind the phones already chosen for notifications — never the tablets
+            phones = {re.sub(r"_\d+$", "", t.removeprefix("notify.")) for t in self.options.get(CONF_NOTIFY_TARGETS) or []}
+            apps = [s for s in self.hass.services.async_services().get("notify", {})
+                    if s.startswith("mobile_app_") and s.removeprefix("mobile_app_") in phones]
         return [a for a in apps if self.hass.services.has_service("notify", a)]
 
     def _with_buttons(self, kind: str, item: dict[str, Any]) -> tuple[list[str], dict[str, Any]] | None:
