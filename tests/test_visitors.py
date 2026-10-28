@@ -131,7 +131,8 @@ async def test_doorstep_visit_without_ring_checks_for_parcel_once(hass: HomeAssi
     await visit(3)  # same parcel still there: not said again
     await visit(3)  # taken in
     await visit(3)  # new post
-    assert len(ai) == 4
+    # only the doorstep checks: other parts of the house may make their own calls while the clock jumps
+    assert len([c for c in ai if "doorstep" in c.data["task_name"]]) == 4
     assert len(said) == 2
 
 
