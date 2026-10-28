@@ -64,6 +64,15 @@ def drain_rate(samples: list[list], newest_days: int, oldest_days: int, today: d
     return drops / span if span >= 4 else None
 
 
+def _when(days: float) -> str:
+    if days < 2:
+        return "a day"
+    if days < 13:
+        return f"{round(days)} days"
+    weeks = round(days / 7)
+    return f"{weeks} week{'s' if weeks != 1 else ''}"
+
+
 class Watchdog:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
         self.hass = hass
@@ -206,6 +215,26 @@ class Watchdog:
             if seen is None or seen.get("hash") != digest:
                 self.cams[st.entity_id] = {"hash": digest, "since": now.isoformat()}
         self._save()
+
+    # ----- batteries: when they'll run out ------------------------------------------------------
+    def battery_forecasts(self, within_days: int = 60) -> list[dict[str, Any]]:
+        """Batteries that will run out within about two months at their recent rate, soonest first."""
+        today = dt_util.now()
+        out = []
+        for entity_id, rows in self.batteries.items():
+            rate = drain_rate(rows, 0, 30, today)
+            st = self.hass.states.get(entity_id)
+            if not rate or rate <= 0 or st is None:
+                continue
+            try:
+                level = float(st.state)
+            except ValueError:
+                continue
+            days = level / rate
+            if days <= within_days:
+                out.append({"entity_id": entity_id, "name": st.name, "level": round(level), "days": round(days),
+                            "text": f"{st.name}: about {_when(days)} left ({round(level)}%)"})
+        return sorted(out, key=lambda b: b["days"])
 
     # ----- what to report -------------------------------------------------------------------
     def issues(self) -> list[dict[str, Any]]:

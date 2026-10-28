@@ -366,4 +366,5 @@ check_now:
             - rain
             - hutch
             - cat
+            - bins
           translation_key: check_now

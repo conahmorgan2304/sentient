@@ -349,8 +349,8 @@
         ["voice", "mdi:account-voice", "Voice & sound", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
         ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
         ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "animals", "rain", "away", "motion", "party", "heating", "energy"]],
-        ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup"]],
+        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
+        ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][3].push(id); });
@@ -821,8 +821,20 @@
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
           <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO SETTINGS</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
+        <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR SAVED BACKUPS…</div></div>
         <div class="spmsg" id="bkmsg"></div>`;
       this._$("bkfile").addEventListener("change", (ev) => this._restore(ev.target.files[0]));
+      this._loadBackups();
+    }
+
+    async _loadBackups() {
+      let res = { items: [], on: false };
+      try { res = await this._hass.callWS({ type: "sentient/backups" }); } catch (e) { /* not admin */ }
+      const el = this._$("bkauto");
+      if (!el) return;
+      el.innerHTML = `<div class="r"><ha-icon icon="mdi:calendar-sync-outline"></ha-icon><b>Saved backups ${res.on ? "· WEEKLY IS ON" : "· WEEKLY IS OFF (Settings → Weekly backup)"}</b><button class="btn sm ghost" data-act="bksave">BACK UP NOW</button></div>`
+        + (res.items.length ? res.items.map((b) => `<div class="r dim"><ha-icon icon="mdi:file-outline"></ha-icon><b>${esc(b.name)}</b><u>${Math.round(b.size / 1024)} KB</u>
+          <button class="btn sm ghost" data-act="bkrestore" data-id="${esc(b.name)}">RESTORE</button></div>`).join("") : '<div class="e">NONE SAVED YET</div>');
     }
 
     async _download() {
@@ -1189,6 +1201,14 @@
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
+      else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Saved ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      else if (act === "bkrestore") {
+        if (!window.confirm(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
+        this._hass.callWS({ type: "sentient/backups/restore", name: id, settings: this._$("bkset").checked }).then((res) => {
+          this._$("bkmsg").textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
+          this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
+        }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      }
       else if (act === "sugyes" || act === "sugno") {
         this._sug = (this._sug || []).filter((s) => s.id !== id);
         this._render();

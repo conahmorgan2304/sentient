@@ -44,6 +44,9 @@ def build(rt: Any, days: int = 7) -> dict[str, Any]:
             + (f", {alerts} with nobody up" if alerts else ", all with someone up inside")
         )
 
+    if rt.options.get("battery_forecast", True) and (batteries := rt.watchdog.battery_forecasts()):
+        out["batteries_to_buy"] = [b["text"] for b in batteries[:6]]
+
     memories = [m.text for m in rt.memory.items if _since(m.created, cutoff)]
     if memories:
         out["new_memories"] = memories[:6]
@@ -67,6 +70,8 @@ def summary(report: dict[str, Any]) -> str:
         parts.append(heat[0])
     if nw := report.get("night_watch"):
         parts.append(f"Night watch: {nw}.")
+    if bats := report.get("batteries_to_buy"):
+        parts.append("Batteries running down: " + "; ".join(bats[:3]) + ".")
     if mem := report.get("new_memories"):
         parts.append(f"{len(mem)} new thing{'s' if len(mem) != 1 else ''} remembered.")
     parts.append(f"This week it {report.get('activity', '')}.")

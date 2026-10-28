@@ -630,7 +630,8 @@ class WatchManager:
             found = self.speech.find_speaker(watch.speaker)
             targets = [found] if found else None
         self.hass.bus.async_fire(
-            EVENT_WATCH_FIRED, {"id": watch.id, "what": watch.what, "message": message, "entity_id": watch.entity_id}
+            EVENT_WATCH_FIRED, {"id": watch.id, "what": watch.what, "message": message, "entity_id": watch.entity_id,
+                                "kind": watch.kind}
         )
         kind = "reminder" if watch.kind == KIND_REMINDER else "watch"
         await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")

@@ -129,3 +129,78 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
         hass.config_entries.async_update_entry(entry, options={**entry.options, **data["settings"]})
         counts["settings"] = 1
     return counts
+
+
+# ----- automatic weekly backups -------------------------------------------------------------
+import json  # noqa: E402
+import logging  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from homeassistant.core import callback  # noqa: E402
+from homeassistant.helpers.event import async_track_time_change  # noqa: E402
+
+_LOGGER = logging.getLogger(__name__)
+FOLDER = "sentient_backups"  # inside the config folder, so Home Assistant's own backups include it too
+WEEKLY_AT = (6, 3, 40)  # Sunday, 03:40
+
+
+class AutoBackup:
+    """Once a week, the same backup as the download button, saved in the config folder; the newest few kept."""
+
+    def __init__(self, hass: HomeAssistant, entry, options: dict[str, Any]) -> None:
+        self.hass = hass
+        self.entry = entry
+        self.options = options
+        self._unsub = None
+
+    async def async_start(self) -> None:
+        self._unsub = async_track_time_change(self.hass, self._tick, hour=WEEKLY_AT[1], minute=WEEKLY_AT[2], second=0)
+
+    @callback
+    def async_stop(self) -> None:
+        if self._unsub:
+            self._unsub()
+            self._unsub = None
+
+    @property
+    def folder(self) -> Path:
+        return Path(self.hass.config.path(FOLDER))
+
+    @callback
+    def _tick(self, now) -> None:
+        from .const import CONF_AUTO_BACKUP
+
+        if self.options.get(CONF_AUTO_BACKUP) and dt_util.as_local(now).weekday() == WEEKLY_AT[0]:
+            self.hass.async_create_task(self.async_save(), eager_start=False)
+
+    async def async_save(self) -> str:
+        from .const import CONF_BACKUP_KEEP, DEFAULT_BACKUP_KEEP
+
+        data = export_all(self.hass, self.entry)
+        keep = max(1, int(float(self.options.get(CONF_BACKUP_KEEP, DEFAULT_BACKUP_KEEP) or DEFAULT_BACKUP_KEEP)))
+        name = f"sentient-{dt_util.now():%Y-%m-%d-%H%M}.json"
+
+        def write() -> None:
+            self.folder.mkdir(exist_ok=True)
+            (self.folder / name).write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
+            for old in sorted(self.folder.glob("sentient-*.json"))[:-keep]:
+                old.unlink(missing_ok=True)
+
+        await self.hass.async_add_executor_job(write)
+        self.entry.runtime_data.timeline.add("mode", "Sentient backed itself up", f"{name}, keeping the newest {keep}")
+        return name
+
+    async def async_list(self) -> list[dict[str, Any]]:
+        def read() -> list[dict[str, Any]]:
+            if not self.folder.is_dir():
+                return []
+            return [{"name": p.name, "size": p.stat().st_size} for p in sorted(self.folder.glob("sentient-*.json"), reverse=True)]
+
+        return await self.hass.async_add_executor_job(read)
+
+    async def async_restore(self, name: str, settings: bool = False) -> dict[str, int]:
+        path = self.folder / Path(name).name  # never outside the folder
+        if not path.name.startswith("sentient-") or path.suffix != ".json":
+            raise ValueError("not a Sentient backup")
+        data = json.loads(await self.hass.async_add_executor_job(path.read_text, "utf-8"))
+        return import_all(self.hass, self.entry, data, settings)

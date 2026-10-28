@@ -1037,6 +1037,8 @@ class HouseCheckTool(_Tool):
             pass
         if animals := rt.animals.readings():
             out["animals_outside"] = animals
+        if rt.options.get("battery_forecast", True) and (batteries := rt.watchdog.battery_forecasts(30)):
+            out["batteries_running_out"] = [b["text"] for b in batteries[:5]]
         if running := [a for a in rt.appliances.listing() if a["running"]]:
             out["appliances_running"] = [f"{a['name']} since {a['started']}" + (f", done about {a['done_about']}" if a.get("done_about") else "")
                                          for a in running]

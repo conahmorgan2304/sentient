@@ -145,6 +145,8 @@ class SentientRuntime:
     selftest: Any
     rain: Any
     pets: Any
+    autobackup: Any
+    bins: Any
     watchdog: Watchdog
     screen: Screen
 
@@ -416,6 +418,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     selftest = SelfTest(hass, entry.entry_id, options, get_rt)
     rain = Rain(hass, options, get_rt)
     pets = Pets(hass, options, get_rt)
+    from .backup import AutoBackup
+
+    autobackup = AutoBackup(hass, entry, options)
+    from .bins import Bins
+
+    bins = Bins(hass, options, get_rt)
     learner.extra_automated = away.times
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
@@ -424,6 +432,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     guard.async_start()
     entry.async_on_unload(guard.async_stop)
     conversations.guard = guard
+    notifier.on_snooze = lambda what, delay: watches.add_reminder(what, minutes=delay.total_seconds() / 60)
     noticer.skip = appliances.handled  # appliances (and the rest of their device) say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
@@ -439,9 +448,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         party=party, followyou=followyou, loops=loops, conversations=conversations, curiosity=curiosity,
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
-        selftest=selftest, rain=rain, pets=pets,
+        selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins,
     )
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -504,7 +513,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets"):
+    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
@@ -717,11 +726,13 @@ def _register_services(hass: HomeAssistant) -> None:
             return await rt.rain.async_check(force=True)
         if what == "hutch":
             return await rt.pets.async_hutch(force=True)
+        if what == "bins":
+            return await rt.bins.async_check(force=True)
         return await rt.pets.async_cat(force=True)
 
     hass.services.async_register(
         DOMAIN, "check_now", check_now, supports_response=SupportsResponse.OPTIONAL,
-        schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat"])}),
+        schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins"])}),
     )
 
     async def look_ahead(call: ServiceCall) -> ServiceResponse:

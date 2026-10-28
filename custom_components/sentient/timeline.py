@@ -133,7 +133,7 @@ class Timeline:
     @callback
     def _watch(self, event: Event) -> None:
         d = event.data
-        self.add("watch", d.get("message") or d.get("what", ""), d.get("what"))
+        self.add("watch", d.get("message") or d.get("what", ""), d.get("what"), reminder=True if d.get("kind") == "reminder" else None)
 
     @callback
     def _light(self, event: Event) -> None:

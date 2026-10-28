@@ -30,6 +30,15 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_PHONE_BUTTONS,
+    CONF_PHONE_APPS,
+    CONF_BINS_CHECK,
+    CONF_BINS_SPOT,
+    CONF_BINS_CALENDAR,
+    CONF_BINS_TIME,
+    CONF_BATTERY_FORECAST,
+    CONF_AUTO_BACKUP,
+    CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
     CONF_RAIN,
     CONF_RAIN_ENTITIES,
@@ -201,7 +210,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
-        CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN,
+        CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
     ]),
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
         CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
@@ -232,6 +241,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
     ]),
+    ("bins", "Bins check", "mdi:delete-variant", "The evening before collection (from the bin calendar), one camera look at where the bins go out — said only if they aren't out yet.", [
+        CONF_BINS_CHECK, CONF_BINS_CALENDAR, CONF_BINS_SPOT, CONF_BINS_TIME,
+    ]),
     ("rain", "Rain warnings", "mdi:weather-pouring", "A word when rain's due within the hour and a window or door is left open. Reads the hourly forecast — no AI.", [
         CONF_RAIN, CONF_RAIN_ENTITIES,
     ]),
@@ -239,7 +251,10 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ENERGY, CONF_ENERGY_PRICE,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
-        CONF_BATTERY_THRESHOLD, CONF_HEALTH_IGNORE,
+        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE,
+    ]),
+    ("autobackup", "Weekly backup", "mdi:calendar-sync-outline", "Every Sunday night, the same backup as the download button, saved in Home Assistant's config folder (so Home Assistant's own backups have it too). The newest few are kept; restore one from Backup.", [
+        CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
         CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES,
@@ -300,6 +315,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)
+    websocket_api.async_register_command(hass, ws_backups)
+    websocket_api.async_register_command(hass, ws_backup_restore)
+    websocket_api.async_register_command(hass, ws_backup_save)
     from .wizard import async_register as _wizard
 
     _wizard(hass)
@@ -777,6 +795,48 @@ def ws_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .backup import export_all
 
     connection.send_result(msg["id"], export_all(hass, entry))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/backups"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backups(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], {"items": await entry.runtime_data.autobackup.async_list(),
+                                       "on": bool(entry.runtime_data.options.get("auto_backup"))})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/backups/restore", vol.Required("name"): str,
+    vol.Optional("settings", default=False): bool,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backup_restore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    try:
+        result = await entry.runtime_data.autobackup.async_restore(msg["name"], msg["settings"])
+    except (OSError, KeyError, TypeError, ValueError) as err:
+        connection.send_error(msg["id"], "invalid", f"Couldn't restore that backup ({err})")
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/backups/save"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_backup_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], {"name": await entry.runtime_data.autobackup.async_save()})
 
 
 @websocket_api.websocket_command(

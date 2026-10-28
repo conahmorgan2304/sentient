@@ -33,6 +33,19 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_PHONE_BUTTONS,
+    CONF_PHONE_APPS,
+    PHONE_BUTTON_KINDS,
+    CONF_BINS_CHECK,
+    CONF_BINS_SPOT,
+    DEFAULT_BINS_SPOT,
+    CONF_BINS_CALENDAR,
+    CONF_BINS_TIME,
+    DEFAULT_BINS_TIME,
+    CONF_BATTERY_FORECAST,
+    CONF_AUTO_BACKUP,
+    CONF_BACKUP_KEEP,
+    DEFAULT_BACKUP_KEEP,
     CONF_SELF_TEST,
     SELF_TEST_MODES,
     CONF_RAIN,
@@ -217,6 +230,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
             vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_AUTO_BACKUP, **d(CONF_AUTO_BACKUP, False)): selector.BooleanSelector(),
+            vol.Required(CONF_BACKUP_KEEP, **d(CONF_BACKUP_KEEP, DEFAULT_BACKUP_KEEP)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=20, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
             vol.Optional(CONF_VOICE_AGENT, **d(CONF_VOICE_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
@@ -447,6 +464,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_BATTERY_THRESHOLD, **d(CONF_BATTERY_THRESHOLD, DEFAULT_BATTERY_THRESHOLD)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_BATTERY_FORECAST, **d(CONF_BATTERY_FORECAST, True)): selector.BooleanSelector(),
             vol.Optional(CONF_HEALTH_IGNORE, **d(CONF_HEALTH_IGNORE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
             ),
@@ -458,6 +476,20 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                     options=NOTIFY_KINDS, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="notify_when"
                 )
             ),
+            vol.Optional(CONF_PHONE_BUTTONS, **d(CONF_PHONE_BUTTONS, [])): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=PHONE_BUTTON_KINDS, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="phone_buttons"
+                )
+            ),
+            vol.Optional(CONF_PHONE_APPS, **d(CONF_PHONE_APPS, [])): selector.TextSelector(
+                selector.TextSelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_BINS_CHECK, **d(CONF_BINS_CHECK, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_BINS_CALENDAR, **d(CONF_BINS_CALENDAR)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="calendar")
+            ),
+            vol.Optional(CONF_BINS_SPOT, **d(CONF_BINS_SPOT, DEFAULT_BINS_SPOT)): selector.TextSelector(),
+            vol.Required(CONF_BINS_TIME, **d(CONF_BINS_TIME, DEFAULT_BINS_TIME)): selector.TimeSelector(),
             vol.Optional(CONF_AI_TASK_ENTITY, **d(CONF_AI_TASK_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),

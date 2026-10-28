@@ -90,3 +90,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Phase 1: the last hour in the voice's context, camera answers reused, camera looks skipped when nothing's changed, per-feature AI allowances, routine offers say how often, a 'last hour' button — all optional (0.54.0)
 - [x] Phase 2: 'say it differently' on anything it said, suggestions on the Sentient page, 'coming up' on the tablet screen, ask 'shall I?' before chosen big actions — all optional (0.55.0)
 - [x] Self-test of the voice overnight, rain warnings, a dusk hutch check and a night cat watch, a 'check now' action — all optional, off by default (0.56.0)
+- [x] Bins check from the bin calendar and a camera spot, buttons on phone notifications (door camera, snooze reminders), battery run-out forecasts, an automatic weekly backup with one-tap restore — all optional (0.57.0)
