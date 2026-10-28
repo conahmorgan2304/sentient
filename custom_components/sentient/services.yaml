@@ -368,4 +368,6 @@ check_now:
             - cat
             - bins
             - faces
+            - faces_forget
+            - clip_watch
           translation_key: check_now

@@ -40,6 +40,24 @@ from .const import (
     CONF_FACES,
     CONF_FACE_PEOPLE,
     CONF_FACE_TEACH,
+    CONF_FACE_CAMERAS,
+    CONF_FACE_FORGET_HOURS,
+    CONF_CLIP_WATCH,
+    CONF_CLIP_CAMERAS,
+    CONF_CLIP_SCOPE,
+    CONF_CLIP_WHEN,
+    CONF_CLIP_NOTIFY,
+    CONF_CLIP_SOURCE,
+    CONF_CLIP_WHOSE,
+    CONF_CLIP_LOOKS,
+    CONF_CLIP_DAYS,
+    CONF_CLIP_KEEP,
+    CONF_BUDGET_CLIPS,
+    CLIP_NOTIFY_MODES,
+    CLIP_SCOPES,
+    CLIP_SOURCES,
+    CLIP_WHENS,
+    DEFAULT_BUDGET_CLIPS,
     CONF_FACE_TEACH_CAMERAS,
     CONF_SMART_AI,
     CONF_PHONE_BUTTONS,
@@ -477,6 +495,39 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_FACE_TEACH_CAMERAS, **d(CONF_FACE_TEACH_CAMERAS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="camera", multiple=True)
             ),
+            vol.Optional(CONF_FACE_CAMERAS, **d(CONF_FACE_CAMERAS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera", multiple=True)
+            ),
+            vol.Required(CONF_FACE_FORGET_HOURS, **d(CONF_FACE_FORGET_HOURS, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=720, step=1, unit_of_measurement="h", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_CLIP_WATCH, **d(CONF_CLIP_WATCH, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_CLIP_CAMERAS, **d(CONF_CLIP_CAMERAS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera", multiple=True)
+            ),
+            vol.Required(CONF_CLIP_SCOPE, **d(CONF_CLIP_SCOPE, CLIP_SCOPES[0])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=CLIP_SCOPES, translation_key="clip_scope")
+            ),
+            vol.Required(CONF_CLIP_WHEN, **d(CONF_CLIP_WHEN, CLIP_WHENS[0])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=CLIP_WHENS, translation_key="clip_when")
+            ),
+            vol.Required(CONF_CLIP_NOTIFY, **d(CONF_CLIP_NOTIFY, CLIP_NOTIFY_MODES[0])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=CLIP_NOTIFY_MODES, translation_key="clip_notify")
+            ),
+            vol.Required(CONF_CLIP_SOURCE, **d(CONF_CLIP_SOURCE, CLIP_SOURCES[0])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=CLIP_SOURCES, translation_key="clip_source")
+            ),
+            vol.Required(CONF_CLIP_WHOSE, **d(CONF_CLIP_WHOSE, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_CLIP_LOOKS, **d(CONF_CLIP_LOOKS, "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
+            vol.Required(CONF_BUDGET_CLIPS, **d(CONF_BUDGET_CLIPS, DEFAULT_BUDGET_CLIPS)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_CLIP_DAYS, **d(CONF_CLIP_DAYS, 7)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="days", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_CLIP_KEEP, **d(CONF_CLIP_KEEP, False)): selector.BooleanSelector(),
             vol.Required(CONF_PARCEL_ALERTS, **d(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS)): selector.BooleanSelector(),
             vol.Optional(CONF_DOORSTEP_SENSORS, **d(CONF_DOORSTEP_SENSORS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)

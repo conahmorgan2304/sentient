@@ -11,6 +11,10 @@ chosen cameras and Frigate kept a face it couldn't name, the phones get a privat
 and a button per person (or type a name). Tapping one files that face under the name in Frigate, so it
 recognises them next time. Nothing is spoken, it never goes to the tablets, and it asks at most every
 ten minutes and a handful of times a day. No AI calls — it's Frigate's own face library.
+
+Strangers: "Not someone we know" deletes that face from Frigate straight away, and (a setting) every night
+any face nobody named that's older than a set number of hours is deleted from Frigate too — so only the
+household's faces are kept. Nothing about a stranger is ever stored by Sentient.
 """
 
 from __future__ import annotations
@@ -25,11 +29,14 @@ from typing import Any, Callable
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_DOOR_CAMERA,
+    CONF_FACE_CAMERAS,
+    CONF_FACE_FORGET_HOURS,
     CONF_FACE_PEOPLE,
     CONF_FACE_SENSOR,
     CONF_FACE_TEACH,
@@ -58,6 +65,21 @@ def frigate_url(hass: HomeAssistant) -> str | None:
         if url := entry.data.get("url"):
             return str(url).rstrip("/")
     return None
+
+
+def face_file_time(name: str) -> float | None:
+    """When Frigate saved an unnamed face: '<frame time>-<id>-<saved at>-<guess>-<score>.webp'."""
+    parts = name.split("-")
+    for i in (2, 0):
+        try:
+            return float(parts[i])
+        except (ValueError, IndexError):
+            continue
+    return None
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
 def parse_face_file(name: str, event_id: str) -> tuple[str, float]:
@@ -89,6 +111,7 @@ class Faces:
         self._unsubs = [
             self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed),
             self.hass.bus.async_listen("mobile_app_notification_action", self._answer),
+            async_track_time_change(self.hass, self._nightly, hour=3, minute=50, second=0),
         ]
 
     @callback
@@ -103,6 +126,18 @@ class Faces:
     def allowed(self, name: str) -> bool:
         people = [p.strip().lower() for p in self.options.get(CONF_FACE_PEOPLE) or [] if p.strip()]
         return not people or name.lower() in people
+
+    def camera_allowed(self, camera: str) -> bool:
+        """Only names from the chosen cameras count (none chosen: all)."""
+        chosen = self.options.get(CONF_FACE_CAMERAS) or []
+        if not chosen:
+            return True
+        names = set()
+        for c in chosen:
+            names.add(_norm(c.split(".", 1)[-1]))
+            if (st := self.hass.states.get(c)) is not None:
+                names.add(_norm(st.name))
+        return _norm(camera) in names
 
     @property
     def teaching(self) -> bool:
@@ -136,6 +171,8 @@ class Faces:
             return
         name = " ".join(w.capitalize() for w in re.split(r"[_\s]+", name.strip()) if w)
         if not name or not self.allowed(name):
+            return
+        if not self.camera_allowed(camera):
             return
         self.saw(name, camera.replace("_", " "))
 
@@ -250,8 +287,10 @@ class Faces:
         self._last_ask = now
         self._today = (day, self._today[1] + 1)
         actions = [{"action": f"{ACTION}_{token}_{i}", "title": n.replace("_", " ")} for i, n in enumerate(names)]
-        actions.append({"action": f"{ACTION}_{token}_other", "title": "Someone else", "behavior": "textInput",
-                        "textInputButtonTitle": "Teach", "textInputPlaceholder": "Their name, or leave blank"})
+        if len(names) < 2:  # phones show three buttons at most
+            actions.append({"action": f"{ACTION}_{token}_other", "title": "Someone else", "behavior": "textInput",
+                            "textInputButtonTitle": "Teach", "textInputPlaceholder": "Their name"})
+        actions.append({"action": f"{ACTION}_{token}_forget", "title": "Not someone we know"})
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         data = {"title": f"{persona} · Who's this?",
                 "message": f"The {camera.replace('_', ' ')} camera saw someone it couldn't put a name to. "
@@ -274,6 +313,9 @@ class Faces:
         ask = self._asks.pop(token, None)
         if ask is None:
             return
+        if choice == "forget":
+            self.hass.async_create_task(self.async_forget([ask["file"]]), eager_start=False)
+            return
         if choice == "other":
             name = str(event.data.get("reply_text") or "").strip()
         else:
@@ -282,6 +324,7 @@ class Faces:
             except (ValueError, IndexError):
                 return
         if name.lower() in SKIP_WORDS:
+            self.hass.async_create_task(self.async_forget([ask["file"]]), eager_start=False)
             return
         self.hass.async_create_task(self.async_teach(ask["file"], name), eager_start=False)
 
@@ -306,3 +349,37 @@ class Faces:
             if (rt := self._rt()) is not None:
                 rt.timeline.add("noticed", f"Learnt another photo of {folder.replace('_', ' ')}'s face", "face recognition")
         return ok
+
+    # ----- forgetting strangers -------------------------------------------------------------
+    async def async_forget(self, files: list[str]) -> bool:
+        """Delete unnamed faces from Frigate's face library."""
+        if not files:
+            return True
+        try:
+            return await self._post("faces/train/delete", {"ids": files})
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Sentient couldn't delete a face from Frigate: %s", err)
+            return False
+
+    @callback
+    def _nightly(self, _now: datetime) -> None:
+        if float(self.options.get(CONF_FACE_FORGET_HOURS) or 0) > 0:
+            self.hass.async_create_task(self.async_forget_old(), eager_start=False)
+
+    async def async_forget_old(self, force: bool = False) -> dict[str, Any]:
+        """Delete every unnamed face older than the setting (nobody named it, so it's someone we don't know)."""
+        hours = float(self.options.get(CONF_FACE_FORGET_HOURS) or 0)
+        if hours <= 0 and not force:
+            return {"skipped": "forgetting unnamed faces is off"}
+        try:
+            faces = await self._get("faces")
+        except Exception as err:  # noqa: BLE001
+            return {"error": f"couldn't reach Frigate: {err}"}
+        if not isinstance(faces, dict):
+            return {"error": "Frigate's face recognition is off"}
+        cutoff = dt_util.utcnow().timestamp() - max(hours, 0) * 3600
+        old = [f for f in faces.get("train") or [] if (t := face_file_time(f)) is not None and t < cutoff]
+        for i in range(0, len(old), 100):
+            await self.async_forget(old[i:i + 100])
+        self._asked = [f for f in self._asked if f not in old]
+        return {"forgotten": len(old), "kept": len(faces.get("train") or []) - len(old)}

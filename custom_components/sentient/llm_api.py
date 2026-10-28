@@ -57,7 +57,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def _clips_on(hass: HomeAssistant) -> bool:
     rt = _runtime(hass)
-    return rt is not None and bool(rt.options.get("event_clips", False))
+    return rt is not None and bool(rt.options.get("event_clips", False) or rt.options.get("clip_watch", False))
 
 
 def _rules_on(hass: HomeAssistant) -> bool:

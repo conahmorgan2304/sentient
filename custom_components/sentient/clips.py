@@ -99,9 +99,15 @@ class Clips:
     async def async_what_happened(self, camera: str, question: str | None = None, since: float | None = None,
                                   force: bool = False) -> dict[str, Any]:
         """Watch the latest event clip from this camera and say what happened."""
+        rt = self._rt()
+        if rt is not None and since is None and (cw := getattr(rt, "clipwatch", None)) is not None and cw.enabled \
+                and self.camera_name(camera) in cw.cameras() and (seen := cw.recent(self.camera_name(camera), 12)):
+            # already watched as they happened: answer from those, no new AI call
+            return {"already_watched": [{"when": i["local"], "what": i["summary"], **({"probably": i["whose"]} if i.get("whose") else {})}
+                                        for i in seen[:8]],
+                    "note": "Clips from this camera in the last 12 hours, newest first. Say only what's asked."}
         if not self.enabled and not force:
             return {"skipped": "event clips are off in Sentient's settings"}
-        rt = self._rt()
         try:
             event = await self.async_latest_event(camera, since)
         except Exception as err:  # noqa: BLE001

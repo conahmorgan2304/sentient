@@ -49,6 +49,19 @@
           "face_people": "Only these people",
           "face_teach": "Ask on the phone who unnamed faces are",
           "face_teach_cameras": "Learn faces from these cameras",
+          "face_cameras": "Names only from these cameras",
+          "face_forget_hours": "Forget unnamed faces after",
+          "clip_watch": "Watch event clips",
+          "clip_cameras": "Cameras",
+          "clip_scope": "Which events",
+          "clip_when": "When",
+          "clip_notify": "Send to the phones",
+          "clip_source": "Who writes the summary",
+          "clip_whose": "Say which household member it was",
+          "clip_looks": "How people look when their face can't be seen",
+          "budget_clips": "Clips watched a day (most)",
+          "clip_days": "Keep the summaries for",
+          "clip_keep": "Keep the clip files",
           "parcel_alerts": "Say when a parcel is left",
           "doorstep_sensors": "Check for parcels after visits seen by",
           "face_sensor": "Recognised name from",
@@ -118,6 +131,19 @@
           "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
           "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and a button per person. Tapping one teaches Frigate. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
           "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
+          "face_cameras": "Empty: every camera. Pick the close-up ones (the doorbell, the front door) so a busy street can't give false names.",
+          "face_forget_hours": "Every night, faces Frigate kept but nobody named — strangers, mostly — are deleted from Frigate once they're this old. Named faces are kept. 0: leave it to Frigate (it keeps its last 200).",
+          "clip_watch": "When Frigate finishes an event on a chosen camera, the AI watches that stretch of recording once and a sentence goes on the timeline and the Sentient page: \"Gate 14:10 — a man walked a dog past\". The voice answers \"what happened at the gate?\" from them without another AI call. Never spoken. Off by default.",
+          "clip_cameras": "Start with one, e.g. the gate.",
+          "clip_scope": "Frigate's alerts are people in the zones you marked as required — the quietest choice for a busy street.",
+          "clip_when": "Only watch at these times. Away means everyone chosen under Away lights is out.",
+          "clip_notify": "Goes to the phones only, with a picture and a play button.",
+          "clip_source": "Frigate's own AI review summaries need switching on in Frigate; then no AI call is made here.",
+          "clip_whose": "In the same AI call, the household's face photos from Frigate's face library (and the looks below) are included, and it names someone only when it's clearly them — \"probably Corey\". Strangers are never named. Only said when asked, never announced.",
+          "clip_looks": "One per line, e.g. \"Conah: black motorbike helmet and riding jacket, on the motorbike\". Helps when a helmet or hood hides the face.",
+          "budget_clips": "Counts towards the overall daily AI limit too. 0: no limit of its own.",
+          "clip_days": "Summaries are words only, then deleted.",
+          "clip_keep": "Off: each clip is deleted as soon as it's been watched.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
@@ -206,6 +232,19 @@
           "face_people": "Only these people",
           "face_teach": "Ask on the phone who unnamed faces are",
           "face_teach_cameras": "Learn faces from these cameras",
+          "face_cameras": "Names only from these cameras",
+          "face_forget_hours": "Forget unnamed faces after",
+          "clip_watch": "Watch event clips",
+          "clip_cameras": "Cameras",
+          "clip_scope": "Which events",
+          "clip_when": "When",
+          "clip_notify": "Send to the phones",
+          "clip_source": "Who writes the summary",
+          "clip_whose": "Say which household member it was",
+          "clip_looks": "How people look when their face can't be seen",
+          "budget_clips": "Clips watched a day (most)",
+          "clip_days": "Keep the summaries for",
+          "clip_keep": "Keep the clip files",
           "parcel_alerts": "Say when a parcel is left",
           "doorstep_sensors": "Check for parcels after visits seen by",
           "face_sensor": "Recognised name from",
@@ -351,6 +390,19 @@
           "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
           "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and a button per person. Tapping one teaches Frigate. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
           "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
+          "face_cameras": "Empty: every camera. Pick the close-up ones (the doorbell, the front door) so a busy street can't give false names.",
+          "face_forget_hours": "Every night, faces Frigate kept but nobody named — strangers, mostly — are deleted from Frigate once they're this old. Named faces are kept. 0: leave it to Frigate (it keeps its last 200).",
+          "clip_watch": "When Frigate finishes an event on a chosen camera, the AI watches that stretch of recording once and a sentence goes on the timeline and the Sentient page: \"Gate 14:10 — a man walked a dog past\". The voice answers \"what happened at the gate?\" from them without another AI call. Never spoken. Off by default.",
+          "clip_cameras": "Start with one, e.g. the gate.",
+          "clip_scope": "Frigate's alerts are people in the zones you marked as required — the quietest choice for a busy street.",
+          "clip_when": "Only watch at these times. Away means everyone chosen under Away lights is out.",
+          "clip_notify": "Goes to the phones only, with a picture and a play button.",
+          "clip_source": "Frigate's own AI review summaries need switching on in Frigate; then no AI call is made here.",
+          "clip_whose": "In the same AI call, the household's face photos from Frigate's face library (and the looks below) are included, and it names someone only when it's clearly them — \"probably Corey\". Strangers are never named. Only said when asked, never announced.",
+          "clip_looks": "One per line, e.g. \"Conah: black motorbike helmet and riding jacket, on the motorbike\". Helps when a helmet or hood hides the face.",
+          "budget_clips": "Counts towards the overall daily AI limit too. 0: no limit of its own.",
+          "clip_days": "Summaries are words only, then deleted.",
+          "clip_keep": "Off: each clip is deleted as soon as it's been watched.",
           "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
@@ -679,7 +731,38 @@
         "hutch": "Hutch check",
         "cat": "Cat watch",
         "bins": "Bins check",
-        "faces": "Who's this? (face teaching)"
+        "faces": "Who's this? (face teaching)",
+        "faces_forget": "Forget unnamed faces now",
+        "clip_watch": "Watch the latest clip now"
+      }
+    },
+    "clip_scope": {
+      "options": {
+        "alerts": "Frigate alerts only",
+        "zones": "Anything in a zone",
+        "all": "Every detection"
+      }
+    },
+    "clip_when": {
+      "options": {
+        "always": "Always",
+        "quiet": "Quiet hours",
+        "away": "When everyone's out",
+        "quiet_or_away": "Quiet hours or when everyone's out"
+      }
+    },
+    "clip_notify": {
+      "options": {
+        "off": "Off",
+        "worth": "Ones worth a look",
+        "suspicious": "Suspicious only",
+        "all": "Every clip"
+      }
+    },
+    "clip_source": {
+      "options": {
+        "sentient": "Sentient (one AI call a clip)",
+        "frigate": "Frigate's own AI summaries"
       }
     },
     "phone_buttons": {
@@ -1104,7 +1187,7 @@
     },
     "check_now": {
       "name": "Check now",
-      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch, the bins check, or a \"who's this?\" for the last face the door camera couldn't name.",
+      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch, the bins check, a \"who's this?\" for the last face the door camera couldn't name, forgetting unnamed faces, or watching the latest clip from the first clip camera.",
       "fields": {
         "what": {
           "name": "Which",

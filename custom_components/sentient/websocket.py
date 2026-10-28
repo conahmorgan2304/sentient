@@ -37,6 +37,19 @@ from .const import (
     CONF_FACES,
     CONF_FACE_PEOPLE,
     CONF_FACE_TEACH,
+    CONF_FACE_CAMERAS,
+    CONF_FACE_FORGET_HOURS,
+    CONF_CLIP_WATCH,
+    CONF_CLIP_CAMERAS,
+    CONF_CLIP_SCOPE,
+    CONF_CLIP_WHEN,
+    CONF_CLIP_NOTIFY,
+    CONF_CLIP_SOURCE,
+    CONF_CLIP_WHOSE,
+    CONF_CLIP_LOOKS,
+    CONF_CLIP_DAYS,
+    CONF_CLIP_KEEP,
+    CONF_BUDGET_CLIPS,
     CONF_FACE_TEACH_CAMERAS,
     CONF_SMART_AI,
     CONF_PHONE_BUTTONS,
@@ -215,8 +228,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
-        CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
+        CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_FACE_CAMERAS, CONF_FACE_FORGET_HOURS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS,
         CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
+    ]),
+    ("clips", "Event clips", "mdi:filmstrip-box-multiple", "Watches Frigate's recorded clips from chosen cameras and writes down what happened — on the timeline, the Sentient page and for the voice. Never spoken. The clip is deleted once watched.", [
+        CONF_CLIP_WATCH, CONF_CLIP_CAMERAS, CONF_CLIP_SCOPE, CONF_CLIP_WHEN, CONF_CLIP_NOTIFY, CONF_CLIP_SOURCE, CONF_CLIP_WHOSE, CONF_CLIP_LOOKS,
+        CONF_BUDGET_CLIPS, CONF_CLIP_DAYS, CONF_CLIP_KEEP,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
@@ -300,6 +317,19 @@ def _serialize(schema: vol.Schema) -> list[dict[str, Any]]:
     return out
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/clips"})
+@callback
+def ws_clips(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The clips watched as they happened (newest first) — for the Sentient page."""
+    entry = _entry(hass)
+    cw = getattr(entry.runtime_data, "clipwatch", None) if entry else None
+    if cw is None:
+        connection.send_result(msg["id"], {"on": False, "items": []})
+        return
+    connection.send_result(msg["id"], {"on": cw.enabled, "via": cw.via, "skipped": cw.skipped,
+                                       "items": cw.recent(None, 72)[:30]})
+
+
 def _current(entry) -> dict[str, Any]:
     return {**entry.data, **entry.options}
 
@@ -322,6 +352,7 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
+    websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)
     websocket_api.async_register_command(hass, ws_backups)

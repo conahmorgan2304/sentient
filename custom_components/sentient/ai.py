@@ -27,7 +27,9 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_AI_TASK_ENTITY,
     CONF_BUDGET_CAMERAS,
+    CONF_BUDGET_CLIPS,
     CONF_BUDGET_DRIVE,
+    DEFAULT_BUDGET_CLIPS,
     CONF_BUDGET_NOTICING,
     CONF_DAILY_AI_LIMIT,
     DEFAULT_DAILY_AI_LIMIT,
@@ -47,7 +49,8 @@ class AIUnavailable(HomeAssistantError):
 
 # features with their own (optional) daily allowance; safety, the doorbell and spoken questions never have one
 BUDGETS = {"drive": CONF_BUDGET_DRIVE, "noticing": CONF_BUDGET_NOTICING,
-           "camera checks": CONF_BUDGET_CAMERAS, "watches": CONF_BUDGET_CAMERAS}
+           "camera checks": CONF_BUDGET_CAMERAS, "watches": CONF_BUDGET_CAMERAS, "clip watch": CONF_BUDGET_CLIPS}
+BUDGET_DEFAULTS = {CONF_BUDGET_CLIPS: DEFAULT_BUDGET_CLIPS}
 
 class AIGate:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
@@ -136,7 +139,7 @@ class AIGate:
     def over_budget(self, purpose: str) -> str | None:
         """This feature has used its own daily allowance (if it has one): the setting's name, else None."""
         key = BUDGETS.get(purpose)
-        cap = int(float(self.options.get(key) or 0)) if key else 0
+        cap = int(float(self.options.get(key, BUDGET_DEFAULTS.get(key, 0)) or 0)) if key else 0
         if not cap:
             return None
         used = sum(n for p, n in self.counts.items() if BUDGETS.get(p) == key)
@@ -145,7 +148,7 @@ class AIGate:
     def budgets(self) -> dict[str, dict[str, int]]:
         out = {}
         for key in dict.fromkeys(BUDGETS.values()):
-            if cap := int(float(self.options.get(key) or 0)):
+            if cap := int(float(self.options.get(key, BUDGET_DEFAULTS.get(key, 0)) or 0)):
                 out[key.removeprefix("budget_")] = {
                     "used": sum(n for p, n in self.counts.items() if BUDGETS.get(p) == key), "cap": cap}
         return out
