@@ -33,6 +33,16 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_SELF_TEST,
+    SELF_TEST_MODES,
+    CONF_RAIN,
+    CONF_RAIN_ENTITIES,
+    CONF_HUTCH_CHECK,
+    CONF_HUTCH_SPOT,
+    DEFAULT_HUTCH_SPOT,
+    CONF_CAT_WATCH,
+    CONF_CAT_SENSORS,
+    CONF_CAT_LOUD,
     CONF_CONFIRM,
     CONFIRM_KINDS,
     CONF_STYLE_NOTES,
@@ -224,6 +234,20 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_ANIMAL_HIGH, **d(CONF_ANIMAL_HIGH, DEFAULT_ANIMAL_HIGH)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=15, max=45, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_HUTCH_CHECK, **d(CONF_HUTCH_CHECK, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_HUTCH_SPOT, **d(CONF_HUTCH_SPOT, DEFAULT_HUTCH_SPOT)): selector.TextSelector(),
+            vol.Required(CONF_CAT_WATCH, **d(CONF_CAT_WATCH, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_CAT_SENSORS, **d(CONF_CAT_SENSORS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_CAT_LOUD, **d(CONF_CAT_LOUD, False)): selector.BooleanSelector(),
+            vol.Required(CONF_RAIN, **d(CONF_RAIN, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_RAIN_ENTITIES, **d(CONF_RAIN_ENTITIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_SELF_TEST, **d(CONF_SELF_TEST, "off")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=SELF_TEST_MODES, translation_key="self_test")
             ),
             vol.Required(CONF_AWAY_LIGHTS_ON, **d(CONF_AWAY_LIGHTS_ON, False)): selector.BooleanSelector(),
             vol.Optional(CONF_AWAY_PEOPLE, **d(CONF_AWAY_PEOPLE, [])): selector.EntitySelector(

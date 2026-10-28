@@ -237,6 +237,8 @@ class HouseHealth:
                 out.append({"kind": "speaker", "name": label, "detail": err, "since": when.isoformat()})
         if (dog := getattr(rt, "watchdog", None)) is not None:
             out += [i for i in dog.issues() if i.get("entity_id") not in ignore]
+        if (test := getattr(rt, "selftest", None)) is not None:
+            out += test.issues()
         from .presence import inside_sensors
 
         sensors = [st for e in inside_sensors(self.hass, self.options)
@@ -254,7 +256,7 @@ class HouseHealth:
         out = []
         now = dt_util.utcnow()
         for i in self.issues:
-            if i["kind"] in ("wear", "fight", "frozen"):
+            if i["kind"] in ("wear", "fight", "frozen", "selftest"):
                 out.append(i["text"])
             elif i["kind"] == "ai":
                 out.append("The AI hasn't answered the last few times — plain words for now")

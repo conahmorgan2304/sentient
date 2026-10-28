@@ -355,3 +355,15 @@ clear_screen:
       selector:
         text:
 morning_card:
+check_now:
+  fields:
+    what:
+      required: true
+      selector:
+        select:
+          options:
+            - self_test
+            - rain
+            - hutch
+            - cat
+          translation_key: check_now

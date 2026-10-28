@@ -133,6 +133,16 @@ CONFIRM_KINDS = {
     "heating": "turn the heating up by more than 2 degrees or set it above 22",
     "appliances": "start an appliance (washing machine, dishwasher, dryer, vacuum)",
 }
+CONF_SELF_TEST = "self_test"  # off / nightly / weekly
+SELF_TEST_MODES = ["off", "nightly", "weekly"]
+CONF_RAIN = "rain_warnings"
+CONF_RAIN_ENTITIES = "rain_entities"
+CONF_HUTCH_CHECK = "hutch_check"
+CONF_HUTCH_SPOT = "hutch_spot"
+DEFAULT_HUTCH_SPOT = "rabbit pen"
+CONF_CAT_WATCH = "cat_watch"
+CONF_CAT_SENSORS = "cat_sensors"
+CONF_CAT_LOUD = "cat_loud"
 CONF_PROMPT_RECENT = "prompt_recent"  # the last hour and busy rooms in the voice's context
 CONF_AWAY_PEOPLE = "away_people"
 CONF_AWAY_LIGHTS = "away_lights"

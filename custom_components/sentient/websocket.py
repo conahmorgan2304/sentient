@@ -30,6 +30,14 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_SELF_TEST,
+    CONF_RAIN,
+    CONF_RAIN_ENTITIES,
+    CONF_HUTCH_CHECK,
+    CONF_HUTCH_SPOT,
+    CONF_CAT_WATCH,
+    CONF_CAT_SENSORS,
+    CONF_CAT_LOUD,
     CONF_CONFIRM,
     CONF_STYLE_NOTES,
     MAX_STYLE_NOTES,
@@ -204,7 +212,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
-        CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT,
+        CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT,
     ]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
         CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
@@ -212,8 +220,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("screen", "Tablet screen", "mdi:tablet-dashboard", "What the Sentient screen card shows: alerts with the camera, notices, a morning card and the house at a glance. Actions can wake a tablet and switch it to that page.", [
         CONF_SCREEN, CONF_SCREEN_ACTIONS, CONF_SCREEN_CLEAR_ACTIONS,
     ]),
-    ("animals", "Animals", "mdi:rabbit", "Temperatures where animals live outside — a hutch, a kennel, a coop: a word when it's too cold or too hot, and frost warnings the evening before.", [
-        CONF_ANIMAL_SENSORS, CONF_ANIMAL_LOW, CONF_ANIMAL_HIGH,
+    ("animals", "Animals", "mdi:rabbit", "Animals that live outside: a word when their hutch, kennel or coop gets too cold or too hot, frost warnings the evening before, a look at the hutch at dusk, and a watch for cats by it at night.", [
+        CONF_ANIMAL_SENSORS, CONF_ANIMAL_LOW, CONF_ANIMAL_HIGH, CONF_HUTCH_CHECK, CONF_HUTCH_SPOT, CONF_CAT_WATCH, CONF_CAT_SENSORS, CONF_CAT_LOUD,
     ]),
     ("appliances", "Appliances", "mdi:washing-machine", "How long things normally run: says when one's finished, or seems stuck — in plain words, no AI.", [
         CONF_APPLIANCES, CONF_APPLIANCE_ANNOUNCE, CONF_APPLIANCE_WATTS,
@@ -223,6 +231,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
+    ]),
+    ("rain", "Rain warnings", "mdi:weather-pouring", "A word when rain's due within the hour and a window or door is left open. Reads the hourly forecast — no AI.", [
+        CONF_RAIN, CONF_RAIN_ENTITIES,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE,

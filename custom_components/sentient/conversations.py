@@ -53,6 +53,7 @@ ACTION_WORDS = {
 class Conversations:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
         self.hass = hass
+        self.skip: set[str] = set()  # conversations that aren't people talking (the self-test)
         self.options = options
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.conversations")
         self.episodes: list[dict[str, Any]] = []  # newest first
@@ -92,6 +93,8 @@ class Conversations:
     @callback
     def attach(self, conversation_id: str, device_id: str | None, platform: str | None = None) -> None:
         """Called when a conversation asks for the Sentient API: this one's worth keeping."""
+        if conversation_id in self.skip:
+            return  # the house testing itself: not a conversation worth remembering
         if conversation_id not in self._ours:
             self._ours[conversation_id] = {"room": self._room(device_id), "device_id": device_id, "via": platform}
             if (ep := self._open.get(conversation_id)) is not None:

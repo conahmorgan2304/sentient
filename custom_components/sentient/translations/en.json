@@ -63,6 +63,14 @@
           "away_after": "Start after everyone's been out for",
           "animal_low": "Too cold below",
           "animal_high": "Too hot above",
+          "hutch_check": "Dusk hutch check",
+          "hutch_spot": "The hutch's camera spot",
+          "cat_watch": "Night cat watch",
+          "cat_sensors": "Cat sensors",
+          "cat_loud": "Say it straight away at night",
+          "rain_warnings": "Rain warnings",
+          "rain_entities": "Windows and doors to watch",
+          "self_test": "Self-test",
           "screen": "Use the tablet screen",
           "screen_actions": "When something appears",
           "screen_clear_actions": "When it's all cleared"
@@ -110,6 +118,14 @@
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
+          "hutch_check": "Half an hour after sunset, one AI look at the hutch: are they in, and is it shut? Only says something if not.",
+          "hutch_spot": "The spot drawn round the hutch on the Spots tab, e.g. 'rabbit pen'.",
+          "cat_watch": "After dark, when a cat sensor on the hutch's camera goes on, one AI look: is a cat at or by the hutch? At most every 15 minutes, and not when the picture hasn't changed.",
+          "cat_sensors": "Empty: the cat sensors on the hutch's camera (e.g. Frigate's cat occupancy).",
+          "cat_loud": "Off: kept for the morning ('A cat was by the hutch at 2:14am'). On: said at once through the night-watch speakers.",
+          "rain_warnings": "When rain's due within the hour and a window or door is open: 'Rain's on the way in the next hour, and the bedroom window's open.' Reads the hourly forecast — no AI. Once per spell of rain.",
+          "rain_entities": "Empty: every window and door sensor.",
+          "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
           "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
           "screen_clear_actions": "e.g. switch the tablet back to its normal page."
@@ -254,6 +270,14 @@
           "away_after": "Start after everyone's been out for",
           "animal_low": "Too cold below",
           "animal_high": "Too hot above",
+          "hutch_check": "Dusk hutch check",
+          "hutch_spot": "The hutch's camera spot",
+          "cat_watch": "Night cat watch",
+          "cat_sensors": "Cat sensors",
+          "cat_loud": "Say it straight away at night",
+          "rain_warnings": "Rain warnings",
+          "rain_entities": "Windows and doors to watch",
+          "self_test": "Self-test",
           "screen": "Use the tablet screen",
           "screen_actions": "When something appears",
           "screen_clear_actions": "When it's all cleared"
@@ -370,6 +394,14 @@
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
+          "hutch_check": "Half an hour after sunset, one AI look at the hutch: are they in, and is it shut? Only says something if not.",
+          "hutch_spot": "The spot drawn round the hutch on the Spots tab, e.g. 'rabbit pen'.",
+          "cat_watch": "After dark, when a cat sensor on the hutch's camera goes on, one AI look: is a cat at or by the hutch? At most every 15 minutes, and not when the picture hasn't changed.",
+          "cat_sensors": "Empty: the cat sensors on the hutch's camera (e.g. Frigate's cat occupancy).",
+          "cat_loud": "Off: kept for the morning ('A cat was by the hutch at 2:14am'). On: said at once through the night-watch speakers.",
+          "rain_warnings": "When rain's due within the hour and a window or door is open: 'Rain's on the way in the next hour, and the bedroom window's open.' Reads the hourly forecast — no AI. Once per spell of rain.",
+          "rain_entities": "Empty: every window and door sensor.",
+          "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
           "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
           "screen_clear_actions": "e.g. switch the tablet back to its normal page."
@@ -577,6 +609,21 @@
         "covers": "Blinds, curtains and shutters",
         "heating": "Turning the heating up a lot",
         "appliances": "Starting appliances"
+      }
+    },
+    "self_test": {
+      "options": {
+        "off": "Off",
+        "nightly": "Every night",
+        "weekly": "Once a week (Sunday night)"
+      }
+    },
+    "check_now": {
+      "options": {
+        "self_test": "Self-test",
+        "rain": "Rain warning",
+        "hutch": "Hutch check",
+        "cat": "Cat watch"
       }
     }
   },
@@ -992,6 +1039,16 @@
     "morning_card": {
       "name": "Morning card",
       "description": "Put this morning's card on the Sentient screen now."
+    },
+    "check_now": {
+      "name": "Check now",
+      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check or the cat watch.",
+      "fields": {
+        "what": {
+          "name": "Which",
+          "description": "Which check to run."
+        }
+      }
     }
   }
 }
