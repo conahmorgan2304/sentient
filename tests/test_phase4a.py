@@ -134,3 +134,14 @@ async def test_hutch_and_cats_off(hass: HomeAssistant) -> None:
     hass.states.async_set("binary_sensor.garden_cat_occupancy", "on")
     await hass.async_block_till_done()
     assert not ai
+
+
+def test_spoken_times() -> None:
+    from custom_components.sentient.selftest import spoken_times
+
+    assert spoken_times("It's twenty to twelve.") == [11 * 60 + 40]
+    assert spoken_times("It's ten to twelve") == [11 * 60 + 50]
+    assert spoken_times("half past three") == [3 * 60 + 30]
+    assert spoken_times("It's 11:49") == [11 * 60 + 49]
+    assert spoken_times("eleven forty-nine") == [11 * 60 + 49]
+    assert spoken_times("three o'clock") == [180]

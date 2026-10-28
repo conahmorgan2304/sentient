@@ -30,7 +30,7 @@ RUN_AT = (3, 25)  # quiet hours, after the overnight think
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
          "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
-         "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30}
+         "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50}
 NONE_SAID = re.compile(r"\b(no|none|nothing|not any|haven't|have not|aren't|isn't|all (shut|closed|off)|everything('s| is) (shut|closed|off))\b", re.I)
 OPENINGS = {"door", "window", "garage_door", "opening"}
 
@@ -48,6 +48,33 @@ def numbers(text: str) -> list[float]:
                 i += 1
             out.append(float(value))
         i += 1
+    return out
+
+
+HOURS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+         "ten": 10, "eleven": 11, "twelve": 12, "midnight": 12, "midday": 12, "noon": 12}
+PAST_TO = re.compile(r"\b(quarter|half|[a-z]+(?:[ -][a-z]+)?|\d{1,2})(?: minutes?)? (past|to) ([a-z]+|\d{1,2})\b", re.I)
+
+
+def spoken_times(text: str) -> list[int]:
+    """Minutes after twelve (0–719) for each time said: "11:49", "ten to twelve", "half past three", "eleven forty-nine"."""
+    out = []
+    for h, m in re.findall(r"\b(\d{1,2})[:.](\d{2})\b", text):
+        out.append(int(h) % 12 * 60 + int(m))
+    for mins, way, hour in PAST_TO.findall(text.lower()):
+        hr = HOURS.get(hour) or (int(hour) if hour.isdigit() else None)
+        n = {"quarter": 15, "half": 30}.get(mins)
+        if n is None:
+            got = numbers(mins.replace("-", " "))
+            n = int(got[0]) if got else None
+        if hr is None or n is None:
+            continue
+        out.append((hr % 12 * 60 + (n if way == "past" else -n)) % 720)
+    for hour, rest in re.findall(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)[ -](o'clock|[a-z]+(?:[ -][a-z]+)?)\b", text.lower()):
+        if rest == "o'clock":
+            out.append(HOURS[hour] % 12 * 60)
+        elif rest.split(" ")[0].split("-")[0] in WORDS and (got := numbers(rest.replace("-", " "))) and got[0] < 60:
+            out.append(HOURS[hour] % 12 * 60 + int(got[0]))
     return out
 
 
@@ -144,11 +171,9 @@ class SelfTest:
         local = dt_util.now()
 
         def clock(answer: str) -> tuple[bool, str]:
-            for h, m in re.findall(r"\b(\d{1,2})[:.](\d{2})\b", answer):
-                said = int(h) % 12 * 60 + int(m)
-                if min(abs(said - (local.hour % 12 * 60 + local.minute)), 720 - abs(said - (local.hour % 12 * 60 + local.minute))) <= 3:
-                    return True, f"{local:%H:%M}"
-            return any(int(n) % 12 == local.hour % 12 for n in numbers(answer) if n < 25), f"{local:%H:%M}"
+            now = local.hour % 12 * 60 + local.minute
+            near = [t for t in spoken_times(answer) if min(abs(t - now), 720 - abs(t - now)) <= 6]  # rounding to fives is fine
+            return bool(near), f"{local:%H:%M}"
 
         out.append(Question("time", "What time is it?", clock))
         return out
