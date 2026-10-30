@@ -22,6 +22,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 from .ai import async_generate
+from .media import read_media
 from .const import CONF_AI_TASK_ENTITY, CONF_CLIP_KEEP, CONF_EVENT_CLIPS, CONF_SMART_AI
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,14 +81,14 @@ class Clips:
             return None
         session = async_get_clientsession(self.hass)
         async with asyncio.timeout(60):
-            resp = await session.get(f"{url}/api/events/{event_id}/clip.mp4")
-            if resp.status != 200:
-                return None
-            data = await resp.content.read(MAX_BYTES + 1)
+            async with session.get(f"{url}/api/events/{event_id}/clip.mp4") as resp:
+                if resp.status != 200:
+                    return None
+                data = await read_media(resp, MAX_BYTES)
             if data and (b"hev1" in data[:400_000] or b"hvc1" in data[:400_000]) and span:
                 # H.265, which the AI can't read: Frigate's own small H.264 preview of the same moments instead
-                resp = await session.get(f"{url}/api/{self.camera_name(camera)}/start/{int(span[0])}/end/{int(span[1]) + 1}/preview.mp4")
-                data = await resp.content.read(MAX_BYTES + 1) if resp.status == 200 else b""
+                async with session.get(f"{url}/api/{self.camera_name(camera)}/start/{int(span[0])}/end/{int(span[1]) + 1}/preview.mp4") as resp:
+                    data = await read_media(resp, MAX_BYTES) if resp.status == 200 else None
         if not data or len(data) > MAX_BYTES:
             return None
         name = f"clip_{self.camera_name(camera)}.mp4"

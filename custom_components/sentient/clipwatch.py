@@ -33,6 +33,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .ai import async_generate
+from .media import UnsupportedCodec, read_media
 from .const import (
     CLIP_NOTIFY_MODES,
     CLIP_SCOPES,
@@ -264,18 +265,22 @@ class ClipWatch:
         return self._record(camera, start, event, review.get("id"), answer)
 
     async def _download(self, path: str, name: str, refuse: tuple[bytes, ...] = ()) -> str | None:
-        """Fetch something from Frigate into local media; its media-source id, or None (also None when its
-        first bytes contain any of `refuse` — e.g. H.265 video, which the AI can't read)."""
+        """Fetch bounded media, returning its media-source id or None if unavailable.
+
+        Raise UnsupportedCodec only when the downloaded bytes match a refused codec.
+        """
         url, local = frigate_url(self.hass), (self.hass.config.media_dirs or {}).get("local")
         if not url or not local:
             return None
         async with asyncio.timeout(60):
-            resp = await async_get_clientsession(self.hass).get(f"{url}{path}")
-            if resp.status != 200:
-                return None
-            body = await resp.content.read(MAX_BYTES + 1)
-        if not body or len(body) > MAX_BYTES or any(r in body[:400_000] for r in refuse):
+            async with async_get_clientsession(self.hass).get(f"{url}{path}") as resp:
+                if resp.status != 200:
+                    return None
+                body = await read_media(resp, MAX_BYTES)
+        if not body:
             return None
+        if any(r in body[:400_000] for r in refuse):
+            raise UnsupportedCodec("The clip uses a refused codec")
 
         def write() -> None:
             folder = Path(local) / "sentient"
@@ -325,9 +330,10 @@ class ClipWatch:
         same moments instead (small, already H.264 — no converting here, so no load on Home Assistant)."""
         span = f"/api/{camera}/start/{int(start)}/end/{int(end) + 1}"
         if camera not in self.hevc:
-            if media := await self._download(f"{span}/clip.mp4", name, refuse=HEVC):
-                return media
-            self.hevc.add(camera)
+            try:
+                return await self._download(f"{span}/clip.mp4", name, refuse=HEVC)
+            except UnsupportedCodec:
+                self.hevc.add(camera)
         return await self._download(f"{span}/preview.mp4", name)
 
     async def _ask_ai(self, camera: str, start: float, end: float, event: str | None = None) -> dict[str, Any] | None:

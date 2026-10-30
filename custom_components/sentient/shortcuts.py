@@ -83,15 +83,15 @@ class Shortcuts:
     def upsert(self, data: dict[str, Any]) -> Shortcut:
         old = self.items.get(data.get("id") or "")
         merged = {**(asdict(old) if old else {}), **data}
-        if not str(merged.get("name") or "").strip():
+        if not _norm(str(merged.get("name") or "")):
             raise ValueError("A routine needs a name")
         if old is None:
             merged.pop("id", None)
         item = Shortcut.from_dict(merged)
         item.name = item.name.strip()
-        clash = self.find(item.name)
-        if clash and clash.id != item.id:
-            raise ValueError(f"There's already a routine called {clash.name}")
+        for existing in self.items.values():
+            if existing.id != item.id and set(item.names()) & set(existing.names()):
+                raise ValueError(f"There's already a routine called {existing.name} with that name or alias")
         self.items[item.id] = item
         self._save()
         return item
@@ -103,16 +103,18 @@ class Shortcuts:
         return True
 
     def find(self, name: str) -> Shortcut | None:
-        want = _norm(name)
+        if not (want := _norm(name)):
+            return None
         if item := self.items.get(name):
             return item
-        for item in self.items.values():
-            if want in item.names():
-                return item
-        for item in self.items.values():  # "goodnight routine" -> "goodnight"
-            if any(n and (n in want or want in n) for n in item.names()):
-                return item
-        return None
+        exact = [item for item in self.items.values() if want in item.names()]
+        if exact:
+            return exact[0] if len(exact) == 1 else None
+        # Match whole words, and only when exactly one routine fits.
+        matches = [item for item in self.items.values()
+                   if any(n and (f" {n} " in f" {want} " or f" {want} " in f" {n} ")
+                          for n in item.names())]
+        return matches[0] if len(matches) == 1 else None
 
     def listing(self) -> list[dict[str, Any]]:
         return [asdict(s) for s in self.items.values()]
@@ -148,7 +150,7 @@ class Shortcuts:
 
         item = self.find(name)
         if item is None:
-            return {"error": f"No routine called {name}", "routines": [s.name for s in self.items.values()]}
+            return {"error": f"No unique routine matching '{name}'; ask for the exact name", "routines": [s.name for s in self.items.values()]}
         wanted = item.input_names()
         variables = {k: None for k in wanted}
         for key, value in (details or {}).items():
