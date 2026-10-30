@@ -1005,6 +1005,11 @@ async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
         for key in ("actions", "room_actions"):
             if item.get(key):
                 await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(item[key]))
+        if msg["kind"] == "rules":
+            from .rules import safe_actions
+
+            if why := safe_actions(item.get("actions") or []):
+                raise ValueError(why)
         entry.runtime_data.lists[msg["kind"]].upsert(item)
     except (vol.Invalid, ValueError, HomeAssistantError) as err:
         connection.send_error(msg["id"], "invalid", str(err))

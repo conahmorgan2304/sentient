@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import re
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
@@ -25,8 +26,8 @@ from .kinds import in_windows
 
 _LOGGER = logging.getLogger(__name__)
 
-ALLOWED = {"light", "switch", "fan", "scene", "input_boolean", "media_player", "climate", "cover", "script", "vacuum",
-           "humidifier", "button", "input_select", "select", "number", "input_number", "notify", "tts", "sentient"}
+ALLOWED = {"light", "switch", "fan", "input_boolean", "media_player", "climate", "cover", "vacuum",
+           "humidifier", "button", "input_select", "select", "number", "input_number", "notify", "tts"}
 NEVER = {"alarm_control_panel", "lock", "homeassistant", "hassio", "shell_command", "rest_command", "python_script"}
 GAP = timedelta(seconds=30)  # the same rule doesn't run twice within this
 STATE_WORDS = {"opens": "on", "open": "on", "opened": "on", "on": "on", "closes": "off", "closed": "off", "off": "off",
@@ -41,10 +42,39 @@ def state_word(text: str | None) -> str:
 def safe_actions(actions: list[dict[str, Any]]) -> str | None:
     """Why these actions can't be in a rule, or None if they're fine."""
     for a in actions:
-        service = str(a.get("action") or a.get("service") or "")
-        domain = service.split(".", 1)[0]
-        if domain in NEVER or (domain and domain not in ALLOWED):
-            return f"rules can't use {service or 'that'}"
+        if not isinstance(a, dict):
+            return "rules need explicit action dictionaries"
+        # Scripts, scenes and Sentient routines can hide arbitrary restricted actions.
+        # Device actions and templated service names cannot be checked here either.
+        service = a.get("action") or a.get("service")
+        if service is not None:
+            if not isinstance(service, str) or not re.fullmatch(r"[a-z_]+\.[a-z0-9_]+", service):
+                return "rules need a fixed action name"
+            domain = service.split(".", 1)[0]
+            if domain in NEVER or domain not in ALLOWED:
+                return f"rules can't use {service}"
+        elif "device_id" in a:
+            return "rules can't use device actions; choose an explicit allowed action"
+        elif not any(k in a for k in ("if", "choose", "repeat", "parallel", "sequence",
+                                      "condition", "delay", "wait_template", "wait_for_trigger", "variables", "stop")):
+            return "rules can't use that action type"
+        children = []
+        for key in ("then", "else", "sequence", "parallel", "default"):
+            if key in a:
+                children.append(a[key])
+        if "choose" in a:
+            choices = a["choose"]
+            if not isinstance(choices, list) or not all(isinstance(c, dict) for c in choices):
+                return "rules need a valid choose action"
+            children.extend(c.get("sequence", []) for c in choices)
+        if "repeat" in a:
+            if not isinstance(a["repeat"], dict):
+                return "rules need a valid repeat action"
+            children.append(a["repeat"].get("sequence", []))
+        for child in children:
+            sequence = child if isinstance(child, list) else [child]
+            if why := safe_actions(sequence):
+                return why
     return None
 
 

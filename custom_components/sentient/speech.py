@@ -359,10 +359,12 @@ class SpeechRouter:
 
         async with self._lock:
             await self._wait_idle(speakers)
-            self._remember_said(text)
+            if (held := self._gate(text, priority, source)) is not None:
+                return held
             volume = await self._volumes(speakers)
             async with delivered(self.hass, speakers, volume, self.duck_level):
                 await self._speak(text, speakers)
+            self._remember_said(text)
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None},
@@ -478,7 +480,8 @@ class SpeechRouter:
             prompt += " " + extra_prompt
         async with self._lock:
             await self._wait_idle([speaker])
-            self._remember_said(text)
+            if (held := self._gate(text, priority, source)) is not None:
+                return held
             await self.hass.services.async_call(
                 "assist_satellite",
                 "start_conversation",
@@ -490,6 +493,7 @@ class SpeechRouter:
                 target={"entity_id": speaker},
                 blocking=True,
             )
+            self._remember_said(text)
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True},
