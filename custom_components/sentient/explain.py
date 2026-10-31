@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import re
+import math
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -23,6 +24,7 @@ _SKIP = {"the", "a", "an", "why", "did", "go", "off", "on", "who", "turned", "tu
 async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 12) -> dict[str, Any]:
     from .watches import resolve_entity
 
+    hours = max(0.05, min(168, hours)) if math.isfinite(hours) else 12
     out: dict[str, Any] = {}
     entity_id = what if hass.states.get(what) else resolve_entity(hass, what)
     st = hass.states.get(entity_id) if entity_id else None
@@ -36,7 +38,7 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
             user = await hass.auth.async_get_user(ctx.user_id)
             out["by"] = f"a person in the Home Assistant app or a dashboard ({user.name if user else 'a user'})"
         elif ctx.parent_id:
-            out["by"] = "an automation, a script or the house itself"
+            out["by"] = "an automation, a script or the house itself may be involved (parent context recorded; cause not confirmed)"
             triggered = []
             for auto in hass.states.async_all("automation"):
                 last = auto.attributes.get("last_triggered")
@@ -46,7 +48,7 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
             if triggered:
                 out["automations_that_ran_just_before"] = triggered[:3]
         else:
-            out["by"] = "the device itself or its own app (a wall switch, a remote, its own timer), or a voice assistant outside Home Assistant"
+            out["by"] = "unknown: no user or parent context was recorded; this does not identify what caused the change"
     words = {w for w in _WORD.findall(((st.name if st else "") + " " + what).lower()) if w not in _SKIP and len(w) > 2}
     notes = []
     for item in rt.timeline.since(hours, None, 400):
@@ -70,4 +72,6 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
         out["noticed_but_not_said"] = quiet
     if not out:
         out["error"] = f"I can't find anything about {what}"
+    from .troubleshoot import report
+    out["investigation"] = report(hass, rt, what, hours)
     return out

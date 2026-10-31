@@ -401,7 +401,7 @@ async def test_why_did_that_happen(hass: HomeAssistant, freezer) -> None:
     assert out["by"].startswith("an automation") and "auto-off" in out["house_log"][0]
     hass.states.async_set("light.landing", "on", {"friendly_name": "Landing light"}, context=Context())
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_why", tool_args={"what": "light.landing"}))
-    assert out["by"].startswith("the device itself")
+    assert out["by"].startswith("unknown:")
 
 
 async def test_look_ahead_only_speaks_when_worth_it(hass: HomeAssistant) -> None:

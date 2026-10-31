@@ -130,6 +130,23 @@ class Control:
             parts.append(text)
         return '; '.join(parts)
 
+    def correction_notice(self, session):
+        prior = (session.correction or {}).get('previous_action') or {}
+        if not prior.get('actions'):
+            return ''
+        labels = {'verified': 'requested state reported', 'attempted': 'request sent, result unverified',
+                  'failed': 'request failed'}
+        reports = []
+        for row in prior['actions']:
+            state = self.hass.states.get(row['entity_id'])
+            reports.append(f"{state.name if state else row['entity_id']}: {labels.get(row['status'], row['status'])}")
+        text = f"My previous request was {prior.get('summary', 'a device change')}. Device reports: {'; '.join(reports)}. "
+        if session.undo and self.options.get(CONF_UNDO):
+            text += "You can say undo that first; lights changed since then will be skipped. "
+        else:
+            text += "I have not restored the earlier devices. "
+        return text
+
     async def propose(self, session, actions, context):
         if not session.authorised or not session.running or session.closed:
             return {'error': 'Use the guarded API through the Sentient with backup voice agent'}
@@ -141,12 +158,15 @@ class Control:
             return {'error': 'Answer or cancel the pending action before requesting another'}
         actions = deepcopy(actions)
         session.entities = [a['entity_id'] for a in actions]
-        if self.needs_confirmation(actions):
+        prior = (session.correction or {}).get('previous_action') or {}
+        correction_after_action = bool(prior.get('actions'))
+        if self.needs_confirmation(actions) or correction_after_action:
             session.pending = {'actions': actions, 'turn': session.turn,
                                'expires': dt_util.utcnow() + timedelta(seconds=60),
                                'before': {a['entity_id']: snapshot(self.hass.states.get(a['entity_id'])) for a in actions},
                                'summary': self.summary(actions)}
-            session.question = f"Shall I {session.pending['summary']}?"
+            session.question = self.correction_notice(session) + f"Shall I {session.pending['summary']}?"
+            session.pending['question'] = session.question
             return {'status': 'awaiting_confirmation', 'question': session.question,
                     'instruction': 'Read this question exactly. Do not claim the action happened.'}
         return await self.execute(session, actions, context)
@@ -208,7 +228,7 @@ class Control:
             except (HomeAssistantError, TimeoutError, ValueError) as err:
                 outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err)})
                 break  # never replay a partly completed batch
-        result = {'actions': outcomes, 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
+        result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(), 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')
@@ -247,4 +267,7 @@ class Control:
                 except (HomeAssistantError, TimeoutError, ValueError) as err:
                     outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err)})
             self.timeline.add('voice', 'Undo recent light changes', str(outcomes))
-            return {'undo': outcomes}
+            result = {'undo': outcomes, 'summary': 'Restore recent light changes',
+                      'recorded_at': dt_util.utcnow().isoformat()}
+            session.last_action = result
+            return result

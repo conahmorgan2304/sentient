@@ -65,3 +65,13 @@ Automated tests cover session isolation/expiry, separate-turn confirmation, exac
 ## Conversation replay checks
 
 Run `pytest -q tests/test_conversation_replay.py` to replay commands, clarification replies, information discussions, topic changes and explicit endings without a microphone or an extra model call. The assertions check the spoken follow-up, retained goal, task state and listening decision. These deterministic tests cover the controller policy, not live model interpretation or microphone behaviour.
+
+## Corrections and conversational troubleshooting (0.64.0)
+
+A correction such as “no, the landing”, “I meant the other light” or “actually, the lamps” carries the previous goal, selected entities, pending proposal and last recorded guarded action into the next turn. The model refines that task or asks for a precise target; it must not guess an ambiguous device. A corrected pending proposal replaces the old one and needs its own confirmation when sensitive.
+
+If a guarded action was already sent, Sentient reads back its recorded outcome before the correction proceeds. A replacement device action requires a fresh confirmation even for lights. Say “undo that” first to request restoration of eligible lights; this cancels the replacement proposal, skips subsequently changed lights, and never restores locks, covers or appliances. Ask for the corrected action again after undo. There is no automatic rollback. Ordinary unrestricted Assist actions are not recorded by this guarded controller, so acknowledgement and correction handling for those actions depend on the underlying agent.
+
+For “why didn't the gate announcement play?”, the existing `sentient_why` tool now returns source-labelled timeline entries, incident evidence when enabled, current readings, cached health issues, delivery failures, explicit gaps and one useful next question. The session remembers the investigation subject for follow-ups. New investigation calls retrieve fresh evidence; a stored summary is not presented as current state.
+
+A held message's recorded reason applies to that message only. A sent message is not proof it was audible. Matching words or nearby events do not establish a shared cause, and a current unavailable sensor cannot prove it was unavailable earlier. No matching record means missing evidence, not that nothing happened. The tool reads only retained local records, does not run a live hardware probe, and does not change devices or settings. Results and time windows are bounded; model interpretation and speech still require live testing.
