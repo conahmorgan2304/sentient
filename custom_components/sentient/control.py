@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 from copy import deepcopy
 from datetime import timedelta
 from typing import Any
@@ -39,8 +40,13 @@ def target_reached(state, action):
         return state.attributes.get('temperature') == action['temperature']
     if wanted is None or state.state != wanted:
         return False
-    if 'brightness_pct' in action and abs(float(state.attributes.get('brightness', -1000)) - action['brightness_pct'] * 2.55) > 2:
-        return False
+    if 'brightness_pct' in action:
+        try:
+            brightness = float(state.attributes.get('brightness'))
+            if not math.isfinite(brightness) or abs(brightness - action['brightness_pct'] * 2.55) > 2:
+                return False
+        except (TypeError, ValueError):
+            return False
     if 'color_temp_kelvin' in action and state.attributes.get('color_temp_kelvin') != action['color_temp_kelvin']:
         return False
     if 'rgb_color' in action and list(state.attributes.get('rgb_color') or []) != action['rgb_color']:
@@ -115,7 +121,11 @@ class Control:
                 prior = st.attributes.get('temperature')
                 fahrenheit = self.hass.config.units.temperature_unit == '°F'
                 ceiling, delta = (71.6, 3.6) if fahrenheit else (22, 2)
-                if prior is None or a['temperature'] > ceiling or a['temperature'] - float(prior) > delta:
+                try:
+                    prior = float(prior)
+                except (TypeError, ValueError):
+                    return True
+                if not math.isfinite(prior) or float(a['temperature']) > ceiling or float(a['temperature']) - prior > delta:
                     return True
         return False
 
@@ -185,13 +195,13 @@ class Control:
             for eid, before in pending['before'].items():
                 if snapshot(self.hass.states.get(eid)) != before:
                     return {'error': 'A device changed while waiting; please ask again'}
-            return await self._execute(session, pending['actions'], context)
+            return await self._execute(session, pending['actions'], context, expected=pending['before'])
 
     async def execute(self, session, actions, context):
         async with self._lock:
             return await self._execute(session, actions, context)
 
-    async def _execute(self, session, actions, context):
+    async def _execute(self, session, actions, context, expected=None):
         try:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
@@ -201,12 +211,18 @@ class Control:
             session.undo_turn = session.turn
         outcomes = []
         for a in actions:
-            if session.closed:
-                break
             eid = a['entity_id']
-            before = snapshot(self.hass.states.get(eid))
             data = {k: v for k, v in a.items() if k not in ('entity_id', 'action')}
             try:
+                # Earlier calls can yield for seconds: recheck each target immediately before dispatch.
+                await self.validate([a], context)
+                if session.closed or not session.authorised or not session.running:
+                    outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'conversation no longer authorised'})
+                    break
+                before = snapshot(self.hass.states.get(eid))
+                if expected is not None and before != expected[eid]:
+                    outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'device changed since confirmation'})
+                    break
                 async with asyncio.timeout(10):
                     await self.hass.services.async_call(eid.split('.')[0], a['action'], {'entity_id': eid, **data}, blocking=True,
                                                         context=context or Context())
@@ -225,7 +241,7 @@ class Control:
                     session.undo = [r for r in session.undo if r['entity_id'] != eid]
                     session.undo.append({'entity_id': eid, 'before': before, 'after': snapshot(state),
                                          'expires': dt_util.utcnow() + timedelta(minutes=5)})
-            except (HomeAssistantError, TimeoutError, ValueError) as err:
+            except (HomeAssistantError, TimeoutError, ValueError, TypeError) as err:
                 outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err)})
                 break  # never replay a partly completed batch
         result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(), 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
@@ -252,6 +268,14 @@ class Control:
                 op = 'turn_on' if before['state'] == 'on' else 'turn_off'
                 try:
                     await self.validate([{'entity_id': eid, 'action': op}], context)
+                    # Permission checks can yield; never restore over a manual change during that wait.
+                    state = self.hass.states.get(eid)
+                    if session.closed or not session.authorised or not session.running:
+                        outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'conversation no longer authorised'})
+                        break
+                    if record['expires'] < dt_util.utcnow() or state is None or snapshot(state) != record['after']:
+                        outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'expired or changed since the action'})
+                        continue
                     data = {'entity_id': eid}
                     if op == 'turn_on':
                         attrs = before['attributes']
@@ -264,7 +288,7 @@ class Control:
                     async with asyncio.timeout(10):
                         await self.hass.services.async_call('light', op, data, blocking=True, context=context or Context())
                     outcomes.append({'entity_id': eid, 'status': 'attempted', 'reason': 'restore requested'})
-                except (HomeAssistantError, TimeoutError, ValueError) as err:
+                except (HomeAssistantError, TimeoutError, ValueError, TypeError) as err:
                     outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err)})
             self.timeline.add('voice', 'Undo recent light changes', str(outcomes))
             result = {'undo': outcomes, 'summary': 'Restore recent light changes',

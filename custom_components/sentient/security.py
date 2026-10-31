@@ -28,7 +28,7 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]
         and st.entity_id not in ignore
     ]
     unlocked = [
-        {"entity_id": st.entity_id, "name": st.name}
+        {"entity_id": st.entity_id, "name": st.name, "state": st.state}
         for st in hass.states.async_all("lock")
         if st.state in ("unlocked", "open", "opening", "jammed") and st.entity_id not in ignore
     ]
@@ -43,15 +43,36 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]
                  st.attributes.get("device_class") in ("garage", "gate", "door"))]
     from .evidence import describe_state
     evidence = [describe_state(hass, st.entity_id) for st in relevant]
+    stable = {
+        "lock": {"locked", "unlocked", "open", "opening", "jammed"},
+        "cover": {"open", "closed", "opening"},
+        "binary_sensor": {"on", "off"},
+        "alarm_control_panel": {"disarmed", "triggered", "pending", "armed_home", "armed_away",
+                                "armed_night", "armed_vacation", "armed_custom_bypass"},
+    }
+    for st, row in zip(relevant, evidence):
+        if st.state not in stable[st.domain]:
+            row["status"] = "unknown"
+            row["reason"] = "No settled security state is reported"
     unknown = [e for e in evidence if e["status"] == "unknown"]
-    problems = len(open_now) + len(covers) + len(unlocked)
+    perimeter = [st for st in relevant if st.domain != "alarm_control_panel"]
+    alarm_alert = any(a["state"] in ("triggered", "pending") for a in alarms)
+    problems = len(open_now) + len(covers) + len(unlocked) + int(alarm_alert)
     text = summary(open_now + covers, unlocked, alarms)
-    if unknown:
-        text = ("Some openings or locks are unsafe. " if problems else "I can't confirm everything is shut and locked. ") +                "No current reading from " + ", ".join(e.get("name", e["entity_id"]) for e in unknown) + "."
+    if unknown or not perimeter:
+        if open_now or covers or unlocked:
+            # Keep known hazards visible instead of replacing them with a generic warning.
+            text = summary(open_now + covers, unlocked, alarms)
+        else:
+            text = "I can't confirm everything is shut and locked." + alarm_summary(alarms)
+        if unknown:
+            text += " No settled reading from " + ", ".join(e.get("name", e["entity_id"]) for e in unknown) + "."
+        if not perimeter:
+            text += " No door, window, cover or lock readings are available."
     if not relevant:
         text = "No security sensors are available to confirm the house is secure."
     return {
-        "secure": False if problems else None if unknown or not relevant else True,
+        "secure": False if problems else None if unknown or not perimeter else True,
         "unknown": unknown,
         "evidence": evidence,
         "open": open_now + covers,
@@ -70,14 +91,29 @@ def summary(open_items: list[dict], unlocked: list[dict], alarms: list[dict]) ->
     if open_items:
         names = [i["name"] for i in open_items]
         parts.append(f"{_join(names)} {'is' if len(names) == 1 else 'are'} open")
-    if unlocked:
-        names = [i["name"] for i in unlocked]
-        parts.append(f"{_join(names)} {'is' if len(names) == 1 else 'are'} unlocked")
+    for state in ("unlocked", "open", "opening", "jammed"):
+        names = [i["name"] for i in unlocked if i.get("state", "unlocked") == state]
+        if names:
+            parts.append(f"{_join(names)} {'is' if len(names) == 1 else 'are'} {state}")
     if not parts:
         text = "Everything's shut" + (" and locked" if not unlocked and alarms is not None else "") + "."
     else:
         text = "; ".join(p[0].upper() + p[1:] for p in parts) + "."
-    armed = [a for a in alarms if a["state"].startswith("armed")]
-    if alarms:
-        text += " The alarm is " + ("set (" + armed[0]["state"].replace("armed_", "").replace("_", " ") + ")." if armed else "off.")
-    return text
+    return text + alarm_summary(alarms)
+
+
+def alarm_summary(alarms: list[dict]) -> str:
+    parts = []
+    for alarm in alarms:
+        state = alarm["state"]
+        label = "The alarm" if len(alarms) == 1 else alarm["name"]
+        if state == "disarmed":
+            status = "off"
+        elif state.startswith("armed_"):
+            status = "set (" + state.removeprefix("armed_").replace("_", " ") + ")"
+        elif state in ("triggered", "pending", "arming", "disarming"):
+            status = state
+        else:
+            status = "reporting an unknown state"
+        parts.append(f"{label} is {status}.")
+    return (" " + " ".join(parts)) if parts else ""

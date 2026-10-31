@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 from .sessions import CONF_INCIDENTS
 
 GAP = timedelta(minutes=3)
+ALERT_LEVELS = {'night': 1, 'fence': 2, 'loitering': 3}
 
 
 class Incidents:
@@ -19,6 +20,7 @@ class Incidents:
         self.hass, self.options = hass, options
         self._store = Store(hass, 1, f'sentient.{entry_id}.incidents')
         self.items = []
+        self._pending_alerts = {}
         self._unsub = None
 
     @property
@@ -39,7 +41,10 @@ class Incidents:
 
     def _prune(self):
         cutoff = (dt_util.utcnow() - timedelta(days=7)).isoformat()
-        self.items = [i for i in self.items if i.get('end', '') >= cutoff][:100]
+        self.items = sorted((i for i in self.items if i.get('end', '') >= cutoff),
+                            key=lambda i: i['end'], reverse=True)[:100]
+        live = {i['id'] for i in self.items}
+        self._pending_alerts = {k: v for k, v in self._pending_alerts.items() if k in live}
 
     def _save(self):
         self._prune()
@@ -68,6 +73,14 @@ class Incidents:
             return None
         now = when or dt_util.utcnow()
         self._prune()
+        if now < dt_util.utcnow() - timedelta(days=7):
+            return None
+        if event_id:
+            existing = next((item for item in self.items if any(
+                e.get('event_id') == event_id and e.get('kind') == kind and e.get('source') == source
+                for e in item['evidence'])), None)
+            if existing is not None:
+                return existing
         possible = []
         for item in self.items:
             start, end = dt_util.parse_datetime(item['start']), dt_util.parse_datetime(item['end'])
@@ -98,12 +111,22 @@ class Incidents:
         item = self.add(camera_for(self.hass, sensor) or sensor, text, 'alert', evidence='inferred')
         if item is None:
             return True, None
-        level = {'night': 1, 'fence': 2, 'loitering': 3}.get(reason, 1)
-        if level <= item['alert_level']:
+        level = ALERT_LEVELS.get(reason, 1)
+        pending = self._pending_alerts.setdefault(item['id'], set())
+        if level <= max([item['alert_level'], *pending]):
             return False, item['id']
-        item['alert_level'] = level
-        self._save()
+        pending.add(level)  # reserve while the camera check runs; do not persist a delivered alert yet
         return True, item['id']
+
+    def finish_alert(self, incident_id, level, accepted):
+        pending = self._pending_alerts.get(incident_id, set())
+        pending.discard(level)
+        if not pending:
+            self._pending_alerts.pop(incident_id, None)
+        item = next((i for i in self.items if i['id'] == incident_id), None)
+        if accepted and item is not None:
+            item['alert_level'] = max(item['alert_level'], level)
+            self._save()
 
     def recent(self, query=''):
         if not self.enabled:
