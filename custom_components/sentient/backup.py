@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .memory import Memory
+from .shortcuts import _norm
 
 FORMAT = 1
 
@@ -83,7 +84,9 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
         rt.motion_lights.set_night(ml["night_start"], ml["night_end"])
 
     for item in data.get("routines", []):
-        existing = rt.shortcuts.find(item.get("name", ""))
+        # Restore identity by canonical name, never by voice aliases or partial matching.
+        existing = next((s for s in rt.shortcuts.items.values()
+                         if _norm(s.name) == _norm(item.get("name", ""))), None)
         payload = {k: v for k, v in item.items() if k != "id"}
         if existing:
             payload["id"] = existing.id

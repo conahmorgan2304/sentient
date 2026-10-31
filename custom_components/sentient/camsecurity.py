@@ -83,6 +83,7 @@ class CameraSecurity:
         self._last_seen: dict[str, datetime] = {}  # sensor -> last time it saw someone
         self._loiter_timers: dict[str, Any] = {}
         self._last_alert: dict[str, datetime] = {}
+        self._pending_alert_keys: set[str] = set()
         self.journeys: list[dict[str, Any]] = []
         self._last_route: tuple[str, datetime] | None = None
         self._unsub = None
@@ -212,30 +213,43 @@ class CameraSecurity:
         else:
             now = dt_util.utcnow()
             key = f"{why}:{sensor}"
-            if (last := self._last_alert.get(key)) and now - last < REPEAT:
+            if key in self._pending_alert_keys or ((last := self._last_alert.get(key)) and now - last < REPEAT):
                 return
-            self._last_alert[key] = now
-        self.hass.async_create_task(self._async_alert(sensor, text, incident_id))
+            self._pending_alert_keys.add(key)
+        self.hass.async_create_task(self._async_alert(sensor, text, incident_id, why))
 
-    async def _async_alert(self, sensor: str, text: str, incident_id: str | None = None) -> None:
+    async def _async_alert(self, sensor: str, text: str, incident_id: str | None = None, reason: str = "night") -> None:
         rt = self._rt()
-        local = dt_util.as_local(dt_util.utcnow())
-        detail = None
-        camera = camera_for(self.hass, sensor)
-        if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
-            seen, detail = await self._describe(camera)
-            if seen is False:
-                # the AI looked and there's nobody there: a false alarm (a shadow, a cat, a coat on the line)
-                rt.timeline.add("noticed", f"{text} — but nobody was in the picture ({local:%H:%M})",
-                                "camera security: probably a false alarm")
-                return
-        if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
-            self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text), "sentient_clip")
-        rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred")
-        if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
-            speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
-            await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),
-                                      "urgent", speakers, source="camera security")
+        from .incidents import ALERT_LEVELS
+        incidents = getattr(rt, "incidents", None)
+        accepted = False
+        try:
+            local = dt_util.as_local(dt_util.utcnow())
+            detail = None
+            camera = camera_for(self.hass, sensor)
+            if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
+                seen, detail = await self._describe(camera)
+                if seen is False:
+                    # the AI looked and there's nobody there: a false alarm (a shadow, a cat, a coat on the line)
+                    rt.timeline.add("noticed", f"{text} — but nobody was in the picture ({local:%H:%M})",
+                                    "camera security: probably a false alarm")
+                    return
+            if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
+                self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text), "sentient_clip")
+            rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred")
+            accepted = True
+            if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
+                speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
+                await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),
+                                          "urgent", speakers, source="camera security")
+        finally:
+            if incident_id is not None and incidents is not None:
+                incidents.finish_alert(incident_id, ALERT_LEVELS.get(reason, 1), accepted)
+            elif incident_id is None:
+                key = f"{reason}:{sensor}"
+                self._pending_alert_keys.discard(key)
+                if accepted:
+                    self._last_alert[key] = dt_util.utcnow()
 
     async def _describe(self, camera: str) -> tuple[bool | None, str | None]:
         """(is anyone actually there, one sentence on them). (None, None) if the AI couldn't look."""

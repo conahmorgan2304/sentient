@@ -10,7 +10,8 @@ from homeassistant.core import HomeAssistant
 from . import SentientConfigEntry
 from .const import CONF_HOUSE_RULES, CONF_PERSONA
 
-TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "name", "message", "what", "text"}
+TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "name", "message", "what", "text",
+             "personality_notes", "style_notes", "known_cars", "face_people"}
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SentientConfigEntry) -> dict[str, Any]:

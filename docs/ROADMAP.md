@@ -101,3 +101,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Corrections retain the task and acknowledge guarded actions before a confirmed replacement; conversational troubleshooting combines labelled evidence, uncertainty and one next question (0.64.0)
 - [x] Resume bounded unfinished discussion topics with fresh readings and no restored permissions; inspect recent exchange goals, devices and listening decisions in the Mind panel (0.65.0)
 - [x] Fix repeated anything-else loops by recognising punctuated and spoken sign-offs locally, while preserving negative answers to specific questions (0.65.1)
+- [x] Reliability audit: per-action guarded revalidation, cautious security/alarm reports, missing speech-route errors, exact backup routine identity, incident deduplication/order, release of rejected camera-alert suppression, and additional diagnostic text redaction (0.65.2)

@@ -21,6 +21,7 @@ import re
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
@@ -401,6 +402,11 @@ class SpeechRouter:
                 "tts", "speak", {"media_player_entity_id": others, "message": text, "cache": True},
                 target={"entity_id": tts}, blocking=True,
             ))
+        if not calls:
+            reason = "No usable announcement or TTS service is configured for the selected speakers"
+            self.failures["the selected speakers"] = (dt_util.utcnow(), reason)
+            raise HomeAssistantError(reason)
+        self.failures.pop("the selected speakers", None)
         results = await asyncio.gather(*calls, return_exceptions=True)
         now = dt_util.utcnow()
         for label, r in zip(labels, results):  # the self-check shows a group that keeps failing
