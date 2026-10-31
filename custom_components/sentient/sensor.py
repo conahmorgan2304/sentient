@@ -325,6 +325,7 @@ class MindSensor(_Base):
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
+        self.async_on_remove(self.hass.bus.async_listen("sentient_voice_session", self._tick))
 
     @callback
     def _tick(self, _now) -> None:
@@ -340,6 +341,8 @@ class MindSensor(_Base):
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
         return {
+            "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
+            "security_incidents": rt.incidents.recent(),
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
             "last_reflection": last.get("time"),

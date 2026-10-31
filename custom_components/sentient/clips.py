@@ -149,6 +149,9 @@ class Clips:
         answer = str((response or {}).get("data") or "").strip()
         when = dt_util.as_local(dt_util.utc_from_timestamp(float(event.get("start_time") or 0)))
         self.last = {"camera": camera, "event": event["id"], "answer": answer, "time": when.isoformat()}
+        if rt is not None and getattr(rt, "incidents", None) is not None:
+            rt.incidents.add(camera if camera.startswith("camera.") else f"camera.{camera}", answer,
+                             "clip", evidence="inferred", when=when, event_id=event["id"])
         return {"what_happened": answer, "when": when.strftime("%H:%M"), "label": event.get("label")}
 
     async def async_after_alert(self, camera: str, text: str) -> None:

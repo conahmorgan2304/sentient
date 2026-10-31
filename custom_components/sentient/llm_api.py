@@ -1211,11 +1211,13 @@ class SentientAPI(llm.API):
             pass
         if conversation_id and (rt := _runtime(self.hass)) is not None:
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
+        from .voice_api import SessionTool, IncidentsTool
+
         return llm.APIInstance(
             api=self,
             api_prompt=self._prompt(llm_context, conversation_id),
             llm_context=llm_context,
-            tools=[RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+            tools=[SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
@@ -1233,6 +1235,12 @@ class SentientAPI(llm.API):
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')} — if asked the time, say this exact "
             f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it.",
         ]
+        from .sessions import CONF_EVIDENCE
+        if opts.get(CONF_EVIDENCE):
+            lines.append("Distinguish observed reports, inferred explanations, attempted actions and verified results. "
+                         "Unknown or unavailable readings do not establish current state. Mention uncertainty when it "
+                         "changes the answer. A timestamp is evidence age, not proof a quiet event-driven sensor is stale. "
+                         "Never call an attempted action completed unless the device reported the requested result.")
         weather_id = opts.get(CONF_BRIEFING_WEATHER)
         weather = self.hass.states.get(weather_id) if weather_id else next(
             (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)

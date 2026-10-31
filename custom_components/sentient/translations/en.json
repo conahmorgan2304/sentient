@@ -97,7 +97,13 @@
           "self_test": "Self-test",
           "screen": "Use the tablet screen",
           "screen_actions": "When something appears",
-          "screen_clear_actions": "When it's all cleared"
+          "screen_clear_actions": "When it's all cleared",
+          "conversation_sessions": "Conversation sessions",
+          "session_seconds": "Session inactivity timeout",
+          "guarded_control": "Enforced voice confirmation",
+          "voice_undo": "Undo recent light changes",
+          "evidence_awareness": "Explain evidence and uncertainty",
+          "security_incidents": "Group security incidents"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -148,7 +154,7 @@
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
-          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction.",
+          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction. For enforced checks, enable guarded control with its required agent setup.",
           "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
           "backup_keep": "Older ones are deleted.",
           "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
@@ -173,7 +179,13 @@
           "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
           "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
-          "screen_clear_actions": "e.g. switch the tablet back to its normal page."
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page.",
+          "conversation_sessions": "Use the Sentient with backup agent. Simple commands keep the usual behaviour; say “let’s talk” or “help me sort…” for a conversation. Say “that’s all” to stop. Follow-up listening needs a compatible Assist device.",
+          "session_seconds": "Discard session context and pending actions after this many seconds without another turn. Your voice device controls its own silence timeout. Confirmation also expires after 60 seconds.",
+          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
+          "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
         }
       }
     },
@@ -356,7 +368,13 @@
           "self_test": "Self-test",
           "screen": "Use the tablet screen",
           "screen_actions": "When something appears",
-          "screen_clear_actions": "When it's all cleared"
+          "screen_clear_actions": "When it's all cleared",
+          "conversation_sessions": "Conversation sessions",
+          "session_seconds": "Session inactivity timeout",
+          "guarded_control": "Enforced voice confirmation",
+          "voice_undo": "Undo recent light changes",
+          "evidence_awareness": "Explain evidence and uncertainty",
+          "security_incidents": "Group security incidents"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -407,7 +425,7 @@
           "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
           "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
           "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
-          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction.",
+          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction. For enforced checks, enable guarded control with its required agent setup.",
           "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
           "backup_keep": "Older ones are deleted.",
           "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
@@ -510,7 +528,13 @@
           "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
           "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
           "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
-          "screen_clear_actions": "e.g. switch the tablet back to its normal page."
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page.",
+          "conversation_sessions": "Use the Sentient with backup agent. Simple commands keep the usual behaviour; say “let’s talk” or “help me sort…” for a conversation. Say “that’s all” to stop. Follow-up listening needs a compatible Assist device.",
+          "session_seconds": "Discard session context and pending actions after this many seconds without another turn. Your voice device controls its own silence timeout. Confirmation also expires after 60 seconds.",
+          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
+          "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
         }
       },
       "memories": {

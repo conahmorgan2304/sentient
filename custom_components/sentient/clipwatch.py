@@ -429,6 +429,8 @@ class ClipWatch:
         text = f"{pretty(camera)} {local} — {summary[0].lower() + summary[1:] if summary else ''}"
         if (rt := self._rt()) is not None:
             rt.timeline.add("clip", text + who, "clip watched", camera=camera, event=event)
+            if getattr(rt, "incidents", None) is not None:
+                rt.incidents.add(f"camera.{camera}", summary, "clip", evidence="inferred", when=when, event_id=event or review_id)
         self._notify(item, text + who)
         return {"recorded": item}
 

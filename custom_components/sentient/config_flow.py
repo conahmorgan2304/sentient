@@ -10,6 +10,8 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
+
 from .const import (
     CONF_COMFORT_TEMP,
     CONF_CAMSEC,
@@ -324,6 +326,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FOLLOW_YOU, **d(CONF_FOLLOW_YOU, True)): selector.BooleanSelector(),
             vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
+            vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
+            vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_INCIDENTS, **d(CONF_INCIDENTS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_SESSION_SECONDS, **d(CONF_SESSION_SECONDS, 60)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=15, max=300, step=15, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_CONVERSATIONS, **d(CONF_CONVERSATIONS, True)): selector.BooleanSelector(),
             vol.Required(CONF_FOLLOW_UPS, **d(CONF_FOLLOW_UPS, True)): selector.BooleanSelector(),
