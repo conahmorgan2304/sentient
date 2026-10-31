@@ -14,7 +14,7 @@ These additions are opt-in. Existing Assist + Sentient agents keep their current
 
 Clear commands and information questions are routed locally; less obvious wording can be classified through the existing model's session tool. There is no extra classification model call. The session tracks its goal, selected entities, missing details and task state. Clarification replies keep the previous goal; the model can refine it for corrections. Task completion does not close an active discussion. Target interpretation and correction quality still depend on the conversation model, and expired confirmations are never restored.
 
-Follow-up listening uses Home Assistant's `continue_conversation` signal. Your satellite/pipeline must support it. The physical microphone's silence timeout is controlled by the device; Sentient does not keep it permanently open. Session context expires lazily when inspected or used after the configured timeout. Restarting or reloading Sentient discards sessions and pending actions. Expiry does not delete your underlying AI agent's own chat history.
+Follow-up listening uses Home Assistant's `continue_conversation` signal. Your satellite/pipeline must support it. The physical microphone's silence timeout is controlled by the device; Sentient does not keep it permanently open. Active session context and action permissions expire lazily when inspected or used after the configured timeout. With Conversation sessions enabled, bounded unfinished discussion bookmarks can be resumed for up to 24 hours as described below. Restarting or reloading Sentient, or changing its settings, discards sessions, pending actions, topic bookmarks and conversation diagnostics. Expiry does not delete your underlying AI agent's own chat history.
 
 Managed sessions use completed responses rather than streaming so Sentient can apply the final listening decision and replace an unsafe model confirmation before it is spoken. This may increase perceived response time compared with streaming.
 
@@ -75,3 +75,21 @@ If a guarded action was already sent, Sentient reads back its recorded outcome b
 For “why didn't the gate announcement play?”, the existing `sentient_why` tool now returns source-labelled timeline entries, incident evidence when enabled, current readings, cached health issues, delivery failures, explicit gaps and one useful next question. The session remembers the investigation subject for follow-ups. New investigation calls retrieve fresh evidence; a stored summary is not presented as current state.
 
 A held message's recorded reason applies to that message only. A sent message is not proof it was audible. Matching words or nearby events do not establish a shared cause, and a current unavailable sensor cannot prove it was unavailable earlier. No matching record means missing evidence, not that nothing happened. The tool reads only retained local records, does not run a live hardware probe, and does not change devices or settings. Results and time windows are bounded; model interpretation and speech still require live testing.
+
+## Resume an unfinished topic (0.65.0)
+
+With **Conversation sessions** enabled, say “back to the gate issue”, “let's get back to the heating”, or “continue our conversation”. This uses bounded in-memory bookmarks from the same device, satellite and Home Assistant user. If several topics match, Sentient asks which one; answer with the topic or “first”, “second” or “third”. “Resume the vacuum” remains a device command.
+
+A bookmark contains the discussion subject, goal, selected entities, previous reply and unanswered question. The previous reply is historical model output, not verified current fact. Resumption starts fresh agent history, reads current exposed entity states subject to user read permissions, and asks what to check next. It does not call the model or control a device in the resumption turn. Other evidence is fetched when the next question needs it.
+
+Pending actions, confirmations, undo records and earlier action outcomes are never restored. A bare “yes” immediately after resumption asks for a new explicit request. Archived discussion text is not permission to execute an action.
+
+Bookmarks are kept for at most 24 hours, with a maximum of eight per device/satellite/user scope and 40 overall. Ordinary completed commands and pending confirmations are not bookmarked. Explicit endings such as “that's all” remove the current discussion's bookmarks. Reloading, restarting or changing settings clears them. Guest mode prevents resumption and new bookmark/diagnostic collection; unidentified requests with no device, satellite or user cannot resume topics. This is scoped context, not voice identification or automatic cross-speaker hand-off.
+
+## Conversation diagnostics
+
+The Mind panel shows the last three exchanges, with an expandable reply, interpreted goal, selected entities, and the reason listening continued or stopped. The Mind sensor exposes the latest ten diagnostic records. These are recorded controller decisions, not a model's internal reasoning.
+
+Diagnostics retain at most 40 exchanges for 24 hours in memory, with truncated request/reply text. They are hidden while guest mode is enabled and excluded from Home Assistant recorder along with the live voice-session attribute. The underlying conversation provider and other Home Assistant logging may retain their own history independently.
+
+Replay tests cover timeout resumption, ambiguous topics, owner isolation, expired bookmarks, current readings, revoked exposure, pending-action exclusion, bare-yes rejection, guest privacy and storage limits. Live model interpretation and microphone behaviour still need installation testing.
