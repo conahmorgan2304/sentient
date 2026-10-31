@@ -22,10 +22,16 @@ CONF_INCIDENTS = 'security_incidents'
 GUARDED_API = 'sentient_guarded'
 START = re.compile(r"\b(let'?s talk|keep listening|conversation mode|help me (?:sort|plan|work|figure))\b", re.I)
 END = re.compile(
-    r"^(?:(?:okay|ok|no|well)[, ]+)?(?:that'?s all(?: for now)?|that is all(?: for now)?|"
-    r"that(?:'?s| is) enough|enough(?: now)?|stop(?: listening)?|end (?:the )?conversation|"
-    r"goodbye|never ?mind|we(?:'?re| are) done|i(?:'?m| am) done|nothing else|no(?: thanks| thank you))"
-    r"(?:[, ]+(?:please|thanks|thank you))?[.! ]*$", re.I)
+    r"^(?:(?:okay|ok|no|well) )?(?:that(?:'?s| is) (?:all(?: for now)?|enough|it)|"
+    r"enough(?: now)?|stop(?: listening| now)?|end (?:the )?conversation|"
+    r"goodbye|never ?mind|we(?:'?re| are) done|i(?:'?m| am) (?:done|finished)|all done|"
+    r"nothing else|no more|(?:no|nope|nah) (?:thanks|thank you|i(?:'?m| am) (?:good|fine|okay|ok|alright|all right))|"
+    r"(?:no )?i (?:don't|do not) need anything else|thanks|thank you)"
+    r"(?: (?:please|thanks|thank you))?$", re.I)
+GENERAL_FOLLOWUP = re.compile(
+    r"\b(?:anything|something) (?:else|more|further)\b|"
+    r"\b(?:any more|further) (?:help|assistance|questions)\b", re.I)
+NEGATIVE_REPLY = {"no", "nope", "nah", "not now", "not right now"}
 # Cheap routing for clear requests; the existing model can classify less obvious requests
 # through sentient_session. These expressions never resolve targets or authorise actions.
 COMMAND = re.compile(
@@ -44,6 +50,31 @@ FOLLOW_UP = "Is there anything else you'd like to know?"
 
 def normalise(text):
     return text.strip().replace("’", "'")
+
+
+def is_conversation_end(text, question='', persona=''):
+    """Recognise a complete spoken ending, tolerating STT punctuation and name addressing."""
+    def clean(value):
+        value = normalise(value).casefold()
+        value = re.sub(r"\bthankyou\b", "thank you", value)
+        value = re.sub(r"[^\w\s']", " ", value).strip("'")
+        return " ".join(value.split())
+
+    text = clean(text)
+    name = clean(persona)
+    if name:
+        if text.startswith(name + " "):
+            text = text[len(name) + 1:]
+        if text.endswith(" " + name):
+            text = text[:-len(name) - 1]
+    if END.fullmatch(text):
+        return True
+    for prefix in ("no thank you ", "no thanks ", "thank you ", "thanks "):
+        if text.startswith(prefix) and END.fullmatch(text[len(prefix):]):
+            return True
+    # "No" can answer a useful question (e.g. "Can you hear that speaker?").
+    # Only treat it as a sign-off when declining the generic follow-up or when idle.
+    return text in NEGATIVE_REPLY and (not question or bool(GENERAL_FOLLOWUP.search(question)))
 
 
 def spoken_text(response):

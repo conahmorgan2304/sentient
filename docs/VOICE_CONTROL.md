@@ -10,7 +10,7 @@ These additions are opt-in. Existing Assist + Sentient agents keep their current
 4. Ask for information, security, health or system status, or say “let's talk” or “help me sort the heating”. The voice keeps the same topic, selected devices and unanswered question across turns. “And upstairs?” is interpreted with that context; ambiguous targets should still be clarified.
 5. A completed single command stops listening unless **Sentient's spoken reply ends in a question**. This is based on the reply, not a question mark in your request or a provider's keep-listening flag. Clarification and confirmation questions reopen listening.
 6. Information, security, health and system discussions stay open. After an answer, Sentient asks “Is there anything else you'd like to know?” unless its answer already ends in a question. Once a discussion is active, a command within it does not end the discussion.
-7. Say “that's all”, “that is all”, “enough”, “that's enough”, “stop listening”, “stop”, “nothing else” or “no thanks” to finish. These must be standalone endings: “stop the vacuum” remains a device command. Ending cancels pending actions. Errors and empty replies do not reopen listening.
+7. Say “no thankyou”, “no, thank you”, “that's all”, “that is all”, “enough”, “that's enough”, “stop listening”, “stop”, “nothing else” or “no thanks” to finish. These must be standalone endings: “stop the vacuum” remains a device command. Ending cancels pending actions. Errors and empty replies do not reopen listening.
 
 Clear commands and information questions are routed locally; less obvious wording can be classified through the existing model's session tool. There is no extra classification model call. The session tracks its goal, selected entities, missing details and task state. Clarification replies keep the previous goal; the model can refine it for corrections. Task completion does not close an active discussion. Target interpretation and correction quality still depend on the conversation model, and expired confirmations are never restored.
 
@@ -93,3 +93,9 @@ The Mind panel shows the last three exchanges, with an expandable reply, interpr
 Diagnostics retain at most 40 exchanges for 24 hours in memory, with truncated request/reply text. They are hidden while guest mode is enabled and excluded from Home Assistant recorder along with the live voice-session attribute. The underlying conversation provider and other Home Assistant logging may retain their own history independently.
 
 Replay tests cover timeout resumption, ambiguous topics, owner isolation, expired bookmarks, current readings, revoked exposure, pending-action exclusion, bare-yes rejection, guest privacy and storage limits. Live model interpretation and microphone behaviour still need installation testing.
+
+## Ending a discussion reliably (0.65.1)
+
+Stop detection tolerates punctuation, repeated spaces, “thankyou”/“thank-you”, and addressing the configured persona by name. “No thankyou”, “No, thank you”, “that's enough”, “I'm finished” and similar complete endings are handled locally: no model call, no new anything-else question, and listening stops. Pending confirmations and the current discussion's bookmarks are discarded.
+
+A bare “no”, “nope” or “nah” closes a generic anything-else follow-up. After a specific question such as “Can you hear the kitchen speaker?”, it remains an answer for the model to interpret. Corrections and commands such as “no, the landing” or “no thanks, check the gate instead” are not swallowed as sign-offs.
