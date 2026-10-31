@@ -37,13 +37,27 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]
         for st in hass.states.async_all("alarm_control_panel")
         if st.entity_id not in ignore
     ]
+    relevant = [st for st in hass.states.async_all() if st.entity_id not in ignore and
+                (st.domain in ("lock", "alarm_control_panel") or st.domain == "binary_sensor" and
+                 st.attributes.get("device_class") in OPEN_CLASSES or st.domain == "cover" and
+                 st.attributes.get("device_class") in ("garage", "gate", "door"))]
+    from .evidence import describe_state
+    evidence = [describe_state(hass, st.entity_id) for st in relevant]
+    unknown = [e for e in evidence if e["status"] == "unknown"]
     problems = len(open_now) + len(covers) + len(unlocked)
+    text = summary(open_now + covers, unlocked, alarms)
+    if unknown:
+        text = ("Some openings or locks are unsafe. " if problems else "I can't confirm everything is shut and locked. ") +                "No current reading from " + ", ".join(e.get("name", e["entity_id"]) for e in unknown) + "."
+    if not relevant:
+        text = "No security sensors are available to confirm the house is secure."
     return {
-        "secure": problems == 0,
+        "secure": False if problems else None if unknown or not relevant else True,
+        "unknown": unknown,
+        "evidence": evidence,
         "open": open_now + covers,
         "unlocked": unlocked,
         "alarms": alarms,
-        "summary": summary(open_now + covers, unlocked, alarms),
+        "summary": text,
     }
 
 

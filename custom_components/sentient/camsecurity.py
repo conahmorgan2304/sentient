@@ -158,7 +158,10 @@ class CameraSecurity:
             entries = [e for e in self.options.get(CONF_CAMSEC_ENTRIES) or [] if (st := self.hass.states.get(e))
                        and (st.state == "on" or when - st.last_changed <= ENTRY_WINDOW)]
             if empty and not entries:
-                self._alert(sensor, f"Someone is in the {place(self.hass, sensor).lower()}, but the gate and doors didn't open", "fence")
+                message = f"Someone is in the {place(self.hass, sensor).lower()}, but the gate and doors didn't open"
+                if self.options.get("evidence_awareness") or self.options.get("security_incidents"):
+                    message = f"A person was reported in the {place(self.hass, sensor).lower()}, with no entry opening confirmed"
+                self._alert(sensor, message, "fence")
                 return
         # anyone at night with the house asleep
         if rt.speech.quiet_hours_now() and rt.night_watch.someone_inside(when) is None:
@@ -192,19 +195,29 @@ class CameraSecurity:
         mins = max(1, round((journey[-1][0] - journey[0][0]).total_seconds() / 60))
         start = dt_util.as_local(journey[0][0])
         self.journeys = [{"time": journey[0][0].isoformat(), "route": route}, *self.journeys][:30]
-        rt.timeline.add("noticed", f"Someone walked {route}", f"{start:%H:%M}, over {mins} minute{'s' if mins != 1 else ''}")
+        if self.options.get("security_incidents"):
+            rt.timeline.add("noticed", f"Possible route: {route}", "Detections close in time, not proof of one person", evidence="inferred")
+        else:
+            rt.timeline.add("noticed", f"Someone walked {route}", f"{start:%H:%M}, over {mins} minute{'s' if mins != 1 else ''}")
 
     # ----- alerting ------------------------------------------------------------------------
     @callback
     def _alert(self, sensor: str, text: str, why: str) -> None:
-        now = dt_util.utcnow()
-        key = f"{why}:{sensor}"
-        if (last := self._last_alert.get(key)) and now - last < REPEAT:
-            return
-        self._last_alert[key] = now
-        self.hass.async_create_task(self._async_alert(sensor, text))
+        incidents = getattr(self._rt(), "incidents", None)
+        incident_id = None
+        if incidents is not None and incidents.enabled:
+            should_alert, incident_id = incidents.alert(sensor, text, why)
+            if not should_alert:
+                return
+        else:
+            now = dt_util.utcnow()
+            key = f"{why}:{sensor}"
+            if (last := self._last_alert.get(key)) and now - last < REPEAT:
+                return
+            self._last_alert[key] = now
+        self.hass.async_create_task(self._async_alert(sensor, text, incident_id))
 
-    async def _async_alert(self, sensor: str, text: str) -> None:
+    async def _async_alert(self, sensor: str, text: str, incident_id: str | None = None) -> None:
         rt = self._rt()
         local = dt_util.as_local(dt_util.utcnow())
         detail = None
@@ -218,7 +231,7 @@ class CameraSecurity:
                 return
         if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
             self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text), "sentient_clip")
-        rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True)
+        rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred")
         if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
             speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
             await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),

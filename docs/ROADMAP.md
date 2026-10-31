@@ -95,3 +95,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Face teaching: a private "who's this?" on the phones when Frigate keeps a face it couldn't name, one tap to teach it — off by default (0.60.0)
 - [x] Clip watching on chosen cameras (alerts / zones / all, when, phone, Sentient or Frigate summaries, optional "probably X" from face photos and looks); faces only from chosen cameras; strangers forgotten ("Not someone we know", nightly clear-out) — all off by default (0.61.0)
 - [x] Memories that match what was asked once there are more than fit; known household cars named from the same drive look; Frigate event clips watched by the AI you already have ('what happened at the door?') — all optional (0.59.0)
+
+- [x] Conversation sessions, enforced guarded voice confirmation, cautious light undo, evidence and last-known security readings, and grouped security incidents — optional features with setup and device limits documented (0.62.0)

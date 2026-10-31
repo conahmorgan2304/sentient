@@ -9,7 +9,8 @@ from custom_components.sentient.security import check
 
 
 async def test_security_report(hass: HomeAssistant) -> None:
-    assert check(hass)["summary"] == "Everything's shut and locked."
+    assert check(hass)["secure"] is None
+    assert "No security sensors" in check(hass)["summary"]
     hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door", "friendly_name": "Back door"})
     hass.states.async_set("lock.front", "unlocked", {"friendly_name": "Front lock"})
     hass.states.async_set("alarm_control_panel.alarmo", "disarmed", {"friendly_name": "Alarm"})

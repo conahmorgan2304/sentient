@@ -122,3 +122,7 @@ what goes to them.
 - **Nothing is said:** check the *Last spoken* sensor's log — every message held back says why
   (quiet hours, hush, duplicate, busy…), and so does the Timeline tab.
 - **Diagnostics:** *Settings → Devices & services → Sentient → ⋮ → Download diagnostics.*
+
+## Conversation sessions and guarded control
+
+See [the voice-control setup guide](VOICE_CONTROL.md) for the optional conversation mode, enforced confirmation, undo, evidence and security incidents. Use only **Sentient guarded** on the dedicated AI agent and route its pipeline through **<persona> with backup** for enforced checks.

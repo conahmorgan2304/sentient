@@ -15,6 +15,10 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
+from .sessions import Sessions
+from .control import Control
+from .incidents import Incidents
+from .evidence import Evidence
 from .ai import AIGate
 from .animals import Animals
 from .away import Away
@@ -99,6 +103,10 @@ class SentientRuntime:
     """Everything a loaded Sentient entry owns."""
 
     options: dict[str, Any]
+    evidence: Any
+    sessions: Any
+    control: Any
+    incidents: Any
     memory: MemoryStore
     speech: SpeechRouter
     tracker: ActivityTracker
@@ -243,6 +251,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         except RuntimeError:  # already registered (e.g. after a reload)
             pass
     hass.data[DOMAIN]["unregister_api"] = llm.async_register_api(hass, SentientAPI(hass))
+    from .voice_api import GuardedAPI
+
+    hass.data[DOMAIN]["unregister_guarded_api"] = llm.async_register_api(hass, GuardedAPI(hass))
     _register_services(hass)
     from .websocket import async_register as _register_websocket
 
@@ -455,7 +466,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
     welcome.async_start()
     entry.async_on_unload(welcome.async_stop)
+    evidence = Evidence(hass, entry.entry_id, options)
+    await evidence.async_start()
+    entry.async_on_unload(evidence.async_stop)
+    sessions = Sessions(options)
+    entry.async_on_unload(sessions.stop)
+    incidents = Incidents(hass, entry.entry_id, options)
+    await incidents.async_start()
+    entry.async_on_unload(incidents.async_stop)
     entry.runtime_data = SentientRuntime(
+        evidence=evidence, sessions=sessions, control=Control(hass, options, timeline), incidents=incidents,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -512,6 +532,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
+    entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.options = options
     entry.runtime_data.speech.options = options
     entry.runtime_data.tracker.options = options
@@ -529,7 +550,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch"):
+    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
