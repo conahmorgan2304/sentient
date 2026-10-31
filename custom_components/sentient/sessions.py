@@ -90,6 +90,9 @@ class VoiceSession:
     command_turn: bool = False
     correction: dict | None = None
     investigation: dict | None = None
+    resume_choices: list[str] = field(default_factory=list)
+    resumed_from: str | None = None
+    resume_context: dict | None = None
 
     def describe(self) -> dict:
         return {'conversation_id': self.id, 'state': 'awaiting_confirmation' if self.pending else
@@ -98,6 +101,7 @@ class VoiceSession:
                 'mode': self.mode, 'goal': self.goal, 'task_state': self.task_state,
                 'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
                 'correction': self.correction, 'investigation': self.investigation,
+                'resumed_from': self.resumed_from, 'resume_context': self.resume_context,
                 'pending_action': self.pending.get('summary') if self.pending else None,
                 'confirmation_expires': self.pending['expires'].isoformat() if self.pending and self.pending.get('expires') else None,
                 'last_action': self.last_action, 'undo_available': bool(self.undo),
@@ -109,6 +113,8 @@ current_session: ContextVar[VoiceSession | None] = ContextVar('sentient_voice_se
 
 class Sessions:
     def __init__(self, options):
+        from .topics import TopicMemory
+        self.memory = TopicMemory()
         self.options = options
         self.items: dict[tuple, VoiceSession] = {}
 
@@ -144,6 +150,7 @@ class Sessions:
         session.turn += 1
         session.touched = dt_util.utcnow()
         session.waiting = False
+        session.listen_reason = 'new_request'
         session.listen_override = None
         text = normalise(text)
         session.correction = None
@@ -205,6 +212,8 @@ class Sessions:
         return result
 
     def close(self, session):
+        self.memory.discard(session)
+        session.resume_choices.clear()
         session.active = False
         session.listen_reason = 'user_ended'
         session.task_state = 'completed'
@@ -216,6 +225,18 @@ class Sessions:
         session.correction = None
         session.investigation = None
 
+    def rekey(self, session):
+        """Use fresh provider history on resumption, never an old confirmation exchange."""
+        for key, value in list(self.items.items()):
+            if value is session:
+                self.items.pop(key)
+        session.id = uuid.uuid4().hex
+        self.items[(session.id, *session.owner)] = session
+
+    def record(self, session, text, result, guest=False):
+        if self.options.get(CONF_SESSIONS) and not guest:
+            self.memory.record(session, text, result)
+
     def describe(self):
         self.prune()
         return [s.describe() for s in self.items.values() if not s.closed]
@@ -224,3 +245,4 @@ class Sessions:
         for session in self.items.values():
             self.close(session)
         self.items.clear()
+        self.memory.clear()

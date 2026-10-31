@@ -319,6 +319,7 @@ class MindSensor(_Base):
 
     _attr_icon = "mdi:head-lightbulb-outline"
     _attr_native_unit_of_measurement = "conversations"
+    _unrecorded_attributes = frozenset({"voice_sessions", "conversation_diagnostics"})
 
     def __init__(self, entry: SentientConfigEntry) -> None:
         super().__init__(entry, "mind")
@@ -342,6 +343,7 @@ class MindSensor(_Base):
         curious = rt.curiosity.listing()
         return {
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
+            "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
