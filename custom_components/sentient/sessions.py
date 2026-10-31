@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import html
+from copy import deepcopy
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -37,6 +38,7 @@ INFORMATION = re.compile(
     r"(?:what|why|how|when|where|who|which|is|are|was|were|has|have|does|do|"
     r"tell me|explain|describe|check|give me (?:a|an|the) (?:report|summary|update)|"
     r"security|system|health|status)\b", re.I)
+CORRECTION = re.compile(r"^(?:no[, ]+|i meant\b|not that\b|actually[, ]+|rather[, ]+|instead[, ]+)", re.I)
 FOLLOW_UP = "Is there anything else you'd like to know?"
 
 
@@ -86,6 +88,8 @@ class VoiceSession:
     missing_detail: str = ''
     listen_reason: str = 'new_request'
     command_turn: bool = False
+    correction: dict | None = None
+    investigation: dict | None = None
 
     def describe(self) -> dict:
         return {'conversation_id': self.id, 'state': 'awaiting_confirmation' if self.pending else
@@ -93,6 +97,7 @@ class VoiceSession:
                 'entities': list(self.entities), 'unanswered_question': self.question,
                 'mode': self.mode, 'goal': self.goal, 'task_state': self.task_state,
                 'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
+                'correction': self.correction, 'investigation': self.investigation,
                 'pending_action': self.pending.get('summary') if self.pending else None,
                 'confirmation_expires': self.pending['expires'].isoformat() if self.pending and self.pending.get('expires') else None,
                 'last_action': self.last_action, 'undo_available': bool(self.undo),
@@ -141,10 +146,19 @@ class Sessions:
         session.waiting = False
         session.listen_override = None
         text = normalise(text)
+        session.correction = None
+        if CORRECTION.search(text) and (session.goal or session.pending or session.last_action):
+            session.correction = {
+                'request': text[:300], 'previous_goal': session.goal,
+                'previous_entities': list(session.entities),
+                'previous_pending': deepcopy(session.pending['actions']) if session.pending and 'actions' in session.pending else None,
+                'previous_action': deepcopy(session.last_action),
+            }
+            session.task_state = 'in_progress'
         session.command_turn = bool(COMMAND.search(text))
         # Preserve the unanswered question through the next model call, so short answers
         # and corrections retain the task they belong to.
-        if not session.question or session.command_turn:
+        if not session.correction and (not session.question or session.command_turn):
             session.goal = text[:200]
             session.task_state = 'in_progress'
             session.missing_detail = ''
@@ -199,6 +213,8 @@ class Sessions:
         session.question = ''
         session.waiting = False
         session.undo.clear()
+        session.correction = None
+        session.investigation = None
 
     def describe(self):
         self.prune()

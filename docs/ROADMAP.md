@@ -98,3 +98,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 
 - [x] Conversation sessions, enforced guarded voice confirmation, cautious light undo, evidence and last-known security readings, and grouped security incidents — optional features with setup and device limits documented (0.62.0)
 - [x] Conversation task tracking and replay tests: completed single commands close unless the reply ends in a question; information discussions keep listening until a user ending or timeout, with visible decision reasons (0.63.0)
+- [x] Corrections retain the task and acknowledge guarded actions before a confirmed replacement; conversational troubleshooting combines labelled evidence, uncertainty and one next question (0.64.0)

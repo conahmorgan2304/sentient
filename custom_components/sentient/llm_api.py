@@ -1116,7 +1116,10 @@ class WhyTool(_Tool):
         "washing had finished?'. Give 'what' (a device, a room or words from what was said). Returns when it last "
         "changed, whether a person (and in which app), an automation or the house did it, the house's own log "
         "around then (including anything held back and why), and things it noticed but chose not to say. "
-        "Answer from these facts in a sentence or two; never guess."
+        "Includes a structured investigation with source-labelled evidence, current readings, delivery failures, "
+        "unknowns and one next question. Match the requested occurrence; nearby events are not proof of a cause. "
+        "Current state cannot establish historical availability; speech sent does not prove it was heard. "
+        "Answer from supported findings and ask at most one useful next question. Never guess or change settings."
     )
     parameters = vol.Schema({vol.Required("what"): cv.string, vol.Optional("hours"): vol.Coerce(float)})
 
@@ -1129,7 +1132,18 @@ class WhyTool(_Tool):
         from .explain import async_explain
 
         a = tool_input.tool_args
-        return await async_explain(hass, rt, a["what"], float(a.get("hours") or 12))
+        result = await async_explain(hass, rt, a["what"], float(a.get("hours") or 12))
+        from .sessions import current_session
+        session = current_session.get()
+        if session is not None and session.running and not session.closed:
+            investigation = result["investigation"]
+            session.investigation = {
+                "subject": investigation["query"], "window": investigation["window"],
+                "entities": [r["entity_id"] for r in investigation["current_readings"]],
+                "findings": investigation["findings"], "next_question": investigation["next_question"],
+                "note": "Previous investigation summary; call sentient_why again for fresh evidence.",
+            }
+        return result
 
 
 class HouseCheckTool(_Tool):

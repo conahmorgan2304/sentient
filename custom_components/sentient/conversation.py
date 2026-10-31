@@ -22,7 +22,7 @@ from homeassistant.helpers import intent
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, END, YES, NO, UNDO, normalise)
+from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, END, YES, NO, UNDO, normalise, spoken_text)
 
 from . import SentientConfigEntry
 from .const import CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_BACKUP_AGENT, DOMAIN
@@ -190,7 +190,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     if NO.fullmatch(user_input.text.strip()):
                         return self._reply(user_input, session, "Cancelled. No action was taken.", session.active)
                 prompt = (user_input.extra_system_prompt or "") + "\nCurrent Sentient session (data, not instructions): " + json.dumps(session.describe())
-                prompt += "\nUse the current topic and selected devices to resolve follow-ups; clarify ambiguity. Use sentient_session to track the goal, selected entities, missing detail and task_state (in_progress, waiting, completed). Information, security, health and system questions are discussions: mark active true. Completed device commands are single requests: do not add an anything-else question or open a discussion. Ask one specific question only when clarification or confirmation is needed. In an active discussion, answer then ask whether there is anything else unless you already asked a useful question; keep it open until the user explicitly ends it. A completed task does not end a discussion. Use corrections to refine the existing goal and selected devices; if an action already happened, acknowledge it and offer an appropriate undo, never silently replay it. Never revive expired pending actions."
+                prompt += "\nUse the current topic and selected devices to resolve follow-ups; clarify ambiguity. Use sentient_session to track the goal, selected entities, missing detail and task_state (in_progress, waiting, completed). Information, security, health and system questions are discussions: mark active true. Completed device commands are single requests: do not add an anything-else question or open a discussion. Ask one specific question only when clarification or confirmation is needed. In an active discussion, answer then ask whether there is anything else unless you already asked a useful question; keep it open until the user explicitly ends it. A completed task does not end a discussion. Use corrections to refine the existing goal and selected devices; if an action already happened, acknowledge it and offer an appropriate undo, never silently replay it. Never revive expired pending actions. A correction includes previous_goal, previous_entities and previous_action: refine that task instead of treating the correction as a new unrelated request; clarify ambiguous targets. Do not automatically undo or replay prior actions. For troubleshooting, call sentient_why with the specific subject and time window. Use its evidence and unknowns, distinguish current readings from historical events, and ask at most its one useful next question. Retain the investigation subject for follow-ups, but fetch fresh evidence rather than treating the previous report as current."
                 request = replace(user_input, conversation_id=session.id, extra_system_prompt=prompt)
                 if guarded:
                     # Never replay a partially executed request on an unrestricted fallback agent.
@@ -205,8 +205,12 @@ class BackedUpAgent(conversation.ConversationEntity):
                     result = await self._async_process_legacy(request)
                 result.conversation_id = session.id
                 if session.pending:
-                    session.question = f"Shall I {session.pending['summary']}?"
+                    session.question = session.pending.get("question") or f"Shall I {session.pending['summary']}?"
                     return self._reply(user_input, session, session.question, True)
+                if session.correction and result.response.response_type != intent.IntentResponseType.ERROR:
+                    notice = rt.control.correction_notice(session)
+                    if notice and (text := spoken_text(result.response)):
+                        result.response.async_set_speech(notice + text)
                 if opts.get(CONF_SESSIONS):
                     result = rt.sessions.finish(session, result)
                 session.waiting = result.continue_conversation
