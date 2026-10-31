@@ -22,10 +22,10 @@ from homeassistant.helpers import intent
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, END, YES, NO, UNDO, normalise, spoken_text)
+from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, is_conversation_end, YES, NO, UNDO, normalise, spoken_text)
 
 from . import SentientConfigEntry
-from .const import CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_BACKUP_AGENT, DOMAIN
+from .const import CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_BACKUP_AGENT, DOMAIN, CONF_PERSONA, DEFAULT_PERSONA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -257,7 +257,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             token = current_session.set(session)
             try:
                 rt.sessions.begin(session, user_input.text)
-                if not user_input.text.strip() or END.fullmatch(normalise(user_input.text)):
+                if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA):
                     rt.sessions.close(session)
                     return self._reply(user_input, session, "Okay.")
                 if opts.get(CONF_SESSIONS):
