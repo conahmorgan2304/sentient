@@ -273,7 +273,7 @@
       const mind = (this._st("mind") || {}).attributes || {};
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
       const mindRows = [
-        ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}</b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
+        ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
         ...(mind.security_incidents || []).slice(0, 3).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`),
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>

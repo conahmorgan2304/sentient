@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -19,7 +20,41 @@ CONF_EVIDENCE = 'evidence_awareness'
 CONF_INCIDENTS = 'security_incidents'
 GUARDED_API = 'sentient_guarded'
 START = re.compile(r"\b(let'?s talk|keep listening|conversation mode|help me (?:sort|plan|work|figure))\b", re.I)
-END = re.compile(r"^(?:that'?s all|that is all|stop listening|end conversation|goodbye|never mind)[.! ]*$", re.I)
+END = re.compile(
+    r"^(?:(?:okay|ok|no|well)[, ]+)?(?:that'?s all(?: for now)?|that is all(?: for now)?|"
+    r"that(?:'?s| is) enough|enough(?: now)?|stop(?: listening)?|end (?:the )?conversation|"
+    r"goodbye|never ?mind|we(?:'?re| are) done|i(?:'?m| am) done|nothing else|no(?: thanks| thank you))"
+    r"(?:[, ]+(?:please|thanks|thank you))?[.! ]*$", re.I)
+# Cheap routing for clear requests; the existing model can classify less obvious requests
+# through sentient_session. These expressions never resolve targets or authorise actions.
+COMMAND = re.compile(
+    r"^(?:(?:please|can you|could you|would you|will you)[, ]+)*"
+    r"(?:turn|switch|set|dim|brighten|open|close|lock|unlock|start|stop|pause|resume|"
+    r"play|mute|unmute|increase|decrease|raise|lower|activate|deactivate|"
+    r"remind|announce|cancel|undo)\b", re.I)
+INFORMATION = re.compile(
+    r"^(?:(?:please|can you|could you|would you)[, ]+)*"
+    r"(?:what|why|how|when|where|who|which|is|are|was|were|has|have|does|do|"
+    r"tell me|explain|describe|check|give me (?:a|an|the) (?:report|summary|update)|"
+    r"security|system|health|status)\b", re.I)
+FOLLOW_UP = "Is there anything else you'd like to know?"
+
+
+def normalise(text):
+    return text.strip().replace("’", "'")
+
+
+def spoken_text(response):
+    """Read the final spoken response, including SSML, rather than tool metadata."""
+    speech = response.speech
+    if "plain" in speech:
+        return speech["plain"].get("speech", "").strip()
+    return html.unescape(re.sub(r"<[^>]+>", "", speech.get("ssml", {}).get("speech", ""))).strip()
+
+
+def ends_in_question(text):
+    return text.rstrip().rstrip('"”’').rstrip().endswith("?")
+
 YES = re.compile(r'^(?:yes|yes please|yeah|confirm|go ahead|do it)[.! ]*$', re.I)
 NO = re.compile(r'^(?:no|no thanks|cancel|cancel that|don\'t|do not)[.! ]*$', re.I)
 UNDO = re.compile(r"^(?:undo|undo that|undo what you just did|put it back|actually[,]? put it back)[.! ]*$", re.I)
@@ -45,11 +80,19 @@ class VoiceSession:
     authorised: bool = False
     closed: bool = False
     listen_override: bool | None = None
+    mode: str = 'command'
+    goal: str = ''
+    task_state: str = 'in_progress'
+    missing_detail: str = ''
+    listen_reason: str = 'new_request'
+    command_turn: bool = False
 
     def describe(self) -> dict:
         return {'conversation_id': self.id, 'state': 'awaiting_confirmation' if self.pending else
-                'listening' if self.active or self.waiting else 'wake_word', 'topic': self.topic,
+                'listening' if self.waiting else 'discussion_idle' if self.active else 'wake_word', 'topic': self.topic,
                 'entities': list(self.entities), 'unanswered_question': self.question,
+                'mode': self.mode, 'goal': self.goal, 'task_state': self.task_state,
+                'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
                 'pending_action': self.pending.get('summary') if self.pending else None,
                 'confirmation_expires': self.pending['expires'].isoformat() if self.pending and self.pending.get('expires') else None,
                 'last_action': self.last_action, 'undo_available': bool(self.undo),
@@ -95,15 +138,62 @@ class Sessions:
     def begin(self, session, text):
         session.turn += 1
         session.touched = dt_util.utcnow()
-        session.question = ''
         session.waiting = False
         session.listen_override = None
-        if self.options.get(CONF_SESSIONS) and START.search(text):
-            session.active = True
-            session.topic = text[:200]
+        text = normalise(text)
+        session.command_turn = bool(COMMAND.search(text))
+        # Preserve the unanswered question through the next model call, so short answers
+        # and corrections retain the task they belong to.
+        if not session.question or session.command_turn:
+            session.goal = text[:200]
+            session.task_state = 'in_progress'
+            session.missing_detail = ''
+        if self.options.get(CONF_SESSIONS):
+            if START.search(text) or (not session.command_turn and INFORMATION.search(text)):
+                session.active = True
+                session.mode = 'discussion'
+                session.topic = text[:200]
+                session.goal = text[:200]
+                session.listen_reason = 'information_discussion'
+
+    def finish(self, session, result):
+        """Apply one listening policy to the actual final reply, regardless of provider flags."""
+        from homeassistant.helpers import intent
+
+        text = spoken_text(result.response)
+        session.question = ''
+        session.waiting = False
+        if result.response.response_type == intent.IntentResponseType.ERROR or not text:
+            result.continue_conversation = False
+            session.listen_reason = 'error_or_empty_reply'
+            session.task_state = 'in_progress'
+            return result
+        # A discussion remains active until the user ends it (or its inactivity timeout).
+        # A model's completed task or active=false must not end the user's discussion.
+        if not ends_in_question(text):
+            session.task_state = 'completed'
+            session.missing_detail = ''
+        elif session.task_state != 'completed':
+            session.task_state = 'waiting'
+        if session.active and not ends_in_question(text):
+            text += " " + FOLLOW_UP
+            result.response.async_set_speech(text)
+        session.waiting = ends_in_question(text)
+        result.continue_conversation = session.waiting
+        if session.waiting:
+            session.question = re.split(r"(?<=[.!])\s+", text)[-1][-300:]
+            session.task_state = 'waiting' if not session.active else session.task_state
+            session.listen_reason = 'discussion_follow_up' if session.active else 'reply_ends_in_question'
+        else:
+            session.task_state = 'completed'
+            session.missing_detail = ''
+            session.listen_reason = 'completed_single_request'
+        return result
 
     def close(self, session):
         session.active = False
+        session.listen_reason = 'user_ended'
+        session.task_state = 'completed'
         session.closed = True
         session.pending = None
         session.question = ''

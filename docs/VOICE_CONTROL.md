@@ -7,14 +7,18 @@ These additions are opt-in. Existing Assist + Sentient agents keep their current
 1. In Sentient Settings → Voice backup, select your main AI conversation agent.
 2. Point the Home Assistant Assist pipeline at **<persona> with backup**.
 3. In Sentient Settings → Voice, enable **Conversation sessions**. Start with the 60-second inactivity timeout.
-4. Say “let's talk” or “help me sort the heating”. The voice keeps the same topic, selected devices and unanswered question across turns. “And upstairs?” is interpreted with that context; ambiguous targets should still be clarified.
-5. Say “that's all”, “stop listening”, “goodbye” or “never mind” to close the session. Ordinary completed commands keep the agent's normal follow-up behaviour. Questions can still request a reply.
+4. Ask for information, security, health or system status, or say “let's talk” or “help me sort the heating”. The voice keeps the same topic, selected devices and unanswered question across turns. “And upstairs?” is interpreted with that context; ambiguous targets should still be clarified.
+5. A completed single command stops listening unless **Sentient's spoken reply ends in a question**. This is based on the reply, not a question mark in your request or a provider's keep-listening flag. Clarification and confirmation questions reopen listening.
+6. Information, security, health and system discussions stay open. After an answer, Sentient asks “Is there anything else you'd like to know?” unless its answer already ends in a question. Once a discussion is active, a command within it does not end the discussion.
+7. Say “that's all”, “that is all”, “enough”, “that's enough”, “stop listening”, “stop”, “nothing else” or “no thanks” to finish. These must be standalone endings: “stop the vacuum” remains a device command. Ending cancels pending actions. Errors and empty replies do not reopen listening.
+
+Clear commands and information questions are routed locally; less obvious wording can be classified through the existing model's session tool. There is no extra classification model call. The session tracks its goal, selected entities, missing details and task state. Clarification replies keep the previous goal; the model can refine it for corrections. Task completion does not close an active discussion. Target interpretation and correction quality still depend on the conversation model, and expired confirmations are never restored.
 
 Follow-up listening uses Home Assistant's `continue_conversation` signal. Your satellite/pipeline must support it. The physical microphone's silence timeout is controlled by the device; Sentient does not keep it permanently open. Session context expires lazily when inspected or used after the configured timeout. Restarting or reloading Sentient discards sessions and pending actions. Expiry does not delete your underlying AI agent's own chat history.
 
 Managed sessions use completed responses rather than streaming so Sentient can apply the final listening decision and replace an unsafe model confirmation before it is spoken. This may increase perceived response time compared with streaming.
 
-The Mind section shows the session topic, selected state, unanswered question and whether undo is available. Sessions are isolated by conversation ID, device, satellite and Home Assistant user; there is no automatic hand-off to a different speaker. Voice recognition is not speaker identification.
+The Mind section shows the current goal, unanswered question, missing details, why listening continued or stopped, and whether undo is available. Sessions are isolated by conversation ID, device, satellite and Home Assistant user; there is no automatic hand-off to a different speaker. Voice recognition is not speaker identification.
 
 ## Enable enforced confirmation
 
@@ -57,3 +61,7 @@ The Mind section shows recent incident evidence. Ask “what happened after the 
 ## Validation limits
 
 Automated tests cover session isolation/expiry, separate-turn confirmation, exact pending batches, permissions, changed devices, cancellation, failure without fallback, safe undo, unavailable readings, incident correlation, escalation and retention. Live microphones, STT accuracy, TTS latency and physical device behaviour still need checking on your installation before relying on them.
+
+## Conversation replay checks
+
+Run `pytest -q tests/test_conversation_replay.py` to replay commands, clarification replies, information discussions, topic changes and explicit endings without a microphone or an extra model call. The assertions check the spoken follow-up, retained goal, task state and listening decision. These deterministic tests cover the controller policy, not live model interpretation or microphone behaviour.

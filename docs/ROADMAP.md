@@ -97,3 +97,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Memories that match what was asked once there are more than fit; known household cars named from the same drive look; Frigate event clips watched by the AI you already have ('what happened at the door?') — all optional (0.59.0)
 
 - [x] Conversation sessions, enforced guarded voice confirmation, cautious light undo, evidence and last-known security readings, and grouped security incidents — optional features with setup and device limits documented (0.62.0)
+- [x] Conversation task tracking and replay tests: completed single commands close unless the reply ends in a question; information discussions keep listening until a user ending or timeout, with visible decision reasons (0.63.0)
