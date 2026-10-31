@@ -288,7 +288,7 @@ async def test_temperature_and_cover_confirmation(hass):
     assert not control.needs_confirmation([{'entity_id': 'cover.gate', 'action': 'stop_cover'}])
 
 
-async def test_session_tool_can_end_without_followup_question(hass):
+async def test_model_cannot_end_an_active_discussion(hass):
     from tests.test_phase3 import _setup
     from custom_components.sentient.voice_api import SessionTool
     entry = await _setup(hass, conversation_sessions=True)
@@ -301,7 +301,7 @@ async def test_session_tool_can_end_without_followup_question(hass):
         result = await SessionTool().async_call(hass, llm.ToolInput(tool_name='sentient_session', tool_args={'active': False}), ctx)
     finally:
         current_session.reset(token)
-    assert result['state'] == 'wake_word' and session.listen_override is False
+    assert session.active and result['state'] == 'discussion_idle'
 
 
 async def test_guarded_configuration_uses_selected_subentry(hass):

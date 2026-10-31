@@ -22,11 +22,16 @@ SAFE_TOOLS = {'sentient_remember', 'sentient_correction', 'sentient_recall', 'se
 
 class SessionTool(_Tool):
     name = 'sentient_session'
-    description = ('Update the current conversation topic, selected entities and unanswered question. '
-                   'Use active true only when the user wants a conversation or a multi-step discussion; '
-                   'active false ends listening. Do not open a session after a completed simple command.')
+    description = ('Track the current goal, topic, selected entities, missing detail and task state. '
+                   'Use active true for information, security, health or system discussions, or an explicit '
+                   'request to talk. Do not open discussions for device commands. A completed task does not '
+                   'close a discussion: only the user ends it. For a single command, ask a question only '
+                   'when clarification or confirmation is necessary; otherwise finish without a question. '
+                   'On a correction, update the existing goal and entities; do not repeat a completed action.')
     parameters = vol.Schema({vol.Optional('active'): bool, vol.Optional('topic'): str,
-                             vol.Optional('entities'): [str], vol.Optional('question'): str})
+                             vol.Optional('entities'): [str], vol.Optional('question'): str,
+                             vol.Optional('goal'): str, vol.Optional('missing_detail'): str,
+                             vol.Optional('task_state'): vol.In(['in_progress', 'waiting', 'completed'])})
 
     async def async_call(self, hass, tool_input, llm_context):
         rt, session = _runtime(hass), current_session.get()
@@ -35,9 +40,14 @@ class SessionTool(_Tool):
         if not rt.options.get(CONF_SESSIONS):
             return {'error': 'Conversation sessions are disabled'}
         a = tool_input.tool_args
-        if 'active' in a:
-            session.active = a['active']
-            session.listen_override = a['active']
+        if a.get('active') and not session.command_turn:
+            session.active = True
+            session.mode = 'discussion'
+        for key in ('goal', 'missing_detail'):
+            if key in a:
+                setattr(session, key, a[key][:200])
+        if 'task_state' in a:
+            session.task_state = a['task_state']
         if 'topic' in a:
             session.topic = a['topic'][:200]
         if 'entities' in a:
