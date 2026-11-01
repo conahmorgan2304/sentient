@@ -261,7 +261,7 @@ class Upkeep:
         self._maybe_briefing(rt, now)
 
     async def _async_energy_check(self, local: datetime) -> None:
-        """Once an hour: put anything newly using far more than usual on the timeline."""
+        """Once an hour: put anything newly using bien plus que d'habitude on the timeline."""
         from .energy import async_report, enabled
 
         if not enabled(self.hass):
@@ -278,7 +278,7 @@ class Upkeep:
             if item["name"] in self._energy_flagged:
                 continue
             self._energy_flagged.add(item["name"])
-            times = f"about {item['times_usual']}× its usual" if item.get("times_usual") else "far more than usual"
+            times = f"environ {item['times_usual']}× sa consommation habituelle" if item.get("times_usual") else "bien plus que d'habitude"
             self._rt().timeline.add("energy", f"{item['name']} has used {item['kwh']} kWh today — {times}")
 
     def weekly_report(self) -> dict[str, Any]:
@@ -323,7 +323,7 @@ class Upkeep:
 
     @callback
     def _maybe_briefing(self, rt, now: datetime) -> None:
-        """The optional daily briefing: only if someone's about and it isn't quiet hours."""
+        """The optional daily briefing: only if someone's environ and it isn't quiet hours."""
         if not rt.options.get(CONF_BRIEFINGS, True):
             return
         local = dt_util.as_local(now)
@@ -336,7 +336,7 @@ class Upkeep:
             and rt.tracker is not None
             and rt.tracker.best_area() is not None
         ):
-            # the first sign of someone up and about after quiet hours
+            # the first sign of someone up and environ after quiet hours
             self._morning_day = local.date().isoformat()
             self.hass.async_create_background_task(self._async_scheduled(), "sentient_morning_briefing")
             return

@@ -151,9 +151,9 @@ class Timeline:
             self.add("mode", "Guest mode on" if d["guest_mode"] else "Guest mode off")
         elif d.get("hush") and d.get("until"):
             until = dt_util.as_local(dt_util.parse_datetime(d["until"]))
-            self.add("mode", f"Hushed until {until:%H:%M}")
+            self.add("mode", f"Silencieux jusqu'à {until:%H:%M}")
         elif "hush" in d:
-            self.add("mode", "Talking again")
+            self.add("mode", "Reprend la parole")
 
     @callback
     def _health(self, event: Event) -> None:
@@ -172,7 +172,7 @@ class Timeline:
             if key not in now:
                 kind, name = key.split(":", 1)
                 back = {
-                    "offline": f"{name} is back to normal", "battery": f"{name}: battery fine again",
+                    "offline": f"{name} est revenu à la normale", "battery": f"{name}: batterie de nouveau correcte",
                     "ai": "The AI is answering again", "speaker": f"Speaking on {name} again",
                     "stuck": f"{name} is working again", "limit": None, "wear": None, "fight": None,
                     "frozen": f"{name.removesuffix(' frozen')}'s picture is moving again",

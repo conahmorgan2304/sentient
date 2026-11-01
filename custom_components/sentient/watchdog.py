@@ -259,7 +259,7 @@ class Watchdog:
                 week = [t for t in times if now - dt_util.parse_datetime(t) < WEEK]
                 if len(week) >= STUCK_TIMES:
                     out.append({"kind": "wear", "entity_id": entity_id, "name": f"{name(entity_id)} stuck",
-                                "text": f"{name(entity_id)} has got stuck or not made it back {len(week)} times this week"})
+                                "text": f"{name(entity_id)} has got stuck or not made it back {len(week)} fois cette semaine"})
         for entity_id, rows in self.batteries.items():
             recent, before = drain_rate(rows, 0, 14, today), drain_rate(rows, 15, 45, today)
             if recent and before and recent >= DRAIN_MIN and recent >= before * DRAIN_FASTER:
@@ -269,7 +269,7 @@ class Watchdog:
             week = [t for t in times if now - dt_util.parse_datetime(t) < WEEK]
             if len(week) >= DROPS:
                 out.append({"kind": "wear", "name": f"{dev} dropping",
-                            "text": f"{dev} has dropped offline {len(week)} times this week"})
+                            "text": f"{dev} est tombé hors ligne {len(week)} fois cette semaine"})
         for entity_id, rows in self.heating.items():
             old = [r[1] for r in rows if 28 <= _days_ago(r[0], today) <= 60]
             if len(old) >= 3 and rows and rows[-1][1] <= median(old) * HEATING_SLOWER:
