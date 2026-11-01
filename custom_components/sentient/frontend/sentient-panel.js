@@ -35,7 +35,7 @@
 
   const dayNameShort = (iso) => {
     const d = new Date(iso), t = new Date();
-    return d.toDateString() === t.toDateString() ? "TODAY" : d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
+    return d.toDateString() === t.toDateString() ? "AUJOURD'HUI" : d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
   };
 
   class SentientPanel extends HTMLElement {
@@ -95,7 +95,7 @@
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
-            <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>TIMELINE</span></button>
+            <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>CHRONOLOGIE</span></button>
             <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>PARAMÈTRES</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
@@ -104,7 +104,7 @@
           <div class="cols"><div class="col stack"><div id="sug" class="card" hidden></div><div id="clipc" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div class="col stack"><div id="mind" class="card"></div><div id="rout" class="stack"></div></div>
             <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
-        <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
+        <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">CHRONOLOGIE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
@@ -176,12 +176,12 @@
       const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${go}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
       const st = (k) => (this._st(k) ? this._st(k).state : "—");
       const ai = ((this._st("mind") || {}).attributes || {}).ai || {};
-      const aiTxt = ai.failing ? "AI NOT ANSWERING · PLAIN WORDS" : ai.capped ? "AI LIMIT REACHED · PLAIN WORDS" : `AI ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} TODAY`;
+      const aiTxt = ai.failing ? "IA NOT ANSWERING · PLAIN WORDS" : ai.capped ? "IA LIMIT REACHED · PLAIN WORDS" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
-          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
-          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
-          <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI CALLS / ${ai.limit}` : "AI CALLS")}</div></div>
+          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "SILENCE 1 H", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "MODE INVITÉ", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
+          <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), "SURVEILLANCE")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITEURS")}${stat(st("health"), "PROBLÈMES")}${stat(ai.today ?? 0, ai.limit ? `IA CALLS / ${ai.limit}` : "IA CALLS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
       // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
@@ -259,14 +259,14 @@
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
         ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
-        : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
-        : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
+        : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The IA isn't answering</b><u>PLAIN WORDS</u></div>`
+        : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's IA calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
         : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock"}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
-      R("health").innerHTML = this._h("HOUSE HEALTH", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "ALL GOOD")
+      R("health").innerHTML = this._h("SANTÉ DE LA MAISON", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "TOUT GOOD")
         + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
 
       // mind: what it's thinking, wondering, waiting to check and pass on
@@ -290,16 +290,16 @@
       // the last hour, on request: straight from the timeline, no AI
       const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
           <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NOTHING IN THE LAST HOUR</div>') : "";
-      R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`)
+      R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS AUJOURD'HUI`)
         + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
         + `<div class="row lh"><button class="btn sm ghost" data-act="lasthour"><ha-icon icon="mdi:history"></ha-icon> ${this._lh ? "HIDE THE LAST HOUR" : "WHAT HAPPENED THIS LAST HOUR?"}</button></div>`
         + lastHour
-        + (ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
+        + (ai.by_purpose ? `<div class="hint meter">IA ${ai.today}${ai.limit ? " OF " + ai.limit : ""} AUJOURD'HUI${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
       this._drawAppliances(mind.appliances || []);
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
-      R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 4).map((v) =>
+      R("visit").innerHTML = this._h("VISITEURS", `${st("visitors")} AUJOURD'HUI`) + (visits.slice(0, 4).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">NO ONE AT THE DOOR YET</div>');
@@ -314,7 +314,7 @@
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
-      R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
+      R("said").innerHTML = this._h("DIT &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
     // ---------- settings ----------
@@ -347,7 +347,7 @@
       const pages = {
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
         mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
-        spots: ["mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into"],
+        spots: ["mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the IA zooms into"],
         shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
         alarms: ["mdi:alarm", "Alarms", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
@@ -469,7 +469,7 @@
       if (W.i === last) {
         const persona = W.draft.persona || W.persona;
         c.innerHTML = head("mdi:check-decagram-outline", "Test & finish", `That's it. Say hello on the speakers to check they work, then finish. Everything can be changed later under Settings.`)
-          + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the AI is down</span></label>` : "")
+          + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the IA is down</span></label>` : "")
           + `<div class="wizres" id="wizres"></div>
           <div class="wizbar"><button class="btn ghost" data-act="wizback">BACK</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">FINISH</button></div>`;
         const pipe = this._$("wizpipe");
@@ -591,7 +591,7 @@
         : `<div class="r mem"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
             <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
-      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">MEMORIES</div>
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">SOUVENIRS</div>
           <div class="bs">What the house knows and shares with every voice assistant. Tap one to edit it.</div></div>
           <div class="chips">${Object.entries(byCat).map(([c, n]) => `<span>${esc(c).toUpperCase()} ${n}</span>`).join("")}</div></div>
         <form class="add" data-form="add"><ha-icon icon="mdi:plus"></ha-icon><input name="text" placeholder="Add a memory, e.g. “The bins go out on Thursday night”" autocomplete="off">
@@ -641,13 +641,13 @@
       const ready = this._shape ? pts.length >= 3 : !!this._draft_box;
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:selection-marker"></ha-icon><div><div class="bt">CAMERA SPOTS</div>
-          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive" — and other names for it. Questions that mention it use the camera that can see it, and send the AI just that part. Draw a shape to leave out what's next to it (a neighbour's car).</div></div></div>
+          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive" — and other names for it. Questions that mention it use the camera that can see it, and send the IA just that part. Draw a shape to leave out what's next to it (a neighbour's car).</div></div></div>
         <div class="spotgrid"><div>
           <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
             <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
           <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
             ${here.map(mark).join("")}${this._drawing ? draft : ""}</div>
-          <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN SAVE" : "DRAG ON THE PICTURE TO MARK THE SPOT") : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO AI NEEDED"}</div>
+          <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN SAVE" : "DRAG ON THE PICTURE TO MARK THE SPOT") : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO IA NEEDED"}</div>
         </div><div>
           <div class="h"><span class="t">TEACH A SPOT</span><i></i></div>
           <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the drive" value="${esc(this._spName || "")}" autocomplete="off"></form>
@@ -929,7 +929,7 @@
       const st = this._st("chime");
       if (!st) return "";
       const on = st.state === "on";
-      return `<button class="mode chime${on ? " lit" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${on ? "mdi:bell-ring-outline" : "mdi:bell-off-outline"}"></ha-icon>CHIME ${on ? "ON" : "OFF"}</button>`;
+      return `<button class="mode chime${on ? " lit" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${on ? "mdi:bell-ring-outline" : "mdi:bell-off-outline"}"></ha-icon>SONNERIE ${on ? "ON" : "OFF"}</button>`;
     }
 
     _drawEnergy() {
@@ -938,7 +938,7 @@
       el.hidden = false;
       const top = en.devices.slice(0, 5), max = Math.max(0.01, ...top.map((d) => Math.max(d.kwh, d.usual)));
       const pct = en.usual_kwh > 0 ? Math.round((en.total_kwh / en.usual_kwh) * 100) : null;
-      el.innerHTML = this._h("ENERGY TODAY", `${en.total_kwh} KWH${en.cost_today != null ? ` · £${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
+      el.innerHTML = this._h("ENERGY AUJOURD'HUI", `${en.total_kwh} KWH${en.cost_today != null ? ` · £${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
@@ -952,7 +952,7 @@
       el.hidden = false;
       const dur = (m) => (m >= 60 ? `${Math.floor(m / 60)}H${m % 60 ? " " + (m % 60) + "M" : ""}` : `${m} MIN`);
       const running = list.filter((a) => a.running).length;
-      el.innerHTML = this._h("APPLIANCES", running ? `${running} RUNNING` : "ALL IDLE") + list.slice(0, 6).map((a) => {
+      el.innerHTML = this._h("APPLIANCES", running ? `${running} RUNNING` : "TOUT IDLE") + list.slice(0, 6).map((a) => {
         const icon = a.entity_id.startsWith("vacuum.") ? "mdi:robot-vacuum" : /dish/i.test(a.name) ? "mdi:dishwasher" : /dry/i.test(a.name) ? "mdi:tumble-dryer" : "mdi:washing-machine";
         const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · DONE ~" + esc(a.done_about) : ""}`
           : a.usual_minutes ? `USUALLY ${dur(a.usual_minutes)}` : `LEARNING · ${a.runs_seen}/3 RUNS`;
@@ -976,7 +976,7 @@
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
           <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
-        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NOTHING UNUSUAL IN THE LAST 3 DAYS</div>') : "";
+        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NOTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
       el.innerHTML = this._h("HEATING &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
 
@@ -1007,7 +1007,7 @@
       const bad = open.length + unlocked.length;
       const alarm = alarms[0];
       const armed = alarm && alarm.state.startsWith("armed");
-      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "ALL SHUT")
+      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "TOUT SHUT")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
         + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
@@ -1172,29 +1172,29 @@
 
     _drawTimeline() {
       const KIND = {
-        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "HELD BACK"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
+        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
         light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"], appliance: ["mdi:washing-machine", "APPLIANCE"], animal: ["mdi:rabbit", "ANIMALS"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
-        heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "THIS WEEK"],
+        heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       const digEl = this._$("tldig");
       if (!digEl._tap) { digEl._tap = true; digEl.addEventListener("click", (e) => { if (e.target.closest("b")) digEl.classList.toggle("open"); }); }
-      digEl.innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short AI summary of the last 24 hours.</b>"}</div>
-        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "SUMMARISE 24H"}</button>
-        <button class="btn sm ghost" data-act="weekly">THIS WEEK</button>`;
+      digEl.innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short IA summary of the last 24 hours.</b>"}</div>
+        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "RÉSUMER 24H"}</button>
+        <button class="btn sm ghost" data-act="weekly">CETTE SEMAINE</button>`;
       const want = this._tlKind || "all";
       const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : i.kind === want));
       const counts = {};
       (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
       this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
         .map(([k, label, n]) => `<button class="${k === want ? "on" : ""}" data-act="tlkind" data-id="${k}">${label} <b>${n}</b></button>`).join("");
-      this._$("tlcount").textContent = "LAST 3 DAYS";
+      this._$("tlcount").textContent = "3 DERNIERS JOURS";
       const dayName = (d) => {
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const that = new Date(d); that.setHours(0, 0, 0, 0);
         const diff = Math.round((today - that) / 864e5);
-        return diff === 0 ? "TODAY" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+        return diff === 0 ? "AUJOURD'HUI" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
       };
       let last = "", html = "";
       for (const i of items) {
@@ -1204,7 +1204,7 @@
         html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${icon}"></ha-icon></span>
           <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${label}</s></div>`;
       }
-      this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
+      this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE CHRONOLOGIE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
     }
 
     // ---------- events ----------
@@ -1303,7 +1303,7 @@
         this._hass.callWS({ type: "sentient/items/test", kind, item_id: id }).then((r) => {
           this._it[kind] = r; this._drawItems(kind);
           const res = r.result || {}, s2 = this._$("status");
-          if (s2) s2.textContent = res.match !== undefined ? (res.match ? "YES — " : "NO — ") + (res.seen || "") : res.spoken === false ? `HELD BACK: ${(res.reason || "").toUpperCase()}` : "DONE";
+          if (s2) s2.textContent = res.match !== undefined ? (res.match ? "YES — " : "NO — ") + (res.seen || "") : res.spoken === false ? `RETENU: ${(res.reason || "").toUpperCase()}` : "DONE";
         }, (e) => { const s2 = this._$("status"); if (s2) s2.textContent = e.message || String(e); });
       }
       else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, inputs: "", actions: [] }; this._openShortcutForm({}); }
