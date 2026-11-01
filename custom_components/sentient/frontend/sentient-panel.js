@@ -272,8 +272,7 @@
       // mind: what it's thinking, wondering, waiting to check and pass on
       const mind = (this._st("mind") || {}).attributes || {};
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
-      const voiceCheck = mind.voice_check;
-      const voiceCheckRow = this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b><button class="btn sm ghost" data-act="voicecheck" data-id="start">START</button>${voiceCheck ? `<button class="btn sm ghost" data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${voiceCheck?.steps?.length === 2 ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}` : "";
+      const voiceCheckRow = this._voiceCheckRow(mind.voice_check);
       const mindRows = [
         voiceCheckRow,
         ...(mind.speech_deliveries || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${esc(d.message)}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`),
@@ -1211,14 +1210,41 @@
       this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
     }
 
+    _voiceCheckRow(sensorValue) {
+      const voiceCheck = this._voiceCheckState(sensorValue);
+      return this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start">START</button>${voiceCheck ? `<button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${voiceCheck?.steps?.length === 2 && voiceCheck.heard_replies === null ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}${this._voiceCheckSaving ? '<div class="r" role="status">Saving voice check…</div>' : ""}${this._voiceCheckError ? `<div class="r bad" role="alert">${esc(this._voiceCheckError)}</div>` : ""}${voiceCheck?.heard_replies != null ? `<div class="r" role="status"><b>${voiceCheck.heard_replies ? "SAVED · You confirmed you heard both replies." : "SAVED · You reported that replies were not heard."}</b><small>This records playback feedback; the LISTEN / STOP results remain above.</small></div>` : ""}` : "";
+    }
+
+    _voiceCheckState(sensorValue) {
+      // Use the acknowledged response immediately, until HA supplies a newer sensor value.
+      if (this._voiceCheckReply && this._voiceCheckReply.sensor === sensorValue) return this._voiceCheckReply.value;
+      this._voiceCheckReply = null;
+      return sensorValue;
+    }
+
+    async _voiceCheckAction(action, runId) {
+      if (this._voiceCheckSaving) return;
+      this._voiceCheckSaving = true;
+      this._voiceCheckError = "";
+      this._render();
+      try {
+        const result = await this._hass.callWS({ type: "sentient/voice_check", action, ...(runId ? { run_id: runId } : {}) });
+        this._voiceCheckReply = { value: result, sensor: this._st("mind")?.attributes?.voice_check };
+      } catch (error) {
+        this._voiceCheckError = error.message || String(error);
+      } finally {
+        this._voiceCheckSaving = false;
+        this._render();
+      }
+    }
+
     // ---------- events ----------
     _click(ev) {
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
       if (act === "voicecheck") {
-        this._hass.callWS({ type: "sentient/voice_check", action: id, ...(el.dataset.run ? { run_id: el.dataset.run } : {}) })
-          .then(() => this._render(), (e) => this._status(e.message || String(e), "bad"));
+        this._voiceCheckAction(id, el.dataset.run);
       }
       else if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
