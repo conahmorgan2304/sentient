@@ -278,7 +278,7 @@ async def test_voice_falls_back_when_the_ai_fails(hass: HomeAssistant) -> None:
     assert main.seen and backup.seen
     assert result.response.speech["plain"]["speech"] == "Turned off the light."
     assert entry.runtime_data.ai.fails_in_row == 1
-    assert any("backup agent" in i["text"] for i in entry.runtime_data.timeline.items)
+    assert any("agent de secours" in i["text"] for i in entry.runtime_data.timeline.items)
 
 
 async def test_voice_says_plainly_when_both_fail(hass: HomeAssistant) -> None:
