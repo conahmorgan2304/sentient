@@ -45,7 +45,7 @@ async def test_hush_and_guest_mode(hass: HomeAssistant, freezer) -> None:
     await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.nova_guest_mode"}, blocking=True)
     assert not speech.guest_mode
     texts = [i["text"] for i in entry.runtime_data.timeline.items if i["kind"] == "mode"]
-    assert texts[0] == "Guest mode off" and "Guest mode on" in texts and "Talking again" in texts
+    assert texts[0] == "Guest mode off" and "Guest mode on" in texts and "Reprend la parole" in texts
 
 
 async def test_chime_setting_and_switch(hass: HomeAssistant) -> None:
