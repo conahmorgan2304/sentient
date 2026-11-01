@@ -347,7 +347,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         self.async_write_ha_state()
         rt = getattr(self._entry, "runtime_data", None)
         if rt is not None:
-            rt.timeline.add("health", "Voice answered by the backup agent", f"the AI failed: {why[:120]}")
+            rt.timeline.add("health", "Réponse vocale par l'agent de secours", f"the AI failed: {why[:120]}")
         try:
             result = await self._converse(self.backup_agent, user_input)
             if result.response.response_type != intent.IntentResponseType.ERROR:

@@ -1333,7 +1333,17 @@
       "AI limit reached · plain words": "AI limit reached · plain words",
       "Test & finish": "Test & finish",
       "That's it. Say hello on the speakers to check they work, then finish.": "That's it. Say hello on the speakers to check they work, then finish.",
-      "Everything can be changed later under Settings.": "Everything can be changed later under Settings."
+      "Everything can be changed later under Settings.": "Everything can be changed later under Settings.",
+      "Show camera": "Show camera",
+      "Snooze 10 min": "Snooze 10 min",
+      "Someone else…": "Someone else…",
+      "Their name — or 'no' if you don't know them": "Their name — or 'no' if you don't know them",
+      "Not someone we know": "Not someone we know",
+      "No security sensors are available to confirm the house is secure.": "No security sensors are available to confirm the house is secure.",
+      "Everything's shut": "Everything's shut",
+      " and locked": " and locked",
+      "The alarm": "The alarm",
+      "Voice answered by the backup agent": "Voice answered by the backup agent"
     }
   }
 }

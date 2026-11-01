@@ -112,14 +112,14 @@ class Notifier:
             data: dict[str, Any] = {"tag": "sentient-door"}
             if camera:
                 data["image"] = f"/api/camera_proxy/{camera}"
-                data["actions"] = [{"action": "URI", "title": "Show camera", "uri": f"entityId:{camera}"}]
+                data["actions"] = [{"action": "URI", "title": "Voir la caméra", "uri": f"entityId:{camera}"}]
             return apps, data
         token = uuid.uuid4().hex[:10]
         self._pending[token] = item.get("detail") or item.get("text", "")
         while len(self._pending) > 30:
             self._pending.pop(next(iter(self._pending)))
         return apps, {"tag": f"sentient-{token}", "actions": [
-            {"action": f"{ACTION}_SNOOZE_{token}", "title": "Snooze 10 min"},
+            {"action": f"{ACTION}_SNOOZE_{token}", "title": "Reporter 10 min"},
             {"action": f"{ACTION}_DONE_{token}", "title": "Done"},
         ]}
 

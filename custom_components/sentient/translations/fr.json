@@ -1333,7 +1333,17 @@
       "AI limit reached · plain words": "Limite IA atteinte · mots simples",
       "Test & finish": "Test & terminer",
       "That's it. Say hello on the speakers to check they work, then finish.": "C'est tout. Dites bonjour sur les haut-parleurs pour vérifier qu'ils fonctionnent, puis terminez.",
-      "Everything can be changed later under Settings.": "Tout peut être modifié plus tard dans les Paramètres."
+      "Everything can be changed later under Settings.": "Tout peut être modifié plus tard dans les Paramètres.",
+      "Show camera": "Voir la caméra",
+      "Snooze 10 min": "Reporter 10 min",
+      "Someone else…": "Quelqu'un d'autre…",
+      "Their name — or 'no' if you don't know them": "Leur nom — ou 'non' si vous ne les connaissez pas",
+      "Not someone we know": "Pas quelqu'un que nous connaissons",
+      "No security sensors are available to confirm the house is secure.": "Aucun capteur de sécurité disponible pour confirmer que la maison est sécurisée.",
+      "Everything's shut": "Tout est fermé",
+      " and locked": " et verrouillé",
+      "The alarm": "L'alarme",
+      "Voice answered by the backup agent": "Réponse vocale par l'agent de secours"
     }
   }
 }

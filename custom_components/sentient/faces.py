@@ -12,7 +12,7 @@ and a button per person (or type a name). Tapping one files that face under the 
 recognises them next time. Nothing is spoken, it never goes to the tablets, and it asks at most every
 ten minutes and a handful of times a day. No AI calls — it's Frigate's own face library.
 
-Strangers: "Not someone we know" (or typing "no" under "Someone else…") deletes that face from Frigate straight away, and (a setting) every night
+Strangers: "Pas quelqu'un que nous connaissons" (or typing "no" under "Quelqu'un d'autre…") deletes that face from Frigate straight away, and (a setting) every night
 any face nobody named that's older than a set number of hours is deleted from Frigate too — so only the
 household's faces are kept. Nothing about a stranger is ever stored by Sentient.
 """
@@ -287,11 +287,11 @@ class Faces:
         self._last_ask = now
         self._today = (day, self._today[1] + 1)
         actions = [{"action": f"{ACTION}_{token}_{i}", "title": n.replace("_", " ")} for i, n in enumerate(names)]
-        # phones show three buttons at most, so "Someone else…" (type a name, or "no") is always one of them
-        actions.append({"action": f"{ACTION}_{token}_other", "title": "Someone else…", "behavior": "textInput",
-                        "textInputButtonTitle": "Save", "textInputPlaceholder": "Their name — or 'no' if you don't know them"})
+        # phones show three buttons at most, so "Quelqu'un d'autre…" (type a name, or "no") is always one of them
+        actions.append({"action": f"{ACTION}_{token}_other", "title": "Quelqu'un d'autre…", "behavior": "textInput",
+                        "textInputButtonTitle": "Enregistrer", "textInputPlaceholder": "Leur nom — ou 'non' si vous ne les connaissez pas"})
         if len(names) < 2:
-            actions.append({"action": f"{ACTION}_{token}_forget", "title": "Not someone we know"})
+            actions.append({"action": f"{ACTION}_{token}_forget", "title": "Pas quelqu'un que nous connaissons"})
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         data = {"title": f"{persona} · Who's this?",
                 "message": f"The {camera.replace('_', ' ')} camera saw someone it couldn't put a name to. "

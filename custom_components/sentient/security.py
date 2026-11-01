@@ -70,7 +70,7 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]
         if not perimeter:
             text += " No door, window, cover or lock readings are available."
     if not relevant:
-        text = "No security sensors are available to confirm the house is secure."
+        text = "Aucun capteur de sécurité disponible pour confirmer que la maison est sécurisée."
     return {
         "secure": False if problems else None if unknown or not perimeter else True,
         "unknown": unknown,
@@ -96,7 +96,7 @@ def summary(open_items: list[dict], unlocked: list[dict], alarms: list[dict]) ->
         if names:
             parts.append(f"{_join(names)} {'is' if len(names) == 1 else 'are'} {state}")
     if not parts:
-        text = "Everything's shut" + (" and locked" if not unlocked and alarms is not None else "") + "."
+        text = "Tout est fermé" + (" et verrouillé" if not unlocked and alarms is not None else "") + "."
     else:
         text = "; ".join(p[0].upper() + p[1:] for p in parts) + "."
     return text + alarm_summary(alarms)
@@ -106,7 +106,7 @@ def alarm_summary(alarms: list[dict]) -> str:
     parts = []
     for alarm in alarms:
         state = alarm["state"]
-        label = "The alarm" if len(alarms) == 1 else alarm["name"]
+        label = "L'alarme" if len(alarms) == 1 else alarm["name"]
         if state == "disarmed":
             status = "off"
         elif state.startswith("armed_"):
