@@ -29,7 +29,7 @@
         if (card && card.constructor.getConfigElement) await card.constructor.getConfigElement();
       }
     } catch (e) { /* fall through to the wait */ }
-    await Promise.race([customElements.whenDefined("ha-form"), new Promise((r) => setTimeout(r, 5000))]);
+    await Promise.race([customElements.whenDefined("ha-form"), new Promise((r) => régléTimeout(r, 5000))]);
     return !!customElements.get("ha-form");
   })());
 
@@ -39,7 +39,7 @@
   };
 
   class SentientPanel extends HTMLElement {
-    set hass(hass) {
+    réglé hass(hass) {
       this._hass = hass;
       if (!this.shadowRoot) this._build();
       if (!this._wizChecked && hass.user && hass.user.is_admin) {
@@ -54,20 +54,20 @@
         const memChanged = ids.memories && hass.states[ids.memories] && hass.states[ids.memories].last_updated !== this._memSig;
         this._sig = sig;
         this._render();
-        if (memChanged) { this._memSig = hass.states[ids.memories].last_updated; if (this._view === "settings") this._loadMemories(); }
+        if (memChanged) { this._memSig = hass.states[ids.memories].last_updated; if (this._view === "réglétings") this._loadMemories(); }
       }
     }
-    set narrow(n) { this._narrow = n; if (this._menu) this._menu.narrow = n; }
-    set panel(p) { this._panel = p; }
-    set route(r) {
+    réglé narrow(n) { this._narrow = n; if (this._menu) this._menu.narrow = n; }
+    réglé panel(p) { this._panel = p; }
+    réglé route(r) {
       this._route = r;
       const path = String((r && r.path) || "");
-      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : "overview";
+      const want = path.startsWith("/réglétings") ? "réglétings" : path.startsWith("/timeline") ? "timeline" : "overview";
       if (this.shadowRoot && want !== this._view) this._show(want, false);
       else if (!this.shadowRoot) this._view = want;
     }
 
-    connectedCallback() { this._tick = setInterval(() => this._render(), 30000); }
+    connectedCallback() { this._tick = régléInterval(() => this._render(), 30000); }
     disconnectedCallback() {
       clearInterval(this._tick);
       if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
@@ -96,7 +96,7 @@
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
             <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>CHRONONLOGIE</span></button>
-            <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>PARAMÈTRES</span></button></nav>
+            <button data-view="réglétings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>PARAMÈTRES</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
@@ -106,7 +106,7 @@
             <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">CHRONONLOGIE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
-        <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
+        <div class="page réglé" id="réglé" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
@@ -117,14 +117,14 @@
         if (brief.classList.contains("busy")) return;
         brief.classList.add("busy"); brief.querySelector("span").textContent = "PREPARING";
         const done = () => { brief.classList.remove("busy"); brief.querySelector("span").textContent = "BRIEFING"; };
-        this._hass.callService("sentient", "briefing", { priority: "urgent" }).then(() => setTimeout(done, 4000), (e) => { done(); window.alert(e.message || e); });
+        this._hass.callService("sentient", "briefing", { priority: "urgent" }).then(() => régléTimeout(done, 4000), (e) => { done(); window.alert(e.message || e); });
       });
-      this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => this._show(b.dataset.view, true)));
+      this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => this._show(b.dataréglé.view, true)));
       this._$("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
       this.shadowRoot.addEventListener("change", (ev) => {
-        const id = ev.target.dataset && ev.target.dataset.mltoggle;
+        const id = ev.target.dataréglé && ev.target.dataréglé.mltoggle;
         if (!id) return;
         const r = (this._ml.rules || []).find((x) => x.id === id);
         if (r) this._motionDo("sentient/motion_lights/save", { rule: { id, light: r.light, motion: r.motion, enabled: ev.target.checked } }).then(() => { this._drawMotion(); this._drawMlCard(); });
@@ -139,15 +139,15 @@
 
     _show(view, push) {
       this._view = view;
-      this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
+      this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataréglé.view === view));
       this._$("ov").hidden = view !== "overview";
-      this._$("set").hidden = view !== "settings";
+      this._$("réglé").hidden = view !== "réglétings";
       this._$("tl").hidden = view !== "timeline";
       if (push && this._route) {
         const base = this._route.prefix || "/sentient";
         history.replaceState(history.state, "", view === "overview" ? base : `${base}/${view}`);
       }
-      if (view === "settings") this._openSettings();
+      if (view === "réglétings") this._openSettings();
       else if (view === "timeline") this._openTimeline();
       else this._render();
     }
@@ -160,7 +160,7 @@
       const room = this._st("likely_room");
       const persona = this._attr("likely_room", "persona", "Sentient");
       R("ttl").textContent = String(persona).toUpperCase();
-      if (this._view === "settings") {
+      if (this._view === "réglétings") {
         if (this._group === "motion" && !this._mlEdit && Date.now() - (this._mlAt || 0) > 10000) { this._mlAt = Date.now(); this._loadMotion(); }
         return;
       }
@@ -179,7 +179,7 @@
       const aiTxt = ai.failing ? "IA NE RÉPOND PAS · MOTS SIMPLES" : ai.capped ? "LIMITE IA ATTEINTE · MOTS SIMPLES" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
-          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
+          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "HEURES DE SILENCE" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
           <div class="modes">${this._modeChip("hush", "mdi:volume-off", "SILENCE 1 H", "SILENCIEUX")}${this._modeChip("guest_mode", "mdi:account-multiple", "MODE INVITÉ", "INVITÉS PRÉSENTS")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
           <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), "SURVEILLANCE")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITEURS")}${stat(st("health"), "PROBLÈMES")}${stat(ai.today ?? 0, ai.limit ? `APPELS IA / ${ai.limit}` : "APPELS IA")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NON RECENT MOUVEMENT</div>'}</div>`;
@@ -224,7 +224,7 @@
       const act = this.shadowRoot.activeElement;
       const typing = act && act.closest && act.closest('form[data-form="remind"]');
       const watches = this._attr("watches", "watches", []);
-      if (!typing) R("watch").innerHTML = this._h("SURVEILLANCEES &amp; REESPRITERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
+      if (!typing) R("watch").innerHTML = this._h("SURVEILLANCEES &amp; REESPRITERS", `${watches.length} ACTIF`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Annuler">✕</a></div>`;
@@ -266,7 +266,7 @@
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NONTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
-      R("health").innerHTML = this._h("SANTÉ DE LA MAISON", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "TOUT GOOD")
+      R("health").innerHTML = this._h("SANTÉ DE LA MAISON", issues.length ? `${issues.length} PROBLÈME${issues.length > 1 ? "S" : ""}` : "TOUT VA BIEN")
         + (healthRows || '<div class="e">EVERYTHING EN LIGNE · BATTERIES FINE</div>');
 
       // mind: what it's thinking, wondering, waiting to check and pass on
@@ -309,7 +309,7 @@
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
       const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
         ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NONTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Content de l'entendre"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
-          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Moins taquin", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
+          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Moins taquin", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleréglé" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">ENREGISTRER</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
@@ -317,7 +317,7 @@
       R("said").innerHTML = this._h("DIT &amp; NONTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
-    // ---------- settings ----------
+    // ---------- réglétings ----------
     async _openSettings() {
       this._drawSide();
       this._loadMemories();
@@ -326,11 +326,11 @@
       this._loadMutes(true);
       this._loadShortcuts();
       ["alarms", "offers", "announce", "checks", "autooff", "rules"].forEach((k) => this._loadItems(k));
-      if (!this._settings && !this._settingsErr) {
+      if (!this._réglétings && !this._réglétingsErr) {
         try {
-          this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
+          this._réglétings = await this._hass.callWS({ type: "sentient/réglétings", language: this._hass.language });
         } catch (e) {
-          this._settingsErr = e.code === "unauthorized" ? "Only an administrator can change settings." : (e.message || String(e));
+          this._réglétingsErr = e.code === "unauthorized" ? "Only an administrator can change réglétings." : (e.message || String(e));
         }
         this._drawSide();
       }
@@ -340,17 +340,17 @@
     _phone() { return window.matchMedia("(max-width: 720px)").matches; }
 
     _drawSide() {
-      const groups = (this._settings && this._settings.groups) || [];
+      const groups = (this._réglétings && this._réglétings.groups) || [];
       const n = (k) => (this._it && this._it[k] ? this._it[k].items.length : null);
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
       // Every page the Settings tab has: id -> [icon, title, short line]
       const pages = {
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
-        mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
+        mutes: ["mdi:volume-mute", "Mis en silence", this._mutes ? `${this._mutes.length} muted` : "Choses qu'il ne mentionnera pas"],
         spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} apprises` : "Zones nommées sur lesquelles l'IA zoome"],
-        shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
+        shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · bonne nuit, bonjour…` : "Bonne nuit, bonjour…"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
-        alarms: ["mdi:alarm", "Alarmes", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
+        alarms: ["mdi:alarm", "Alarmes", n("alarms") !== null ? `${n("alarms")} réglé` : "Alarmes, rendez-vous, routines"],
         offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
         announce: ["mdi:bullhorn-outline", "Annonces", n("announce") !== null ? `${n("announce")} · sonnette, portail` : "Sonnette, portail…"],
         autooff: ["mdi:timer-off-outline", "Extinction auto", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
@@ -384,7 +384,7 @@
         return `<div class="menu${open ? " open" : ""}${here ? " here" : ""}">
           <button class="mh" data-act="menu" data-id="${mid}" aria-expanded="${open}"><ha-icon icon="${icon}"></ha-icon><span>${esc(title)}</span><u>${list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
           <div class="mi">${list.map(item).join("")}</div></div>`;
-      }).join("") + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
+      }).join("") + (this._réglétingsErr ? `<div class="note">${esc(this._réglétingsErr)}</div>` : "");
     }
 
     async _loadMemories() {
@@ -395,7 +395,7 @@
         this._memories = this._attr("memories", "items", []);
         this._cats = ["fact", "preference", "person", "routine", "note", "correction"];
       }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "memories") this._drawMemories(); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === "memories") this._drawMemories(); }
     }
 
     _drawBody() {
@@ -406,13 +406,13 @@
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       if (["alarms", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
-      const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
+      const g = this._réglétings && this._réglétings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${g.icon}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERTE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">ENREGISTRER</button></div>`;
-      this._draft = { ...this._settings.data };
+        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERTE</button>' : ""}<button class="btn ghost" data-act="reréglé">UNDO CHANGES</button><button class="btn" data-act="save">ENREGISTRER</button></div>`;
+      this._draft = { ...this._réglétings.data };
       this._dirty = false;
       this._status("");
       loadForm().then((ok) => {
@@ -422,7 +422,7 @@
           wrap.innerHTML = `<div class="e">THE PARAMÈTRES FORM COULDN'T LOAD · REFRESH THE PAGE AND TRY AGAIN</div>`;
           return;
         }
-        const S = this._settings;
+        const S = this._réglétings;
         const form = document.createElement("ha-form");
         form.hass = this._hass;
         form.schema = g.schema;
@@ -442,7 +442,7 @@
       });
     }
 
-    // ---------- set-up wizard ----------
+    // ---------- réglé-up wizard ----------
     async _openWizard(w) {
       const el = this._$("wiz");
       el.hidden = false;
@@ -510,7 +510,7 @@
       try {
         const res = await this._hass.callWS({ type: "sentient/wizard/save", step: st.id, data });
         W.draft = { ...W.draft, ...res.data };
-        this._settings = null;  // the Settings tab reloads with these
+        this._réglétings = null;  // the Settings tab reloads with these
         this._wizGo(W.i + 1);
       } catch (e) {
         if (status) { status.textContent = String(e.message || e).toUpperCase(); status.className = "warn"; }
@@ -554,27 +554,27 @@
     }
 
     async _save() {
-      const g = this._settings.groups.find((x) => x.id === this._group);
+      const g = this._réglétings.groups.find((x) => x.id === this._group);
       if (!g) return;
       const names = g.schema.map((s) => s.name);
       const data = {};
       for (const n of names) if (this._draft[n] !== undefined && this._draft[n] !== null && this._draft[n] !== "") data[n] = this._draft[n];
       this._status("SAVING…");
       try {
-        const res = await this._hass.callWS({ type: "sentient/settings/save", group: g.id, data });
-        this._settings.data = res.data;
+        const res = await this._hass.callWS({ type: "sentient/réglétings/save", group: g.id, data });
+        this._réglétings.data = res.data;
         this._draft = { ...res.data };
         if (this._form) this._form.data = this._draft;
         this._dirty = false;
         this._status("ENREGISTRERD ✓", "ok");
-        this._enAt = 0; this._en = null;  // energy card follows its on/off setting
+        this._enAt = 0; this._en = null;  // energy card follows its on/off régléting
       } catch (e) {
         this._status(e.message || String(e), "bad");
       }
     }
 
     _drawMemories() {
-      if (this._view !== "settings" || this._group !== "memories") return;
+      if (this._view !== "réglétings" || this._group !== "memories") return;
       const body = this._$("body");
       const items = this._memories || [];
       const q = (this._find || "").toLowerCase().trim();
@@ -594,11 +594,11 @@
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">SOUVENIRS</div>
           <div class="bs">What the house knows and shares with every voice assistant. Tap one to edit it.</div></div>
           <div class="chips">${Object.entries(byCat).map(([c, n]) => `<span>${esc(c).toUpperCase()} ${n}</span>`).join("")}</div></div>
-        <form class="add" data-form="add"><ha-icon icon="mdi:plus"></ha-icon><input name="text" placeholder="Add a memory, e.g. “The bins go out on Thursday night”" autocomplete="off">
+        <form class="add" data-form="add"><ha-icon icon="mdi:plus"></ha-icon><input name="text" placeholder="Ajouter un souvenir, ex. « Les poubelles sortent le jeudi soir »" autocomplete="off">
           <select name="category">${opts("fact")}</select><button class="btn sm" type="submit">AJOUTER</button></form>
         <div class="find"><ha-icon icon="mdi:magnify"></ha-icon><input id="mfind" placeholder="Search ${items.length} memories…" value="${esc(this._find || "")}" autocomplete="off"></div>
         <div class="list">${rows || `<div class="e">${q ? "NONTHING MATCHES" : "NONTHING REMEMBERED YET · SAY “REMEMBER THAT…”"}</div>`}</div>`;
-      if (keepFocus) { const f = this._$("mfind"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+      if (keepFocus) { const f = this._$("mfind"); f.focus(); f.régléSelectionRange(f.value.length, f.value.length); }
       if (this._editing) { const i = body.querySelector("form.edit input"); if (i) i.focus(); }
     }
 
@@ -606,7 +606,7 @@
     // ---------- camera spots ----------
     async _loadSpots() {
       try { this._spots = (await this._hass.callWS({ type: "sentient/spots" })).spots; } catch (e) { this._spots = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
     }
 
     _cameras() {
@@ -622,7 +622,7 @@
     }
 
     _drawSpots() {
-      if (this._view !== "settings" || this._group !== "spots") return;
+      if (this._view !== "réglétings" || this._group !== "spots") return;
       const cams = this._cameras();
       const spots = this._spots || [];
       if (!this._cam || !cams.find((c) => c.id === this._cam)) {
@@ -673,7 +673,7 @@
       const al = this._$("spalias");
       if (al) al.addEventListener("input", (ev) => { this._spAlias = ev.target.value; });
       body.querySelectorAll("input.alias").forEach((inp) => inp.addEventListener("change", () => {
-        this._hass.callWS({ type: "sentient/spots/aliases", name: inp.dataset.alias, aliases: inp.value })
+        this._hass.callWS({ type: "sentient/spots/aliases", name: inp.dataréglé.alias, aliases: inp.value })
           .then((r) => { this._spots = r.spots; }, (e) => window.alert(e.message || e));
       }));
       const snap = this._$("snap");
@@ -683,7 +683,7 @@
           snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); this._pts = [...(this._pts || []), pos(ev)]; this._drawSpots(); });
           return;
         }
-        snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); snap.setPointerCapture(ev.pointerId); this._dragFrom = pos(ev); });
+        snap.addEventListener("pointerdown", (ev) => { ev.preventDefault(); snap.régléPointerCapture(ev.pointerId); this._dragFrom = pos(ev); });
         snap.addEventListener("pointermove", (ev) => {
           if (!this._dragFrom) return;
           const [x, y] = pos(ev), [a, b] = this._dragFrom;
@@ -713,7 +713,7 @@
           if (!name) return say("Donnez d'abord un nom à la zone.");
           const pts = this._pts || [];
           if (this._shape ? pts.length < 3 : !this._draft_box) return say(this._shape ? "Tap at least three corners first." : "Drag on the picture to mark it first.");
-          const req = { type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box || [0, 0, 1, 1], aliases: this._spAlias || "" };
+          const req = { type: "sentient/spots/réglé", camera: this._cam, name, box: this._draft_box || [0, 0, 1, 1], aliases: this._spAlias || "" };
           if (this._shape) req.points = pts;
           const res = await this._hass.callWS(req);
           this._spots = res.spots; this._spName = ""; this._spAlias = ""; this._draft_box = null; this._pts = []; this._drawing = false; say(`Enregistré ${res.result.name}.`);
@@ -727,7 +727,7 @@
     // ---------- named routines ----------
     async _loadShortcuts() {
       try { this._sc = (await this._hass.callWS({ type: "sentient/shortcuts" })).items; } catch (e) { this._sc = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
       else this._render();  // routine buttons on the overview
     }
 
@@ -781,7 +781,7 @@
     async _loadItems(kind, extra) {
       this._it = this._it || {};
       try { this._it[kind] = await this._hass.callWS({ type: "sentient/items", kind, ...(extra || {}) }); } catch (e) { this._it[kind] = { items: [], meta: null, err: e.message || String(e) }; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === kind && !this._itEdit) this._drawItems(kind); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === kind && !this._itEdit) this._drawItems(kind); }
     }
 
     _drawItems(kind) {
@@ -800,7 +800,7 @@
         <div class="mllist">${rows || '<div class="e">NONNE YET</div>'}</div><div id="itedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="itadd">${esc(m.add)}</button></div>`;
       body.querySelectorAll("input[data-ittoggle]").forEach((cb) => cb.addEventListener("change", () => {
-        const it = data.items.find((x) => x.id === cb.dataset.ittoggle);
+        const it = data.items.find((x) => x.id === cb.dataréglé.ittoggle);
         if (!it) return;
         this._hass.callWS({ type: "sentient/items/save", kind, item: { ...it, enabled: cb.checked } })
           .then((r) => { this._it[kind] = r; this._drawItems(kind); }, (e) => window.alert(e.message || e));
@@ -834,7 +834,7 @@
           <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
         <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
-          <label class="tg" title="Restaurer aussi les paramètres"><input type="checkbox" id="bkset"><i></i></label><u>ALSO PARAMÈTRES</u>
+          <label class="tg" title="Restaurer aussi les paramètres"><input type="checkbox" id="bkréglé"><i></i></label><u>ALSO PARAMÈTRES</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
         <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR ENREGISTRERD RETOURUPS…</div></div>
         <div class="spmsg" id="bkmsg"></div>`;
@@ -859,7 +859,7 @@
       a.href = URL.createObjectURL(blob);
       a.download = `sentient-backup-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      régléTimeout(() => URL.revokeObjectURL(a.href), 2000);
       this._$("bkmsg").textContent = `Enregistré ${data.memories.length} memories, ${data.spots.length} spots, ${data.motion_lights.rules.length} motion lights and ${data.routines.length} routines.`;
     }
 
@@ -869,7 +869,7 @@
       try {
         const data = JSON.parse(await file.text());
         if (!window.confirm(`Restore ${file.name}? It adds to what's here and doesn't delete anything.`)) return;
-        const res = await this._hass.callWS({ type: "sentient/import", data, settings: this._$("bkset").checked });
+        const res = await this._hass.callWS({ type: "sentient/import", data, réglétings: this._$("bkréglé").checked });
         msg.textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
         this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
       } catch (e) { msg.textContent = e.message || String(e); }
@@ -878,12 +878,12 @@
     // ---------- shushed ----------
     async _loadMutes(quiet, extra) {
       try { const r = await this._hass.callWS({ type: "sentient/mutes", ...(extra || {}) }); this._mutes = r.mutes; this._learnedQuiet = r.learned || []; } catch (e) { this._mutes = []; this._learnedQuiet = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
     }
 
     _drawMutes() {
       const rows = (this._mutes || []).map((m) => `<div class="r"><ha-icon icon="${m.kind === "entity" ? "mdi:volume-off" : "mdi:text-box-remove-outline"}"></ha-icon>
-          <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSSILENCIEUX"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
+          <b>${esc(m.name)}</b><u>${m.until ? "JUSQU'À " + hm(m.until) : "JUSQU'À UNSSILENCIEUX"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Désilencer">✕</a></div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SSILENCIEUX</div>
           <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
         ${rows || '<div class="e">NONTHING SSILENCIEUX</div>'}
@@ -897,7 +897,7 @@
     // ---------- motion lights ----------
     async _loadMotion() {
       try { this._ml = await this._hass.callWS({ type: "sentient/motion_lights" }); } catch (e) { this._ml = { rules: [] }; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "motion" && !this._mlEdit) this._drawMotion(); }
+      if (this._view === "réglétings") { this._drawSide(); if (this._group === "motion" && !this._mlEdit) this._drawMotion(); }
       else this._drawMlCard();
     }
 
@@ -977,7 +977,7 @@
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
           <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.en surveillance || []).length} SURVEILLANCEED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
         + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NONTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
-      el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT SURVEILLANCE", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
+      el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT SURVEILLANCE", upTxt ? "CHAUD POUR " + upTxt : "") + zoneRows + nwRows;
     }
 
     _security() {
@@ -1019,7 +1019,7 @@
       if (!el || !ml || !ml.rules.length) { if (el) el.hidden = true; return; }
       el.hidden = false;
       const on = ml.rules.filter((r) => r.managing).length;
-      el.innerHTML = this._h("MOUVEMENT LUMIÈRES", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "JOUR · RESTING")
+      el.innerHTML = this._h("MOUVEMENT LUMIÈRES", ml.dark ? (ml.late_night ? "TARD LE SOIR · ATTÉNUÉ" : ml.quiet ? "HEURES DE SILENCE" : "SOMBRE · ACTIF") : "JOUR · AU REPOS")
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
           return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
@@ -1046,14 +1046,14 @@
     }
 
     _drawMotion() {
-      if (this._view !== "settings" || this._group !== "motion") return;
+      if (this._view !== "réglétings" || this._group !== "motion") return;
       const ml = this._ml || { rules: [] };
       const pill = (on, text, cls) => `<span class="pill ${on ? cls || "on" : ""}">${text}</span>`;
       const rows = ml.rules.map((r) => {
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
         const chips = [
-          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORE LES HEURES DE SILENCE",
+          r.respect_quiet ? "OFF IN HEURES DE SILENCE" : "IGNORE LES HEURES DE SILENCE",
           r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "N'IMPORTE QUAND",
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
@@ -1067,8 +1067,8 @@
           ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
       }).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOUVEMENT LUMIÈRES</div>
-          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
-          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "JOUR")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "TARD LE SOIR", "warn")}</div></div>
+          <div class="bs">Lights that come on with movement between sunréglé and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
+          <div class="chips">${pill(ml.dark, ml.dark ? "SOMBRE" : "JOUR")}${pill(ml.quiet, "HEURES DE SILENCE", "warn")}${pill(ml.late_night, "TARD LE SOIR", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
           <button class="btn ghost sm" type="submit">ENREGISTRER</button></form>
@@ -1088,15 +1088,15 @@
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
         light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
-        only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
+        only_dark: "Only between sunréglé and sunrise", off_after: "Off after no movement for",
         brightness: "Luminosité", night_brightness: "Luminosité nocturne",
         lux_sensor: "Light sensor (optional)", lux_below: "Sombre en dessous",
       };
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
         respect_quiet: "Off: this light still comes on in quiet hours (handy for landings and stairs).",
-        night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
-        lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
+        night_brightness: "Utilisé tard le soir (la fenêtre ci-dessus). 0 conserve la luminosité normale.",
+        lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunréglé.",
       };
       const schema = [
         { name: "light", required: true, selector: { entity: { domain: ["light", "switch"] } } },
@@ -1191,8 +1191,8 @@
         .map(([k, label, n]) => `<button class="${k === want ? "on" : ""}" data-act="tlkind" data-id="${k}">${label} <b>${n}</b></button>`).join("");
       this._$("tlcount").textContent = "3 DERNIERS JOURS";
       const dayName = (d) => {
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const that = new Date(d); that.setHours(0, 0, 0, 0);
+        const today = new Date(); today.régléHours(0, 0, 0, 0);
+        const that = new Date(d); that.régléHours(0, 0, 0, 0);
         const diff = Math.round((today - that) / 864e5);
         return diff === 0 ? "AUJOURD'HUI" : diff === 1 ? "OUITERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
       };
@@ -1211,7 +1211,7 @@
     _click(ev) {
       const el = ev.target.closest("[data-act]");
       if (!el) return;
-      const { act, id, text } = el.dataset;
+      const { act, id, text } = el.dataréglé;
       if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
@@ -1219,7 +1219,7 @@
       else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Enregistré ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
       else if (act === "bkrestore") {
         if (!window.confirm(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
-        this._hass.callWS({ type: "sentient/backups/restore", name: id, settings: this._$("bkset").checked }).then((res) => {
+        this._hass.callWS({ type: "sentient/backups/restore", name: id, réglétings: this._$("bkréglé").checked }).then((res) => {
           this._$("bkmsg").textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
           this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
         }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
@@ -1231,14 +1231,14 @@
       }
       else if (act === "restyle") { this._restyle = this._restyle === text ? null : text; this._render(); }
       else if (act === "restylex") { this._restyle = null; this._render(); }
-      else if (act === "restyleset") this._restyleSave(text, id);
+      else if (act === "restyleréglé") this._restyleSave(text, id);
       else if (act === "wonderx") this._call("wonder", { dismiss: text });
       else if (act === "fux") this._call("cancel_follow_up", { about: id }, `Stop checking: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
-      else if (act === "goto") { this._group = id; this._show("settings", true); }
+      else if (act === "goto") { this._group = id; this._show("réglétings", true); }
       else if (act === "wizard") this._openWizard();
       else if (act === "wizback") this._wizGo(this._wiz.i - 1);
       else if (act === "wiznext") this._wizNext();
@@ -1248,7 +1248,7 @@
       else if (act === "thumb") {
         const up = id === "up";
         this._thumbs = { ...(this._thumbs || {}), [text]: id };
-        this._hass.callWS({ type: "sentient/feedback/thumb", text, source: el.dataset.src || null, up }).then(() => this._render(), () => {});
+        this._hass.callWS({ type: "sentient/feedback/thumb", text, source: el.dataréglé.src || null, up }).then(() => this._render(), () => {});
         this._render();
       }
       else if (act === "menu") {
@@ -1262,7 +1262,7 @@
         this._drawSide(); this._drawBody();
         if (this._phone()) this._$("body").scrollIntoView({ behavior: "smooth", block: "start" });
       } else if (act === "save") this._save();
-      else if (act === "reset") this._drawBody();
+      else if (act === "reréglé") this._drawBody();
       else if (act === "edit") { this._editing = id; this._drawMemories(); }
       else if (act === "noedit") { this._editing = null; this._drawMemories(); }
       else if (act === "snap") { this._snapT = Date.now(); this._drawSpots(); }
@@ -1325,7 +1325,7 @@
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "critest") {
-        if (!window.confirm("Say a test safety alert on every speaker now?")) return;
+        if (!window.confirm("Dire une alerte de sécurité test sur tous les haut-parleurs maintenant ?")) return;
         this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERTE SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
@@ -1356,19 +1356,19 @@
 
     async _submit(ev) {
       const form = ev.target;
-      if (!form.dataset || !form.dataset.form) return;
+      if (!form.dataréglé || !form.dataréglé.form) return;
       ev.preventDefault();
-      if (form.dataset.form === "mlnight") {
+      if (form.dataréglé.form === "mlnight") {
         const ok = await this._motionDo("sentient/motion_lights/night", { start: form.elements.start.value, end: form.elements.end.value });
-        if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW ENREGISTRERD ✓"; st.className = "ok"; } }
+        if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "FENÊTRE NOCTURNE ENREGISTRÉE ✓"; st.className = "ok"; } }
         return;
       }
-      if (form.dataset.form === "restyle") {
+      if (form.dataréglé.form === "restyle") {
         const note = (new FormData(form).get("note") || "").toString().trim();
-        if (note) this._restyleSave(form.dataset.text, note);
+        if (note) this._restyleSave(form.dataréglé.text, note);
         return;
       }
-      if (form.dataset.form === "remind") {
+      if (form.dataréglé.form === "remind") {
         const message = form.elements.msg.value.trim(), when = form.elements.when.value.trim().toLowerCase();
         if (!message) return;
         const data = { message };
@@ -1385,8 +1385,8 @@
         } catch (e) { window.alert(e.message || String(e)); }
         return;
       }
-      if (form.dataset.form === "spot") { this._spotDo(this._drawing && (this._draft_box || (this._pts || []).length >= 3) ? "save" : "find"); return; }
-      if (form.dataset.form === "look") {
+      if (form.dataréglé.form === "spot") { this._spotDo(this._drawing && (this._draft_box || (this._pts || []).length >= 3) ? "save" : "find"); return; }
+      if (form.dataréglé.form === "look") {
         const q = form.elements.q.value.trim() || form.elements.q.placeholder, spot = form.elements.spot.value;
         const out = this._$("spans"); out.textContent = "OBSERVATION…";
         try {
@@ -1399,11 +1399,11 @@
       const text = form.elements.text.value.trim(), category = form.elements.category.value;
       if (!text) return;
       try {
-        if (form.dataset.form === "add") {
+        if (form.dataréglé.form === "add") {
           await this._hass.callService("sentient", "remember", { text, category });
           form.elements.text.value = "";
         } else {
-          await this._hass.callWS({ type: "sentient/memory/update", memory_id: form.dataset.id, text, category });
+          await this._hass.callWS({ type: "sentient/memory/update", memory_id: form.dataréglé.id, text, category });
           this._editing = null;
         }
         this._loadMemories();
@@ -1455,7 +1455,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 input,textarea,select{-webkit-appearance:none;appearance:none}
 input:focus,textarea:focus{background-color:transparent}
-input:-webkit-autofill{-webkit-box-shadow:0 0 0 40px #0c1424 inset;-webkit-text-fill-color:#e6f5fa}
+input:-webkit-autofill{-webkit-box-shadow:0 0 0 40px #0c1424 inréglé;-webkit-text-fill-color:#e6f5fa}
 img,video{max-width:100%}
 [hidden]{display:none !important}
 button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
@@ -1464,14 +1464,14 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .tabs{display:flex;gap:4px;margin-left:8px;padding:3px;border-radius:14px;border:1px solid rgba(0,255,247,.18);background:rgba(0,255,247,.03)}
 .tabs button{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:11px;font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.7)}
 .tabs button ha-icon{--mdc-icon-size:15px}
-.tabs button.on{color:#00fff7;background:rgba(0,255,247,.12);box-shadow:0 0 10px rgba(0,255,247,.2) inset}
+.tabs button.on{color:#00fff7;background:rgba(0,255,247,.12);box-shadow:0 0 10px rgba(0,255,247,.2) inréglé}
 .brief{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.16em;padding:6px 12px;border-radius:12px;color:#7fefff;border:1px solid rgba(0,255,247,.5);background:rgba(0,255,247,.08);box-shadow:0 0 10px rgba(0,255,247,.18)}
 .brief ha-icon{--mdc-icon-size:14px;color:#00fff7} .brief.busy{opacity:.7}
 .ask{flex:1;display:flex;align-items:center;gap:8px;max-width:640px;margin:0 auto;padding:6px 12px;border-radius:14px;border:1px solid rgba(0,255,247,.28);background:rgba(0,255,247,.05)}
 .ask ha-icon,.add ha-icon,.find ha-icon{--mdc-icon-size:16px;color:#00fff7;flex:none}
 input,select{font:inherit;font-size:13px;color:#e6f5fa}
 .ask input,.add input,.find input{flex:1;min-width:0;width:0;background:none;border:none;outline:none}
-.cols>*,.set>*{min-width:0}
+.cols>*,.réglé>*{min-width:0}
 input::placeholder{color:rgba(150,220,235,.45)}
 select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:5px 8px;outline:none}
 .reply{display:flex;align-items:flex-start;gap:12px;max-width:1564px;margin:12px auto 0;padding:12px 16px;border-radius:16px;border:1px solid rgba(0,255,247,.3);background:rgba(0,255,247,.06);box-shadow:0 0 14px rgba(0,255,247,.12)}
@@ -1481,7 +1481,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .page{max-width:1600px;margin:0 auto;padding:18px}
 .card{position:relative;border-radius:20px;padding:14px 16px;overflow:hidden;
   background:radial-gradient(circle at 20% 0%, rgba(0,255,255,0.09), transparent 45%),linear-gradient(160deg, rgba(10,15,25,0.96), rgba(18,26,50,0.92));
-  border:1px solid rgba(0,255,255,0.28);box-shadow:0 0 14px rgba(0,255,255,0.14), inset 0 0 22px rgba(0,255,255,0.05)}
+  border:1px solid rgba(0,255,255,0.28);box-shadow:0 0 14px rgba(0,255,255,0.14), inréglé 0 0 22px rgba(0,255,255,0.05)}
 .head{display:flex;align-items:center;gap:20px}
 .head img{width:128px;height:128px;border-radius:18px;box-shadow:0 0 24px rgba(0,255,247,.35);flex:none;object-fit:cover}
 .m{flex:1;min-width:0}
@@ -1498,7 +1498,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .b i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#00a8ff,#00fff7);box-shadow:0 0 6px rgba(0,255,247,.6)}
 .cols{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;margin-top:16px;align-items:start}
 .stack{display:flex;flex-direction:column;gap:10px}
-.wiz{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px 16px;background:rgba(3,6,14,.78);backdrop-filter:blur(6px);overflow-y:auto}
+.wiz{position:fixed;inréglé:0;z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px 16px;background:rgba(3,6,14,.78);backdrop-filter:blur(6px);overflow-y:auto}
 .wizc{width:100%;max-width:760px;padding:20px 22px}
 .wizh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .wizdots{display:flex;gap:6px} .wizdots i{width:22px;height:4px;border-radius:2px;background:rgba(0,255,247,.15)} .wizdots i.done{background:rgba(0,255,247,.5)} .wizdots i.on{background:#00fff7;box-shadow:0 0 8px rgba(0,255,247,.7)}
@@ -1539,8 +1539,8 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
 .e{padding:18px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
-/* settings */
-.set{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+/* réglétings */
+.réglé{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 .side{position:sticky;top:74px;padding:12px;display:flex;flex-direction:column;gap:4px}
 .sh{font-size:11px;font-weight:700;letter-spacing:.32em;color:#00fff7;padding:4px 10px 10px;text-shadow:0 0 6px rgba(0,255,247,.5)}
 .menu{border-radius:14px;border:1px solid rgba(0,255,247,.08);background:rgba(0,255,247,.015)}
@@ -1619,9 +1619,9 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .snap{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,247,.3);background:#000;aspect-ratio:16/9;user-select:none;touch-action:none}
 .snap img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
 .snap.drawing{cursor:crosshair;border-color:#00fff7;box-shadow:0 0 16px rgba(0,255,247,.35)}
-.box{position:absolute;border:2px solid #00fff7;border-radius:6px;box-shadow:0 0 10px rgba(0,255,247,.6), inset 0 0 18px rgba(0,255,247,.15);pointer-events:none}
+.box{position:absolute;border:2px solid #00fff7;border-radius:6px;box-shadow:0 0 10px rgba(0,255,247,.6), inréglé 0 0 18px rgba(0,255,247,.15);pointer-events:none}
 .box span{position:absolute;left:-2px;top:-22px;font-size:10px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:6px;background:#00fff7;color:#041016;white-space:nowrap;text-transform:uppercase}
-.shape{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.shape{position:absolute;inréglé:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .shape polygon{fill:rgba(0,255,247,.12);stroke:#00fff7;stroke-width:.5;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px rgba(0,255,247,.7))}
 .shape.new polygon{fill:rgba(255,190,85,.12);stroke:#ffbe55;stroke-dasharray:4 3}
 .dotp{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#ffbe55;box-shadow:0 0 6px #ffbe55;pointer-events:none}
@@ -1640,7 +1640,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .chips.left{justify-content:flex-start}
 .mlform{margin-top:14px;border-color:rgba(0,255,247,.55)} .row.end{justify-content:flex-end;margin-top:10px} .row.end .spmsg{flex:1;color:#ff7088}
 .tg{position:relative;flex:none;width:34px;height:18px;cursor:pointer} .tg input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
-.tg i{position:absolute;inset:0;border-radius:9px;background:rgba(150,220,235,.2);transition:.2s;pointer-events:none}
+.tg i{position:absolute;inréglé:0;border-radius:9px;background:rgba(150,220,235,.2);transition:.2s;pointer-events:none}
 .tg i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#9bb;transition:.2s}
 .tg input:checked+i{background:rgba(0,255,247,.35)} .tg input:checked+i::after{left:18px;background:#00fff7;box-shadow:0 0 6px #00fff7}
 .tlp{max-width:1100px}
@@ -1668,12 +1668,12 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .bar2 b{position:absolute;top:-3px;width:2px;height:13px;background:rgba(255,255,255,.7);border-radius:1px}
 .en.hot .bar2 i{background:linear-gradient(90deg,#ff9a3d,#ff5a78)} .en.hot u{color:#ff7088}
 .tli.k-energy .dot ha-icon{color:#ffbe55} .tli.k-security .dot ha-icon{color:#ff7088}
-@media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
+@media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .réglé{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:10px} .top{padding:0 8px;gap:6px} .top .ttl{letter-spacing:.2em;font-size:12px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1} .tabs{margin-left:0} .tabs button{padding:6px 9px} .brief span{display:none} .brief{padding:6px 8px}
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
-  .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
-  .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
+  .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unréglé;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
+  .réglé{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
 `;
 
   customElements.define("sentient-panel", SentientPanel);
