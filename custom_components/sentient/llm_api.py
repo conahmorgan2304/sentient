@@ -8,6 +8,7 @@ That gives every voice in the house one shared brain.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from typing import TYPE_CHECKING, Any
@@ -23,6 +24,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import llm
 from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
+
+from .voice_actions import speech_attempt, ANNOUNCE_TIMEOUT
 
 from .const import (
     CONF_FALLBACK_SPEAKERS,
@@ -253,10 +256,24 @@ class AnnounceTool(_Tool):
                                 "speakers": rt.speech.describe_rooms()}
                     if found not in targets:
                         targets.append(found)
-        result = await rt.speech.async_say(
-            args["message"], args.get("priority", "normal"), targets, source="conversation"
-        )
-        return result.as_dict()
+        attempt = speech_attempt.get()
+        if attempt is not None:
+            attempt['started'] = True
+        try:
+            async with asyncio.timeout(ANNOUNCE_TIMEOUT):
+                result = await rt.speech.async_say(
+                    args["message"], args.get("priority", "normal"), targets, source="conversation"
+                )
+            outcome = result.as_dict()
+        except TimeoutError:
+            outcome = {"spoken": None, "reason": "delivery_timeout", "speakers": targets or [],
+                       "error": "The speaker request timed out. Playback is unconfirmed; do not automatically retry."}
+        except HomeAssistantError as err:
+            outcome = {"spoken": False, "reason": "delivery_failed", "speakers": targets or [],
+                       "error": str(err)[:300] or "Speaker delivery failed"}
+        if attempt is not None:
+            attempt['result'] = outcome
+        return outcome
 
 
 class WatchTool(_Tool):

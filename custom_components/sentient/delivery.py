@@ -217,29 +217,39 @@ async def delivered(
     """Set speaker volume (one level, or one per speaker) and duck nearby media for the block."""
     restore: list[tuple[tuple[str, str], float]] = []
     try:
-        for speaker in speakers:
-            level = volume.get(speaker) if isinstance(volume, dict) else volume
-            if level is not None:
-                volume_for = level
-                if (control := volume_control(hass, speaker)) and (before := _level(hass, control)) is not None:
-                    if abs(before - volume_for) > 0.01:
-                        restore.append((control, before))
-                        await _set(hass, control, volume_for)
-        if duck is not None:
-            for player in playing_nearby(hass, speakers):
-                control = ("media_player", player)
-                if (before := _level(hass, control)) is not None and before > duck:
-                    restore.append((control, before))
-                    await _set(hass, control, duck)
-        if restore:
-            await asyncio.sleep(0.4)  # let the new level land before speaking
-    except Exception as err:  # noqa: BLE001 - never stop the message for this
-        _LOGGER.debug("Could not adjust volume: %s", err)
-    try:
+        try:
+            async with asyncio.timeout(3):
+                for speaker in speakers:
+                    level = volume.get(speaker) if isinstance(volume, dict) else volume
+                    if level is not None:
+                        if (control := volume_control(hass, speaker)) and (before := _level(hass, control)) is not None:
+                            if abs(before - level) > 0.01:
+                                restore.append((control, before))
+                                await _set(hass, control, level)
+                if duck is not None:
+                    for player in playing_nearby(hass, speakers):
+                        control = ("media_player", player)
+                        if (before := _level(hass, control)) is not None and before > duck:
+                            restore.append((control, before))
+                            await _set(hass, control, duck)
+                if restore:
+                    await asyncio.sleep(0.4)
+        except Exception as err:  # volume adjustment is best effort
+            _LOGGER.debug("Could not adjust volume: %s", err)
         yield
     finally:
-        for control, level in reversed(restore):
+        # Also runs if cancellation happens before yield. Bound cleanup so it cannot
+        # hold the speech lock and the conversation indefinitely.
+        async def restore_one(control, level):
             try:
                 await _set(hass, control, level)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Could not restore %s: %s", control[1], err)
+        latest = dict(restore)  # preserve the original level for repeated controls below
+        for control, level in reversed(restore):
+            latest[control] = level
+        try:
+            async with asyncio.timeout(3):
+                await asyncio.gather(*(restore_one(control, level) for control, level in latest.items()))
+        except TimeoutError:
+            _LOGGER.warning("Speaker volume restoration timed out; check speaker volumes")
