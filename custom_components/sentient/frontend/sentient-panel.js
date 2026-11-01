@@ -176,7 +176,7 @@
       const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${go}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
       const st = (k) => (this._st(k) ? this._st(k).state : "—");
       const ai = ((this._st("mind") || {}).attributes || {}).ai || {};
-      const aiTxt = ai.failing ? "IA NONT ANSWERING · PLAIN WORDS" : ai.capped ? "IA LIMIT REACHED · PLAIN WORDS" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
+      const aiTxt = ai.failing ? "IA NE RÉPOND PAS · MOTS SIMPLES" : ai.capped ? "LIMITE IA ATTEINTE · MOTS SIMPLES" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
           <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
@@ -203,7 +203,7 @@
       const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passant": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspect: "mdi:alert-outline", rien: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
       R("clipc").innerHTML = this._h("EXTRAITS VUS", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probablement ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">LIRE</a>` : ""}</div>`).join("")
-        || '<div class="e">NONTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
+        || '<div class="e">NONTHING SURVEILLANCEED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
 
       // routines
       const routines = this._attr("routines", "routines", []);
@@ -224,11 +224,11 @@
       const act = this.shadowRoot.activeElement;
       const typing = act && act.closest && act.closest('form[data-form="remind"]');
       const watches = this._attr("watches", "watches", []);
-      if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REESPRITERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
+      if (!typing) R("watch").innerHTML = this._h("SURVEILLANCEES &amp; REESPRITERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Annuler">✕</a></div>`;
-      }).join("") || '<div class="e">NONTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
+      }).join("") || '<div class="e">NONTHING BEING SURVEILLANCEED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
 
@@ -347,7 +347,7 @@
       const pages = {
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
         mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
-        spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} taught` : "Zones nommées sur lesquelles l'IA zoome"],
+        spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} apprises` : "Zones nommées sur lesquelles l'IA zoome"],
         shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
         alarms: ["mdi:alarm", "Alarmes", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
@@ -468,7 +468,7 @@
       const c = this._$("wizc");
       if (W.i === last) {
         const persona = W.draft.persona || W.persona;
-        c.innerHTML = head("mdi:check-decagram-outline", "Test & finish", `That's it. Say hello on the speakers to check they work, then finish. Everything can be changed later under Settings.`)
+        c.innerHTML = head("mdi:check-decagram-outline", "Test & terminer", `C'est tout. Dites bonjour sur les haut-parleurs pour vérifier qu'ils fonctionnent, puis terminez. Tout peut être modifié plus tard dans les Paramètres.`)
           + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the IA is down</span></label>` : "")
           + `<div class="wizres" id="wizres"></div>
           <div class="wizbar"><button class="btn ghost" data-act="wizback">RETOUR</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">TERMINER</button></div>`;
@@ -663,7 +663,7 @@
               <input class="alias" data-alias="${esc(sp.name)}" value="${esc(sp.aliases || "")}" placeholder="also called…">
               <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Oublier">✕</a></div>`).join("") || '<div class="e">NONNE YET</div>'}
           <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
-          <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
+          <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Y a-t-il quelque chose dans ${esc(here[0].name)}?` : "Que vois-tu ?"}" autocomplete="off">
             <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
           <div class="spmsg ans" id="spans">${esc(this._lookAns || "")}</div>
         </div></div>`;
@@ -705,12 +705,12 @@
       const say = (t) => { this._spMsg = t; const m = this._$("spmsg"); if (m) m.textContent = t; };
       try {
         if (kind === "find") {
-          if (!name) return say("Give the spot a name first.");
+          if (!name) return say("Donnez d'abord un nom à la zone.");
           say(`Looking for ${name}…`);
           const res = await this._hass.callWS({ type: "sentient/spots/learn", camera: this._cam, name });
           this._spots = res.spots; this._spName = ""; say(`Trouvé ${res.result.name}.`);
         } else if (kind === "save") {
-          if (!name) return say("Give the spot a name first.");
+          if (!name) return say("Donnez d'abord un nom à la zone.");
           const pts = this._pts || [];
           if (this._shape ? pts.length < 3 : !this._draft_box) return say(this._shape ? "Tap at least three corners first." : "Drag on the picture to mark it first.");
           const req = { type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box || [0, 0, 1, 1], aliases: this._spAlias || "" };
@@ -912,7 +912,7 @@
     _showChips() {
       const st = this._st("party_mode");
       if (!st) return "";
-      const SHOWS = { disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "FÊTE"], rainbow: ["mdi:looks", "RAINBOW"],
+      const SHOWS = { disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "FÊTE"], rainbow: ["mdi:looks", "ARC-EN-CIEL"],
         chill: ["mdi:weather-night", "DÉTENTE"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "NOËL"] };
       const on = st.state === "on", style = st.attributes.style;
       const list = (st.attributes.buttons || []).filter((s) => SHOWS[s]);
@@ -975,9 +975,9 @@
           ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.warm_by)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
-          <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.en surveillance || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
+          <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.en surveillance || []).length} SURVEILLANCEED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
         + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NONTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
-      el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
+      el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT SURVEILLANCE", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
 
     _security() {
@@ -1173,7 +1173,7 @@
     _drawTimeline() {
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
-        visitor: ["mdi:doorbell-video", "VISITEUR"], watch: ["mdi:bell-ring-outline", "WATCH"],
+        visitor: ["mdi:doorbell-video", "VISITEUR"], watch: ["mdi:bell-ring-outline", "SURVEILLANCE"],
         light: ["mdi:motion-sensor", "LUMIÈRE"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SÉCURITÉ"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "ACTION VOCALE"], clip: ["mdi:filmstrip-box", "EXTRAIT"],
         heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
@@ -1388,10 +1388,10 @@
       if (form.dataset.form === "spot") { this._spotDo(this._drawing && (this._draft_box || (this._pts || []).length >= 3) ? "save" : "find"); return; }
       if (form.dataset.form === "look") {
         const q = form.elements.q.value.trim() || form.elements.q.placeholder, spot = form.elements.spot.value;
-        const out = this._$("spans"); out.textContent = "LOOKING…";
+        const out = this._$("spans"); out.textContent = "OBSERVATION…";
         try {
           const res = await this._hass.callWS({ type: "sentient/look", camera: this._cam, question: q, ...(spot ? { spot } : {}) });
-          this._lookAns = res.result.answer || "No answer.";
+          this._lookAns = res.result.answer || "Pas de réponse.";
         } catch (e) { this._lookAns = e.message || String(e); }
         out.textContent = this._lookAns;
         return;
