@@ -31,7 +31,7 @@ async def test_timeline_records_and_answers(hass: HomeAssistant, hass_ws_client)
     await hass.async_block_till_done()
     tl = entry.runtime_data.timeline
     texts = [i["text"] for i in tl.since(1)]
-    assert texts[:3] == ["Waxmelt is back to normal", "Waxmelt is offline", "Landing light: on with motion"]
+    assert texts[:3] == ["Waxmelt est revenu à la normale", "Waxmelt is offline", "Landing light: on with motion"]
     assert "x" not in texts and "Weather: cloudy → rainy" in texts
     said = next(i for i in tl.items if i["kind"] == "said")
     assert said["detail"] == "Kitchen speaker"
