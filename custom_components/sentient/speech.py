@@ -396,7 +396,7 @@ class SpeechRouter:
             target = alexa[0] if len(alexa) == 1 else alexa
             calls.append(self.hass.services.async_call(
                 "notify", "alexa_media",
-                {"message": text, "target": target, "data": {"type": "announce" if self.chime else "tts"}},
+                {"message": text, "target": target, "data": {"type": "tts"}},  # force tts: announce is unreliable on some Alexa setups
                 blocking=True,
             ))
         if others and (tts := self.options.get(CONF_TTS_ENTITY)):
