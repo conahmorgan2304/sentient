@@ -106,7 +106,8 @@
           "security_incidents": "Regrouper les incidents de sécurité",
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
-          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa"
+          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
+          "update_checker": "Vérifier les mises à jour de Sentient"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -191,7 +192,8 @@
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
-          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas."
+          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
+          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique."
         }
       }
     },
@@ -383,7 +385,8 @@
           "security_incidents": "Regrouper les incidents de sécurité",
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
-          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa"
+          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
+          "update_checker": "Vérifier les mises à jour de Sentient"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -546,7 +549,8 @@
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
-          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas."
+          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
+          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique."
         }
       },
       "memories": {

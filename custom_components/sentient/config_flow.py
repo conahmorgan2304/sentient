@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .const import CONF_UPDATE_CHECKER
 from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
@@ -294,6 +295,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_RAIN_ENTITIES, **d(CONF_RAIN_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),
+            vol.Required(CONF_UPDATE_CHECKER, **d(CONF_UPDATE_CHECKER, False)): selector.BooleanSelector(),
             vol.Required(CONF_SELF_TEST, **d(CONF_SELF_TEST, "off")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=SELF_TEST_MODES, translation_key="self_test")
             ),

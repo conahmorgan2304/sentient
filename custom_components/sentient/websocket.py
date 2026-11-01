@@ -18,6 +18,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
 
+from .const import CONF_UPDATE_CHECKER
 from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .config_flow import _briefing_schema, _speech_schema
@@ -254,6 +255,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
     ]),
+    ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
         CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
     ]),
@@ -357,6 +359,7 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_voice_check)
+    websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_thumb)
@@ -1109,3 +1112,18 @@ def ws_voice_check(hass: HomeAssistant, connection, msg):
         connection.send_result(msg["id"], rt.voice_checks.status())
     except ValueError as err:
         connection.send_error(msg["id"], "invalid", str(err))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/update_check"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_update_check(hass, connection, msg):
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    checker = entry.runtime_data.updates
+    if not checker.enabled:
+        connection.send_error(msg["id"], "disabled", "Enable the update checker in Settings → Updates first")
+        return
+    connection.send_result(msg["id"], await checker.async_check())

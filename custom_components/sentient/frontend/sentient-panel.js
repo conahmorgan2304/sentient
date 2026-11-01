@@ -274,6 +274,7 @@
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
       const voiceCheckRow = mind.live_voice_check_enabled === false ? "" : this._voiceCheckRow(mind.voice_check);
       const mindRows = [
+        this._updateRow(mind.sentient_updates),
         voiceCheckRow,
         ...(mind.speech_deliveries || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${esc(d.message)}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`),
         ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
@@ -1210,6 +1211,28 @@
       this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
     }
 
+    _updateRow(info) {
+      if (!info?.enabled || !this._hass.user?.is_admin) return "";
+      const label = info.error ? "CHECK FAILED" : info.update_available ? "UPDATE AVAILABLE" : info.latest_version ? "NO NEWER RELEASE" : "NOT CHECKED YET";
+      return `<div class="r"><ha-icon icon="mdi:update"></ha-icon><b class="wrap">SENTIENT · ${esc(label)}<small>Loaded: ${esc(info.installed_version || "unknown")} · Latest: ${esc(info.latest_version || "unknown")}</small><small>${esc(info.error || info.note || "")}</small><small>${info.last_checked ? "Last check: " + esc(new Date(info.last_checked).toLocaleString()) : ""}</small><small role="status">${esc(this._updatesFeedback || "")}</small><a href="https://github.com/conahmorgan2304/sentient/releases" target="_blank" rel="noopener noreferrer">Release notes</a></b><button class="btn sm ghost" data-act="checkupdates" ${this._updatesSaving ? "disabled" : ""}>${this._updatesSaving ? "CHECKING…" : "CHECK NOW"}</button><button class="btn sm ghost" data-act="refreshpanel">REFRESH PANEL</button></div>`;
+    }
+
+    async _checkUpdates() {
+      if (this._updatesSaving) return;
+      this._updatesSaving = true;
+      this._updatesFeedback = "Checking…";
+      this._render();
+      try {
+        const result = await this._hass.callWS({ type: "sentient/update_check" });
+        this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? "Update available in HACS." : "No newer release found."} Recent checks may be cached.` : "Checker disabled.";
+      } catch (error) {
+        this._updatesFeedback = error.message || String(error);
+      } finally {
+        this._updatesSaving = false;
+        this._render();
+      }
+    }
+
     _voiceCheckRow(sensorValue) {
       const voiceCheck = this._voiceCheckState(sensorValue);
       return this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start">START</button>${voiceCheck ? `<button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${voiceCheck?.steps?.length === 2 && voiceCheck.heard_replies === null ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}${this._voiceCheckSaving ? '<div class="r" role="status">Saving voice check…</div>' : ""}${this._voiceCheckError ? `<div class="r bad" role="alert">${esc(this._voiceCheckError)}</div>` : ""}${voiceCheck?.heard_replies != null ? `<div class="r" role="status"><b>${voiceCheck.heard_replies ? "SAVED · You confirmed you heard both replies." : "SAVED · You reported that replies were not heard."}</b><small>This records playback feedback; the LISTEN / STOP results remain above.</small></div>` : ""}` : "";
@@ -1243,7 +1266,9 @@
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
-      if (act === "voicecheck") {
+      if (act === "checkupdates") this._checkUpdates();
+      else if (act === "refreshpanel") window.location.reload();
+      else if (act === "voicecheck") {
         this._voiceCheckAction(id, el.dataset.run);
       }
       else if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
