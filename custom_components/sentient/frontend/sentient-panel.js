@@ -131,7 +131,7 @@
       });
       this.shadowRoot.addEventListener("input", (ev) => { if (ev.target.id === "mfind") { this._find = ev.target.value; this._drawMemories(); } });
       this.shadowRoot.addEventListener("keydown", (ev) => {
-        if (ev.key === "Escape" && this._editing) { this._editing = null; this._drawMemories(); }
+        if (ev.key === "Échap" && this._editing) { this._editing = null; this._drawMemories(); }
       });
       this._group = "memories";
       this._show(this._view || "overview", false);
@@ -212,12 +212,12 @@
       const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} SUPPRIMERD · BRING RETOUR</a>` : "";
       R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}${back}</div>` +
         (routines.slice(0, 6).map((r) => {
-          const tag = r.adopted ? "LA MAISON S'EN OCCUPE" : r.declined ? "REFUSÉ" : r.offered ? "OFFERED" : "LEARNED";
+          const tag = r.adopted ? "LA MAISON S'EN OCCUPE" : r.declined ? "REFUSÉ" : r.offered ? "OFFERED" : "APPRIS";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
           return `<div class="card rt ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}">
-            <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>
-            <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LET THE HOUSE DO IT"}</div></div>`;
+            <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Supprimer">✕</a></div>
+            <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LAISSER LA MAISON S'EN OCCUPER"}</div></div>`;
         }).join("") || '<div class="card"><div class="e">NON ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
 
       // watches (left alone while a reminder is being typed)
@@ -227,7 +227,7 @@
       if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REESPRITERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
-          <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
+          <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Annuler">✕</a></div>`;
       }).join("") || '<div class="e">NONTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
@@ -274,13 +274,13 @@
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
       const mindRows = [
         ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
-        ...(mind.conversation_diagnostics || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
+        ...(mind.conversation_diagnostics || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "ÉCOUTER" : "STOP"} · ${hm(d.time)}</u></div>`),
         ...(mind.security_incidents || []).slice(0, 3).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`),
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
           <button class="btn sm ghost" data-act="wonderask">ASK</button><a class="x" data-act="wonderx" data-text="${esc(q)}" title="Don't ask">✕</a></div>`),
         ...(mind.follow_ups || []).map((f) => `<div class="r"><ha-icon icon="mdi:sync"></ha-icon><b>Check back: ${esc(f.about)}</b><u>${esc(f.at)}</u>
-          <a class="x" data-act="fux" data-id="${esc(f.id)}" data-text="${esc(f.about)}" title="Cancel">✕</a></div>`),
+          <a class="x" data-act="fux" data-id="${esc(f.id)}" data-text="${esc(f.about)}" title="Annuler">✕</a></div>`),
         ...(mind.to_pass_on || []).map((t) => `<div class="r dim"><ha-icon icon="mdi:account-arrow-right-outline"></ha-icon><b>${esc(t)}</b><u>TO PASS ON</u></div>`),
         ...(mind.lessons || []).slice(-2).map((t) => `<div class="r dim"><ha-icon icon="mdi:school-outline"></ha-icon><b>${esc(t)}</b><u>LESSON</u></div>`),
         ...(mind.recent_conversations || []).slice(0, 3).map((c) => `<div class="r dim"><ha-icon icon="mdi:chat-outline"></ha-icon>
@@ -308,8 +308,8 @@
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
       const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NONTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
-          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NONTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Content de l'entendre"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
+          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Moins taquin", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">ENREGISTRER</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
@@ -347,16 +347,16 @@
       const pages = {
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
         mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
-        spots: ["mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the IA zooms into"],
+        spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} taught` : "Named areas the IA zooms into"],
         shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
-        alarms: ["mdi:alarm", "Alarms", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
+        alarms: ["mdi:alarm", "Alarmes", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
         offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
-        announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
-        autooff: ["mdi:timer-off-outline", "Auto-off", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
+        announce: ["mdi:bullhorn-outline", "Annonces", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
+        autooff: ["mdi:timer-off-outline", "Extinction auto", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
-        checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
-        backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
+        checks: ["mdi:cctv", "Vérifications caméras", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
+        backup: ["mdi:backup-restore", "Sauvegarde", "Télécharger ou tout restaurer"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
       // The menus, in order; anything not listed lands in the last one
@@ -587,10 +587,10 @@
       const rows = shown.map((m) => this._editing === m.id
         ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon>
             <input name="text" value="${esc(m.text)}" autocomplete="off"><select name="category">${opts(m.category)}</select>
-            <button class="btn sm" type="submit">ENREGISTRER</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
+            <button class="btn sm" type="submit">ENREGISTRER</button><a class="x" data-act="noedit" title="Annuler">✕</a></form>`
         : `<div class="r mem"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
-            <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
+            <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Oublier">✕</a></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">SOUVENIRS</div>
           <div class="bs">What the house knows and shares with every voice assistant. Tap one to edit it.</div></div>
           <div class="chips">${Object.entries(byCat).map(([c, n]) => `<span>${esc(c).toUpperCase()} ${n}</span>`).join("")}</div></div>
@@ -661,7 +661,7 @@
           <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
           ${here.map((sp) => `<div class="r"><ha-icon icon="${sp.points ? "mdi:vector-polygon" : "mdi:selection-marker"}"></ha-icon><b>${esc(sp.name)}</b>
               <input class="alias" data-alias="${esc(sp.name)}" value="${esc(sp.aliases || "")}" placeholder="also called…">
-              <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONNE YET</div>'}
+              <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Oublier">✕</a></div>`).join("") || '<div class="e">NONNE YET</div>'}
           <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
           <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
             <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
@@ -735,7 +735,7 @@
       const rows = (this._sc || []).map((r) => `<div class="card ml"><div class="r"><ha-icon icon="mdi:playlist-play"></ha-icon><b>${esc(r.name)}</b>
             <s>${r.actions.length} STEP${r.actions.length === 1 ? "" : "S"}</s>
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
-            <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Delete">✕</a></div>
+            <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Supprimer">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
           <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
@@ -753,7 +753,7 @@
         <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">ANNULER</button><button class="btn sm" data-act="scsave">ENREGISTRER</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = { name: "Name", aliases: "Other ways of asking (comma separated)", say: "Say when done",
-        check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", check_locks: "First check for anything unlocked",
+        check_open: "Vérifier d'abord les portes et fenêtres restées ouvertes", check_lights: "Vérifier d'abord les lumières restées allumées", check_locks: "Vérifier d'abord ce qui est déverrouillé",
         inputs: "Details it can be told — one per line, 'name: what it is' (e.g. 'rooms: which rooms — living room, kitchen'). Use them in actions as {{ rooms }}", actions: "Actions" };
       const schema = [
         { name: "name", required: true, selector: { text: {} } },
@@ -793,7 +793,7 @@
       const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${m.icon}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
             <label class="tg" title="On or off"><input type="checkbox" data-ittoggle="${esc(it.id)}"${it.enabled === false ? "" : " checked"}><i></i></label>
             <button class="btn ghost sm" data-act="ittest" data-id="${esc(it.id)}">TRY</button>
-            <a class="x" data-act="itedit" data-id="${esc(it.id)}" title="Edit">✎</a><a class="x" data-act="itdel" data-id="${esc(it.id)}" data-text="${esc(it.name)}" title="Delete">✕</a></div>
+            <a class="x" data-act="itedit" data-id="${esc(it.id)}" title="Edit">✎</a><a class="x" data-act="itdel" data-id="${esc(it.id)}" data-text="${esc(it.name)}" title="Supprimer">✕</a></div>
           <div class="mlsub">${esc(it._summary || "")}</div>${it.last_answer ? `<div class="hint">LAST: ${esc(it.last_answer).toUpperCase()}</div>` : ""}</div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="${m.icon}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
           <div class="bs">${esc(m.blurb)}</div></div></div>
@@ -834,7 +834,7 @@
           <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
         <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
-          <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO PARAMÈTRES</u>
+          <label class="tg" title="Restaurer aussi les paramètres"><input type="checkbox" id="bkset"><i></i></label><u>ALSO PARAMÈTRES</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
         <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR ENREGISTRERD RETOURUPS…</div></div>
         <div class="spmsg" id="bkmsg"></div>`;
@@ -891,7 +891,7 @@
         <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDRETOUR</div>
           <div class="bs">What the house has picked up from shushes, hushing it straight after a remark, and declined or deleted routines. It fades by itself over a month or so; ✕ forgets it now.</div></div></div>
         ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline"}"></ha-icon>
-          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Forget this">✕</a></div>`).join("") || '<div class="e">NONTHING YET</div>'}`;
+          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Oublier ceci">✕</a></div>`).join("") || '<div class="e">NONTHING YET</div>'}`;
     }
 
     // ---------- motion lights ----------
@@ -971,7 +971,7 @@
       if (wb.weekdays) up.weekdays = wb.weekdays; if (wb.weekends) up.weekends = wb.weekends;
       const upTxt = [up.weekdays && `WEEKDAYS ${up.weekdays}`, up.weekends && `WEEKENDS ${up.weekends}`].filter(Boolean).join(" · ");
       const zoneRows = zones.map((z) => `<div class="r"><ha-icon icon="mdi:radiator"></ha-icon><b>${esc(z.name)}</b>
-          <u>${z.now != null ? z.now + "° NONW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "LEARNING"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
+          <u>${z.now != null ? z.now + "° NONW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "APPRENTISSAGE"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
           ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.warm_by)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
@@ -1053,7 +1053,7 @@
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
         const chips = [
-          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNONRES QUIET HOURS",
+          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORE LES HEURES DE SILENCE",
           r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "N'IMPORTE QUAND",
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
@@ -1068,7 +1068,7 @@
       }).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOUVEMENT LIGHTS</div>
           <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
-          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "JOUR")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
+          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "JOUR")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "TARD LE SOIR", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
           <button class="btn ghost sm" type="submit">ENREGISTRER</button></form>
@@ -1089,8 +1089,8 @@
       const LABELS = {
         light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
         only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
-        brightness: "Brightness", night_brightness: "Late-night brightness",
-        lux_sensor: "Light sensor (optional)", lux_below: "Dark below",
+        brightness: "Luminosité", night_brightness: "Luminosité nocturne",
+        lux_sensor: "Light sensor (optional)", lux_below: "Sombre en dessous",
       };
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
