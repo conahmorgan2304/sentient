@@ -347,15 +347,15 @@
       const pages = {
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
         mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
-        spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} taught` : "Named areas the IA zooms into"],
+        spots: ["mdi:selection-marker", "Zones caméras", this._spots ? `${this._spots.length} taught` : "Zones nommées sur lesquelles l'IA zoome"],
         shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
         alarms: ["mdi:alarm", "Alarmes", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
         offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
-        announce: ["mdi:bullhorn-outline", "Annonces", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
+        announce: ["mdi:bullhorn-outline", "Annonces", n("announce") !== null ? `${n("announce")} · sonnette, portail` : "Sonnette, portail…"],
         autooff: ["mdi:timer-off-outline", "Extinction auto", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
-        checks: ["mdi:cctv", "Vérifications caméras", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
+        checks: ["mdi:cctv", "Vérifications caméras", n("checks") !== null ? `${n("checks")} en surveillance` : "Camion de livraison dehors ?"],
         backup: ["mdi:backup-restore", "Sauvegarde", "Télécharger ou tout restaurer"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
@@ -641,7 +641,7 @@
       const ready = this._shape ? pts.length >= 3 : !!this._draft_box;
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:selection-marker"></ha-icon><div><div class="bt">CAMERA SPOTS</div>
-          <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive" — and other names for it. Questions that mention it use the camera that can see it, and send the IA just that part. Draw a shape to leave out what's next to it (a neighbour's car).</div></div></div>
+          <div class="bs">Nommez une partie de l'image d'une caméra — "le clapier", "l'allée" — et d'autres noms pour elle. Les questions qui la mentionnent utilisent la caméra qui la voit, et envoient uniquement cette partie à l'IA. Dessinez une forme pour exclure ce qui est à côté (a neighbour's car).</div></div></div>
         <div class="spotgrid"><div>
           <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
             <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
@@ -650,8 +650,8 @@
           <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN ENREGISTRER" : "GLISSEZ SUR L'IMAGE POUR MARQUER L'ENDROIT") : "TIP: “DESSINER” LETS YOU MARK IT YOURSELF — NON IA NEEDED"}</div>
         </div><div>
           <div class="h"><span class="t">TEACH A SPOT</span><i></i></div>
-          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the drive" value="${esc(this._spName || "")}" autocomplete="off"></form>
-          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon><input name="aliases" id="spalias" placeholder="Also called, e.g. driveway, parking space" value="${esc(this._spAlias || "")}" autocomplete="off"></form>
+          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. l'allée" value="${esc(this._spName || "")}" autocomplete="off"></form>
+          <form class="add" data-form="spot"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon><input name="aliases" id="spalias" placeholder="Aussi appelé, ex. allée, place de parking" value="${esc(this._spAlias || "")}" autocomplete="off"></form>
           <div class="row"><button class="btn sm" data-act="spfind">FIND IT WITH AI</button>
             <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DESSINER"}</button>
             ${this._drawing ? `<button class="btn ghost sm" data-act="spshape">${this._shape ? "BOÎTE À LA PLACE" : "SHAPE INSTEAD"}</button>` : ""}
@@ -708,7 +708,7 @@
           if (!name) return say("Give the spot a name first.");
           say(`Looking for ${name}…`);
           const res = await this._hass.callWS({ type: "sentient/spots/learn", camera: this._cam, name });
-          this._spots = res.spots; this._spName = ""; say(`Found ${res.result.name}.`);
+          this._spots = res.spots; this._spName = ""; say(`Trouvé ${res.result.name}.`);
         } else if (kind === "save") {
           if (!name) return say("Give the spot a name first.");
           const pts = this._pts || [];
@@ -716,7 +716,7 @@
           const req = { type: "sentient/spots/set", camera: this._cam, name, box: this._draft_box || [0, 0, 1, 1], aliases: this._spAlias || "" };
           if (this._shape) req.points = pts;
           const res = await this._hass.callWS(req);
-          this._spots = res.spots; this._spName = ""; this._spAlias = ""; this._draft_box = null; this._pts = []; this._drawing = false; say(`Saved ${res.result.name}.`);
+          this._spots = res.spots; this._spName = ""; this._spAlias = ""; this._draft_box = null; this._pts = []; this._drawing = false; say(`Enregistré ${res.result.name}.`);
         }
       } catch (e) { say(e.message || String(e)); }
       this._drawSide(); this._drawSpots();
@@ -737,7 +737,7 @@
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
             <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Supprimer">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
-          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
+          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LUMIÈRES</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
@@ -847,7 +847,7 @@
       try { res = await this._hass.callWS({ type: "sentient/backups" }); } catch (e) { /* not admin */ }
       const el = this._$("bkauto");
       if (!el) return;
-      el.innerHTML = `<div class="r"><ha-icon icon="mdi:calendar-sync-outline"></ha-icon><b>Saved backups ${res.on ? "· WEEKLY IS ON" : "· WEEKLY IS OFF (Settings → Weekly backup)"}</b><button class="btn sm ghost" data-act="bksave">RETOUR UP NONW</button></div>`
+      el.innerHTML = `<div class="r"><ha-icon icon="mdi:calendar-sync-outline"></ha-icon><b>Enregistré backups ${res.on ? "· WEEKLY IS ON" : "· WEEKLY IS OFF (Settings → Weekly backup)"}</b><button class="btn sm ghost" data-act="bksave">RETOUR UP NONW</button></div>`
         + (res.items.length ? res.items.map((b) => `<div class="r dim"><ha-icon icon="mdi:file-outline"></ha-icon><b>${esc(b.name)}</b><u>${Math.round(b.size / 1024)} KB</u>
           <button class="btn sm ghost" data-act="bkrestore" data-id="${esc(b.name)}">RESTORE</button></div>`).join("") : '<div class="e">NONNE ENREGISTRERD YET</div>');
     }
@@ -860,7 +860,7 @@
       a.download = `sentient-backup-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      this._$("bkmsg").textContent = `Saved ${data.memories.length} memories, ${data.spots.length} spots, ${data.motion_lights.rules.length} motion lights and ${data.routines.length} routines.`;
+      this._$("bkmsg").textContent = `Enregistré ${data.memories.length} memories, ${data.spots.length} spots, ${data.motion_lights.rules.length} motion lights and ${data.routines.length} routines.`;
     }
 
     async _restore(file) {
@@ -975,7 +975,7 @@
           ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.warm_by)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
-          <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
+          <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.en surveillance || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
         + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NONTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
       el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
@@ -1007,7 +1007,7 @@
       const bad = open.length + unlocked.length;
       const alarm = alarms[0];
       const armed = alarm && alarm.state.startsWith("armed");
-      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "TOUT SHUT")
+      el.innerHTML = this._h("SÉCURITÉ", bad ? `${bad} OPEN` : "TOUT SHUT")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
         + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
@@ -1019,7 +1019,7 @@
       if (!el || !ml || !ml.rules.length) { if (el) el.hidden = true; return; }
       el.hidden = false;
       const on = ml.rules.filter((r) => r.managing).length;
-      el.innerHTML = this._h("MOUVEMENT LIGHTS", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "JOUR · RESTING")
+      el.innerHTML = this._h("MOUVEMENT LUMIÈRES", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "JOUR · RESTING")
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
           return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
@@ -1066,15 +1066,15 @@
           <div class="chips left">${chips.map((c) => `<span>${c}</span>`).join("")}</div>
           ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
       }).join("");
-      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOUVEMENT LIGHTS</div>
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOUVEMENT LUMIÈRES</div>
           <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
           <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "JOUR")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "TARD LE SOIR", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
           <button class="btn ghost sm" type="submit">ENREGISTRER</button></form>
-        <div class="mllist">${rows || '<div class="e">NON MOUVEMENT LIGHTS YET</div>'}</div>
+        <div class="mllist">${rows || '<div class="e">NON MOUVEMENT LUMIÈRES YET</div>'}</div>
         <div id="mledit"></div>
-        <div class="bar"><span id="status"></span><button class="btn" data-act="mladd">+ AJOUTER A MOUVEMENT LIGHT</button></div>`;
+        <div class="bar"><span id="status"></span><button class="btn" data-act="mladd">+ AJOUTER A MOUVEMENT LUMIÈRE</button></div>`;
       if (this._mlEdit) this._openMotionForm(this._mlEdit);
     }
 
@@ -1082,7 +1082,7 @@
       this._mlEdit = rule;
       const wrap = this._$("mledit");
       if (!wrap) return;
-      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "MODIFIER" : "NEW"} MOUVEMENT LIGHT</span><i></i></div>
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "MODIFIER" : "NEW"} MOUVEMENT LUMIÈRE</span><i></i></div>
         <div id="mlformwrap" class="formwrap"><div class="e">LOADING…</div></div>
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">ANNULER</button><button class="btn sm" data-act="mlsave">ENREGISTRER</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1174,7 +1174,7 @@
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
+        light: ["mdi:motion-sensor", "LUMIÈRE"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SÉCURITÉ"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "ACTION VOCALE"], clip: ["mdi:filmstrip-box", "EXTRAIT"],
         heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
@@ -1216,7 +1216,7 @@
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
-      else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Saved ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Enregistré ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
       else if (act === "bkrestore") {
         if (!window.confirm(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
         this._hass.callWS({ type: "sentient/backups/restore", name: id, settings: this._$("bkset").checked }).then((res) => {
