@@ -391,9 +391,12 @@ class SpeechRouter:
         others = [p for p in players if p not in alexa]
         if alexa and self.hass.services.has_service("notify", "alexa_media"):
             labels.append("the Echo speakers")
+            # Alexa Media Player accepte mieux une chaîne simple qu'une liste
+            # quand il n'y a qu'un seul Echo.
+            target = alexa[0] if len(alexa) == 1 else alexa
             calls.append(self.hass.services.async_call(
                 "notify", "alexa_media",
-                {"message": text, "target": alexa, "data": {"type": "announce" if self.chime else "tts"}},
+                {"message": text, "target": target, "data": {"type": "announce" if self.chime else "tts"}},
                 blocking=True,
             ))
         if others and (tts := self.options.get(CONF_TTS_ENTITY)):
@@ -522,3 +525,4 @@ class SpeechRouter:
         if reason in ("quiet_hours", "hushed") and priority and self.on_unheard is not None:
             self.on_unheard(text, priority, source, reason)
         return SpeechResult(False, reason, text, [])
+
