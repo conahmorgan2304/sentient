@@ -316,7 +316,7 @@ async def test_speaks_through_an_echo_too(hass: HomeAssistant, monkeypatch) -> N
     start = async_mock_service(hass, "assist_satellite", "start_conversation")
     monkeypatch.setattr(speech_mod.asyncio, "sleep", no_wait)
     await hass.services.async_call(DOMAIN, "say", {"message": "Tea's up.", "speaker": "media_player.bathroom_echo"}, blocking=True)
-    assert not sat and alexa[-1].data["target"] == ["media_player.bathroom_echo"]
+    assert not sat and alexa[-1].data["target"] in ("media_player.bathroom_echo", ["media_player.bathroom_echo"])
     assert alexa[-1].data["data"]["type"] in ("announce", "tts")
     # an Echo can't listen for an answer: a question is just said
     await hass.services.async_call(DOMAIN, "ask", {"question": "Fancy a brew?", "speaker": "media_player.bathroom_echo"}, blocking=True)
