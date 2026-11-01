@@ -207,7 +207,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passer-by": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspicious: "mdi:alert-outline", nothing: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
       R("clipc").innerHTML = this._h("EXTRAITS VUS", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
-        || '<div class="e">NONTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
+        || '<div class="e">RIEN VU POUR LE MOMENT · ÇA S\'ÉCRIT ICI QUAND LES CAMÉRAS VOIENT QUELQU\'UN</div>');
 
       // routines
       const routines = this._attr("routines", "routines", []);
@@ -222,7 +222,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
           return `<div class="card rt ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}">
             <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Supprimer">✕</a></div>
             <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LAISSER LA MAISON S'EN OCCUPER"}</div></div>`;
-        }).join("") || '<div class="card"><div class="e">NON ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
+        }).join("") || '<div class="card"><div class="e">AUCUNE ROUTINE APPRISE POUR LE MOMENT — VÉRIFIÉ CHAQUE NUIT</div></div>');
 
       // watches (left alone while a reminder is being typed)
       const act = this.shadowRoot.activeElement;
@@ -232,7 +232,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Annuler">✕</a></div>`;
-      }).join("") || '<div class="e">NONTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
+      }).join("") || '<div class="e">RIEN EN SURVEILLANCE · DIS « GARDE UN ŒIL SUR… »</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
 
@@ -285,7 +285,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
           <button class="btn sm ghost" data-act="wonderask">ASK</button><a class="x" data-act="wonderx" data-text="${esc(q)}" title="Don't ask">✕</a></div>`),
         ...(mind.follow_ups || []).map((f) => `<div class="r"><ha-icon icon="mdi:sync"></ha-icon><b>Check back: ${esc(f.about)}</b><u>${esc(f.at)}</u>
           <a class="x" data-act="fux" data-id="${esc(f.id)}" data-text="${esc(f.about)}" title="Annuler">✕</a></div>`),
-        ...(mind.to_pass_on || []).map((t) => `<div class="r dim"><ha-icon icon="mdi:account-arrow-right-outline"></ha-icon><b>${esc(t)}</b><u>TO PASS ON</u></div>`),
+        ...(mind.to_pass_on || []).map((t) => `<div class="r dim"><ha-icon icon="mdi:account-arrow-right-outline"></ha-icon><b>${esc(t)}</b><u>À TRANSMETTRE</u></div>`),
         ...(mind.lessons || []).slice(-2).map((t) => `<div class="r dim"><ha-icon icon="mdi:school-outline"></ha-icon><b>${esc(t)}</b><u>LESSON</u></div>`),
         ...(mind.recent_conversations || []).slice(0, 3).map((c) => `<div class="r dim"><ha-icon icon="mdi:chat-outline"></ha-icon>
           <b>${esc(((c.conversation || [])[0] || "").replace(/^They: /, ""))}</b><u>${esc(String(c.when || "").split(" ").pop())}${c.room ? " · " + esc(c.room).toUpperCase() : ""}</u></div>`),
@@ -293,9 +293,9 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       const mindCount = (mind.wondering || []).length + (mind.follow_ups || []).length;
       // the last hour, on request: straight from the timeline, no AI
       const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
-          <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NONTHING IN THE LAST HOUR</div>') : "";
+          <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">RIEN DANS LA DERNIÈRE HEURE</div>') : "";
       R("mind").innerHTML = this._h("ESPRIT", mindCount ? `${mindCount} ON ITS ESPRIT` : `${this._st("mind") ? this._st("mind").state : 0} TALKS AUJOURD'HUI`)
-        + (mindRows || '<div class="e">NONTHING ON ITS ESPRIT · THINKS IT OVER EACH NIGHT</div>')
+        + (mindRows || '<div class="e">RIEN EN TÊTE · IL Y RÉFLÉCHIT CHAQUE NUIT</div>')
         + `<div class="row lh"><button class="btn sm ghost" data-act="lasthour"><ha-icon icon="mdi:history"></ha-icon> ${this._lh ? "CACHER LA DERNIÈRE HEURE" : "WHAT HAPPENED THIS LAST HOUR?"}</button></div>`
         + lastHour
         + (ai.by_purpose ? `<div class="hint meter">IA ${ai.today}${ai.limit ? " OF " + ai.limit : ""} AUJOURD'HUI${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
@@ -601,7 +601,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
         <form class="add" data-form="add"><ha-icon icon="mdi:plus"></ha-icon><input name="text" placeholder="Add a memory, e.g. “The bins go out on Thursday night”" autocomplete="off">
           <select name="category">${opts("fact")}</select><button class="btn sm" type="submit">AJOUTER</button></form>
         <div class="find"><ha-icon icon="mdi:magnify"></ha-icon><input id="mfind" placeholder="Search ${items.length} memories…" value="${esc(this._find || "")}" autocomplete="off"></div>
-        <div class="list">${rows || `<div class="e">${q ? "NONTHING MATCHES" : "NONTHING REMEMBERED YET · SAY “REMEMBER THAT…”"}</div>`}</div>`;
+        <div class="list">${rows || `<div class="e">${q ? "AUCUNE CORRESPONDANCE" : "RIEN RETENU POUR LE MOMENT · DIS « SOUVIENS-TOI QUE… »"}</div>`}</div>`;
       if (keepFocus) { const f = this._$("mfind"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
       if (this._editing) { const i = body.querySelector("form.edit input"); if (i) i.focus(); }
     }
@@ -745,7 +745,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
-        <div class="mllist">${rows || '<div class="e">NON ROUTINES YET</div>'}</div><div id="scedit"></div>
+        <div class="mllist">${rows || '<div class="e">AUCUNE ROUTINE POUR LE MOMENT</div>'}</div><div id="scedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="scadd">+ NEW ROUTINE</button></div>`;
     }
 
@@ -890,12 +890,12 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
           <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSSILENCIEUX"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SSILENCIEUX</div>
           <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
-        ${rows || '<div class="e">NONTHING SSILENCIEUX</div>'}
+        ${rows || '<div class="e">RIEN EN SILENCE</div>'}
         ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}
         <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDRETOUR</div>
           <div class="bs">What the house has picked up from shushes, hushing it straight after a remark, and declined or deleted routines. It fades by itself over a month or so; ✕ forgets it now.</div></div></div>
         ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline"}"></ha-icon>
-          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Oublier ceci">✕</a></div>`).join("") || '<div class="e">NONTHING YET</div>'}`;
+          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Oublier ceci">✕</a></div>`).join("") || '<div class="e">RIEN POUR LE MOMENT</div>'}`;
     }
 
     // ---------- motion lights ----------
@@ -956,9 +956,9 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       el.hidden = false;
       const dur = (m) => (m >= 60 ? `${Math.floor(m / 60)}H${m % 60 ? " " + (m % 60) + "M" : ""}` : `${m} MIN`);
       const running = list.filter((a) => a.running).length;
-      el.innerHTML = this._h("APPAREILS", running ? `${running} RUNNING` : "TOUT AU REPOS") + list.slice(0, 6).map((a) => {
+      el.innerHTML = this._h("APPAREILS", running ? `${running} EN COURS` : "TOUT AU REPOS") + list.slice(0, 6).map((a) => {
         const icon = a.entity_id.startsWith("vacuum.") ? "mdi:robot-vacuum" : /dish/i.test(a.name) ? "mdi:dishwasher" : /dry/i.test(a.name) ? "mdi:tumble-dryer" : "mdi:washing-machine";
-        const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · TERMINÉ ~" + esc(a.done_about) : ""}`
+        const tag = a.running ? `EN COURS ${dur(a.minutes_so_far || 0)}${a.done_about ? " · TERMINÉ ~" + esc(a.done_about) : ""}`
           : a.usual_minutes ? `USUALLY ${dur(a.usual_minutes)}` : `LEARNING · ${a.runs_seen}/3 RUNS`;
         return `<div class="r${a.running ? " on" : " dim"}"><ha-icon icon="${icon}"></ha-icon><b>${esc(a.name)}</b><u>${tag}</u></div>`;
       }).join("");
@@ -980,7 +980,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
           <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
-        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NONTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
+        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">RIEN D\'INHABITUEL CES 3 DERNIERS JOURS</div>') : "";
       el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
 
@@ -1011,7 +1011,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       const bad = open.length + unlocked.length;
       const alarm = alarms[0];
       const armed = alarm && alarm.state.startsWith("armed");
-      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "TOUT SHUT")
+      el.innerHTML = this._h("SÉCURITÉ", bad ? `${bad} OPEN` : "TOUT SHUT")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
         + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
@@ -1178,7 +1178,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SÉCURITÉ"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
         heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
@@ -1208,7 +1208,7 @@ const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "
         html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${icon}"></ha-icon></span>
           <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${label}</s></div>`;
       }
-      this._$("tllist").innerHTML = html || '<div class="e">NONTHING YET · THE CHRONONLOGIE FILLS AS THE HOUSE SPEAKS, NONTICES AND ACTS</div>';
+      this._$("tllist").innerHTML = html || '<div class="e">RIEN POUR LE MOMENT · THE CHRONONLOGIE FILLS AS THE HOUSE SPEAKS, NONTICES AND ACTS</div>';
     }
 
     // ---------- events ----------
