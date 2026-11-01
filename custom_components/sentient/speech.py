@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 import logging
 import re
@@ -61,6 +61,7 @@ from .presence import ActivityTracker, area_of
 _LOGGER = logging.getLogger(__name__)
 
 _DUPLICATE_WINDOW = timedelta(seconds=120)
+DELIVERY_TIMEOUT = 60
 _BUSY_STATES = {"listening", "processing", "responding"}
 _START_CONVERSATION = 2  # AssistSatelliteEntityFeature.START_CONVERSATION
 # what still goes to the Echos when they're kept for important things only
@@ -79,6 +80,7 @@ class SpeechResult:
     reason: str
     message: str
     speakers: list[str]
+    deliveries: list[dict[str, Any]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -86,6 +88,7 @@ class SpeechResult:
             "reason": self.reason,
             "message": self.message,
             "speakers": self.speakers,
+            **({"deliveries": self.deliveries} if self.deliveries else {}),
         }
 
 
@@ -141,8 +144,10 @@ class SpeechRouter:
         self.options = options
         self.tracker = tracker
         self._recent: dict[str, datetime] = {}
-        self.failures: dict[str, tuple[datetime, str]] = {}  # speaker group -> (when it last failed, why)
+        self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
+        self._delivered_recent: dict[tuple[str, str], datetime] = {}
+        self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
@@ -308,7 +313,7 @@ class SpeechRouter:
     def recent_said(self, limit: int = 5) -> list[str]:
         return [text for _, text in list(self._said)[:limit]]
 
-    def _gate(self, text: str, priority: str, source: str | None) -> SpeechResult | None:
+    def _gate(self, text: str, priority: str, source: str | None, check_duplicate: bool = True) -> SpeechResult | None:
         """Shared rules; returns a held result, or None when it may speak."""
         if not text:
             return self._held("empty", text, source)
@@ -329,8 +334,7 @@ class SpeechRouter:
                 # low priority never interrupts something said in the last minute
                 if any(dt_util.utcnow() - t < timedelta(seconds=60) for t in self._recent.values()):
                     return self._held("busy", text, source)
-        last = self._recent.get(text.lower())
-        if source != "critical" and last and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
+        if check_duplicate and source != "critical" and (last := self._recent.get(text.lower())) is not None and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
             return self._held("duplicate", text, source)
         return None
 
@@ -348,7 +352,7 @@ class SpeechRouter:
         source: str | None = None,
     ) -> SpeechResult:
         text = clean_message(message, self.banned)
-        if (held := self._gate(text, priority, source)) is not None:
+        if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
             return held
         vital = important(source)
         if source != "critical":  # safety alerts always use every speaker
@@ -360,68 +364,83 @@ class SpeechRouter:
 
         async with self._lock:
             await self._wait_idle(speakers)
-            if (held := self._gate(text, priority, source)) is not None:
+            if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
                 return held
+            now = dt_util.utcnow()
+            self._delivered_recent = {k: v for k, v in self._delivered_recent.items() if now - v < _DUPLICATE_WINDOW}
+            speakers = list(dict.fromkeys(speakers))
+            if source != "critical":
+                speakers = [s for s in speakers if (text.lower(), s) not in self._delivered_recent]
+            if not speakers:
+                return self._held("duplicate", text, source)
             volume = await self._volumes(speakers)
             async with delivered(self.hass, speakers, volume, self.duck_level):
-                await self._speak(text, speakers)
+                receipts = await self._speak(text, speakers)
+            # Compatibility for injected/test delivery backends that return no receipts.
+            receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
+            accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
+            for speaker in accepted:
+                self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
             self._remember_said(text)
+        speakers = accepted
+        reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None},
+            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None, "deliveries": receipts},
         )
         if unheard and self.on_unheard is not None:
             self.on_unheard(text, priority, source, None)
-        return SpeechResult(True, "spoken", text, speakers)
+        return SpeechResult(True, reason, text, speakers, receipts)
 
-    async def _speak(self, text: str, speakers: list[str]) -> None:
-        """Voice speakers announce; media players (an Echo, a smart speaker) are spoken to through
-        Alexa Media Player or a TTS engine. All at once, then wait until a media player should have finished,
-        so the volume isn't put back mid-sentence."""
-        sats = [s for s in speakers if s.startswith("assist_satellite.")]
-        players = [s for s in speakers if s.startswith("media_player.")]
-        calls, labels = [], []
-        if sats:
-            labels.append("the voice speakers")
-            calls.append(self.hass.services.async_call(
-                "assist_satellite", "announce", {"message": text, "preannounce": self.chime},
-                target={"entity_id": sats}, blocking=True,
-            ))
-        alexa = [p for p in players if _platform(self.hass, p) == "alexa_media"]
-        others = [p for p in players if p not in alexa]
-        if alexa and self.hass.services.has_service("notify", "alexa_media"):
-            labels.append("the Echo speakers")
-            calls.append(self.hass.services.async_call(
-                "notify", "alexa_media",
-                {"message": text, "target": alexa, "data": {"type": "announce" if self.chime else "tts"}},
-                blocking=True,
-            ))
-        if others and (tts := self.options.get(CONF_TTS_ENTITY)):
-            labels.append("the other speakers")
-            calls.append(self.hass.services.async_call(
-                "tts", "speak", {"media_player_entity_id": others, "message": text, "cache": True},
-                target={"entity_id": tts}, blocking=True,
-            ))
-        if not calls:
-            reason = "No usable announcement or TTS service is configured for the selected speakers"
-            self.failures["the selected speakers"] = (dt_util.utcnow(), reason)
-            raise HomeAssistantError(reason)
-        self.failures.pop("the selected speakers", None)
-        results = await asyncio.gather(*calls, return_exceptions=True)
+    async def _speak(self, text: str, speakers: list[str]) -> list[dict[str, Any]]:
+        """One request per destination; acceptance is not independent proof of audible sound."""
+        async def send(eid):
+            row = {'entity_id': eid, 'status': 'failed'}
+            try:
+                if eid.startswith('assist_satellite.'):
+                    domain, service = 'assist_satellite', 'announce'
+                    data, target = {'message': text, 'preannounce': self.chime}, {'entity_id': [eid]}
+                elif eid.startswith('media_player.') and _platform(self.hass, eid) == 'alexa_media':
+                    domain, service = 'notify', 'alexa_media'
+                    data, target = {'message': text, 'target': [eid], 'data': {'type': 'announce' if self.chime else 'tts'}}, None
+                elif eid.startswith('media_player.') and (tts := self.options.get(CONF_TTS_ENTITY)):
+                    domain, service = 'tts', 'speak'
+                    data, target = {'media_player_entity_id': [eid], 'message': text, 'cache': True}, {'entity_id': tts}
+                else:
+                    row.update(status='unroutable', error='No usable announcement or TTS service is configured')
+                    return row
+                if not self.hass.services.has_service(domain, service):
+                    row.update(status='unroutable', error=f'{domain}.{service} is unavailable')
+                    return row
+                state = self.hass.states.get(eid)
+                if state is not None and state.state == 'unavailable':
+                    row.update(status='unavailable', error='Speaker reports unavailable')
+                    return row
+                async with asyncio.timeout(DELIVERY_TIMEOUT):
+                    await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
+                row['status'] = 'accepted'
+            except TimeoutError:
+                row.update(status='timed_out', error='Delivery timed out; playback outcome is unknown')
+            except Exception as err:  # one failed destination must not cancel another
+                row['error'] = (str(err) or type(err).__name__)[:200]
+            return row
+
+        receipts = await asyncio.gather(*(send(eid) for eid in dict.fromkeys(speakers)))
         now = dt_util.utcnow()
-        for label, r in zip(labels, results):  # the self-check shows a group that keeps failing
-            if isinstance(r, Exception):
-                self.failures[label] = (now, (str(r) or type(r).__name__)[:160])
+        for row in receipts:
+            if row['status'] == 'accepted':
+                self.failures.pop(row['entity_id'], None)
             else:
-                self.failures.pop(label, None)
-        errors = [r for r in results if isinstance(r, Exception)]
-        if errors and len(errors) == len(results):
-            raise errors[0]
-        for err in errors:
-            _LOGGER.warning("A speaker couldn't say it: %s", err)
-        if players:
-            # media players return straight away: give them time to say it before volumes go back
+                self.failures[row['entity_id']] = (now, row.get('error', row['status']))
+        record = {'time': now.isoformat(), 'message': text[:300], 'results': receipts,
+                  'note': 'Accepted means Home Assistant completed the service call; audibility is unverified.'}
+        self.deliveries.appendleft(record)
+        self.hass.bus.async_fire('sentient_speech_delivery')
+        if not any(r['status'] == 'accepted' for r in receipts):
+            raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
+        if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
             await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
+        return receipts
 
     async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
         """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),

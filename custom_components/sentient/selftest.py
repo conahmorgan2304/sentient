@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
+import math
 import re
 from typing import Any, Callable
 
@@ -129,8 +130,11 @@ class SelfTest:
         weather_id = self.options.get(CONF_BRIEFING_WEATHER)
         weather = hass.states.get(weather_id) if weather_id else next(
             (w for w in hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
-        if weather is not None and weather.attributes.get("temperature") is not None:
-            real = float(weather.attributes["temperature"])
+        try:
+            real = float(weather.attributes.get("temperature")) if weather is not None else float("nan")
+        except (TypeError, ValueError):
+            real = float("nan")
+        if math.isfinite(real) and weather.state not in ("unknown", "unavailable"):
 
             def outside(answer: str) -> tuple[bool, str]:
                 said = numbers(answer)
@@ -138,15 +142,17 @@ class SelfTest:
 
             out.append(Question("outside", "What's the temperature outside right now?", outside))
 
-        opens = [s for s in hass.states.async_all("binary_sensor")
-                 if s.attributes.get("device_class") in OPENINGS and s.state == "on"]
+        openings = [s for s in hass.states.async_all("binary_sensor")
+                    if s.attributes.get("device_class") in OPENINGS]
+        opens = [s for s in openings if s.state == "on"]
 
         def anything_open(answer: str) -> tuple[bool, str]:
             if not opens:
                 return bool(NONE_SAID.search(answer)) and not re.search(r"\bis open\b|\bare open\b", answer, re.I), "nothing open"
             return any(mentions(answer, s.name) for s in opens), "open: " + ", ".join(s.name for s in opens[:4])
 
-        out.append(Question("open", "Is anything open?", anything_open))
+        if openings and all(s.state in ("on", "off") for s in openings):
+            out.append(Question("open", "Is anything open?", anything_open))
 
         rt = self._rt()
         if rt is not None:
@@ -159,13 +165,13 @@ class SelfTest:
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
 
-        panels = [s for s in hass.states.async_all("alarm_control_panel") if s.state not in ("unavailable", "unknown")]
-        if panels:
-            armed = panels[0].state.startswith("armed") or panels[0].state == "triggered"
+        panels = hass.states.async_all("alarm_control_panel")
+        if panels and len({s.state for s in panels}) == 1 and (panels[0].state.startswith("armed_") or panels[0].state == "disarmed"):
+            armed = panels[0].state.startswith("armed_")
 
             def alarm(answer: str) -> tuple[bool, str]:
                 says_off = bool(re.search(r"\b(disarmed|not (set|armed|on)|off)\b", answer, re.I))
-                says_on = bool(re.search(r"\b(armed|is on|is set)\b", answer, re.I)) and not re.search(r"\bdisarmed\b", answer, re.I)
+                says_on = bool(re.search(r"\b(armed|is on|is set)\b", answer, re.I)) and not says_off
                 return (says_on if armed else says_off), "armed" if armed else "disarmed"
 
             out.append(Question("alarm", "Is the alarm on?", alarm))

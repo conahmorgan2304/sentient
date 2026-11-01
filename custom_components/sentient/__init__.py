@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
+from .voice_checks import VoiceChecks
 from .sessions import Sessions
 from .control import Control
 from .incidents import Incidents
@@ -105,6 +106,7 @@ class SentientRuntime:
     options: dict[str, Any]
     evidence: Any
     sessions: Any
+    voice_checks: Any
     control: Any
     incidents: Any
     memory: MemoryStore
@@ -469,13 +471,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     evidence = Evidence(hass, entry.entry_id, options)
     await evidence.async_start()
     entry.async_on_unload(evidence.async_stop)
+    voice_checks = VoiceChecks(hass)
+    entry.async_on_unload(voice_checks.stop)
     sessions = Sessions(options)
     entry.async_on_unload(sessions.stop)
     incidents = Incidents(hass, entry.entry_id, options)
     await incidents.async_start()
     entry.async_on_unload(incidents.async_stop)
     entry.runtime_data = SentientRuntime(
-        evidence=evidence, sessions=sessions, control=Control(hass, options, timeline), incidents=incidents,
+        evidence=evidence, sessions=sessions, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -532,6 +536,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
+    entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.options = options
     entry.runtime_data.speech.options = options

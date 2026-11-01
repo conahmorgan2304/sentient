@@ -264,7 +264,7 @@ async def test_announce_to_several_rooms_or_everywhere(hass: HomeAssistant) -> N
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_announce", tool_args={
         "message": "Dinner's ready.", "speaker": "kitchen and upstairs"}))
-    assert out["spoken"] and sorted(said[-1].data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.landing"]
+    assert out["spoken"] and sorted(e for c in said[-2:] for e in c.data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.landing"]
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_announce", tool_args={
         "message": "Film's starting.", "speaker": "everywhere"}))
-    assert out["spoken"] and len(said[-1].data["entity_id"]) == 3
+    assert out["spoken"] and len({e for c in said[-3:] for e in c.data["entity_id"]}) == 3
