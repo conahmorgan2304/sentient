@@ -1219,5 +1219,31 @@
         }
       }
     }
+  },
+  "panel": {
+    "strings": {
+      "AWAKE": "AWAKE",
+      "PEOPLE IN": "PEOPLE IN",
+      "TODAY": "TODAY",
+      "HUSH 1 HOUR": "HUSH 1 HOUR",
+      "GUEST MODE": "GUEST MODE",
+      "MEMORIES": "MEMORIES",
+      "WATCHING": "WATCHING",
+      "ROUTINES": "ROUTINES",
+      "VISITORS": "VISITORS",
+      "PROBLEMS": "PROBLEMS",
+      "HOUSE HEALTH": "HOUSE HEALTH",
+      "TIMELINE": "TIMELINE",
+      "LAST 3 DAYS": "LAST 3 DAYS",
+      "SUMMARISE 24H": "SUMMARISE 24H",
+      "THIS WEEK": "THIS WEEK",
+      "SETTINGS": "SETTINGS",
+      "SET-UP WIZARD": "SET-UP WIZARD",
+      "Voice & sound": "Voice & sound",
+      "Cameras & video": "Cameras & video",
+      "Security & safety": "Security & safety",
+      "Home & routines": "Home & routines",
+      "Brain & system": "Brain & system"
+    }
   }
 }

@@ -5,7 +5,41 @@
 (() => {
   if (customElements.get("sentient-panel")) return;
 
-  const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode", "mind", "media_speakers", "house"];
+  
+// Simple translation helper for the panel
+const I18N = {
+  fr: {
+    "AWAKE": t("AWAKE"),
+    "PEOPLE IN": t("PEOPLE IN"),
+    "TODAY": t("TODAY"),
+    "HUSH 1 HOUR": t("HUSH 1 HOUR"),
+    "GUEST MODE": t("GUEST MODE"),
+    "MEMORIES": t("MEMORIES"),
+    "WATCHING": t("WATCHING"),
+    t("ROUTINES"): t("ROUTINES"),
+    "VISITORS": t("VISITORS"),
+    "PROBLEMS": t("PROBLEMS"),
+    "HOUSE HEALTH": t("HOUSE HEALTH"),
+    "TIMELINE": t("TIMELINE"),
+    "LAST 3 DAYS": t("LAST 3 DAYS"),
+    "SUMMARISE 24H": t("SUMMARISE 24H"),
+    "THIS WEEK": t("THIS WEEK"),
+    "SETTINGS": t("SETTINGS"),
+    "SET-UP WIZARD": t("SET-UP WIZARD"),
+    "Voice & sound": t("Voice & sound"),
+    "Cameras & video": t("Cameras & video"),
+    "Security & safety": t("Security & safety"),
+    "Home & routines": t("Home & routines"),
+    "Brain & system": t("Brain & system"),
+  },
+  en: {}
+};
+function t(key) {
+  const lang = (window.hass && window.hass.language) || "fr";
+  return (I18N[lang] && I18N[lang][key]) || I18N.fr[key] || key;
+}
+
+const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode", "mind", "media_speakers", "house"];
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
@@ -35,7 +69,7 @@
 
   const dayNameShort = (iso) => {
     const d = new Date(iso), t = new Date();
-    return d.toDateString() === t.toDateString() ? "AUJOURD'HUI" : d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
+    return d.toDateString() === t.toDateString() ? t("TODAY") : d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
   };
 
   class SentientPanel extends HTMLElement {
@@ -179,9 +213,9 @@
       const aiTxt = ai.failing ? "IA NE RÉPOND PAS · MOTS SIMPLES" : ai.capped ? "LIMITE IA ATTEINTE · MOTS SIMPLES" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
-          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "HEURES DE SILENCE" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
-          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "SILENCE 1 H", "SILENCIEUX")}${this._modeChip("guest_mode", "mdi:account-multiple", "MODE INVITÉ", "INVITÉS PRÉSENTS")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
-          <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), "SURVEILLANCE")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITEURS")}${stat(st("health"), "PROBLÈMES")}${stat(ai.today ?? 0, ai.limit ? `APPELS IA / ${ai.limit}` : "APPELS IA")}</div></div>
+          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "HEURES DE SILENCE" : t("AWAKE")} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", t("HUSH 1 HOUR"), "SILENCIEUX")}${this._modeChip("guest_mode", "mdi:account-multiple", t("GUEST MODE"), "INVITÉS PRÉSENTS")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
+          <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), t("WATCHING"))}${stat(st("routines"), t("ROUTINES"))}${stat(st("visitors"), t("VISITORS"))}${stat(st("health"), t("PROBLEMS"))}${stat(ai.today ?? 0, ai.limit ? `APPELS IA / ${ai.limit}` : "APPELS IA")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NON RECENT MOUVEMENT</div>'}</div>`;
 
       // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
@@ -266,7 +300,7 @@
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NONTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
-      R("health").innerHTML = this._h("SANTÉ DE LA MAISON", issues.length ? `${issues.length} PROBLÈME${issues.length > 1 ? "S" : ""}` : "TOUT VA BIEN")
+      R("health").innerHTML = this._h(t("HOUSE HEALTH"), issues.length ? `${issues.length} PROBLÈME${issues.length > 1 ? "S" : ""}` : "TOUT VA BIEN")
         + (healthRows || '<div class="e">EVERYTHING EN LIGNE · BATTERIES FINE</div>');
 
       // mind: what it's thinking, wondering, waiting to check and pass on
@@ -299,7 +333,7 @@
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
-      R("visit").innerHTML = this._h("VISITEURS", `${st("visitors")} AUJOURD'HUI`) + (visits.slice(0, 4).map((v) =>
+      R("visit").innerHTML = this._h(t("VISITORS"), `${st("visitors")} AUJOURD'HUI`) + (visits.slice(0, 4).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · COLIS DÉPOSÉ" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">PERSONNE À LA PORTE POUR LE MOMENT</div>');
@@ -361,11 +395,11 @@
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
       // The menus, in order; anything not listed lands in the last one
       const menus = [
-        ["voice", "mdi:account-voice", "Voix & son", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
-        ["cameras", "mdi:cctv", "Caméras & vidéo", ["door", "spots", "checks", "camsec", "drive"]],
-        ["security", "mdi:shield-home", "Sécurité & sûreté", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Maison & routines", ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
-        ["brain", "mdi:brain", "Cerveau & système", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
+        ["voice", "mdi:account-voice", t("Voice & sound"), ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
+        ["cameras", "mdi:cctv", t("Cameras & video"), ["door", "spots", "checks", "camsec", "drive"]],
+        ["security", "mdi:shield-home", t("Security & safety"), ["nightwatch", "safety", "health"]],
+        ["home", "mdi:home-automation", t("Home & routines"), ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
+        ["brain", "mdi:brain", t("Brain & system"), ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][3].push(id); });
@@ -1173,15 +1207,15 @@
     _drawTimeline() {
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
-        visitor: ["mdi:doorbell-video", "VISITEUR"], watch: ["mdi:bell-ring-outline", "SURVEILLANCE"],
+        visitor: ["mdi:doorbell-video", "VISITEUR"], watch: ["mdi:bell-ring-outline", t("WATCHING")],
         light: ["mdi:motion-sensor", "LUMIÈRE"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SÉCURITÉ"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "ACTION VOCALE"], clip: ["mdi:filmstrip-box", "EXTRAIT"],
-        heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
+        heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", t("THIS WEEK")],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       const digEl = this._$("tldig");
       if (!digEl._tap) { digEl._tap = true; digEl.addEventListener("click", (e) => { if (e.target.closest("b")) digEl.classList.toggle("open"); }); }
       digEl.innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>RÉSUMÉ · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short IA summary of the last 24 hours.</b>"}</div>
-        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "RÉSUMER 24H"}</button>
+        <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : t("SUMMARISE 24H")}</button>
         <button class="btn sm ghost" data-act="weekly">CETTE SEMAINE</button>`;
       const want = this._tlKind || "all";
       const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : i.kind === want));
@@ -1189,12 +1223,12 @@
       (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
       this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
         .map(([k, label, n]) => `<button class="${k === want ? "on" : ""}" data-act="tlkind" data-id="${k}">${label} <b>${n}</b></button>`).join("");
-      this._$("tlcount").textContent = "3 DERNIERS JOURS";
+      this._$("tlcount").textContent = t("LAST 3 DAYS");
       const dayName = (d) => {
         const today = new Date(); today.régléHours(0, 0, 0, 0);
         const that = new Date(d); that.régléHours(0, 0, 0, 0);
         const diff = Math.round((today - that) / 864e5);
-        return diff === 0 ? "AUJOURD'HUI" : diff === 1 ? "OUITERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+        return diff === 0 ? t("TODAY") : diff === 1 ? "OUITERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
       };
       let last = "", html = "";
       for (const i of items) {
