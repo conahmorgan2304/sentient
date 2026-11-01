@@ -1,0 +1,1223 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Découvrez le cerveau de votre maison",
+        "description": "Donnez-lui un nom. Il l’utilisera pour se présenter et apparaîtra sous ce nom dans Home Assistant.",
+        "data": {
+          "persona": "Nom"
+        }
+      },
+      "speech": {
+        "title": "Comment la maison doit-elle parler ?",
+        "description": "Choisissez les satellites vocaux qu’elle peut utiliser. Elle parle là où se trouvent les personnes (mouvement ou interaction avec un haut-parleur), sinon sur le haut-parleur par défaut.",
+        "data": {
+          "speakers": "Haut-parleurs",
+          "default_speaker": "Haut-parleur par défaut",
+          "quiet_start": "Début des heures de silence",
+          "quiet_end": "Fin des heures de silence",
+          "motion_window": "Période de détection de présence",
+          "banned_words": "Ne jamais utiliser ces mots (séparés par des virgules)",
+          "suppress_entities": "Rester silencieux après ces automatisations ou scripts",
+          "suppress_seconds": "Rester silencieux pendant",
+          "prompt_memories": "Souvenirs à partager avec les assistants vocaux",
+          "pass_through_areas": "Zones de passage",
+          "all_occupied": "Parler dans toutes les pièces occupées",
+          "ai_task_entity": "IA pour les tâches en arrière-plan",
+          "camera_cooldown": "Intervalle minimal entre les vérifications des caméras",
+          "fallback_speakers": "Haut-parleurs de secours uniquement",
+          "daily_ai_limit": "Appels à l’IA par jour",
+          "prompt_recent": "Inclure la dernière heure dans le contexte vocal",
+          "rules": "Règles et création de règles par la voix",
+          "relevant_memories": "Sélectionner les souvenirs pertinents pour la demande",
+          "look_cache_minutes": "Réutiliser une réponse de caméra pendant",
+          "camera_prefilter": "Ignorer les vérifications des caméras si rien n’a changé",
+          "budget_drive": "Appels à l’IA par jour : initiative",
+          "budget_noticing": "Appels à l’IA par jour : observations",
+          "budget_cameras": "Appels à l’IA par jour : vérifications et surveillance des caméras",
+          "routine_evidence": "Indiquer la fréquence d’observation d’une routine",
+          "notice_entities": "Éléments à surveiller",
+          "chattiness": "Niveau de bavardage",
+          "house_rules": "Règles de la maison",
+          "learn_entities": "Apprendre les routines à partir de",
+          "link_triggers": "Apprendre également ce qui suit ces événements",
+          "suggest_routines": "Proposer d’automatiser les routines",
+          "door_camera": "Caméra de la porte",
+          "door_triggers": "Sonnette",
+          "announce_visitors": "Annoncer qui est à la porte",
+          "faces": "Noms issus de la reconnaissance faciale",
+          "face_people": "Uniquement ces personnes",
+          "face_teach": "Demander sur le téléphone d’identifier les visages inconnus",
+          "face_teach_cameras": "Apprendre les visages depuis ces caméras",
+          "face_cameras": "Reconnaître les noms uniquement depuis ces caméras",
+          "face_forget_hours": "Oublier les visages non identifiés après",
+          "clip_watch": "Analyser les extraits d’événements",
+          "clip_cameras": "Caméras",
+          "clip_scope": "Quels événements",
+          "clip_when": "Quand",
+          "clip_notify": "Envoyer aux téléphones",
+          "clip_source": "Qui rédige le résumé",
+          "clip_whose": "Préciser le membre du foyer concerné",
+          "clip_looks": "Décrire les personnes lorsque leur visage est invisible",
+          "budget_clips": "Nombre maximal d’extraits analysés par jour",
+          "clip_days": "Conserver les résumés pendant",
+          "clip_keep": "Conserver les fichiers vidéo",
+          "parcel_alerts": "Annoncer le dépôt d’un colis",
+          "doorstep_sensors": "Check for parcels after visits seen by",
+          "face_sensor": "Nom reconnu depuis",
+          "sidebar_panel": "Afficher dans la barre latérale",
+          "suggestions": "Suggestions sur la page Sentient",
+          "auto_backup": "Sauvegarder chaque semaine",
+          "backup_keep": "Nombre de sauvegardes à conserver",
+          "confirm_kinds": "Demander confirmation avant",
+          "chat_agent": "Agent de conversation pour la page latérale",
+          "battery_threshold": "Batterie faible en dessous de",
+          "battery_forecast": "Prévenir lorsque les batteries seront épuisées",
+          "health_ignore": "Ignorer dans l’état de santé de la maison",
+          "second_opinion_ai": "Deuxième avis de l’IA",
+          "smart_ai_task": "IA avancée pour la sécurité et l’analyse nocturne",
+          "event_clips": "Analyser les extraits d’événements de Frigate",
+          "chime": "Jouer un signal sonore avant de parler",
+          "voice_agent": "Agent vocal IA principal",
+          "backup_agent": "Agent de secours",
+          "animal_sensors": "Capteurs de température des animaux",
+          "away_lights_on": "Éclairage en cas d’absence",
+          "away_people": "Activer le mode absence lorsque tous sont sortis",
+          "away_lights": "Éclairages à utiliser",
+          "away_after": "Démarrer après une absence de",
+          "animal_low": "Trop froid en dessous de",
+          "animal_high": "Trop chaud au-dessus de",
+          "hutch_check": "Vérification du clapier au crépuscule",
+          "hutch_spot": "Zone de caméra du clapier",
+          "cat_watch": "Surveillance nocturne du chat",
+          "cat_sensors": "Capteurs du chat",
+          "cat_loud": "Annoncer immédiatement la nuit",
+          "rain_warnings": "Alertes de pluie",
+          "rain_entities": "Fenêtres et portes à surveiller",
+          "self_test": "Autotest",
+          "screen": "Utiliser l’écran de la tablette",
+          "screen_actions": "Lorsqu’un élément apparaît",
+          "screen_clear_actions": "Lorsque tout est effacé",
+          "conversation_sessions": "Sessions de conversation",
+          "session_seconds": "Délai d’inactivité de session",
+          "guarded_control": "Confirmation vocale obligatoire",
+          "voice_undo": "Annuler les modifications récentes de l’éclairage",
+          "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
+          "security_incidents": "Regrouper les incidents de sécurité"
+        },
+        "data_description": {
+          "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
+          "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
+          "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
+          "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
+          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
+          "ai_task_entity": "The AI task used for camera looks, briefings, the nightly think and the look at tomorrow. Empty uses Home Assistant's preferred AI task.",
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
+          "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
+          "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
+          "prompt_recent": "A few lines on what happened in the last hour, and where there's been movement, so 'what just happened?' is answered straight away. Free: no extra AI calls.",
+          "rules": "\"When this happens, do that\" rules (the Rules page), and the voice can make them: it reads the rule back and only saves it after a yes. Rules can never arm, disarm or unlock anything. Off: no rules run.",
+          "relevant_memories": "Once there are more memories than fit in the voice's context, it gets the ones that share words with the question, then the newest. Free, no AI. Off: always the newest.",
+          "look_cache_minutes": "The same question to the same camera within this time gets the last answer instead of a new AI look. 0 always looks again.",
+          "camera_prefilter": "Camera checks and watches compare a tiny picture first (on this machine, free) and only ask the AI when the camera — or its spot — looks different from the last look.",
+          "budget_drive": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit.",
+          "budget_noticing": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit.",
+          "budget_cameras": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit. Safety, the doorbell and questions you ask are never held back.",
+          "routine_evidence": "Offers to take over a routine say how often it happened, e.g. '4 of the last 4 weekend days'.",
+          "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
+          "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
+          "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
+          "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
+          "door_camera": "Looked at once when the doorbell rings, to log who came.",
+          "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
+          "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
+          "faces": "When Frigate (or the doorbell) recognises someone, it goes on the timeline and the voice can answer \"has Sam come home?\". Names are never announced or guessed — only said when someone asks. Off by default.",
+          "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
+          "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and buttons for the household (phones show three at most). Tapping one teaches Frigate; \"Someone else…\" takes a typed name for anyone new, or \"no\" to delete a stranger's face. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
+          "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
+          "face_cameras": "Empty: every camera. Pick the close-up ones (the doorbell, the front door) so a busy street can't give false names.",
+          "face_forget_hours": "Every night, faces Frigate kept but nobody named — strangers, mostly — are deleted from Frigate once they're this old. Named faces are kept. 0: leave it to Frigate (it keeps its last 200).",
+          "clip_watch": "When Frigate finishes an event on a chosen camera, the AI watches that stretch of recording once and a sentence goes on the timeline and the Sentient page: \"Gate 14:10 — a man walked a dog past\". The voice answers \"what happened at the gate?\" from them without another AI call. Never spoken. Off by default.",
+          "clip_cameras": "Start with one, e.g. the gate.",
+          "clip_scope": "Frigate's alerts are people in the zones you marked as required — the quietest choice for a busy street.",
+          "clip_when": "Only watch at these times. Away means everyone chosen under Away lights is out.",
+          "clip_notify": "Goes to the phones only, with a picture and a play button.",
+          "clip_source": "Frigate's own AI review summaries need switching on in Frigate; then no AI call is made here.",
+          "clip_whose": "In the same AI call, the household's face photos from Frigate's face library (and the looks below) are included, and it names someone only when it's clearly them — \"probably Sam\". Strangers are never named. Only said when asked, never announced.",
+          "clip_looks": "One per line, e.g. \"Alex: black motorbike helmet and riding jacket, on the motorbike\". Helps when a helmet or hood hides the face.",
+          "budget_clips": "Counts towards the overall daily AI limit too. 0: no limit of its own.",
+          "clip_days": "Summaries are words only, then deleted.",
+          "clip_keep": "Off: each clip is deleted as soon as it's been watched.",
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
+          "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
+          "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
+          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
+          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction. For enforced checks, enable guarded control with its required agent setup.",
+          "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
+          "backup_keep": "Older ones are deleted.",
+          "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
+          "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
+          "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
+          "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
+          "away_people": "Empty: everyone with a person entry.",
+          "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "away_after": "So popping to the shop doesn't start it.",
+          "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
+          "animal_high": "Says once when it rises above this.",
+          "hutch_check": "Half an hour after sunset, one AI look at the hutch: are they in, and is it shut? Only says something if not.",
+          "hutch_spot": "The spot drawn round the hutch on the Spots tab, e.g. 'rabbit pen'.",
+          "cat_watch": "After dark, when a cat sensor on the hutch's camera goes on, one AI look: is a cat at or by the hutch? At most every 15 minutes, and not when the picture hasn't changed.",
+          "cat_sensors": "Empty: the cat sensors on the hutch's camera (e.g. Frigate's cat occupancy).",
+          "cat_loud": "Off: kept for the morning ('A cat was by the hutch at 2:14am'). On: said at once through the night-watch speakers.",
+          "rain_warnings": "When rain's due within the hour and a window or door is open: 'Rain's on the way in the next hour, and the bedroom window's open.' Reads the hourly forecast — no AI. Once per spell of rain.",
+          "rain_entities": "Empty: every window and door sensor.",
+          "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
+          "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
+          "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page.",
+          "conversation_sessions": "Use the Sentient with backup agent. Single commands stop listening unless the spoken reply ends in a question. Information, security, health and system discussions ask if there is anything else and stay open until you say “that’s all”, “enough” or “stop listening”, or the inactivity timeout expires. Say “back to the…” to resume an unfinished topic from this device within 24 hours, without restoring action permissions. The Mind panel shows recent conversation decisions. Follow-up listening needs a compatible Assist device.",
+          "session_seconds": "Discard session context and pending actions after this many seconds without another turn. Your voice device controls its own silence timeout. Confirmation also expires after 60 seconds.",
+          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
+          "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Sentient is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sentient",
+        "menu_options": {
+          "settings": "Settings",
+          "briefing": "Briefings",
+          "memories": "Memories"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "data": {
+          "persona": "Nom",
+          "speakers": "Haut-parleurs",
+          "default_speaker": "Haut-parleur par défaut",
+          "quiet_start": "Début des heures de silence",
+          "quiet_end": "Fin des heures de silence",
+          "motion_window": "Période de détection de présence",
+          "banned_words": "Ne jamais utiliser ces mots (séparés par des virgules)",
+          "suppress_entities": "Rester silencieux après ces automatisations ou scripts",
+          "suppress_seconds": "Rester silencieux pendant",
+          "prompt_memories": "Souvenirs à partager avec les assistants vocaux",
+          "pass_through_areas": "Zones de passage",
+          "all_occupied": "Parler dans toutes les pièces occupées",
+          "ai_task_entity": "IA pour les tâches en arrière-plan",
+          "camera_cooldown": "Intervalle minimal entre les vérifications des caméras",
+          "fallback_speakers": "Haut-parleurs de secours uniquement",
+          "daily_ai_limit": "Appels à l’IA par jour",
+          "prompt_recent": "Inclure la dernière heure dans le contexte vocal",
+          "rules": "Règles et création de règles par la voix",
+          "relevant_memories": "Sélectionner les souvenirs pertinents pour la demande",
+          "look_cache_minutes": "Réutiliser une réponse de caméra pendant",
+          "camera_prefilter": "Ignorer les vérifications des caméras si rien n’a changé",
+          "budget_drive": "Appels à l’IA par jour : initiative",
+          "budget_noticing": "Appels à l’IA par jour : observations",
+          "budget_cameras": "Appels à l’IA par jour : vérifications et surveillance des caméras",
+          "routine_evidence": "Indiquer la fréquence d’observation d’une routine",
+          "notice_entities": "Éléments à surveiller",
+          "chattiness": "Niveau de bavardage",
+          "house_rules": "Règles de la maison",
+          "learn_entities": "Apprendre les routines à partir de",
+          "link_triggers": "Apprendre également ce qui suit ces événements",
+          "suggest_routines": "Proposer d’automatiser les routines",
+          "door_camera": "Caméra de la porte",
+          "door_triggers": "Sonnette",
+          "announce_visitors": "Annoncer qui est à la porte",
+          "faces": "Noms issus de la reconnaissance faciale",
+          "face_people": "Uniquement ces personnes",
+          "face_teach": "Demander sur le téléphone d’identifier les visages inconnus",
+          "face_teach_cameras": "Apprendre les visages depuis ces caméras",
+          "face_cameras": "Reconnaître les noms uniquement depuis ces caméras",
+          "face_forget_hours": "Oublier les visages non identifiés après",
+          "clip_watch": "Analyser les extraits d’événements",
+          "clip_cameras": "Caméras",
+          "clip_scope": "Quels événements",
+          "clip_when": "Quand",
+          "clip_notify": "Envoyer aux téléphones",
+          "clip_source": "Qui rédige le résumé",
+          "clip_whose": "Préciser le membre du foyer concerné",
+          "clip_looks": "Décrire les personnes lorsque leur visage est invisible",
+          "budget_clips": "Nombre maximal d’extraits analysés par jour",
+          "clip_days": "Conserver les résumés pendant",
+          "clip_keep": "Conserver les fichiers vidéo",
+          "parcel_alerts": "Annoncer le dépôt d’un colis",
+          "doorstep_sensors": "Check for parcels after visits seen by",
+          "face_sensor": "Nom reconnu depuis",
+          "sidebar_panel": "Afficher dans la barre latérale",
+          "suggestions": "Suggestions sur la page Sentient",
+          "auto_backup": "Sauvegarder chaque semaine",
+          "backup_keep": "Nombre de sauvegardes à conserver",
+          "confirm_kinds": "Demander confirmation avant",
+          "chat_agent": "Agent de conversation pour la page latérale",
+          "battery_threshold": "Batterie faible en dessous de",
+          "battery_forecast": "Prévenir lorsque les batteries seront épuisées",
+          "health_ignore": "Ignorer dans l’état de santé de la maison",
+          "second_opinion_ai": "Deuxième avis de l’IA",
+          "smart_ai_task": "IA avancée pour la sécurité et l’analyse nocturne",
+          "event_clips": "Analyser les extraits d’événements de Frigate",
+          "notify_targets": "Phones to notify",
+          "notify_when": "Send to phones",
+          "phone_buttons": "Buttons on phone notifications",
+          "phone_apps": "Companion apps for buttons",
+          "bins_check": "Bins check",
+          "bins_calendar": "Bin calendar",
+          "bins_spot": "The bins' camera spot",
+          "bins_time": "Look at",
+          "chime": "Jouer un signal sonore avant de parler",
+          "welcome_home": "Welcome people home",
+          "welcome_people": "People to welcome",
+          "speak_volume": "Speaking volume",
+          "night_volume": "Speaking volume in quiet hours",
+          "duck_media": "Turn music and TV down while speaking",
+          "critical_alerts": "Safety alerts",
+          "critical_ignore": "Never treat these as safety alerts",
+          "energy_insight": "Energy insight",
+          "energy_price": "Electricity price",
+          "left_open_minutes": "Mention doors and windows left open after",
+          "left_open_ignore": "Don't mention these",
+          "leaving_check": "Check when everyone goes out",
+          "critical_extra": "Also treat these as safety alerts",
+          "heating_entities": "Heating to learn",
+          "preheat": "Warm up before people are up",
+          "comfort_temp": "Warm-up temperature",
+          "inside_sensors": "Motion sensors inside",
+          "weekly_report": "Weekly report",
+          "night_watch": "Night watch",
+          "night_watch_entities": "Doors and gates to watch",
+          "night_watch_announce": "Say alerts out loud, even in quiet hours",
+          "night_watch_speakers": "Say alerts on",
+          "warm_by_weekdays": "Warm by (weekdays)",
+          "warm_by_weekends": "Warm by (weekends)",
+          "heating_limit": "Turn heating back after",
+          "personality": "Personality",
+          "personality_notes": "Personality notes",
+          "style_feedback": "\"Say it differently\" on things it said",
+          "style_notes": "How things should be said",
+          "camera_security": "Camera security",
+          "camera_security_sensors": "Cameras' person sensors",
+          "camera_security_inside": "Inside the boundary",
+          "camera_security_entries": "Ways in",
+          "camera_security_describe": "Describe who it is",
+          "party_lights": "Show lights",
+          "party_style": "Style",
+          "party_minutes": "Stop by itself after",
+          "party_whole_house": "Use every light in the house",
+          "party_exclude": "Never use these lights",
+          "party_sound": "Follow the sound from",
+          "party_show": "Buttons on the overview",
+          "party_sound_switch": "Turn on while listening",
+          "room_volume": "Speak up in a noisy room",
+          "follow_you": "Messages follow people",
+          "follow_minutes": "Keep messages to pass on for",
+          "conversation_memory": "Remember conversations",
+          "follow_ups": "Check back on things",
+          "curiosity": "Curiosity",
+          "reflection": "Overnight reflection",
+          "reflection_time": "Reflect at",
+          "drive_spot": "Drive spot",
+          "drive_camera": "Drive camera",
+          "drive_triggers": "Look when these settle",
+          "known_cars": "Household cars",
+          "full_volume_speakers": "Full volume on these speakers",
+          "tts_entity": "Voice for other speakers",
+          "media_speakers": "Use Echos and other media players",
+          "media_important_only": "Echos: alarms and reminders only",
+          "foresight": "A look at tomorrow",
+          "foresight_time": "Look ahead at",
+          "sleep_detection": "Know when the house is asleep",
+          "sleep_minutes": "Asleep after nothing's moved for",
+          "bedtime_routines": "Bedtime routines",
+          "sleep_actions": "When the house goes to sleep, do",
+          "wake_actions": "When someone's up, do",
+          "appliances": "Appliances to follow",
+          "appliance_announce": "Say when they finish",
+          "appliance_watts": "Running above",
+          "voice_agent": "Agent vocal IA principal",
+          "backup_agent": "Agent de secours",
+          "animal_sensors": "Capteurs de température des animaux",
+          "away_lights_on": "Éclairage en cas d’absence",
+          "away_people": "Activer le mode absence lorsque tous sont sortis",
+          "away_lights": "Éclairages à utiliser",
+          "away_after": "Démarrer après une absence de",
+          "animal_low": "Trop froid en dessous de",
+          "animal_high": "Trop chaud au-dessus de",
+          "hutch_check": "Vérification du clapier au crépuscule",
+          "hutch_spot": "Zone de caméra du clapier",
+          "cat_watch": "Surveillance nocturne du chat",
+          "cat_sensors": "Capteurs du chat",
+          "cat_loud": "Annoncer immédiatement la nuit",
+          "rain_warnings": "Alertes de pluie",
+          "rain_entities": "Fenêtres et portes à surveiller",
+          "self_test": "Autotest",
+          "screen": "Utiliser l’écran de la tablette",
+          "screen_actions": "Lorsqu’un élément apparaît",
+          "screen_clear_actions": "Lorsque tout est effacé",
+          "conversation_sessions": "Sessions de conversation",
+          "session_seconds": "Délai d’inactivité de session",
+          "guarded_control": "Confirmation vocale obligatoire",
+          "voice_undo": "Annuler les modifications récentes de l’éclairage",
+          "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
+          "security_incidents": "Regrouper les incidents de sécurité"
+        },
+        "data_description": {
+          "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
+          "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
+          "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
+          "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
+          "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
+          "ai_task_entity": "The AI task used for camera looks, briefings, the nightly think and the look at tomorrow. Empty uses Home Assistant's preferred AI task.",
+          "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
+          "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
+          "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
+          "prompt_recent": "A few lines on what happened in the last hour, and where there's been movement, so 'what just happened?' is answered straight away. Free: no extra AI calls.",
+          "rules": "\"When this happens, do that\" rules (the Rules page), and the voice can make them: it reads the rule back and only saves it after a yes. Rules can never arm, disarm or unlock anything. Off: no rules run.",
+          "relevant_memories": "Once there are more memories than fit in the voice's context, it gets the ones that share words with the question, then the newest. Free, no AI. Off: always the newest.",
+          "look_cache_minutes": "The same question to the same camera within this time gets the last answer instead of a new AI look. 0 always looks again.",
+          "camera_prefilter": "Camera checks and watches compare a tiny picture first (on this machine, free) and only ask the AI when the camera — or its spot — looks different from the last look.",
+          "budget_drive": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit.",
+          "budget_noticing": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit.",
+          "budget_cameras": "Its own daily allowance within the overall limit. 0 means it just shares the overall limit. Safety, the doorbell and questions you ask are never held back.",
+          "routine_evidence": "Offers to take over a routine say how often it happened, e.g. '4 of the last 4 weekend days'.",
+          "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
+          "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
+          "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
+          "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
+          "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
+          "door_camera": "Looked at once when the doorbell rings, to log who came.",
+          "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
+          "announce_visitors": "Off keeps it to a quiet log that voice assistants can answer from.",
+          "faces": "When Frigate (or the doorbell) recognises someone, it goes on the timeline and the voice can answer \"has Sam come home?\". Names are never announced or guessed — only said when someone asks. Off by default.",
+          "face_people": "Names as Frigate knows them. Empty: everyone it recognises.",
+          "face_teach": "Helps Frigate's face recognition get better. When someone leaves a chosen camera and Frigate kept a face it couldn't name, the phones get a private \"Who's this?\" with the face and buttons for the household (phones show three at most). Tapping one teaches Frigate; \"Someone else…\" takes a typed name for anyone new, or \"no\" to delete a stranger's face. Never spoken, never on the tablets, at most every ten minutes. Needs Frigate face recognition on and phones chosen for notifications. Off by default.",
+          "face_teach_cameras": "Close-up cameras where faces are clear, e.g. the doorbell. Empty: the door camera.",
+          "face_cameras": "Empty: every camera. Pick the close-up ones (the doorbell, the front door) so a busy street can't give false names.",
+          "face_forget_hours": "Every night, faces Frigate kept but nobody named — strangers, mostly — are deleted from Frigate once they're this old. Named faces are kept. 0: leave it to Frigate (it keeps its last 200).",
+          "clip_watch": "When Frigate finishes an event on a chosen camera, the AI watches that stretch of recording once and a sentence goes on the timeline and the Sentient page: \"Gate 14:10 — a man walked a dog past\". The voice answers \"what happened at the gate?\" from them without another AI call. Never spoken. Off by default.",
+          "clip_cameras": "Start with one, e.g. the gate.",
+          "clip_scope": "Frigate's alerts are people in the zones you marked as required — the quietest choice for a busy street.",
+          "clip_when": "Only watch at these times. Away means everyone chosen under Away lights is out.",
+          "clip_notify": "Goes to the phones only, with a picture and a play button.",
+          "clip_source": "Frigate's own AI review summaries need switching on in Frigate; then no AI call is made here.",
+          "clip_whose": "In the same AI call, the household's face photos from Frigate's face library (and the looks below) are included, and it names someone only when it's clearly them — \"probably Sam\". Strangers are never named. Only said when asked, never announced.",
+          "clip_looks": "One per line, e.g. \"Alex: black motorbike helmet and riding jacket, on the motorbike\". Helps when a helmet or hood hides the face.",
+          "budget_clips": "Counts towards the overall daily AI limit too. 0: no limit of its own.",
+          "clip_days": "Summaries are words only, then deleted.",
+          "clip_keep": "Off: each clip is deleted as soon as it's been watched.",
+          "parcel_alerts": "After a delivery, look again a few minutes later and say if a parcel has been left.",
+          "doorstep_sensors": "Optional: person sensors for the doorstep or front garden (e.g. a Frigate zone's person occupancy). When a visit there ends without the bell, the door camera is checked once for a parcel or post left behind.",
+          "face_sensor": "Optional: a face-recognition sensor whose state is the name it just recognised (e.g. from Frigate). Used in the log, and in the announcement if that's on.",
+          "sidebar_panel": "A page in the sidebar showing memories, routines, watches, visitors and what's been said.",
+          "confirm_kinds": "Asks the AI to describe these actions and wait for a yes. This is a prompt instruction, not an enforced action block: your conversation agent controls device execution. Turning things off does not need asking. Empty: no extra confirmation instruction. For enforced checks, enable guarded control with its required agent setup.",
+          "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
+          "backup_keep": "Older ones are deleted.",
+          "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
+          "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
+          "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
+          "second_opinion_ai": "Optional: a bigger model asked only when the usual one says the picture is too dark or unclear to be sure. Counts towards the daily limit.",
+          "smart_ai_task": "Optional. Used only for camera security looks and the overnight think, where a smarter model helps most. Empty: the usual AI, so costs don't change.",
+          "event_clips": "Fetches Frigate's short clip of an event and has the AI watch it, so it can say what actually happened ('left a parcel and went'). Used after a camera-security alert, and when asked 'what happened at the door?'. Needs the Frigate integration. One AI call per clip. Off by default.",
+          "notify_targets": "Notify entities, e.g. the Home Assistant app on each phone or watch.",
+          "notify_when": "Each kind is sent at most once in ten minutes.",
+          "phone_buttons": "Through the companion app: at the door — the camera picture and a Show camera button; reminders — Snooze 10 min and Done. Empty: plain notifications as now.",
+          "phone_apps": "e.g. notify.mobile_app_pixel_8. Empty: the companion app behind each phone chosen above (notify.my_phone → mobile_app_my_phone) — never the tablets.",
+          "bins_check": "The evening before collection, one camera look at where the bins go out. Only says something if they aren't out: 'Recycling tomorrow, and the bins aren't out yet.' Looks once more an hour later.",
+          "bins_calendar": "Empty: a waste-collection calendar from the briefing calendars.",
+          "bins_spot": "Drawn on the Spots tab where the bins go out, e.g. 'bins'.",
+          "bins_time": "The evening before collection, before quiet hours.",
+          "chime": "Off: announcements and questions start straight away, without the speaker's chime.",
+          "welcome_home": "When someone gets back after 20 minutes or more, say \"Welcome back\" in the room they're in — plus what's worth knowing from while they were out (visitors, things that finished, problems). Never in quiet hours, hush or guest mode.",
+          "welcome_people": "Empty means everyone.",
+          "speak_volume": "Optional: the speaker's volume while Sentient talks, put back afterwards. Empty leaves it alone.",
+          "night_volume": "Optional: a quieter level for anything said in quiet hours (urgent messages only).",
+          "duck_media": "Anything playing in the same room is turned down while Sentient talks, then turned back up.",
+          "critical_alerts": "Smoke, carbon monoxide, gas, water-leak and tamper sensors are found automatically, and so is the alarm going off. Said on every speaker, through quiet hours, hush and guest mode, repeated twice while still on, and sent to phones.",
+          "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
+          "energy_price": "Optional: your unit rate, to show today's cost.",
+          "left_open_minutes": "Said once (then every half hour while still open), within quiet hours and shushes as usual. 0 turns it off.",
+          "leaving_check": "When the last person leaves, anything open or unlocked goes on the timeline and to phones (\"Left open\").",
+          "critical_extra": "Anything else that should always be said everywhere when it turns on, e.g. a panic button or a freezer-too-warm sensor. An alarm panel going off is always included.",
+          "heating_entities": "Thermostats to learn from. Leave empty for every one in the house. It learns how fast each warms up and the temperature it's usually set to.",
+          "preheat": "Start the heating early so it's at the usual temperature by the time people normally get up. A thermostat with its own schedule is put back on it afterwards, and one that's switched off is left off.",
+          "comfort_temp": "Optional: the temperature to warm up to. Leave empty to use the one it's usually set to during the day.",
+          "inside_sensors": "Optional: which motion sensors mean someone's inside. Leave empty to use the ones on the same floors as the speakers (garden and camera sensors don't count). Used for night watch and getting-up times.",
+          "weekly_report": "On Sunday evenings, put what the house learned and noticed this week on the timeline (sent to phones if digests are).",
+          "night_watch": "Learns when each door, gate and window normally opens. An opening at a time it never usually does, with nobody moving inside first, is an alert. If someone was up inside (leaving for work, say), it's only noted.",
+          "night_watch_entities": "Leave empty for every door, window, gate and garage door sensor.",
+          "night_watch_announce": "An unusual opening with nobody up is said straight away, through quiet hours, hush and guest mode — it could be someone who shouldn't be there.",
+          "night_watch_speakers": "Leave empty for every speaker.",
+          "warm_by_weekdays": "Optional: when it should be warm on weekdays. Leave empty to use the learned getting-up time.",
+          "warm_by_weekends": "Optional: the same for Saturdays and Sundays.",
+          "heating_limit": "When someone turns the heating up or on by voice or in the app, put it back (to its schedule, or off) after this many hours. 0 never does.",
+          "personality": "How the house sounds — in remarks, briefings, welcomes and to every voice assistant.",
+          "personality_notes": "Optional, in your own words, e.g. 'Fond of the cats. Teases gently about how much tea gets made.'",
+          "style_feedback": "A button next to the thumbs on anything it said: pick Shorter, Plainer, Less cheeky, More detail, or say how. The notes below are then followed everywhere it speaks. Off: no button, and the notes aren't used.",
+          "style_notes": "One per line; added from the button, and yours to edit. The latest 8 are used.",
+          "camera_security": "Follow people from camera to camera, and alert for someone in the garden when the gate and doors didn't open, or anyone about at night with nobody up. Alerts are said out loud in quiet hours if night watch does.",
+          "camera_security_sensors": "Each camera's (or zone's) person sensor, e.g. Frigate's 'Gate person occupancy'.",
+          "camera_security_inside": "The person sensors for places behind the gate or fence — the garden, the shed. Someone appearing there without a way in opening is an alert.",
+          "camera_security_entries": "The gate and doors people should come through (e.g. the back gate and the back door).",
+          "camera_security_describe": "One AI look at the camera for each alert ('a man in a dark hoodie trying the shed door').",
+          "party_lights": "The lights that join in when not using the whole house. Leave empty to use the room of whoever asks (or say a room: 'disco mode in the living room').",
+          "party_style": "Disco: quick colour changes. Party: bright colours, short fades. Rainbow: a colour wheel. Chill: slow, dim colours. Halloween: flickering orange, purple and green. Christmas: red, green and warm white, twinkling.",
+          "party_minutes": "Then every light goes back exactly as it was. 0 keeps going until it's turned off.",
+          "party_whole_house": "Every light that can dim or change colour joins in (light groups, screens and backlights don't). Say 'disco mode everywhere' to do this just once.",
+          "party_exclude": "Left out of every show, even 'everywhere' — tablet screens, a projector, a bedroom where someone sleeps.",
+          "party_sound": "Optional: a loudness sensor in dB, such as a voice speaker's microphone through ESPHome's sound_level sensor. Disco, party, rainbow and Halloween then follow the music — louder is brighter, and each beat changes colour.",
+          "party_show": "Which shows get a button on the overview. Leave empty for none; every show still works by voice.",
+          "party_sound_switch": "Optional: a switch that makes the loudness sensor report (so it isn't sending readings all day). It's turned on while a show follows the sound and off afterwards. Found automatically if it's on the same device and has 'loudness' in its name.",
+          "room_volume": "Speakers that can hear the room (a loudness sensor on the same device) have a one-second listen first and speak louder over a TV or chatter. Not in quiet hours.",
+          "follow_you": "Something said where nobody was about — or held back for quiet hours — is passed on the next time someone walks into a room with a speaker.",
+          "follow_minutes": "After this long an unheard message is dropped.",
+          "conversation_memory": "Keeps a short record of what was asked and said on every speaker, so another room can pick up where one left off. Kept two weeks; private while guests are in.",
+          "follow_ups": "Voices can set follow-ups (\"I'll check the room's warmed up in an hour\") and a watch that runs out with nothing seen is closed off out loud.",
+          "curiosity": "At most once a day, when someone's about, it asks about something it can't explain — a regular caller, a pattern it noticed overnight — and remembers the answer.",
+          "reflection": "One AI call each night over the day's log and conversations: new things worth remembering, a thought or two for the morning, and a question to ask.",
+          "reflection_time": "Best in the small hours.",
+          "drive_spot": "The camera spot that shows the drive (draw it on the Spots tab).",
+          "drive_camera": "Only needed if more than one camera has a spot with that name.",
+          "drive_triggers": "Motion or car sensors that see the drive. Empty: the camera's own motion and car sensors.",
+          "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
+          "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
+          "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
+          "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
+          "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
+          "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
+          "foresight": "Each evening one AI look at tomorrow's calendars, weather, alarms and reminders. Says something only when there's something to do tonight — frost before an early start, rain on washing day. Usually silent.",
+          "foresight_time": "Before quiet hours start.",
+          "sleep_detection": "Asleep after a bedtime routine, or in quiet hours once nothing inside has moved for a while. Awake in the morning when there's movement in two rooms (or a light switched on by hand). A House sensor shows it.",
+          "bedtime_routines": "Routines that mean everyone's gone to bed, comma separated. Empty: any routine with 'night' or 'bed' in its name.",
+          "sleep_actions": "e.g. tablet screens off, the Echo speakers switch off.",
+          "wake_actions": "e.g. the Echo speakers back on, the hallway light on low.",
+          "appliances": "Washing machine, dryer, dishwasher, hoover — their power sensor or status. Leave empty to follow every robot vacuum and any power sensor named washing machine, dryer or dishwasher.",
+          "appliance_announce": "Says “the washing machine's finished” where people are, and when one is taking far longer than usual. Plain words, no AI.",
+          "appliance_watts": "For power sensors: running while above this, finished once it's stayed below for five minutes.",
+          "voice_agent": "The AI agent that normally answers (e.g. Google AI). Empty uses the page's chat agent.",
+          "backup_agent": "Answers when the main agent fails — Home Assistant's own agent does lights, heating and timers without any AI.",
+          "animal_sensors": "Hutch, kennel, coop or tank temperature sensors.",
+          "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
+          "away_people": "Empty: everyone with a person entry.",
+          "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "away_after": "So popping to the shop doesn't start it.",
+          "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
+          "animal_high": "Says once when it rises above this.",
+          "hutch_check": "Half an hour after sunset, one AI look at the hutch: are they in, and is it shut? Only says something if not.",
+          "hutch_spot": "The spot drawn round the hutch on the Spots tab, e.g. 'rabbit pen'.",
+          "cat_watch": "After dark, when a cat sensor on the hutch's camera goes on, one AI look: is a cat at or by the hutch? At most every 15 minutes, and not when the picture hasn't changed.",
+          "cat_sensors": "Empty: the cat sensors on the hutch's camera (e.g. Frigate's cat occupancy).",
+          "cat_loud": "Off: kept for the morning ('A cat was by the hutch at 2:14am'). On: said at once through the night-watch speakers.",
+          "rain_warnings": "When rain's due within the hour and a window or door is open: 'Rain's on the way in the next hour, and the bedroom window's open.' Reads the hourly forecast — no AI. Once per spell of rain.",
+          "rain_entities": "Empty: every window and door sensor.",
+          "self_test": "Overnight, the voice is asked a few everyday questions (the temperature outside, anything open, reminders, the alarm, the time) and its answers are checked against the house. Anything wrong shows in house health with the tool it used. About 5 AI calls a run. Questions only — nothing is switched.",
+          "screen": "Alerts, notices and a morning card on the Sentient screen card (custom:sentient-screen-card). Off: it only shows the house at a glance.",
+          "screen_actions": "e.g. wake a tablet and switch it to the page with the screen card.",
+          "screen_clear_actions": "e.g. switch the tablet back to its normal page.",
+          "conversation_sessions": "Use the Sentient with backup agent. Single commands stop listening unless the spoken reply ends in a question. Information, security, health and system discussions ask if there is anything else and stay open until you say “that’s all”, “enough” or “stop listening”, or the inactivity timeout expires. Say “back to the…” to resume an unfinished topic from this device within 24 hours, without restoring action permissions. The Mind panel shows recent conversation decisions. Follow-up listening needs a compatible Assist device.",
+          "session_seconds": "Discard session context and pending actions after this many seconds without another turn. Your voice device controls its own silence timeout. Confirmation also expires after 60 seconds.",
+          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
+          "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
+        }
+      },
+      "memories": {
+        "title": "Memories",
+        "description": "The house remembers {count} things. Pick one to edit, tick any to forget, or add a new one.",
+        "data": {
+          "edit": "Edit a memory",
+          "forget": "Forget",
+          "add": "Add a memory",
+          "category": "Category for the new memory"
+        }
+      },
+      "edit_memory": {
+        "title": "Edit memory",
+        "data": {
+          "text": "Memory",
+          "category": "Category"
+        }
+      },
+      "briefing": {
+        "title": "Briefings",
+        "description": "What a briefing covers — from the BRIEFING button, by voice, or at a set time each day.",
+        "data": {
+          "briefings": "Briefings on",
+          "briefing_sections": "Include",
+          "briefing_weather": "Weather from",
+          "briefing_todo": "To-do lists",
+          "briefing_calendars": "Calendars",
+          "briefing_system": "System sensors to report",
+          "briefing_time": "Daily briefing at",
+          "digest_time": "Daily digest at",
+          "morning_briefing": "Briefing when someone's first up"
+        },
+        "data_description": {
+          "briefings": "Off turns off the button, the voice tool and the service.",
+          "briefing_weather": "Leave empty to use the first weather entity.",
+          "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
+          "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
+          "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
+          "morning_briefing": "Once a day, the first time someone's moving about after quiet hours end (before noon), in that room."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "memories": {
+        "name": "Memories"
+      },
+      "last_spoken": {
+        "name": "Last spoken"
+      },
+      "likely_room": {
+        "name": "Likely room"
+      },
+      "watches": {
+        "name": "Watches"
+      },
+      "routines": {
+        "name": "Routines"
+      },
+      "visitors": {
+        "name": "Visitors"
+      },
+      "health": {
+        "name": "House health"
+      },
+      "drive": {
+        "name": "Drive"
+      },
+      "mind": {
+        "name": "Mind"
+      },
+      "house": {
+        "name": "House",
+        "state": {
+          "awake": "Awake",
+          "asleep": "Endormi"
+        }
+      },
+      "screen": {
+        "name": "Screen",
+        "state": {
+          "idle": "Idle",
+          "morning": "Morning",
+          "notice": "Notice",
+          "alert": "Alerte"
+        }
+      }
+    },
+    "switch": {
+      "hush": {
+        "name": "Hush"
+      },
+      "guest_mode": {
+        "name": "Guest mode"
+      },
+      "chime": {
+        "name": "Chime"
+      },
+      "party_mode": {
+        "name": "Light show"
+      },
+      "media_speakers": {
+        "name": "Echo speakers"
+      },
+      "media_important_only": {
+        "name": "Echos: alarms and reminders only"
+      },
+      "away_lights": {
+        "name": "Éclairage en cas d’absence"
+      },
+      "screen": {
+        "name": "Tablet screen"
+      }
+    },
+    "conversation": {
+      "voice": {
+        "name": "With backup"
+      }
+    }
+  },
+  "selector": {
+    "priority": {
+      "options": {
+        "low": "Low",
+        "normal": "Normal",
+        "urgent": "Urgent (ignores quiet hours)"
+      }
+    },
+    "category": {
+      "options": {
+        "fact": "Fact",
+        "preference": "Preference",
+        "person": "Person",
+        "routine": "Routine",
+        "note": "Note",
+        "correction": "Correction"
+      }
+    },
+    "chattiness": {
+      "options": {
+        "off": "Désactivé",
+        "quiet": "Quiet",
+        "normal": "Normal",
+        "chatty": "Chatty"
+      }
+    },
+    "briefing_section": {
+      "options": {
+        "time": "Time",
+        "weather": "Weather",
+        "reminders": "Reminders due today",
+        "watches": "What's being watched",
+        "routines": "Routines coming up",
+        "open": "Windows and doors open",
+        "visitors": "Visitors today",
+        "said": "What was said recently",
+        "system": "System health",
+        "todo": "To-do lists",
+        "calendar": "Calendar (next 24 hours)",
+        "energy": "Electricity used today (and anything unusual)",
+        "security": "Anything open or unlocked"
+      }
+    },
+    "notify_when": {
+      "options": {
+        "urgent": "Urgent announcements",
+        "held_quiet": "Things held back in quiet hours",
+        "unheard": "Things nobody could hear (no speaker available)",
+        "visitors": "Doorbell visitors and parcels",
+        "watches": "Watches and reminders going off",
+        "health": "House health problems",
+        "digest": "The daily digest",
+        "critical": "Safety alerts (smoke, CO, gas, leaks)",
+        "security": "Things left open when everyone goes out"
+      }
+    },
+    "personality": {
+      "options": {
+        "calm": "Calm and to the point",
+        "dry": "Dry wit",
+        "warm": "Warm and friendly",
+        "cheeky": "Cheeky",
+        "composed": "Composed, like a butler"
+      }
+    },
+    "party_style": {
+      "options": {
+        "disco": "Disco",
+        "party": "Party",
+        "rainbow": "Rainbow",
+        "chill": "Chill",
+        "halloween": "Halloween",
+        "christmas": "Christmas"
+      }
+    },
+    "confirm_kinds": {
+      "options": {
+        "locks": "Locks",
+        "garage": "Garage doors and gates",
+        "covers": "Blinds, curtains and shutters",
+        "heating": "Turning the heating up a lot",
+        "appliances": "Starting appliances"
+      }
+    },
+    "self_test": {
+      "options": {
+        "off": "Désactivé",
+        "nightly": "Every night",
+        "weekly": "Once a week (Sunday night)"
+      }
+    },
+    "check_now": {
+      "options": {
+        "self_test": "Autotest",
+        "rain": "Rain warning",
+        "hutch": "Hutch check",
+        "cat": "Cat watch",
+        "bins": "Bins check",
+        "faces": "Who's this? (face teaching)",
+        "faces_forget": "Forget unnamed faces now",
+        "clip_watch": "Watch the latest clip now"
+      }
+    },
+    "clip_scope": {
+      "options": {
+        "alerts": "Frigate alerts only",
+        "zones": "Anything in a zone",
+        "all": "Every detection"
+      }
+    },
+    "clip_when": {
+      "options": {
+        "always": "Always",
+        "quiet": "Quiet hours",
+        "away": "When everyone's out",
+        "quiet_or_away": "Quiet hours or when everyone's out"
+      }
+    },
+    "clip_notify": {
+      "options": {
+        "off": "Désactivé",
+        "worth": "Ones worth a look",
+        "suspicious": "Suspicious only",
+        "all": "Every clip"
+      }
+    },
+    "clip_source": {
+      "options": {
+        "sentient": "Sentient (one AI call a clip)",
+        "frigate": "Frigate's own AI summaries"
+      }
+    },
+    "phone_buttons": {
+      "options": {
+        "door": "At the door",
+        "reminders": "Reminders"
+      }
+    }
+  },
+  "services": {
+    "say": {
+      "name": "Say",
+      "description": "Speak through the house, following quiet hours and room awareness.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "What to say."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent ignores quiet hours and hush periods; low never interrupts."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "A speaker, room name or entity id. Leave empty to follow the person."
+        }
+      }
+    },
+    "remember": {
+      "name": "Remember",
+      "description": "Add something to the house's long-term memory.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "One short sentence."
+        },
+        "category": {
+          "name": "Category",
+          "description": "What kind of memory this is."
+        }
+      }
+    },
+    "forget": {
+      "name": "Forget",
+      "description": "Remove a memory by id or by matching text.",
+      "fields": {
+        "what": {
+          "name": "What",
+          "description": "Memory id or words from it."
+        }
+      }
+    },
+    "watch": {
+      "name": "Watch",
+      "description": "Keep an eye on a device, sensor or camera and speak up when something happens.",
+      "fields": {
+        "what": {
+          "name": "What",
+          "description": "Short description, e.g. 'the cats near the rabbit pen'."
+        },
+        "entity": {
+          "name": "Entity",
+          "description": "Entity id, name, or a camera's area name."
+        },
+        "to_state": {
+          "name": "To state",
+          "description": "Fire when the entity reaches this state."
+        },
+        "above": {
+          "name": "Above",
+          "description": "Fire when the value goes above this."
+        },
+        "below": {
+          "name": "Below",
+          "description": "Fire when the value goes below this."
+        },
+        "question": {
+          "name": "Question",
+          "description": "Camera watches: a yes/no question about the picture."
+        },
+        "look_for": {
+          "name": "Look for",
+          "description": "Camera watches: object to wake on, e.g. person, cat, car."
+        },
+        "message": {
+          "name": "Message",
+          "description": "What to say. Leave empty for an automatic sentence."
+        },
+        "until": {
+          "name": "Until",
+          "description": "Clock time, e.g. 18:00 or 6pm."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Or how many minutes to watch for."
+        },
+        "repeat": {
+          "name": "Repeat",
+          "description": "Keep watching after it fires."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent ignores quiet hours."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it. Leave empty to follow people."
+        },
+        "wake_on": {
+          "name": "Wake on",
+          "description": "Camera watches: a zone or object sensor to wake on instead of the camera's own sensors."
+        },
+        "spot": {
+          "name": "Spot",
+          "description": "Camera watches: only check this named spot (taught by voice, e.g. 'the rabbit pen')."
+        }
+      }
+    },
+    "cancel_watch": {
+      "name": "Cancel watch",
+      "description": "Stop a watch.",
+      "fields": {
+        "what": {
+          "name": "What",
+          "description": "Watch id or words from it."
+        }
+      }
+    },
+    "remind": {
+      "name": "Remind",
+      "description": "Say something at a time, in the room where people are.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "What to say, e.g. 'Time to put the oven on.'"
+        },
+        "at": {
+          "name": "At",
+          "description": "Clock time, e.g. 18:00 or 6pm."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Or in how many minutes."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it. Leave empty to follow people."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent (default) still speaks during quiet hours."
+        }
+      }
+    },
+    "ask": {
+      "name": "Ask",
+      "description": "Ask a question out loud and listen for the answer, in the room where people are.",
+      "fields": {
+        "question": {
+          "name": "Question",
+          "description": "e.g. 'Fancy a brew? Shall I put the kettle on?'"
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent ignores quiet hours and hush periods."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to ask. Leave empty to follow people."
+        },
+        "extra_prompt": {
+          "name": "Extra instructions",
+          "description": "Extra guidance for the voice agent handling the reply."
+        },
+        "preannounce": {
+          "name": "Chime first",
+          "description": "Play the chime before asking."
+        }
+      }
+    },
+    "learn": {
+      "name": "Learn now",
+      "description": "Look for routines in recent history straight away instead of waiting for tonight."
+    },
+    "briefing": {
+      "name": "Briefing",
+      "description": "A short briefing of what matters right now, spoken where people are.",
+      "fields": {
+        "speak": {
+          "name": "Speak it",
+          "description": "Off returns the facts without speaking or using the AI."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent speaks even in quiet hours, e.g. when someone pressed a button for it."
+        }
+      }
+    },
+    "tidy_memories": {
+      "name": "Tidy memories",
+      "description": "Merge duplicates and drop nonsense from memory now (also runs every Sunday night)."
+    },
+    "forget_routine": {
+      "name": "Delete learned routine",
+      "description": "Delete a learned routine or habit for good — the house stops doing it and never learns or offers it again. With Restore on, bring deleted ones back (one, or all if Routine is empty).",
+      "fields": {
+        "routine": {
+          "name": "Routine",
+          "description": "Routine id or words from it."
+        },
+        "restore": {
+          "name": "Restore",
+          "description": "Bring deleted ones back instead."
+        }
+      }
+    },
+    "adopt_routine": {
+      "name": "Adopt routine",
+      "description": "Have the house do a learned routine by itself, or stop. Leave Adopt empty to toggle.",
+      "fields": {
+        "routine": {
+          "name": "Routine",
+          "description": "Routine id or words from it."
+        },
+        "adopt": {
+          "name": "Adopt",
+          "description": "On to start, off to stop."
+        }
+      }
+    },
+    "hush": {
+      "name": "Hush",
+      "description": "Say nothing that isn't urgent for a while. 0 minutes stops hushing.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "How long to stay hushed."
+        }
+      }
+    },
+    "run_routine": {
+      "name": "Run routine",
+      "description": "Run a named routine (set up on the sidebar page's Settings → Routines).",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "The routine's name or one of its other names."
+        },
+        "speak": {
+          "name": "Speak",
+          "description": "Say the result where people are."
+        },
+        "details": {
+          "name": "Details",
+          "description": "For routines that take details, e.g. which rooms."
+        }
+      }
+    },
+    "weekly_report": {
+      "name": "Weekly report",
+      "description": "Put together what the house learned and noticed in the last week, and keep it on the timeline."
+    },
+    "party": {
+      "name": "Light show",
+      "description": "Start or stop a light show (disco, Halloween, Christmas…). Lights go back exactly as they were when it stops.",
+      "fields": {
+        "on": {
+          "name": "Activé",
+          "description": "Off stops it and puts the lights back."
+        },
+        "style": {
+          "name": "Style",
+          "description": "Disco, party, rainbow, chill, Halloween or Christmas. Empty uses the setting."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Stop by itself after this long (0 = until turned off). Empty uses the setting."
+        },
+        "area": {
+          "name": "Room",
+          "description": "Use this room's lights (or 'everywhere' for every light)."
+        },
+        "lights": {
+          "name": "Lights",
+          "description": "Use exactly these lights."
+        }
+      }
+    },
+    "reflect": {
+      "name": "Reflect now",
+      "description": "Think over the last day now, as it does overnight: new memories, morning thoughts and a question."
+    },
+    "check_drive": {
+      "name": "Check the drive",
+      "description": "Take one AI look at the drive spot now and update what's parked there."
+    },
+    "wonder": {
+      "name": "Wonder",
+      "description": "Add a question for curiosity to ask, drop one, or ask the next one now.",
+      "fields": {
+        "question": {
+          "name": "Question",
+          "description": "Something to ask the household once."
+        },
+        "ask_now": {
+          "name": "Ask now",
+          "description": "Ask the next question straight away."
+        },
+        "dismiss": {
+          "name": "Dismiss",
+          "description": "Words from a question not to ask after all."
+        }
+      }
+    },
+    "follow_up": {
+      "name": "Follow up",
+      "description": "Check back on something later and say how it went.",
+      "fields": {
+        "minutes": {
+          "name": "Minutes",
+          "description": "When to check."
+        },
+        "about": {
+          "name": "About",
+          "description": "A few words on what it's about."
+        },
+        "entity": {
+          "name": "Entity",
+          "description": "Device to check then."
+        },
+        "state": {
+          "name": "State",
+          "description": "The state that means it worked."
+        },
+        "above": {
+          "name": "Above",
+          "description": "Worked if the value is at least this."
+        },
+        "below": {
+          "name": "Below",
+          "description": "Worked if the value is at most this."
+        },
+        "if_done": {
+          "name": "If done",
+          "description": "What to say if it worked."
+        },
+        "if_not": {
+          "name": "If not",
+          "description": "What to say if it didn't."
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Where to say it (default: where people are)."
+        }
+      }
+    },
+    "cancel_follow_up": {
+      "name": "Cancel a follow-up",
+      "description": "Stop it checking back on something.",
+      "fields": {
+        "about": {
+          "name": "About",
+          "description": "Its id, or words from what it's about."
+        }
+      }
+    },
+    "look_ahead": {
+      "name": "Look ahead",
+      "description": "Look at tomorrow now and say whether there's anything worth a heads-up.",
+      "fields": {
+        "speak": {
+          "name": "Say it",
+          "description": "Le dire à voix haute le cas échéant."
+        }
+      }
+    },
+    "set_asleep": {
+      "name": "Définir l’état de sommeil",
+      "description": "Tell the house it's asleep or awake (runs the bedtime or morning actions).",
+      "fields": {
+        "asleep": {
+          "name": "Endormi",
+          "description": "Activé pour endormi, désactivé pour éveillé."
+        }
+      }
+    },
+    "show_on_screen": {
+      "name": "Afficher à l’écran",
+      "description": "Afficher une carte sur l’écran Sentient.",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "Contenu à afficher."
+        },
+        "camera": {
+          "name": "Caméra",
+          "description": "Caméra à afficher avec le contenu."
+        },
+        "minutes": {
+          "name": "Pendant",
+          "description": "Durée (10 minutes si vide)."
+        },
+        "alert": {
+          "name": "Alerte",
+          "description": "Afficher sous forme d’alerte."
+        }
+      }
+    },
+    "clear_screen": {
+      "name": "Effacer l’écran",
+      "description": "Retirer une carte de l’écran Sentient, ou tout effacer.",
+      "fields": {
+        "card_id": {
+          "name": "Carte",
+          "description": "Identifiant de la carte, « morning », ou vide pour tout effacer."
+        }
+      }
+    },
+    "morning_card": {
+      "name": "Carte du matin",
+      "description": "Afficher maintenant la carte du matin sur l’écran Sentient."
+    },
+    "check_now": {
+      "name": "Vérifier maintenant",
+      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch, the bins check, a \"who's this?\" for the last face the door camera couldn't name, forgetting unnamed faces, or watching the latest clip from the first clip camera.",
+      "fields": {
+        "what": {
+          "name": "Lequel",
+          "description": "Vérification à exécuter."
+        }
+      }
+    }
+  }
+}
