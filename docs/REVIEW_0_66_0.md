@@ -30,3 +30,7 @@ Service responses include delivery details and report `reason: partial` when onl
 ## Validation
 
 Regression coverage includes partial delivery and retry, independent timeout handling, repeated critical alerts, live-check expiry and ownership, premature/stale hearing confirmations, empty replies, guest privacy, the websocket endpoint, and the real conversation hook closing locally. The full integration suite passes: 466 tests (18 new regression cases). All frontend JavaScript passes syntax checks, translations remain identical, and the diff passes whitespace checks. Microphones, Echo devices, TTS audio and installed Home Assistant hardware cannot be verified from this development environment.
+
+## 0.66.1 — hearing confirmation feedback
+
+YES and NO now show a saving state, consume the server acknowledgement immediately, and replace the question with an explicit saved confirmation. Failed requests show their error beside the live check and can be retried. Duplicate clicks are blocked while saving. New sensor results replace the temporary acknowledged display, so starting another check does not retain an earlier confirmation. Three frontend regression tests cover delayed sensor updates, YES/NO, clearing, errors and retry.

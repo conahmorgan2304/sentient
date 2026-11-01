@@ -29,3 +29,7 @@ jobs:
           python-version: "3.13"
       - run: pip install -r requirements_test.txt
       - run: pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/*.test.cjs
