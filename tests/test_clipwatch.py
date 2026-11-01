@@ -161,7 +161,7 @@ async def test_not_someone_we_know_deletes_the_face(hass: HomeAssistant, aioclie
     aioclient_mock.post(f"{URL}/api/faces/train/delete", json={"success": True})
     await entry.runtime_data.faces.async_ask("front_door_doorbell")
     actions = phone[-1].data["data"]["actions"]
-    assert [a["title"] for a in actions] == ["Alex", "Sam", "Someone else…"]  # three at most, "someone else" always there
+    assert [a["title"] for a in actions] == ["Alex", "Sam", "Quelqu'un d'autre…"]  # three at most, "someone else" always there
     hass.bus.async_fire("mobile_app_notification_action", {"action": actions[-1]["action"], "reply_text": "No"})
     await hass.async_block_till_done()
     posted = [c for c in aioclient_mock.mock_calls if c[0] == "POST"]
