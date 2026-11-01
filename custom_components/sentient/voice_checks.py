@@ -9,6 +9,7 @@ import uuid
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers import intent
 
+from .const import CONF_LIVE_VOICE_CHECK
 from .sessions import is_conversation_end, spoken_text
 
 QUESTION = 'How is the system?'
@@ -16,14 +17,17 @@ ENDING = 'No thankyou.'
 
 
 class VoiceChecks:
-    def __init__(self, hass):
+    def __init__(self, hass, options=None):
         self.hass = hass
+        self.options = options if options is not None else {}
         self.run = None
 
     def _notify(self):
         self.hass.bus.async_fire('sentient_voice_check')
 
     def start(self):
+        if not self.options.get(CONF_LIVE_VOICE_CHECK, True):
+            raise ValueError("Live voice check is disabled")
         self.run = {'id': uuid.uuid4().hex, 'status': 'waiting_for_question',
                     'started': dt_util.utcnow().isoformat(),
                     'expires': (dt_util.utcnow() + timedelta(minutes=5)).isoformat(),
@@ -51,6 +55,8 @@ class VoiceChecks:
         return self.status()
 
     def observe(self, user_input, result):
+        if not self.options.get(CONF_LIVE_VOICE_CHECK, True):
+            return
         run = self.status()
         if not run or not run['status'].startswith('waiting'):
             return

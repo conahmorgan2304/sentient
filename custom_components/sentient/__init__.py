@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
+from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
 from .sessions import Sessions
 from .control import Control
@@ -471,7 +472,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     evidence = Evidence(hass, entry.entry_id, options)
     await evidence.async_start()
     entry.async_on_unload(evidence.async_stop)
-    voice_checks = VoiceChecks(hass)
+    voice_checks = VoiceChecks(hass, options)
     entry.async_on_unload(voice_checks.stop)
     sessions = Sessions(options)
     entry.async_on_unload(sessions.stop)
@@ -539,6 +540,9 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.options = options
+    entry.runtime_data.voice_checks.options = options
+    if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
+        entry.runtime_data.speech.deliveries.clear()
     entry.runtime_data.speech.options = options
     entry.runtime_data.tracker.options = options
     entry.runtime_data.watches.options = options

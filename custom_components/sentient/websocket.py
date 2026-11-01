@@ -18,6 +18,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
 
+from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .config_flow import _briefing_schema, _speech_schema
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 
@@ -206,7 +207,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -1090,6 +1091,9 @@ def ws_voice_check(hass: HomeAssistant, connection, msg):
     rt = entry.runtime_data
     if rt.speech.guest_mode:
         connection.send_error(msg["id"], "private", "Voice checks are unavailable in guest mode")
+        return
+    if not rt.options.get(CONF_LIVE_VOICE_CHECK, True):
+        connection.send_error(msg["id"], "disabled", "Enable Live voice check in Settings → Voice first")
         return
     action = msg["action"]
     try:

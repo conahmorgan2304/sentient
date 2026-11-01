@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 
 from .const import (
@@ -327,6 +328,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_LIVE_VOICE_CHECK, **d(CONF_LIVE_VOICE_CHECK, True)): selector.BooleanSelector(),
+            vol.Required(CONF_SPEECH_DELIVERY_HISTORY, **d(CONF_SPEECH_DELIVERY_HISTORY, True)): selector.BooleanSelector(),
             vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
             vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),

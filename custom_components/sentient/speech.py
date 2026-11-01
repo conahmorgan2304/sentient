@@ -25,6 +25,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
+from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
     CONF_FALLBACK_SPEAKERS,
     CONF_ALL_OCCUPIED,
@@ -434,8 +435,9 @@ class SpeechRouter:
                 self.failures[row['entity_id']] = (now, row.get('error', row['status']))
         record = {'time': now.isoformat(), 'message': text[:300], 'results': receipts,
                   'note': 'Accepted means Home Assistant completed the service call; audibility is unverified.'}
-        self.deliveries.appendleft(record)
-        self.hass.bus.async_fire('sentient_speech_delivery')
+        if self.options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
+            self.deliveries.appendleft(record)
+            self.hass.bus.async_fire('sentient_speech_delivery')
         if not any(r['status'] == 'accepted' for r in receipts):
             raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
         if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
