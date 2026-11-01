@@ -17,6 +17,7 @@ from homeassistant.helpers import llm
 
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
+from .updates import UpdateChecker
 from .sessions import Sessions
 from .control import Control
 from .incidents import Incidents
@@ -107,6 +108,7 @@ class SentientRuntime:
     options: dict[str, Any]
     evidence: Any
     sessions: Any
+    updates: Any
     voice_checks: Any
     control: Any
     incidents: Any
@@ -472,6 +474,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     evidence = Evidence(hass, entry.entry_id, options)
     await evidence.async_start()
     entry.async_on_unload(evidence.async_stop)
+    updates = UpdateChecker(hass)
+    await updates.async_start(options)
+    entry.async_on_unload(updates.stop)
     voice_checks = VoiceChecks(hass, options)
     entry.async_on_unload(voice_checks.stop)
     sessions = Sessions(options)
@@ -480,7 +485,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await incidents.async_start()
     entry.async_on_unload(incidents.async_stop)
     entry.runtime_data = SentientRuntime(
-        evidence=evidence, sessions=sessions, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
+        evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -540,6 +545,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.options = options
+    entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
     if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
         entry.runtime_data.speech.deliveries.clear()

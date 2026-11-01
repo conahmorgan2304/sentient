@@ -14,6 +14,7 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 
 ## What it does today
 
+- **Optional update checker.** Check stable Sentient releases every six hours, inspect loaded/latest versions and refresh the sidebar after upgrading. Installation and restarts stay manual. [Setup and behaviour](docs/UPDATES.md).
 - **Live voice checks and speaker delivery results.** Check that an information question keeps listening and “No thankyou” stops it, then confirm whether you heard the replies. See each announcement destination’s service result and retry failures without repeating successful destinations. [How to check your setup and interpret the results](docs/REVIEW_0_66_0.md).
 - **Conversation sessions and guarded voice control (optional).** Keep a topic open with “let’s talk” and end it with “that’s all”; use a dedicated **Sentient guarded** API for enforced, separate-turn confirmation, explicit device control and cautious undo of recent light changes. State evidence distinguishes unknown readings and attempted actions from verified device reports. Security incidents group entry contacts, detections, alerts and clips with uncertain links labelled. These features are off by default; guarded control requires a specific agent/pipeline setup and disables unrestricted fallback. [Setup, supported actions and limitations](docs/VOICE_CONTROL.md).
 

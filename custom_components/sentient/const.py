@@ -324,3 +324,5 @@ CONF_LIVE_VOICE_CHECK = "live_voice_check"
 CONF_SPEECH_DELIVERY_HISTORY = "speech_delivery_history"
 
 CONF_ALEXA_TTS_ONLY = "alexa_tts_only"
+
+CONF_UPDATE_CHECKER = "update_checker"

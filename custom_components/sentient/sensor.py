@@ -329,6 +329,7 @@ class MindSensor(_Base):
         self.async_on_remove(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_session", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_check", self._tick))
+        self.async_on_remove(self.hass.bus.async_listen("sentient_update_check", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_speech_delivery", self._tick))
 
     @callback
@@ -345,6 +346,7 @@ class MindSensor(_Base):
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
         return {
+            "sentient_updates": rt.updates.status(),
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
             "voice_check": None if rt.speech.guest_mode or not rt.options.get(CONF_LIVE_VOICE_CHECK, True) else rt.voice_checks.status(),
             "speech_deliveries": [] if rt.speech.guest_mode or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else list(rt.speech.deliveries)[:5],

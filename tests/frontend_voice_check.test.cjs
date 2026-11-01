@@ -59,3 +59,20 @@ test('rejection is visible in the live check and retry remains possible', async 
   assert.match(panel.html, /SAVED · You confirmed/);
   assert.doesNotMatch(panel.html, /role="alert"/);
 });
+
+test('update checker UI is optional, escapes errors and prevents repeated requests', async () => {
+  let finish, calls = 0;
+  const panel = setup(() => { calls++; return new Promise(resolve => { finish = resolve; }); });
+  const info = { enabled: true, installed_version: '0.67.0', latest_version: null };
+  assert.equal(panel._updateRow({ enabled: false }), '');
+  panel._render = () => { panel.html = panel._updateRow(info); };
+  const pending = panel._checkUpdates();
+  assert.match(panel.html, /CHECKING…/);
+  await panel._checkUpdates();
+  assert.equal(calls, 1);
+  finish({ error: 'Offline <retry>' });
+  await pending;
+  assert.match(panel.html, /Check failed: Offline &lt;retry&gt;/);
+  panel._hass.user.is_admin = false;
+  assert.equal(panel._updateRow(info), '');
+});
