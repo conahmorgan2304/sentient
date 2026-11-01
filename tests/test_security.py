@@ -16,7 +16,7 @@ async def test_security_report(hass: HomeAssistant) -> None:
     hass.states.async_set("alarm_control_panel.alarmo", "disarmed", {"friendly_name": "Alarm"})
     r = check(hass)
     assert not r["secure"]
-    assert r["summary"] == "Back door is open; Front lock is unlocked. The alarm is off."
+    assert r["summary"] == "Back door is open; Front lock is unlocked. L'alarme is off."
 
 
 async def test_scene_tool(hass: HomeAssistant) -> None:
