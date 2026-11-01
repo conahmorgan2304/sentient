@@ -1,6 +1,6 @@
 # Sentient
 
-<p align="center"><img src="docs/images/sentient.jpg" alt="Sentient" width="420"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/XAV59213/sentient/main/docs/images/sentient.jpg" alt="Sentient" width="420"></p>
 
 **An evolving AI brain for Home Assistant.**
 
