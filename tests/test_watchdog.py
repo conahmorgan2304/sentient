@@ -72,7 +72,7 @@ async def test_appliance_wearing_out(hass: HomeAssistant) -> None:
     rt.appliances.errors["vacuum.robot"] = [(now - timedelta(days=d)).isoformat() for d in (1, 2, 3)]
     texts = [i["text"] for i in rt.watchdog.issues()]
     assert "Robot is taking longer to finish than it used to (about 60 min, was 40)" in texts
-    assert "Robot has got stuck or not made it back 3 times this week" in texts
+    assert "Robot has got stuck or not made it back 3 fois cette semaine" in texts
     rt.health.async_check()
     assert any(i["kind"] == "wear" for i in rt.health.issues)
 
@@ -99,7 +99,7 @@ async def test_device_keeps_dropping_offline(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
         hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {}})
         await hass.async_block_till_done()
-    assert any(i["text"] == "Hall plug has dropped offline 4 times this week" for i in dog.issues())
+    assert any(i["text"] == "Hall plug est tombé hors ligne 4 fois cette semaine" for i in dog.issues())
 
 
 async def test_automations_fighting(hass: HomeAssistant) -> None:
