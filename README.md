@@ -1,6 +1,8 @@
 # Sentient
 
-<p align="center"><img src="docs/images/sentient.jpg" alt="Sentient" width="420"></p>
+[Résumé en français](README.fr.md)
+
+<p align="center"><img src="https://raw.githubusercontent.com/conahmorgan2304/sentient/main/docs/images/sentient.jpg" alt="Sentient" width="420"></p>
 
 **An evolving AI brain for Home Assistant.**
 

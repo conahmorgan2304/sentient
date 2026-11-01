@@ -25,6 +25,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
+from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
     CONF_FALLBACK_SPEAKERS,
@@ -403,7 +404,9 @@ class SpeechRouter:
                     data, target = {'message': text, 'preannounce': self.chime}, {'entity_id': [eid]}
                 elif eid.startswith('media_player.') and _platform(self.hass, eid) == 'alexa_media':
                     domain, service = 'notify', 'alexa_media'
-                    data, target = {'message': text, 'target': [eid], 'data': {'type': 'announce' if self.chime else 'tts'}}, None
+                    # Each call targets one Echo; use its entity ID directly.
+                    kind = 'tts' if self.options.get(CONF_ALEXA_TTS_ONLY, False) or not self.chime else 'announce'
+                    data, target = {'message': text, 'target': eid, 'data': {'type': kind}}, None
                 elif eid.startswith('media_player.') and (tts := self.options.get(CONF_TTS_ENTITY)):
                     domain, service = 'tts', 'speak'
                     data, target = {'media_player_entity_id': [eid], 'message': text, 'cache': True}, {'entity_id': tts}

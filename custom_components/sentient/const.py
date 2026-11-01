@@ -322,3 +322,5 @@ CONF_WAKE_ACTIONS = "wake_actions"
 # Optional voice diagnostics (enabled by default to preserve existing installations).
 CONF_LIVE_VOICE_CHECK = "live_voice_check"
 CONF_SPEECH_DELIVERY_HISTORY = "speech_delivery_history"
+
+CONF_ALEXA_TTS_ONLY = "alexa_tts_only"

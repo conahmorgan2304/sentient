@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 
@@ -319,6 +320,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_DUCK_MEDIA, **d(CONF_DUCK_MEDIA, True)): selector.BooleanSelector(),
             vol.Required(CONF_ROOM_VOLUME, **d(CONF_ROOM_VOLUME, True)): selector.BooleanSelector(),
             vol.Optional(CONF_FULL_VOLUME_SPEAKERS, **d(CONF_FULL_VOLUME_SPEAKERS, [])): _SPEAKER,
+            vol.Required(CONF_ALEXA_TTS_ONLY, **d(CONF_ALEXA_TTS_ONLY, False)): selector.BooleanSelector(),
             vol.Required(CONF_MEDIA_SPEAKERS, **d(CONF_MEDIA_SPEAKERS, True)): selector.BooleanSelector(),
             vol.Required(CONF_MEDIA_IMPORTANT_ONLY, **d(CONF_MEDIA_IMPORTANT_ONLY, False)): selector.BooleanSelector(),
             vol.Optional(CONF_TTS_ENTITY, **d(CONF_TTS_ENTITY)): selector.EntitySelector(

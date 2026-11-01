@@ -105,7 +105,8 @@
           "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
           "security_incidents": "Regrouper les incidents de sécurité",
           "live_voice_check": "Test vocal en direct",
-          "speech_delivery_history": "Historique des annonces par enceinte"
+          "speech_delivery_history": "Historique des annonces par enceinte",
+          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -189,7 +190,8 @@
           "evidence_awareness": "Demande à l’assistant de distinguer les observations, déductions, tentatives d’action et états vérifiés des appareils. Des capteurs de sécurité indisponibles empêchent toujours d’affirmer que tout est sécurisé.",
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
-          "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives."
+          "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
+          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas."
         }
       }
     },
@@ -380,7 +382,8 @@
           "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
           "security_incidents": "Regrouper les incidents de sécurité",
           "live_voice_check": "Test vocal en direct",
-          "speech_delivery_history": "Historique des annonces par enceinte"
+          "speech_delivery_history": "Historique des annonces par enceinte",
+          "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -542,7 +545,8 @@
           "evidence_awareness": "Demande à l’assistant de distinguer les observations, déductions, tentatives d’action et états vérifiés des appareils. Des capteurs de sécurité indisponibles empêchent toujours d’affirmer que tout est sécurisé.",
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
-          "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives."
+          "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
+          "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas."
         }
       },
       "memories": {

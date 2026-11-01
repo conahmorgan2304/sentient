@@ -105,7 +105,8 @@
           "evidence_awareness": "Explain evidence and uncertainty",
           "security_incidents": "Group security incidents",
           "live_voice_check": "Live voice check",
-          "speech_delivery_history": "Speaker delivery history"
+          "speech_delivery_history": "Speaker delivery history",
+          "alexa_tts_only": "Use TTS only on Alexa"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -189,7 +190,8 @@
           "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
           "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat.",
           "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
-          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active."
+          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
+          "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged."
         }
       }
     },
@@ -380,7 +382,8 @@
           "evidence_awareness": "Explain evidence and uncertainty",
           "security_incidents": "Group security incidents",
           "live_voice_check": "Live voice check",
-          "speech_delivery_history": "Speaker delivery history"
+          "speech_delivery_history": "Speaker delivery history",
+          "alexa_tts_only": "Use TTS only on Alexa"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -542,7 +545,8 @@
           "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
           "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat.",
           "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
-          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active."
+          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
+          "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged."
         }
       },
       "memories": {
