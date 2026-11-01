@@ -200,9 +200,9 @@
         this._hass.callWS({ type: "sentient/clips" }).then((r) => { this._clips = r; this._render(); }, () => { this._clips = null; });
       }
       const cl = this._clips || { on: false, items: [] };
-      const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passer-by": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspicious: "mdi:alert-outline", nothing: "mdi:minus" };
+      const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passant": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspect: "mdi:alert-outline", rien: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
-      R("clipc").innerHTML = this._h("EXTRAITS VUS", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
+      R("clipc").innerHTML = this._h("EXTRAITS VUS", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probablement ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">LIRE</a>` : ""}</div>`).join("")
         || '<div class="e">NONTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
 
       // routines
@@ -301,8 +301,8 @@
       const visits = this._attr("visitors", "recent", []);
       R("visit").innerHTML = this._h("VISITEURS", `${st("visitors")} AUJOURD'HUI`) + (visits.slice(0, 4).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
-          <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
-        || '<div class="e">NON ONE AT THE DOOR YET</div>');
+          <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · COLIS DÉPOSÉ" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
+        || '<div class="e">PERSONNE À LA PORTE POUR LE MOMENT</div>');
 
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
@@ -737,7 +737,7 @@
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
             <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Supprimer">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
-          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LUMIÈRES</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
+          <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>VÉRIFIE LUMIÈRES</span>" : ""}${r.check_locks ? "<span>VÉRIFIE SERRURES</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
@@ -1010,7 +1010,7 @@
       el.innerHTML = this._h("SÉCURITÉ", bad ? `${bad} OPEN` : "TOUT SHUT")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
-        + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
+        + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Portes et fenêtres fermées</b></div>')
         + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-off-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
     }
 
@@ -1156,7 +1156,7 @@
       try {
         await this._hass.callWS({ type: "sentient/feedback/style", text, note });
         this._thumbs = { ...(this._thumbs || {}), [text]: "styled" };
-      } catch (e) { /* turned off or not loaded: nothing to do */ }
+      } catch (e) { /* turned off or not loaded: rien to do */ }
       this._restyle = null;
       this._render();
     }
@@ -1173,7 +1173,7 @@
     _drawTimeline() {
       const KIND = {
         said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
-        visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
+        visitor: ["mdi:doorbell-video", "VISITEUR"], watch: ["mdi:bell-ring-outline", "WATCH"],
         light: ["mdi:motion-sensor", "LUMIÈRE"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SÉCURITÉ"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "ACTION VOCALE"], clip: ["mdi:filmstrip-box", "EXTRAIT"],
         heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
