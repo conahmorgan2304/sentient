@@ -96,7 +96,7 @@
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
             <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>TIMELINE</span></button>
-            <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>SETTINGS</span></button></nav>
+            <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>PARAMÈTRES</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
@@ -361,11 +361,11 @@
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
       // The menus, in order; anything not listed lands in the last one
       const menus = [
-        ["voice", "mdi:account-voice", "Voice & sound", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
-        ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
-        ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
-        ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
+        ["voice", "mdi:account-voice", "Voix & son", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
+        ["cameras", "mdi:cctv", "Caméras & vidéo", ["door", "spots", "checks", "camsec", "drive"]],
+        ["security", "mdi:shield-home", "Sécurité & sûreté", ["nightwatch", "safety", "health"]],
+        ["home", "mdi:home-automation", "Maison & routines", ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
+        ["brain", "mdi:brain", "Cerveau & système", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[3]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][3].push(id); });
@@ -376,7 +376,7 @@
         const [icon, title, sub] = pages[id];
         return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
       };
-      this._$("side").innerHTML = `<div class="sh">SETTINGS</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>SET-UP WIZARD</button>` + menus.map(([mid, icon, title, ids]) => {
+      this._$("side").innerHTML = `<div class="sh">PARAMÈTRES</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>ASSISTANT DE CONFIGURATION</button>` + menus.map(([mid, icon, title, ids]) => {
         const list = ids.filter((id) => pages[id]);
         if (!list.length) return "";
         const open = this._openMenus.has(mid);
@@ -419,7 +419,7 @@
         if (this._group !== g.id) return;
         const wrap = this._$("formwrap");
         if (!ok) {
-          wrap.innerHTML = `<div class="e">THE SETTINGS FORM COULDN'T LOAD · REFRESH THE PAGE AND TRY AGAIN</div>`;
+          wrap.innerHTML = `<div class="e">THE PARAMÈTRES FORM COULDN'T LOAD · REFRESH THE PAGE AND TRY AGAIN</div>`;
           return;
         }
         const S = this._settings;
@@ -834,7 +834,7 @@
           <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
         <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
-          <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO SETTINGS</u>
+          <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO PARAMÈTRES</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
         <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR SAVED BACKUPS…</div></div>
         <div class="spmsg" id="bkmsg"></div>`;
