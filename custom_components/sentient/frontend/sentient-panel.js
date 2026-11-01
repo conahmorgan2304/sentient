@@ -95,7 +95,7 @@
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
-            <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>CHRONOLOGIE</span></button>
+            <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>CHRONONLOGIE</span></button>
             <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>PARAMÈTRES</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
@@ -104,7 +104,7 @@
           <div class="cols"><div class="col stack"><div id="sug" class="card" hidden></div><div id="clipc" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
             <div class="col stack"><div id="mind" class="card"></div><div id="rout" class="stack"></div></div>
             <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
-        <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">CHRONOLOGIE</span><i></i><em id="tlcount"></em></div>
+        <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">CHRONONLOGIE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
@@ -176,13 +176,13 @@
       const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${go}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
       const st = (k) => (this._st(k) ? this._st(k).state : "—");
       const ai = ((this._st("mind") || {}).attributes || {}).ai || {};
-      const aiTxt = ai.failing ? "IA NOT ANSWERING · PLAIN WORDS" : ai.capped ? "IA LIMIT REACHED · PLAIN WORDS" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
+      const aiTxt = ai.failing ? "IA NONT ANSWERING · PLAIN WORDS" : ai.capped ? "IA LIMIT REACHED · PLAIN WORDS" : `IA ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} AUJOURD'HUI`;
       R("head").innerHTML = `<img src="/sentient_static/logo.png" alt="">
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
-          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
-          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "SILENCE 1 H", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "MODE INVITÉ", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
-          <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), "SURVEILLANCE")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITEURS")}${stat(st("health"), "PROBLÈMES")}${stat(ai.today ?? 0, ai.limit ? `IA CALLS / ${ai.limit}` : "IA CALLS")}</div></div>
-        <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
+          <div class="sub">${(this._st("house") || {}).state === "asleep" ? "MAISON ENDORMIE" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "ÉVEILLÉ"} · PERSONNES DANS ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
+          <div class="modes">${this._modeChip("hush", "mdi:volume-off", "SILENCE 1 H", "SILENCIEUX")}${this._modeChip("guest_mode", "mdi:account-multiple", "MODE INVITÉ", "INVITÉS PRÉSENTS")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
+          <div class="st">${stat(st("memories"), "SOUVENIRS ›", "memories")}${stat(st("watches"), "SURVEILLANCE")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITEURS")}${stat(st("health"), "PROBLÈMES")}${stat(ai.today ?? 0, ai.limit ? `APPELS IA / ${ai.limit}` : "APPELS IA")}</div></div>
+        <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NON RECENT MOUVEMENT</div>'}</div>`;
 
       // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
       if (!this._sugAt || Date.now() - this._sugAt > 600000) {
@@ -202,33 +202,33 @@
       const cl = this._clips || { on: false, items: [] };
       const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passer-by": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspicious: "mdi:alert-outline", nothing: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
-      R("clipc").innerHTML = this._h("CLIPS WATCHED", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
-        || '<div class="e">NOTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
+      R("clipc").innerHTML = this._h("EXTRAITS VUS", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
+        || '<div class="e">NONTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
 
       // routines
       const routines = this._attr("routines", "routines", []);
       const on = routines.filter((r) => r.adopted).length;
       const gone = this._attr("routines", "deleted", []);
-      const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} DELETED · BRING BACK</a>` : "";
+      const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} SUPPRIMERD · BRING RETOUR</a>` : "";
       R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}${back}</div>` +
         (routines.slice(0, 6).map((r) => {
-          const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
+          const tag = r.adopted ? "LA MAISON S'EN OCCUPE" : r.declined ? "REFUSÉ" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
           return `<div class="card rt ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}">
             <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>
             <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LET THE HOUSE DO IT"}</div></div>`;
-        }).join("") || '<div class="card"><div class="e">NO ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
+        }).join("") || '<div class="card"><div class="e">NON ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
 
       // watches (left alone while a reminder is being typed)
       const act = this.shadowRoot.activeElement;
       const typing = act && act.closest && act.closest('form[data-form="remind"]');
       const watches = this._attr("watches", "watches", []);
-      if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REMINDERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
+      if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REESPRITERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
         return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
-      }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
+      }).join("") || '<div class="e">NONTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
 
@@ -258,16 +258,16 @@
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>HORS LIGNE${i.since ? " · " + ago(i.since) : ""}</u></div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The IA isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's IA calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
         : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock"}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
-        : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
+        : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NONTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
       R("health").innerHTML = this._h("SANTÉ DE LA MAISON", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "TOUT GOOD")
-        + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
+        + (healthRows || '<div class="e">EVERYTHING EN LIGNE · BATTERIES FINE</div>');
 
       // mind: what it's thinking, wondering, waiting to check and pass on
       const mind = (this._st("mind") || {}).attributes || {};
@@ -289,10 +289,10 @@
       const mindCount = (mind.wondering || []).length + (mind.follow_ups || []).length;
       // the last hour, on request: straight from the timeline, no AI
       const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
-          <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NOTHING IN THE LAST HOUR</div>') : "";
-      R("mind").innerHTML = this._h("MIND", mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS AUJOURD'HUI`)
-        + (mindRows || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
-        + `<div class="row lh"><button class="btn sm ghost" data-act="lasthour"><ha-icon icon="mdi:history"></ha-icon> ${this._lh ? "HIDE THE LAST HOUR" : "WHAT HAPPENED THIS LAST HOUR?"}</button></div>`
+          <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NONTHING IN THE LAST HOUR</div>') : "";
+      R("mind").innerHTML = this._h("ESPRIT", mindCount ? `${mindCount} ON ITS ESPRIT` : `${this._st("mind") ? this._st("mind").state : 0} TALKS AUJOURD'HUI`)
+        + (mindRows || '<div class="e">NONTHING ON ITS ESPRIT · THINKS IT OVER EACH NIGHT</div>')
+        + `<div class="row lh"><button class="btn sm ghost" data-act="lasthour"><ha-icon icon="mdi:history"></ha-icon> ${this._lh ? "CACHER LA DERNIÈRE HEURE" : "WHAT HAPPENED THIS LAST HOUR?"}</button></div>`
         + lastHour
         + (ai.by_purpose ? `<div class="hint meter">IA ${ai.today}${ai.limit ? " OF " + ai.limit : ""} AUJOURD'HUI${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, 3).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "");
       this._drawAppliances(mind.appliances || []);
@@ -302,19 +302,19 @@
       R("visit").innerHTML = this._h("VISITEURS", `${st("visitors")} AUJOURD'HUI`) + (visits.slice(0, 4).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
-        || '<div class="e">NO ONE AT THE DOOR YET</div>');
+        || '<div class="e">NON ONE AT THE DOOR YET</div>');
 
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
       const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NONTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
           ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
-            <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
+            <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">ENREGISTRER</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
-      R("said").innerHTML = this._h("DIT &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
+      R("said").innerHTML = this._h("DIT &amp; NONTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
     // ---------- settings ----------
@@ -411,7 +411,7 @@
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${g.icon}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
+        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERTE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">ENREGISTRER</button></div>`;
       this._draft = { ...this._settings.data };
       this._dirty = false;
       this._status("");
@@ -434,7 +434,7 @@
           this._draft = { ...ev.detail.value };
           form.data = this._draft;
           this._dirty = true;
-          this._status("UNSAVED CHANGES", "warn");
+          this._status("UNENREGISTRERD CHANGES", "warn");
         });
         wrap.innerHTML = "";
         wrap.appendChild(form);
@@ -450,7 +450,7 @@
       try {
         w = w || await this._hass.callWS({ type: "sentient/wizard", language: this._hass.language });
       } catch (e) {
-        this._$("wizc").innerHTML = `<div class="e">${esc(e.message || e)}</div><div class="wizbar"><button class="btn ghost" data-act="wizlater">CLOSE</button></div>`;
+        this._$("wizc").innerHTML = `<div class="e">${esc(e.message || e)}</div><div class="wizbar"><button class="btn ghost" data-act="wizlater">FERMER</button></div>`;
         return;
       }
       this._wiz = { ...w, i: 0, draft: { ...w.data }, backupPipeline: true };
@@ -471,7 +471,7 @@
         c.innerHTML = head("mdi:check-decagram-outline", "Test & finish", `That's it. Say hello on the speakers to check they work, then finish. Everything can be changed later under Settings.`)
           + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the IA is down</span></label>` : "")
           + `<div class="wizres" id="wizres"></div>
-          <div class="wizbar"><button class="btn ghost" data-act="wizback">BACK</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">FINISH</button></div>`;
+          <div class="wizbar"><button class="btn ghost" data-act="wizback">RETOUR</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">TERMINER</button></div>`;
         const pipe = this._$("wizpipe");
         if (pipe) pipe.addEventListener("change", () => { W.backupPipeline = pipe.checked; });
         this._wizForm = null;
@@ -482,7 +482,7 @@
       c.innerHTML = head(st.icon, st.title, st.blurb)
         + (suggested ? `<div class="wizsug"><ha-icon icon="mdi:auto-fix"></ha-icon>FILLED IN FROM YOUR HOUSE — CHECK AND CHANGE ANYTHING</div>` : "")
         + `<div class="formwrap" id="wizform"><div class="e">LOADING…</div></div>
-        <div class="wizbar">${W.i ? '<button class="btn ghost" data-act="wizback">BACK</button>' : '<button class="btn ghost" data-act="wizlater">LATER</button>'}<span id="wizst"></span><button class="btn" data-act="wiznext">NEXT</button></div>`;
+        <div class="wizbar">${W.i ? '<button class="btn ghost" data-act="wizback">RETOUR</button>' : '<button class="btn ghost" data-act="wizlater">LATER</button>'}<span id="wizst"></span><button class="btn" data-act="wiznext">SUIVANT</button></div>`;
       loadForm().then((ok) => {
         if (this._wiz !== W || W.i !== steps.indexOf(st)) return;
         const wrap = this._$("wizform");
@@ -566,7 +566,7 @@
         this._draft = { ...res.data };
         if (this._form) this._form.data = this._draft;
         this._dirty = false;
-        this._status("SAVED ✓", "ok");
+        this._status("ENREGISTRERD ✓", "ok");
         this._enAt = 0; this._en = null;  // energy card follows its on/off setting
       } catch (e) {
         this._status(e.message || String(e), "bad");
@@ -587,7 +587,7 @@
       const rows = shown.map((m) => this._editing === m.id
         ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon>
             <input name="text" value="${esc(m.text)}" autocomplete="off"><select name="category">${opts(m.category)}</select>
-            <button class="btn sm" type="submit">SAVE</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
+            <button class="btn sm" type="submit">ENREGISTRER</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
         : `<div class="r mem"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
             <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
@@ -595,9 +595,9 @@
           <div class="bs">What the house knows and shares with every voice assistant. Tap one to edit it.</div></div>
           <div class="chips">${Object.entries(byCat).map(([c, n]) => `<span>${esc(c).toUpperCase()} ${n}</span>`).join("")}</div></div>
         <form class="add" data-form="add"><ha-icon icon="mdi:plus"></ha-icon><input name="text" placeholder="Add a memory, e.g. “The bins go out on Thursday night”" autocomplete="off">
-          <select name="category">${opts("fact")}</select><button class="btn sm" type="submit">ADD</button></form>
+          <select name="category">${opts("fact")}</select><button class="btn sm" type="submit">AJOUTER</button></form>
         <div class="find"><ha-icon icon="mdi:magnify"></ha-icon><input id="mfind" placeholder="Search ${items.length} memories…" value="${esc(this._find || "")}" autocomplete="off"></div>
-        <div class="list">${rows || `<div class="e">${q ? "NOTHING MATCHES" : "NOTHING REMEMBERED YET · SAY “REMEMBER THAT…”"}</div>`}</div>`;
+        <div class="list">${rows || `<div class="e">${q ? "NONTHING MATCHES" : "NONTHING REMEMBERED YET · SAY “REMEMBER THAT…”"}</div>`}</div>`;
       if (keepFocus) { const f = this._$("mfind"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
       if (this._editing) { const i = body.querySelector("form.edit input"); if (i) i.focus(); }
     }
@@ -645,23 +645,23 @@
         <div class="spotgrid"><div>
           <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
             <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
-          <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
+          <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NON CAMERAS</div>'}
             ${here.map(mark).join("")}${this._drawing ? draft : ""}</div>
-          <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN SAVE" : "DRAG ON THE PICTURE TO MARK THE SPOT") : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO IA NEEDED"}</div>
+          <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN ENREGISTRER" : "GLISSEZ SUR L'IMAGE POUR MARQUER L'ENDROIT") : "TIP: “DESSINER” LETS YOU MARK IT YOURSELF — NON IA NEEDED"}</div>
         </div><div>
           <div class="h"><span class="t">TEACH A SPOT</span><i></i></div>
           <form class="add" data-form="spot"><ha-icon icon="mdi:tag-outline"></ha-icon><input name="name" id="spname" placeholder="Name, e.g. the drive" value="${esc(this._spName || "")}" autocomplete="off"></form>
           <form class="add" data-form="spot"><ha-icon icon="mdi:tag-multiple-outline"></ha-icon><input name="aliases" id="spalias" placeholder="Also called, e.g. driveway, parking space" value="${esc(this._spAlias || "")}" autocomplete="off"></form>
           <div class="row"><button class="btn sm" data-act="spfind">FIND IT WITH AI</button>
-            <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DRAW IT"}</button>
-            ${this._drawing ? `<button class="btn ghost sm" data-act="spshape">${this._shape ? "BOX INSTEAD" : "SHAPE INSTEAD"}</button>` : ""}
+            <button class="btn ghost sm" data-act="spdraw">${this._drawing ? "STOP DRAWING" : "DESSINER"}</button>
+            ${this._drawing ? `<button class="btn ghost sm" data-act="spshape">${this._shape ? "BOÎTE À LA PLACE" : "SHAPE INSTEAD"}</button>` : ""}
             ${this._drawing && this._shape && pts.length ? `<button class="btn ghost sm" data-act="spundo">UNDO POINT</button>` : ""}
-            ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${ready ? "" : " disabled"}>SAVE SPOT</button>` : ""}</div>
+            ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${ready ? "" : " disabled"}>ENREGISTRER SPOT</button>` : ""}</div>
           <div class="spmsg" id="spmsg">${esc(this._spMsg || "")}</div>
           <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
           ${here.map((sp) => `<div class="r"><ha-icon icon="${sp.points ? "mdi:vector-polygon" : "mdi:selection-marker"}"></ha-icon><b>${esc(sp.name)}</b>
               <input class="alias" data-alias="${esc(sp.name)}" value="${esc(sp.aliases || "")}" placeholder="also called…">
-              <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONE YET</div>'}
+              <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONNE YET</div>'}
           <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
           <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
             <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
@@ -741,16 +741,16 @@
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
           <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
-        <div class="mllist">${rows || '<div class="e">NO ROUTINES YET</div>'}</div><div id="scedit"></div>
+        <div class="mllist">${rows || '<div class="e">NON ROUTINES YET</div>'}</div><div id="scedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="scadd">+ NEW ROUTINE</button></div>`;
     }
 
     _openShortcutForm(item) {
       this._scEdit = item;
       const wrap = this._$("scedit");
-      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "EDIT" : "NEW"} ROUTINE</span><i></i></div>
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "MODIFIER" : "NEW"} ROUTINE</span><i></i></div>
         <div id="scformwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">CANCEL</button><button class="btn sm" data-act="scsave">SAVE</button></div></div>`;
+        <div class="row end"><span class="spmsg" id="scmsg"></span><button class="btn ghost sm" data-act="sccancel">ANNULER</button><button class="btn sm" data-act="scsave">ENREGISTRER</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = { name: "Name", aliases: "Other ways of asking (comma separated)", say: "Say when done",
         check_open: "First check for doors and windows left open", check_lights: "First check for lights left on", check_locks: "First check for anything unlocked",
@@ -789,7 +789,7 @@
       const body = this._$("body");
       if (!data || !data.meta) { body.innerHTML = `<div class="e">${esc((data && data.err) || "LOADING…")}</div>`; return; }
       const m = data.meta;
-      const when = (it) => kind === "alarms" && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
+      const when = (it) => kind === "alarms" && it._next ? `<s>SUIVANT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
       const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${m.icon}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
             <label class="tg" title="On or off"><input type="checkbox" data-ittoggle="${esc(it.id)}"${it.enabled === false ? "" : " checked"}><i></i></label>
             <button class="btn ghost sm" data-act="ittest" data-id="${esc(it.id)}">TRY</button>
@@ -797,7 +797,7 @@
           <div class="mlsub">${esc(it._summary || "")}</div>${it.last_answer ? `<div class="hint">LAST: ${esc(it.last_answer).toUpperCase()}</div>` : ""}</div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="${m.icon}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
           <div class="bs">${esc(m.blurb)}</div></div></div>
-        <div class="mllist">${rows || '<div class="e">NONE YET</div>'}</div><div id="itedit"></div>
+        <div class="mllist">${rows || '<div class="e">NONNE YET</div>'}</div><div id="itedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="itadd">${esc(m.add)}</button></div>`;
       body.querySelectorAll("input[data-ittoggle]").forEach((cb) => cb.addEventListener("change", () => {
         const it = data.items.find((x) => x.id === cb.dataset.ittoggle);
@@ -812,9 +812,9 @@
       this._itEdit = item;
       this._itDraft = { ...data.meta.defaults, ...item };
       const wrap = this._$("itedit");
-      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "EDIT" : "NEW"}</span><i></i></div>
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${item.id ? "MODIFIER" : "NEW"}</span><i></i></div>
         <div id="itformwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="row end"><span class="spmsg" id="itmsg"></span><button class="btn ghost sm" data-act="itcancel">CANCEL</button><button class="btn sm" data-act="itsave">SAVE</button></div></div>`;
+        <div class="row end"><span class="spmsg" id="itmsg"></span><button class="btn ghost sm" data-act="itcancel">ANNULER</button><button class="btn sm" data-act="itsave">ENREGISTRER</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       loadForm().then((ok) => {
         const fw = this._$("itformwrap");
@@ -830,13 +830,13 @@
 
     // ---------- backup ----------
     _drawBackup() {
-      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:backup-restore"></ha-icon><div><div class="bt">BACKUP</div>
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:backup-restore"></ha-icon><div><div class="bt">RETOURUP</div>
           <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
         <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
           <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO PARAMÈTRES</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
-        <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR SAVED BACKUPS…</div></div>
+        <div class="card ml" style="margin-top:12px" id="bkauto"><div class="e">LOOKING FOR ENREGISTRERD RETOURUPS…</div></div>
         <div class="spmsg" id="bkmsg"></div>`;
       this._$("bkfile").addEventListener("change", (ev) => this._restore(ev.target.files[0]));
       this._loadBackups();
@@ -847,9 +847,9 @@
       try { res = await this._hass.callWS({ type: "sentient/backups" }); } catch (e) { /* not admin */ }
       const el = this._$("bkauto");
       if (!el) return;
-      el.innerHTML = `<div class="r"><ha-icon icon="mdi:calendar-sync-outline"></ha-icon><b>Saved backups ${res.on ? "· WEEKLY IS ON" : "· WEEKLY IS OFF (Settings → Weekly backup)"}</b><button class="btn sm ghost" data-act="bksave">BACK UP NOW</button></div>`
+      el.innerHTML = `<div class="r"><ha-icon icon="mdi:calendar-sync-outline"></ha-icon><b>Saved backups ${res.on ? "· WEEKLY IS ON" : "· WEEKLY IS OFF (Settings → Weekly backup)"}</b><button class="btn sm ghost" data-act="bksave">RETOUR UP NONW</button></div>`
         + (res.items.length ? res.items.map((b) => `<div class="r dim"><ha-icon icon="mdi:file-outline"></ha-icon><b>${esc(b.name)}</b><u>${Math.round(b.size / 1024)} KB</u>
-          <button class="btn sm ghost" data-act="bkrestore" data-id="${esc(b.name)}">RESTORE</button></div>`).join("") : '<div class="e">NONE SAVED YET</div>');
+          <button class="btn sm ghost" data-act="bkrestore" data-id="${esc(b.name)}">RESTORE</button></div>`).join("") : '<div class="e">NONNE ENREGISTRERD YET</div>');
     }
 
     async _download() {
@@ -883,15 +883,15 @@
 
     _drawMutes() {
       const rows = (this._mutes || []).map((m) => `<div class="r"><ha-icon icon="${m.kind === "entity" ? "mdi:volume-off" : "mdi:text-box-remove-outline"}"></ha-icon>
-          <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSHUSHED"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
-      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SHUSHED</div>
+          <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSSILENCIEUX"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SSILENCIEUX</div>
           <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
-        ${rows || '<div class="e">NOTHING SHUSHED</div>'}
+        ${rows || '<div class="e">NONTHING SSILENCIEUX</div>'}
         ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}
-        <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDBACK</div>
+        <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDRETOUR</div>
           <div class="bs">What the house has picked up from shushes, hushing it straight after a remark, and declined or deleted routines. It fades by itself over a month or so; ✕ forgets it now.</div></div></div>
         ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline"}"></ha-icon>
-          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Forget this">✕</a></div>`).join("") || '<div class="e">NOTHING YET</div>'}`;
+          <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Forget this">✕</a></div>`).join("") || '<div class="e">NONTHING YET</div>'}`;
     }
 
     // ---------- motion lights ----------
@@ -912,8 +912,8 @@
     _showChips() {
       const st = this._st("party_mode");
       if (!st) return "";
-      const SHOWS = { disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
-        chill: ["mdi:weather-night", "CHILL"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "CHRISTMAS"] };
+      const SHOWS = { disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "FÊTE"], rainbow: ["mdi:looks", "RAINBOW"],
+        chill: ["mdi:weather-night", "DÉTENTE"], halloween: ["mdi:halloween", "HALLOWEEN"], christmas: ["mdi:pine-tree", "NOËL"] };
       const on = st.state === "on", style = st.attributes.style;
       const list = (st.attributes.buttons || []).filter((s) => SHOWS[s]);
       if (on && style && !list.includes(style) && SHOWS[style]) list.push(style); // whatever is running can always be stopped here
@@ -938,11 +938,11 @@
       el.hidden = false;
       const top = en.devices.slice(0, 5), max = Math.max(0.01, ...top.map((d) => Math.max(d.kwh, d.usual)));
       const pct = en.usual_kwh > 0 ? Math.round((en.total_kwh / en.usual_kwh) * 100) : null;
-      el.innerHTML = this._h("ENERGY AUJOURD'HUI", `${en.total_kwh} KWH${en.cost_today != null ? ` · £${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
+      el.innerHTML = this._h("ÉNERGIE AUJOURD'HUI", `${en.total_kwh} KWH${en.cost_today != null ? ` · £${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
-        + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
+        + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NONW</div>`;
     }
 
     _drawAppliances(list) {
@@ -952,9 +952,9 @@
       el.hidden = false;
       const dur = (m) => (m >= 60 ? `${Math.floor(m / 60)}H${m % 60 ? " " + (m % 60) + "M" : ""}` : `${m} MIN`);
       const running = list.filter((a) => a.running).length;
-      el.innerHTML = this._h("APPLIANCES", running ? `${running} RUNNING` : "TOUT IDLE") + list.slice(0, 6).map((a) => {
+      el.innerHTML = this._h("APPAREILS", running ? `${running} RUNNING` : "TOUT AU REPOS") + list.slice(0, 6).map((a) => {
         const icon = a.entity_id.startsWith("vacuum.") ? "mdi:robot-vacuum" : /dish/i.test(a.name) ? "mdi:dishwasher" : /dry/i.test(a.name) ? "mdi:tumble-dryer" : "mdi:washing-machine";
-        const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · DONE ~" + esc(a.done_about) : ""}`
+        const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · TERMINÉ ~" + esc(a.done_about) : ""}`
           : a.usual_minutes ? `USUALLY ${dur(a.usual_minutes)}` : `LEARNING · ${a.runs_seen}/3 RUNS`;
         return `<div class="r${a.running ? " on" : " dim"}"><ha-icon icon="${icon}"></ha-icon><b>${esc(a.name)}</b><u>${tag}</u></div>`;
       }).join("");
@@ -971,13 +971,13 @@
       if (wb.weekdays) up.weekdays = wb.weekdays; if (wb.weekends) up.weekends = wb.weekends;
       const upTxt = [up.weekdays && `WEEKDAYS ${up.weekdays}`, up.weekends && `WEEKENDS ${up.weekends}`].filter(Boolean).join(" · ");
       const zoneRows = zones.map((z) => `<div class="r"><ha-icon icon="mdi:radiator"></ha-icon><b>${esc(z.name)}</b>
-          <u>${z.now != null ? z.now + "° NOW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "LEARNING"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
+          <u>${z.now != null ? z.now + "° NONW · " : ""}${z.warms_per_hour ? z.warms_per_hour + "°/H" : "LEARNING"}${z.comfortable_at ? " · USUALLY " + z.comfortable_at + "°" : ""}</u></div>
           ${z.needs_to_start ? `<div class="hint">TO BE ${z.comfortable_at}° BY ${esc(z.warm_by)} IT NEEDS TO START ${esc(z.needs_to_start)}${h.preheat ? " · WARMS UP EARLY ✓" : ""}</div>` : ""}`).join("");
       const recent = (nw.recent_unusual || []).slice(0, 3);
       const nwRows = nw.on ? `<div class="r"><ha-icon icon="mdi:shield-moon-outline"></ha-icon><b>Night watch</b>
           <u>${nw.learning ? `LEARNING · ${nw.days_of_history} DAYS` : `${(nw.watching || []).length} WATCHED`}${nw.announces ? " · SPEAKS" : ""}</u></div>`
-        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NOTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
-      el.innerHTML = this._h("HEATING &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
+        + (recent.length ? recent.map((t) => `<div class="hint">${esc(t).toUpperCase()}</div>`).join("") : '<div class="hint">NONTHING UNUSUAL IN THE 3 DERNIERS JOURS</div>') : "";
+      el.innerHTML = this._h("CHAUFFAGE &amp; NIGHT WATCH", upTxt ? "WARM BY " + upTxt : "") + zoneRows + nwRows;
     }
 
     _security() {
@@ -1019,13 +1019,13 @@
       if (!el || !ml || !ml.rules.length) { if (el) el.hidden = true; return; }
       el.hidden = false;
       const on = ml.rules.filter((r) => r.managing).length;
-      el.innerHTML = this._h("MOTION LIGHTS", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "DAYLIGHT · RESTING")
+      el.innerHTML = this._h("MOUVEMENT LIGHTS", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "JOUR · RESTING")
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
           return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
-            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : r.respect_quiet && ml.quiet ? "QUIET" : "READY"}</u>
+            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COMPTE À REBOURS" : "ON BY MOUVEMENT") : r.respect_quiet && ml.quiet ? "QUIET" : "READY"}</u>
             <label class="tg"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label></div>`;
-        }).join("") + (on ? `<div class="hint">${on} ON BY MOTION NOW</div>` : "");
+        }).join("") + (on ? `<div class="hint">${on} ON BY MOUVEMENT NONW</div>` : "");
     }
 
     _name(id) { const s = this._hass.states[id]; return s ? (s.attributes.friendly_name || id) : id; }
@@ -1053,28 +1053,28 @@
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
         const chips = [
-          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORES QUIET HOURS",
-          r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "ANY TIME",
+          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNONRES QUIET HOURS",
+          r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "N'IMPORTE QUAND",
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
         ].filter(Boolean);
         return `<div class="card ml${r.enabled ? "" : " off"}"><div class="r"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}" class="${lit ? "lit" : ""}"></ha-icon>
-            <b>${esc(this._name(r.light))}</b><s>${r.managing ? (r.timer ? "ON · COUNTING DOWN" : "ON BY MOTION") : lit ? "ON" : "OFF"}</s>
+            <b>${esc(this._name(r.light))}</b><s>${r.managing ? (r.timer ? "ON · COMPTE À REBOURS" : "ON BY MOUVEMENT") : lit ? "ON" : "OFF"}</s>
             <label class="tg" title="${r.enabled ? "On" : "Off"}"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label>
             <a class="x" data-act="mledit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="mldel" data-id="${esc(r.id)}" data-text="${esc(this._name(r.light))}" title="Remove">✕</a></div>
           <div class="mlsub"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.motion.map((m) => esc(this._name(m))).join(" · ")}</div>
           <div class="chips left">${chips.map((c) => `<span>${c}</span>`).join("")}</div>
           ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
       }).join("");
-      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOTION LIGHTS</div>
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOUVEMENT LIGHTS</div>
           <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
-          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "DAYLIGHT")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
+          <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "JOUR")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
-          <button class="btn ghost sm" type="submit">SAVE</button></form>
-        <div class="mllist">${rows || '<div class="e">NO MOTION LIGHTS YET</div>'}</div>
+          <button class="btn ghost sm" type="submit">ENREGISTRER</button></form>
+        <div class="mllist">${rows || '<div class="e">NON MOUVEMENT LIGHTS YET</div>'}</div>
         <div id="mledit"></div>
-        <div class="bar"><span id="status"></span><button class="btn" data-act="mladd">+ ADD A MOTION LIGHT</button></div>`;
+        <div class="bar"><span id="status"></span><button class="btn" data-act="mladd">+ AJOUTER A MOUVEMENT LIGHT</button></div>`;
       if (this._mlEdit) this._openMotionForm(this._mlEdit);
     }
 
@@ -1082,9 +1082,9 @@
       this._mlEdit = rule;
       const wrap = this._$("mledit");
       if (!wrap) return;
-      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "EDIT" : "NEW"} MOTION LIGHT</span><i></i></div>
+      wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "MODIFIER" : "NEW"} MOUVEMENT LIGHT</span><i></i></div>
         <div id="mlformwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
+        <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">ANNULER</button><button class="btn sm" data-act="mlsave">ENREGISTRER</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
         light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
@@ -1172,15 +1172,15 @@
 
     _drawTimeline() {
       const KIND = {
-        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NOTICED"],
+        said: ["mdi:account-voice", "SAID"], held: ["mdi:volume-off", "RETENU"], mode: ["mdi:tune-variant", "MODE"], noticed: ["mdi:radar", "NONTICED"],
         visitor: ["mdi:doorbell-video", "VISITOR"], watch: ["mdi:bell-ring-outline", "WATCH"],
-        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "HEALTH"], digest: ["mdi:creation-outline", "DIGEST"], critical: ["mdi:fire-alert", "ALERT"], energy: ["mdi:lightning-bolt", "ENERGY"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "MIND"], loop: ["mdi:sync", "FOLLOW-UP"], drive: ["mdi:car", "DRIVE"], appliance: ["mdi:washing-machine", "APPLIANCE"], animal: ["mdi:rabbit", "ANIMALS"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
-        heating: ["mdi:radiator", "HEATING"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
+        light: ["mdi:motion-sensor", "LIGHT"], health: ["mdi:home-heart", "SANTÉ"], digest: ["mdi:creation-outline", "RÉSUMÉ"], critical: ["mdi:fire-alert", "ALERTE"], energy: ["mdi:lightning-bolt", "ÉNERGIE"], security: ["mdi:shield-alert-outline", "SECURITY"], mind: ["mdi:head-lightbulb-outline", "ESPRIT"], loop: ["mdi:sync", "SUIVI"], drive: ["mdi:car", "ALLÉE"], appliance: ["mdi:washing-machine", "APPAREIL"], animal: ["mdi:rabbit", "ANIMAUX"], voice: ["mdi:gesture-tap-button", "VOICE ACTION"], clip: ["mdi:filmstrip-box", "CLIP"],
+        heating: ["mdi:radiator", "CHAUFFAGE"], learned: ["mdi:school-outline", "CETTE SEMAINE"],
       };
       const dig = (this._tlItems || []).find((i) => i.kind === "digest");
       const digEl = this._$("tldig");
       if (!digEl._tap) { digEl._tap = true; digEl.addEventListener("click", (e) => { if (e.target.closest("b")) digEl.classList.toggle("open"); }); }
-      digEl.innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>DIGEST · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short IA summary of the last 24 hours.</b>"}</div>
+      digEl.innerHTML = `<ha-icon icon="mdi:creation-outline"></ha-icon><div class="dt">${dig ? `<b>${esc(dig.text)}</b><i>RÉSUMÉ · ${dayNameShort(dig.time)} ${hm(dig.time)}</i>` : "<b>Ask for a short IA summary of the last 24 hours.</b>"}</div>
         <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "RÉSUMER 24H"}</button>
         <button class="btn sm ghost" data-act="weekly">CETTE SEMAINE</button>`;
       const want = this._tlKind || "all";
@@ -1194,7 +1194,7 @@
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const that = new Date(d); that.setHours(0, 0, 0, 0);
         const diff = Math.round((today - that) / 864e5);
-        return diff === 0 ? "AUJOURD'HUI" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+        return diff === 0 ? "AUJOURD'HUI" : diff === 1 ? "OUITERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
       };
       let last = "", html = "";
       for (const i of items) {
@@ -1204,7 +1204,7 @@
         html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${icon}"></ha-icon></span>
           <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${label}</s></div>`;
       }
-      this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE CHRONOLOGIE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
+      this._$("tllist").innerHTML = html || '<div class="e">NONTHING YET · THE CHRONONLOGIE FILLS AS THE HOUSE SPEAKS, NONTICES AND ACTS</div>';
     }
 
     // ---------- events ----------
@@ -1303,7 +1303,7 @@
         this._hass.callWS({ type: "sentient/items/test", kind, item_id: id }).then((r) => {
           this._it[kind] = r; this._drawItems(kind);
           const res = r.result || {}, s2 = this._$("status");
-          if (s2) s2.textContent = res.match !== undefined ? (res.match ? "YES — " : "NO — ") + (res.seen || "") : res.spoken === false ? `RETENU: ${(res.reason || "").toUpperCase()}` : "DONE";
+          if (s2) s2.textContent = res.match !== undefined ? (res.match ? "OUI — " : "NON — ") + (res.seen || "") : res.spoken === false ? `RETENU: ${(res.reason || "").toUpperCase()}` : "TERMINÉ";
         }, (e) => { const s2 = this._$("status"); if (s2) s2.textContent = e.message || String(e); });
       }
       else if (act === "scadd") { this._scDraft = { name: "", aliases: "", say: "", check_open: false, check_lights: false, check_locks: false, inputs: "", actions: [] }; this._openShortcutForm({}); }
@@ -1326,7 +1326,7 @@
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "critest") {
         if (!window.confirm("Say a test safety alert on every speaker now?")) return;
-        this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERT SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
+        this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERTE SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
@@ -1360,7 +1360,7 @@
       ev.preventDefault();
       if (form.dataset.form === "mlnight") {
         const ok = await this._motionDo("sentient/motion_lights/night", { start: form.elements.start.value, end: form.elements.end.value });
-        if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW SAVED ✓"; st.className = "ok"; } }
+        if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW ENREGISTRERD ✓"; st.className = "ok"; } }
         return;
       }
       if (form.dataset.form === "restyle") {
