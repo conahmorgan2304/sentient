@@ -251,7 +251,7 @@ async def test_face_teaching_asks_the_phone_and_teaches_frigate(hass: HomeAssist
         await hass.async_block_till_done()
     assert phone and not tablet  # only the phone, never the tablets
     data = phone[-1].data["data"]
-    assert [a["title"] for a in data["actions"]] == ["Sam", "Alex", "Someone else…"]  # Frigate's guess first
+    assert [a["title"] for a in data["actions"]] == ["Sam", "Alex", "Quelqu'un d'autre…"]  # Frigate's guess first
     assert data["image"] == "/api/frigate/notifications/1793190000.5-abc123/thumbnail.jpg"
     hass.bus.async_fire("mobile_app_notification_action", {"action": data["actions"][0]["action"]})
     await hass.async_block_till_done()
@@ -276,7 +276,7 @@ async def test_face_teaching_typed_name_makes_a_new_person(hass: HomeAssistant, 
     out = await entry.runtime_data.faces.async_ask("front_door_doorbell")
     assert out["names"] == ["Alex"]
     other = phone[-1].data["data"]["actions"][1]
-    assert other["title"] == "Someone else…" and phone[-1].data["data"]["actions"][2]["title"] == "Not someone we know"
+    assert other["title"] == "Quelqu'un d'autre…" and phone[-1].data["data"]["actions"][2]["title"] == "Pas quelqu'un que nous connaissons"
     hass.bus.async_fire("mobile_app_notification_action", {"action": "nope"})
     hass.bus.async_fire("mobile_app_notification_action", {"action": other["action"], "reply_text": "nan"})
     await hass.async_block_till_done()
