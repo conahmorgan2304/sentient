@@ -74,19 +74,19 @@ async def test_smoke_alert_everywhere_and_repeats(hass: HomeAssistant, freezer) 
     await hass.async_block_till_done()
     hass.states.async_set("binary_sensor.kitchen_smoke", "on", {"device_class": "smoke", "friendly_name": "Kitchen smoke"})
     await hass.async_block_till_done()
-    assert said and set(said[0].data["entity_id"]) == set(OPTIONS["speakers"])
+    assert said and {e for c in said for e in c.data["entity_id"]} == set(OPTIONS["speakers"])
     assert said[0].data["message"] == "Smoke detected: Kitchen smoke!"
     assert sent and sent[0].data["title"] == "Nova · ALERT"
     freezer.tick(timedelta(seconds=125))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert len(said) == 2
+    assert len(said) == 2 * len(OPTIONS["speakers"])
     hass.states.async_set("binary_sensor.kitchen_smoke", "off", {"device_class": "smoke", "friendly_name": "Kitchen smoke"})
     await hass.async_block_till_done()
     freezer.tick(timedelta(seconds=125))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert len(said) == 2
+    assert len(said) == 2 * len(OPTIONS["speakers"])
     assert entry.runtime_data.timeline.items[0]["text"] == "Kitchen smoke has cleared"
 
 

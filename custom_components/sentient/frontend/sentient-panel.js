@@ -272,7 +272,11 @@
       // mind: what it's thinking, wondering, waiting to check and pass on
       const mind = (this._st("mind") || {}).attributes || {};
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
+      const voiceCheck = mind.voice_check;
+      const voiceCheckRow = this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b><button class="btn sm ghost" data-act="voicecheck" data-id="start">START</button>${voiceCheck ? `<button class="btn sm ghost" data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${voiceCheck?.steps?.length === 2 ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}` : "";
       const mindRows = [
+        voiceCheckRow,
+        ...(mind.speech_deliveries || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${esc(d.message)}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`),
         ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
         ...(mind.conversation_diagnostics || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
         ...(mind.security_incidents || []).slice(0, 3).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`),
@@ -1212,7 +1216,11 @@
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
-      if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
+      if (act === "voicecheck") {
+        this._hass.callWS({ type: "sentient/voice_check", action: id, ...(el.dataset.run ? { run_id: el.dataset.run } : {}) })
+          .then(() => this._render(), (e) => this._status(e.message || String(e), "bad"));
+      }
+      else if (act === "forget") this._call("forget", { what: id }, `Forget: ${text}?`);
       else if (act === "cancel") this._call("cancel_watch", { what: id }, `Stop: ${text}?`);
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();

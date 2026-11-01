@@ -319,7 +319,7 @@ class MindSensor(_Base):
 
     _attr_icon = "mdi:head-lightbulb-outline"
     _attr_native_unit_of_measurement = "conversations"
-    _unrecorded_attributes = frozenset({"voice_sessions", "conversation_diagnostics"})
+    _unrecorded_attributes = frozenset({"voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries"})
 
     def __init__(self, entry: SentientConfigEntry) -> None:
         super().__init__(entry, "mind")
@@ -327,6 +327,8 @@ class MindSensor(_Base):
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_session", self._tick))
+        self.async_on_remove(self.hass.bus.async_listen("sentient_voice_check", self._tick))
+        self.async_on_remove(self.hass.bus.async_listen("sentient_speech_delivery", self._tick))
 
     @callback
     def _tick(self, _now) -> None:
@@ -342,6 +344,8 @@ class MindSensor(_Base):
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
         return {
+            "voice_check": None if rt.speech.guest_mode else rt.voice_checks.status(),
+            "speech_deliveries": [] if rt.speech.guest_mode else list(rt.speech.deliveries)[:5],
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),

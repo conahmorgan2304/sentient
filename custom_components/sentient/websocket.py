@@ -354,6 +354,7 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_voice_check)
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_thumb)
@@ -1072,3 +1073,34 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
         connection.send_error(msg["id"], "failed", str(err))
         return
     connection.send_result(msg["id"], {**_items_payload(hass, entry, kind), "result": result})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/voice_check",
+    vol.Optional("action", default="status"): vol.In(["status", "start", "clear", "heard", "not_heard"]),
+    vol.Optional("run_id"): str,
+})
+@websocket_api.require_admin
+@callback
+def ws_voice_check(hass: HomeAssistant, connection, msg):
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if rt.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "Voice checks are unavailable in guest mode")
+        return
+    action = msg["action"]
+    try:
+        if action == "start":
+            if not rt.options.get(CONF_SESSIONS):
+                raise ValueError("Enable Conversation sessions and use the Sentient with backup agent in your voice pipeline")
+            rt.voice_checks.start()
+        elif action == "clear":
+            rt.voice_checks.stop()
+        elif action in ("heard", "not_heard"):
+            rt.voice_checks.confirm_heard(msg.get("run_id"), action == "heard")
+        connection.send_result(msg["id"], rt.voice_checks.status())
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))

@@ -197,7 +197,7 @@ async def test_two_occupied_rooms_both_hear(hass: HomeAssistant, freezer) -> Non
     clock.back()
     res = await hass.services.async_call(DOMAIN, "say", {"message": "Hello"}, blocking=True, return_response=True)
     assert sorted(res["speakers"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
-    assert sorted(calls[-1].data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
+    assert sorted(e for c in calls for e in c.data["entity_id"]) == ["assist_satellite.kitchen", "assist_satellite.living"]
 
 
 async def test_backup_speaker_only_when_main_rooms_empty(hass: HomeAssistant, freezer) -> None:

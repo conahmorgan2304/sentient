@@ -109,7 +109,7 @@ async def test_speaker_failure_shows_in_self_check(hass: HomeAssistant) -> None:
     except HomeAssistantError:
         pass
     entry.runtime_data.health.async_check()
-    assert "Couldn't speak on the voice speakers" in entry.runtime_data.health.describe()
+    assert any("Couldn't speak on assist_satellite." in line for line in entry.runtime_data.health.describe())
     hass.services.async_remove("assist_satellite", "announce")
     async_mock_service(hass, "assist_satellite", "announce")
     await entry.runtime_data.speech.async_say("Test again", "urgent", None, source="test")

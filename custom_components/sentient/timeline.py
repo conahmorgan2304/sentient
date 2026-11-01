@@ -102,7 +102,7 @@ class Timeline:
             area_entry = ar.async_get(self.hass).async_get_area(area) if area else None
             st = self.hass.states.get(sp)
             rooms.append(area_entry.name if area_entry else (st.name if st else sp))
-        self.add("said", d.get("message", ""), ", ".join(rooms) or None, priority=d.get("priority"), source=d.get("source"))
+        self.add("said", d.get("message", ""), ", ".join(rooms) or None, priority=d.get("priority"), source=d.get("source"), deliveries=d.get("deliveries"))
 
     @callback
     def _held(self, event: Event) -> None:

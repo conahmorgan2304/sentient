@@ -144,8 +144,14 @@ class BackedUpAgent(conversation.ConversationEntity):
             session.listen_reason = 'direct_reply'
         if session.pending:
             session.listen_reason = "awaiting_confirmation"
-        self._entry.runtime_data.sessions.record(session, user_input.text, result, self._guest())
+        self._record(user_input, session, result)
         return result
+
+    def _record(self, user_input, session, result):
+        rt = self._entry.runtime_data
+        rt.sessions.record(session, user_input.text, result, self._guest())
+        if not self._guest() and (checks := getattr(rt, "voice_checks", None)) is not None:
+            checks.observe(user_input, result)
 
     def _guest(self):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))
@@ -312,7 +318,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 if opts.get(CONF_SESSIONS):
                     result = rt.sessions.finish(session, result)
                 session.waiting = result.continue_conversation
-                rt.sessions.record(session, user_input.text, result, self._guest())
+                self._record(user_input, session, result)
                 return result
             finally:
                 from homeassistant.util import dt as dt_util
