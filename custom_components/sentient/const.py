@@ -318,3 +318,7 @@ DEFAULT_SLEEP_MINUTES = 20
 CONF_BEDTIME_ROUTINES = "bedtime_routines"
 CONF_SLEEP_ACTIONS = "sleep_actions"
 CONF_WAKE_ACTIONS = "wake_actions"
+
+# Optional voice diagnostics (enabled by default to preserve existing installations).
+CONF_LIVE_VOICE_CHECK = "live_voice_check"
+CONF_SPEECH_DELIVERY_HISTORY = "speech_delivery_history"

@@ -272,7 +272,7 @@
       // mind: what it's thinking, wondering, waiting to check and pass on
       const mind = (this._st("mind") || {}).attributes || {};
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
-      const voiceCheckRow = this._voiceCheckRow(mind.voice_check);
+      const voiceCheckRow = mind.live_voice_check_enabled === false ? "" : this._voiceCheckRow(mind.voice_check);
       const mindRows = [
         voiceCheckRow,
         ...(mind.speech_deliveries || []).slice(0, 3).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${esc(d.message)}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`),

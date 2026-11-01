@@ -161,3 +161,53 @@ async def test_selftest_rejects_not_armed_for_armed_alarm(hass):
     question = next(q for q in runner.questions() if q.key == 'alarm')
     assert not question.check('The alarm is not armed.')[0]
     assert question.check('The alarm is armed.')[0]
+
+
+async def test_disabled_voice_check_does_not_start_or_observe(hass):
+    checks = VoiceChecks(hass, {'live_voice_check': False})
+    with pytest.raises(ValueError, match='disabled'):
+        checks.start()
+    checks.observe(*turn('How is the system?', True))
+    assert checks.status() is None
+
+
+async def test_disabled_delivery_history_keeps_delivery_and_failure_detection(hass):
+    from pytest_homeassistant_custom_component.common import async_mock_service
+    router = SpeechRouter(hass, {'speech_delivery_history': False})
+    async_mock_service(hass, 'assist_satellite', 'announce')
+    result = await router._speak('Hello', ['assist_satellite.ready', 'media_player.unconfigured'])
+    assert [r['status'] for r in result] == ['accepted', 'unroutable']
+    assert not router.deliveries
+    assert 'media_player.unconfigured' in router.failures
+
+
+async def test_diagnostic_toggles_roundtrip_clear_and_reenable(hass, hass_ws_client):
+    from tests.test_websocket import _setup
+    from custom_components.sentient.sensor import MindSensor
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.voice_checks.start()
+    rt.speech.deliveries.append({'message': 'old'})
+    ws = await hass_ws_client(hass)
+    await ws.send_json({'id': 1, 'type': 'sentient/settings'})
+    settings = (await ws.receive_json())['result']
+    voice = next(g for g in settings['groups'] if g['id'] == 'voice')
+    assert {'live_voice_check', 'speech_delivery_history'} <= {f['name'] for f in voice['schema']}
+    await ws.send_json({'id': 2, 'type': 'sentient/settings/save', 'group': 'voice',
+                       'data': {'live_voice_check': False, 'speech_delivery_history': False, 'conversation_sessions': True}})
+    assert (await ws.receive_json())['success']
+    await hass.async_block_till_done()
+    assert rt.voice_checks.status() is None and not rt.speech.deliveries
+    attrs = MindSensor(entry).extra_state_attributes
+    assert attrs['live_voice_check_enabled'] is False
+    assert attrs['voice_check'] is None and attrs['speech_deliveries'] == []
+    await ws.send_json({'id': 3, 'type': 'sentient/voice_check', 'action': 'start'})
+    assert (await ws.receive_json())['error']['code'] == 'disabled'
+    await ws.send_json({'id': 4, 'type': 'sentient/settings/save', 'group': 'voice',
+                       'data': {'live_voice_check': True, 'speech_delivery_history': True, 'conversation_sessions': True}})
+    assert (await ws.receive_json())['success']
+    await hass.async_block_till_done()
+    await ws.send_json({'id': 5, 'type': 'sentient/voice_check', 'action': 'start'})
+    assert (await ws.receive_json())['success']
+    assert rt.speech.options['speech_delivery_history'] is True
+    assert MindSensor(entry).extra_state_attributes['live_voice_check_enabled'] is True

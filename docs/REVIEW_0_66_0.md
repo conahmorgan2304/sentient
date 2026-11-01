@@ -34,3 +34,9 @@ Regression coverage includes partial delivery and retry, independent timeout han
 ## 0.66.1 — hearing confirmation feedback
 
 YES and NO now show a saving state, consume the server acknowledgement immediately, and replace the question with an explicit saved confirmation. Failed requests show their error beside the live check and can be retried. Duplicate clicks are blocked while saving. New sensor results replace the temporary acknowledged display, so starting another check does not retain an earlier confirmation. Three frontend regression tests cover delayed sensor updates, YES/NO, clearing, errors and retry.
+
+## 0.66.2 — optional diagnostic features
+
+Under **Settings → Voice**, **Live voice check** and **Speaker delivery history** can each be enabled or disabled. Both default to enabled to preserve existing behaviour. Disabling the live check clears its current run, stops observation, blocks its API and hides the controls. Disabling delivery history clears the recent-results buffer and stops collecting it; enabling again starts a fresh history. Settings take effect immediately without restarting Home Assistant.
+
+Conversation sessions, guarded control, undo, state evidence and security incidents already have their own settings. New optional user-facing features must likewise provide settings controls. Reliability fixes, accurate service responses, failure detection and duplicate-safe delivery remain active; the delivery-history toggle controls the optional recent-results display and buffer.

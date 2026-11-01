@@ -15,6 +15,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
+from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from . import SentientConfigEntry
 from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_HEALTH_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
 
@@ -344,8 +345,9 @@ class MindSensor(_Base):
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
         return {
-            "voice_check": None if rt.speech.guest_mode else rt.voice_checks.status(),
-            "speech_deliveries": [] if rt.speech.guest_mode else list(rt.speech.deliveries)[:5],
+            "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
+            "voice_check": None if rt.speech.guest_mode or not rt.options.get(CONF_LIVE_VOICE_CHECK, True) else rt.voice_checks.status(),
+            "speech_deliveries": [] if rt.speech.guest_mode or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else list(rt.speech.deliveries)[:5],
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),

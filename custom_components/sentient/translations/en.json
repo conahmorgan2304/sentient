@@ -103,7 +103,9 @@
           "guarded_control": "Enforced voice confirmation",
           "voice_undo": "Undo recent light changes",
           "evidence_awareness": "Explain evidence and uncertainty",
-          "security_incidents": "Group security incidents"
+          "security_incidents": "Group security incidents",
+          "live_voice_check": "Live voice check",
+          "speech_delivery_history": "Speaker delivery history"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -185,7 +187,9 @@
           "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
           "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
           "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
-          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat.",
+          "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
+          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active."
         }
       }
     },
@@ -374,7 +378,9 @@
           "guarded_control": "Enforced voice confirmation",
           "voice_undo": "Undo recent light changes",
           "evidence_awareness": "Explain evidence and uncertainty",
-          "security_incidents": "Group security incidents"
+          "security_incidents": "Group security incidents",
+          "live_voice_check": "Live voice check",
+          "speech_delivery_history": "Speaker delivery history"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -534,7 +540,9 @@
           "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
           "voice_undo": "With guarded control, say “undo that” to request restoration of recent verified light settings. Skips lights changed since, expires with the session, and never undoes locks, heating or appliances.",
           "evidence_awareness": "Tell the voice to distinguish observations, inferences, attempted actions and verified device reports. Unavailable security sensors always prevent an all-secure claim.",
-          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat."
+          "security_incidents": "Group configured camera-security person sensors and entry contacts with alerts and clip summaries. Keep seven days locally. Time proximity is a possible link, not proof of the same person; only escalating alerts repeat.",
+          "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
+          "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active."
         }
       },
       "memories": {

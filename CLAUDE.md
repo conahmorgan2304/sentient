@@ -14,6 +14,9 @@ Home Assistant custom integration (domain `sentient`). An evolving AI "brain" sh
 - `tests/` — pytest with `pytest-homeassistant-custom-component`; run `pytest -q`
 - `docs/ROADMAP.md` — stages; tick items off as they land
 
+## Optional features
+- Every new optional user-facing feature must have an enable/disable control in Settings, with runtime enforcement and clear descriptions. Disabling it stops its optional work and hides its UI; document whether retained data is cleared. Reliability fixes remain active.
+
 ## Conventions
 - British English in user-facing strings.
 - Keep `strings.json` and `translations/en.json` identical.
