@@ -22,6 +22,8 @@ from homeassistant.helpers import intent
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .voice_actions import speech_attempt, BACKUP_TIMEOUT
+
 from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, is_conversation_end, YES, NO, UNDO, normalise, spoken_text)
 
 from . import SentientConfigEntry
@@ -330,6 +332,14 @@ class BackedUpAgent(conversation.ConversationEntity):
                 self.hass.bus.async_fire("sentient_voice_session")
 
     async def _async_process_legacy(self, user_input: conversation.ConversationInput) -> conversation.ConversationResult:
+        attempt = {}
+        token = speech_attempt.set(attempt)
+        try:
+            return await self._async_process_with_fallback(user_input, attempt)
+        finally:
+            speech_attempt.reset(token)
+
+    async def _async_process_with_fallback(self, user_input, attempt):
         gate = getattr(getattr(self._entry, "runtime_data", None), "ai", None)
         why = "no main agent chosen in Sentient's settings"
         if self.main_agent:
@@ -346,6 +356,22 @@ class BackedUpAgent(conversation.ConversationEntity):
                 why = str(err) or type(err).__name__
             if gate is not None:
                 gate.failed(RuntimeError(f"voice agent: {why}"))
+        if attempt.get('started'):
+            # An announcement may already have played. A fallback must not replay it.
+            outcome = attempt.get('result', {})
+            if outcome.get('reason') == 'delivery_timeout':
+                text = "The speaker request timed out. I couldn't confirm playback, and I haven't retried it."
+            elif outcome.get('reason') == 'delivery_failed':
+                text = "The speaker request failed. Please check the speaker delivery details. I haven't retried it."
+            elif outcome.get('spoken'):
+                text = "Home Assistant accepted the speaker request, but the AI didn't finish its reply. I haven't repeated it."
+            elif outcome.get('spoken') is False:
+                text = "The announcement was held back: " + str(outcome.get('reason', 'unknown reason')).replace('_', ' ') + ". I haven't retried it."
+            else:
+                text = "The speaker request didn't finish. Playback is unconfirmed, and I haven't retried it."
+            response = intent.IntentResponse(language=user_input.language)
+            response.async_set_speech(text)
+            return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
         _LOGGER.info("Sentient: the main voice agent failed (%s); using %s", why, self.backup_agent)
         from homeassistant.util import dt as dt_util
 
@@ -355,7 +381,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         if rt is not None:
             rt.timeline.add("health", "Voice answered by the backup agent", f"the AI failed: {why[:120]}")
         try:
-            result = await self._converse(self.backup_agent, user_input)
+            async with asyncio.timeout(BACKUP_TIMEOUT):
+                result = await self._converse(self.backup_agent, user_input)
             if result.response.response_type != intent.IntentResponseType.ERROR:
                 return result
         except Exception as err:  # noqa: BLE001

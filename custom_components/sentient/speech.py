@@ -396,8 +396,12 @@ class SpeechRouter:
 
     async def _speak(self, text: str, speakers: list[str]) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
+        rows = {eid: {'entity_id': eid, 'status': 'cancelled',
+                      'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
         async def send(eid):
-            row = {'entity_id': eid, 'status': 'failed'}
+            row = rows[eid]
+            row['status'] = 'failed'
+            row.pop('error', None)
             try:
                 if eid.startswith('assist_satellite.'):
                     domain, service = 'assist_satellite', 'announce'
@@ -423,13 +427,29 @@ class SpeechRouter:
                 async with asyncio.timeout(DELIVERY_TIMEOUT):
                     await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
                 row['status'] = 'accepted'
+                self._delivered_recent[(text.lower(), eid)] = dt_util.utcnow()
+            except asyncio.CancelledError:
+                row.update(status='cancelled', error='Delivery interrupted; playback outcome is unknown')
+                raise
             except TimeoutError:
                 row.update(status='timed_out', error='Delivery timed out; playback outcome is unknown')
             except Exception as err:  # one failed destination must not cancel another
                 row['error'] = (str(err) or type(err).__name__)[:200]
             return row
 
-        receipts = await asyncio.gather(*(send(eid) for eid in dict.fromkeys(speakers)))
+        try:
+            receipts = await asyncio.gather(*(send(eid) for eid in rows))
+        except asyncio.CancelledError:
+            self._record_deliveries(text, list(rows.values()))
+            raise
+        self._record_deliveries(text, receipts)
+        if not any(r['status'] == 'accepted' for r in receipts):
+            raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
+        if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
+            await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
+        return receipts
+
+    def _record_deliveries(self, text, receipts):
         now = dt_util.utcnow()
         for row in receipts:
             if row['status'] == 'accepted':
@@ -441,11 +461,6 @@ class SpeechRouter:
         if self.options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
             self.deliveries.appendleft(record)
             self.hass.bus.async_fire('sentient_speech_delivery')
-        if not any(r['status'] == 'accepted' for r in receipts):
-            raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
-        if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
-            await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
-        return receipts
 
     async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
         """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),
