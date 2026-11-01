@@ -34,8 +34,8 @@ async def test_alarm_alert_not_reported_off_or_secure(hass, state):
     hass.states.async_set('alarm_control_panel.home', state)
     out = check(hass)
     assert out['secure'] is False
-    assert f'alarm is {state}' in out['summary']
-    assert 'alarm is off' not in out['summary']
+    assert f"L'alarme is {state}" in out['summary']
+    assert 'L\'alarme is off' not in out['summary']
 
 
 async def test_alarm_alone_cannot_confirm_openings_or_locks(hass):
