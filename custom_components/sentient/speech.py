@@ -26,7 +26,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_ALEXA_TTS_ONLY
+from .const import CONF_ALEXA_TTS_ONLY, CONF_READING_TTS, CONF_READING_VOICE
 from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
@@ -120,6 +120,35 @@ def in_quiet_hours(now: datetime, start: time, end: time) -> bool:
     if start < end:
         return start <= current < end
     return current >= start or current < end
+
+
+def tts_language(hass: HomeAssistant, engine: str) -> str | None:
+    """The house's language as this text-to-speech service knows it (en-GB, en, or its own default)."""
+    try:
+        from homeassistant.components.tts.helper import get_engine_instance
+
+        inst = get_engine_instance(hass, engine)
+    except Exception:  # noqa: BLE001 - tts not loaded
+        return None
+    if inst is None:
+        return None
+    langs = list(getattr(inst, "supported_languages", None) or [])
+    base = (hass.config.language or "en").replace("_", "-")
+    wants = [base] + ([f"{base}-{hass.config.country}"] if "-" not in base and hass.config.country else [])
+    low = {lang.lower(): lang for lang in langs}
+    for want in reversed(wants):  # en-GB before en
+        if want.lower() in low:
+            return low[want.lower()]
+    prefix = base.split("-")[0].lower()
+    near = [lang for lang in langs if lang.lower().split("-")[0] == prefix]
+    return near[0] if near else getattr(inst, "default_language", None)
+
+
+def tts_media_id(hass: HomeAssistant, text: str, engine: str, language: str | None, options: dict | None) -> str:
+    """Audio of this text from a chosen text-to-speech service, as a media id a satellite can announce."""
+    from homeassistant.components.tts import generate_media_source_id
+
+    return generate_media_source_id(hass, text, engine, language, options, cache=True)
 
 
 def _platform(hass: HomeAssistant, entity_id: str) -> str | None:
@@ -419,19 +448,25 @@ class SpeechRouter:
             self.on_unheard(text, priority, source, None)
         return SpeechResult(True, reason, text, speakers, receipts)
 
-    async def async_read_aloud(self, text: str, speaker: str) -> bool:
+    async def async_read_aloud(self, text: str, speaker: str, story: bool = False) -> bool:
         """One passage of a book or a recipe step someone asked for: straight to that speaker, not logged as
         something the house said, and not held for quiet hours (they asked). Waits until it has been read.
 
+        A story uses the reading voice from Settings when one is chosen (not on Echos — Alexa only has its own).
         Some satellites (a browser tablet, for one) accept an announcement and return straight away, so the
         wait is also paced by the passage's length — otherwise the next passage would cut this one off."""
         started = asyncio.get_running_loop().time()
+        text = clean_message(text, self.banned)
         try:
             async with self._lock:
                 await self._wait_idle([speaker])
                 volume = await self._volumes([speaker])
                 async with delivered(self.hass, [speaker], volume, self.duck_level):
-                    receipts = await self._speak(clean_message(text, self.banned), [speaker], chime=False)
+                    receipts = None
+                    if story and (engine := self.options.get(CONF_READING_TTS)):
+                        receipts = await self._speak_voice(text, speaker, engine, self.options.get(CONF_READING_VOICE))
+                    if receipts is None:  # no reading voice, or this speaker can't take one
+                        receipts = await self._speak(text, [speaker], chime=False)
         except HomeAssistantError:
             return False
         if not any(r["status"] == "accepted" for r in receipts or []):
@@ -443,6 +478,40 @@ class SpeechRouter:
                 break
             await asyncio.sleep(1)
         return True
+
+    async def _speak_voice(self, text: str, speaker: str, engine: str, voice: str | None) -> list[dict[str, Any]] | None:
+        """Speak with a chosen text-to-speech service and voice; None when this speaker can't (an Echo)."""
+        if self.hass.states.get(engine) is None or (speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media"):
+            return None
+        language = tts_language(self.hass, engine)
+        options = {"voice": voice} if voice else None
+        try:
+            async with asyncio.timeout(max(30.0, reading_seconds(text) * 2)):
+                if speaker.startswith("assist_satellite."):
+                    media_id = tts_media_id(self.hass, text, engine, language, options)
+                    await self.hass.services.async_call("assist_satellite", "announce", {
+                        "message": text, "media_id": media_id, "preannounce": False}, target={"entity_id": [speaker]}, blocking=True)
+                else:
+                    await self.hass.services.async_call("tts", "speak", {
+                        "media_player_entity_id": [speaker], "message": text, "cache": True,
+                        **({"language": language} if language else {}), **({"options": options} if options else {}),
+                    }, target={"entity_id": engine}, blocking=True)
+        except (HomeAssistantError, TimeoutError, ValueError) as err:
+            _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker, err)
+            return None
+        return [{"entity_id": speaker, "status": "accepted"}]
+
+    async def async_try_voice(self, speaker: str, engine: str | None, voice: str | None) -> dict[str, Any]:
+        """Settings → Books: hear a line in a reading voice before choosing it."""
+        from .const import READING_SAMPLE
+
+        if engine:
+            receipts = await self._speak_voice(READING_SAMPLE, speaker, engine, voice)
+            if receipts is None:
+                return {"ok": False, "why": "that voice couldn't speak on this speaker (Echos only have Alexa's own voice)"}
+        else:
+            receipts = await self._speak(READING_SAMPLE, [speaker], chime=False)
+        return {"ok": any(r["status"] == "accepted" for r in receipts or []), "speaker": speaker}
 
     async def _speak(self, text: str, speakers: list[str], chime: bool | None = None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""

@@ -287,16 +287,16 @@ class Books:
                 passages = chapters[ch]["passages"]
                 while ps < len(passages):
                     if until and dt_util.utcnow().timestamp() >= until:
-                        await rt.speech.async_read_aloud("I'll stop there and keep your place.", speaker)
+                        await rt.speech.async_read_aloud("I'll stop there and keep your place.", speaker, story=True)
                         return
-                    if not await rt.speech.async_read_aloud(passages[ps], speaker):
+                    if not await rt.speech.async_read_aloud(passages[ps], speaker, story=True):
                         return  # couldn't speak: keep the place on this passage
                     ps += 1
                     self._mark(book["name"], speaker, ch, ps, chapters)  # only once it has been read
                 ch, ps = ch + 1, 0
                 if ch < len(chapters):
-                    await rt.speech.async_read_aloud(f"Chapter {ch + 1}.", speaker)
-            await rt.speech.async_read_aloud(f"That's the end of {book['name']}.", speaker)
+                    await rt.speech.async_read_aloud(f"Chapter {ch + 1}.", speaker, story=True)
+            await rt.speech.async_read_aloud(f"That's the end of {book['name']}.", speaker, story=True)
         finally:
             info = self.reading.get(speaker)
             if info and info.get("book") == book["name"]:

@@ -81,6 +81,10 @@ CONF_GOALS = "goals"  # goals over days or weeks
 CONF_BOOKS = "books"  # audiobooks and ebooks read aloud, with bookmarks
 CONF_BOOKS_FOLDER = "books_folder"
 DEFAULT_BOOKS_FOLDER = "books"
+CONF_READING_TTS = "reading_tts"  # a different text-to-speech service for books (blank: the usual voice)
+CONF_READING_VOICE = "reading_voice"  # that service's voice
+READING_SAMPLE = ("Once upon a time, in a house at the end of a quiet lane, a small fox curled up by the fire, "
+                  "and waited for the story to begin.")
 CONF_RECIPES = "recipes"  # recipes and a step-by-step cooking mode
 CONF_RECIPES_FOLDER = "recipes_folder"
 DEFAULT_RECIPES_FOLDER = "recipes"

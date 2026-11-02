@@ -65,7 +65,7 @@ async def test_reading_keeps_the_place_and_picks_up(hass: HomeAssistant, tmp_pat
     rt = entry.runtime_data
     said = []
 
-    async def read_aloud(text, speaker):
+    async def read_aloud(text, speaker, **_kw):
         said.append(text)
         if len(said) == 2:
             rt.books._stop(speaker, save=False)  # the wake word, during the second passage
@@ -221,3 +221,37 @@ async def test_read_hands_off_and_pause_after_the_wake_word_keeps_the_place(hass
             rt.books._stop("assist_satellite.bedroom", save=False)
     finally:
         turn_flags.reset(token)
+
+
+async def test_a_story_reads_in_the_chosen_reading_voice(hass: HomeAssistant, tmp_path) -> None:
+    """Books can have their own text-to-speech voice; Echos and recipes keep the usual one."""
+    entry, _device = await _setup(hass, tmp_path, books=True, reading_tts="tts.storyteller", reading_voice="Kore")
+    hass.states.async_set("tts.storyteller", "unknown")
+    speech = entry.runtime_data.speech
+    announce = async_mock_service(hass, "assist_satellite", "announce")
+    speak = async_mock_service(hass, "tts", "speak")
+    with patch("custom_components.sentient.speech.asyncio.sleep", AsyncMock()), \
+            patch("custom_components.sentient.speech.tts_media_id", return_value="media-source://tts/x") as gen:
+        assert await speech.async_read_aloud("Once upon a time.", "assist_satellite.bedroom", story=True)
+        assert announce[-1].data["media_id"] == "media-source://tts/x" and announce[-1].data["message"] == "Once upon a time."
+        assert gen.call_args.args[2] == "tts.storyteller" and gen.call_args.args[4] == {"voice": "Kore"}
+        assert await speech.async_read_aloud("Once upon a time.", "media_player.bedroom", story=True)
+        assert speak[-1].data["options"] == {"voice": "Kore"} and speak[-1].data["entity_id"] in ("tts.storyteller", ["tts.storyteller"])
+        # a recipe step (not a story) stays in the usual voice
+        n = len(announce)
+        assert await speech.async_read_aloud("Chop the onions.", "assist_satellite.bedroom")
+        assert len(announce) == n + 1 and "media_id" not in announce[-1].data
+
+
+async def test_reading_voice_picker_and_try_it(hass: HomeAssistant, tmp_path, hass_ws_client) -> None:
+    entry, _device = await _setup(hass, tmp_path, books=True, default_speaker="assist_satellite.bedroom")
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/settings"})
+    res = (await ws.receive_json())["result"]
+    reading = next(g for g in res["groups"] if g["id"] == "reading")["schema"]
+    voice = next(f for f in reading if f["name"] == "reading_voice")
+    assert "tts_voice" in voice["selector"] and voice["context"] == {"engineId": "reading_tts"}
+    announce = async_mock_service(hass, "assist_satellite", "announce")
+    await ws.send_json({"id": 2, "type": "sentient/reading/try"})
+    out = (await ws.receive_json())["result"]
+    assert out["ok"] and out["speaker_name"] == "Bedroom" and "fox" in announce[-1].data["message"]

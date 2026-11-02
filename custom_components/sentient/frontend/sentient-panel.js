@@ -487,7 +487,7 @@
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${g.icon}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
+        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
       this._dirty = false;
       this._status("");
@@ -1470,6 +1470,13 @@
       else if (act === "bkup") this._$("bkfile").click();
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
+      else if (act === "trytts") {
+        const d = this._draft || {};
+        this._status("PLAYING…", "warn");
+        this._hass.callWS({ type: "sentient/reading/try", engine: d.reading_tts || null, voice: d.reading_voice || null }).then(
+          (r) => this._status(r.ok ? `PLAYING ON ${String(r.speaker_name || "").toUpperCase()} ✓` : String(r.why || "COULDN'T PLAY IT").toUpperCase(), r.ok ? "ok" : "bad"),
+          (e) => this._status(e.message || String(e), "bad"));
+      }
       else if (act === "critest") {
         if (!window.confirm("Say a test safety alert on every speaker now?")) return;
         this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERT SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
