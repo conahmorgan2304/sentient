@@ -33,6 +33,10 @@ CONF_LEFT_OPEN_MINUTES = "left_open_minutes"
 CONF_LEFT_OPEN_IGNORE = "left_open_ignore"
 CONF_LEAVING_CHECK = "leaving_check"
 CONF_ENERGY_PRICE = "energy_price"
+CONF_ENERGY_CURRENCY = "energy_currency"  # empty: Home Assistant's own currency
+CURRENCIES = ["GBP", "EUR", "USD", "CAD", "AUD", "NZD", "CHF", "SEK", "NOK", "DKK", "PLN", "CZK", "ZAR", "INR", "JPY"]
+CURRENCY_SYMBOLS = {"GBP": "£", "EUR": "€", "USD": "$", "CAD": "CA$", "AUD": "A$", "NZD": "NZ$", "CHF": "CHF ",
+                    "SEK": "kr ", "NOK": "kr ", "DKK": "kr ", "PLN": "zł ", "CZK": "Kč ", "ZAR": "R", "INR": "₹", "JPY": "¥"}
 CONF_CRITICAL_IGNORE = "critical_ignore"
 CONF_CRITICAL_EXTRA = "critical_extra"
 CONF_WELCOME_PEOPLE = "welcome_people"

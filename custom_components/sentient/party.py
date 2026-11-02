@@ -72,6 +72,7 @@ _RESTORE_ATTR = {
     "color_temp": "color_temp_kelvin", "hs": "hs_color", "xy": "xy_color",
     "rgb": "rgb_color", "rgbw": "rgbw_color", "rgbww": "rgbww_color",
 }
+REAPPLY_AFTER = 5  # seconds after a show ends before the lights are put back a second time
 BEAT_DB = 4.0  # this much above the running average is a beat
 BEAT_GAP = 0.35  # seconds; no faster than this, so bulbs and the network keep up
 BEAT_LIGHTS = 4  # lights changed per beat (taking turns), so a whole-house show doesn't flood the network
@@ -109,6 +110,7 @@ class Party:
         self._tick_unsub: CALLBACK_TYPE | None = None
         self._end_unsub: CALLBACK_TYPE | None = None
         self._sound_unsub: CALLBACK_TYPE | None = None
+        self._reapply_unsub: CALLBACK_TYPE | None = None
         self._avg: float | None = None
         self._last_beat = 0.0
         # every change hangs off this, so the rest of the house sees it as automatic, not someone at a switch
@@ -129,6 +131,9 @@ class Party:
     @callback
     def async_stop(self) -> None:
         self._cancel()
+        if self._reapply_unsub is not None:
+            self._reapply_unsub()
+            self._reapply_unsub = None
 
     # ----- which lights ----------------------------------------------------------------
     def lights_for(self, area: str | None = None, device_id: str | None = None) -> list[str]:
@@ -190,6 +195,9 @@ class Party:
             return {"error": "No lights to use. Choose show lights in Sentient's settings, or say which room (or 'everywhere')."}
         if minutes is None:
             minutes = float(self.options.get(CONF_PARTY_MINUTES, DEFAULT_PARTY_MINUTES) or 0)
+        if self._reapply_unsub is not None:  # a new show straight after the last one: no second put-back
+            self._reapply_unsub()
+            self._reapply_unsub = None
         for e in lights:  # save each light the first time it joins
             if e not in self._saved:
                 self._saved[e] = self._snapshot(e)
@@ -227,10 +235,12 @@ class Party:
             return {"on": False, "note": "No light show was on"}
         self._cancel()
         self.active = False
+        saved = dict(self._saved)
         await self._async_restore()
         self._resume_motion(self.lights)
         count = len(self.lights)
         self.lights, self._saved, self.until = [], {}, None
+        self._schedule_reapply(saved)
         await self._store.async_remove()
         if (rt := self._rt()) is not None:
             rt.timeline.add("mode", "Light show off", why or f"{count} light{'s' if count != 1 else ''} back as they were")
@@ -409,6 +419,41 @@ class Party:
                 await self.hass.services.async_call("light", "turn_on", data, blocking=True, context=context)
             except Exception as err:  # noqa: BLE001 - one bad light shouldn't stop the rest
                 _LOGGER.debug("Could not put %s back: %s", light, err)
+
+    def _schedule_reapply(self, saved: dict[str, dict[str, Any]]) -> None:
+        """Zigbee and Wi-Fi bulbs can still be working through the show's last commands when they're put back,
+        or drop a command in the rush. A few seconds later, put back once more any light nobody has touched since."""
+        if self._reapply_unsub is not None:
+            self._reapply_unsub()
+        if not saved:
+            self._reapply_unsub = None
+            return
+        ended = dt_util.utcnow()
+
+        @callback
+        def again(_now: datetime) -> None:
+            self._reapply_unsub = None
+            self.hass.async_create_task(self._async_reapply(saved, ended), eager_start=False)
+
+        self._reapply_unsub = async_call_later(self.hass, REAPPLY_AFTER, again)
+
+    async def _async_reapply(self, saved: dict[str, dict[str, Any]], ended: datetime) -> None:
+        if self.active:
+            return  # a new show started meanwhile
+        mine = []
+        for light in saved:
+            st = self.hass.states.get(light)
+            if st is None:
+                continue
+            ours = st.context is not None and st.context.parent_id == self._parent.id
+            if st.last_updated >= ended and not ours:
+                continue  # someone changed it after the show: leave it as they set it
+            mine.append(light)
+        self._saved = {k: saved[k] for k in mine}
+        try:
+            await self._async_restore()
+        finally:
+            self._saved = {}
 
     # ----- motion lights step aside ------------------------------------------------------
     def _pause_motion(self, lights: list[str]) -> None:

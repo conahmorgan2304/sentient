@@ -30,7 +30,7 @@ class TopicMemory:
         self.traces = deque((t for t in self.traces if t['time'] >= cutoff), maxlen=40)
 
     def record(self, session, text, result):
-        from .sessions import spoken_text, YES, NO, UNDO, FOLLOW_UP
+        from .sessions import spoken_text, YES, NO, UNDO, is_follow_up
         from homeassistant.helpers import intent
 
         self.prune()
@@ -52,7 +52,7 @@ class TopicMemory:
         subject = (session.investigation or {}).get('subject') or session.topic or session.goal
         if not subject:
             return
-        question = session.question if session.question != FOLLOW_UP else ''
+        question = session.question if not is_follow_up(session.question) else ''
         # Explicit field allowlist. No pending, undo, correction, action data or authorisation.
         topic = {
             'id': uuid.uuid4().hex, 'owner': session.owner, 'source_session': session.id,

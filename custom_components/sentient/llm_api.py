@@ -987,7 +987,8 @@ class EnergyTool(_Tool):
         if not report.get("enabled", True):
             return {"error": report["note"]}
         return {
-            "cost_today_gbp": report.get("cost_today"),
+            "cost_today": report.get("cost_today"),
+            "currency": report.get("currency"),
             "up_to": report.get("up_to"),
             "total_kwh_today": report.get("total_kwh"),
             "usual_by_now": report.get("usual_kwh"),
