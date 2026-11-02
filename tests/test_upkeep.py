@@ -135,3 +135,32 @@ async def test_briefing_page_keeps_other_settings(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["chattiness"] == "chatty" and entry.options["quiet_start"] == "21:00:00"
     assert entry.options["briefing_sections"] == ["time", "todo"] and entry.options["briefing_time"] == "07:30:00"
+
+
+async def test_morning_briefing_when_someone_gets_up_even_in_quiet_hours(hass: HomeAssistant, freezer) -> None:
+    """Up and about (movement in two rooms) gives the briefing in that one room straight away, once a day."""
+    from unittest.mock import patch
+
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.sleep import EVENT_SLEEP
+
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=7, minute=10)))
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        **OPTIONS, "quiet_start": "21:00:00", "quiet_end": "09:30:00", "morning_briefing": True})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, "Morning. It's raining.")
+    speech = entry.runtime_data.speech
+    with patch.object(type(speech), "pick_speaker", lambda self, important=True: ["assist_satellite.kitchen"]):
+        speech.nobody_about = False
+        hass.bus.async_fire(EVENT_SLEEP, {"asleep": True})
+        hass.bus.async_fire(EVENT_SLEEP, {"asleep": False, "why": "moving about in two rooms"})
+        await hass.async_block_till_done()
+        assert said and said[-1].data["message"] == "Morning. It's raining."
+        hass.bus.async_fire(EVENT_SLEEP, {"asleep": False})
+        await hass.async_block_till_done()
+    assert len(said) == 1  # once a day

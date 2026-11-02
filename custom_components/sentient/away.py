@@ -130,7 +130,7 @@ class Away:
 
     @callback
     def _changed(self, event: Event) -> None:
-        if str(event.data.get("entity_id", "")).startswith("person."):
+        if str(event.data.get("entity_id", "")) in self.people():  # people, or the phones chosen instead
             self._check_people(dt_util.utcnow())
 
     @callback

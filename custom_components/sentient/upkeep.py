@@ -241,6 +241,27 @@ class Upkeep:
             async_track_time_change(self.hass, self._weekly, hour=3, minute=45, second=0),
             async_track_time_change(self.hass, self._every_minute, second=0),
         ]
+        from .sleep import EVENT_SLEEP
+
+        self._unsubs.append(self.hass.bus.async_listen(EVENT_SLEEP, self._woke))
+
+    @callback
+    def _woke(self, event) -> None:
+        """Someone's up (Asleep or awake saw movement in two rooms): the morning briefing, in their room,
+        straight away — even if quiet hours haven't ended, since only that room hears it."""
+        rt = self._rt()
+        if event.data.get("asleep") or rt is None:
+            return
+        local = dt_util.now()
+        if (not rt.options.get(CONF_BRIEFINGS, True) or not rt.options.get(CONF_MORNING_BRIEFING)
+                or getattr(self, "_morning_day", None) == local.date().isoformat() or not 5 <= local.hour < 12
+                or rt.speech.hushed() or rt.speech.guest_mode):
+            return
+        room = rt.speech.pick_speaker(False)[:1]  # busiest first: just the room they're in
+        if not room or rt.speech.nobody_about:
+            return  # can't tell where they are: the usual check after quiet hours will catch them
+        self._morning_day = local.date().isoformat()
+        self.hass.async_create_background_task(self._async_scheduled(source="briefing:up", targets=room), "sentient_morning_briefing")
 
     @callback
     def async_stop(self) -> None:
@@ -349,9 +370,9 @@ class Upkeep:
             return
         self.hass.async_create_background_task(self._async_scheduled(), "sentient_briefing")
 
-    async def _async_scheduled(self) -> None:
+    async def _async_scheduled(self, source: str = "briefing", targets: list[str] | None = None) -> None:
         try:
-            await self.async_speak_briefing()
+            await self.async_speak_briefing(source=source, targets=targets)
         except HomeAssistantError as err:
             _LOGGER.debug("Scheduled briefing skipped: %s", err)
 
@@ -379,7 +400,8 @@ class Upkeep:
         return (response or {}).get("data")
 
     # ----- briefing -------------------------------------------------------------
-    async def async_speak_briefing(self, priority: str = "normal") -> dict[str, Any]:
+    async def async_speak_briefing(self, priority: str = "normal", source: str = "briefing",
+                                   targets: list[str] | None = None) -> dict[str, Any]:
         rt = self._rt()
         if not rt.options.get(CONF_BRIEFINGS, True):
             raise HomeAssistantError("Briefings are turned off in Sentient's settings")
@@ -405,7 +427,7 @@ class Upkeep:
         message = str(text or "").strip() if isinstance(text, (str, type(None))) else ""
         if not message:
             message = plain_briefing(facts)  # the AI couldn't: say the facts plainly
-        result = await rt.speech.async_say(message, priority, None, source="briefing")
+        result = await rt.speech.async_say(message, priority, targets, source=source)
         if result.spoken and facts.get("overnight_thoughts"):
             rt.followyou.take_thoughts()  # said in the briefing: don't say them again
         return {**result.as_dict(), "facts": facts}
