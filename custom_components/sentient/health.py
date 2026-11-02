@@ -84,6 +84,7 @@ class HouseHealth:
                 links.setdefault(entry.device_id, []).append(entry.entity_id)
         offline = []
         unverified: list[str] = []
+        was_offline = {i.get("device_id") for i in self.issues if i["kind"] == "offline"}
         for device_id, entity_ids in by_device.items():
             if device_id in ignore or any(e in ignore for e in entity_ids):
                 continue
@@ -107,14 +108,22 @@ class HouseHealth:
                 stale = [e for e in entity_ids if now - self._checked.get(e, datetime.min.replace(tzinfo=now.tzinfo)) > RECHECK]
                 if stale:  # look at their history first; reported on a later check if they really went offline
                     unverified.extend(stale)
-                    continue
+                    if device_id not in was_offline:  # one already reported stays reported while it's rechecked
+                        continue
             if now - since < OFFLINE_AFTER:
                 continue
             device = dev_reg.async_get(device_id)
             if device is None or device.disabled_by:
                 continue
             name = device.name_by_user or device.name or entity_ids[0]
-            offline.append({"kind": "offline", "name": name, "since": since.isoformat(), "device_id": device_id})
+            offline.append({"kind": "offline", "name": name, "since": since.isoformat(), "device_id": device_id,
+                            "via": device.via_device_id})
+
+        # a hub that's offline takes its devices with it: one line ("Frigate and 12 of its devices")
+        hubs = {i["device_id"] for i in offline}
+        for item in offline:
+            item["with"] = sum(1 for o in offline if o.get("via") == item["device_id"])
+        offline = [{k: v for k, v in i.items() if k != "via"} for i in offline if i.get("via") not in hubs]
 
         if unverified and not self._checking:
             self._checking = True
@@ -271,7 +280,8 @@ class HouseHealth:
                 else:
                     out.append(f"{i['name']} hasn't seen anything for {max(1, (now - since).days)} days")
             elif i["kind"] == "offline":
-                out.append(f"{i['name']} is offline")
+                n = i.get("with") or 0
+                out.append(f"{i['name']} is offline" + (f" (and {n} of its device{'s' if n != 1 else ''})" if n else ""))
             elif i["level"] is not None:
                 out.append(f"{i['name']} is at {i['level']}%")
             else:

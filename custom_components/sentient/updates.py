@@ -5,6 +5,7 @@ import asyncio
 from datetime import timedelta
 import re
 
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.loader import async_get_integration
@@ -16,6 +17,7 @@ RELEASE_URL = 'https://api.github.com/repos/conahmorgan2304/sentient/releases/la
 RELEASE_PAGE = 'https://github.com/conahmorgan2304/sentient/releases'
 EVENT = 'sentient_update_check'
 INTERVAL = timedelta(hours=6)
+ISSUE = 'update_available'
 
 
 def version_tuple(value):
@@ -66,6 +68,7 @@ class UpdateChecker:
         self.latest = self.checked = self.error = None
         self._checking = False
         self._next_check = 0
+        ir.async_delete_issue(self.hass, DOMAIN, ISSUE)
 
     def _notify(self):
         self.hass.bus.async_fire(EVENT)
@@ -118,7 +121,21 @@ class UpdateChecker:
         self.checked = dt_util.utcnow().isoformat()
         self.error = error
         self._checking = False
+        self._repair()
         self._notify()
+
+    def _repair(self):
+        """A Home Assistant repair while a newer stable release is out; gone once it's installed."""
+        if self.error is not None:
+            return
+        if self.status()['update_available']:
+            ir.async_create_issue(
+                self.hass, DOMAIN, ISSUE, is_fixable=False, is_persistent=False,
+                severity=ir.IssueSeverity.WARNING, translation_key=ISSUE, learn_more_url=RELEASE_PAGE,
+                translation_placeholders={'installed': str(self.installed), 'latest': str(self.latest)},
+            )
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, ISSUE)
 
     def status(self):
         available = None
