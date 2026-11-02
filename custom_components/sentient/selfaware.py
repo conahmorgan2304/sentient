@@ -27,6 +27,7 @@ SPEAKER_BAD = 0.3  # three in ten failing
 CHATTY_MIN = 3  # remarks of one kind before it can be "too much"
 REPEATED_QUESTION = 3
 _WORDS = re.compile(r"[a-z0-9']+")
+TRIVIAL = re.compile(r"\b(?:what(?:'s| is)? the time|what time|time is it|what(?:'s| is)? the date|what day|today's date)\b", re.I)
 # remarks that are about safety or someone asking: never quietened, never counted as "chatty"
 NEVER_QUIETEN = ("critical", "security", "alarm", "alexa:", "reply", "watch", "remind", "announce:")
 
@@ -158,6 +159,8 @@ class SelfAware:
         conv = getattr(rt, "conversations", None)
         for ep in (conv.recent(hours=days * 24, limit=500) if conv else []):
             first = next((t["text"] for t in ep.get("turns", []) if t["who"] == "them"), "")
+            if TRIVIAL.search(first):
+                continue  # the time or the date: of course people ask the speaker that
             if (k := _key(first)) and len(k.split()) >= 2:
                 asked[k] += 1
                 examples.setdefault(k, first)

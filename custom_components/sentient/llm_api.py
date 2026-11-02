@@ -92,6 +92,14 @@ def clock_words(when) -> str:
     return f"{_ONES[hour]} {_TENS[m // 10]}" + (f"-{_ONES[m % 10]}" if m % 10 else "")
 
 
+def _result(data: Any) -> Any:
+    """Newer Home Assistant wants a ToolResult rather than a plain dict; older versions only know dicts."""
+    tool_result = getattr(llm, "ToolResult", None)
+    if tool_result is None or not isinstance(data, dict):
+        return data
+    return tool_result(data=data, error=bool(data.get("error")) and len(data) == 1)
+
+
 class _Tool(llm.Tool):
     """Every Sentient tool says which integration provides it."""
 
@@ -112,14 +120,14 @@ class _Tool(llm.Tool):
             try:
                 tool_input.tool_args = self.parameters(dict(tool_input.tool_args or {}))
             except vol.Invalid as err:
-                return {"error": f"wrong arguments: {err}"}
+                return _result({"error": f"wrong arguments: {err}"})
             try:
-                return await inner(self, hass, tool_input, llm_context)
+                return _result(await inner(self, hass, tool_input, llm_context))
             except HomeAssistantError:
                 raise
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Sentient tool %s failed: %r", self.name, err)
-                return {"error": f"that didn't work ({type(err).__name__})"}
+                return _result({"error": f"that didn't work ({type(err).__name__})"})
 
         cls.async_call = async_call
 

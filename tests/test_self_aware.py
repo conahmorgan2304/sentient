@@ -119,3 +119,10 @@ async def test_goal_follows_a_sensor(hass: HomeAssistant) -> None:
     assert "Use less heating this month (20% lower" in (await _api(hass)).api_prompt
     closed = await api.async_call_tool(llm.ToolInput(tool_name="sentient_goal", tool_args={"action": "close", "title": "heating"}))
     assert closed["closed"] == "Use less heating this month"
+
+
+def test_asking_the_time_is_not_a_finding() -> None:
+    from custom_components.sentient.selfaware import TRIVIAL
+
+    assert TRIVIAL.search("what time is it") and TRIVIAL.search("What's the time?")
+    assert not TRIVIAL.search("what's the temperature outside?")
