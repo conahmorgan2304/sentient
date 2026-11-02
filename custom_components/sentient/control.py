@@ -83,6 +83,9 @@ class Control:
                 raise ValueError(f'{eid} has no reliable current state')
             if not async_should_expose(self.hass, 'conversation', eid):
                 raise ValueError(f'{eid} is not exposed to Assist')
+            from .never import blocked
+            if blocked(self.hass, eid):
+                raise ValueError(f'{state.name} is on the never-touch list, so it has to be changed by hand')
             if user and not user.permissions.check_entity(eid, POLICY_CONTROL):
                 raise ValueError(f'No permission to control {eid}')
             if not self.hass.services.has_service(domain, op):

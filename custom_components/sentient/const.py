@@ -71,6 +71,7 @@ DEFAULT_CARRY_ON_MINUTES = 0
 MAX_CARRY_ON_MINUTES = 5  # Home Assistant forgets a conversation after five quiet minutes
 CONF_FOCUSED_TOOLS = "focused_tools"  # only the Sentient tools that fit the request
 CONF_ASK_LATER = "ask_later"  # remember to ask how something went
+CONF_NEVER_ENTITIES = "never_entities"  # devices Sentient must never change by itself
 CONF_HOUSE_RULES = "house_rules"
 CONF_LEARN_ENTITIES = "learn_entities"
 CONF_SUGGEST_ROUTINES = "suggest_routines"

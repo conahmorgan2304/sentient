@@ -142,7 +142,9 @@ class AutoOff:
 
     async def async_switch_off(self, item: dict[str, Any], entities: list[str]) -> None:
         ctx = Context(parent_id=self._parent.id)  # the house did this, not a person
-        for entity_id in entities:
+        from .never import allowed
+
+        for entity_id in allowed(self.hass, entities):
             domain = entity_id.split(".", 1)[0]
             service = "turn_off"
             if domain == "media_player":

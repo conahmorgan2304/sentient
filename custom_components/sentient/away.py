@@ -235,6 +235,10 @@ class Away:
         self._store.async_delay_save(lambda: {"switched": self.switched, "ours": sorted(self.ours)}, 5)
 
     async def _switch(self, light: str, on: bool) -> None:
+        from .never import blocked
+
+        if blocked(self.hass, light):
+            return
         self.switched.setdefault(light, []).append(int(dt_util.utcnow().timestamp()))
         try:
             await self.hass.services.async_call(
