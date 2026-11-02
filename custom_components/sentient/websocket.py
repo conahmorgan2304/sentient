@@ -135,6 +135,12 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
+    CONF_SEARCH_HINTS,
+    CONF_WEB_SEARCH,
+    CONF_SEARXNG_URL,
+    CONF_ALEXA_SKILL,
+    CONF_ALEXA_WAIT,
+    CONF_ALEXA_LATE,
     CONF_CRITICAL_IGNORE,
     CONF_CRITICAL_EXTRA,
     CONF_WELCOME_PEOPLE,
@@ -280,6 +286,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("rain", "Rain warnings", "mdi:weather-pouring", "A word when rain's due within the hour and a window or door is left open. Reads the hourly forecast — no AI.", [
         CONF_RAIN, CONF_RAIN_ENTITIES,
+    ]),
+    ("search", "Web search", "mdi:web", "Questions about the world outside the house. Best with the Voice Satellite LLM Tools companion (web, images, YouTube on the tablets); or Sentient's own voice-only search through your SearXNG.", [
+        CONF_SEARCH_HINTS, CONF_WEB_SEARCH, CONF_SEARXNG_URL,
+    ]),
+    ("alexa", "Ask through Alexa", "mdi:amazon-alexa", "Ask the house brain from any Echo with an Alexa skill: point the skill at the \u201cFor Alexa\u201d agent. It knows which Echo was spoken to, keeps answers short, and if the AI needs longer than Alexa waits, says the answer on that Echo when it's ready.", [
+        CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_ALEXA_LATE,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,

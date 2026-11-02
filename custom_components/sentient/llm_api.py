@@ -493,6 +493,38 @@ class WhatHappenedTool(_Tool):
         return await rt.clips.async_what_happened(camera, tool_input.tool_args.get("question"), force=True)
 
 
+class SearchTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_search"
+    description = (
+        "Search the web for anything about the world outside the house — news, facts, opening times, how-tos, "
+        "people, films. 'query' is what to search for. Answer from the results in a sentence or two; never "
+        "read out web addresses."
+    )
+    parameters = vol.Schema({vol.Required("query"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .search import async_search, own_search_on
+
+        if not own_search_on(hass, rt.options):
+            return {"skipped": "web search is off in Sentient's settings"}
+        return await async_search(hass, rt.options, tool_input.tool_args["query"])
+
+
+def _search_on(hass: HomeAssistant) -> bool:
+    rt = _runtime(hass)
+    if rt is None:
+        return False
+    from .search import own_search_on
+
+    return own_search_on(hass, rt.options)
+
+
 class LookTool(_Tool):
     name = "sentient_look"
     description = (
@@ -1251,7 +1283,7 @@ class SentientAPI(llm.API):
             llm_context=llm_context,
             tools=[SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
         )
 
     def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
@@ -1341,6 +1373,10 @@ class SentientAPI(llm.API):
             lines.append(drive)
         if not rt.speech.guest_mode and (seen := rt.faces.prompt_line()):
             lines.append(seen)
+        from .search import prompt_line as _search_line
+
+        if search := _search_line(self.hass, opts):
+            lines.append(search)
         if rt.loops.items:
             lines.append("Follow-ups you've set: " + "; ".join(f"{i['about']} at {i['at']}" for i in rt.loops.listing()[:6]) + ".")
         if spots := rt.spots.describe():

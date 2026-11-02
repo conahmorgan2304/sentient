@@ -299,6 +299,12 @@
           "energy_insight": "Energy insight",
           "energy_price": "Electricity price",
           "energy_currency": "Currency",
+          "search_hints": "Tell the voice about search tools",
+          "web_search": "Sentient's own web search",
+          "searxng_url": "SearXNG address",
+          "alexa_skill": "Answer questions asked through Alexa",
+          "alexa_wait": "Longest wait before Alexa gives up",
+          "alexa_late_answers": "Say slow answers on that Echo",
           "left_open_minutes": "Mention doors and windows left open after",
           "left_open_ignore": "Don't mention these",
           "leaving_check": "Check when everyone goes out",
@@ -465,6 +471,12 @@
           "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
           "energy_price": "Optional: your unit rate in pence or cents per kWh (e.g. 24.5), to show today's cost.",
           "energy_currency": "The currency costs are shown in. Empty: Home Assistant's own currency (Settings → System → General).",
+          "search_hints": "When Voice Satellite LLM Tools (or Sentient's own search) is set up, the voice is told the search tools are there and to use them for anything outside the house — words on a speaker, pictures only on a tablet. No AI calls of its own.",
+          "web_search": "A voice-only web search through your own SearXNG (for example the SearXNG add-on). Only used when Voice Satellite LLM Tools' web search isn't installed, so the voice never gets two. Off by default.",
+          "searxng_url": "For example http://localhost:8080 or the add-on's address. SearXNG must allow the json format (in its settings: search → formats).",
+          "alexa_skill": "Adds nothing until a skill uses it: point an Alexa skill (for example the community 'Home Assistant Assist' skill) at the 'For Alexa' agent, then say \\u201cAlexa, ask <skill name> …\\u201d. Off by default.",
+          "alexa_wait": "Alexa hangs up after about 8 seconds, so the answer must come quicker than this.",
+          "alexa_late_answers": "When the AI takes longer, Alexa says \\u201cGive me a moment\\u201d and the answer is said on the same Echo when it's ready.",
           "left_open_minutes": "Said once (then every half hour while still open), within quiet hours and shushes as usual. 0 turns it off.",
           "leaving_check": "When the last person leaves, anything open or unlocked goes on the timeline and to phones (\"Left open\").",
           "critical_extra": "Anything else that should always be said everywhere when it turns on, e.g. a panic button or a freezer-too-warm sensor. An alarm panel going off is always included.",
@@ -672,6 +684,9 @@
     "conversation": {
       "voice": {
         "name": "With backup"
+      },
+      "alexa": {
+        "name": "For Alexa"
       }
     }
   },

@@ -63,11 +63,15 @@ async def test_suggestions_offer_then_use_or_dismiss(hass: HomeAssistant, hass_w
     await ws.send_json({"id": 3, "type": "sentient/suggestions/act", "suggestion": "animal_sensors|sensor.hutch_temperature", "accept": False})
     await ws.receive_json()
     await ws.send_json({"id": 4, "type": "sentient/suggestions"})
-    assert (await ws.receive_json())["result"]["items"] == []  # used, and dismissed for good
+    left = (await ws.receive_json())["result"]["items"]
+    assert [i["id"] for i in left] == ["companion|search"]  # used, and dismissed for good (the search companion stays offered)
+    await ws.send_json({"id": 5, "type": "sentient/suggestions/act", "suggestion": "companion|search", "accept": True})
+    got = await ws.receive_json()
+    assert got.get("result", {}).get("url", "").startswith("https://github.com/"), got
     hass.states.async_set("sensor.dryer_power", "1", {"device_class": "power", "friendly_name": "Dryer power"})
     hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, "suggestions": False})
     await hass.async_block_till_done()
-    await ws.send_json({"id": 5, "type": "sentient/suggestions"})
+    await ws.send_json({"id": 6, "type": "sentient/suggestions"})
     assert (await ws.receive_json())["result"]["items"] == []  # off: nothing offered
 
 

@@ -66,6 +66,13 @@ class Suggestions:
                 if sid in self.dismissed or (st := self.hass.states.get(entity_id)) is None:
                     continue
                 out.append({"id": sid, "key": key, "entity_id": entity_id, "text": text.format(name=st.name)})
+        from .const import SEARCH_COMPANION, SEARCH_COMPANION_URL
+
+        sid = "companion|search"
+        if sid not in self.dismissed and not self.hass.config_entries.async_entries(SEARCH_COMPANION):
+            out.append({"id": sid, "key": "companion", "entity_id": None, "url": SEARCH_COMPANION_URL,
+                        "text": "Web, image and YouTube search for the voice: add Voice Satellite LLM Tools from HACS, "
+                                "then tick its tools under your AI agent's \"Control Home Assistant\""})
         return out[:6]
 
     @callback
@@ -117,6 +124,9 @@ def ws_suggestion_act(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
         connection.send_error(msg["id"], "not_found", "That suggestion has gone")
         return
     rt.suggestions.dismiss(item["id"])  # either way, never asked again
+    if msg["accept"] and item.get("url"):
+        connection.send_result(msg["id"], {"done": True, "url": item["url"]})
+        return
     if msg["accept"]:
         opts = {**entry.data, **entry.options}
         many = next(m for k, m, _ in OFFERS if k == item["key"])
