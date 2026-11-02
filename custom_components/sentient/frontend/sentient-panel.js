@@ -1243,12 +1243,26 @@
       this._render();
       try {
         const result = await this._hass.callWS({ type: "sentient/update_check" });
-        this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? "Update available in HACS." : "No newer release found."} Recent checks may be cached.` : "Checker disabled.";
+        const hacs = await this._refreshHacs();
+        this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? (hacs ? "HACS has been told to look again; the update should show in HACS shortly." : "Update available in HACS (open Sentient there and choose Update information if it isn't showing).") : "No newer release found."}` : "Checker disabled.";
       } catch (error) {
         this._updatesFeedback = error.message || String(error);
       } finally {
         this._updatesSaving = false;
         this._render();
+      }
+    }
+
+    async _refreshHacs() {
+      // best effort: HACS only refreshes custom repositories now and then, so a new release can take a while to show
+      try {
+        const repos = await this._hass.callWS({ type: "hacs/repositories/list", categories: ["integration"] });
+        const repo = (repos || []).find((r) => String(r.full_name || "").toLowerCase() === "conahmorgan2304/sentient");
+        if (!repo) return false;
+        await this._hass.callWS({ type: "hacs/repository/refresh", repository: String(repo.id) });
+        return true;
+      } catch (_err) {
+        return false;
       }
     }
 

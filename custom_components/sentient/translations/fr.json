@@ -1256,5 +1256,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "update_available": {
+      "title": "Sentient {latest} est disponible",
+      "description": "Vous avez la version {installed}. Dans HACS, ouvrez Sentient, choisissez « Télécharger » (ou « Mettre à jour les informations » si la mise à jour n'apparaît pas encore), puis redémarrez Home Assistant. Si Sentient a été copié à la main plutôt qu'installé par HACS, il ne se mettra jamais à jour seul : ajoutez le dépôt dans HACS."
+    }
   }
 }

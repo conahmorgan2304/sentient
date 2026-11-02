@@ -109,3 +109,51 @@ async def test_offline_before_a_restart_is_reported_straight_away(hass: HomeAssi
     health._went_off["switch.hallway_plug"] = dt_util.utcnow() - timedelta(hours=2)  # what history says
     issues = health.async_check()
     assert [i["name"] for i in issues if i["kind"] == "offline"] == ["Hallway plug"]
+
+
+async def test_offline_device_stays_reported_while_its_history_is_rechecked(hass: HomeAssistant, freezer) -> None:
+    other = MockConfigEntry(domain="zha"); other.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    plug = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("zha", "plug")}, name="Hallway plug")
+    ents.async_get_or_create("switch", "zha", "plug", suggested_object_id="hallway_plug", device_id=plug.id)
+    hass.states.async_set("switch.hallway_plug", "unavailable")
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    health._never.clear()
+    health._checked["switch.hallway_plug"] = dt_util.utcnow()
+    freezer.tick(timedelta(minutes=11))
+    assert [i["name"] for i in health.async_check() if i["kind"] == "offline"] == ["Hallway plug"]
+    seen = []
+    hass.bus.async_listen("sentient_health_changed", lambda e: seen.append(e))
+    freezer.tick(timedelta(hours=7))  # due a fresh look at its history
+    health._checking = True  # that look is still running
+    assert [i["name"] for i in health.async_check() if i["kind"] == "offline"] == ["Hallway plug"]
+    await hass.async_block_till_done()
+    assert not seen  # no "back to normal" then "offline" again
+
+
+async def test_hub_offline_is_one_line(hass: HomeAssistant, freezer) -> None:
+    other = MockConfigEntry(domain="frigate"); other.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    hub = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("frigate", "hub")}, name="Frigate")
+    ents.async_get_or_create("sensor", "frigate", "fps", suggested_object_id="frigate_fps", device_id=hub.id)
+    hass.states.async_set("sensor.frigate_fps", "unavailable")
+    for n in ("Garden", "Gate", "Zone1"):
+        dev = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("frigate", n)}, name=n,
+                                       via_device=("frigate", "hub"))
+        ents.async_get_or_create("sensor", "frigate", n, suggested_object_id=f"{n.lower()}_count", device_id=dev.id)
+        hass.states.async_set(f"sensor.{n.lower()}_count", "unavailable")
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    health._never.clear()
+    for e in ("sensor.frigate_fps", "sensor.garden_count", "sensor.gate_count", "sensor.zone1_count"):
+        health._checked[e] = dt_util.utcnow()
+    freezer.tick(timedelta(minutes=11))
+    health.async_check()
+    assert health.describe() == ["Frigate is offline (and 3 of its devices)"]
