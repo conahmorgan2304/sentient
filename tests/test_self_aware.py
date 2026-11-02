@@ -126,3 +126,18 @@ def test_asking_the_time_is_not_a_finding() -> None:
 
     assert TRIVIAL.search("what time is it") and TRIVIAL.search("What's the time?")
     assert not TRIVIAL.search("what's the temperature outside?")
+
+
+async def test_once_a_day_and_a_fresh_restart_are_not_problems(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for _ in range(7):  # the kettle each morning for a week
+        rt.timeline.add("said", "The kettle has finished boiling.", "Kitchen", source="notice")
+        freezer.tick(timedelta(days=1))
+    assert not [f for f in rt.selfaware.check()["findings"] if f["kind"] == "repeat"]
+    hass.states.async_set("camera.tablet", "unavailable", {"friendly_name": "Tablet Camera"})
+    cams = next(c for c in rt.selfaware.status() if c["name"] == "Cameras")
+    assert "Tablet Camera" not in cams["why"]  # it has only just dropped (a restart, a tablet waking)
+    freezer.tick(timedelta(minutes=11))
+    cams = next(c for c in rt.selfaware.status() if c["name"] == "Cameras")
+    assert cams["status"] == "limited" and "Tablet Camera" in cams["why"]

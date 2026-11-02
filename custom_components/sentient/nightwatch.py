@@ -211,7 +211,6 @@ class NightWatch:
         return None
 
     def judge(self, entity_id: str, when: datetime) -> dict[str, Any]:
-        rt = self._rt()
         if self.days_known >= MIN_DAYS:
             usual = how_usual(self.history.get(entity_id, []), when, self.days_known)
             unusual = usual["rare"]

@@ -27,6 +27,14 @@ SPEAKER_BAD = 0.3  # three in ten failing
 CHATTY_MIN = 3  # remarks of one kind before it can be "too much"
 REPEATED_QUESTION = 3
 _WORDS = re.compile(r"[a-z0-9']+")
+DOWN_FOR = timedelta(minutes=10)  # a restart or a tablet waking up isn't "unavailable"
+
+
+def _down(st) -> bool:
+    """Unavailable for a while, not just for the moment after a restart."""
+    return st.state == "unavailable" and dt_util.utcnow() - st.last_changed >= DOWN_FOR
+
+
 TRIVIAL = re.compile(r"\b(?:what(?:'s| is)? the time|what time|time is it|what(?:'s| is)? the date|what day|today's date)\b", re.I)
 # remarks that are about safety or someone asking: never quietened, never counted as "chatty"
 NEVER_QUIETEN = ("critical", "security", "alarm", "alexa:", "reply", "watch", "remind", "announce:")
@@ -115,8 +123,12 @@ class SelfAware:
                     "evidence": {"said": n, "hushed_right_after": pushback, "days": days},
                 })
         repeats = Counter(_key(i["text"]) for i in said if i.get("source") == "notice")
+        same_day = Counter((_key(i["text"]), str(i.get("time") or "")[:10]) for i in said if i.get("source") == "notice")
         for text_key, n in repeats.items():
-            if n >= 3 and text_key:
+            # once a day (the kettle finishing each morning) is just the day happening; flag it only when it comes
+            # round more than daily on average, or three times or more in one day
+            busiest = max((c for (k, _d), c in same_day.items() if k == text_key), default=0)
+            if text_key and n >= 3 and (n > max(days, 1) * 1.5 or busiest >= 3):
                 example = next(i["text"] for i in said if _key(i["text"]) == text_key)
                 findings.append({
                     "kind": "repeat", "about": "remarks",
@@ -246,7 +258,7 @@ class SelfAware:
             add("Speaking", "ok")
         bad = [n for n, s in (self.check(days=1)["numbers"]["speakers"]).items() if s["tries"] >= 2 and s["failed"] >= s["tries"] / 2]
         speakers = opts.get("speakers") or []
-        gone = [st.name for e in speakers if (st := self.hass.states.get(e)) is not None and st.state == "unavailable"]
+        gone = [st.name for e in speakers if (st := self.hass.states.get(e)) is not None and _down(st)]
         if gone or bad:
             add("Speakers", "limited", "; ".join(filter(None, [
                 f"offline: {', '.join(gone)}" if gone else "", f"failing today: {', '.join(bad)}" if bad else ""])))
@@ -264,8 +276,9 @@ class SelfAware:
         if over:
             add("AI budgets", "limited", "used up today: " + ", ".join(over))
         # looking
-        cams = [st for st in self.hass.states.async_all("camera")]
-        dark = [st.name for st in cams if st.state == "unavailable"]
+        ignored = set(opts.get("health_ignore") or [])
+        cams = [st for st in self.hass.states.async_all("camera") if st.entity_id not in ignored]
+        dark = [st.name for st in cams if _down(st)]
         if not cams:
             add("Cameras", "off", "no cameras")
         elif ai.failing or ai.capped:

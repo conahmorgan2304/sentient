@@ -161,7 +161,7 @@ class Pets:
         rt.timeline.add("animal", text, "night cat watch")
         if self.options.get(CONF_CAT_LOUD):
             speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
-            await rt.speech.async_say(f"Heads up: there's a cat by the hutch.", "urgent", speakers, source="animals")
+            await rt.speech.async_say("Heads up: there's a cat by the hutch.", "urgent", speakers, source="animals")
         elif rt.speech.quiet_hours_now():
             from .followyou import next_quiet_end
 
