@@ -39,6 +39,8 @@
           "notice_entities": "Things to notice",
           "remark_repeat_hours": "Don't repeat a remark for",
           "chattiness": "How chatty",
+          "conversation_style": "How it talks",
+          "carry_on_minutes": "Carry on a conversation for",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
           "link_triggers": "Also learn what follows these",
@@ -132,6 +134,8 @@
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "remark_repeat_hours": "The same thing noticed (\"The kettle has finished boiling.\") isn't said again for this long. 0: no limit.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "conversation_style": "Brief: short, to-the-point answers. Natural: commands stay short, but questions and chat get a few natural sentences and a follow-up question when a person would ask one, which keeps the microphone listening.",
+          "carry_on_minutes": "Saying the wake word again this soon after talking carries on the same conversation from the same speaker, so \"and upstairs?\" still makes sense. 0 turns this off; Home Assistant forgets a conversation after five quiet minutes.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
@@ -244,6 +248,8 @@
           "notice_entities": "Things to notice",
           "remark_repeat_hours": "Don't repeat a remark for",
           "chattiness": "How chatty",
+          "conversation_style": "How it talks",
+          "carry_on_minutes": "Carry on a conversation for",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
           "link_triggers": "Also learn what follows these",
@@ -420,6 +426,8 @@
           "notice_entities": "When these change, the AI decides whether it's worth saying something (or asking). e.g. washing machine, doors, weather, bins.",
           "remark_repeat_hours": "The same thing noticed (\"The kettle has finished boiling.\") isn't said again for this long. 0: no limit.",
           "chattiness": "Limits remarks per hour: quiet 2, normal 4, chatty 8. Off stops noticing.",
+          "conversation_style": "Brief: short, to-the-point answers. Natural: commands stay short, but questions and chat get a few natural sentences and a follow-up question when a person would ask one, which keeps the microphone listening.",
+          "carry_on_minutes": "Saying the wake word again this soon after talking carries on the same conversation from the same speaker, so \"and upstairs?\" still makes sense. 0 turns this off; Home Assistant forgets a conversation after five quiet minutes.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
@@ -830,6 +838,12 @@
       "options": {
         "door": "At the door",
         "reminders": "Reminders"
+      }
+    },
+    "conversation_style": {
+      "options": {
+        "brief": "Brief",
+        "natural": "Natural"
       }
     }
   },

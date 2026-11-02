@@ -28,7 +28,7 @@ from .voice_actions import speech_attempt, BACKUP_TIMEOUT
 from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, is_conversation_end, YES, NO, UNDO, normalise, spoken_text)
 
 from . import SentientConfigEntry
-from .const import CONF_ALEXA_LATE, CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_ALEXA_WAIT, DEFAULT_BACKUP_AGENT, DOMAIN, CONF_PERSONA, DEFAULT_PERSONA
+from .const import CONF_CARRY_ON_MINUTES, MAX_CARRY_ON_MINUTES, CONF_ALEXA_LATE, CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_ALEXA_WAIT, DEFAULT_BACKUP_AGENT, DOMAIN, CONF_PERSONA, DEFAULT_PERSONA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,6 +56,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             model="Home brain", entry_type=DeviceEntryType.SERVICE,
         )
         self.last_backup: str | None = None
+        self._carry: dict[str, tuple[str, Any]] = {}  # speaker -> (conversation id, when it was last used)
+        self._ours: set[str] = set()  # conversation ids this agent has answered
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -254,6 +256,28 @@ class BackedUpAgent(conversation.ConversationEntity):
         return " ".join(parts) or "No devices were changed."
 
     async def async_process(self, user_input):
+        """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
+        from homeassistant.util import dt as dt_util
+
+        minutes = min(float(self._options().get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
+        speaker = user_input.satellite_id or user_input.device_id
+        now = dt_util.utcnow()
+        if minutes and speaker and user_input.conversation_id not in self._ours:
+            last = self._carry.get(speaker)
+            if last and (now - last[1]).total_seconds() < minutes * 60:
+                user_input = replace(user_input, conversation_id=last[0])
+        result = await self._process_turn(user_input)
+        if minutes and speaker and result.conversation_id:
+            if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA):
+                self._carry.pop(speaker, None)  # "that's all" ends it: the next wake word starts afresh
+            else:
+                self._carry[speaker] = (result.conversation_id, dt_util.utcnow())
+            if len(self._ours) > 500:
+                self._ours.clear()
+            self._ours.add(result.conversation_id)
+        return result
+
+    async def _process_turn(self, user_input):
         opts = self._options()
         if not (opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED)):
             return await self._async_process_legacy(user_input)
