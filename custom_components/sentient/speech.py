@@ -77,6 +77,14 @@ def important(source: str | None) -> bool:
     return str(source or "").startswith(IMPORTANT_SOURCES)
 
 
+READING_WORDS_PER_SECOND = 2.5  # a steady reading voice, about 150 words a minute
+
+
+def reading_seconds(text: str) -> float:
+    """Roughly how long a text-to-speech voice takes to read this out, with a short breath after."""
+    return len(text.split()) / READING_WORDS_PER_SECOND + 0.8
+
+
 @dataclass
 class SpeechResult:
     """What happened to a request to speak."""
@@ -413,29 +421,32 @@ class SpeechRouter:
 
     async def async_read_aloud(self, text: str, speaker: str) -> bool:
         """One passage of a book or a recipe step someone asked for: straight to that speaker, not logged as
-        something the house said, and not held for quiet hours (they asked). Waits until it has been read."""
+        something the house said, and not held for quiet hours (they asked). Waits until it has been read.
+
+        Some satellites (a browser tablet, for one) accept an announcement and return straight away, so the
+        wait is also paced by the passage's length — otherwise the next passage would cut this one off."""
+        started = asyncio.get_running_loop().time()
         try:
             async with self._lock:
                 await self._wait_idle([speaker])
                 volume = await self._volumes([speaker])
                 async with delivered(self.hass, [speaker], volume, self.duck_level):
-                    receipts = await self._speak(clean_message(text, self.banned), [speaker])
+                    receipts = await self._speak(clean_message(text, self.banned), [speaker], chime=False)
         except HomeAssistantError:
             return False
         if not any(r["status"] == "accepted" for r in receipts or []):
             return False
-        if speaker.startswith("media_player."):
-            # _speak only waits a short while for media players: wait for the rest of the passage
-            await asyncio.sleep(max(0.0, len(text.split()) / 2.6 - 13))
-            for _ in range(60):
-                st = self.hass.states.get(speaker)
-                if st is None or st.state != "playing":
-                    break
-                await asyncio.sleep(1)
+        await asyncio.sleep(max(0.0, reading_seconds(text) - (asyncio.get_running_loop().time() - started)))
+        for _ in range(60):  # and then until the speaker says it has finished
+            st = self.hass.states.get(speaker)
+            if st is None or st.state not in ("playing", "responding"):
+                break
+            await asyncio.sleep(1)
         return True
 
-    async def _speak(self, text: str, speakers: list[str]) -> list[dict[str, Any]]:
+    async def _speak(self, text: str, speakers: list[str], chime: bool | None = None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
+        chime = self.chime if chime is None else chime
         rows = {eid: {'entity_id': eid, 'status': 'cancelled',
                       'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
         async def send(eid):
@@ -445,11 +456,11 @@ class SpeechRouter:
             try:
                 if eid.startswith('assist_satellite.'):
                     domain, service = 'assist_satellite', 'announce'
-                    data, target = {'message': text, 'preannounce': self.chime}, {'entity_id': [eid]}
+                    data, target = {'message': text, 'preannounce': chime}, {'entity_id': [eid]}
                 elif eid.startswith('media_player.') and _platform(self.hass, eid) == 'alexa_media':
                     domain, service = 'notify', 'alexa_media'
                     # Each call targets one Echo; use its entity ID directly.
-                    kind = 'tts' if self.options.get(CONF_ALEXA_TTS_ONLY, False) or not self.chime else 'announce'
+                    kind = 'tts' if self.options.get(CONF_ALEXA_TTS_ONLY, False) or not chime else 'announce'
                     data, target = {'message': text, 'target': eid, 'data': {'type': kind}}, None
                 elif eid.startswith('media_player.') and (tts := self.options.get(CONF_TTS_ENTITY)):
                     domain, service = 'tts', 'speak'

@@ -253,7 +253,9 @@ class Books:
         if ps >= len(chapters[ch]["passages"]):
             ch, ps = ch + 1, 0
         if ch >= len(chapters):
-            return {"book": book["name"], "finished": True, "note": "That's the end of the book. Say 'start it again' to begin from the start."}
+            if not title:
+                return {"book": book["name"], "finished": True, "note": "That's the end of the book. Say 'start it again' to begin from the start."}
+            ch, ps = 0, 0  # asked for by name after finishing it: start it again
         where = f"chapter {ch + 1} of {len(chapters)}" + (f", {chapters[ch]['title']}" if chapters[ch]["title"] else "")
         if via_reply:  # an Echo through the Alexa skill: one passage as the answer, then "carry on"
             text = chapters[ch]["passages"][ps]
@@ -420,8 +422,11 @@ class Books:
             await self.hass.services.async_call("media_player", "media_pause", {"entity_id": info["player"]}, blocking=False)
         book = self._stop(speaker, save=False)
         if book is None:
-            return {"error": "nothing is being read there"}
-        return {"stopped": book, "kept_place": (self.place(book, speaker) or {}).get("where")}
+            # the wake word already stopped it (that's how "pause" usually arrives): the place is kept either way
+            if (book := self.last.get(speaker)) is None:
+                return {"error": "nothing is being read there"}
+        return {"stopped": book, "kept_place": (self.place(book, speaker) or {}).get("where"),
+                "note": "Say it's paused and where; 'carry on' picks up from there."}
 
     async def async_move(self, speaker: str, how: str) -> dict[str, Any]:
         """next chapter / previous chapter / back a bit / restart, for an ebook."""

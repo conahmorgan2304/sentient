@@ -18,6 +18,16 @@ import re
 current_request: ContextVar[str | None] = ContextVar("sentient_current_request", default=None)
 # set while answering through the Alexa skill (the reply is what the Echo says)
 via_alexa: ContextVar[bool] = ContextVar("sentient_via_alexa", default=False)
+# what a tool asked of the turn it ran in — {"hand_off": "Starting the book."} ends the conversation with those words
+# once something long (a story being read) carries on by itself, so nothing waits for a reply over the top of it
+turn_flags: ContextVar[dict | None] = ContextVar("sentient_turn_flags", default=None)
+
+
+def hand_off(say: str) -> None:
+    """End this voice turn with just these words and stop listening: the speaker is about to be busy."""
+    flags = turn_flags.get()
+    if flags is not None:
+        flags["hand_off"] = say
 
 ALWAYS = {
     "sentient_session", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_recall",
@@ -47,7 +57,8 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_manual"]),
         ("goals", r"\bgoals?\b|\baim\b|target|use less|cut (?:down|back)|reduce|save (?:energy|money)|how are we doing",
          ["sentient_goal", "sentient_energy", "sentient_heating"]),
-        ("books", r"\bbook|read (?:to me|me|my|the|some|for)|carry on (?:reading|with)|chapter|audiobook|story|bedtime",
+        ("books", r"\bbook|read (?:to me|me|my|the|some|for|it|on)|carry on (?:reading|with)|keep reading|chapter|audiobook|"
+                  r"stor(?:y|ies)|bedtime|\bpause\b|\bresume\b|where (?:was i|were we|did we)|play (?:the|my|a)\b",
          ["sentient_book"]),
         ("recipes", r"recipe|cook|bake|make (?:the|a|some)|ingredients|next step|step|what'?s next|repeat that|for dinner|for tea",
          ["sentient_recipe"]),

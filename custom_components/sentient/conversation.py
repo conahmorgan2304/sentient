@@ -266,13 +266,22 @@ class BackedUpAgent(conversation.ConversationEntity):
             last = self._carry.get(speaker)
             if last and (now - last[1]).total_seconds() < minutes * 60:
                 user_input = replace(user_input, conversation_id=last[0])
-        from .focus import current_request
+        from .focus import current_request, turn_flags
 
-        token = current_request.set(user_input.text)
+        flags: dict = {}
+        token, ftoken = current_request.set(user_input.text), turn_flags.set(flags)
         try:
             result = await self._process_turn(user_input)
         finally:
             current_request.reset(token)
+            turn_flags.reset(ftoken)
+        if flags.get("hand_off"):
+            # a story (or anything long) is now playing on this speaker: say the one line and stop listening, so
+            # the satellite isn't waiting for an answer over the top of it and no "anything else?" is added
+            result.response.async_set_speech(flags["hand_off"])
+            result.continue_conversation = False
+            self._carry.pop(speaker, None)
+            return result
         if minutes and speaker and result.conversation_id:
             if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA):
                 self._carry.pop(speaker, None)  # "that's all" ends it: the next wake word starts afresh
@@ -350,6 +359,13 @@ class BackedUpAgent(conversation.ConversationEntity):
                         result.response.async_set_speech(notice + text)
                 if opts.get(CONF_SESSIONS):
                     result = rt.sessions.finish(session, result)
+                from .focus import turn_flags
+
+                if say := (turn_flags.get() or {}).get("hand_off"):
+                    result.response.async_set_speech(say)
+                    rt.sessions.close(session)
+                    session.listen_reason = "handed_off"
+                    result.continue_conversation = False
                 session.waiting = result.continue_conversation
                 self._record(user_input, session, result)
                 return result

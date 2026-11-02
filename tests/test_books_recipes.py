@@ -180,3 +180,44 @@ async def test_mealie_recipe_needs_no_ai(hass: HomeAssistant, tmp_path) -> None:
          patch.object(type(entry.runtime_data.recipes), "_mealie_entry", lambda self: mealie):
         out = await entry.runtime_data.recipes.async_cook("chicken curry", "s1")
     assert out["recipe"] == "Chicken curry" and out["ingredients"] == ["2 chicken breasts"] and not ai.called
+
+
+async def test_reading_paces_a_satellite_that_returns_straight_away(hass: HomeAssistant, tmp_path) -> None:
+    """A browser tablet accepts an announcement instantly: the reader still waits for the passage to be spoken."""
+    from custom_components.sentient.speech import reading_seconds
+
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    calls = async_mock_service(hass, "assist_satellite", "announce")
+    passage = "word " * 100
+    with patch("custom_components.sentient.speech.asyncio.sleep", AsyncMock()) as sleep:
+        assert await entry.runtime_data.speech.async_read_aloud(passage, "assist_satellite.bedroom")
+    assert calls[-1].data["preannounce"] is False  # no chime before every paragraph
+    assert max(c.args[0] for c in sleep.await_args_list) >= reading_seconds(passage) - 1 >= 39
+
+
+async def test_read_hands_off_and_pause_after_the_wake_word_keeps_the_place(hass: HomeAssistant, tmp_path) -> None:
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, device = await _setup(hass, tmp_path, books=True)
+    rt = entry.runtime_data
+    from custom_components.sentient.focus import TOPICS, turn_flags
+
+    assert TOPICS["books"][0].search("play the princess story") and TOPICS["books"][0].search("pause")
+    flags: dict = {}
+    token = turn_flags.set(flags)
+    try:
+        with patch.object(rt.speech, "async_read_aloud", AsyncMock(return_value=True)), \
+                patch("custom_components.sentient.books.Books._read_loop", AsyncMock()):
+            api = await _api(hass, device)
+            out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "Flump"}))
+            assert flags["hand_off"] == out["say_first"] == "Starting Flump."
+            rt.books._stop("assist_satellite.bedroom", save=False)  # the wake word stops it first
+            paused = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "pause"}))
+            assert paused["stopped"] == "Flump"
+            # finished books start again when asked for by name
+            rt.books.marks["Flump|assist_satellite.bedroom"] = {"chapter": 1, "passage": 999}
+            again = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "Flump"}))
+            assert again["reading"] and again["say_first"] == "Starting Flump."
+            rt.books._stop("assist_satellite.bedroom", save=False)
+    finally:
+        turn_flags.reset(token)

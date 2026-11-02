@@ -631,14 +631,17 @@ def _speaker_here(hass: HomeAssistant, rt: Any, llm_context: llm.LLMContext, nam
 class BookTool(_Tool):
     name = "sentient_book"
     description = (
-        "Audiobooks and ebooks read aloud, picking up where this room left off — 'read my book', 'carry on with the "
-        "book', 'read The Hobbit', 'read for 20 minutes', 'stop reading', 'next chapter', 'go back a bit', 'what chapter "
-        "am I on?', 'what happened last time?', 'what books are there?'. action: read (title optional — the last book on "
-        "this speaker; minutes optional), stop, next_chapter, previous_chapter, back, restart, where, recap, list. "
+        "Audiobooks, ebooks and stories read aloud, from start to finish by themselves, picking up where this room "
+        "left off — 'read my book', 'play the Princess story', 'carry on with the book', 'read for 20 minutes', "
+        "'pause', 'resume', 'stop reading', 'next chapter', 'go back a bit', 'what chapter am I on?', 'what happened "
+        "last time?', 'what books are there?'. Always use this for a book or story in the books folder: never read, "
+        "retell or make up its text yourself. action: read (title optional — the last book on this speaker; minutes "
+        "optional), resume, pause, stop, next_chapter, previous_chapter, back, restart, where, recap, list. "
         "'speaker' only if they name another room."
     )
     parameters = vol.Schema({
-        vol.Required("action"): vol.In(["read", "stop", "next_chapter", "previous_chapter", "back", "restart", "where", "recap", "list"]),
+        vol.Required("action"): vol.In(["read", "resume", "pause", "stop", "next_chapter", "previous_chapter", "back",
+                                        "restart", "where", "recap", "list"]),
         vol.Optional("title"): cv.string, vol.Optional("minutes"): vol.Coerce(float), vol.Optional("speaker"): cv.string,
     })
 
@@ -655,14 +658,20 @@ class BookTool(_Tool):
         speaker = _speaker_here(hass, rt, llm_context, a.get("speaker"))
         if speaker is None:
             return {"error": "which room's speaker should it be on?"}
-        from .focus import via_alexa
+        from .focus import hand_off, via_alexa
 
         echo = via_alexa.get() or rt.books.is_echo(speaker)
-        if a["action"] == "read":
-            out = await rt.books.async_read(a.get("title"), speaker, a.get("minutes"), via_reply=echo)
+        if a["action"] in ("read", "resume"):
+            out = await rt.books.async_read(a.get("title") if a["action"] == "read" else None, speaker,
+                                            a.get("minutes"), via_reply=echo)
             if echo and "read_aloud" not in out and "error" not in out:
                 out["warning"] = "Echos cut long speech short"
+            if out.get("reading") or out.get("playing"):
+                # it reads on by itself now: end the voice turn with the one line, without listening for a reply
+                hand_off(out["say_first"])
             return out
+        if a["action"] == "pause":
+            return await rt.books.async_stop_reading(speaker)
         if a["action"] == "stop":
             return await rt.books.async_stop_reading(speaker)
         if a["action"] == "where":
@@ -683,7 +692,10 @@ class BookTool(_Tool):
             except AIUnavailable as err:
                 return {"error": str(err)}
             return {"book": book, "recap": str((resp or {}).get("data") or "")}
-        return await rt.books.async_move(speaker, a["action"])
+        out = await rt.books.async_move(speaker, a["action"])
+        if out.get("reading") or out.get("playing"):
+            hand_off(out["say_first"])
+        return out
 
 
 class RecipeTool(_Tool):
@@ -1577,6 +1589,9 @@ class SentientAPI(llm.API):
                 + ": if asked to look at a camera or for anything that needs it, say plainly it's limited right now "
                 "and try again later — don't pretend to have looked."
             )
+        if getattr(rt, "books", None) is not None and rt.books.enabled:
+            lines.append("Books and stories are read by the house itself: for 'read' or 'play' a book or story, call "
+                         "sentient_book — never recite, retell or invent its text in your reply.")
         if getattr(rt, "goals", None) is not None and rt.goals.enabled and (goal_line := rt.goals.prompt_line()):
             lines.append(goal_line)
         if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:
