@@ -133,6 +133,30 @@ class HouseHealth:
             item["with"] = sum(1 for o in offline if o.get("via") == item["device_id"])
         offline = [{k: v for k, v in i.items() if k != "via"} for i in offline if i.get("via") not in hubs]
 
+        # why, when it's clear: the integration isn't running, or many of its devices dropped together
+        by_entry: dict[str, list[dict[str, Any]]] = {}
+        for item in offline:
+            device = dev_reg.async_get(item["device_id"])
+            entry_id = (getattr(device, "primary_config_entry", None) or next(iter(device.config_entries), None)) if device else None
+            if entry_id:
+                by_entry.setdefault(entry_id, []).append(item)
+        for entry_id, items in by_entry.items():
+            entry = self.hass.config_entries.async_get_entry(entry_id)
+            if entry is None:
+                continue
+            from homeassistant.config_entries import ConfigEntryState
+
+            failing = {ConfigEntryState.SETUP_RETRY: "keeps retrying to connect", ConfigEntryState.SETUP_ERROR: "failed to start",
+                       ConfigEntryState.MIGRATION_ERROR: "failed to update"}
+            if entry.state in failing:
+                why = f"its integration, {entry.title}, {failing[entry.state]}"
+            elif len(items) >= 3:  # separate devices (a hub and its own devices are already one line)
+                why = f"{sum(1 + (i.get('with') or 0) for i in items)} {entry.title} devices dropped together — probably {entry.title} or the network, not each device"
+            else:
+                continue
+            for item in items:
+                item["why"] = why
+
         if unverified and not self._checking:
             self._checking = True
             self.hass.async_create_task(self._async_verify(unverified), eager_start=False)
@@ -289,7 +313,8 @@ class HouseHealth:
                     out.append(f"{i['name']} hasn't seen anything for {max(1, (now - since).days)} days")
             elif i["kind"] == "offline":
                 n = i.get("with") or 0
-                out.append(f"{i['name']} is offline" + (f" (and {n} of its device{'s' if n != 1 else ''})" if n else ""))
+                out.append(f"{i['name']} is offline" + (f" (and {n} of its device{'s' if n != 1 else ''})" if n else "")
+                           + (f" — {i['why']}" if i.get("why") else ""))
             elif i["level"] is not None:
                 out.append(f"{i['name']} is at {i['level']}%")
             else:

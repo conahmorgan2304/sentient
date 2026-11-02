@@ -114,8 +114,8 @@
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes mp2">
-            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div><div id="minc" class="card" hidden></div></section>
-            <section class="lane" aria-label="Talking"><div class="lt">TALKING</div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div><div id="minc" class="card" hidden></div></section>
+            <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
@@ -280,7 +280,7 @@
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
@@ -1608,6 +1608,24 @@
           ${ai.limit ? `<div class="use"><i style="width:${used}%"></i></div>` : ""}
           <div class="tchips">${chip(tk.style === "natural", tk.style === "natural" ? "NATURAL TALK" : "BRIEF TALK")}${chip(tk.carry_on_minutes > 0, tk.carry_on_minutes > 0 ? `CARRIES ON ${esc(String(tk.carry_on_minutes))} MIN` : "NEW CHAT EACH TIME")}${chip(tk.focused_tools, "FOCUSED TOOLS")}${chip(tk.ask_later, "ASKS HOW THINGS WENT")}</div></div>
         <div class="week"><div class="wt">AI CALLS · LAST WEEK${ai.average_per_day != null ? ` · USUALLY ${esc(String(ai.average_per_day))} A DAY` : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
+      // about itself: what works right now, and what its own records show
+      const me = mind.self;
+      R("mself").hidden = !me;
+      if (me) {
+        const ic = { ok: "mdi:check-circle-outline", limited: "mdi:alert-circle-outline", off: "mdi:minus-circle-outline" };
+        const row = (c) => `<div class="r${c.status === "ok" ? " dim" : c.status === "limited" ? " warn" : ""}"><ha-icon icon="${ic[c.status] || ic.off}"></ha-icon><b class="wrap">${esc(c.name)}${c.why ? `<small>${esc(c.why)}</small>` : ""}</b><u>${esc(c.status.toUpperCase())}</u></div>`;
+        const notOk = (me.status || []).filter((c) => c.status !== "ok").map(row).join("");
+        const statusRows = (me.status || []).filter((c) => c.status === "ok").map(row).join("");
+        const found = (me.findings || []).map((f) => `<div class="r"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><b class="wrap">${esc(f.text)}</b><s>SELF-CHECK</s></div>`).join("");
+        const limited = (me.status || []).filter((c) => c.status !== "ok").length;
+        R("mself").innerHTML = this._h("ABOUT ITSELF", limited ? `${limited} LIMITED` : "ALL WORKING")
+          + notOk + found + (me.enabled === false ? "" : (found ? "" : '<div class="hint">NOTHING STANDS OUT IN ITS OWN RECORDS THIS WEEK</div>'))
+          + (me.adjusted || []).map((a) => `<div class="hint">LAST NIGHT · ${esc(a).toUpperCase()}</div>`).join("")
+          + `${statusRows ? `<details class="caps"><summary>${notOk ? "Everything else is working" : "What it can do right now · all working"}</summary>${statusRows}</details>` : ""}`;
+      }
+      const goals = mind.goals || [];
+      R("mgoals").hidden = !goals.length;
+      R("mgoals").innerHTML = goals.length ? this._h("GOALS", `${goals.length}`) + goals.map((g) => `<div class="r"><ha-icon icon="mdi:flag-checkered"></ha-icon><b class="wrap">${esc(g.title)}<small>${g.progress ? esc(g.progress) : g.follows ? `following ${esc(g.follows)} · first check tonight` : "no sensor to follow"}</small></b><u>UNTIL ${esc(day(g.ends)).toUpperCase()}</u></div>`).join("") : "";
       R("mlater").hidden = !later.length;
       R("mlater").innerHTML = later.length ? this._h("WILL ASK HOW IT WENT", `${later.length}`) + later.map((t) => `<div class="r"><ha-icon icon="mdi:comment-question-outline"></ha-icon><b class="wrap">${esc(t.question)}<small>${esc(t.about)}</small></b><u>${new Date(t.due) > new Date() ? "FROM " + (Date.now() - new Date(t.due) > -864e5 ? hm(t.due) : day(t.due)) : "NEXT CHAT"}</u></div>`).join("") : "";
     }
@@ -1696,6 +1714,8 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto}
 .lt{display:flex;align-items:center;gap:10px;margin:2px 4px -4px;font-size:9.5px;font-weight:700;letter-spacing:.3em;color:rgba(127,239,255,.55)}
 .lt::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.22),transparent)}
+.caps{margin-top:6px} .caps>summary{cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.16em;color:#7fefff;padding:6px 2px;list-style:none}
+.caps>summary::-webkit-details-marker{display:none} .caps>summary::before{content:"▸ "} .caps[open]>summary::before{content:"▾ "}
 .rtr{cursor:pointer} .rtr.on{border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.09)} .rtr.off{opacity:.55}
 .rtr s{text-decoration:none;font-size:8.5px;font-weight:700;letter-spacing:.14em;color:#7fefff;white-space:nowrap}
 .brain{margin-top:0}

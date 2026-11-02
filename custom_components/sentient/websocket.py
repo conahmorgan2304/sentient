@@ -66,6 +66,11 @@ from .const import (
     CONF_BATTERY_FORECAST,
     CONF_AUTO_BACKUP,
     CONF_NEVER_ENTITIES,
+    CONF_SELF_CHECK,
+    CONF_SELF_ADJUST,
+    CONF_MANUALS,
+    CONF_MANUALS_FOLDER,
+    CONF_GOALS,
     CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
     CONF_RAIN,
@@ -270,6 +275,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -301,6 +307,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("alexa", "Ask through Alexa", "mdi:amazon-alexa", "Ask the house brain from any Echo with an Alexa skill: point the skill at the \u201cFor Alexa\u201d agent. It knows which Echo was spoken to, keeps answers short, and if the AI needs longer than Alexa waits, says the answer on that Echo when it's ready.", [
         CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_ALEXA_LATE,
+    ]),
+    ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question.", [
+        CONF_MANUALS, CONF_MANUALS_FOLDER,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,
