@@ -106,13 +106,13 @@
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
-        <div class="page" id="ov"><div id="head" class="card head"></div>
+        <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
             <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div></section>
             <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="ins" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="rout" class="card"></div></section>
           </div></div>
-        <div class="page" id="mp" hidden><div id="mbrain" class="card brain"></div>
+        <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes mp2">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div><div id="minc" class="card" hidden></div></section>
             <section class="lane" aria-label="Talking"><div class="lt">TALKING</div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
@@ -142,7 +142,10 @@
         const r = (this._ml.rules || []).find((x) => x.id === id);
         if (r) this._motionDo("sentient/motion_lights/save", { rule: { id, light: r.light, motion: r.motion, enabled: ev.target.checked } }).then(() => { this._drawMotion(); this._drawMlCard(); });
       });
-      this.shadowRoot.addEventListener("input", (ev) => { if (ev.target.id === "mfind") { this._find = ev.target.value; this._drawMemories(); } });
+      this.shadowRoot.addEventListener("input", (ev) => {
+        if (ev.target.id === "mfind") { this._find = ev.target.value; this._drawMemories(); }
+        if (ev.target.id === "sfind") { this._sq = ev.target.value; this._drawSide(); }
+      });
       this.shadowRoot.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape" && this._editing) { this._editing = null; this._drawMemories(); }
       });
@@ -198,6 +201,11 @@
           <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
           <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI CALLS / ${ai.limit}` : "AI CALLS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
+
+      // when the AI keeps failing or today's calls are used up, say so plainly at the top
+      const warn = ai.failing ? `<ha-icon icon="mdi:robot-confused-outline"></ha-icon><b>The AI isn't answering right now<small>Remarks, camera looks and briefings use plain words until it's back${ai.last_error ? " · " + esc(String(ai.last_error).slice(0, 140)) : ""}</small></b>`
+        : ai.capped ? `<ha-icon icon="mdi:counter"></ha-icon><b>Today's ${esc(String(ai.limit))} AI calls are used up<small>Plain words until midnight · the limit is in Settings → Mind</small></b>` : "";
+      for (const id of ["aiwarn", "aiwarn2"]) { R(id).hidden = !warn; R(id).innerHTML = warn; }
 
       // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
       if (!this._sugAt || Date.now() - this._sugAt > 600000) {
@@ -395,32 +403,64 @@
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
-      // The menus, in order; anything not listed lands in the last one
+      // Essentials first; optional features under Extras, each with its on/off state. Anything not listed lands last.
+      const data = (this._settings && this._settings.data) || {};
+      const SWITCH = { clips: "clip_watch", camsec: "camera_security", nightwatch: "night_watch", away: "away_lights_on", bins: "bins_check",
+        rain: "rain_warnings", alexa: "alexa_skill", energy: "energy_insight", autobackup: "auto_backup", screen: "screen", updates: "update_checker",
+        party: "party_whole_house", safety: "critical_alerts", heating: "preheat", appliances: "appliance_announce", briefing: "briefings",
+        search: "search_hints", door: "faces", animals: "hutch_check" };
       const menus = [
-        ["voice", "mdi:account-voice", "Voice & sound", ["voice", "voicebackup", "quiet", "announce", "offers", "mutes", "briefing", "phone"]],
-        ["cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "drive"]],
-        ["security", "mdi:shield-home", "Security & safety", ["nightwatch", "safety", "health"]],
-        ["home", "mdi:home-automation", "Home & routines", ["shortcuts", "rules", "alarms", "autooff", "appliances", "animals", "rain", "bins", "away", "motion", "party", "heating", "energy"]],
-        ["brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "backup", "autobackup"]],
+        ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "voicebackup", "mutes", "phone"]],
+        ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
+        ["essentials", "brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
+        ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
+        ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins"]],
+        ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "rules", "alarms", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
       ];
-      const placed = new Set(menus.flatMap((m) => m[3]));
-      Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][3].push(id); });
-      const mine = menus.find((m) => m[3].includes(this._group));
+      const placed = new Set(menus.flatMap((m) => m[4]));
+      Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][4].push(id); });
+      const mine = menus.find((m) => m[4].includes(this._group));
       if (!this._openMenus) this._openMenus = new Set();
-      if (mine && this._menuFor !== this._group) { this._menuFor = this._group; if (!this._phone()) this._openMenus.add(mine[0]); }
-      const item = (id) => {
+      if (mine && this._menuFor !== this._group) { this._menuFor = this._group; if (!this._phone()) this._openMenus.add(mine[1]); }
+      const chip = (id) => SWITCH[id] && data[SWITCH[id]] !== undefined ? `<em class="onoff${data[SWITCH[id]] ? " on" : ""}">${data[SWITCH[id]] ? "ON" : "OFF"}</em>` : "";
+      const item = (id, sub2) => {
         const [icon, title, sub] = pages[id];
-        return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${sub ? `<i>${esc(sub)}</i>` : ""}</span></button>`;
+        return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${(sub2 || sub) ? `<i>${esc(sub2 || sub)}</i>` : ""}</span>${chip(id)}</button>`;
       };
-      this._$("side").innerHTML = `<div class="sh">SETTINGS</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>SET-UP WIZARD</button>` + menus.map(([mid, icon, title, ids]) => {
-        const list = ids.filter((id) => pages[id]);
-        if (!list.length) return "";
-        const open = this._openMenus.has(mid);
-        const here = mine && mine[0] === mid;
-        return `<div class="menu${open ? " open" : ""}${here ? " here" : ""}">
-          <button class="mh" data-act="menu" data-id="${mid}" aria-expanded="${open}"><ha-icon icon="${icon}"></ha-icon><span>${esc(title)}</span><u>${list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
-          <div class="mi">${list.map(item).join("")}</div></div>`;
-      }).join("") + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
+      const side = this._$("side");
+      if (!side.querySelector("#sfind")) {
+        side.innerHTML = `<div class="sh">SETTINGS</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>SET-UP WIZARD</button>
+          <label class="find sfind"><ha-icon icon="mdi:magnify"></ha-icon><input id="sfind" type="search" placeholder="Search settings…" autocomplete="off" value="${esc(this._sq || "")}"></label><div id="snav"></div>`;
+      }
+      const q = (this._sq || "").trim().toLowerCase();
+      let html;
+      if (q) {
+        // pages whose title or blurb match, then single settings whose label or description match
+        const labels = (this._settings && this._settings.labels) || {}, helpers = (this._settings && this._settings.helpers) || {};
+        const hit = (t) => String(t || "").toLowerCase().includes(q);
+        const pageHits = Object.keys(pages).filter((id) => hit(pages[id][1]) || hit(pages[id][2]));
+        const fieldHits = [];
+        for (const g of groups) for (const f of g.schema || []) {
+          if (hit(labels[f.name]) || hit(helpers[f.name])) fieldHits.push([g.id, labels[f.name] || f.name]);
+        }
+        html = (pageHits.map((id) => item(id)).join("") + fieldHits.slice(0, 30).map(([gid, label]) => `<button class="nav" data-act="group" data-id="${gid}"><ha-icon icon="mdi:tune-variant"></ha-icon><span><b>${esc(label)}</b><i>in ${esc(pages[gid] ? pages[gid][1] : gid)}</i></span></button>`).join(""))
+          || '<div class="e">NOTHING MATCHES · TRY ANOTHER WORD</div>';
+      } else {
+        let section = "";
+        html = menus.map(([sec, mid, icon, title, ids]) => {
+          const list = ids.filter((id) => pages[id]);
+          if (!list.length) return "";
+          const open = this._openMenus.has(mid);
+          const here = mine && mine[1] === mid;
+          const on = list.filter((id) => SWITCH[id] && data[SWITCH[id]]).length;
+          const head = sec !== section ? `<div class="ssec">${sec === "essentials" ? "ESSENTIALS" : "EXTRAS · OPTIONAL FEATURES"}</div>` : "";
+          section = sec;
+          return head + `<div class="menu${open ? " open" : ""}${here ? " here" : ""}">
+            <button class="mh" data-act="menu" data-id="${mid}" aria-expanded="${open}"><ha-icon icon="${icon}"></ha-icon><span>${esc(title)}</span><u>${sec === "extras" ? `${on} ON` : list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
+            <div class="mi">${list.map((id) => item(id)).join("")}</div></div>`;
+        }).join("");
+      }
+      this._$("snav").innerHTML = html + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
 
     async _loadMemories() {
@@ -1643,6 +1683,10 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
    scrolls when it must, without a visible scroll bar. Settings and the timeline keep theirs. */
 /* Overview and Mind: fixed lanes, each with one job, the same height, the last card stretching to the bottom */
 .lanes{display:grid;gap:16px;margin-top:16px;align-items:stretch}
+.warnbar{display:flex;align-items:center;gap:12px;margin-top:14px;padding:11px 16px;border-radius:16px;border:1px solid rgba(255,190,85,.45);background:linear-gradient(90deg,rgba(255,180,60,.12),rgba(255,180,60,.03))}
+.warnbar ha-icon{--mdc-icon-size:22px;color:#ffbe55;flex:none} .warnbar b{font-weight:500;font-size:13.5px;color:#ffe2b0}
+.warnbar small{display:block;margin-top:2px;font-size:11px;color:rgba(255,226,176,.7)}
+#mp>.warnbar{margin:0 0 14px}
 .ov3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .mp2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
 .lane{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -1732,6 +1776,13 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .nav span{display:flex;flex-direction:column;min-width:0} .nav b{font-weight:500;font-size:13.5px;color:#e6f5fa}
 .nav i{font-style:normal;font-size:10.5px;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav:hover{background:rgba(0,255,247,.05)}
+.nav span{flex:1}
+.onoff{flex:none;font-style:normal;font-size:8.5px;font-weight:700;letter-spacing:.14em;padding:2px 7px;border-radius:8px;color:rgba(150,220,235,.45);border:1px solid rgba(150,220,235,.18)}
+.onoff.on{color:#7fefff;border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.08)}
+.ssec{margin:12px 10px 4px;font-size:9px;font-weight:700;letter-spacing:.26em;color:rgba(127,239,255,.55)}
+.sfind{display:flex;align-items:center;gap:8px;margin:2px 0 6px;padding:7px 11px;border-radius:12px;border:1px solid rgba(0,255,247,.25);background:rgba(0,255,247,.04)}
+.sfind input{flex:1;min-width:0;background:none;border:none;outline:none} .sfind:focus-within{border-color:rgba(0,255,247,.6)}
+#snav{display:flex;flex-direction:column;gap:4px}
 .nav.on{border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.09);box-shadow:0 0 12px rgba(0,255,247,.15)} .nav.on ha-icon{color:#00fff7}
 .note{margin-top:8px;padding:10px;border-radius:10px;font-size:11px;color:#ffbe55;border:1px dashed rgba(255,190,85,.4)}
 .body{padding:20px 22px;min-height:400px}

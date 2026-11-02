@@ -190,7 +190,9 @@ class Party:
             style = self.options.get(CONF_PARTY_STYLE) or DEFAULT_PARTY_STYLE
         if style not in STYLES:
             style = DEFAULT_PARTY_STYLE
-        lights = [e for e in (lights or self.lights_for()) if e.startswith("light.") and self.hass.states.get(e)]
+        from .never import allowed
+
+        lights = allowed(self.hass, [e for e in (lights or self.lights_for()) if e.startswith("light.") and self.hass.states.get(e)])
         if not lights:
             return {"error": "No lights to use. Choose show lights in Sentient's settings, or say which room (or 'everywhere')."}
         if minutes is None:

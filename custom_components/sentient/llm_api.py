@@ -1110,6 +1110,10 @@ class ScenesTool(_Tool):
             (st for st in scenes if low in st.name.lower()), None
         )
         if match:
+            from .never import names, touches
+
+            if hit := touches(hass, match.attributes.get("entity_id") or []):
+                return {"error": f"That scene would change {names(hass, hit)}, which is on the never-touch list"}
             await hass.services.async_call("scene", "turn_on", {"entity_id": match.entity_id}, blocking=True,
                                            context=llm_context.context)
             return {"scene_on": match.name}
@@ -1363,6 +1367,18 @@ class SentientAPI(llm.API):
                 "The outside temperature isn't known right now (the weather hasn't updated). If asked, say so: "
                 "never give a room or thermostat temperature as the weather."
             )
+        if rt.ai.failing or rt.ai.capped:
+            lines.append(
+                "The house's background AI (camera looks, remarks, clip watching) is "
+                + ("not answering right now" if rt.ai.failing else "out of calls for today")
+                + ": if asked to look at a camera or for anything that needs it, say plainly it's limited right now "
+                "and try again later — don't pretend to have looked."
+            )
+        if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:
+            from .never import names
+
+            lines.append("Never switch, dim or change these, even if asked — say they have to be changed by hand: "
+                         + names(self.hass, never) + ". You may still report on them.")
         if rules := (opts.get(CONF_HOUSE_RULES) or "").strip():
             lines.append(f"House rules you must always follow:\n{rules}")
         room = self._room_of_device(llm_context.device_id)

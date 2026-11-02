@@ -638,8 +638,10 @@ class Learner:
             self.hass.async_create_task(self._async_offer(local))
 
     async def _async_do(self, routine: Routine | Link) -> None:
+        from .never import blocked
+
         state = self.hass.states.get(routine.entity_id)
-        if state is None or state.state == routine.state:
+        if state is None or state.state == routine.state or blocked(self.hass, routine.entity_id):
             return
         domain = routine.entity_id.split(".", 1)[0]
         if domain == "cover":

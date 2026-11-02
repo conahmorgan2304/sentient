@@ -65,6 +65,7 @@ from .const import (
     CONF_BINS_TIME,
     CONF_BATTERY_FORECAST,
     CONF_AUTO_BACKUP,
+    CONF_NEVER_ENTITIES,
     CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
     CONF_RAIN,
@@ -227,6 +228,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
         CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
+    ]),
+    ("never", "Never touch", "mdi:hand-back-left-off-outline", "Devices Sentient must never switch, dim or change by itself — not in rules, routines, offers, auto-off, away or motion lights, light shows, the heating or by voice. It can still read them and talk about them.", [
+        CONF_NEVER_ENTITIES,
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,

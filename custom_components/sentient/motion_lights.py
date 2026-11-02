@@ -344,6 +344,10 @@ class MotionLights:
 
     @callback
     def _turn(self, rule: MotionRule, on: bool, brightness: int | None = None) -> None:
+        from .never import blocked
+
+        if blocked(self.hass, rule.light):
+            return  # on the "never touch" list
         context = Context()
         self._ours.setdefault(rule.light, set()).add(context.id)
         self._sent[rule.light] = dt_util.utcnow()

@@ -394,6 +394,10 @@ class Heating:
                 self.hass.async_create_task(self._async_boost(entity_id, st, comfort, wake, local))
 
     async def _async_boost(self, entity_id: str, st: State, comfort: float, wake: int, local: datetime) -> None:
+        from .never import blocked
+
+        if blocked(self.hass, entity_id):
+            return  # on the never-touch list
         until = local.replace(hour=wake // 60, minute=wake % 60, second=0, microsecond=0) + RESTORE_AFTER
         self._boosted[entity_id] = {
             "preset": st.attributes.get("preset_mode"),

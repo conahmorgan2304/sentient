@@ -162,6 +162,10 @@ class Shortcuts:
             return {"routine": item.name, "error": "It needs to know: " + "; ".join(f"{k} ({wanted[k]})" for k in missing),
                     "needs": {k: wanted[k] for k in missing}}
         notes = self.checks(item)  # before the actions, so "still on" means before it ran
+        from .never import names, touches
+
+        if hit := touches(self.hass, item.actions):
+            return {"routine": item.name, "error": f"Not run: it would change {names(self.hass, hit)}, which is on the never-touch list"}
         if item.actions:
             try:
                 sequence = await async_validate_actions_config(self.hass, cv.SCRIPT_SCHEMA(item.actions))
@@ -185,6 +189,11 @@ class Shortcuts:
 async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], name: str, context: Context | None = None) -> None:
     """Run a list of ordinary Home Assistant actions (as built in HA's action editor)."""
     if not actions:
+        return
+    from .never import names, touches
+
+    if hit := touches(hass, actions):
+        _LOGGER.warning("Sentient: %s not run — it would change %s, which is on the never-touch list", name, names(hass, hit))
         return
     sequence = await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(actions))
     script = Script(hass, sequence, f"Sentient: {name}", DOMAIN, running_description="actions")
