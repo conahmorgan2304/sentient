@@ -48,9 +48,13 @@ class HouseHealth:
         self._checked: dict[str, datetime] = {}  # entity -> when its history was last looked at
         self._went_off: dict[str, datetime] = {}  # entity -> when it last lost a real reading (from history)
         self._checking = False
+        self._started = dt_util.utcnow()
+        # names already reported offline before a restart (from the timeline); those are reported straight away
+        self.was_offline_before: Callable[[], set[str]] = lambda: set()
 
     @callback
     def async_start(self) -> None:
+        self._started = dt_util.utcnow()
         self._unsub = async_track_time_interval(self.hass, self._tick, CHECK_EVERY)
         self.hass.loop.call_soon(self.async_check)
 
@@ -110,12 +114,16 @@ class HouseHealth:
                     unverified.extend(stale)
                     if device_id not in was_offline:  # one already reported stays reported while it's rechecked
                         continue
-            if now - since < OFFLINE_AFTER:
-                continue
             device = dev_reg.async_get(device_id)
             if device is None or device.disabled_by:
                 continue
             name = device.name_by_user or device.name or entity_ids[0]
+            if not link and device_id not in was_offline and name not in self.was_offline_before():
+                # just after a restart, integrations are still reconnecting: give each device the usual ten
+                # minutes from start-up, unless it was already offline before the restart
+                since = max(since, self._started)
+            if now - since < OFFLINE_AFTER:
+                continue
             offline.append({"kind": "offline", "name": name, "since": since.isoformat(), "device_id": device_id,
                             "via": device.via_device_id})
 
