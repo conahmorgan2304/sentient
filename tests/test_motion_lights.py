@@ -162,3 +162,17 @@ async def test_lux_sensor_and_voice_tool(hass: HomeAssistant, freezer) -> None:
     hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"})
     await _motion(hass, True)
     assert len(on) == 1
+
+
+async def test_stayed_off_logged_once_not_every_time(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass, freezer, 23, 30)
+    async_mock_service(hass, "light", "turn_on")
+    seen = []
+    hass.bus.async_listen("sentient_motion_light", lambda e: seen.append(e.data["what"]))
+    rule = entry.runtime_data.motion_lights.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"]})
+    for _ in range(3):
+        await _motion(hass, True)
+        await _motion(hass, False)
+        freezer.tick(timedelta(minutes=5))
+    assert rule.last == "stayed off: quiet hours"
+    assert seen.count("stayed off: quiet hours") == 1

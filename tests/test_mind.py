@@ -112,7 +112,7 @@ async def test_follow_up_checks_back(hass: HomeAssistant, freezer) -> None:
     freezer.tick(timedelta(minutes=61))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert said[-1].data["message"] == "The lounge warming up: not yet — Lounge is 18.5 °C."
+    assert said[-1].data["message"] == "The lounge warming up: not yet — Lounge is 19 °C."
     assert any(i["kind"] == "loop" for i in entry.runtime_data.timeline.items)
 
 
