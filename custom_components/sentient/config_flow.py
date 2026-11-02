@@ -206,6 +206,13 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
+    CONF_SEARCH_HINTS,
+    CONF_WEB_SEARCH,
+    CONF_SEARXNG_URL,
+    CONF_ALEXA_SKILL,
+    CONF_ALEXA_WAIT,
+    CONF_ALEXA_LATE,
+    DEFAULT_ALEXA_WAIT,
     CURRENCIES,
     CONF_CRITICAL_IGNORE,
     CONF_CRITICAL_EXTRA,
@@ -447,6 +454,16 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_ENERGY_CURRENCY, **d(CONF_ENERGY_CURRENCY)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=CURRENCIES, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)
             ),
+            vol.Required(CONF_SEARCH_HINTS, **d(CONF_SEARCH_HINTS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_WEB_SEARCH, **d(CONF_WEB_SEARCH, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_SEARXNG_URL, **d(CONF_SEARXNG_URL)): selector.TextSelector(
+                selector.TextSelectorConfig(type=selector.TextSelectorType.URL)
+            ),
+            vol.Required(CONF_ALEXA_SKILL, **d(CONF_ALEXA_SKILL, False)): selector.BooleanSelector(),
+            vol.Required(CONF_ALEXA_WAIT, **d(CONF_ALEXA_WAIT, DEFAULT_ALEXA_WAIT)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=2, max=7, step=0.5, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_ALEXA_LATE, **d(CONF_ALEXA_LATE, True)): selector.BooleanSelector(),
             vol.Optional(CONF_CRITICAL_EXTRA, **d(CONF_CRITICAL_EXTRA, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["binary_sensor", "input_boolean"], multiple=True)
             ),

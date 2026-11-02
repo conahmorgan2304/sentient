@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from dataclasses import replace
 import json
 from typing import Any, Literal
@@ -27,7 +28,7 @@ from .voice_actions import speech_attempt, BACKUP_TIMEOUT
 from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, is_conversation_end, YES, NO, UNDO, normalise, spoken_text)
 
 from . import SentientConfigEntry
-from .const import CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_BACKUP_AGENT, DOMAIN, CONF_PERSONA, DEFAULT_PERSONA
+from .const import CONF_ALEXA_LATE, CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_VOICE_AGENT, DEFAULT_ALEXA_WAIT, DEFAULT_BACKUP_AGENT, DOMAIN, CONF_PERSONA, DEFAULT_PERSONA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ NOT_ANSWERING = "The AI isn't answering right now, so I can only do simple thing
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([BackedUpAgent(entry)])
+    async_add_entities([BackedUpAgent(entry), AlexaAgent(entry)])
 
 
 class BackedUpAgent(conversation.ConversationEntity):
@@ -402,3 +403,108 @@ class BackedUpAgent(conversation.ConversationEntity):
         return conversation.ConversationResult(
             response=response, conversation_id=result.conversation_id if result else user_input.conversation_id
         )
+
+
+# ----- asking through Alexa ------------------------------------------------------------------------
+ALEXA_PROMPT = (
+    "\nThis question was asked through an Amazon Echo (an Alexa skill): answer in one or two short spoken "
+    "sentences, show nothing on screens, and keep it quick — Alexa only waits a few seconds."
+)
+_SKILL_SUFFIX = re.compile(r"\.?\s*device_id:\s*\S+\s*$", re.I)
+CALLED_WITHIN = 20  # seconds: the Echo spoken to most recently, if this recent, is the one asking
+
+
+def calling_echo(hass: HomeAssistant, within: float = CALLED_WITHIN) -> str | None:
+    """The Echo someone has just spoken to (Alexa Media Player marks it 'last called'), or None."""
+    import time
+
+    best: tuple[float, str] | None = None
+    for st in hass.states.async_all("media_player"):
+        if not st.attributes.get("last_called"):
+            continue
+        try:
+            at = float(st.attributes.get("last_called_timestamp")) / 1000
+        except (TypeError, ValueError):
+            continue
+        if time.time() - at <= within and (best is None or at > best[0]):
+            best = (at, st.entity_id)
+    return best[1] if best else None
+
+
+class AlexaAgent(BackedUpAgent):
+    """The same brain for questions asked through an Alexa skill ("Alexa, ask Sentinel how's the house?").
+
+    Point the skill (for example the community "Home Assistant Assist" skill) at this agent. It knows which
+    Echo was spoken to, so "in here" means that room; answers are kept short; and when the AI needs longer
+    than Alexa will wait, it says it'll get back to you and then says the answer on that Echo.
+    """
+
+    _attr_translation_key = "alexa"
+    _attr_icon = "mdi:amazon-alexa"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry)
+        self._attr_unique_id = f"{entry.entry_id}_alexa"
+        self.late: dict[str, Any] = {}
+
+    @property
+    def main_agent(self) -> str | None:
+        from homeassistant.helpers import entity_registry as er
+
+        reg = er.async_get(self.hass)
+        opts = self._options()
+        for agent in (opts.get(CONF_VOICE_AGENT), opts.get(CONF_CHAT_AGENT)):
+            entry = reg.async_get(agent) if agent else None
+            if agent and agent != self.entity_id and not (entry and entry.platform == DOMAIN):
+                return agent  # never Sentient's own "with backup" agent: no going round twice
+        return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {**super().extra_state_attributes, "enabled": bool(self._options().get(CONF_ALEXA_SKILL)),
+                "last_late_answer": self.late or None}
+
+    def _plain(self, user_input, text: str) -> conversation.ConversationResult:
+        response = intent.IntentResponse(language=user_input.language)
+        response.async_set_speech(text)
+        return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
+
+    def _device_of(self, entity_id: str | None) -> str | None:
+        from homeassistant.helpers import entity_registry as er
+
+        entry = er.async_get(self.hass).async_get(entity_id) if entity_id else None
+        return entry.device_id if entry else None
+
+    async def async_process(self, user_input):
+        opts = self._options()
+        if not opts.get(CONF_ALEXA_SKILL):
+            return self._plain(user_input, "Asking through Alexa is switched off in Sentient's settings.")
+        text = _SKILL_SUFFIX.sub("", user_input.text or "").strip()
+        echo = calling_echo(self.hass)
+        request = replace(
+            user_input, text=text, device_id=user_input.device_id or self._device_of(echo),
+            extra_system_prompt=(user_input.extra_system_prompt or "") + ALEXA_PROMPT,
+        )
+        task = self.hass.async_create_task(super().async_process(request), "sentient alexa answer")
+        wait = float(opts.get(CONF_ALEXA_WAIT, DEFAULT_ALEXA_WAIT) or DEFAULT_ALEXA_WAIT)
+        done, _ = await asyncio.wait({task}, timeout=wait)
+        if task in done:
+            return task.result()
+        if echo and opts.get(CONF_ALEXA_LATE, True):
+            task.add_done_callback(lambda t: self.hass.async_create_task(self._say_late(t, echo, text)))
+            return self._plain(user_input, "Give me a moment, I'll tell you when I've got it.")
+        task.add_done_callback(lambda t: t.cancelled() or t.exception())  # let it finish quietly
+        return self._plain(user_input, "That's taking a little while. Ask me again in a moment.")
+
+    async def _say_late(self, task: asyncio.Task, echo: str, asked: str) -> None:
+        from homeassistant.util import dt as dt_util
+
+        if task.cancelled() or task.exception() is not None:
+            return
+        answer = spoken_text(task.result().response)
+        rt = getattr(self._entry, "runtime_data", None)
+        if not answer or rt is None:
+            return
+        await rt.speech.async_say(answer, targets=[echo], source="alexa:reply")
+        self.late = {"asked": asked[:200], "said": answer[:300], "on": echo, "time": dt_util.utcnow().isoformat()}
+        self.async_write_ha_state()

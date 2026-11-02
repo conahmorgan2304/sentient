@@ -67,7 +67,8 @@ DELIVERY_TIMEOUT = 60
 _BUSY_STATES = {"listening", "processing", "responding"}
 _START_CONVERSATION = 2  # AssistSatelliteEntityFeature.START_CONVERSATION
 # what still goes to the Echos when they're kept for important things only
-IMPORTANT_SOURCES = ("alarm:", "alarm test", "reminder:", "critical")
+IMPORTANT_SOURCES = ("alarm:", "alarm test", "reminder:", "critical", "alexa:")
+REPLY_SOURCES = ("alexa:",)  # answers to someone who just asked: never held for quiet hours or a hush
 
 
 def important(source: str | None) -> bool:
@@ -319,7 +320,7 @@ class SpeechRouter:
         """Shared rules; returns a held result, or None when it may speak."""
         if not text:
             return self._held("empty", text, source)
-        if priority != PRIORITY_URGENT:
+        if priority != PRIORITY_URGENT and not str(source or "").startswith(REPLY_SOURCES):
             if self.mutes is not None and (muted := self.mutes.text_muted(text)):
                 return self._held(f"muted:{muted}", text, source)
             feedback = getattr(self.mutes, "feedback", None) if self.mutes is not None else None

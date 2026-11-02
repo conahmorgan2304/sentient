@@ -197,7 +197,7 @@
       const sug = this._sug || [];
       R("sug").hidden = !sug.length;
       R("sug").innerHTML = sug.length ? this._h("SUGGESTIONS", `${sug.length}`) + sug.map((s) => `<div class="r"><ha-icon icon="mdi:lightbulb-auto-outline"></ha-icon><b class="wrap">${esc(s.text)}</b>
-          <button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button><a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
+          ${s.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">HOW</a>` : `<button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button>`}<a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
 
       // clips watched as they happened (refreshed every two minutes; hidden when off and empty)
       if (!this._clipAt || Date.now() - this._clipAt > 120000) {

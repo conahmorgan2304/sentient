@@ -299,6 +299,12 @@
           "energy_insight": "Analyse énergétique",
           "energy_price": "Prix de l’électricité",
           "energy_currency": "Devise",
+          "search_hints": "Signaler les outils de recherche à la voix",
+          "web_search": "Recherche web de Sentient",
+          "searxng_url": "Adresse SearXNG",
+          "alexa_skill": "Répondre aux questions posées via Alexa",
+          "alexa_wait": "Attente maximale avant qu'Alexa abandonne",
+          "alexa_late_answers": "Dire les réponses lentes sur cet Echo",
           "left_open_minutes": "Signaler les portes et fenêtres restées ouvertes après",
           "left_open_ignore": "Ne pas signaler ces éléments",
           "leaving_check": "Vérifier lorsque tout le monde sort",
@@ -465,6 +471,12 @@
           "energy_insight": "Compare la consommation du jour des appareils du tableau de bord Énergie avec celle de la semaine passée. Affiche une carte Énergie, une section dans les résumés, un outil vocal et des observations sur les consommations inhabituelles. Désactivé : masque et arrête ces fonctions.",
           "energy_price": "Facultatif : tarif unitaire en centimes par kWh, pour afficher le coût du jour.",
           "energy_currency": "Devise des coûts. Vide : la devise de Home Assistant.",
+          "search_hints": "Quand Voice Satellite LLM Tools (ou la recherche de Sentient) est installé, la voix sait que les outils de recherche existent.",
+          "web_search": "Recherche web vocale via votre SearXNG. Désactivée par défaut.",
+          "searxng_url": "Par exemple http://localhost:8080. SearXNG doit autoriser le format json.",
+          "alexa_skill": "Pointez une skill Alexa vers l'agent « Pour Alexa ». Désactivé par défaut.",
+          "alexa_wait": "Alexa raccroche après environ 8 secondes.",
+          "alexa_late_answers": "Si l'IA est lente, la réponse est dite sur le même Echo quand elle est prête.",
           "left_open_minutes": "Annonce une fois, puis toutes les demi-heures tant que l’ouverture persiste, en respectant les périodes de silence. 0 désactive cette fonction.",
           "leaving_check": "Lorsque la dernière personne quitte le domicile, toute ouverture ou serrure déverrouillée est signalée dans la chronologie et sur les téléphones (« Resté ouvert »).",
           "critical_extra": "Autres éléments devant toujours déclencher une annonce partout lorsqu’ils s’activent, par exemple un bouton panique ou un capteur de congélateur trop chaud. Le déclenchement d’une centrale d’alarme est toujours inclus.",
@@ -672,6 +684,9 @@
     "conversation": {
       "voice": {
         "name": "With backup"
+      },
+      "alexa": {
+        "name": "Pour Alexa"
       }
     }
   },
