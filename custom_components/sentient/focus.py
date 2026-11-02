@@ -16,6 +16,8 @@ import re
 
 # the words of the request being answered (set by the "with backup" agent)
 current_request: ContextVar[str | None] = ContextVar("sentient_current_request", default=None)
+# set while answering through the Alexa skill (the reply is what the Echo says)
+via_alexa: ContextVar[bool] = ContextVar("sentient_via_alexa", default=False)
 
 ALWAYS = {
     "sentient_session", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_recall",
@@ -45,6 +47,10 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_manual"]),
         ("goals", r"\bgoals?\b|\baim\b|target|use less|cut (?:down|back)|reduce|save (?:energy|money)|how are we doing",
          ["sentient_goal", "sentient_energy", "sentient_heating"]),
+        ("books", r"\bbook|read (?:to me|me|my|the|some|for)|carry on (?:reading|with)|chapter|audiobook|story|bedtime",
+         ["sentient_book"]),
+        ("recipes", r"recipe|cook|bake|make (?:the|a|some)|ingredients|next step|step|what'?s next|repeat that|for dinner|for tea",
+         ["sentient_recipe"]),
         ("house", r"\bhouse\b|\bhome\b|happen|while i was|today|this week|check|anything|how'?s|status|announce|"
                   r"tell (?:the|every)|learn",
          ["sentient_house_check", "sentient_weekly_report", "sentient_timeline", "sentient_announce",

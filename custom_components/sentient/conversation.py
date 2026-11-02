@@ -438,7 +438,8 @@ class BackedUpAgent(conversation.ConversationEntity):
 # ----- asking through Alexa ------------------------------------------------------------------------
 ALEXA_PROMPT = (
     "\nThis question was asked through an Amazon Echo (an Alexa skill): answer in one or two short spoken "
-    "sentences, show nothing on screens, and keep it quick — Alexa only waits a few seconds."
+    "sentences, show nothing on screens, and keep it quick — Alexa only waits a few seconds. The one exception: "
+    "when a tool gives you read_aloud text (a book passage), say that text in full."
 )
 _SKILL_SUFFIX = re.compile(r"\.?\s*device_id:\s*\S+\s*$", re.I)
 CALLED_WITHIN = 20  # seconds: the Echo spoken to most recently, if this recent, is the one asking
@@ -515,7 +516,13 @@ class AlexaAgent(BackedUpAgent):
             user_input, text=text, device_id=user_input.device_id or self._device_of(echo),
             extra_system_prompt=(user_input.extra_system_prompt or "") + ALEXA_PROMPT,
         )
-        task = self.hass.async_create_task(super().async_process(request), "sentient alexa answer")
+        from .focus import via_alexa
+
+        token = via_alexa.set(True)
+        try:
+            task = self.hass.async_create_task(super().async_process(request), "sentient alexa answer")
+        finally:
+            via_alexa.reset(token)
         wait = float(opts.get(CONF_ALEXA_WAIT, DEFAULT_ALEXA_WAIT) or DEFAULT_ALEXA_WAIT)
         done, _ = await asyncio.wait({task}, timeout=wait)
         if task in done:

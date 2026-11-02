@@ -604,6 +604,114 @@ class GoalTool(_Tool):
         return await rt.goals.async_set(a["title"], entity, a["aim"], a["days"])
 
 
+def _speaker_here(hass: HomeAssistant, rt: Any, llm_context: llm.LLMContext, named: str | None = None) -> str | None:
+    """The speaker someone is talking to (or the one they named)."""
+    if named:
+        from .watches import resolve_entity
+
+        for domain in ("assist_satellite", "media_player"):
+            if (e := resolve_entity(hass, named, domain)) and e.startswith(domain + "."):
+                return e
+    if not llm_context.device_id:
+        return None
+    ents = er.async_get(hass)
+    found = [e.entity_id for e in er.async_entries_for_device(ents, llm_context.device_id)
+             if e.domain in ("assist_satellite", "media_player")]
+    return next((e for e in found if e.startswith("assist_satellite.")), None) or (found[0] if found else None)
+
+
+class BookTool(_Tool):
+    name = "sentient_book"
+    description = (
+        "Audiobooks and ebooks read aloud, picking up where this room left off — 'read my book', 'carry on with the "
+        "book', 'read The Hobbit', 'read for 20 minutes', 'stop reading', 'next chapter', 'go back a bit', 'what chapter "
+        "am I on?', 'what happened last time?', 'what books are there?'. action: read (title optional — the last book on "
+        "this speaker; minutes optional), stop, next_chapter, previous_chapter, back, restart, where, recap, list. "
+        "'speaker' only if they name another room."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["read", "stop", "next_chapter", "previous_chapter", "back", "restart", "where", "recap", "list"]),
+        vol.Optional("title"): cv.string, vol.Optional("minutes"): vol.Coerce(float), vol.Optional("speaker"): cv.string,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "books", None) is None or not rt.books.enabled:
+            return {"error": "books are switched off"}
+        a = tool_input.tool_args
+        if a["action"] == "list":
+            return {"books": [{"title": b["name"], "kind": b["kind"]} for b in await rt.books.async_books()],
+                    "bookmarks": rt.books.listing()}
+        speaker = _speaker_here(hass, rt, llm_context, a.get("speaker"))
+        if speaker is None:
+            return {"error": "which room's speaker should it be on?"}
+        from .focus import via_alexa
+
+        echo = via_alexa.get() or rt.books.is_echo(speaker)
+        if a["action"] == "read":
+            out = await rt.books.async_read(a.get("title"), speaker, a.get("minutes"), via_reply=echo)
+            if echo and "read_aloud" not in out and "error" not in out:
+                out["warning"] = "Echos cut long speech short"
+            return out
+        if a["action"] == "stop":
+            return await rt.books.async_stop_reading(speaker)
+        if a["action"] == "where":
+            book = (rt.books.reading.get(speaker) or {}).get("book") or rt.books.last.get(speaker)
+            return {"book": book, "place": (rt.books.place(book, speaker) or {}).get("where")} if book else {"error": "no book on this speaker yet"}
+        if a["action"] == "recap":
+            book = a.get("title") or rt.books.last.get(speaker)
+            text = await rt.books.recent_text(book, speaker) if book else ""
+            if not text:
+                return {"error": "nothing read yet to recap"}
+            from .ai import AIUnavailable
+
+            rt.ai.spend("book recap", force=True)
+            try:
+                resp = await rt.ai.async_call({"task_name": "sentient book recap", "instructions":
+                                               "In two or three spoken sentences, remind the listener what happened in this "
+                                               "part of the story, without spoiling anything after it:\n\n" + text[:6000]})
+            except AIUnavailable as err:
+                return {"error": str(err)}
+            return {"book": book, "recap": str((resp or {}).get("data") or "")}
+        return await rt.books.async_move(speaker, a["action"])
+
+
+class RecipeTool(_Tool):
+    name = "sentient_recipe"
+    description = (
+        "Recipes and step-by-step cooking — 'let's make the lasagne', 'what can I make with chicken?', 'next', 'repeat "
+        "that', 'go back', 'what's after this?', 'go to step 5', 'make it for 6', 'add the ingredients to the shopping "
+        "list', 'stop cooking'. action: find (query), cook (query; servings optional), next, previous, repeat, peek, "
+        "goto (step), shopping, stop. Read each step as given; when a step has timer_minutes, offer the speaker's own timer."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["find", "cook", "next", "previous", "repeat", "peek", "goto", "shopping", "stop"]),
+        vol.Optional("query"): cv.string, vol.Optional("servings"): vol.Coerce(float), vol.Optional("step"): vol.Coerce(int),
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "recipes", None) is None or not rt.recipes.enabled:
+            return {"error": "recipes are switched off"}
+        a = tool_input.tool_args
+        if a["action"] == "find":
+            return {"recipes": [m["name"] for m in await rt.recipes.async_search(a.get("query") or "")]}
+        speaker = _speaker_here(hass, rt, llm_context) or f"device:{llm_context.device_id or 'page'}"
+        if a["action"] == "cook":
+            if not a.get("query"):
+                return {"error": "which recipe?"}
+            return await rt.recipes.async_cook(a["query"], speaker, a.get("servings"))
+        if a["action"] == "shopping":
+            return await rt.recipes.async_shopping(speaker)
+        if a["action"] == "stop":
+            return rt.recipes.stop(speaker)
+        return rt.recipes.move(speaker, a["action"], a.get("step"))
+
+
 class AskLaterTool(_Tool):
     name = "sentient_ask_later"
     description = (
@@ -1401,7 +1509,9 @@ class SentientAPI(llm.API):
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
-                 *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else [])]
+                 *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else []),
+                 *([BookTool()] if rt0 is not None and rt0.options.get("books") else []),
+                 *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else [])]
         rt = _runtime(self.hass)
         if rt is not None and rt.options.get("focused_tools") and getattr(rt, "focus", None) is not None:
             from .focus import current_request
