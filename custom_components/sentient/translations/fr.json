@@ -39,6 +39,8 @@
           "notice_entities": "Éléments à surveiller",
           "remark_repeat_hours": "Ne pas répéter une remarque pendant",
           "chattiness": "Niveau de bavardage",
+          "conversation_style": "Façon de parler",
+          "carry_on_minutes": "Poursuivre une conversation pendant",
           "house_rules": "Règles de la maison",
           "learn_entities": "Apprendre les routines à partir de",
           "link_triggers": "Apprendre également ce qui suit ces événements",
@@ -132,6 +134,8 @@
           "notice_entities": "Lorsque ces éléments changent, l’IA décide s’il faut annoncer quelque chose ou poser une question : lave-linge, portes, météo, poubelles, etc.",
           "remark_repeat_hours": "La même remarque n'est pas répétée pendant cette durée. 0 : sans limite.",
           "chattiness": "Limite les remarques par heure : discret 2, normal 4, bavard 8. Désactivé : aucune observation.",
+          "conversation_style": "Bref : des réponses courtes et directes. Naturel : les commandes restent courtes, mais les questions et la discussion ont quelques phrases naturelles et une question de relance quand une personne en poserait une, ce qui garde le micro à l'écoute.",
+          "carry_on_minutes": "Redire le mot d'activation peu après avoir parlé poursuit la même conversation sur le même appareil, pour que « et à l'étage ? » ait encore un sens. 0 désactive ; Home Assistant oublie une conversation après cinq minutes sans échange.",
           "house_rules": "Instructions en langage naturel que toutes les voix doivent respecter, une par ligne, par exemple « Ne jamais dire que la maison est vide ».",
           "learn_entities": "Lumières, interrupteurs, ventilateurs et volets actionnés manuellement. Chaque nuit, les deux dernières semaines sont analysées pour détecter les habitudes horaires et les actions qui suivent un événement.",
           "link_triggers": "Facultatif : événements supplémentaires pouvant déclencher une habitude (téléviseur allumé, capteur de lit…). Les portes, fenêtres et éclairages appris sont toujours pris en compte.",
@@ -244,6 +248,8 @@
           "notice_entities": "Éléments à surveiller",
           "remark_repeat_hours": "Ne pas répéter une remarque pendant",
           "chattiness": "Niveau de bavardage",
+          "conversation_style": "Façon de parler",
+          "carry_on_minutes": "Poursuivre une conversation pendant",
           "house_rules": "Règles de la maison",
           "learn_entities": "Apprendre les routines à partir de",
           "link_triggers": "Apprendre également ce qui suit ces événements",
@@ -420,6 +426,8 @@
           "notice_entities": "Lorsque ces éléments changent, l’IA décide s’il faut annoncer quelque chose ou poser une question : lave-linge, portes, météo, poubelles, etc.",
           "remark_repeat_hours": "La même remarque n'est pas répétée pendant cette durée. 0 : sans limite.",
           "chattiness": "Limite les remarques par heure : discret 2, normal 4, bavard 8. Désactivé : aucune observation.",
+          "conversation_style": "Bref : des réponses courtes et directes. Naturel : les commandes restent courtes, mais les questions et la discussion ont quelques phrases naturelles et une question de relance quand une personne en poserait une, ce qui garde le micro à l'écoute.",
+          "carry_on_minutes": "Redire le mot d'activation peu après avoir parlé poursuit la même conversation sur le même appareil, pour que « et à l'étage ? » ait encore un sens. 0 désactive ; Home Assistant oublie une conversation après cinq minutes sans échange.",
           "house_rules": "Instructions en langage naturel que toutes les voix doivent respecter, une par ligne, par exemple « Ne jamais dire que la maison est vide ».",
           "learn_entities": "Lumières, interrupteurs, ventilateurs et volets actionnés manuellement. Chaque nuit, les deux dernières semaines sont analysées pour détecter les habitudes horaires et les actions qui suivent un événement.",
           "link_triggers": "Facultatif : événements supplémentaires pouvant déclencher une habitude (téléviseur allumé, capteur de lit…). Les portes, fenêtres et éclairages appris sont toujours pris en compte.",
@@ -830,6 +838,12 @@
       "options": {
         "door": "At the door",
         "reminders": "Reminders"
+      }
+    },
+    "conversation_style": {
+      "options": {
+        "brief": "Bref",
+        "natural": "Naturel"
       }
     }
   },

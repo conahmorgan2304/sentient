@@ -152,6 +152,12 @@ from .const import (
     DEFAULT_SUGGEST_ROUTINES,
     CHATTINESS_LIMITS,
     CONF_CHATTINESS,
+    CONF_TALK_STYLE,
+    TALK_STYLES,
+    DEFAULT_TALK_STYLE,
+    CONF_CARRY_ON_MINUTES,
+    DEFAULT_CARRY_ON_MINUTES,
+    MAX_CARRY_ON_MINUTES,
     CONF_HOUSE_RULES,
     CONF_NOTICE_ENTITIES,
     DEFAULT_CHATTINESS,
@@ -506,6 +512,12 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_CHATTINESS, **d(CONF_CHATTINESS, DEFAULT_CHATTINESS)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(CHATTINESS_LIMITS), translation_key="chattiness")
+            ),
+            vol.Required(CONF_TALK_STYLE, **d(CONF_TALK_STYLE, DEFAULT_TALK_STYLE)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=TALK_STYLES, translation_key="conversation_style")
+            ),
+            vol.Required(CONF_CARRY_ON_MINUTES, **d(CONF_CARRY_ON_MINUTES, DEFAULT_CARRY_ON_MINUTES)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=MAX_CARRY_ON_MINUTES, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.SLIDER)
             ),
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)

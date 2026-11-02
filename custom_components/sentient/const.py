@@ -63,6 +63,12 @@ CONF_APPLIANCE_ANNOUNCE = "appliance_announce"
 CONF_APPLIANCE_WATTS = "appliance_watts"
 CONF_NOTICE_ENTITIES = "notice_entities"
 CONF_CHATTINESS = "chattiness"
+CONF_TALK_STYLE = "conversation_style"  # brief / natural
+TALK_STYLES = ["brief", "natural"]
+DEFAULT_TALK_STYLE = "brief"
+CONF_CARRY_ON_MINUTES = "carry_on_minutes"  # a new wake word this soon carries on the last conversation
+DEFAULT_CARRY_ON_MINUTES = 0
+MAX_CARRY_ON_MINUTES = 5  # Home Assistant forgets a conversation after five quiet minutes
 CONF_HOUSE_RULES = "house_rules"
 CONF_LEARN_ENTITIES = "learn_entities"
 CONF_SUGGEST_ROUTINES = "suggest_routines"
@@ -269,6 +275,24 @@ PERSONALITIES = {
     "cheeky": "cheeky and playful, with light banter and the odd tease — but plain and serious about safety, security or anything upsetting",
     "composed": "polite and composed, like a capable butler, never stiff and never using titles",
 }
+
+
+NATURAL_TALK = (
+    "How to talk (this replaces any other rule about reply length, except for device commands): "
+    "for a command, a few words are enough (\"Done, the landing light's off.\"). For questions and chat, talk like a "
+    "person in the room: two to four natural sentences — react to what was said, answer, and add one relevant thought "
+    "when there is one. Ask a short follow-up question when a person naturally would, but not after every reply and "
+    "never more than one question at a time. Use contractions and varied wording; no stock phrases (\"Is there "
+    "anything else…\", \"I hope that helps\", \"Certainly!\"), no lists or headings, and don't repeat the question "
+    "back. Bring in what you remember about the household when it fits. Light humour and opinions to suit your "
+    "personality are welcome, but be plain and calm about safety, security, alarms or anything upsetting. If you "
+    "don't know something, just say so."
+)
+
+
+def talk_line(options: dict) -> str | None:
+    """The 'natural' speaking rules, or None for the brief style (the agent's own rules apply)."""
+    return NATURAL_TALK if options.get(CONF_TALK_STYLE, DEFAULT_TALK_STYLE) == "natural" else None
 
 
 def personality_line(options: dict) -> str:
