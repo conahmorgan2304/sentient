@@ -411,6 +411,29 @@ class SpeechRouter:
             self.on_unheard(text, priority, source, None)
         return SpeechResult(True, reason, text, speakers, receipts)
 
+    async def async_read_aloud(self, text: str, speaker: str) -> bool:
+        """One passage of a book or a recipe step someone asked for: straight to that speaker, not logged as
+        something the house said, and not held for quiet hours (they asked). Waits until it has been read."""
+        try:
+            async with self._lock:
+                await self._wait_idle([speaker])
+                volume = await self._volumes([speaker])
+                async with delivered(self.hass, [speaker], volume, self.duck_level):
+                    receipts = await self._speak(clean_message(text, self.banned), [speaker])
+        except HomeAssistantError:
+            return False
+        if not any(r["status"] == "accepted" for r in receipts or []):
+            return False
+        if speaker.startswith("media_player."):
+            # _speak only waits a short while for media players: wait for the rest of the passage
+            await asyncio.sleep(max(0.0, len(text.split()) / 2.6 - 13))
+            for _ in range(60):
+                st = self.hass.states.get(speaker)
+                if st is None or st.state != "playing":
+                    break
+                await asyncio.sleep(1)
+        return True
+
     async def _speak(self, text: str, speakers: list[str]) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
         rows = {eid: {'entity_id': eid, 'status': 'cancelled',

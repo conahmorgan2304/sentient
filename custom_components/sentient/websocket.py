@@ -71,6 +71,13 @@ from .const import (
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
     CONF_GOALS,
+    CONF_BOOKS,
+    CONF_BOOKS_FOLDER,
+    CONF_RECIPES,
+    CONF_RECIPES_FOLDER,
+    CONF_RECIPES_LIST,
+    CONF_TANDOOR_URL,
+    CONF_TANDOOR_TOKEN,
     CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
     CONF_RAIN,
@@ -310,6 +317,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question.", [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
+    ]),
+    ("reading", "Books & recipes", "mdi:book-open-variant", "Audiobooks played and ebooks read aloud, picking up where each room left off; recipes from a folder, Mealie or Tandoor with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short and can't play the house's own audio files, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
+        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,
