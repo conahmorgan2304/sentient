@@ -102,12 +102,8 @@
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div>
-          <div class="cols"><div class="col stack"><div id="sug" class="card" hidden></div><div id="clipc" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mlc" class="card" hidden></div></div>
-            <div class="col stack"><div id="mind" class="card"></div><div id="rout" class="stack"></div></div>
-            <div class="col stack"><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="visit" class="card"></div><div id="said" class="card"></div></div></div></div>
-        <div class="page" id="mp" hidden><div class="cols"><div class="col stack"><div id="mthink" class="card"></div></div>
-          <div class="col stack"><div id="mvoice" class="card"></div></div>
-          <div class="col stack"><div id="mdeliv" class="card"></div><div id="minc" class="card" hidden></div><div id="mupd" class="card" hidden></div></div></div></div>
+          <div class="flow"><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="mind" class="card"></div><div id="said" class="card"></div><div id="watch" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div><div id="rout" class="stack"></div><div id="mlc" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div></div></div>
+        <div class="page" id="mp" hidden><div class="flow"><div id="mthink" class="card"></div><div id="mdeliv" class="card"></div><div id="minc" class="card" hidden></div><div id="mupd" class="card" hidden></div><div id="mvoice" class="card"></div></div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
@@ -143,6 +139,7 @@
 
     _show(view, push) {
       this._view = view;
+      this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
       this._$("ov").hidden = view !== "overview";
       this._$("set").hidden = view !== "settings";
@@ -208,7 +205,7 @@
       const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passer-by": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspicious: "mdi:alert-outline", nothing: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
       R("clipc").innerHTML = this._h("CLIPS WATCHED", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
-        || '<div class="e">NOTHING WATCHED YET · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE</div>');
+        || `<div class="e">NOTHING WATCHED YET${Object.keys(cl.skipped || {}).length ? " · SKIPPED: " + Object.entries(cl.skipped).map(([k, v]) => `${v} ${esc(k).toUpperCase()}`).join(", ") : " · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE"}</div>`);
 
       // routines
       const routines = this._attr("routines", "routines", []);
@@ -1560,7 +1557,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .reply .q{flex:none;max-width:35%;font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.7)}
 .reply .a{flex:1;font-size:14px;line-height:1.45;color:#e6f5fa} .reply .a.thinking{color:#00fff7;letter-spacing:.2em;font-size:11px;font-weight:700}
 .reply .a.err{color:#ff8fa3}
-.page{max-width:1600px;margin:0 auto;padding:18px}
+.page{max-width:2200px;margin:0 auto;padding:18px}
 .card{position:relative;border-radius:20px;padding:14px 16px;overflow:hidden;
   background:radial-gradient(circle at 20% 0%, rgba(0,255,255,0.09), transparent 45%),linear-gradient(160deg, rgba(10,15,25,0.96), rgba(18,26,50,0.92));
   border:1px solid rgba(0,255,255,0.28);box-shadow:0 0 14px rgba(0,255,255,0.14), inset 0 0 22px rgba(0,255,255,0.05)}
@@ -1593,14 +1590,21 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .wizbtn{display:flex;align-items:center;gap:8px;justify-content:center;width:100%;margin:2px 0 10px} .wizbtn ha-icon{--mdc-icon-size:16px}
 .th{width:22px;height:22px;opacity:.55} .th:hover{opacity:1;color:#00fff7} .th ha-icon{--mdc-icon-size:14px} .thd{text-decoration:none;font-size:12px}
 .hint.meter{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,255,247,.1)}
-/* Big screens (tablets, desktops): the overview fits the screen and each column scrolls on its own */
-@media (min-width: 1101px) and (min-height: 600px){
-  #ov:not([hidden]){display:flex;flex-direction:column;height:calc(100vh - 56px);height:calc(100dvh - 56px)}
-  #ov .cols{flex:1;min-height:0;align-items:stretch;margin-top:14px}
-  #ov .col{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 6px 14px;margin:-2px -6px 0;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.28) transparent}
-  #ov .col>*,#ov .col .stack>*{flex-shrink:0}
-  #ov .col::-webkit-scrollbar{width:6px} #ov .col::-webkit-scrollbar-thumb{background:rgba(0,255,247,.28);border-radius:3px}
-}
+/* Overview and Mind: cards flow into balanced columns (no gaps under short columns), and the page itself
+   scrolls when it must, without a visible scroll bar. Settings and the timeline keep theirs. */
+.flow{columns:3;column-gap:16px;margin-top:16px}
+.flow>*{break-inside:avoid;margin:0 0 14px;width:100%}
+.flow>.stack{break-inside:avoid;display:flex;gap:14px}
+.flow>[hidden],.flow>.stack:empty{display:none}
+:host([view="overview"]),:host([view="mind"]){scrollbar-width:none}
+:host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar{display:none}
+#mp .flow{columns:2}
+.r b small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);white-space:normal}
+.r b details{display:block;margin-top:3px} .r b summary{cursor:pointer;font-size:11px;color:#7fefff;list-style:none}
+.r b summary::-webkit-details-marker{display:none} .r b summary::before{content:"▸ "} .r b details[open] summary::before{content:"▾ "}
+@media (min-width: 2200px){ .flow{columns:4} #mp .flow{columns:3} }
+@media (max-width: 1100px){ .flow{columns:2} }
+@media (max-width: 720px){ .flow{columns:1} }
 .h{display:flex;align-items:center;gap:10px;margin-bottom:10px} .h.tight{margin:0}
 .h .t{flex:none;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.26em;color:#00fff7;text-shadow:0 0 6px rgba(0,255,247,.5)}
 .h i{flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.45),transparent)}
@@ -1620,7 +1624,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt.off s{color:rgba(255,120,140,.85);border-color:rgba(255,120,140,.6)}
 .rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
-.e{padding:18px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
+.e{padding:10px 12px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
 /* settings */
 .set{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 .side{position:sticky;top:74px;padding:12px;display:flex;flex-direction:column;gap:4px}
