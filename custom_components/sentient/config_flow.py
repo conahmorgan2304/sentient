@@ -110,6 +110,12 @@ from .const import (
     CONF_BATTERY_THRESHOLD,
     CONF_HEALTH_IGNORE,
     CONF_NEVER_ENTITIES,
+    CONF_SELF_CHECK,
+    CONF_SELF_ADJUST,
+    CONF_MANUALS,
+    CONF_MANUALS_FOLDER,
+    DEFAULT_MANUALS_FOLDER,
+    CONF_GOALS,
     DEFAULT_BATTERY_THRESHOLD,
     CONF_CHAT_AGENT,
     CONF_VOICE_AGENT,
@@ -603,6 +609,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_NEVER_ENTITIES, **d(CONF_NEVER_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
             ),
+            vol.Required(CONF_SELF_CHECK, **d(CONF_SELF_CHECK, True)): selector.BooleanSelector(),
+            vol.Required(CONF_SELF_ADJUST, **d(CONF_SELF_ADJUST, False)): selector.BooleanSelector(),
+            vol.Required(CONF_GOALS, **d(CONF_GOALS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_MANUALS, **d(CONF_MANUALS, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_MANUALS_FOLDER, **d(CONF_MANUALS_FOLDER, DEFAULT_MANUALS_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_NOTIFY_TARGETS, **d(CONF_NOTIFY_TARGETS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="notify", multiple=True)
             ),

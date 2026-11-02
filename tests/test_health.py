@@ -178,3 +178,26 @@ async def test_hub_offline_is_one_line(hass: HomeAssistant, freezer) -> None:
     freezer.tick(timedelta(minutes=11))
     health.async_check()
     assert health.describe() == ["Frigate is offline (and 3 of its devices)"]
+
+
+async def test_why_devices_are_offline(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.config_entries import ConfigEntryState
+
+    tuya = MockConfigEntry(domain="tuya_local", title="Tuya Local"); tuya.add_to_hass(hass)
+    tuya.mock_state(hass, ConfigEntryState.SETUP_RETRY)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    for n in ("Coffee", "Fountain"):
+        d = devs.async_get_or_create(config_entry_id=tuya.entry_id, identifiers={("tuya", n)}, name=n)
+        ents.async_get_or_create("switch", "tuya_local", n, suggested_object_id=n.lower(), device_id=d.id)
+        hass.states.async_set(f"switch.{n.lower()}", "unavailable")
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    health._never.clear()
+    for e in ("switch.coffee", "switch.fountain"):
+        health._checked[e] = dt_util.utcnow()
+    freezer.tick(timedelta(minutes=11))
+    health.async_check()
+    assert "Coffee is offline — its integration, Tuya Local, keeps retrying to connect" in health.describe()

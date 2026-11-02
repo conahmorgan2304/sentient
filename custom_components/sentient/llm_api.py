@@ -522,6 +522,88 @@ class SearchTool(_Tool):
         return await async_search(hass, rt.options, tool_input.tool_args["query"])
 
 
+class SelfTool(_Tool):
+    name = "sentient_self"
+    description = (
+        "How the house brain itself is doing — for 'what can you do right now?', 'is anything not working?', "
+        "'have you been annoying us?', 'what have you realised about yourself?', 'how reliable are the speakers?'. "
+        "Returns each capability as ok, limited or off with the reason, and (if the nightly self-check is on) what "
+        "its own records show, with the numbers. Only say what the evidence shows; quote the numbers."
+    )
+    parameters = vol.Schema({vol.Optional("days", default=7): vol.Coerce(float)})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "selfaware", None) is None:
+            return {"error": "Sentient is not loaded"}
+        out: dict[str, Any] = {"right_now": rt.selfaware.status()}
+        if rt.selfaware.enabled:
+            report = rt.selfaware.check(days=max(1.0, min(float(tool_input.tool_args["days"]), 14.0)))
+            out["noticed_about_itself"] = [{"finding": f["text"], "evidence": f["evidence"]} for f in report["findings"]] or "nothing stands out"
+            out["numbers"] = report["numbers"]
+            if rt.selfaware.last and rt.selfaware.last.get("adjusted"):
+                out["adjusted_last_night"] = rt.selfaware.last["adjusted"]
+        return out
+
+
+class ManualTool(_Tool):
+    name = "sentient_manual"
+    description = (
+        "Answer from the household's own documents (appliance manuals, warranties, receipts) — e.g. 'what filter does "
+        "the air purifier need?', 'how do I descale the coffee machine?', 'when does the boiler warranty end?'. "
+        "'question' is what they asked; 'document' the appliance or document name if they said it."
+    )
+    parameters = vol.Schema({vol.Required("question"): cv.string, vol.Optional("document"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        from .manuals import async_answer
+
+        return await async_answer(hass, rt, tool_input.tool_args["question"], tool_input.tool_args.get("document"))
+
+
+class GoalTool(_Tool):
+    name = "sentient_goal"
+    description = (
+        "Goals the household wants over days or weeks — 'help us use less heating this month', 'let's get the energy "
+        "down', 'how are we doing on our goal?', 'stop that goal'. action: set (title; optional entity = a sensor to "
+        "follow such as an energy or temperature sensor; aim = lower or higher; days), list, or close (title). "
+        "Never change anything in the house for a goal; suggest instead."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["set", "list", "close"]), vol.Optional("title"): cv.string,
+        vol.Optional("entity"): cv.string, vol.Optional("aim", default="lower"): vol.In(["lower", "higher"]),
+        vol.Optional("days", default=30): vol.Coerce(int),
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "goals", None) is None or not rt.goals.enabled:
+            return {"error": "goals are switched off"}
+        a = tool_input.tool_args
+        if a["action"] == "list":
+            return {"goals": rt.goals.listing()}
+        if not a.get("title"):
+            return {"error": "which goal?"}
+        if a["action"] == "close":
+            g = rt.goals.close(a["title"])
+            return {"closed": g["title"], "how_it_went": rt.goals.progress(g)} if g else {"error": "no goal like that"}
+        entity = None
+        if a.get("entity"):
+            from .watches import resolve_entity
+
+            entity = resolve_entity(hass, a["entity"], "sensor") or a["entity"]
+        return await rt.goals.async_set(a["title"], entity, a["aim"], a["days"])
+
+
 class AskLaterTool(_Tool):
     name = "sentient_ask_later"
     description = (
@@ -1314,9 +1396,12 @@ class SentientAPI(llm.API):
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         from .voice_api import SessionTool, IncidentsTool
 
+        rt0 = _runtime(self.hass)
         tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else [])]
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
+                 *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
+                 *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else [])]
         rt = _runtime(self.hass)
         if rt is not None and rt.options.get("focused_tools") and getattr(rt, "focus", None) is not None:
             from .focus import current_request
@@ -1374,6 +1459,8 @@ class SentientAPI(llm.API):
                 + ": if asked to look at a camera or for anything that needs it, say plainly it's limited right now "
                 "and try again later — don't pretend to have looked."
             )
+        if getattr(rt, "goals", None) is not None and rt.goals.enabled and (goal_line := rt.goals.prompt_line()):
+            lines.append(goal_line)
         if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:
             from .never import names
 

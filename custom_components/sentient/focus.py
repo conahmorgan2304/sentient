@@ -20,7 +20,7 @@ current_request: ContextVar[str | None] = ContextVar("sentient_current_request",
 ALWAYS = {
     "sentient_session", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
-    "sentient_search", "sentient_ask_later",
+    "sentient_search", "sentient_ask_later", "sentient_self",
 }
 
 TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
@@ -41,6 +41,10 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
           "sentient_briefing", "sentient_party", "sentient_scenes", "sentient_motion_lights", "sentient_make_rule"]),
         ("quiet", r"quiet|shush|hush|stop (?:telling|saying|talking)|guests?|talk again|shut up",
          ["sentient_quiet", "sentient_shush"]),
+        ("manuals", r"manual|instructions|warranty|guarantee|receipt|filter|descale|model number|how do (?:i|you) (?:clean|reset|change|fit)",
+         ["sentient_manual"]),
+        ("goals", r"\bgoals?\b|\baim\b|target|use less|cut (?:down|back)|reduce|save (?:energy|money)|how are we doing",
+         ["sentient_goal", "sentient_energy", "sentient_heating"]),
         ("house", r"\bhouse\b|\bhome\b|happen|while i was|today|this week|check|anything|how'?s|status|announce|"
                   r"tell (?:the|every)|learn",
          ["sentient_house_check", "sentient_weekly_report", "sentient_timeline", "sentient_announce",
