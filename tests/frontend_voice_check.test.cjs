@@ -76,3 +76,18 @@ test('update checker UI is optional, escapes errors and prevents repeated reques
   panel._hass.user.is_admin = false;
   assert.equal(panel._updateRow(info), '');
 });
+
+test('a successful update check also asks HACS to look again', async () => {
+  const sent = [];
+  const panel = setup(async (msg) => {
+    sent.push(msg);
+    if (msg.type === 'sentient/update_check') return { latest_version: '9.0.0', update_available: true };
+    if (msg.type === 'hacs/repositories/list') return [{ id: 42, full_name: 'conahmorgan2304/sentient' }];
+    return null;
+  });
+  panel._render = () => {};
+  await panel._checkUpdates();
+  assert.deepEqual(sent.map(m => m.type), ['sentient/update_check', 'hacs/repositories/list', 'hacs/repository/refresh']);
+  assert.equal(sent[2].repository, '42');
+  assert.match(panel._updatesFeedback, /HACS has been told to look again/);
+});

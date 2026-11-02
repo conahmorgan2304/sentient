@@ -1243,7 +1243,7 @@
       this._render();
       try {
         const result = await this._hass.callWS({ type: "sentient/update_check" });
-        const hacs = await this._refreshHacs();
+        const hacs = !result.error && result.latest_version ? await this._refreshHacs() : false;
         this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? (hacs ? "HACS has been told to look again; the update should show in HACS shortly." : "Update available in HACS (open Sentient there and choose Update information if it isn't showing).") : "No newer release found."}` : "Checker disabled.";
       } catch (error) {
         this._updatesFeedback = error.message || String(error);
