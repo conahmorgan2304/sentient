@@ -8,6 +8,11 @@
   const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode", "mind", "media_speakers", "house"];
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
+  const heldWhy = (reason) => {
+    const [kind, what] = String(reason || "").split(/:(.*)/s);
+    if (kind === "hushed_by") return what === "announcement" ? "AFTER ANOTHER ANNOUNCEMENT" : "AFTER " + String(what || "SOMETHING ELSE").split(".").pop().replaceAll("_", " ").toUpperCase();
+    return ({ quiet_hours: "QUIET HOURS", said_recently: "SAID RECENTLY", duplicate: "JUST SAID", thumbs_down: "THUMBS-DOWN", guest_mode: "GUESTS IN", hourly_limit: "ENOUGH THIS HOUR", no_speaker: "NO SPEAKER", hushed: "HUSHED" })[kind] || kind.replaceAll("_", " ").toUpperCase();
+  };
   const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
   const left = (iso, fallback) => {
     const d = iso ? new Date(iso) : null;
@@ -102,8 +107,16 @@
           <button class="brief" id="brief"><ha-icon icon="mdi:text-box-outline"></ha-icon><span>BRIEFING</span></button></div>
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div>
-          <div class="flow"><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="mind" class="card"></div><div id="said" class="card"></div><div id="watch" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div><div id="rout" class="stack"></div><div id="mlc" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="ins" class="card" hidden></div><div id="energy" class="card" hidden></div></div></div>
-        <div class="page" id="mp" hidden><div class="flow"><div id="mthink" class="card"></div><div id="mdeliv" class="card"></div><div id="minc" class="card" hidden></div><div id="mupd" class="card" hidden></div><div id="mvoice" class="card"></div></div></div>
+          <div class="lanes ov3">
+            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
+            <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="ins" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="rout" class="card"></div></section>
+          </div></div>
+        <div class="page" id="mp" hidden><div id="mbrain" class="card brain"></div>
+          <div class="lanes mp2">
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div><div id="minc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Talking"><div class="lt">TALKING</div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
+          </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
@@ -212,15 +225,14 @@
       const on = routines.filter((r) => r.adopted).length;
       const gone = this._attr("routines", "deleted", []);
       const back = gone.length ? `<a class="lnk" data-act="unforget" data-text="Let ${gone.length} deleted routine${gone.length > 1 ? "s" : ""} be learned again?">${gone.length} DELETED · BRING BACK</a>` : "";
-      R("rout").innerHTML = `<div class="card">${this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`, true)}${back}</div>` +
+      R("rout").innerHTML = this._h("ROUTINES &amp; HABITS", `${on} AUTOMATED · ${routines.length} LEARNED`) + back +
         (routines.slice(0, 6).map((r) => {
           const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
-          return `<div class="card rt ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}">
-            <div class="r"><b class="wrap">${esc(r.routine)}</b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>
-            <div class="hint">${esc(r.how_sure).toUpperCase()} · TAP TO ${r.adopted ? "STOP" : "LET THE HOUSE DO IT"}</div></div>`;
-        }).join("") || '<div class="card"><div class="e">NO ROUTINES LEARNED YET — CHECKED NIGHTLY</div></div>');
+          return `<div class="r rtr ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}"><ha-icon icon="${r.adopted ? "mdi:robot-happy-outline" : "mdi:repeat"}"></ha-icon>
+            <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
+        }).join("") || '<div class="e">NO ROUTINES LEARNED YET · CHECKED EACH NIGHT</div>');
 
       // watches (left alone while a reminder is being typed)
       const act = this.shadowRoot.activeElement;
@@ -318,11 +330,12 @@
       R("minc").innerHTML = incidentRows ? this._h("SECURITY INCIDENTS", "") + incidentRows : "";
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
+      this._drawBrain(mind, ai);
       this._drawAppliances(mind.appliances || []);
 
       // visitors
       const visits = this._attr("visitors", "recent", []);
-      R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 4).map((v) =>
+      R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 8).map((v) =>
         `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">NO ONE AT THE DOOR YET</div>');
@@ -330,11 +343,11 @@
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
-      const log = this._attr("last_spoken", "log", []).slice(0, 4).map((l) => l.said
+      const log = this._attr("last_spoken", "log", []).slice(0, 7).map((l) => l.said
         ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
           ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
-        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(String(l.reason || "").split(":")[0].replace("_", " ")).toUpperCase()}</u></div>`).join("");
+        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
@@ -1233,7 +1246,7 @@
     _updateRow(info) {
       if (!info?.enabled || !this._hass.user?.is_admin) return "";
       const label = info.error ? "CHECK FAILED" : info.update_available ? "UPDATE AVAILABLE" : info.latest_version ? "NO NEWER RELEASE" : "NOT CHECKED YET";
-      return `<div class="r"><ha-icon icon="mdi:update"></ha-icon><b class="wrap">SENTIENT · ${esc(label)}<small>Loaded: ${esc(info.installed_version || "unknown")} · Latest: ${esc(info.latest_version || "unknown")}</small><small>${esc(info.error || info.note || "")}</small><small>${info.last_checked ? "Last check: " + esc(new Date(info.last_checked).toLocaleString()) : ""}</small><small role="status">${esc(this._updatesFeedback || "")}</small><a href="https://github.com/conahmorgan2304/sentient/releases" target="_blank" rel="noopener noreferrer">Release notes</a></b><button class="btn sm ghost" data-act="checkupdates" ${this._updatesSaving ? "disabled" : ""}>${this._updatesSaving ? "CHECKING…" : "CHECK NOW"}</button><button class="btn sm ghost" data-act="refreshpanel">REFRESH PANEL</button></div>`;
+      return `<div class="r stackr"><ha-icon icon="mdi:update"></ha-icon><b class="wrap">SENTIENT · ${esc(label)}<small>Loaded: ${esc(info.installed_version || "unknown")} · Latest: ${esc(info.latest_version || "unknown")}</small><small>${esc(info.error || info.note || "")}</small><small>${info.last_checked ? "Last check: " + esc(new Date(info.last_checked).toLocaleString()) : ""}</small><small role="status">${esc(this._updatesFeedback || "")}</small><a href="https://github.com/conahmorgan2304/sentient/releases" target="_blank" rel="noopener noreferrer">Release notes</a></b><button class="btn sm ghost" data-act="checkupdates" ${this._updatesSaving ? "disabled" : ""}>${this._updatesSaving ? "CHECKING…" : "CHECK NOW"}</button><button class="btn sm ghost" data-act="refreshpanel">REFRESH PANEL</button></div>`;
     }
 
     async _checkUpdates() {
@@ -1537,6 +1550,28 @@
       if (rx) rx.addEventListener("click", () => { reply.hidden = true; this._cid = null; });
     }
 
+    // the Mind page's top strip: how much it's thought today, the last week, and how it talks
+    _drawBrain(mind, ai) {
+      const R = (id) => this._$(id);
+      const tk = mind.talking || {};
+      const days = Object.entries(ai.last_7_days || {});
+      if (ai.today != null) days.push(["today", ai.today]);
+      const most = Math.max(1, ...days.map(([, n]) => n));
+      const wd = (d) => d === "today" ? "TODAY" : new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+      const bars = days.slice(-8).map(([d, n]) => `<div class="wbar${d === "today" ? " now" : ""}" title="${esc(String(n))} AI calls"><b>${esc(String(n))}</b><i style="height:${Math.max(3, Math.round((n / most) * 64))}px"></i><span>${wd(d)}</span></div>`).join("");
+      const tile = (n, l, cls) => `<div class="s${cls ? " " + cls : ""}"><div class="n">${esc(String(n))}</div><div class="l">${l}</div></div>`;
+      const chip = (onNow, text) => `<span class="tchip${onNow ? " on" : ""}">${text}</span>`;
+      const later = mind.ask_later || [];
+      const used = ai.limit ? Math.min(100, Math.round(((ai.today || 0) / ai.limit) * 100)) : 0;
+      R("mbrain").innerHTML = `<div class="brh"><div class="brl">${this._h("MIND", ai.failing ? "AI NOT ANSWERING" : ai.capped ? "AI LIMIT REACHED" : "THINKING NORMALLY")}
+          <div class="st">${tile(ai.today ?? 0, ai.limit ? `AI CALLS OF ${ai.limit}` : "AI CALLS")}${tile(ai.failed_today || 0, "FAILED TODAY", ai.failed_today ? "warn" : "")}${tile(this._st("mind") ? this._st("mind").state : 0, "TALKS TODAY")}${tile(this._st("memories") ? this._st("memories").state : 0, "MEMORIES")}${tile((mind.follow_ups || []).length + later.length, "TO COME BACK TO")}</div>
+          ${ai.limit ? `<div class="use"><i style="width:${used}%"></i></div>` : ""}
+          <div class="tchips">${chip(tk.style === "natural", tk.style === "natural" ? "NATURAL TALK" : "BRIEF TALK")}${chip(tk.carry_on_minutes > 0, tk.carry_on_minutes > 0 ? `CARRIES ON ${esc(String(tk.carry_on_minutes))} MIN` : "NEW CHAT EACH TIME")}${chip(tk.focused_tools, "FOCUSED TOOLS")}${chip(tk.ask_later, "ASKS HOW THINGS WENT")}</div></div>
+        <div class="week"><div class="wt">AI CALLS · LAST WEEK${ai.average_per_day != null ? ` · USUALLY ${esc(String(ai.average_per_day))} A DAY` : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
+      R("mlater").hidden = !later.length;
+      R("mlater").innerHTML = later.length ? this._h("WILL ASK HOW IT WENT", `${later.length}`) + later.map((t) => `<div class="r"><ha-icon icon="mdi:comment-question-outline"></ha-icon><b class="wrap">${esc(t.question)}<small>${esc(t.about)}</small></b><u>${new Date(t.due) > new Date() ? "FROM " + (Date.now() - new Date(t.due) > -864e5 ? hm(t.due) : day(t.due)) : "NEXT CHAT"}</u></div>`).join("") : "";
+    }
+
     _h(title, pill, tight) {
       return `<div class="h${tight ? " tight" : ""}"><span class="t">${title}</span><i></i>${pill ? `<em>${pill}</em>` : ""}</div>`;
     }
@@ -1606,6 +1641,46 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .hint.meter{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,255,247,.1)}
 /* Overview and Mind: cards flow into balanced columns (no gaps under short columns), and the page itself
    scrolls when it must, without a visible scroll bar. Settings and the timeline keep theirs. */
+/* Overview and Mind: fixed lanes, each with one job, the same height, the last card stretching to the bottom */
+.lanes{display:grid;gap:16px;margin-top:16px;align-items:stretch}
+.ov3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mp2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.lane{display:flex;flex-direction:column;gap:14px;min-width:0}
+.lane>.card{flex:none;display:flex;flex-direction:column}
+.lane>.card>.hint.meter{margin-top:auto}
+.lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto}
+.lt{display:flex;align-items:center;gap:10px;margin:2px 4px -4px;font-size:9.5px;font-weight:700;letter-spacing:.3em;color:rgba(127,239,255,.55)}
+.lt::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.22),transparent)}
+.rtr{cursor:pointer} .rtr.on{border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.09)} .rtr.off{opacity:.55}
+.rtr s{text-decoration:none;font-size:8.5px;font-weight:700;letter-spacing:.14em;color:#7fefff;white-space:nowrap}
+.brain{margin-top:0}
+.brh{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:22px;align-items:stretch}
+.brh .st{margin-top:4px}
+.s.warn .n{color:#ffbe55;text-shadow:0 0 8px rgba(255,190,85,.5)}
+.use{height:4px;margin-top:10px;border-radius:2px;background:rgba(0,255,247,.1);overflow:hidden}
+.use i{display:block;height:100%;background:linear-gradient(90deg,#00a8ff,#00fff7);box-shadow:0 0 6px rgba(0,255,247,.6)}
+.tchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;justify-content:flex-start}
+.tchip{font-size:8.5px;font-weight:700;letter-spacing:.14em;padding:4px 9px;border-radius:10px;color:rgba(150,220,235,.45);border:1px solid rgba(150,220,235,.18)}
+.tchip.on{color:#7fefff;border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.08)}
+.week{display:flex;flex-direction:column;padding-left:22px;border-left:1px solid rgba(0,255,247,.12)}
+.wt{font-size:9px;font-weight:700;letter-spacing:.18em;color:rgba(150,220,235,.65);margin-bottom:10px}
+.wbars{flex:1;display:flex;align-items:flex-end;gap:8px;min-height:104px}
+.wbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0}
+.wbar i{display:block;width:100%;max-width:26px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,rgba(0,255,247,.55),rgba(0,168,255,.25));flex:none}
+.wbar.now i{background:linear-gradient(180deg,#00fff7,#00a8ff);box-shadow:0 0 10px rgba(0,255,247,.55)}
+.wbar b{font-size:10px;font-weight:600;color:#bff8ff}
+.wbar span{font-size:8px;font-weight:700;letter-spacing:.1em;color:rgba(150,220,235,.55)} .wbar.now span{color:#00fff7}
+@media (max-width: 1100px){
+  .ov3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ov3>.lane:nth-child(3){grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+  .ov3>.lane:nth-child(3)>.lt{grid-column:1/-1}
+  .brh{grid-template-columns:1fr} .week{padding:14px 0 0;border-left:none;border-top:1px solid rgba(0,255,247,.12)}
+}
+@media (max-width: 720px){
+  .lanes.ov3,.lanes.mp2{grid-template-columns:1fr}
+  .ov3>.lane:nth-child(3){display:flex;align-items:stretch}
+  .r.stackr{flex-wrap:wrap} .r.stackr b{flex:1 1 calc(100% - 30px)}
+}
 .flow{columns:3;column-gap:16px;margin-top:16px}
 .flow>*{break-inside:avoid;margin:0 0 14px;width:100%}
 .flow>.stack{break-inside:avoid;display:flex;gap:14px}
