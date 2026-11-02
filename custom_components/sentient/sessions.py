@@ -243,7 +243,9 @@ class Sessions:
             session.missing_detail = ''
         elif session.task_state != 'completed':
             session.task_state = 'waiting'
-        if session.active and not ends_in_question(text):
+        if session.active and not ends_in_question(text) and self.options.get("conversation_style") != "natural":
+            # brief style: keep a discussion going with a varied "anything else?"; the natural style asks its own
+            # follow-up questions when they fit, so a stock one isn't added
             text += " " + self.next_follow_up()
             result.response.async_set_speech(text)
         session.waiting = ends_in_question(text)

@@ -184,3 +184,45 @@ async def test_follow_ups_vary(hass):
     said = [rt.sessions.next_follow_up() for _ in range(12)]
     assert all(a != b for a, b in zip(said, said[1:]))  # never the same twice running
     assert len(set(said[:5])) == 5  # nor within the last few
+
+
+async def test_natural_style_adds_no_stock_followup(hass):
+    obj, rt = agent(hass, {'conversation_sessions': True, 'conversation_style': 'natural'})
+    with patch.object(obj, '_async_process_legacy', AsyncMock(return_value=response('Nine degrees and cloudy.'))):
+        result = await obj.async_process(request('What is the temperature?'))
+    assert result.response.speech['plain']['speech'] == 'Nine degrees and cloudy.'
+    assert not result.continue_conversation  # no question asked, so the mic closes
+
+
+async def test_tools_return_a_tool_result_on_newer_home_assistant(hass, monkeypatch):
+    from dataclasses import dataclass
+
+    @dataclass
+    class ToolResult:
+        data: dict
+        error: bool = False
+
+    monkeypatch.setattr(llm, 'ToolResult', ToolResult, raising=False)
+    obj, rt = agent(hass, {'conversation_sessions': True})
+    from custom_components.sentient.llm_api import SelfTool
+
+    out = await SelfTool().async_call(hass, llm.ToolInput(tool_name='sentient_self', tool_args={}), llm.LLMContext(
+        platform='t', context=Context(), language='en', assistant=None, device_id=None))
+    assert isinstance(out, ToolResult) and out.data == {'error': 'Sentient is not loaded'} and out.error is True
+
+
+async def test_story_starting_ends_the_turn_without_anything_else(hass):
+    """Once a story is reading on the speaker, the reply is the one line and nothing listens over it."""
+    from custom_components.sentient.focus import hand_off
+
+    obj, rt = agent(hass, {'conversation_sessions': True})
+
+    async def model(*_args, **_kw):
+        hand_off("Starting Princess Scarlet.")  # what sentient_book does once the reading has begun
+        return response('Princess Scarlet stepped into the woods... Shall I keep going?')
+
+    with patch.object(obj, '_async_process_legacy', side_effect=model):
+        result = await obj.async_process(request('Read me the Princess Scarlet story, how is the house?'))
+    assert result.continue_conversation is False
+    assert result.response.speech['plain']['speech'] == "Starting Princess Scarlet."
+    assert all(s['listen_reason'] != 'discussion_follow_up' for s in rt.sessions.describe())
