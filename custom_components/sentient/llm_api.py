@@ -64,6 +64,11 @@ def _clips_on(hass: HomeAssistant) -> bool:
     return rt is not None and bool(rt.options.get("event_clips", False) or rt.options.get("clip_watch", False))
 
 
+def _ask_later_on(hass: HomeAssistant) -> bool:
+    rt = _runtime(hass)
+    return rt is not None and bool(rt.options.get("ask_later", False)) and getattr(rt, "threads", None) is not None
+
+
 def _rules_on(hass: HomeAssistant) -> bool:
     rt = _runtime(hass)
     return rt is not None and bool(rt.options.get("rules", False))
@@ -515,6 +520,33 @@ class SearchTool(_Tool):
         if not own_search_on(hass, rt.options):
             return {"skipped": "web search is off in Sentient's settings"}
         return await async_search(hass, rt.options, tool_input.tool_args["query"])
+
+
+class AskLaterTool(_Tool):
+    name = "sentient_ask_later"
+    description = (
+        "Remember to ask how something went, the way a friend would. Use when someone mentions something coming up "
+        "that's worth asking about afterwards (a trip, a match, an interview, a night out, taking a pet to the vet). "
+        "'question' is the short, natural question to ask afterwards (\"How did the match go?\"); 'about' a few "
+        "words; 'hours' how long until it's worth asking (e.g. 3 for this afternoon, 20 for tomorrow). Never for "
+        "anyone's health, money, relationships or other private matters, and only once per thing."
+    )
+    parameters = vol.Schema({vol.Required("question"): cv.string, vol.Required("about"): cv.string,
+                             vol.Optional("hours", default=20): vol.Coerce(float)})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or not _ask_later_on(hass):
+            return {"error": "asking later is switched off"}
+        if rt.speech.guest_mode:
+            return {"error": "not while guests are in"}
+        args = tool_input.tool_args
+        item = rt.threads.add(args["question"], args["about"], args["hours"])
+        rt.timeline.add("mind", f"Will ask later: {item['question']}", item["about"])
+        return {"saved": item["about"], "will_ask_after": item["due"],
+                "note": "Don't mention that you'll ask; just carry on the conversation."}
 
 
 def _search_on(hass: HomeAssistant) -> bool:
@@ -1278,13 +1310,21 @@ class SentientAPI(llm.API):
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         from .voice_api import SessionTool, IncidentsTool
 
+        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+                   WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else [])]
+        rt = _runtime(self.hass)
+        if rt is not None and rt.options.get("focused_tools") and getattr(rt, "focus", None) is not None:
+            from .focus import current_request
+
+            wanted = rt.focus.tools_for(current_request.get(), conversation_id)
+            if wanted is not None:
+                tools = [t for t in tools if t.name in wanted]
         return llm.APIInstance(
             api=self,
             api_prompt=self._prompt(llm_context, conversation_id),
             llm_context=llm_context,
-            tools=[SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
-                   WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool()],
+            tools=tools,
         )
 
     def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
@@ -1341,6 +1381,22 @@ class SentientAPI(llm.API):
                 "Guests are visiting: don't bring up personal household details, routines or memories "
                 "unless someone explicitly asks."
             )
+        if _ask_later_on(self.hass) and not rt.speech.guest_mode:
+            lines.append(
+                "When someone mentions something coming up that a friend would ask about afterwards (a trip, a "
+                "match, an interview, the vet), save a question with sentient_ask_later — never about health, "
+                "money or anything private."
+            )
+            from .focus import current_request
+            from .sessions import COMMAND
+
+            asked = current_request.get()
+            if not (asked and COMMAND.search(asked)) and not rt.speech.quiet_now() and (due := rt.threads.take_due()):
+                lines.append(
+                    f"Something to ask about, once: \"{due['question']}\" ({due['about']}). After you've answered, "
+                    "ask it naturally as your follow-up question, unless the person is dealing with something urgent "
+                    "or upsetting — then leave it."
+                )
         usual = rt.sleep.usual()
         if usual["bedtime"] or usual["up"]:
             lines.append(

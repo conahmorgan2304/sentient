@@ -266,7 +266,13 @@ class BackedUpAgent(conversation.ConversationEntity):
             last = self._carry.get(speaker)
             if last and (now - last[1]).total_seconds() < minutes * 60:
                 user_input = replace(user_input, conversation_id=last[0])
-        result = await self._process_turn(user_input)
+        from .focus import current_request
+
+        token = current_request.set(user_input.text)
+        try:
+            result = await self._process_turn(user_input)
+        finally:
+            current_request.reset(token)
         if minutes and speaker and result.conversation_id:
             if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA):
                 self._carry.pop(speaker, None)  # "that's all" ends it: the next wake word starts afresh

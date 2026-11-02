@@ -158,6 +158,8 @@ from .const import (
     CONF_CARRY_ON_MINUTES,
     DEFAULT_CARRY_ON_MINUTES,
     MAX_CARRY_ON_MINUTES,
+    CONF_FOCUSED_TOOLS,
+    CONF_ASK_LATER,
     CONF_HOUSE_RULES,
     CONF_NOTICE_ENTITIES,
     DEFAULT_CHATTINESS,
@@ -519,6 +521,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_CARRY_ON_MINUTES, **d(CONF_CARRY_ON_MINUTES, DEFAULT_CARRY_ON_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=MAX_CARRY_ON_MINUTES, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.SLIDER)
             ),
+            vol.Required(CONF_FOCUSED_TOOLS, **d(CONF_FOCUSED_TOOLS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_ASK_LATER, **d(CONF_ASK_LATER, False)): selector.BooleanSelector(),
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),

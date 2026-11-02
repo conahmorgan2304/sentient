@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 
-from .const import CONF_SPEECH_DELIVERY_HISTORY
+from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
 from .updates import UpdateChecker
 from .sessions import Sessions
@@ -166,6 +166,8 @@ class SentientRuntime:
     clipwatch: Any
     watchdog: Watchdog
     screen: Screen
+    threads: Any = None  # things to ask about later
+    focus: Any = None  # focused voice tools
 
 
 type SentientConfigEntry = ConfigEntry[SentientRuntime]
@@ -484,6 +486,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     incidents = Incidents(hass, entry.entry_id, options)
     await incidents.async_start()
     entry.async_on_unload(incidents.async_stop)
+    from .focus import Focus
+    from .threads import Threads
+
+    threads = Threads(hass, entry.entry_id)
+    await threads.async_load()
     entry.runtime_data = SentientRuntime(
         evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
@@ -495,6 +502,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
+        threads=threads, focus=Focus(),
     )
     for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch):
         await engine.async_start()
@@ -547,6 +555,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.options = options
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
+    if not options.get(CONF_ASK_LATER):
+        entry.runtime_data.threads.clear()  # switched off: nothing is kept to ask later
     if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
         entry.runtime_data.speech.deliveries.clear()
     entry.runtime_data.speech.options = options
