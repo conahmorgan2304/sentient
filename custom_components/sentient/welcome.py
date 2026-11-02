@@ -1,6 +1,7 @@
 """Welcome home: when someone gets back, a short word on what happened while they were out.
 
-Triggered by a person entity coming home after being away a while. It waits a moment
+Triggered by a person entity — or a phone's tracker, for a house whose people are always "home" —
+coming home after being away a while. It waits a moment
 for them to get inside, then speaks in the busiest room: "Welcome back" — plus, if
 anything notable happened (visitors, watches, problems), one or two sentences from the
 timeline written by the AI. No names, nothing in quiet hours, hush or guest mode.

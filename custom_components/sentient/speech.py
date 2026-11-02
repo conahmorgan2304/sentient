@@ -70,7 +70,9 @@ _BUSY_STATES = {"listening", "processing", "responding"}
 _START_CONVERSATION = 2  # AssistSatelliteEntityFeature.START_CONVERSATION
 # what still goes to the Echos when they're kept for important things only
 IMPORTANT_SOURCES = ("alarm:", "alarm test", "reminder:", "critical", "alexa:")
-REPLY_SOURCES = ("alexa:",)  # answers to someone who just asked: never held for quiet hours or a hush
+# answers to someone who just asked, and the briefing for someone who's just got up (in their room only):
+# never held for quiet hours
+REPLY_SOURCES = ("alexa:", "briefing:up")
 
 
 def important(source: str | None) -> bool:

@@ -52,3 +52,23 @@ async def test_short_trip_no_welcome(hass: HomeAssistant, freezer) -> None:
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert not said
+
+
+async def test_welcome_from_a_phone_when_the_person_is_always_home(hass: HomeAssistant, freezer) -> None:
+    """A house whose person entity never leaves can pick a phone's tracker instead."""
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={**OPTIONS, "welcome_people": ["device_tracker.phone"]})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("person.sam", "home")
+    hass.states.async_set("device_tracker.phone", "not_home")
+    freezer.tick(timedelta(minutes=45))
+    hass.states.async_set("device_tracker.phone", "home")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=80))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert said and said[-1].data["message"].startswith("Welcome back")

@@ -338,7 +338,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_AWAY_LIGHTS_ON, **d(CONF_AWAY_LIGHTS_ON, False)): selector.BooleanSelector(),
             vol.Optional(CONF_AWAY_PEOPLE, **d(CONF_AWAY_PEOPLE, [])): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="person", multiple=True)
+                selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)
             ),
             vol.Optional(CONF_AWAY_LIGHTS, **d(CONF_AWAY_LIGHTS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="light", multiple=True)
@@ -549,7 +549,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="person", multiple=True)
+                selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)
             ),
             vol.Optional(CONF_LINK_TRIGGERS, **d(CONF_LINK_TRIGGERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["binary_sensor", "media_player", "input_boolean", "switch", "light"], multiple=True)
