@@ -272,7 +272,7 @@
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
@@ -1648,6 +1648,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .lane{display:flex;flex-direction:column;gap:14px;min-width:0}
 .lane>.card{flex:none;display:flex;flex-direction:column}
 .lane>.card>.hint.meter{margin-top:auto}
+.lane>.card>.e:last-child{margin:auto 0}
 .lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto}
 .lt{display:flex;align-items:center;gap:10px;margin:2px 4px -4px;font-size:9.5px;font-weight:700;letter-spacing:.3em;color:rgba(127,239,255,.55)}
 .lt::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.22),transparent)}

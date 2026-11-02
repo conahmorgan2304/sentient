@@ -107,8 +107,29 @@ async def test_offline_before_a_restart_is_reported_straight_away(hass: HomeAssi
     health._never.clear()
     health._checked["switch.hallway_plug"] = dt_util.utcnow()
     health._went_off["switch.hallway_plug"] = dt_util.utcnow() - timedelta(hours=2)  # what history says
+    health.was_offline_before = lambda: {"Hallway plug"}  # the timeline had it offline before the restart
     issues = health.async_check()
     assert [i["name"] for i in issues if i["kind"] == "offline"] == ["Hallway plug"]
+
+
+async def test_still_reconnecting_after_a_restart_is_not_offline(hass: HomeAssistant, freezer) -> None:
+    other = MockConfigEntry(domain="tuya_local"); other.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    plug = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("tuya", "coffee")}, name="Coffee machine")
+    ents.async_get_or_create("switch", "tuya_local", "coffee", suggested_object_id="coffee", device_id=plug.id)
+    hass.states.async_set("switch.coffee", "unavailable")  # its integration hasn't reconnected yet
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    health._never.clear()
+    health._checked["switch.coffee"] = dt_util.utcnow()
+    health._went_off["switch.coffee"] = dt_util.utcnow() - timedelta(minutes=45)  # history: since the last restart
+    assert not [i for i in health.async_check() if i["kind"] == "offline"]
+    freezer.tick(timedelta(minutes=11))  # still gone ten minutes after start-up: that's real
+    health._checked["switch.coffee"] = dt_util.utcnow()
+    assert [i["name"] for i in health.async_check() if i["kind"] == "offline"] == ["Coffee machine"]
 
 
 async def test_offline_device_stays_reported_while_its_history_is_rechecked(hass: HomeAssistant, freezer) -> None:

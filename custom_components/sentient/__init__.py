@@ -380,6 +380,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     upkeep.async_start()
     entry.async_on_unload(upkeep.async_stop)
     health = HouseHealth(hass, options, lambda: getattr(entry, "runtime_data", None))
+    health.was_offline_before = lambda: {k.split(":", 1)[1] for k in (timeline._problems or {}) if k.startswith("offline:")}
     health.async_start()
     entry.async_on_unload(health.async_stop)
     visitors = Visitors(hass, entry.entry_id, options, speech, watches)
