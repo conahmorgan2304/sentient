@@ -73,6 +73,8 @@ from .const import (
     CONF_GOALS,
     CONF_BOOKS,
     CONF_BOOKS_FOLDER,
+    CONF_READING_TTS,
+    CONF_READING_VOICE,
     CONF_RECIPES,
     CONF_RECIPES_FOLDER,
     CONF_RECIPES_LIST,
@@ -319,7 +321,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Audiobooks played and ebooks read aloud, picking up where each room left off; recipes from a folder, Mealie or Tandoor with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short and can't play the house's own audio files, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
-        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
+        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,
@@ -440,6 +442,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_energy)
     websocket_api.async_register_command(hass, ws_security)
     websocket_api.async_register_command(hass, ws_critical_test)
+    websocket_api.async_register_command(hass, ws_reading_try)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -480,6 +483,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         }
         for gid, title, icon, blurb, _keys in GROUPS
     ]
+    _voice_picker(hass, entry, groups)
     connection.send_result(
         msg["id"],
         {
@@ -491,6 +495,42 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             "categories": MEMORY_CATEGORIES,
         },
     )
+
+
+def _voice_picker(hass: HomeAssistant, entry, groups: list[dict[str, Any]]) -> None:
+    """The reading voice as Home Assistant's own voice picker, following the service chosen above it."""
+    from .speech import tts_language
+
+    engine = entry.options.get(CONF_READING_TTS) or entry.data.get(CONF_READING_TTS)
+    language = (tts_language(hass, engine) if engine else None) or hass.config.language
+    for group in groups:
+        for field in group["schema"]:
+            if field["name"] == CONF_READING_VOICE:
+                field["selector"] = {"tts_voice": {"language": language}}
+                field["context"] = {"engineId": CONF_READING_TTS}
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/reading/try", vol.Optional("engine"): vol.Any(str, None),
+     vol.Optional("voice"): vol.Any(str, None), vol.Optional("speaker"): vol.Any(str, None)}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_reading_try(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Hear a line in the reading voice on the default speaker (or the one given)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    opts = {**entry.data, **entry.options}
+    speaker = msg.get("speaker") or opts.get("default_speaker") or next(iter(opts.get("speakers") or []), None)
+    if not speaker:
+        connection.send_error(msg["id"], "no_speaker", "Choose a default speaker under Speaking first")
+        return
+    out = await entry.runtime_data.speech.async_try_voice(speaker, msg.get("engine"), msg.get("voice"))
+    st = hass.states.get(speaker)
+    out["speaker_name"] = st.name if st else speaker
+    connection.send_result(msg["id"], out)
 
 
 @websocket_api.websocket_command(
