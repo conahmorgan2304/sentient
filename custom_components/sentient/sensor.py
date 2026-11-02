@@ -283,7 +283,7 @@ class HealthSensor(_Base):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         health = self._entry.runtime_data.health
-        return {"issues": health.issues[:30], "updates": health.updates}
+        return {"issues": health.issues[:30], "problems": health.describe()[:30], "updates": health.updates}
 
 
 class DriveSensor(_Base):
@@ -366,6 +366,14 @@ class MindSensor(_Base):
             "appliances": rt.appliances.listing(),
             "style_feedback": bool(rt.options.get("style_feedback", True)),
             "style_notes": [n.strip() for n in str(rt.options.get("style_notes") or "").splitlines() if n.strip()],
+            "talking": {
+                "style": rt.options.get("conversation_style", "brief"),
+                "carry_on_minutes": rt.options.get("carry_on_minutes", 0),
+                "focused_tools": bool(rt.options.get("focused_tools")),
+                "ask_later": bool(rt.options.get("ask_later")),
+            },
+            "ask_later": [] if rt.speech.guest_mode or not rt.options.get("ask_later") or rt.threads is None
+            else [{"question": t["question"], "about": t["about"], "due": t["due"]} for t in rt.threads.waiting()],
         }
 
 

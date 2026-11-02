@@ -36,6 +36,27 @@ EVENT_TIMELINE = f"{DOMAIN}_timeline"
 KINDS = ["said", "held", "noticed", "visitor", "watch", "light", "health", "mode", "digest", "critical", "energy", "security", "mind", "loop", "drive", "appliance", "animal", "voice", "clip"]
 
 
+HELD_REASONS = {
+    "quiet_hours": "quiet hours", "hushed": "the house was hushed", "guest_mode": "guests were in",
+    "said_recently": "said the same not long ago", "duplicate": "just said that", "thumbs_down": "a thumbs-down on these",
+    "no_speaker": "no speaker to say it on", "busy": "already saying something", "hourly_limit": "enough said this hour",
+    "empty": "nothing to say",
+}
+
+
+def held_reason(hass: HomeAssistant, reason: str) -> str:
+    """Why something wasn't said, in words ("right after another announcement", "quiet hours")."""
+    kind, _, what = reason.partition(":")
+    if kind == "hushed_by":
+        if what == "announcement":
+            return "right after another announcement"
+        st = hass.states.get(what) if what else None
+        return f"right after {st.name if st else what or 'something else'}"
+    if kind == "muted":
+        return f"muted ({what})" if what else "muted"
+    return HELD_REASONS.get(kind, kind.replace("_", " "))
+
+
 class Timeline:
     """Newest-first list of {time, kind, text, detail}."""
 
@@ -107,8 +128,8 @@ class Timeline:
     @callback
     def _held(self, event: Event) -> None:
         d = event.data
-        reason = str(d.get("reason") or "").split(":")[0].replace("_", " ")
-        self.add("held", d.get("message", ""), f"held back: {reason}" if reason else None, reason=d.get("reason"), source=d.get("source"))
+        why = held_reason(self.hass, str(d.get("reason") or ""))
+        self.add("held", d.get("message", ""), f"held back: {why}" if why else None, reason=d.get("reason"), source=d.get("source"))
 
     @callback
     def _noticed(self, event: Event) -> None:

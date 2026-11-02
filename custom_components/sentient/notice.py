@@ -313,7 +313,9 @@ class Noticer:
                          + "\n".join(f"- {t}" for t in self.feedback.liked[:5]))
         said = self.speech.recent_said(6)
         if said:
-            lines.append("What you've said recently (don't repeat yourself):\n" + "\n".join(f"- {s}" for s in said))
+            lines.append("What you've said recently (don't repeat yourself, and don't make the same point or offer "
+                         "again in other words — if the heating, say, has just been offered, leave it):\n"
+                         + "\n".join(f"- {s}" for s in said))
         return "\n".join(lines)
 
     async def _async_ask_ai(self, changes: list[Change]) -> dict[str, Any]:

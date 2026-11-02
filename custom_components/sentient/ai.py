@@ -161,9 +161,18 @@ class AIGate:
             data["entity_id"] = ai
         try:
             async with asyncio.timeout(timeout):
-                response = await self.hass.services.async_call(
-                    "ai_task", "generate_data", data, blocking=True, return_response=True
-                )
+                try:
+                    response = await self.hass.services.async_call(
+                        "ai_task", "generate_data", data, blocking=True, return_response=True
+                    )
+                except Exception as err:  # noqa: BLE001
+                    if not busy(err):
+                        raise
+                    # "high demand" / rate limited: usually gone in a moment, so try once more
+                    await asyncio.sleep(RETRY_AFTER)
+                    response = await self.hass.services.async_call(
+                        "ai_task", "generate_data", data, blocking=True, return_response=True
+                    )
         except Exception as err:  # noqa: BLE001 - every failure means "use the plain version"
             self.failed(err)
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
@@ -203,6 +212,16 @@ class AIGate:
             "last_7_days": dict(zip(days, week)),
             "average_per_day": round(sum(week) / len(week)) if week else None,
         }
+
+
+RETRY_AFTER = 4  # seconds
+_BUSY = ("503", "429", "unavailable", "high demand", "overloaded", "resource_exhausted", "rate limit", "try again later")
+
+
+def busy(err: BaseException) -> bool:
+    """The AI service said it's busy (not that the request was wrong): worth one more try."""
+    text = f"{type(err).__name__} {err}".lower()
+    return any(b in text for b in _BUSY)
 
 
 def gate(hass: HomeAssistant) -> AIGate | None:
