@@ -239,7 +239,13 @@ class MotionLights:
         return not is_up(self.hass)
 
     def _note(self, rule: MotionRule, what: str) -> None:
-        rule.last, rule.last_time = what, dt_util.utcnow().isoformat()
+        now = dt_util.utcnow()
+        repeat = what.startswith("stayed off") and rule.last == what and rule.last_time and \
+            now - (dt_util.parse_datetime(rule.last_time) or now) < timedelta(minutes=30)
+        rule.last, rule.last_time = what, now.isoformat()
+        if repeat:  # "stayed off: quiet hours" every few minutes all night isn't news for the timeline
+            self._save()
+            return
         self._save()
         st = self.hass.states.get(rule.light)
         self.hass.bus.async_fire(

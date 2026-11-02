@@ -207,6 +207,8 @@ from .const import (
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
     CONF_SEARCH_HINTS,
+    CONF_REMARK_REPEAT_HOURS,
+    DEFAULT_REMARK_REPEAT_HOURS,
     CONF_WEB_SEARCH,
     CONF_SEARXNG_URL,
     CONF_ALEXA_SKILL,
@@ -488,6 +490,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_NOTICE_ENTITIES, **d(CONF_NOTICE_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_REMARK_REPEAT_HOURS, **d(CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=24, step=0.5, unit_of_measurement="h", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_PERSONALITY, **d(CONF_PERSONALITY, DEFAULT_PERSONALITY)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(PERSONALITIES), translation_key="personality")

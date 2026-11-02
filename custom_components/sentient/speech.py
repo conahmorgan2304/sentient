@@ -17,6 +17,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 import logging
+import math
 import re
 from typing import Any
 
@@ -26,6 +27,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_ALEXA_TTS_ONLY
+from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
     CONF_FALLBACK_SPEAKERS,
@@ -119,6 +121,10 @@ def _platform(hass: HomeAssistant, entity_id: str) -> str | None:
     return entry.platform if entry else None
 
 
+def _remark_key(text: str) -> str:
+    return re.sub(r"[^a-z0-9 ]", "", text.lower()).strip()
+
+
 def clean_message(message: str, banned: list[str]) -> str:
     """Strip unwanted forms of address and tidy the sentence."""
     text = message
@@ -129,6 +135,9 @@ def clean_message(message: str, banned: list[str]) -> str:
         text = re.sub(rf"(?i)^\s*\b{w}\b[\s,]*", "", text)  # "Sir, the gate..."
         text = re.sub(rf"(?i),\s*\b{w}\b", "", text)  # "...is open, sir."
         text = re.sub(rf"(?i)\s*\b{w}\b", "", text)  # "Good evening sir, ..."
+    # say temperatures the way a person would: "18.2 degrees" -> "18 degrees"
+    text = re.sub(r"(?<![\d.])(-?\d+\.\d+)(\s*(?:°\s*C?|degrees?\b))",
+                  lambda m: f"{math.floor(float(m.group(1)) + 0.5)}{m.group(2)}", text)
     text = re.sub(r"\s+([,.!?])", r"\1", text)
     text = re.sub(r"^[\s,.;:-]+", "", text)
     text = re.sub(r"\s{2,}", " ", text).strip()
@@ -337,12 +346,19 @@ class SpeechRouter:
                 # low priority never interrupts something said in the last minute
                 if any(dt_util.utcnow() - t < timedelta(seconds=60) for t in self._recent.values()):
                     return self._held("busy", text, source)
+        if source == "notice" and (hours := float(self.options.get(CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS) or 0)):
+            last = getattr(self, "_remarks", {}).get(_remark_key(text))
+            if last is not None and dt_util.utcnow() - last < timedelta(hours=hours):
+                return self._held("said_recently", text, source)  # "The kettle has finished boiling." once is enough
         if check_duplicate and source != "critical" and (last := self._recent.get(text.lower())) is not None and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
             return self._held("duplicate", text, source)
         return None
 
     def _remember_said(self, text: str) -> None:
         now = dt_util.utcnow()
+        key = _remark_key(text)
+        self._remarks = {k: v for k, v in getattr(self, "_remarks", {}).items() if now - v < timedelta(hours=24)}
+        self._remarks[key] = now
         self._recent = {k: v for k, v in self._recent.items() if now - v < _DUPLICATE_WINDOW}
         self._recent[text.lower()] = now
         self._said.appendleft((now, text))

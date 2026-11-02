@@ -136,6 +136,7 @@ from .const import (
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
     CONF_SEARCH_HINTS,
+    CONF_REMARK_REPEAT_HOURS,
     CONF_WEB_SEARCH,
     CONF_SEARXNG_URL,
     CONF_ALEXA_SKILL,
@@ -228,7 +229,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
-        CONF_NOTICE_ENTITIES, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
+        CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
         CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT,
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
