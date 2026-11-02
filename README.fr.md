@@ -26,6 +26,7 @@ Il fonctionne avec l’IA que vous avez déjà dans Home Assistant (Google Gemin
 - **Timeline.** Journal de ce que la maison a fait et remarqué.
 - **Notifications téléphone.** Choisissez les téléphones et ce qui leur est envoyé.
 - **Bienvenue à la maison.** Optionnel : un message quand quelqu’un rentre après une absence.
+- **Livres, histoires et recettes.** Optionnel : ebooks et histoires lus en entier jusqu’à « stop » ou « pause », livres audio, une voix de lecture au choix (n’importe quel service de synthèse vocale), et un mode cuisine pas à pas depuis un dossier, Mealie ou Tandoor.
 
 ## Installation
 
