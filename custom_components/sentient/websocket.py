@@ -134,6 +134,7 @@ from .const import (
     CONF_LEFT_OPEN_IGNORE,
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
+    CONF_ENERGY_CURRENCY,
     CONF_CRITICAL_IGNORE,
     CONF_CRITICAL_EXTRA,
     CONF_WELCOME_PEOPLE,
@@ -281,7 +282,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_RAIN, CONF_RAIN_ENTITIES,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
-        CONF_ENERGY, CONF_ENERGY_PRICE,
+        CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
         CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE,

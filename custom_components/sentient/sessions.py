@@ -46,6 +46,22 @@ INFORMATION = re.compile(
     r"security|system|health|status)\b", re.I)
 CORRECTION = re.compile(r"^(?:no[, ]+|i meant\b|not that\b|actually[, ]+|rather[, ]+|instead[, ]+)", re.I)
 FOLLOW_UP = "Is there anything else you'd like to know?"
+# Said in turn so it doesn't sound like a script; every one matches GENERAL_FOLLOWUP, so a plain "no" still ends it.
+FOLLOW_UPS = (
+    FOLLOW_UP,
+    "Anything else?",
+    "Anything else I can help with?",
+    "Anything more on that, or something else?",
+    "Want to know anything else?",
+    "Anything else on your mind?",
+    "Something else I can check for you?",
+    "Any more questions?",
+)
+
+
+def is_follow_up(text: str) -> bool:
+    """One of our own 'anything else?' questions (not a real question from the model)."""
+    return (text or "").strip() in FOLLOW_UPS
 
 
 def normalise(text):
@@ -228,7 +244,7 @@ class Sessions:
         elif session.task_state != 'completed':
             session.task_state = 'waiting'
         if session.active and not ends_in_question(text):
-            text += " " + FOLLOW_UP
+            text += " " + self.next_follow_up()
             result.response.async_set_speech(text)
         session.waiting = ends_in_question(text)
         result.continue_conversation = session.waiting
@@ -241,6 +257,15 @@ class Sessions:
             session.missing_detail = ''
             session.listen_reason = 'completed_single_request'
         return result
+
+    def next_follow_up(self) -> str:
+        """A different 'anything else?' each time, never one of the last few."""
+        import random
+
+        recent = getattr(self, "_recent_follow_ups", [])
+        choice = random.choice([f for f in FOLLOW_UPS if f not in recent] or list(FOLLOW_UPS))
+        self._recent_follow_ups = (recent + [choice])[-4:]
+        return choice
 
     def close(self, session):
         self.memory.discard(session)

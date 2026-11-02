@@ -44,7 +44,8 @@ async def test_information_discussion_adds_followup(hass, text):
     with patch.object(obj, '_async_process_legacy', AsyncMock(return_value=response('Here is the report.'))):
         result = await obj.async_process(request(text))
     assert result.continue_conversation
-    assert result.response.speech['plain']['speech'].endswith("Is there anything else you'd like to know?")
+    from custom_components.sentient.sessions import FOLLOW_UPS
+    assert any(result.response.speech['plain']['speech'].endswith(f) for f in FOLLOW_UPS)
     assert rt.sessions.describe()[0]['mode'] == 'discussion'
 
 
@@ -155,7 +156,8 @@ async def test_discussion_confirmation_is_separate_and_keeps_followup(hass):
         result = await obj.async_process(request('yes'))
         assert len(calls) == 1 and ai.await_count == 2
         assert result.continue_conversation
-        assert "anything else" in result.response.speech['plain']['speech']
+        from custom_components.sentient.sessions import FOLLOW_UPS
+        assert any(result.response.speech['plain']['speech'].endswith(f) for f in FOLLOW_UPS)
         assert not (await obj.async_process(request('enough'))).continue_conversation
 
 
@@ -175,3 +177,10 @@ async def test_device_stop_is_not_conversation_ending(hass):
         result = await obj.async_process(request('Stop the vacuum'))
     model.assert_awaited_once()
     assert not result.continue_conversation
+
+
+async def test_follow_ups_vary(hass):
+    obj, rt = agent(hass, {'conversation_sessions': True})
+    said = [rt.sessions.next_follow_up() for _ in range(12)]
+    assert all(a != b for a, b in zip(said, said[1:]))  # never the same twice running
+    assert len(set(said[:5])) == 5  # nor within the last few

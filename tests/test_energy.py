@@ -56,3 +56,20 @@ async def test_energy_can_be_turned_off(hass: HomeAssistant) -> None:
     api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
     res = await api.async_call_tool(llm.ToolInput(tool_name="sentient_energy", tool_args={}))
     assert "turned off" in getattr(res, "data", res)["error"]
+
+
+async def test_currency_follows_the_setting_or_home_assistant(hass: HomeAssistant) -> None:
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    hass.config.currency = "EUR"
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert energy.currency(hass) == ("EUR", "€") and energy.money(hass, 1.5) == "€1.50"  # Home Assistant's own
+    entry.runtime_data.options = {**entry.runtime_data.options, "energy_currency": "usd"}
+    assert energy.currency(hass) == ("USD", "$")
+    entry.runtime_data.options = {**entry.runtime_data.options, "energy_currency": "XYZ"}
+    assert energy.money(hass, 2) == "XYZ 2.00"  # any code, shown as itself

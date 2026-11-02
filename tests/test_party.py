@@ -160,3 +160,29 @@ async def test_everywhere_halloween_and_following_the_music(hass: HomeAssistant,
     assert sw_off  # christmas isn't listening, so reporting goes off again
     assert hass.states.get("switch.nova_light_show").attributes["style"] == "christmas"
     await party.async_end()
+
+
+async def test_lights_put_back_again_once_the_bulbs_catch_up(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.core import Context
+
+    entry = await _setup(hass, freezer)
+    on = async_mock_service(hass, "light", "turn_on")
+    off = async_mock_service(hass, "light", "turn_off")
+    party = entry.runtime_data.party
+    await party.async_party("disco")
+    await party.async_end()
+    await hass.async_block_till_done()
+    # a late show command lands after the first put-back (as Zigbee bulbs do)…
+    hass.states.async_set("light.lamp", "on", {"supported_color_modes": ["color_temp", "hs"], "color_mode": "hs",
+                                               "hs_color": [300, 100], "brightness": 255},
+                          context=Context(parent_id=party._parent.id))
+    # …and someone switches the ceiling light on by hand after the show
+    hass.states.async_set("light.ceiling", "on", {"supported_color_modes": ["brightness"]}, context=Context())
+    on.clear()
+    off.clear()
+    freezer.tick(timedelta(seconds=6))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    lamp = [c.data for c in on if c.data["entity_id"] == "light.lamp"]
+    assert lamp and lamp[-1]["color_temp_kelvin"] == 2700 and lamp[-1]["brightness"] == 120  # put back again
+    assert not any(c.data["entity_id"] == "light.ceiling" for c in off)  # the hand-switched light is left alone

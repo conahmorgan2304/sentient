@@ -205,6 +205,8 @@ from .const import (
     CONF_LEFT_OPEN_IGNORE,
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
+    CONF_ENERGY_CURRENCY,
+    CURRENCIES,
     CONF_CRITICAL_IGNORE,
     CONF_CRITICAL_EXTRA,
     CONF_WELCOME_PEOPLE,
@@ -440,7 +442,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_WEEKLY_REPORT, **d(CONF_WEEKLY_REPORT, DEFAULT_WEEKLY_REPORT)): selector.BooleanSelector(),
             vol.Required(CONF_ENERGY, **d(CONF_ENERGY, True)): selector.BooleanSelector(),
             vol.Optional(CONF_ENERGY_PRICE, **d(CONF_ENERGY_PRICE)): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="p/kWh", mode=selector.NumberSelectorMode.BOX)
+                selector.NumberSelectorConfig(min=0, max=200, step=0.01, unit_of_measurement="per kWh", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_ENERGY_CURRENCY, **d(CONF_ENERGY_CURRENCY)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=CURRENCIES, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)
             ),
             vol.Optional(CONF_CRITICAL_EXTRA, **d(CONF_CRITICAL_EXTRA, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["binary_sensor", "input_boolean"], multiple=True)

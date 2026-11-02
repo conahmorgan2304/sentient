@@ -140,7 +140,7 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
             report = await async_report(hass)
             if report.get("devices"):
                 out["energy_today"] = {
-                    **({"cost_so_far": f"£{report['cost_today']:.2f}"} if report.get("cost_today") else {}),
+                    **({"cost_so_far": f"{report.get('currency_symbol', '£')}{report['cost_today']:.2f}"} if report.get("cost_today") else {}),
                     "kwh_so_far": report["total_kwh"],
                     "usual_by_now": report["usual_kwh"],
                     "biggest": [f"{d['name']} {d['kwh']} kWh" for d in report["devices"][:3]],

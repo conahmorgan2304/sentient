@@ -54,6 +54,20 @@ def _price(hass: HomeAssistant) -> float | None:
     return float(value) if value else None
 
 
+def currency(hass: HomeAssistant) -> tuple[str, str]:
+    """(ISO code, symbol to show) — the chosen currency, else Home Assistant's own."""
+    from .const import CONF_ENERGY_CURRENCY, CURRENCY_SYMBOLS, DOMAIN
+
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    code = (entries[0].runtime_data.options.get(CONF_ENERGY_CURRENCY) if entries else None) or hass.config.currency or "GBP"
+    code = str(code).strip().upper()
+    return code, CURRENCY_SYMBOLS.get(code, f"{code} ")
+
+
+def money(hass: HomeAssistant, amount: float) -> str:
+    return f"{currency(hass)[1]}{amount:.2f}"
+
+
 async def async_report(hass: HomeAssistant) -> dict[str, Any]:
     if not enabled(hass):
         return {"enabled": False, "devices": [], "unusual": [], "note": "Energy insight is turned off in Sentient's settings"}
@@ -98,6 +112,8 @@ async def async_report(hass: HomeAssistant) -> dict[str, Any]:
     return {
         "enabled": True,
         "cost_today": round(total * price / 100, 2) if price else None,
+        "currency": currency(hass)[0],
+        "currency_symbol": currency(hass)[1],
         "up_to": upto.strftime("%H:%M"),
         "total_kwh": total,
         "usual_kwh": total_usual,
