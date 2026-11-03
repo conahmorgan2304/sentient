@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -278,14 +279,23 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         # each card's address only changes when that card's file does, so a browser's saved copy of
         # the page keeps working across updates that don't touch the cards
         tags = await hass.async_add_executor_job(_card_tags)
+        # The cards are also copied to config/www/sentient, which Home Assistant itself serves (/local) from
+        # the first second of a start. Sentient's own address only exists once Sentient has loaded, so a
+        # tablet or phone that reconnected while Home Assistant was still starting got "not found", kept
+        # that, and showed "Custom element doesn't exist" until its cache was cleared.
+        try:
+            base = LOCAL_CARDS_URL if await hass.async_add_executor_job(_publish_cards, Path(hass.config.path("www"))) else FRONTEND_URL
+        except OSError as err:
+            _LOGGER.warning("Couldn't copy the dashboard cards to the www folder: %s", err)
+            base = FRONTEND_URL
         for card in CARDS:
-            add_extra_js_url(hass, f"{FRONTEND_URL}/{card}.js?v={tags.get(card, version)}")
+            add_extra_js_url(hass, f"{base}/{card}.js?v={tags.get(card, version)}")
 
         # also as dashboard resources: an app or browser holding an old copy of the page loads those
         # with the dashboard, so the cards are never "not found" after an update
         async def _resources(_event=None) -> None:
             try:
-                await async_register_card_resources(hass, version, tags)
+                await async_register_card_resources(hass, version, tags, base)
             except Exception as err:  # noqa: BLE001 - the extra JS above still works in most places
                 _LOGGER.debug("Couldn't add the cards as dashboard resources: %s", err)
 
@@ -297,6 +307,26 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
+LOCAL_CARDS_URL = "/local/sentient"  # config/www/sentient, served by Home Assistant from the start
+
+
+def _publish_cards(www: Path) -> bool:
+    """Copy the cards to config/www/sentient (only when they've changed).
+
+    True when the www folder was already there, so Home Assistant is serving /local this run (it only
+    looks for the folder as it starts — the very first time, the cards come from Sentient's own address)."""
+    existed = www.is_dir()
+    dest = www / "sentient"
+    dest.mkdir(parents=True, exist_ok=True)
+    src = Path(__file__).parent / "frontend"
+    for card in CARDS:
+        data = (src / f"{card}.js").read_bytes()
+        target = dest / f"{card}.js"
+        if not target.is_file() or target.read_bytes() != data:
+            tmp = target.with_suffix(".js.tmp")
+            tmp.write_bytes(data)
+            tmp.replace(target)
+    return existed
 
 
 def _card_tags(cards: tuple[str, ...] = CARDS) -> dict[str, str]:
@@ -313,7 +343,8 @@ def _card_tags(cards: tuple[str, ...] = CARDS) -> dict[str, str]:
     return out
 
 
-async def async_register_card_resources(hass: HomeAssistant, version: str, tags: dict[str, str] | None = None) -> list[str]:
+async def async_register_card_resources(hass: HomeAssistant, version: str, tags: dict[str, str] | None = None,
+                                        base: str = FRONTEND_URL) -> list[str]:
     """Make sure each card is a module resource on the dashboards, at this version."""
     try:
         from homeassistant.components.lovelace.const import LOVELACE_DATA
@@ -328,9 +359,10 @@ async def async_register_card_resources(hass: HomeAssistant, version: str, tags:
         resources.loaded = True
     done = []
     for card in CARDS:
-        base = f"{FRONTEND_URL}/{card}.js"
-        url = f"{base}?v={(tags or {}).get(card, version)}"
-        mine = [r for r in resources.async_items() if str(r.get("url", "")).split("?")[0] == base]
+        url = f"{base}/{card}.js?v={(tags or {}).get(card, version)}"
+        # either address: one from before the cards moved to /local is updated in place
+        mine = [r for r in resources.async_items()
+                if str(r.get("url", "")).split("?")[0] in (f"{FRONTEND_URL}/{card}.js", f"{LOCAL_CARDS_URL}/{card}.js")]
         if not mine:
             await resources.async_create_item({"res_type": "module", "url": url})
             done.append(url)
