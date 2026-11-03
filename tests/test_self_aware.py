@@ -141,3 +141,13 @@ async def test_once_a_day_and_a_fresh_restart_are_not_problems(hass: HomeAssista
     freezer.tick(timedelta(minutes=11))
     cams = next(c for c in rt.selfaware.status() if c["name"] == "Cameras")
     assert cams["status"] == "limited" and "Tablet Camera" in cams["why"]
+
+
+def test_self_test_understands_every_way_of_saying_none() -> None:
+    from custom_components.sentient.selftest import NONE_SAID
+
+    for said in ("You don't have any reminders set right now.", "You do not have any reminders.",
+                 "There aren't any reminders.", "You’ve not got any reminders.", "No reminders today.", "All clear."):
+        assert NONE_SAID.search(said), said
+    for said in ("You have two reminders: the bins and the dentist.", "Your reminder is the dentist at three."):
+        assert not NONE_SAID.search(said), said
