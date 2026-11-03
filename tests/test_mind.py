@@ -545,3 +545,28 @@ async def test_drive_only_asks_the_ai_when_the_picture_changes(hass: HomeAssista
         freezer.tick(timedelta(minutes=10))
     assert len(ai) == 2 and rt.drive.skipped == 1
     assert rt.drive.describe()["cars"] == 1
+
+
+def test_cards_are_copied_to_www_for_home_assistant_to_serve_from_the_start(tmp_path) -> None:
+    from custom_components.sentient import CARDS, _publish_cards
+
+    www = tmp_path / "www"
+    assert _publish_cards(www) is False  # no www folder at start-up: /local isn't served this run
+    assert {p.name for p in (www / "sentient").iterdir()} == {f"{c}.js" for c in CARDS}
+    (www / "sentient" / "sentient-hub-card.js").write_text("old")
+    assert _publish_cards(www) is True
+    assert "sentient-hub-card" in (www / "sentient" / "sentient-hub-card.js").read_text()
+
+
+async def test_card_resources_move_to_local(hass: HomeAssistant) -> None:
+    from homeassistant.setup import async_setup_component
+
+    from custom_components.sentient import LOCAL_CARDS_URL, async_register_card_resources
+    from homeassistant.components.lovelace.const import LOVELACE_DATA
+
+    assert await async_setup_component(hass, "lovelace", {})
+    await async_register_card_resources(hass, "1.0.0")
+    await async_register_card_resources(hass, "1.0.0", None, LOCAL_CARDS_URL)
+    urls = sorted(r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items())
+    assert urls == ["/local/sentient/sentient-hub-card.js?v=1.0.0", "/local/sentient/sentient-screen-card.js?v=1.0.0",
+                    "/local/sentient/sentient-shows-card.js?v=1.0.0"]  # moved, not added twice
