@@ -643,6 +643,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.voice_checks.options = options
     if not options.get(CONF_ASK_LATER):
         entry.runtime_data.threads.clear()  # switched off: nothing is kept to ask later
+    if not options.get("privacy_log", True):
+        entry.runtime_data.ai.forget_sent()  # switched off: the record of what left the house goes too
     if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
         entry.runtime_data.speech.deliveries.clear()
     entry.runtime_data.speech.options = options

@@ -402,6 +402,7 @@
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
+        privacy: ["mdi:shield-lock-outline", "What leaves the house", this._priv ? `${this._priv.totals.times} sent this week` : "AI calls and searches, and forgetting"],
         doctor: ["mdi:stethoscope", "Setup doctor", this._doc ? (this._doc.status === "ok" ? "All good" : `${this._doc.rows.filter((r) => r.status !== "ok").length} to look at`) : "Check the setup and what to fix"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
@@ -414,7 +415,7 @@
       const menus = [
         ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "voicebackup", "mutes", "phone"]],
         ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
-        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
+        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
         ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
@@ -484,6 +485,7 @@
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       if (this._group === "doctor") { this._form = null; this._drawDoctor(); return; }
+      if (this._group === "privacy") { this._form = null; this._drawPrivacy(); return; }
       if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
@@ -929,6 +931,30 @@
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
         <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
         <div class="bar"><span id="status"></span><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
+    }
+
+    // ---------- what leaves the house ----------
+    async _drawPrivacy(refresh) {
+      const body = this._$("body");
+      if (!this._priv || refresh) {
+        body.innerHTML = `<div class="e">LOADING…</div>`;
+        try { this._priv = await this._hass.callWS({ type: "sentient/privacy" }); } catch (e) { body.innerHTML = `<div class="e">${esc(e.message || String(e))}</div>`; return; }
+        this._drawSide();
+      }
+      if (this._group !== "privacy") return;
+      const P = this._priv;
+      const n = (v, one, many) => `${v} ${v === 1 ? one : many}`;
+      const what = (r) => [r.pictures && n(r.pictures, "picture", "pictures"), r.clips && n(r.clips, "clip", "clips"), r.documents && n(r.documents, "document", "documents")].filter(Boolean).join(", ") || "text only";
+      const rows = Object.entries(P.by_feature || {}).map(([f, r]) => `<div class="r"><ha-icon icon="mdi:cloud-upload-outline"></ha-icon><b class="wrap">${esc(f)}<small>${esc(what(r))}</small></b><u>${esc(String(r.times))}×</u></div>`).join("");
+      const recent = (P.last_48_hours || []).slice(0, 30).map((s) => `<div class="r dim"><span class="tm">${new Date(s.time).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}</span><b class="wrap">${esc(s.feature)}<small>${esc(what(s))} · to ${esc(s.to)}</small></b></div>`).join("");
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:shield-lock-outline"></ha-icon><div><div class="bt">WHAT LEAVES THE HOUSE</div>
+          <div class="bs">Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.</div></div></div>
+        ${P.keeping_record ? "" : '<div class="hint">THE RECORD IS TURNED OFF · SETTINGS → MIND</div>'}
+        <div class="card ml">${this._h("LAST 7 DAYS", `${esc(String(P.totals.times))} SENT · ${esc(String(P.totals.pictures))} PICTURES · ${esc(String(P.totals.clips))} CLIPS`)}${rows || '<div class="e">NOTHING SENT THIS WEEK</div>'}
+          ${P.where && P.where.length ? `<div class="hint">SENT TO ${esc(P.where.join(", ")).toUpperCase()}</div>` : ""}</div>
+        ${recent ? `<details class="caps"><summary>The last 48 hours, one by one</summary>${recent}</details>` : ""}
+        <div class="spmsg" id="privmsg"></div>
+        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="privrun">REFRESH</button><button class="btn" data-act="privforget">FORGET THE LAST 48 HOURS</button></div>`;
     }
 
     // ---------- backup ----------
@@ -1516,6 +1542,15 @@
           .then(() => { m.pinned = !m.pinned; this._drawMemories(); }, (e) => window.alert(e.message || e));
       }
       else if (act === "docrun") this._drawDoctor(true);
+      else if (act === "privrun") this._drawPrivacy(true);
+      else if (act === "privforget") {
+        if (!window.confirm("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
+        this._hass.callWS({ type: "sentient/privacy/forget", hours: 48 }).then((r) => {
+          const total = Object.values(r.forgot).reduce((a, b) => a + b, 0);
+          this._status(`FORGOT ${total} THING${total === 1 ? "" : "S"} ✓`, "ok");
+          this._drawPrivacy(true);
+        }, (e) => this._status(e.message || String(e), "bad"));
+      }
       else if (act === "docspeak") {
         if (!window.confirm("Say a short test line on every speaker, one after another?")) return;
         this._status("TESTING…", "warn");

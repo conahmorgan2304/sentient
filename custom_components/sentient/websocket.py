@@ -69,6 +69,7 @@ from .const import (
     CONF_SELF_CHECK,
     CONF_SELF_ADJUST,
     CONF_PROPOSALS,
+    CONF_PRIVACY_LOG,
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
     CONF_GOALS,
@@ -292,7 +293,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_PROPOSALS, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -428,9 +429,37 @@ def ws_proposal(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], result)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/privacy", vol.Optional("days", default=7): vol.All(vol.Coerce(float), vol.Range(min=1, max=14))})
+@websocket_api.require_admin
+@callback
+def ws_privacy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """What has left the house, by feature (metadata only)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], entry.runtime_data.ai.sent_summary(msg["days"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/privacy/forget", vol.Optional("hours", default=48): vol.All(vol.Coerce(float), vol.Range(min=1, max=168))})
+@websocket_api.require_admin
+@callback
+def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Forget everything Sentient kept from the last few hours."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .privacy import forget_recent
+
+    connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_proposal)
+    websocket_api.async_register_command(hass, ws_privacy)
+    websocket_api.async_register_command(hass, ws_privacy_forget)
     websocket_api.async_register_command(hass, ws_voice_check)
     websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
