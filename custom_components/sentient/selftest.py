@@ -187,6 +187,18 @@ class SelfTest:
             return bool(near), f"{local:%H:%M}"
 
         out.append(Question("time", "What time is it?", clock))
+
+        # the question asked most often this week: no right answer to check against, but it must get a real one
+        if rt is not None:
+            from .selfaware import ANSWERED_BADLY, asked_often, is_question
+
+            often = next((q for q, _n in asked_often(rt) if is_question(q)), None)
+            if often:
+
+                def answered(answer: str) -> tuple[bool, str]:
+                    return bool(answer.strip()) and not ANSWERED_BADLY.search(answer), "a real answer (it's asked often)"
+
+                out.append(Question("asked often", often, answered))
         return out
 
     # ----- running ------------------------------------------------------------------------

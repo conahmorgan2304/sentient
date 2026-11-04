@@ -75,6 +75,7 @@ CONF_ASK_LATER = "ask_later"  # remember to ask how something went
 CONF_NEVER_ENTITIES = "never_entities"  # devices Sentient must never change by itself
 CONF_SELF_CHECK = "self_check"  # nightly self-check from its own records (no AI)
 CONF_SELF_ADJUST = "self_adjust"  # quieten remark kinds the house keeps hushing
+CONF_PROPOSALS = "proposals"  # suggest small settings changes from the self-check, applied only on a yes
 CONF_MANUALS = "manuals"  # answer from documents in a media folder
 CONF_MANUALS_FOLDER = "manuals_folder"
 DEFAULT_MANUALS_FOLDER = "manuals"

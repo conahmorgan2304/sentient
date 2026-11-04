@@ -51,6 +51,35 @@ def _key(text: str) -> str:
     return " ".join(w for w in _WORDS.findall(text.lower()) if len(w) > 2)
 
 
+# a question, not a request to do something (the self-test asks these, so nothing may be switched)
+QUESTION_START = re.compile(r"^\s*(what|what's|whats|when|where|who|how|is|are|was|were|has|have|did|does|do|which|will)\b", re.I)
+DOES_SOMETHING = re.compile(
+    r"\b(turn|switch|set|start|stop|play|pause|arm|disarm|put|add|remind|cancel|call|send|read|make|change|unlock|lock|"
+    r"open|close|remember|forget|tell \w+ to|announce|dim|brighten)\b", re.I)
+ANSWERED_BADLY = re.compile(
+    r"\b(i can(?:no|')t|i(?:'m| am) (?:not able|unable|sorry)|i don(?:'|)t (?:know|have)|no access|something went wrong|"
+    r"error|try again)\b", re.I)
+
+
+def is_question(text: str) -> bool:
+    return bool(QUESTION_START.search(text)) and not DOES_SOMETHING.search(text)
+
+
+def asked_often(rt: Any, days: float = DAYS, top: int = 3) -> list[tuple[str, int]]:
+    """Questions asked again and again this week: [(an example, times)], the time and date left out."""
+    asked: Counter[str] = Counter()
+    examples: dict[str, str] = {}
+    conv = getattr(rt, "conversations", None)
+    for ep in (conv.recent(hours=days * 24, limit=500) if conv else []):
+        first = next((t["text"] for t in ep.get("turns", []) if t["who"] == "them"), "")
+        if TRIVIAL.search(first):
+            continue  # the time or the date: of course people ask the speaker that
+        if (k := _key(first)) and len(k.split()) >= 2:
+            asked[k] += 1
+            examples.setdefault(k, first)
+    return [(examples[k], n) for k, n in asked.most_common(top) if n >= REPEATED_QUESTION]
+
+
 class SelfAware:
     def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
         self.hass = hass
@@ -90,6 +119,10 @@ class SelfAware:
         for f in report["findings"]:
             if f["kind"] == "failing":  # a part of it isn't working: a health problem (to phones, if chosen)
                 rt.timeline.add("health", f["text"], "self-check")
+        if (proposals := getattr(rt, "proposals", None)) is not None:
+            for p in proposals.refresh(report["findings"]):
+                rt.timeline.add("mind", f"Something I'd change: {p['change'][0].lower()}{p['change'][1:]}?",
+                                f"because {p['because'][0].lower()}{p['because'][1:]} — say yes or no on the Mind page")
 
     # ----- the check ---------------------------------------------------------------------
     def check(self, days: float = DAYS) -> dict[str, Any]:
@@ -170,23 +203,12 @@ class SelfAware:
             })
 
         # 4. the same question asked again and again — maybe it should be easier to find
-        asked: Counter[str] = Counter()
-        examples: dict[str, str] = {}
-        conv = getattr(rt, "conversations", None)
-        for ep in (conv.recent(hours=days * 24, limit=500) if conv else []):
-            first = next((t["text"] for t in ep.get("turns", []) if t["who"] == "them"), "")
-            if TRIVIAL.search(first):
-                continue  # the time or the date: of course people ask the speaker that
-            if (k := _key(first)) and len(k.split()) >= 2:
-                asked[k] += 1
-                examples.setdefault(k, first)
-        for k, n in asked.most_common(3):
-            if n >= REPEATED_QUESTION:
-                findings.append({
-                    "kind": "question", "about": examples[k],
-                    "text": f"I've been asked “{examples[k]}” {n} times — it might be worth putting in the morning briefing or on a screen",
-                    "evidence": {"times": n, "days": days},
-                })
+        for example, n in asked_often(rt, days):
+            findings.append({
+                "kind": "question", "about": example,
+                "text": f"I've been asked “{example}” {n} times — it might be worth putting in the morning briefing or on a screen",
+                "evidence": {"times": n, "days": days},
+            })
 
         # 5. its own parts failing (said once a day, and on the phone if health problems go there)
         day_ago = dt_util.utcnow() - timedelta(days=1)

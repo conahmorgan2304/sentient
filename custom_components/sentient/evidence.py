@@ -19,6 +19,28 @@ def describe_state(hass, entity_id):
                     'This is the last reported state, not an independent physical verification. Age alone does not prove staleness.'}
 
 
+# readings that normally report often: one not heard from in hours is probably stuck, not steady
+REPORTS_OFTEN = {"temperature", "humidity", "illuminance", "pressure", "atmospheric_pressure", "carbon_dioxide",
+                 "pm25", "pm10", "power", "voltage", "current"}
+STALE_AFTER_HOURS = 6
+
+
+def stale_readings(hass, allowed=None, hours=STALE_AFTER_HOURS):
+    """Measurement sensors not heard from for *hours* — [(name, hours since)] oldest first.
+
+    Uses last_reported (any report, changed or not), so a steady reading that keeps reporting isn't stale."""
+    now = dt_util.utcnow()
+    out = []
+    for state in hass.states.async_all("sensor"):
+        if state.attributes.get("device_class") not in REPORTS_OFTEN or state.state in ("unknown", "unavailable"):
+            continue
+        observed = getattr(state, "last_reported", state.last_updated)
+        age = (now - observed).total_seconds() / 3600
+        if age >= hours and (allowed is None or allowed(state.entity_id)):
+            out.append((state.name, int(age)))
+    return sorted(out, key=lambda r: -r[1])
+
+
 class Evidence:
     """Remember the last usable security reading across temporary outages and restarts."""
     def __init__(self, hass, entry_id, options):

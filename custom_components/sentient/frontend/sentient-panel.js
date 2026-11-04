@@ -1397,6 +1397,11 @@
           this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
         }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
       }
+      else if (act === "propyes" || act === "propno") {
+        (this._propDone = this._propDone || new Set()).add(id);
+        this._render();
+        this._hass.callWS({ type: "sentient/proposal", proposal: id, accept: act === "propyes" }).catch(() => {});
+      }
       else if (act === "sugyes" || act === "sugno") {
         this._sug = (this._sug || []).filter((s) => s.id !== id);
         this._render();
@@ -1667,8 +1672,12 @@
         const statusRows = (me.status || []).filter((c) => c.status === "ok").map(row).join("");
         const found = (me.findings || []).map((f) => `<div class="r"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><b class="wrap">${esc(f.text)}</b><s>SELF-CHECK</s></div>`).join("");
         const limited = (me.status || []).filter((c) => c.status !== "ok").length;
+        const gone = this._propDone || new Set();
+        const props = (mind.proposals || []).filter((p) => !gone.has(p.id)).map((p) => `<div class="r prop"><ha-icon icon="mdi:tune-variant"></ha-icon>
+          <b class="wrap">I'd change: ${esc(p.change.charAt(0).toLowerCase() + p.change.slice(1))}<small>Because ${esc(p.because)}</small></b>
+          <button class="btn sm" data-act="propyes" data-id="${esc(p.id)}">YES</button><button class="btn sm ghost" data-act="propno" data-id="${esc(p.id)}">NO</button></div>`).join("");
         R("mself").innerHTML = this._h("ABOUT ITSELF", limited ? `${limited} LIMITED` : "ALL WORKING")
-          + notOk + found + (me.enabled === false ? "" : (found ? "" : '<div class="hint">NOTHING STANDS OUT IN ITS OWN RECORDS THIS WEEK</div>'))
+          + notOk + props + found + (me.enabled === false ? "" : (found ? "" : '<div class="hint">NOTHING STANDS OUT IN ITS OWN RECORDS THIS WEEK</div>'))
           + (me.adjusted || []).map((a) => `<div class="hint">LAST NIGHT · ${esc(a).toUpperCase()}</div>`).join("")
           + `${statusRows ? `<details class="caps"><summary>${notOk ? "Everything else is working" : "What it can do right now · all working"}</summary>${statusRows}</details>` : ""}`;
       }
@@ -1869,7 +1878,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .r.edit{border-color:rgba(0,255,247,.5);background:rgba(0,255,247,.08)}
 .r.edit input{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;outline:none}
 .btn{flex:none;font-size:10px;font-weight:700;letter-spacing:.16em;padding:8px 16px;border-radius:10px;color:#041016;background:linear-gradient(90deg,#00c8ff,#00fff7);box-shadow:0 0 12px rgba(0,255,247,.35)}
-.btn.sm{padding:6px 12px} .btn[disabled]{opacity:.35;cursor:default} .btn.ghost{color:#7fefff;background:none;border:1px solid rgba(0,255,247,.35);box-shadow:none}
+.btn.sm{padding:6px 12px} .r.prop{flex-wrap:wrap;gap:8px} .r.prop .btn{flex:none} .btn[disabled]{opacity:.35;cursor:default} .btn.ghost{color:#7fefff;background:none;border:1px solid rgba(0,255,247,.35);box-shadow:none}
 .bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(0,255,247,.15);position:sticky;bottom:0}
 #status{flex:1;font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(150,220,235,.6)}
 #status.ok{color:#3dffa8} #status.warn{color:#ffbe55} #status.bad{color:#ff7088;letter-spacing:.02em;font-weight:400;font-size:12px}

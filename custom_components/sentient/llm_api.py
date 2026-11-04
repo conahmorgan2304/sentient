@@ -1833,7 +1833,15 @@ class SentientAPI(llm.API):
                    if st.state in ("open", "opening") and st.attributes.get("device_class") in ("garage", "gate", "door")]
         if opened := opened[:4]:
             bits.append("open: " + ", ".join(opened))
-        return [f"Right now: {'; '.join(bits)}."] if bits else []
+        out = [f"Right now: {'; '.join(bits)}."] if bits else []
+        from .evidence import stale_readings
+
+        if stale := stale_readings(self.hass, lambda eid: _exposed(self.hass, eid))[:5]:
+            out.append(
+                "Not heard from for a while, so don't give these as current — say when it was last heard from: "
+                + ", ".join(f"{name} ({hours} hours)" for name, hours in stale) + "."
+            )
+        return out
 
     def _recent_lines(self, rt: Any) -> list[str]:
         """The last hour at a glance, and where people seem to be — so 'what just happened?' needs no tool."""

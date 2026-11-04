@@ -68,6 +68,7 @@ from .const import (
     CONF_NEVER_ENTITIES,
     CONF_SELF_CHECK,
     CONF_SELF_ADJUST,
+    CONF_PROPOSALS,
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
     CONF_GOALS,
@@ -288,7 +289,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_PROPOSALS, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -406,8 +407,27 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/proposal", vol.Required("proposal"): str, vol.Required("accept"): bool}
+)
+@websocket_api.require_admin
+@callback
+def ws_proposal(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Yes or no to one of the self-check's suggested settings changes (it changes nothing without a yes)."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "proposals", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    result = entry.runtime_data.proposals.answer(msg["proposal"], msg["accept"])
+    if "error" in result:
+        connection.send_error(msg["id"], "gone", result["error"])
+        return
+    connection.send_result(msg["id"], result)
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_voice_check)
     websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
