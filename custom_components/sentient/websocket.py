@@ -139,6 +139,9 @@ from .const import (
     CONF_DRIVE_CAMERA,
     CONF_DRIVE_SPOT,
     CONF_DRIVE_TRIGGERS,
+    CONF_CAMERA_WAKE,
+    CONF_CAMERA_WAKE_CAMERAS,
+    CONF_CAMERA_WAKE_SECONDS,
     CONF_CONVERSATIONS,
     CONF_FOLLOW_UPS,
     CONF_CURIOSITY,
@@ -302,6 +305,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("drive", "The drive", "mdi:car", "Which cars are on the drive, from a camera spot — one AI look when activity settles.", [
         CONF_DRIVE_SPOT, CONF_DRIVE_CAMERA, CONF_DRIVE_TRIGGERS, CONF_KNOWN_CARS,
+    ]),
+    ("camwake", "Sleepy cameras", "mdi:camera-timer", "Battery cameras and others that go into standby show an old or black picture until they wake, so the AI would answer from it (\u201cthe drive is empty\u201d). Add actions that wake them \u2014 pressing a wake or refresh button, turning on a stream, running a script; {{ camera }} is the camera being looked at \u2014 and Sentient runs them first and waits for a fresh picture. Each camera is woken at most once a minute. No actions: off.", [
+        CONF_CAMERA_WAKE, CONF_CAMERA_WAKE_CAMERAS, CONF_CAMERA_WAKE_SECONDS,
     ]),
     ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,

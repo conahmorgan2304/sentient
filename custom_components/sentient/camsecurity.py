@@ -253,6 +253,9 @@ class CameraSecurity:
 
     async def _describe(self, camera: str) -> tuple[bool | None, str | None]:
         """(is anyone actually there, one sentence on them). (None, None) if the AI couldn't look."""
+        from .camwake import async_wake
+
+        await async_wake(self.hass, self.options, camera)
         data: dict[str, Any] = {
             "task_name": "Sentient: who's there",
             "instructions": "A home security camera thinks it just saw a person. Is there really a person in this "

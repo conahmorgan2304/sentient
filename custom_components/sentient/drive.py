@@ -160,7 +160,9 @@ class Drive:
             "instructions": (
                 "This picture shows only the drive of a house. Count the cars or vans parked on it (ignore "
                 "anything on the road beyond). For each, a few plain words — colour and type (e.g. 'silver "
-                "estate', 'small white van'). If it's too dark or unclear to tell, set unsure."
+                "estate', 'small white van'). If it's too dark or unclear to tell — or the picture is black, grey, frozen, "
+                "a 'camera asleep/offline' screen or otherwise doesn't clearly show the drive — set unsure rather than "
+                "saying it's empty."
             ),
             "structure": {
                 **({"whose": {"description": "Whose cars these are, from the known cars, comma-separated; empty if none clearly match",
@@ -169,7 +171,7 @@ class Drive:
                          "selector": {"number": {"min": 0, "max": 10}}},
                 "description": {"description": "A few words on each, comma-separated; empty if none", "required": False,
                                 "selector": {"text": {}}},
-                "unsure": {"description": "Too dark or unclear to be sure", "required": False,
+                "unsure": {"description": "Too dark, unclear, or not a real live view of the drive", "required": False,
                            "selector": {"boolean": {}}},
             },
             "attachments": [await rt.spots.async_attachment(spot["camera"], _key(spot["name"]))],

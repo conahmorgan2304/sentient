@@ -171,7 +171,10 @@ class Spots:
         return Path(local) if local else None
 
     async def async_attachment(self, camera: str, spot_key: str | None) -> dict[str, str]:
-        """An AI-task attachment: the whole camera picture, or just the spot."""
+        """An AI-task attachment: the whole camera picture, or just the spot (a sleepy camera is woken first)."""
+        from .camwake import async_wake
+
+        await async_wake(self.hass, self.options, camera)
         whole = {"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}
         spot = self.spots.get(spot_key or "")
         media = self._media_dir()
@@ -235,6 +238,9 @@ class Spots:
             if not whole:
                 return None
             spot = {"camera": camera, "box": [0.0, 0.0, 1.0, 1.0]}
+        from .camwake import async_wake
+
+        await async_wake(self.hass, self.options, camera)  # a standby picture would look "unchanged"
         try:
             from homeassistant.components.camera import async_get_image
 

@@ -388,3 +388,9 @@ CONF_SPEECH_DELIVERY_HISTORY = "speech_delivery_history"
 CONF_ALEXA_TTS_ONLY = "alexa_tts_only"
 
 CONF_UPDATE_CHECKER = "update_checker"
+
+# Battery and sleepy cameras: wake them before the AI looks, so it doesn't judge a standby picture
+CONF_CAMERA_WAKE = "camera_wake"  # actions to run first ({{ camera }} is the camera being looked at)
+CONF_CAMERA_WAKE_CAMERAS = "camera_wake_cameras"  # only these cameras (empty: every camera)
+CONF_CAMERA_WAKE_SECONDS = "camera_wake_seconds"  # then wait this long for a fresh picture
+DEFAULT_CAMERA_WAKE_SECONDS = 5
