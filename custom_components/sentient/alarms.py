@@ -163,10 +163,12 @@ class Alarms:
 
     # ----- by voice ------------------------------------------------------------------------
     def set(self, name: str, at: str, days: list[str] | None = None, on: str | None = None,
-            description: str = "", routine: str | None = None) -> dict[str, Any]:
-        actions = [{"action": "sentient.run_routine", "data": {"name": routine}}] if routine else []
+            description: str = "", routine: str | None = None, silent: bool = False,
+            actions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+        """An alarm (said at a time) — or, silent, an automated routine (just done at a time)."""
+        actions = list(actions or []) + ([{"action": "sentient.run_routine", "data": {"name": routine}}] if routine else [])
         item = {"name": name, "time": at if len(at) > 5 else f"{at}:00", "days": days or [], "date": on,
-                "description": description, "actions": actions, "enabled": True}
+                "description": description, "actions": actions, "enabled": True, "silent": silent}
         existing = self.items.find(name)
         if existing:
             item["id"] = existing["id"]

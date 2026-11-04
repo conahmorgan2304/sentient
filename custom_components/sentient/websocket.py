@@ -1053,20 +1053,24 @@ def ws_weekly(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 # ----- offers, announcements, alarms, camera checks ---------------------------------------
 def _items_payload(hass: HomeAssistant, entry, kind: str) -> dict[str, Any]:
-    from .kinds import KINDS, summary
+    from .kinds import KINDS, belongs, store_of, summary
 
     meta = KINDS[kind]
-    items = entry.runtime_data.lists[kind].listing()
+    rt = entry.runtime_data
+    items = [i for i in rt.lists[store_of(kind)].listing() if belongs(kind, i)]
     for item in items:
         item["_summary"] = summary(kind, item, hass)
-    if kind == "alarms":
-        nexts = {a["id"]: a["next"] for a in entry.runtime_data.alarms.listing()}
+    if store_of(kind) == "alarms":
+        nexts = {a["id"]: a["next"] for a in rt.alarms.listing()}
         for item in items:
             item["_next"] = nexts.get(item["id"])
-    return {
+    out = {
         "items": items,
         "meta": {k: meta[k] for k in ("title", "icon", "blurb", "add", "schema", "labels", "defaults")},
     }
+    if kind == "schedules":  # learned habits the house was asked to take over
+        out["learned"] = [{"id": r.id, "text": r.describe()} for r in rt.learner.all() if getattr(r, "adopted", False)]
+    return out
 
 
 from .kinds import KINDS as _ALL_KINDS  # noqa: E402
@@ -1106,7 +1110,11 @@ async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
 
             if why := safe_actions(item.get("actions") or []):
                 raise ValueError(why)
-        entry.runtime_data.lists[msg["kind"]].upsert(item)
+        from .kinds import store_of
+
+        if store_of(msg["kind"]) == "alarms":
+            item["silent"] = msg["kind"] == "schedules"  # alarms speak; automated routines just do things
+        entry.runtime_data.lists[store_of(msg["kind"])].upsert(item)
     except (vol.Invalid, ValueError, HomeAssistantError) as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
@@ -1123,7 +1131,9 @@ def ws_items_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
-    entry.runtime_data.lists[msg["kind"]].remove(msg["item_id"])
+    from .kinds import store_of
+
+    entry.runtime_data.lists[store_of(msg["kind"])].remove(msg["item_id"])
     connection.send_result(msg["id"], _items_payload(hass, entry, msg["kind"]))
 
 
@@ -1138,8 +1148,10 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
+    from .kinds import store_of
+
     rt = entry.runtime_data
-    item = rt.lists[msg["kind"]].items.get(msg["item_id"])
+    item = rt.lists[store_of(msg["kind"])].items.get(msg["item_id"])
     if item is None:
         connection.send_error(msg["id"], "not_found", "It's gone")
         return
@@ -1155,6 +1167,11 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
                 "urgent", [s for s in item.get("speakers") or [] if hass.states.get(s)] or None, source="alarm test",
             )
             result = result.as_dict()
+        elif kind == "schedules":
+            from .shortcuts import async_run_actions
+
+            await async_run_actions(hass, item.get("actions") or [], item["name"])
+            result = {"ran": item["name"]}
         elif kind == "autooff":
             on = [e for e in rt.autooff.targets(item) if hass.states.get(e) and hass.states.get(e).state == "on"]
             await rt.autooff.async_switch_off(item, on)

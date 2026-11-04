@@ -937,18 +937,21 @@ class AcceptOfferTool(_Tool):
 class AlarmTool(_Tool):
     name = "sentient_alarm"
     description = (
-        "Alarms and appointments. action 'set': name, time (HH:MM, 24-hour), and either days "
-        "(list of mon..sun, or 'weekdays'/'weekends'/'every day') for a repeating alarm, or date "
-        "(YYYY-MM-DD) for a one-off on another day (neither = next time it comes round); optional "
-        "description and routine (the name of one of the household's named routines to run when it "
-        "goes off). action 'list' shows them and when each next goes off. action 'cancel' with name "
-        "deletes one; 'off'/'on' with name pauses or resumes it."
+        "Alarms (said at a time: wake-ups, appointments) and automated routines (done at a time with nothing "
+        "said: 'turn the heated blanket on at 9 every night'). action 'set': name, time (HH:MM, 24-hour), and "
+        "either days (list of mon..sun, or 'weekdays'/'weekends'/'every day') to repeat, or date (YYYY-MM-DD) "
+        "for a one-off on another day (neither = next time it comes round); optional description and routine "
+        "(the name of one of the household's voice routines to run). For an automated routine set silent=true "
+        "and turn_on / turn_off (devices by name). action 'list' shows both and when each next happens. "
+        "action 'cancel' with name deletes one; 'off'/'on' with name pauses or resumes it."
     )
     parameters = vol.Schema({
         vol.Required("action"): vol.In(["set", "list", "cancel", "off", "on"]),
         vol.Optional("name"): cv.string, vol.Optional("time"): cv.string,
         vol.Optional("days"): vol.Any(cv.string, [cv.string]), vol.Optional("date"): cv.string,
         vol.Optional("description"): cv.string, vol.Optional("routine"): cv.string,
+        vol.Optional("silent"): cv.boolean, vol.Optional("turn_on"): vol.Any(cv.string, [cv.string]),
+        vol.Optional("turn_off"): vol.Any(cv.string, [cv.string]),
     })
 
     async def async_call(
@@ -983,9 +986,28 @@ class AlarmTool(_Tool):
                     else DAYS[5:] if "weekend" in low else [d for d in DAYS if d in low])
         if a.get("routine") and rt.shortcuts.find(a["routine"]) is None:
             return {"error": f"There's no routine called {a['routine']}", "routines": [r.name for r in rt.shortcuts.items.values()]}
-        item = rt.alarms.set(a["name"], a["time"], days, a.get("date"), a.get("description") or "", a.get("routine"))
+        from .never import blocked
+        from .watches import resolve_entity
+
+        actions, unknown = [], []
+        for key, service in (("turn_on", "turn_on"), ("turn_off", "turn_off")):
+            names = a.get(key) or []
+            for wanted in [names] if isinstance(names, str) else names:
+                eid = resolve_entity(hass, wanted)
+                if not eid or "." not in eid:
+                    unknown.append(wanted)
+                    continue
+                if blocked(hass, eid):
+                    return {"error": f"{wanted} is on the never-touch list"}
+                actions.append({"action": f"{eid.split('.', 1)[0]}.{service}", "target": {"entity_id": eid}})
+        if unknown:
+            return {"error": "I couldn't find " + ", ".join(unknown)}
+        silent = bool(a.get("silent")) or (bool(actions) and not a.get("description"))
+        item = rt.alarms.set(a["name"], a["time"], days, a.get("date"), a.get("description") or "", a.get("routine"),
+                             silent=silent, actions=actions)
         nxt = next((x for x in rt.alarms.listing() if x["id"] == item["id"]), {})
-        return {"set": item["name"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next")}
+        return {"set": item["name"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next"),
+                "kind": "automated routine" if item.get("silent") else "alarm"}
 
 
 class PartyTool(_Tool):
