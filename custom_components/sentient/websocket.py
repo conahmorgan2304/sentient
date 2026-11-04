@@ -77,6 +77,7 @@ from .const import (
     CONF_BOOKS_FOLDER,
     CONF_READING_TTS,
     CONF_READING_VOICE,
+    CONF_READ_AHEAD,
     CONF_RECIPES,
     CONF_RECIPES_FOLDER,
     CONF_RECIPES_LIST,
@@ -349,7 +350,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
-        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
+        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,

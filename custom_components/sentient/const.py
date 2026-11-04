@@ -94,6 +94,7 @@ CONF_BOOKS_FOLDER = "books_folder"
 DEFAULT_BOOKS_FOLDER = "books"
 CONF_READING_TTS = "reading_tts"  # a different text-to-speech service for books (blank: the usual voice)
 CONF_READING_VOICE = "reading_voice"  # that service's voice
+CONF_READ_AHEAD = "read_ahead"  # make the next piece's audio while one is read
 READING_SAMPLE = ("Once upon a time, in a house at the end of a quiet lane, a small fox curled up by the fire, "
                   "and waited for the story to begin.")
 CONF_RECIPES = "recipes"  # recipes and a step-by-step cooking mode

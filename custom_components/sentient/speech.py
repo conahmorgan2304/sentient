@@ -22,12 +22,12 @@ import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_ALEXA_TTS_ONLY, CONF_READING_TTS, CONF_READING_VOICE
+from .const import CONF_ALEXA_TTS_ONLY, CONF_READ_AHEAD, CONF_READING_TTS, CONF_READING_VOICE
 from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
@@ -210,6 +210,7 @@ class SpeechRouter:
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self._prepared: dict[str, Any] = {}  # reading voice audio being made ahead
         self.phone = None  # set by the runtime: asks yes/no questions on phones when nobody's near a speaker
         self.profiles = None  # set by the runtime: room profiles (own quiet time, volume, no offers)
         self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
@@ -507,6 +508,36 @@ class SpeechRouter:
                 break
             await asyncio.sleep(1)
         return True
+
+    @callback
+    def prepare_reading(self, text: str, speaker: str) -> None:
+        """Make the next piece's audio in the reading voice while this one is read, so a slow voice leaves no gap."""
+        engine = self.options.get(CONF_READING_TTS)
+        if not engine or not self.options.get(CONF_READ_AHEAD, True) or self.hass.states.get(engine) is None:
+            return
+        if speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media":
+            return
+        text = clean_message(text, self.banned)
+        voice = self.options.get(CONF_READING_VOICE)
+        key = f"{engine}|{voice}|{text}"
+        if key in self._prepared:
+            return
+        try:
+            media_id = tts_media_id(self.hass, text, engine, tts_language(self.hass, engine), {"voice": voice} if voice else None)
+        except (HomeAssistantError, ValueError):
+            return
+        self._prepared[key] = self.hass.async_create_background_task(self._make_audio(media_id), "sentient read ahead")
+        while len(self._prepared) > 4:
+            self._prepared.pop(next(iter(self._prepared)))
+
+    async def _make_audio(self, media_id: str) -> None:
+        from homeassistant.components.tts import async_get_media_source_audio
+
+        try:
+            async with asyncio.timeout(120):
+                await async_get_media_source_audio(self.hass, media_id)  # cached: the real request is then instant
+        except Exception as err:  # noqa: BLE001 - only a head start; reading carries on without it
+            _LOGGER.debug("Couldn't make the next piece's audio ahead: %s", err)
 
     async def _speak_voice(self, text: str, speaker: str, engine: str, voice: str | None) -> list[dict[str, Any]] | None:
         """Speak with a chosen text-to-speech service and voice; None when this speaker can't (an Echo)."""

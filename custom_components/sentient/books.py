@@ -303,6 +303,8 @@ class Books:
         chapters = await self._chapters_of(book)
         rt = self._rt()
         until = dt_util.utcnow().timestamp() + minutes * 60 if minutes else None
+        if ch < len(chapters) and ps < len(chapters[ch]["passages"]):
+            rt.speech.prepare_reading(speech_pieces(chapters[ch]["passages"][ps])[0], speaker)  # ready by the time it's needed
         await asyncio.sleep(4)  # let the voice finish its "picking up in…"
         try:
             while ch < len(chapters):
@@ -311,7 +313,12 @@ class Books:
                     if until and dt_util.utcnow().timestamp() >= until:
                         await rt.speech.async_read_aloud("I'll stop there and keep your place.", speaker, story=True)
                         return
-                    for piece in speech_pieces(passages[ps]):
+                    pieces = speech_pieces(passages[ps])
+                    following = speech_pieces(passages[ps + 1])[:1] if ps + 1 < len(passages) else []
+                    upcoming = pieces + following
+                    for i, piece in enumerate(pieces):
+                        if i + 1 < len(upcoming):
+                            rt.speech.prepare_reading(upcoming[i + 1], speaker)  # made while this one is read
                         if not await rt.speech.async_read_aloud(piece, speaker, story=True):
                             return  # couldn't speak: keep the place on this passage
                     ps += 1

@@ -269,3 +269,51 @@ def test_passages_are_spoken_in_short_pieces_at_sentence_ends() -> None:
     assert len(pieces) == 3 and all(len(p) <= 330 for p in pieces)
     assert " ".join(pieces).split() == passage.split()  # nothing lost or repeated
     assert pieces[0].endswith(("!", ".", "?", '"'))
+
+
+async def test_next_piece_made_while_this_one_is_read(hass: HomeAssistant, tmp_path) -> None:
+    """With a reading voice, each next piece's audio is asked for before the current one is read."""
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, device = await _setup(hass, tmp_path, books=True, reading_tts="tts.storyteller")
+    hass.states.async_set("tts.storyteller", "unknown")
+    rt = entry.runtime_data
+    events: list[tuple[str, str]] = []
+    made: list[str] = []
+
+    async def read_aloud(text, speaker, **_kw):
+        events.append(("read", text))
+        if len([e for e in events if e[0] == "read"]) >= 3:
+            rt.books._stop(speaker, save=False)
+            raise asyncio.CancelledError
+        return True
+
+    async def make(media_id):
+        made.append(media_id)
+
+    with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), \
+            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), \
+            patch("custom_components.sentient.speech.tts_media_id", side_effect=lambda h, text, *a: f"tts:{text}"), \
+            patch.object(rt.speech, "_make_audio", side_effect=make):
+        orig = rt.speech.prepare_reading
+
+        def prepare(text, speaker):
+            events.append(("prepare", text))
+            orig(text, speaker)
+
+        rt.speech.prepare_reading = prepare
+        api = await _api(hass, device)
+        await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "flump"}))
+        await asyncio.sleep(0.05)
+        await hass.async_block_till_done()
+    reads = [t for k, t in events if k == "read"]
+    prepared = [t for k, t in events if k == "prepare"]
+    assert prepared[0] == reads[0]  # the first piece is made during "starting…"
+    for i in range(1, len(reads)):  # each next piece was asked for before the one before it was read
+        assert events.index(("prepare", reads[i])) < events.index(("read", reads[i - 1]))
+    assert made and made[0].startswith("tts:")
+    rt.speech.options = {**rt.speech.options, "read_ahead": False}
+    n = len(made)
+    orig("Another piece.", "assist_satellite.bedroom")
+    await hass.async_block_till_done()
+    assert len(made) == n  # off: nothing made ahead
