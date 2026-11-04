@@ -73,6 +73,9 @@ class Offers:
         area = area_of(self.hass, new.entity_id)
         if area is None:
             return
+        profile = getattr(self._rt(), "profiles", None)
+        if profile is not None and not (profile.for_area(area) or {}).get("offers", True):
+            return  # this room doesn't take offers
         for offer in self.items.enabled():
             if area in (offer.get("areas") or []) and self.ready(offer):
                 self.hass.async_create_task(self.async_ask(offer, area))

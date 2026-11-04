@@ -40,7 +40,8 @@ HELD_REASONS = {
     "quiet_hours": "quiet hours", "hushed": "the house was hushed", "guest_mode": "guests were in",
     "said_recently": "said the same not long ago", "duplicate": "just said that", "thumbs_down": "a thumbs-down on these",
     "no_speaker": "no speaker to say it on", "busy": "already saying something", "hourly_limit": "enough said this hour",
-    "empty": "nothing to say",
+    "empty": "nothing to say", "holiday": "holiday mode (sent to phones instead)",
+    "room_quiet": "that room's own quiet time",
 }
 
 

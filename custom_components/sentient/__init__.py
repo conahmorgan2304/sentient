@@ -174,6 +174,7 @@ class SentientRuntime:
     proposals: Any = None  # settings changes it would make, waiting for a yes
     holiday: Any = None  # holiday mode
     trust: Any = None  # do, say-then-do or ask first, by kind of device
+    profiles: Any = None  # room profiles
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     recipes: Any = None  # recipes and cooking mode
@@ -564,6 +565,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .selfaware import SelfAware
 
     selfaware = SelfAware(hass, options, get_rt)
+    from .rooms import RoomProfiles
+
+    profiles = RoomProfiles(hass, lists["rooms"])
+    speech.profiles = profiles
     from .trust import Trust
 
     trust = Trust(hass, entry.entry_id, options, get_rt)
@@ -595,7 +600,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, goals=goals, books=books, recipes=recipes,
     )
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)

@@ -210,6 +210,7 @@ class SpeechRouter:
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self.profiles = None  # set by the runtime: room profiles (own quiet time, volume, no offers)
         self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
         self.nobody_about = False  # the last pick found nobody in any speaker's room
@@ -425,6 +426,11 @@ class SpeechRouter:
         if source != "critical":  # safety alerts always use every speaker
             targets = self.usable(targets, vital) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker(vital)
+        if self.profiles is not None and speakers:
+            allowed = self.profiles.allowed(speakers, priority, source)
+            if not allowed:
+                return self._held("room_quiet", text, source)  # those rooms' own quiet time
+            speakers = allowed
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
@@ -610,6 +616,8 @@ class SpeechRouter:
         """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),
         and full volume on the speakers chosen for that (outside quiet hours)."""
         out = await self._room_volumes(speakers)
+        if self.profiles is not None and (own := {s: v for s in speakers if (v := self.profiles.volume(s)) is not None}):
+            out = {**({s: out for s in speakers} if not isinstance(out, dict) else out), **own}
         full = set(self.options.get(CONF_FULL_VOLUME_SPEAKERS) or []) & set(speakers)
         if not full or self.quiet_hours_now():
             return out
@@ -657,6 +665,10 @@ class SpeechRouter:
             return held
         vital = important(source)
         candidates = self.usable(targets, vital) or self.pick_speaker(vital)
+        if self.profiles is not None and candidates:
+            candidates = self.profiles.allowed(candidates, priority, source)
+            if not candidates:
+                return self._held("room_quiet", text, source)
         listening = [
             s for s in candidates
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None

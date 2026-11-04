@@ -297,6 +297,8 @@ class RecallTool(_Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         found = rt.memory.search(tool_input.tool_args["query"])
+        if getattr(rt, "profiles", None) is not None and (rt.profiles.for_device(llm_context.device_id) or {}).get("private"):
+            found = [m for m in found if m.category == "correction"]  # a private room: only how things are named
         return {"memories": [{"id": m.id, "text": m.text, "category": m.category} for m in found]}
 
 
@@ -1755,6 +1757,15 @@ class SentientAPI(llm.API):
         room = self._room_of_device(llm_context.device_id)
         if room:
             lines.append(f"The person talking to you is in the {room}.")
+        profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) is not None else None
+        private = bool(profile and profile.get("private"))
+        if private:
+            lines.append(
+                "This room is private: don't bring up personal details about anyone in the household, what other "
+                "people said or where they've been — answer what's asked about the house and the world."
+            )
+        if profile and profile.get("gentle"):
+            lines.append("In this room speak gently: short, calm, simple words, nothing alarming or sarcastic.")
         if opts.get(CONF_PROMPT_RECENT, True):
             lines.extend(self._recent_lines(rt))
         if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
@@ -1802,13 +1813,13 @@ class SentientAPI(llm.API):
         if lessons:
             lines.append("You've been corrected on these before — get them right first time:")
             lines.extend(f"- {m.text}" for m in lessons)
-        memories = self._memories(rt, int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)),
-                                  bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
+        memories = [] if private else self._memories(rt, int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)),
+                                                      bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
         if memories:
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
-        if not rt.speech.guest_mode and (talk := rt.conversations.prompt_lines(exclude=conversation_id)):
+        if not rt.speech.guest_mode and not private and (talk := rt.conversations.prompt_lines(exclude=conversation_id)):
             lines.append(
                 "Recent conversations on the house's speakers (any room) — pick up where they left off if it's "
                 "relevant; sentient_conversations has more:"
@@ -1816,7 +1827,7 @@ class SentientAPI(llm.API):
             lines.extend(talk)
         if drive := rt.drive.prompt_line():
             lines.append(drive)
-        if not rt.speech.guest_mode and (seen := rt.faces.prompt_line()):
+        if not rt.speech.guest_mode and not private and (seen := rt.faces.prompt_line()):
             lines.append(seen)
         from .search import prompt_line as _search_line
 

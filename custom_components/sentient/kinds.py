@@ -274,6 +274,36 @@ KINDS: dict[str, dict[str, Any]] = {
             "cooldown_minutes": "Then don't check again for",
         },
     },
+    "rooms": {
+        "title": "Rooms",
+        "icon": "mdi:door-open",
+        "blurb": "Make a room different: private (no personal memories there — a child's room), a gentler voice, its own "
+                 "volume, its own quiet time, and whether offers and questions are asked there. Rooms without one "
+                 "behave as usual. Safety alerts always sound everywhere.",
+        "add": "+ NEW ROOM PROFILE",
+        "defaults": {
+            "enabled": True, "areas": [], "private": False, "gentle": False, "volume": 0, "quiet": "", "offers": True,
+            "last": None,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("areas", {"area": {"multiple": True}}, True),
+            _sel("private", {"boolean": {}}),
+            _sel("gentle", {"boolean": {}}),
+            _sel("volume", {"number": {"min": 0, "max": 100, "step": 5, "unit_of_measurement": "%", "mode": "slider"}}),
+            _sel("quiet", {"text": {}}),
+            _sel("offers", {"boolean": {}}),
+        ],
+        "labels": {
+            "name": "Name (e.g. The girls' rooms)", "enabled": "On", "areas": "Rooms",
+            "private": "Private: no personal memories, other rooms' conversations or names from the door",
+            "gentle": "Gentler voice: softer, simpler replies",
+            "volume": "Announcement volume here (0 = as usual)",
+            "quiet": "Quiet here between (e.g. 19:00-07:30; urgent and safety alerts still sound)",
+            "offers": "Offers and questions may be asked here",
+        },
+    },
 }
 
 
@@ -315,6 +345,16 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
 
             what += [f"{a.name} lights" if (a := ar.async_get(hass).async_get_area(x)) else x for x in item["areas"]]
         return " · ".join([", ".join(what[:3]) + ("…" if len(what) > 3 else "")] + bits)
+    if kind == "rooms":
+        from homeassistant.helpers import area_registry as ar
+
+        names = [a.name if (a := ar.async_get(hass).async_get_area(x)) else x for x in item.get("areas") or []]
+        bits = [", ".join(names) or "no rooms yet"]
+        bits += [b for b, on in (("private", item.get("private")), ("gentle", item.get("gentle")),
+                                 (f"volume {item.get('volume'):g}%", float(item.get("volume") or 0) > 0),
+                                 (f"quiet {item.get('quiet')}", bool(item.get("quiet"))),
+                                 ("no offers", not item.get("offers", True))) if on]
+        return " · ".join(bits)
     if kind == "checks":
         return f"{name_of(item.get('camera'))} · {item.get('question') or ''}" + (" · says it" if item.get("say") else "")
     if kind == "rules":

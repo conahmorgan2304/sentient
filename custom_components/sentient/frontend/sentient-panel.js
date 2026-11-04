@@ -11,7 +11,7 @@
   const heldWhy = (reason) => {
     const [kind, what] = String(reason || "").split(/:(.*)/s);
     if (kind === "hushed_by") return what === "announcement" ? "AFTER ANOTHER ANNOUNCEMENT" : "AFTER " + String(what || "SOMETHING ELSE").split(".").pop().replaceAll("_", " ").toUpperCase();
-    return ({ quiet_hours: "QUIET HOURS", said_recently: "SAID RECENTLY", duplicate: "JUST SAID", thumbs_down: "THUMBS-DOWN", guest_mode: "GUESTS IN", hourly_limit: "ENOUGH THIS HOUR", no_speaker: "NO SPEAKER", hushed: "HUSHED" })[kind] || kind.replaceAll("_", " ").toUpperCase();
+    return ({ quiet_hours: "QUIET HOURS", said_recently: "SAID RECENTLY", duplicate: "JUST SAID", thumbs_down: "THUMBS-DOWN", guest_mode: "GUESTS IN", hourly_limit: "ENOUGH THIS HOUR", no_speaker: "NO SPEAKER", hushed: "HUSHED", holiday: "ON HOLIDAY", room_quiet: "ROOM'S QUIET TIME" })[kind] || kind.replaceAll("_", " ").toUpperCase();
   };
   const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
   const left = (iso, fallback) => {
@@ -400,6 +400,7 @@
         announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
         autooff: ["mdi:timer-off-outline", "Auto-off", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
+        rooms: ["mdi:door-open", "Rooms", n("rooms") !== null ? `${n("rooms")} with their own ways` : "Private, gentler, own volume or quiet"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
         privacy: ["mdi:shield-lock-outline", "What leaves the house", this._priv ? `${this._priv.totals.times} sent this week` : "AI calls and searches, and forgetting"],
@@ -413,7 +414,7 @@
         party: "party_whole_house", safety: "critical_alerts", heating: "preheat", appliances: "appliance_announce", briefing: "briefings",
         search: "search_hints", door: "faces", animals: "hutch_check" };
       const menus = [
-        ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "voicebackup", "mutes", "phone"]],
+        ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "rooms", "voicebackup", "mutes", "phone"]],
         ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
         ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
@@ -486,7 +487,7 @@
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       if (this._group === "doctor") { this._form = null; this._drawDoctor(); return; }
       if (this._group === "privacy") { this._form = null; this._drawPrivacy(); return; }
-      if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
+      if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules", "rooms"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
