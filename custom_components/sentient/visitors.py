@@ -19,7 +19,7 @@ import asyncio
 from collections import deque
 from datetime import datetime, timedelta
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
@@ -80,6 +80,7 @@ class Visitors:
         self._doorstep_last: datetime | None = None
         self._doorstep_pending = False
         self.parcel_waiting = False  # a parcel was there at the last look
+        self.expecting: Callable[[], bool] = lambda: False  # set by the runtime: a parcel's out for delivery today
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -164,7 +165,7 @@ class Visitors:
     # ----- doorstep visits without the bell -------------------------------------
     @callback
     def _doorstep_visit_ended(self) -> None:
-        if not self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS) or self._doorstep_pending:
+        if not (self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS) or self.expecting()) or self._doorstep_pending:
             return
         now = dt_util.utcnow()
         if self._doorstep_last and now - self._doorstep_last < DOORSTEP_COOLDOWN:
@@ -284,7 +285,7 @@ class Visitors:
             line = (f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
                     if result.get("description") else "Someone's at the door.")
             await self.speech.async_say(line, "normal", None, source="visitors")
-        if (kind == "delivery" or visit["parcel"]) and self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS):
+        if (kind == "delivery" or visit["parcel"]) and (self.options.get(CONF_PARCEL_ALERTS, DEFAULT_PARCEL_ALERTS) or self.expecting()):
             @callback
             def _recheck(_now: datetime) -> None:
                 self.hass.async_create_task(self._async_parcel_check(visit))

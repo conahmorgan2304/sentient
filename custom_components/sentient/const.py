@@ -118,6 +118,8 @@ CONF_BRIEFING_WEATHER = "briefing_weather"
 CONF_BRIEFING_TODO = "briefing_todo"
 CONF_BRIEFING_CALENDARS = "briefing_calendars"
 CONF_BRIEFING_SYSTEM = "briefing_system"
+CONF_OUTSIDE_INFO = "outside_info"  # sensors read into the briefing and the look at tomorrow (prices, warnings…)
+CONF_PARCEL_TRACKERS = "parcel_trackers"  # "out for delivery" sets a door watch for the day
 CONF_BRIEFING_TIME = "briefing_time"
 BRIEFING_SECTIONS = [
     "time", "weather", "reminders", "watches", "routines", "open",

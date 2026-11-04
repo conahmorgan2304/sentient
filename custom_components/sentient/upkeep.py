@@ -180,6 +180,12 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
         if todo:
             out["to_do"] = todo
 
+    if (parcels := getattr(rt, "parcels", None)) is not None:
+        if outside := parcels.outside():
+            out["outside_information"] = outside
+        if parcels.trackers and parcels.expecting_today:
+            out["parcel_expected_today"] = True
+
     if "calendar" in want and (calendars := opts.get(CONF_BRIEFING_CALENDARS)):
         events: list[str] = []
         try:
@@ -211,6 +217,10 @@ def plain_briefing(facts: dict[str, Any]) -> str:
     if open_now := facts.get("open_now"):
         out.append(("The " if len(open_now) == 1 else "Open now: ") + ", ".join(open_now[:4])
                    + (" is open." if len(open_now) == 1 else "."))
+    if facts.get("parcel_expected_today"):
+        out.append("A parcel's out for delivery today.")
+    if world := facts.get("outside_information"):
+        out.append("; ".join(world[:2]) + ".")
     if outside := facts.get("animals_outside"):
         out.append(outside[0][:1].upper() + outside[0][1:] + ".")
     if thoughts := facts.get("overnight_thoughts"):

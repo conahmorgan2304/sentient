@@ -158,6 +158,8 @@ from .const import (
     CONF_BRIEFING_CALENDARS,
     CONF_BRIEFING_SECTIONS,
     CONF_BRIEFING_SYSTEM,
+    CONF_OUTSIDE_INFO,
+    CONF_PARCEL_TRACKERS,
     CONF_BRIEFING_TIME,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
@@ -767,6 +769,12 @@ def _briefing_schema(current: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="calendar", multiple=True)
             ),
             vol.Optional(CONF_BRIEFING_SYSTEM, **d(CONF_BRIEFING_SYSTEM, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
+            ),
+            vol.Optional(CONF_OUTSIDE_INFO, **d(CONF_OUTSIDE_INFO, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "binary_sensor", "event"], multiple=True)
+            ),
+            vol.Optional(CONF_PARCEL_TRACKERS, **d(CONF_PARCEL_TRACKERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
             ),
             vol.Optional(CONF_BRIEFING_TIME, **d(CONF_BRIEFING_TIME)): selector.TimeSelector(),
