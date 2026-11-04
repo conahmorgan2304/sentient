@@ -461,6 +461,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         rt = getattr(self._entry, "runtime_data", None)
         if rt is not None:
             rt.timeline.add("health", "Voice answered by the backup agent", f"the AI failed: {why[:120]}")
+            if (selfaware := getattr(rt, "selfaware", None)) is not None:
+                selfaware.voice_fell_back(why)
         try:
             async with asyncio.timeout(BACKUP_TIMEOUT):
                 result = await self._converse(self.backup_agent, user_input)

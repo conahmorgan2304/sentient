@@ -27,6 +27,7 @@ SPEAKER_BAD = 0.3  # three in ten failing
 CHATTY_MIN = 3  # remarks of one kind before it can be "too much"
 REPEATED_QUESTION = 3
 _WORDS = re.compile(r"[a-z0-9']+")
+FAILURES_MIN = 3  # this many failures of one kind in a day is a pattern worth saying
 DOWN_FOR = timedelta(minutes=10)  # a restart or a tablet waking up isn't "unavailable"
 
 
@@ -86,6 +87,9 @@ class SelfAware:
         if report["findings"]:
             rt.timeline.add("mind", f"Self-check: {len(report['findings'])} thing{'s' if len(report['findings']) > 1 else ''} noticed about itself",
                             "; ".join(f["text"] for f in report["findings"][:3]))
+        for f in report["findings"]:
+            if f["kind"] == "failing":  # a part of it isn't working: a health problem (to phones, if chosen)
+                rt.timeline.add("health", f["text"], "self-check")
 
     # ----- the check ---------------------------------------------------------------------
     def check(self, days: float = DAYS) -> dict[str, Any]:
@@ -184,7 +188,26 @@ class SelfAware:
                     "evidence": {"times": n, "days": days},
                 })
 
-        # 5. the AI
+        # 5. its own parts failing (said once a day, and on the phone if health problems go there)
+        day_ago = dt_util.utcnow() - timedelta(days=1)
+        fell_back = [i for i in items if i["kind"] == "health" and i["text"].startswith("Voice answered by the backup agent")
+                     and dt_util.parse_datetime(i["time"]) >= day_ago]
+        if len(fell_back) >= FAILURES_MIN:
+            findings.append({"kind": "failing", "about": "voice", "text": (
+                f"The AI didn't answer {len(fell_back)} times in the last day, so the basic voice agent answered instead — "
+                "check the AI agent in Settings, or the setup doctor"), "evidence": {"times": len(fell_back)}})
+        reading = [r for r in getattr(rt.speech, "reading_fallbacks", []) if r[0] >= day_ago]
+        if len(reading) >= FAILURES_MIN:
+            findings.append({"kind": "failing", "about": "reading voice", "text": (
+                f"The reading voice failed {len(reading)} times in the last day and I read in the usual voice instead — "
+                "it may be slow or not work on that speaker"), "evidence": {"times": len(reading)}})
+        if errors := self._errors_today():
+            top, n = errors
+            findings.append({"kind": "failing", "about": "errors", "text": (
+                f"Something in me logged {n} error{'s' if n > 1 else ''} in the last day — most often: {top[:140]}"),
+                "evidence": {"errors": n}})
+
+        # 6. the AI
         ai = rt.ai.describe()
         week = list((ai.get("last_7_days") or {}).values())
         if ai.get("failed_today", 0) >= 3:
@@ -224,6 +247,35 @@ class SelfAware:
             fb._save()
             rt.timeline.add("mind", "Adjusted itself", "; ".join(done))
         return done
+
+    def _errors_today(self) -> tuple[str, int] | None:
+        """Errors Sentient itself logged in the last day (from Home Assistant's own log), most common first."""
+        try:
+            from homeassistant.components.system_log import DATA_SYSTEM_LOG
+
+            handler = self.hass.data.get(DATA_SYSTEM_LOG)
+            records = list(handler.records.values()) if handler is not None else []
+        except Exception:  # noqa: BLE001 - the system log isn't loaded
+            return None
+        since = (dt_util.utcnow() - timedelta(days=1)).timestamp()
+        mine = [r for r in records if str(getattr(r, "name", "")).startswith("custom_components.sentient")
+                and getattr(r, "level", "") in ("ERROR", "CRITICAL") and getattr(r, "timestamp", 0) >= since]
+        if not mine:
+            return None
+        mine.sort(key=lambda r: getattr(r, "count", 1), reverse=True)
+        return str(list(mine[0].message)[0]), sum(getattr(r, "count", 1) for r in mine)
+
+    @callback
+    def voice_fell_back(self, why: str) -> None:
+        """The voice had to use the basic agent: after a few in an hour, say so straight away (once in six hours)."""
+        now = dt_util.utcnow()
+        self._fallbacks = [t for t in getattr(self, "_fallbacks", []) if now - t < timedelta(hours=1)] + [now]
+        last = getattr(self, "_fallback_told", None)
+        if len(self._fallbacks) >= FAILURES_MIN and (last is None or now - last > timedelta(hours=6)):
+            self._fallback_told = now
+            if (rt := self._rt()) is not None:
+                rt.timeline.add("health", f"The AI hasn't answered {len(self._fallbacks)} times in the last hour",
+                                f"the basic voice agent answered instead; last reason: {why[:120]}")
 
     def summary(self) -> dict[str, Any]:
         """For the Mind page: status now and the self-check (kept for five minutes)."""

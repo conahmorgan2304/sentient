@@ -200,6 +200,7 @@ class SpeechRouter:
         self._recent: dict[str, datetime] = {}
         self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
+        self.reading_fallbacks: deque[tuple[datetime, str, str]] = deque(maxlen=50)  # the reading voice failing
         self._questions: dict[str, dict[str, Any]] = {}  # satellite -> the house's open question and what to do with the answer
         self._delivered_recent: dict[tuple[str, str], datetime] = {}
         self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
@@ -515,6 +516,7 @@ class SpeechRouter:
         except (HomeAssistantError, TimeoutError, ValueError) as err:
             _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker,
                             str(err) or type(err).__name__)
+            self.reading_fallbacks.append((dt_util.utcnow(), engine, speaker))
             return None
         return [{"entity_id": speaker, "status": "accepted"}]
 

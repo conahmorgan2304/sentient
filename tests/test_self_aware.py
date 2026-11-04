@@ -151,3 +151,21 @@ def test_self_test_understands_every_way_of_saying_none() -> None:
         assert NONE_SAID.search(said), said
     for said in ("You have two reminders: the bins and the dentist.", "Your reminder is the dentist at three."):
         assert not NONE_SAID.search(said), said
+
+
+async def test_notices_its_own_failures(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for _ in range(3):
+        rt.timeline.add("health", "Voice answered by the backup agent", "the AI failed: timeout")
+        rt.selfaware.voice_fell_back("timeout")
+        freezer.tick(timedelta(minutes=5))
+    # said straight away, once
+    told = [i for i in rt.timeline.since(1, ["health"], 50) if i["text"].startswith("The AI hasn't answered")]
+    assert len(told) == 1
+    from datetime import datetime, timezone
+
+    for _ in range(3):
+        rt.speech.reading_fallbacks.append((datetime.now(timezone.utc), "tts.slow", "assist_satellite.kitchen"))
+    kinds = {f["about"] for f in rt.selfaware.check()["findings"] if f["kind"] == "failing"}
+    assert {"voice", "reading voice"} <= kinds
