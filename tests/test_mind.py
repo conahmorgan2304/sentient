@@ -570,3 +570,14 @@ async def test_card_resources_move_to_local(hass: HomeAssistant) -> None:
     urls = sorted(r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items())
     assert urls == ["/local/sentient/sentient-hub-card.js?v=1.0.0", "/local/sentient/sentient-screen-card.js?v=1.0.0",
                     "/local/sentient/sentient-shows-card.js?v=1.0.0"]  # moved, not added twice
+
+
+def test_a_habit_the_houses_own_alarm_does_is_not_offered() -> None:
+    from custom_components.sentient import scheduled_by_alarm
+
+    alarms = [{"enabled": True, "time": "23:00:00", "days": ["mon", "tue"], "actions": [
+        {"action": "switch.turn_off", "target": {"entity_id": "switch.bedroom_heated_blanket_outlet"}}]}]
+    assert scheduled_by_alarm(alarms, "switch.bedroom_heated_blanket_outlet", "off", 22 * 60 + 55)
+    assert not scheduled_by_alarm(alarms, "switch.bedroom_heated_blanket_outlet", "on", 22 * 60 + 55)
+    assert not scheduled_by_alarm(alarms, "switch.bedroom_heated_blanket_outlet", "off", 7 * 60)
+    assert not scheduled_by_alarm([{**alarms[0], "enabled": False}], "switch.bedroom_heated_blanket_outlet", "off", 1380)

@@ -355,6 +355,7 @@ class Learner:
         self._unsubs: list = []
         self._asked_today: str | None = None
         self.extra_automated = None  # () -> {entity: epoch seconds} changed by Sentient itself
+        self.covered = None  # (entity_id, state, minute of day) -> True when one of Sentient's own schedules does it
         self.skip = None  # callable giving entities another feature already runs
         self.feedback = None  # set by the runtime: declines teach it what not to offer
 
@@ -515,6 +516,8 @@ class Learner:
             ):
                 if routine.id in self.dismissed:
                     continue
+                if self.covered is not None and self.covered(routine.entity_id, routine.state, routine.minute):
+                    continue  # the house already does this on a schedule (an alarm): it's not a habit to offer
                 old = self.routines.get(routine.id)
                 if old is not None:
                     routine.adopted, routine.declined, routine.suggested = old.adopted, old.declined, old.suggested

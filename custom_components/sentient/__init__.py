@@ -308,6 +308,29 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
+def scheduled_by_alarm(alarms: list[dict[str, Any]], entity_id: str, state: str, minute: int, within: int = 60) -> bool:
+    """One of Sentient's own enabled, repeating alarms already switches this entity to this state at about this
+    time (the heated blanket off at 23:00) — so the house switching it isn't a habit to learn or offer."""
+    service = {"on": "turn_on", "off": "turn_off", "open": "open_cover", "closed": "close_cover"}.get(state)
+    for alarm in alarms:
+        if not alarm.get("enabled", True) or not alarm.get("days"):
+            continue
+        try:
+            hh, mm = (int(x) for x in str(alarm.get("time") or "").split(":")[:2])
+        except ValueError:
+            continue
+        gap = abs(hh * 60 + mm - minute)
+        if min(gap, 1440 - gap) > within:
+            continue
+        for action in alarm.get("actions") or []:
+            name = str(action.get("action") or action.get("service") or "")
+            targets = (action.get("target") or {}).get("entity_id") or (action.get("data") or {}).get("entity_id") or []
+            targets = [targets] if isinstance(targets, str) else list(targets)
+            if entity_id in targets and service and name.endswith("." + service):
+                return True
+    return False
+
+
 CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
 LOCAL_CARDS_URL = "/local/sentient"  # config/www/sentient, served by Home Assistant from the start
 
@@ -492,6 +515,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     clipwatch = ClipWatch(hass, entry.entry_id, options, get_rt)
     learner.extra_automated = away.times
+    learner.covered = lambda entity, state, minute: scheduled_by_alarm(lists["alarms"].listing(), entity, state, minute)
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
     conversations.timeline = timeline

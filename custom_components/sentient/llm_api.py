@@ -816,8 +816,10 @@ class AdoptRoutineTool(_Tool):
     name = "sentient_adopt_routine"
     description = (
         "Start (adopt=true) or stop (adopt=false) the house doing a learned routine by itself, "
-        "e.g. after someone says yes to 'want me to do that for you?', or 'stop turning the "
-        "hallway light on for me'. 'routine' is its id or words from it."
+        "e.g. after someone says a clear yes to 'want me to do that for you?', or 'stop turning the "
+        "hallway light on for me'. 'routine' is its id or words from it. Only a clear yes adopts: 'it already "
+        "does that', 'that's already set up', 'no need' or anything unclear is NOT a yes — then call "
+        "sentient_forget_routine for it if they say it's already handled, otherwise ask again."
     )
     parameters = vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt", default=True): cv.boolean})
 
