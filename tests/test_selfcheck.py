@@ -355,3 +355,11 @@ async def test_event_listeners_start_only_once_the_runtime_exists(hass: HomeAssi
     with patch.object(Upkeep, "async_start", up), patch.object(Welcome, "async_start", wel):
         await _setup(hass)
     assert seen == [True, True]
+
+
+async def test_diagnostics_hide_the_tandoor_token_and_private_addresses(hass: HomeAssistant) -> None:
+    from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
+
+    entry = await _setup(hass, tandoor_token="secret-token", tandoor_url="http://192.168.1.5:8080", clip_looks="Sam: red coat")
+    out = await async_get_config_entry_diagnostics(hass, entry)
+    assert "secret-token" not in str(out) and "192.168.1.5" not in str(out) and "red coat" not in str(out)

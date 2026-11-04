@@ -547,29 +547,34 @@ async def test_drive_only_asks_the_ai_when_the_picture_changes(hass: HomeAssista
     assert rt.drive.describe()["cars"] == 1
 
 
-def test_cards_are_copied_to_www_for_home_assistant_to_serve_from_the_start(tmp_path) -> None:
-    from custom_components.sentient import CARDS, _publish_cards
+def test_old_card_copies_are_taken_back_but_nothing_else(tmp_path) -> None:
+    """Older versions copied the cards into the user's www folder: only those copies are removed."""
+    from custom_components.sentient import _remove_old_card_copies
 
-    www = tmp_path / "www"
-    assert _publish_cards(www) is False  # no www folder at start-up: /local isn't served this run
-    assert {p.name for p in (www / "sentient").iterdir()} == {f"{c}.js" for c in CARDS}
-    (www / "sentient" / "sentient-hub-card.js").write_text("old")
-    assert _publish_cards(www) is True
-    assert "sentient-hub-card" in (www / "sentient" / "sentient-hub-card.js").read_text()
+    folder = tmp_path / "www" / "sentient"
+    folder.mkdir(parents=True)
+    (folder / "sentient-hub-card.js").write_text('customElements.define("sentient-hub-card", X);')
+    (folder / "sentient-shows-card.js").write_text("someone else's file with the same name")
+    assert _remove_old_card_copies(tmp_path / "www") == ["sentient-hub-card.js"]
+    assert (folder / "sentient-shows-card.js").exists() and folder.exists()
+    (folder / "sentient-shows-card.js").unlink()
+    (folder / "sentient-screen-card.js").write_text('customElements.define("sentient-screen-card", X);')
+    _remove_old_card_copies(tmp_path / "www")
+    assert not folder.exists()  # emptied: the folder goes too
 
 
-async def test_card_resources_move_to_local(hass: HomeAssistant) -> None:
+async def test_card_resources_move_back_from_local(hass: HomeAssistant) -> None:
     from homeassistant.setup import async_setup_component
 
     from custom_components.sentient import LOCAL_CARDS_URL, async_register_card_resources
     from homeassistant.components.lovelace.const import LOVELACE_DATA
 
     assert await async_setup_component(hass, "lovelace", {})
-    await async_register_card_resources(hass, "1.0.0")
-    await async_register_card_resources(hass, "1.0.0", None, LOCAL_CARDS_URL)
+    await async_register_card_resources(hass, "1.0.0", None, LOCAL_CARDS_URL)  # as 0.80.1–0.83.0 left them
+    await async_register_card_resources(hass, "1.0.1")
     urls = sorted(r["url"] for r in hass.data[LOVELACE_DATA].resources.async_items())
-    assert urls == ["/local/sentient/sentient-hub-card.js?v=1.0.0", "/local/sentient/sentient-screen-card.js?v=1.0.0",
-                    "/local/sentient/sentient-shows-card.js?v=1.0.0"]  # moved, not added twice
+    assert urls == ["/sentient_frontend/sentient-hub-card.js?v=1.0.1", "/sentient_frontend/sentient-screen-card.js?v=1.0.1",
+                    "/sentient_frontend/sentient-shows-card.js?v=1.0.1"]  # moved back, not added twice
 
 
 def test_a_habit_the_houses_own_alarm_does_is_not_offered() -> None:
