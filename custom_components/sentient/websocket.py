@@ -493,9 +493,25 @@ def ws_whats_new_seen(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     connection.send_result(msg["id"], {"seen": True})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/export/readable"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_export_readable(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Memories, routines, lists and settings as readable text (secrets and addresses left out)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .readable import async_labels, build
+
+    text = build(hass, entry.runtime_data, entry.title, await async_labels(hass))
+    connection.send_result(msg["id"], {"text": text})
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_proposal)
+    websocket_api.async_register_command(hass, ws_export_readable)
     websocket_api.async_register_command(hass, ws_whats_new)
     websocket_api.async_register_command(hass, ws_whats_new_seen)
     websocket_api.async_register_command(hass, ws_privacy)

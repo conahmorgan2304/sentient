@@ -973,7 +973,8 @@
     _drawBackup() {
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:backup-restore"></ha-icon><div><div class="bt">BACKUP</div>
           <div class="bs">Everything Sentient has learned and been told — memories, camera spots, motion lights, routines, shushes and which learned routines you adopted — in one file. Restoring adds to what's here and never deletes.</div></div></div>
-        <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div></div>
+        <div class="card ml"><div class="r"><ha-icon icon="mdi:download"></ha-icon><b>Download a backup now</b><button class="btn sm" data-act="bkdown">DOWNLOAD</button></div>
+          <div class="r"><ha-icon icon="mdi:file-document-outline"></ha-icon><b class="wrap">A readable copy<small>Memories, routines, lists and settings as plain text to read or print — not for restoring. Secrets and addresses are left out.</small></b><button class="btn sm ghost" data-act="bkread">READABLE COPY</button></div></div>
         <div class="card ml" style="margin-top:12px"><div class="r"><ha-icon icon="mdi:upload"></ha-icon><b>Restore from a backup file</b>
           <label class="tg" title="Also restore settings"><input type="checkbox" id="bkset"><i></i></label><u>ALSO SETTINGS</u>
           <button class="btn sm" data-act="bkup">CHOOSE FILE…</button></div><input type="file" id="bkfile" accept="application/json,.json" hidden></div>
@@ -1553,6 +1554,15 @@
         this._hass.callService("sentient", "run_routine", { name: r ? r.name : id }).then(() => this._loadShortcuts(), (e) => window.alert(e.message || e));
       } else if (act === "bkdown") this._download().catch((e) => { this._$("bkmsg").textContent = e.message || String(e); });
       else if (act === "bkup") this._$("bkfile").click();
+      else if (act === "bkread") {
+        this._hass.callWS({ type: "sentient/export/readable" }).then((r) => {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([r.text], { type: "text/markdown" }));
+          a.download = `sentient-readable-${new Date().toISOString().slice(0, 10)}.md`;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      }
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "trytts") {
