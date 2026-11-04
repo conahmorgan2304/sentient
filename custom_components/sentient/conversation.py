@@ -34,6 +34,34 @@ _LOGGER = logging.getLogger(__name__)
 
 MAIN_TIMEOUT = 45  # seconds; a voice request that takes longer than this has failed
 FAILED_CODES = {intent.IntentResponseErrorCode.UNKNOWN}
+def find_ai_agent(hass: HomeAssistant, opts: dict[str, Any], me: str | None) -> str | None:
+    """The AI conversation agent that does the thinking — never one of Sentient's own agents (no going round
+    in circles) and never Home Assistant's plain one. The agents chosen in Settings first; failing those, the
+    one the house's preferred voice pipeline uses; failing that, the only AI agent there is."""
+    from homeassistant.helpers import entity_registry as er
+
+    reg = er.async_get(hass)
+
+    def usable(agent: str | None, chosen: bool = False) -> bool:
+        if not agent or agent == me or agent in ("conversation.home_assistant", "homeassistant"):
+            return False
+        entry = reg.async_get(agent)
+        return not (entry and entry.platform == DOMAIN) and (chosen or hass.states.get(agent) is not None)
+
+    for agent in (opts.get(CONF_VOICE_AGENT), opts.get(CONF_CHAT_AGENT)):
+        if usable(agent, chosen=True):
+            return agent
+    try:
+        from homeassistant.components.assist_pipeline import async_get_pipeline
+
+        if usable(engine := async_get_pipeline(hass).conversation_engine):
+            return engine
+    except Exception:  # noqa: BLE001 - no pipelines yet
+        pass
+    others = [st.entity_id for st in hass.states.async_all("conversation") if usable(st.entity_id)]
+    return others[0] if len(others) == 1 else None
+
+
 NOT_ANSWERING = "The AI isn't answering right now, so I can only do simple things like lights and heating."
 
 
@@ -80,11 +108,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     @property
     def main_agent(self) -> str | None:
-        opts = self._options()
-        for agent in (opts.get(CONF_VOICE_AGENT), opts.get(CONF_CHAT_AGENT)):
-            if agent and agent != self.entity_id:
-                return agent
-        return None
+        return find_ai_agent(self.hass, self._options(), self.entity_id)
 
     @property
     def backup_agent(self) -> str:
@@ -496,15 +520,7 @@ class AlexaAgent(BackedUpAgent):
 
     @property
     def main_agent(self) -> str | None:
-        from homeassistant.helpers import entity_registry as er
-
-        reg = er.async_get(self.hass)
-        opts = self._options()
-        for agent in (opts.get(CONF_VOICE_AGENT), opts.get(CONF_CHAT_AGENT)):
-            entry = reg.async_get(agent) if agent else None
-            if agent and agent != self.entity_id and not (entry and entry.platform == DOMAIN):
-                return agent  # never Sentient's own "with backup" agent: no going round twice
-        return None
+        return find_ai_agent(self.hass, self._options(), self.entity_id)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

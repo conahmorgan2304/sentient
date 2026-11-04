@@ -314,3 +314,44 @@ async def test_frost_warning_mentions_the_animals(hass: HomeAssistant) -> None:
 
     text = plain_heads_up({"weather": {"templow": -1}, "animals_living_outside_now": ["the rabbit hutch 4°"]})
     assert text == "Frost's forecast for tomorrow morning, so the car may need defrosting and the water in the rabbit hutch may freeze."
+
+
+async def test_alexa_finds_the_ai_agent_even_when_voice_agent_is_sentients_own(hass: HomeAssistant) -> None:
+    """Voice agent set to Sentient "with backup" and no Ask-box agent: the Alexa agent still finds the AI,
+    instead of going straight to Home Assistant's plain agent ("the AI isn't answering")."""
+    from homeassistant.helpers import entity_registry as er
+
+    from custom_components.sentient.conversation import find_ai_agent
+
+    reg = er.async_get(hass)
+    reg.async_get_or_create("conversation", "sentient", "x_backup", suggested_object_id="sensei_with_backup")
+    hass.states.async_set("conversation.sensei_with_backup", "idle")
+    hass.states.async_set("conversation.home_assistant", "idle")
+    hass.states.async_set("conversation.google_ai_conversation", "idle")
+    opts = {"voice_agent": "conversation.sensei_with_backup"}
+    assert find_ai_agent(hass, opts, "conversation.sensei_for_alexa") == "conversation.google_ai_conversation"
+    hass.states.async_set("conversation.openai", "idle")  # two AI agents and none chosen: don't guess
+    assert find_ai_agent(hass, opts, "conversation.sensei_for_alexa") is None
+
+
+async def test_event_listeners_start_only_once_the_runtime_exists(hass: HomeAssistant) -> None:
+    """A sensor changing while Sentient sets up must not find an entry with no runtime_data."""
+    from unittest.mock import patch
+
+    from custom_components.sentient.upkeep import Upkeep
+    from custom_components.sentient.welcome import Welcome
+
+    seen = []
+    real_up, real_wel = Upkeep.async_start, Welcome.async_start
+
+    def up(self):
+        seen.append(self._rt() is not None)
+        return real_up(self)
+
+    def wel(self):
+        seen.append(self._rt() is not None)
+        return real_wel(self)
+
+    with patch.object(Upkeep, "async_start", up), patch.object(Welcome, "async_start", wel):
+        await _setup(hass)
+    assert seen == [True, True]
