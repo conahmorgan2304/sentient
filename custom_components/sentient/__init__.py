@@ -281,15 +281,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         # each card's address only changes when that card's file does, so a browser's saved copy of
         # the page keeps working across updates that don't touch the cards
         tags = await hass.async_add_executor_job(_card_tags)
-        # The cards are also copied to config/www/sentient, which Home Assistant itself serves (/local) from
-        # the first second of a start. Sentient's own address only exists once Sentient has loaded, so a
-        # tablet or phone that reconnected while Home Assistant was still starting got "not found", kept
-        # that, and showed "Custom element doesn't exist" until its cache was cleared.
-        try:
-            base = LOCAL_CARDS_URL if await hass.async_add_executor_job(_publish_cards, Path(hass.config.path("www"))) else FRONTEND_URL
-        except OSError as err:
-            _LOGGER.warning("Couldn't copy the dashboard cards to the www folder: %s", err)
-            base = FRONTEND_URL
+        base = FRONTEND_URL
+        # 0.80.1–0.83.0 also copied the cards into config/www/sentient: that folder is the user's, so take
+        # back only the copies Sentient put there (and the folder, if that leaves it empty)
+        await hass.async_add_executor_job(_remove_old_card_copies, Path(hass.config.path("www")))
         for card in CARDS:
             add_extra_js_url(hass, f"{base}/{card}.js?v={tags.get(card, version)}")
 
@@ -332,26 +327,29 @@ def scheduled_by_alarm(alarms: list[dict[str, Any]], entity_id: str, state: str,
 
 
 CARDS = ("sentient-shows-card", "sentient-hub-card", "sentient-screen-card")
-LOCAL_CARDS_URL = "/local/sentient"  # config/www/sentient, served by Home Assistant from the start
+LOCAL_CARDS_URL = "/local/sentient"  # where 0.80.1–0.83.0 put copies of the cards; resources there move back
 
 
-def _publish_cards(www: Path) -> bool:
-    """Copy the cards to config/www/sentient (only when they've changed).
-
-    True when the www folder was already there, so Home Assistant is serving /local this run (it only
-    looks for the folder as it starts — the very first time, the cards come from Sentient's own address)."""
-    existed = www.is_dir()
-    dest = www / "sentient"
-    dest.mkdir(parents=True, exist_ok=True)
-    src = Path(__file__).parent / "frontend"
+def _remove_old_card_copies(www: Path) -> list[str]:
+    """Delete the card copies older versions left in config/www/sentient — only Sentient's own card files."""
+    folder = www / "sentient"
+    removed: list[str] = []
+    if not folder.is_dir():
+        return removed
     for card in CARDS:
-        data = (src / f"{card}.js").read_bytes()
-        target = dest / f"{card}.js"
-        if not target.is_file() or target.read_bytes() != data:
-            tmp = target.with_suffix(".js.tmp")
-            tmp.write_bytes(data)
-            tmp.replace(target)
-    return existed
+        target = folder / f"{card}.js"
+        try:
+            if target.is_file() and f'customElements.define("{card}"' in target.read_text(errors="ignore"):
+                target.unlink()
+                removed.append(target.name)
+        except OSError:
+            pass
+    try:
+        if removed and not any(folder.iterdir()):
+            folder.rmdir()
+    except OSError:
+        pass
+    return removed
 
 
 def _card_tags(cards: tuple[str, ...] = CARDS) -> dict[str, str]:
