@@ -47,6 +47,37 @@ async def test_says_so_only_when_it_did_not_happen(hass: HomeAssistant, freezer)
     assert said[0].data.get("entity_id", said[0].data) is not None
 
 
+async def test_patient_with_slow_devices_newest_request_wins_and_a_later_change_by_hand_is_fine(
+    hass: HomeAssistant, freezer
+) -> None:
+    await _setup(hass)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    async_mock_service(hass, "climate", "set_temperature")
+    async_mock_service(hass, "light", "turn_on")
+    hass.states.async_set("climate.heating", "heat", {"temperature": 18, "friendly_name": "Heating"})
+    hass.states.async_set("light.girls", "off", {"friendly_name": "Girls light"})
+    hass.states.async_set("assist_satellite.kitchen", "listening")
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+
+    async def tick(seconds):
+        freezer.tick(timedelta(seconds=seconds))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    # the offer sets 20, then the voice sets 21: only 21 is checked
+    await hass.services.async_call("climate", "set_temperature", {"entity_id": "climate.heating", "temperature": 20}, blocking=True, context=Context())
+    await hass.services.async_call("climate", "set_temperature", {"entity_id": "climate.heating", "temperature": 21}, blocking=True, context=Context())
+    # the light comes on, then one of the children switches it off again
+    await hass.services.async_call("light", "turn_on", {"entity_id": "light.girls"}, blocking=True, context=Context())
+    hass.states.async_set("light.girls", "on", {"friendly_name": "Girls light"})
+    hass.states.async_set("light.girls", "off", {"friendly_name": "Girls light"})
+    await tick(21)
+    assert not said  # the thermostat hasn't reported back yet: wait longer, don't complain
+    hass.states.async_set("climate.heating", "heat", {"temperature": 21, "friendly_name": "Heating"})
+    await tick(91)
+    assert not said
+
+
 async def test_quiet_when_nobody_asked_by_voice(hass: HomeAssistant, freezer) -> None:
     await _setup(hass)
     said = async_mock_service(hass, "assist_satellite", "announce")

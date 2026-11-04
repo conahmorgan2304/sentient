@@ -25,7 +25,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 VOICE_RECENT = timedelta(seconds=90)
-CHECK_AFTER = 20  # seconds
+CHECK_AFTER = 20  # seconds: the first look
+LATE_CHECK = 90  # seconds: a device that hasn't caught up yet (a thermostat over a slow radio) gets this long more
 # real devices only: helpers (input_boolean…) have no batteries to go flat
 DOMAINS = {"light", "switch", "fan", "climate", "cover", "lock", "media_player",
            "vacuum", "water_heater", "humidifier", "valve"}
@@ -85,6 +86,8 @@ class FollowThrough:
         self._voice: tuple[str, datetime] | None = None  # the satellite last spoken to
         self.own_contexts: set[str] = set()  # changes the house made itself (not checked here)
         self._unsubs: list = []
+        # entity -> what the latest voice request wants from it, whether it has got there yet, and its check
+        self._pending: dict[str, dict[str, Any]] = {}
 
     @callback
     def async_start(self) -> None:
@@ -101,6 +104,10 @@ class FollowThrough:
         new = event.data.get("new_state")
         if new is not None and new.domain == "assist_satellite" and new.state in VOICE_STATES:
             self._voice = (new.entity_id, dt_util.utcnow())
+        if new is not None and (pending := self._pending.get(new.entity_id)) and worked(new, pending["want"]):
+            # it got there — even if someone changes it again afterwards (switching the light back by hand),
+            # the request worked
+            pending["reached"] = True
 
     def recent_voice(self) -> str | None:
         if self._voice and dt_util.utcnow() - self._voice[1] <= VOICE_RECENT:
@@ -130,18 +137,39 @@ class FollowThrough:
         if not targets or len(targets) > 6:
             return  # whole-house commands are too broad to judge sensibly
 
-        @callback
-        def _check(_now: datetime) -> None:
-            self.hass.async_create_task(self._async_report(domain, service, targets, want, satellite))
-
-        async_call_later(self.hass, CHECK_AFTER, _check)
-
-    async def _async_report(self, domain: str, service: str, targets: list[str], want, satellite: str) -> None:
-        failed = []
         for entity_id in targets:
-            st = self.hass.states.get(entity_id)
-            if worked(st, want) is False:
-                failed.append(st)
+            # the newest request for a device is the one that counts: "20 degrees… actually make it 21"
+            if (old := self._pending.pop(entity_id, None)) and old.get("cancel"):
+                old["cancel"]()
+            pending = {"want": want, "satellite": satellite, "reached": False}
+            self._pending[entity_id] = pending
+            pending["cancel"] = async_call_later(self.hass, CHECK_AFTER, self._later(entity_id, pending, late=False))
+
+    def _later(self, entity_id: str, pending: dict[str, Any], late: bool):
+        @callback
+        def _run(_now: datetime) -> None:
+            self._check(entity_id, pending, late)
+
+        return _run
+
+    @callback
+    def _check(self, entity_id: str, pending: dict[str, Any], late: bool) -> None:
+        if self._pending.get(entity_id) is not pending:
+            return  # a newer request took over
+        st = self.hass.states.get(entity_id)
+        if pending["reached"] or worked(st, pending["want"]) is not False:
+            self._pending.pop(entity_id, None)
+            return
+        offline = st is None or st.state in ("unavailable", "unknown")
+        if not late and not offline:
+            # not there yet but still talking to us: some devices report back slowly — look again later
+            pending["cancel"] = async_call_later(self.hass, LATE_CHECK, self._later(entity_id, pending, late=True))
+            return
+        self._pending.pop(entity_id, None)
+        self.hass.async_create_task(self._async_report([st], pending["want"], pending["satellite"]))
+
+    async def _async_report(self, failed: list, want, satellite: str) -> None:
+        failed = [s for s in failed if s is not None]
         if not failed:
             return
         names = [s.name for s in failed]
