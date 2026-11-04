@@ -560,6 +560,9 @@ class WatchManager:
 
     async def _attachment(self, camera: str, spot: str | None) -> dict[str, str]:
         if self.spots is None:
+            from .camwake import async_wake
+
+            await async_wake(self.hass, self.options, camera)
             return {"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}
         key = None
         if spot:

@@ -219,6 +219,10 @@ from .const import (
     CONF_DRIVE_CAMERA,
     CONF_DRIVE_SPOT,
     CONF_DRIVE_TRIGGERS,
+    CONF_CAMERA_WAKE,
+    CONF_CAMERA_WAKE_CAMERAS,
+    CONF_CAMERA_WAKE_SECONDS,
+    DEFAULT_CAMERA_WAKE_SECONDS,
     DEFAULT_DRIVE_SPOT,
     CONF_CONVERSATIONS,
     CONF_FOLLOW_UPS,
@@ -410,6 +414,13 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_KNOWN_CARS, **d(CONF_KNOWN_CARS, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
+            ),
+            vol.Optional(CONF_CAMERA_WAKE, **d(CONF_CAMERA_WAKE, [])): selector.ActionSelector(),
+            vol.Optional(CONF_CAMERA_WAKE_CAMERAS, **d(CONF_CAMERA_WAKE_CAMERAS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera", multiple=True)
+            ),
+            vol.Required(CONF_CAMERA_WAKE_SECONDS, **d(CONF_CAMERA_WAKE_SECONDS, DEFAULT_CAMERA_WAKE_SECONDS)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=30, step=1, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_CRITICAL, **d(CONF_CRITICAL, True)): selector.BooleanSelector(),
             vol.Required(CONF_LEFT_OPEN_MINUTES, **d(CONF_LEFT_OPEN_MINUTES, 0)): selector.NumberSelector(

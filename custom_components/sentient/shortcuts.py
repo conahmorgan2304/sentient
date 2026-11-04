@@ -186,7 +186,8 @@ class Shortcuts:
         return {"routine": item.name, "steps": len(item.actions), "said": " ".join(parts), "notes": notes}
 
 
-async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], name: str, context: Context | None = None) -> None:
+async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], name: str, context: Context | None = None,
+                            variables: dict[str, Any] | None = None) -> None:
     """Run a list of ordinary Home Assistant actions (as built in HA's action editor)."""
     if not actions:
         return
@@ -197,7 +198,7 @@ async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], 
         return
     sequence = await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(actions))
     script = Script(hass, sequence, f"Sentient: {name}", DOMAIN, running_description="actions")
-    await script.async_run(context=context or Context())
+    await script.async_run(run_variables=variables, context=context or Context())
 
 
 def _join(names: list[str]) -> str:
