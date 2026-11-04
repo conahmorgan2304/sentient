@@ -6,11 +6,23 @@
 
 **An evolving AI brain for Home Assistant.**
 
-Sentient gives your home one shared brain. Every voice assistant and automation in the house uses the same memory, follows the same house rules about when and where to speak, and gets smarter the longer it runs.
+Sentient gives your home one shared brain. Every voice assistant and automation in the house uses the same memory, follows the same house rules about when and where to speak, and gets smarter the longer it runs. It learns your habits (including ones that follow sunset or getting up), can say why it did or said anything, lets you choose how much it does by itself, and keeps a record of what it sends to AI services.
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
 > **Status: beta.** In daily use in one house; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+
+## New in 0.84–0.88
+
+- **Knows its own actions** — nothing it switches is mistaken for a person, learned as a habit or reported as "didn't happen".
+- **Setup doctor** — one page that checks the AI, voice pipeline, speakers, voices, cameras and folders and says what to fix.
+- **Better memory** — pin memories; the rest are picked by what was asked. "Why did you say that?" gives the reason it noted at the time.
+- **Smarter routines** — habits that follow sunset or getting up, habits done together offered as one, and "no, the other one" put right in one go.
+- **Trust, rooms and privacy** — just do it, say so first or ask, per kind of device; private and gentler rooms; holiday mode; a page showing what leaves the house, with "forget the last 48 hours"; text it reads from the web or cameras can't make it act.
+- **The world outside** — energy price, weather warnings and parcels in the briefing; maintenance due by actual use; cheap-electricity nudges; music by asking with Music Assistant; questions answered from your phone; `sentient.notice` for your own automations.
+- **Simpler** — "how it's used", a simpler settings page for new installs, a "what's new" card after updates, a readable copy of everything it knows, stories without gaps, and a lighter start-up.
+
+Every new feature has its own switch in Settings.
 
 ## What it does today
 
@@ -103,6 +115,8 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Smarter routines.** A lamp put on at dusk is learned against sunset (and the kettle against getting up), so a routine the house does for you moves with the seasons; things done together — the lamp, the blinds, the TV around 8pm — are offered as one. Say "no, the other one" and the voice switches back what it just did and puts it right.
 - **The world outside.** Chosen sensors (today's electricity price, a weather warning, parcels on the way) go into the briefing and the look at tomorrow; a parcel tracker saying "out for delivery" means the door is watched all day. A Maintenance page counts how long things actually run, so "the purifier filter is due" comes at the right time. With a time-of-use tariff it can nudge you to use the dishwasher's delay start when electricity's cheapest; with Music Assistant, "play something calm in the kitchen" plays from your own library. Questions can be answered from your phone when nobody's near a speaker, and any automation can pass something through Sentient with `sentient.notice`.
 - **Trust, rooms and privacy.** Choose whether the house just does things by itself, says so first or asks (per kind of device). Rooms can be private (no personal memories — a child's room), gentler, with their own volume and quiet time. Holiday mode keeps the house quiet, sends things to phones, runs the away lights and turns chosen heating down to frost protection until you're back. *Brain & system → What leaves the house* shows every AI call and web search Sentient makes by itself (never the content), with a button to forget the last 48 hours. Text it reads from the web, documents or cameras can't make it act.
+- **Keeping it simple.** *Brain & system → How it's used* shows which optional features you use and which are on but never used; new installs start with a simpler settings page (SHOW EVERYTHING is one tap away). After an update, a short card says what's new. Backup can also give a readable copy of everything it knows and does.
+- **Stories without gaps.** With a reading voice, the next part of the story is made while this part is read, so a slow voice doesn't pause between parts.
 - **Why, and what it would change.** Ask "why did you say that?" or "why did you offer to put the heating on?" and it gives the reason it noted at the time (the timeline shows it too). The weekly report says what it got wrong, and the Mind page can suggest one or two small settings changes with the reason — nothing changes until you say yes (Settings → Mind → *Suggest changes to its settings*).
 - **Books and stories (optional, off by default).** "Read Princess Scarlet", "carry on with the book", "pause", "next chapter" — DRM-free .epub or .txt ebooks and your own stories are read aloud straight through until stopped or paused, and audiobooks (.mp3, .m4b, a folder of parts) are played; each speaker keeps its own place, picking up from the paragraph it stopped in. Starting a story ends the conversation with one line, so nothing keeps listening or asks "anything else?" over it; the wake word pauses it. A sleep timer ("read for 20 minutes"), "go back a bit", "what happened last time?", and an optional **reading voice** — any text-to-speech service and voice you have (Gemini, ElevenLabs, Home Assistant Cloud…) just for stories, with a TRY THE VOICE button. Echos read one passage per request in Alexa's own voice and can't play audiobooks.
 - **Recipes and cooking mode (optional, off by default).** Recipes from a media folder (tidied once by the AI), Mealie or Tandoor: "let's make the lasagne", then "next", "repeat that", "go to step 5", "make it for 6" and "add the ingredients to the shopping list", with the speaker's own timer offered when a step needs one. Works on any speaker, Echos included.

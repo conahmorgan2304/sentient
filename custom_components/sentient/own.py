@@ -108,7 +108,28 @@ class OwnActions:
 
 
 def own_actions(hass: HomeAssistant) -> OwnActions | None:
-    return (hass.data.get(DOMAIN) or {}).get("own")
+    """The registry, kept on Sentient's config entry (None while it isn't running)."""
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if (own := getattr(getattr(entry, "runtime_data", None), "own", None)) is not None:
+            return own
+    return None
+
+
+class LastingContext:
+    """A long-lived 'the house did this' context for one feature, made the first time it's needed
+    (Sentient may still be starting when the feature itself is created)."""
+
+    def __init__(self, hass: HomeAssistant, why: str) -> None:
+        self.hass = hass
+        self.why = why
+        self._context: Context | None = None
+
+    def get(self) -> Context:
+        if self._context is None:
+            if own_actions(self.hass) is None:
+                return Context()  # not running yet: don't keep a context that isn't registered
+            self._context = own_context(self.hass, self.why, lasting=True)
+        return self._context
 
 
 def own_context(hass: HomeAssistant, why: str = "", lasting: bool = False) -> Context:

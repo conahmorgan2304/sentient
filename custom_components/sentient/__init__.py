@@ -182,6 +182,8 @@ class SentientRuntime:
     music: Any = None  # music by asking (made when first used)
     whats_new: Any = None  # what's new after an update
     usage: Any = None  # which features are used
+    own: Any = None  # what the house itself switched (so nothing mistakes it for a person)
+    outside_read: dict = field(default_factory=dict)  # conversation -> the turn outside text was last read in
     dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
     startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
     goals: Any = None  # goals over days or weeks
@@ -433,7 +435,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     own = OwnActions(hass, entry.entry_id)  # first, so everything after can mark what it does as the house's own
     await own.async_start()
-    hass.data[DOMAIN]["own"] = own
     entry.async_on_unload(own.async_stop)
     timeline = Timeline(hass, entry.entry_id)
     await timeline.async_start()
@@ -640,7 +641,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)

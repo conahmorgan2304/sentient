@@ -33,7 +33,12 @@ ASKED_TO_ACT = re.compile(
     r"\b(turn|switch|put|set|start|stop|run|play|pause|open|close|shut|lock|unlock|arm|disarm|dim|brighten|"
     r"announce|remind|remember|note|save|forget|make|add|create|change|raise|lower|heat|warm|cool|"
     r"activate|enable|disable|cancel)\b", re.I)
-KEY = f"{DOMAIN}_outside_read"
+
+
+def _reads(hass: HomeAssistant) -> dict[str, int] | None:
+    """Kept on Sentient's runtime: conversation id -> how many things the person had said when outside text was read."""
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    return getattr(entries[0].runtime_data, "outside_read", None) if entries else None
 
 
 def _turn() -> tuple[str, int, str] | None:
@@ -53,7 +58,8 @@ def _turn() -> tuple[str, int, str] | None:
 def mark_read(hass: HomeAssistant) -> None:
     if (turn := _turn()) is None:
         return
-    read: dict[str, int] = hass.data.setdefault(KEY, {})
+    if (read := _reads(hass)) is None:
+        return
     read[turn[0]] = turn[1]
     if len(read) > 200:
         for key in list(read)[:100]:
@@ -64,7 +70,7 @@ def blocked(hass: HomeAssistant) -> bool:
     """Whether an acting tool should refuse: outside text read this turn, and no request to act from the person."""
     if (turn := _turn()) is None:
         return False
-    if hass.data.get(KEY, {}).get(turn[0]) != turn[1]:
+    if ((_reads(hass) or {}).get(turn[0])) != turn[1]:
         return False
     return not ASKED_TO_ACT.search(turn[2])
 
