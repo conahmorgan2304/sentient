@@ -65,9 +65,13 @@ async def test_reading_keeps_the_place_and_picks_up(hass: HomeAssistant, tmp_pat
     rt = entry.runtime_data
     said = []
 
+    from custom_components.sentient.books import read_chapters, speech_pieces
+
+    first = len(speech_pieces(read_chapters(str(tmp_path / "books" / "Flump.epub"))[0]["passages"][0]))
+
     async def read_aloud(text, speaker, **_kw):
         said.append(text)
-        if len(said) == 2:
+        if len(said) == first + 1:
             rt.books._stop(speaker, save=False)  # the wake word, during the second passage
             raise asyncio.CancelledError
         return True
@@ -255,3 +259,13 @@ async def test_reading_voice_picker_and_try_it(hass: HomeAssistant, tmp_path, ha
     await ws.send_json({"id": 2, "type": "sentient/reading/try"})
     out = (await ws.receive_json())["result"]
     assert out["ok"] and out["speaker_name"] == "Bedroom" and "fox" in announce[-1].data["message"]
+
+
+def test_passages_are_spoken_in_short_pieces_at_sentence_ends() -> None:
+    from custom_components.sentient.books import speech_pieces
+
+    passage = "She opened the door. \"Who is there?\" she asked! Nobody answered... " * 12
+    pieces = speech_pieces(passage)
+    assert len(pieces) == 3 and all(len(p) <= 330 for p in pieces)
+    assert " ".join(pieces).split() == passage.split()  # nothing lost or repeated
+    assert pieces[0].endswith(("!", ".", "?", '"'))
