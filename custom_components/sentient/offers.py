@@ -147,8 +147,18 @@ class Offers:
             a = ar.async_get(self.hass).async_get_area(area)
             found = rt.speech.find_speaker(a.name if a else area)
             targets = [found] if found else None
+        async def answered(kind: str) -> str:
+            if kind == "yes":
+                out = await self.async_accept(offer["id"], True)
+                return "Done." if out.get("done") else str(out.get("error") or "That didn't work.")
+            if kind == "done":  # "it's already on": not a no to the offer itself
+                rt.timeline.add("mode", f"Already done: {offer['name']}")
+                return "Right, it's already sorted."
+            await self.async_accept(offer["id"], False)
+            return "Okay."
+
         result = await rt.speech.async_ask(
-            question, source=f"offer:{offer['name']}", targets=targets,
+            question, source=f"offer:{offer['name']}", targets=targets, on_answer=answered,
             extra_prompt=(
                 f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
                 f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "

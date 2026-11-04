@@ -19,6 +19,7 @@ from datetime import datetime, time, timedelta
 import logging
 import math
 import re
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -80,6 +81,7 @@ def important(source: str | None) -> bool:
 
 
 INSTANT_SECONDS = 2.0  # an announcement handed back faster than this hasn't been spoken yet
+QUESTION_OPEN = timedelta(seconds=90)  # a reply this soon after the house asked is an answer to it
 READING_WORDS_PER_SECOND = 2.5  # a steady reading voice, about 150 words a minute
 
 
@@ -198,6 +200,7 @@ class SpeechRouter:
         self._recent: dict[str, datetime] = {}
         self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
+        self._questions: dict[str, dict[str, Any]] = {}  # satellite -> the house's open question and what to do with the answer
         self._delivered_recent: dict[tuple[str, str], datetime] = {}
         self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
@@ -632,8 +635,12 @@ class SpeechRouter:
         source: str | None = None,
         extra_prompt: str | None = None,
         preannounce: bool | None = None,
+        on_answer: Callable[[str], Awaitable[str]] | None = None,
     ) -> SpeechResult:
         """Ask out loud and open the microphone, so the reply goes to that speaker's voice agent.
+
+        With *on_answer*, a plain yes / no / "it already does that" reply is handled here without the AI:
+        on_answer('yes' | 'no' | 'done') does it and returns what to say back.
 
         Only one speaker can listen, so it's the busiest room's. Speakers that can't
         start a conversation get the question as a plain announcement instead.
@@ -673,11 +680,30 @@ class SpeechRouter:
                 blocking=True,
             )
             self._remember_said(text)
+        if on_answer is not None:
+            self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True},
         )
         return SpeechResult(True, "asked", text, [speaker])
+
+    async def async_take_answer(self, satellite: str | None, text: str) -> str | None:
+        """If this satellite was just asked one of the house's questions and the reply is a plain answer,
+        act on it and return what to say back; None to let the AI handle it."""
+        from .answers import classify
+
+        question = self._questions.get(satellite or "")
+        if question is None:
+            return None
+        if dt_util.utcnow() > question["until"]:
+            self._questions.pop(satellite, None)
+            return None
+        kind = classify(text)
+        if kind is None:
+            return None  # not a plain answer: the AI reads it (and asks again if it's still unclear)
+        self._questions.pop(satellite, None)
+        return await question["on_answer"](kind)
 
     async def _wait_idle(self, speakers: list[str], timeout: float = 15) -> None:
         """Don't talk over a conversation that's already happening."""

@@ -407,7 +407,7 @@ class Learner:
         """Learned routines and links together."""
         return [*self.routines.values(), *self.links.values()]
 
-    def dismiss(self, id_or_words: str) -> Routine | Link | None:
+    def dismiss(self, id_or_words: str, penalise: bool = True) -> Routine | Link | None:
         """Delete a learned routine or habit for good: it stops, and is never learned or offered again."""
         item = self._find(id_or_words)
         if item is None:
@@ -415,7 +415,7 @@ class Learner:
         self.routines.pop(item.id, None)
         self.links.pop(item.id, None)
         self.dismissed[item.id] = item.describe()
-        if self.feedback is not None:
+        if penalise and self.feedback is not None:  # "it already does that" isn't a complaint about the device
             from .feedback import DELETED
 
             self.feedback.record(item.entity_id, DELETED, "deleted a learned routine", "offers")
@@ -683,9 +683,20 @@ class Learner:
                 f"{'goes ' + routine.state if routine.state in ('on', 'off') else ('opens' if routine.state == 'open' else 'closes')}"
                 f" around {routine.when} {routine.days}{seen}. Want me to do that for you from now on?"
             )
+        async def answered(kind: str) -> str:
+            if kind == "yes":
+                self.adopt(routine.id, True)
+                return "Okay, I'll do that from now on."
+            if kind == "done":  # something already does it: never offer it again
+                self.dismiss(routine.id, penalise=False)
+                return "Ah, right — I'll leave that one alone then."
+            self.adopt(routine.id, False)
+            return "Okay, I won't."
+
         result = await self.speech.async_ask(
             question,
             source="learning",
+            on_answer=answered,
             extra_prompt=(
                 f"If they say yes, call sentient_adopt_routine with routine '{routine.id}'. "
                 f"If they say no, call sentient_adopt_routine with routine '{routine.id}' and adopt false."
