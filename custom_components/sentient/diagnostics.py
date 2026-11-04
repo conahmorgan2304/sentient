@@ -17,7 +17,9 @@ TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "nam
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SentientConfigEntry) -> dict[str, Any]:
     rt = entry.runtime_data
+    out_startup = getattr(rt, "startup", None) or {}
     return {
+        "startup": out_startup,
         "options": async_redact_data({**entry.data, **entry.options}, TO_REDACT),
         "memory": {"count": len(rt.memory.items), "categories": sorted({m.category for m in rt.memory.items})},
         "speech": {"quiet_now": rt.speech.quiet_now(), "speaker_now": rt.speech.pick_speaker()},

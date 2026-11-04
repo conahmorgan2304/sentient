@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
-from typing import Any
+import time
+from typing import Any, Callable
 
 import voluptuous as vol
 
@@ -181,6 +182,8 @@ class SentientRuntime:
     music: Any = None  # music by asking (made when first used)
     whats_new: Any = None  # what's new after an update
     usage: Any = None  # which features are used
+    dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
+    startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     recipes: Any = None  # recipes and cooking mode
@@ -408,7 +411,21 @@ async def async_register_card_resources(hass: HomeAssistant, version: str, tags:
     return done
 
 
+# optional parts that only start when switched on (and start the moment they are, without a restart)
+DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
+    "books": lambda o: bool(o.get("books")),
+    "recipes": lambda o: bool(o.get("recipes")),
+    "goals": lambda o: bool(o.get("goals")),
+    "clipwatch": lambda o: bool(o.get("clip_watch")),
+    "faces": lambda o: bool(o.get("faces") or o.get("face_teach") or float(o.get("face_forget_hours") or 0) > 0),
+    "rain": lambda o: bool(o.get("rain_warnings")),
+    "parcels": lambda o: bool(o.get("outside_info") or o.get("parcel_trackers")),
+    "cheap_power": lambda o: bool(o.get("price_entity")),
+}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
+    started_at = time.monotonic()
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
@@ -630,9 +647,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     for engine in (upkeep, critical, left_open, welcome):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch, selfaware, goals, books, recipes, holiday, trust, parcels, maintenance, cheap_power, whats_new, usage):
+    engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "curiosity": curiosity,
+               "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
+               "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
+               "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
+               "selfaware": selfaware, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
+               "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
+    timings: dict[str, float] = {}
+    for name, engine in engines.items():
+        if name in DORMANT_WHEN_OFF and not DORMANT_WHEN_OFF[name](options):
+            entry.runtime_data.dormant.add(name)  # switched off: not started (it starts when switched on)
+            continue
+        began = time.monotonic()
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
+        timings[name] = time.monotonic() - began
     await party.async_start()
     entry.async_on_unload(party.async_stop)
     night_watch.async_start()
@@ -643,6 +672,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.runtime_data.startup = {
+        "seconds": round(time.monotonic() - started_at, 2),
+        "slowest_parts": {k: round(v, 2) for k, v in sorted(timings.items(), key=lambda kv: -kv[1])[:5]},
+        "not_started_while_off": sorted(entry.runtime_data.dormant),
+    }
     return True
 
 
@@ -706,6 +740,12 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
+    for name in sorted(entry.runtime_data.dormant):  # switched on just now: start it without a restart
+        if DORMANT_WHEN_OFF[name](options):
+            engine = getattr(entry.runtime_data, name)
+            await engine.async_start()
+            entry.async_on_unload(engine.async_stop)
+            entry.runtime_data.dormant.discard(name)
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
