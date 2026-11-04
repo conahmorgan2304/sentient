@@ -571,7 +571,7 @@
         c.innerHTML = head("mdi:check-decagram-outline", "Test & finish", `That's it. Say hello on the speakers to check they work, then finish. Everything can be changed later under Settings.`)
           + (W.own_agent ? `<label class="wizchk"><input type="checkbox" id="wizpipe" ${W.backupPipeline ? "checked" : ""}><span>Use <b>${esc(persona)} with backup</b> in my voice pipelines, so simple things still work if the AI is down</span></label>` : "")
           + `<div class="wizres" id="wizres"></div>
-          <div class="wizbar"><button class="btn ghost" data-act="wizback">BACK</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn" data-act="wizdone">FINISH</button></div>`;
+          <div class="wizbar"><button class="btn ghost" data-act="wizback">BACK</button><span></span><button class="btn ghost" data-act="wiztest"><ha-icon icon="mdi:speaker-play"></ha-icon> SAY HELLO</button><button class="btn ghost" data-act="wizdoctor"><ha-icon icon="mdi:stethoscope"></ha-icon> FINISH &amp; CHECK THE SETUP</button><button class="btn" data-act="wizdone">FINISH</button></div>`;
         const pipe = this._$("wizpipe");
         if (pipe) pipe.addEventListener("change", () => { W.backupPipeline = pipe.checked; });
         this._wizForm = null;
@@ -1504,6 +1504,7 @@
       else if (act === "wizlater") this._closeWizard();
       else if (act === "wiztest") this._wizTest();
       else if (act === "wizdone") this._wizFinish();
+      else if (act === "wizdoctor") this._wizFinish().then(() => { this._doc = null; this._group = "doctor"; this._show("settings", true); });
       else if (act === "thumb") {
         const up = id === "up";
         this._thumbs = { ...(this._thumbs || {}), [text]: id };
