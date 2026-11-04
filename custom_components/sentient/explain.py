@@ -34,7 +34,12 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
         out["now"] = st.state
         out["changed"] = f"{when:%H:%M}" + ("" if when.date() == dt_util.now().date() else f" on {when:%A}")
         ctx = st.context
-        if ctx.user_id:
+        from .own import own_actions
+
+        own = own_actions(hass)
+        if own is not None and own.is_own(ctx):
+            out["by"] = f"the house itself ({own.why(ctx) or own.last_reason(st.entity_id) or 'one of its schedules'})"
+        elif ctx.user_id:
             user = await hass.auth.async_get_user(ctx.user_id)
             out["by"] = f"a person in the Home Assistant app or a dashboard ({user.name if user else 'a user'})"
         elif ctx.parent_id:

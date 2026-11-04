@@ -13,7 +13,7 @@ import logging
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
@@ -169,7 +169,8 @@ class Offers:
             rt.timeline.add("mode", f"Said no to: {offer['name']}")
             return {"offer": offer["name"], "done": False}
         try:
-            await async_run_actions(self.hass, offer.get("actions") or [], offer["name"])
+            # someone said yes: this is their request (checked like any other), not the house acting by itself
+            await async_run_actions(self.hass, offer.get("actions") or [], offer["name"], context=Context())
         except Exception as err:  # noqa: BLE001
             return {"offer": offer["name"], "error": f"It didn't work: {err}"}
         rt.timeline.add("mode", f"Yes to: {offer['name']}", note or None)

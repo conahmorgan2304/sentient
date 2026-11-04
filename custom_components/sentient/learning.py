@@ -652,7 +652,10 @@ class Learner:
         else:
             service = "turn_on" if routine.state == "on" else "turn_off"
         _LOGGER.debug("Doing adopted routine: %s", routine.describe())
-        await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True)
+        from .own import own_context
+
+        await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True,
+                                            context=own_context(self.hass, f"learned routine: {routine.describe()}"))
 
     def next_to_offer(self) -> Routine | Link | None:
         options = [

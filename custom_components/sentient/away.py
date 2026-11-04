@@ -22,6 +22,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .presence import area_of
+from .own import own_context
 from .const import CONF_AWAY_AFTER, CONF_AWAY_LIGHTS, CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, DEFAULT_AWAY_AFTER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class Away:
         self._plan_for: datetime | None = None  # start of the window the plan covers
         self._applied: dict[str, bool] = {}  # what we last set each light to
         self.ours: set[str] = set()  # lights we switched on and haven't switched off
-        self.context = Context()
+        self.context = own_context(hass, "away lights", lasting=True)
         self.switched: dict[str, list[int]] = {}  # light -> when we switched it (epoch seconds), so learning skips them
         self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.away")
         self._unsubs: list = []

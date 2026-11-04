@@ -21,6 +21,7 @@ from homeassistant.core import Context, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
+from .own import own_context
 
 from .items import Items
 from .kinds import in_windows
@@ -45,7 +46,7 @@ class AutoOff:
         self._rt = runtime
         self._unsub = None
         self._unsub_back = None
-        self._parent = Context()
+        self._parent = own_context(hass, "auto-off", lasting=True)
         self._switched: dict[str, tuple[datetime, str]] = {}  # entity -> (when the house switched it off, item id)
 
     @callback

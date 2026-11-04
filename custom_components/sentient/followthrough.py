@@ -117,7 +117,10 @@ class FollowThrough:
     @callback
     def _call(self, event: Event) -> None:
         domain, service = event.data.get("domain"), event.data.get("service")
-        if domain not in DOMAINS or event.context.parent_id or event.context.id in self.own_contexts:
+        from .own import is_own
+
+        if (domain not in DOMAINS or event.context.parent_id or event.context.id in self.own_contexts
+                or is_own(self.hass, event.context)):
             return  # automations and scripts have a parent; the house's own changes are its business
         satellite = self.recent_voice()
         if satellite is None:

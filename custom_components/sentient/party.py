@@ -38,6 +38,7 @@ from homeassistant.helpers.event import (
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .own import own_context
 from .const import (
     CONF_PARTY_EXCLUDE,
     CONF_PARTY_LIGHTS,
@@ -114,7 +115,7 @@ class Party:
         self._avg: float | None = None
         self._last_beat = 0.0
         # every change hangs off this, so the rest of the house sees it as automatic, not someone at a switch
-        self._parent = Context()
+        self._parent = own_context(hass, "light show", lasting=True)
 
     # ----- start-up ----------------------------------------------------------------
     async def async_start(self) -> None:

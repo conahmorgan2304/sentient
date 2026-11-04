@@ -100,7 +100,7 @@ class Alarms:
         if alarm.get("silent"):
             rt.timeline.add("mode", alarm["name"], "schedule")
             try:
-                await async_run_actions(self.hass, alarm.get("actions") or [], alarm["name"])
+                await async_run_actions(self.hass, alarm.get("actions") or [], f"alarm: {alarm['name']}")
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
             return {"spoken": False, "reason": "silent"}
@@ -118,7 +118,7 @@ class Alarms:
             self._room[alarm["id"]] = (alarm["room_area"], now + ROOM_WINDOW, alarm["room_actions"])
         result = await rt.speech.async_say(message, "urgent", speakers, source=f"alarm:{alarm['name']}")
         try:
-            await async_run_actions(self.hass, alarm.get("actions") or [], alarm["name"])
+            await async_run_actions(self.hass, alarm.get("actions") or [], f"alarm: {alarm['name']}")
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
         return result.as_dict()

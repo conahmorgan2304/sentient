@@ -402,6 +402,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
+    from .own import OwnActions
+
+    own = OwnActions(hass, entry.entry_id)  # first, so everything after can mark what it does as the house's own
+    await own.async_start()
+    hass.data[DOMAIN]["own"] = own
+    entry.async_on_unload(own.async_stop)
     timeline = Timeline(hass, entry.entry_id)
     await timeline.async_start()
     entry.async_on_unload(timeline.async_stop)
@@ -512,7 +518,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .clipwatch import ClipWatch
 
     clipwatch = ClipWatch(hass, entry.entry_id, options, get_rt)
-    learner.extra_automated = away.times
+    def _house_did() -> dict[str, set[int]]:  # away lights, and everything else the house switched itself
+        out = {k: set(v) for k, v in own.times().items()}
+        for entity, stamps in away.times().items():
+            out.setdefault(entity, set()).update(stamps)
+        return out
+
+    learner.extra_automated = _house_did
     learner.covered = lambda entity, state, minute: scheduled_by_alarm(lists["alarms"].listing(), entity, state, minute)
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
