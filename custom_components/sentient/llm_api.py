@@ -33,6 +33,7 @@ from .const import (
     CONF_CONFIRM,
     CONFIRM_KINDS,
     CONF_PROMPT_RECENT,
+    CONF_PUT_RIGHT,
     CONF_BRIEFING_WEATHER,
     personality_line,
     talk_line,
@@ -172,11 +173,49 @@ class RememberTool(_Tool):
         return {"saved": memory.text, "id": memory.id, "pinned": memory.pinned}
 
 
+def _put_right_on(hass: HomeAssistant) -> bool:
+    rt = _runtime(hass)
+    return rt is not None and bool(rt.options.get(CONF_PUT_RIGHT, True)) and getattr(rt.conversations, "guard", None) is not None
+
+
+class UndoLastTool(_Tool):
+    name = "sentient_undo_last"
+    description = (
+        "When someone says you switched the wrong thing — 'no, the other one', 'not that light, the lamp', "
+        "'wrong room' — call this first: it switches back exactly what you just switched on or off in this "
+        "conversation (only in the last few minutes). Then do the request again with only the corrected part "
+        "(the same action, the right device or room), then save the lesson with sentient_correction. "
+        "Don't ask them to repeat the whole request."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or not _put_right_on(hass):
+            return {"error": "Putting things right isn't turned on"}
+        conversation_id = None
+        try:
+            from homeassistant.components.conversation.chat_log import current_chat_log
+
+            if (chat := current_chat_log.get()) is not None:
+                conversation_id = chat.conversation_id
+        except ImportError:
+            pass
+        restored = await rt.conversations.guard.async_undo([conversation_id or "", llm_context.device_id or ""])
+        if not restored:
+            return {"undone": [], "note": "Nothing switched by voice in the last few minutes to put back — just do the corrected request."}
+        rt.timeline.add("voice", f"Put back {', '.join(restored[:4])}", "corrected by voice")
+        return {"undone": restored}
+
+
 class CorrectionTool(_Tool):
     name = "sentient_correction"
     description = (
         "When someone corrects you — 'no, I meant the lamp', 'not that one', 'that's the wrong room', "
-        "'I said the girls' room' — first put it right, then call this with one short lesson so it never "
+        "'I said the girls' room' — first put it right (sentient_undo_last for what you switched by mistake, then "
+        "the corrected request), then call this with one short lesson so it never "
         "happens again, in any room or voice. Say what was meant, and where if it matters, e.g. "
         "'In the living room, \"the light\" means the lamp, not the ceiling light.' or "
         "'\"The big light\" means the ceiling light.' Not for ordinary facts — use sentient_remember for those."
@@ -1567,7 +1606,7 @@ class SentientAPI(llm.API):
         from .voice_api import SessionTool, IncidentsTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),

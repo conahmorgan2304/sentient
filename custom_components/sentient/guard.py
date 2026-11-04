@@ -28,6 +28,7 @@ WORD = re.compile(r"[a-z0-9]+")
 DOMAINS = {"light", "switch", "fan", "media_player", "input_boolean"}
 RECENT = timedelta(seconds=30)
 MIN_TARGETS = 3
+UNDO_WITHIN = timedelta(minutes=3)
 
 
 def _words(text: str) -> list[str]:
@@ -46,6 +47,7 @@ class Guard:
         self._before: dict[str, tuple[str, datetime]] = {}  # entity -> (state before its last change, when)
         self._unsub = None
         self.context = Context()  # Sentient's own put-backs
+        self.last: dict[str, dict[str, Any]] = {}  # conversation id or device id -> the last voice switch
 
     @callback
     def async_start(self) -> None:
@@ -92,6 +94,50 @@ class Guard:
                 continue  # that room was named
             out.append(e)
         return out
+
+    @callback
+    def note(self, keys: list[str], targets: list[dict[str, Any]]) -> None:
+        """A voice just switched these: remember what they were before, so 'no, the other one' can undo it."""
+        now = dt_util.utcnow()
+        before = {}
+        for t in targets:
+            eid = str(t.get("id", "")) if isinstance(t, dict) and t.get("type") == "entity" else ""
+            was = self._before.get(eid)
+            if eid.split(".")[0] in DOMAINS and was is not None and now - was[1] <= RECENT and was[0] in ("on", "off"):
+                before[eid] = was[0]
+        if not before:
+            return
+        action = {"time": now, "before": before}
+        for key in filter(None, keys):
+            self.last[key] = action
+        if len(self.last) > 50:
+            cutoff = now - UNDO_WITHIN
+            self.last = {k: v for k, v in self.last.items() if v["time"] > cutoff}
+
+    async def async_undo(self, keys: list[str]) -> list[str]:
+        """Switch back what the voice last switched for this conversation or speaker (within a few minutes)."""
+        now = dt_util.utcnow()
+        action = next((self.last[k] for k in filter(None, keys) if k in self.last), None)
+        if action is None or now - action["time"] > UNDO_WITHIN:
+            return []
+        for key in [k for k, v in self.last.items() if v is action]:
+            self.last.pop(key, None)
+        from .own import own_context
+
+        restored = []
+        for entity_id, state in action["before"].items():
+            st = self.hass.states.get(entity_id)
+            if st is None or st.state == state or st.state not in ("on", "off"):
+                continue
+            try:
+                await self.hass.services.async_call(
+                    "homeassistant", f"turn_{state}", {"entity_id": entity_id}, blocking=True,
+                    context=own_context(self.hass, "put right after a correction"),
+                )
+                restored.append(st.name)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Couldn't undo %s: %s", entity_id, err)
+        return restored
 
     async def async_put_back(self, said: str, targets: list[dict[str, Any]]) -> list[str]:
         now = dt_util.utcnow()

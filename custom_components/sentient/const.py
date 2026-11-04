@@ -72,6 +72,7 @@ DEFAULT_CARRY_ON_MINUTES = 0
 MAX_CARRY_ON_MINUTES = 5  # Home Assistant forgets a conversation after five quiet minutes
 CONF_FOCUSED_TOOLS = "focused_tools"  # only the Sentient tools that fit the request
 CONF_ASK_LATER = "ask_later"  # remember to ask how something went
+CONF_PUT_RIGHT = "put_right"  # "no, the other one": switch back what the voice just switched, then redo
 CONF_NEVER_ENTITIES = "never_entities"  # devices Sentient must never change by itself
 CONF_SELF_CHECK = "self_check"  # nightly self-check from its own records (no AI)
 CONF_SELF_ADJUST = "self_adjust"  # quieten remark kinds the house keeps hushing
