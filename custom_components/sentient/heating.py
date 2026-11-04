@@ -22,7 +22,7 @@ from statistics import median
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import EVENT_CALL_SERVICE
-from homeassistant.core import Context, Event, HomeAssistant, State, callback
+from homeassistant.core import Event, HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util

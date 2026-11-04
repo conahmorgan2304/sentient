@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.exceptions import ServiceValidationError
 
 from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
@@ -494,6 +494,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     drive = Drive(hass, entry.entry_id, options, get_rt)
     foresight = Foresight(hass, options, get_rt)
     sleep = Sleep(hass, entry.entry_id, options, get_rt)
+    learner.woke_on = sleep.woke_on
     appliances = Appliances(hass, entry.entry_id, options, get_rt)
     animals = Animals(hass, options, get_rt)
     away = Away(hass, entry.entry_id, options, get_rt)

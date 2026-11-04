@@ -35,6 +35,8 @@ from homeassistant.util import dt as dt_util
 
 from .reasons import because
 from .const import (
+    CONF_LEARN_ANCHORS,
+    CONF_SLEEP,
     CONF_ROUTINE_EVIDENCE,
     CONF_LEARN_ENTITIES,
     CONF_LINK_TRIGGERS,
@@ -57,6 +59,9 @@ MIN_SUPPORT = 0.6  # share of eligible days the change must happen on
 MIN_DAYS = 3
 AUTOMATED_SPREAD_MIN = 1.0  # changes this precise are an automation already
 MAX_ROUTINES = 20
+# habits that follow the day rather than the clock: lamps at dusk, blinds at sunrise, the kettle after getting up
+ANCHOR_LIMITS = {"sunset": (-120, 120), "sunrise": (-120, 120), "getting up": (0, 180)}
+ANCHOR_TIGHTER_BY = 5  # minutes: an anchor must explain the days this much more tightly than the clock
 SUGGEST_FROM, SUGGEST_UNTIL = time(10, 0), time(20, 0)
 
 _SUPPORTED = {
@@ -107,6 +112,8 @@ class Routine:
     suggested: str | None = None
     adopted: bool = False
     declined: bool = False
+    anchor: str = "clock"  # or "sunset", "sunrise", "getting up"
+    offset: int = 0  # minutes after the anchor (negative: before)
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -118,9 +125,20 @@ class Routine:
         h12 = hour % 12 or 12
         return f"{h12}{'' if minute == 0 else f':{minute:02d}'}{'am' if hour < 12 else 'pm'}"
 
+    @property
+    def timing(self) -> str:
+        """'around 6:30pm', 'around sunset (about 4:50pm today)', 'about 20 minutes after getting up'."""
+        if self.anchor == "clock":
+            return f"around {self.when}"
+        if abs(self.offset) <= 10:
+            rel = f"around {self.anchor}"
+        else:
+            rel = f"about {abs(self.offset)} minutes {'after' if self.offset > 0 else 'before'} {self.anchor}"
+        return rel + ("" if self.anchor == "getting up" else f" (about {self.when} today)")
+
     def describe(self) -> str:
         verb = {"on": "goes on", "off": "goes off", "open": "opens", "closed": "closes"}.get(self.state, self.state)
-        return f"The {self.name} usually {verb} around {self.when} {self.days}."
+        return f"The {self.name} usually {verb} {self.timing} {self.days}."
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -155,14 +173,36 @@ def _changes_to(states: list[State], target: str, automated: set[int] | None = N
     return out
 
 
+def _fit(values: dict[Any, list[int]], days: list) -> tuple[float, int, int, float] | None:
+    """The best cluster of one value per day: (support, days seen, median, spread), or None."""
+    best = None
+    for centre in sorted({m for d in days for m in values.get(d, [])}):
+        hits = []
+        for d in days:
+            near = [m for m in values.get(d, []) if abs(m - centre) <= TOLERANCE_MIN]
+            if near:
+                hits.append(min(near, key=lambda m: abs(m - centre)))
+        if len(hits) < MIN_DAYS or len(hits) / len(days) < MIN_SUPPORT:
+            continue
+        mid = round(median(hits))
+        fit = (len(hits) / len(days), len(hits), mid, median(abs(m - mid) for m in hits))
+        if best is None or fit[0] > best[0] + 0.1 or (abs(fit[0] - best[0]) <= 0.1 and fit[1] > best[1]):
+            best = fit
+    return best
+
+
 def find_routines(
     entity_id: str,
     name: str,
     states: list[State],
     today: datetime | None = None,
     automated: set[int] | None = None,
+    anchors: dict[str, Callable[[Any], int | None]] | None = None,
 ) -> list[Routine]:
-    """Pure statistics over one entity's history."""
+    """Pure statistics over one entity's history.
+
+    With *anchors* (minutes after midnight of sunset, sunrise or getting up on a given date), a habit that
+    follows one of them more tightly than the clock is learned against it, so it moves with the seasons."""
     domain = entity_id.split(".", 1)[0]
     if domain not in _SUPPORTED:
         return []
@@ -174,35 +214,48 @@ def find_routines(
         by_day: dict[Any, list[int]] = {}
         for e in events:
             by_day.setdefault(e.date(), []).append(e.hour * 60 + e.minute)
+        relative: dict[str, dict[Any, list[int]]] = {}
+        for anchor, at in (anchors or {}).items():
+            low, high = ANCHOR_LIMITS.get(anchor, (-120, 120))
+            rel: dict[Any, list[int]] = {}
+            for d, minutes in by_day.items():
+                if (a := at(d)) is not None:
+                    rel[d] = [m - a for m in minutes if low <= m - a <= high]
+            relative[anchor] = rel
         best: Routine | None = None
         for label, keep in _DAYTYPES.items():
             days = [d for d in window if keep(d)]
             if not days:
                 continue
-            candidates = sorted({m for d in days for m in by_day.get(d, [])})
-            for centre in candidates:
-                hits = []
-                for d in days:
-                    near = [m for m in by_day.get(d, []) if abs(m - centre) <= TOLERANCE_MIN]
-                    if near:
-                        hits.append(min(near, key=lambda m: abs(m - centre)))
-                if len(hits) < MIN_DAYS:
+            clock = _fit(by_day, days)
+            choice = ("clock", clock)
+            for anchor, rel in relative.items():
+                fit = _fit(rel, [d for d in days if d in rel] or days)
+                if fit is None:
                     continue
-                support = len(hits) / len(days)
-                if support < MIN_SUPPORT:
-                    continue
-                mid = round(median(hits))
-                spread = median(abs(m - mid) for m in hits)
-                routine = Routine(entity_id, name, target, mid, label, round(support, 2), len(hits), spread)
-                # prefer 'every day' unless a narrower day type is clearly stronger
-                if best is None or (support > best.support + 0.1) or (
-                    abs(support - best.support) <= 0.1 and len(hits) > best.seen
-                ):
-                    best = routine
+                current = choice[1]
+                if current is None or (fit[0] >= current[0] - 0.05 and fit[3] <= current[3] - ANCHOR_TIGHTER_BY):
+                    choice = (anchor, fit)
+            anchor, fit = choice
+            if fit is None:
+                continue
+            support, seen, mid, spread = fit
+            if anchor == "clock":
+                minute = mid
+            else:
+                base = (anchors or {})[anchor](today)
+                minute = (base + mid) % 1440 if base is not None else 0
+            routine = Routine(entity_id, name, target, minute, label, round(support, 2), seen, spread,
+                              anchor=anchor, offset=mid if anchor != "clock" else 0)
+            # prefer 'every day' unless a narrower day type is clearly stronger
+            if best is None or (support > best.support + 0.1) or (
+                abs(support - best.support) <= 0.1 and seen > best.seen
+            ):
+                best = routine
         if best is None:
             continue
         if best.spread < AUTOMATED_SPREAD_MIN and best.support >= 0.9:
-            continue  # to the minute every day: an automation already does this
+            continue  # to the minute every day (or every sunset): an automation already does this
         found.append(best)
     return found
 
@@ -359,6 +412,8 @@ class Learner:
         self.covered = None  # (entity_id, state, minute of day) -> True when one of Sentient's own schedules does it
         self.skip = None  # callable giving entities another feature already runs
         self.feedback = None  # set by the runtime: declines teach it what not to offer
+        self.woke_on = None  # (date) -> minute after midnight the house got up that day, or None
+        self._sun: dict[tuple[str, Any], int | None] = {}
 
     # ----- lifecycle --------------------------------------------------------------
     async def async_start(self) -> None:
@@ -445,6 +500,43 @@ class Learner:
             return local.hour >= 19 or local.hour < 7
         return when < rise or when >= down
 
+    def _sun_minute(self, event: str, day: Any) -> int | None:
+        key = (event, day)
+        if key not in self._sun:
+            try:
+                at = get_astral_event_date(self.hass, event, day)
+            except Exception:  # noqa: BLE001 - no location set
+                at = None
+            local = dt_util.as_local(at) if at is not None else None
+            self._sun[key] = local.hour * 60 + local.minute if local is not None else None
+            if len(self._sun) > 200:
+                self._sun = dict(list(self._sun.items())[-60:])
+        return self._sun[key]
+
+    def anchors(self) -> dict[str, Callable[[Any], int | None]]:
+        """What habits can follow besides the clock (when that setting is on)."""
+        if not self.options.get(CONF_LEARN_ANCHORS, True):
+            return {}
+        out: dict[str, Callable[[Any], int | None]] = {
+            "sunset": lambda d: self._sun_minute("sunset", d),
+            "sunrise": lambda d: self._sun_minute("sunrise", d),
+        }
+        if self.woke_on is not None and self.options.get(CONF_SLEEP, True):
+            out["getting up"] = self.woke_on
+        return out
+
+    def minute_today(self, routine: Routine, day: Any) -> int | None:
+        """When an adopted routine is due today: its clock time, or its offset from today's sunset or getting up."""
+        if routine.anchor == "clock":
+            return routine.minute
+        at = self.anchors().get(routine.anchor)
+        if at is None:
+            return routine.minute  # following the day is switched off: its last time, like any clock routine
+        base = at(day)
+        if base is None:
+            return None if routine.anchor == "getting up" else routine.minute  # not up yet: not due
+        return (base + routine.offset) % 1440
+
     @property
     def entities(self) -> list[str]:
         """Lights and switches to learn from — not ones motion lights already run."""
@@ -513,7 +605,7 @@ class Learner:
             state = self.hass.states.get(entity_id)
             name = (state.name if state else entity_id).lower()
             for routine in find_routines(
-                entity_id, name, history.get(entity_id, []), automated=automated.get(entity_id)
+                entity_id, name, history.get(entity_id, []), automated=automated.get(entity_id), anchors=self.anchors()
             ):
                 if routine.id in self.dismissed:
                     continue
@@ -631,7 +723,11 @@ class Learner:
         local = dt_util.as_local(now)
         minute = local.hour * 60 + local.minute
         for routine in self.routines.values():
-            if routine.adopted and routine.minute == minute and _DAYTYPES[routine.days](local.date()):
+            if not routine.adopted or not _DAYTYPES[routine.days](local.date()):
+                continue
+            if routine.anchor != "clock" and (due := self.minute_today(routine, local.date())) is not None:
+                routine.minute = due  # follows the sun (or getting up) from day to day
+            if self.minute_today(routine, local.date()) == minute:
                 self.hass.async_create_task(self._async_do(routine))
         if (
             self.options.get(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)
@@ -682,7 +778,7 @@ class Learner:
             question = (
                 f"I've noticed the {routine.name} usually "
                 f"{'goes ' + routine.state if routine.state in ('on', 'off') else ('opens' if routine.state == 'open' else 'closes')}"
-                f" around {routine.when} {routine.days}{seen}. Want me to do that for you from now on?"
+                f" {routine.timing} {routine.days}{seen}. Want me to do that for you from now on?"
             )
         async def answered(kind: str) -> str:
             if kind == "yes":
@@ -695,7 +791,7 @@ class Learner:
             return "Okay, I won't."
 
         pattern = (f"{routine.describe().rstrip('.')} ({routine.seen} times in two weeks)" if isinstance(routine, Link)
-                   else f"the {routine.name} at about {routine.when} {routine.days} ({routine.evidence()})")
+                   else f"the {routine.name} {routine.timing} {routine.days} ({routine.evidence()})")
         with because(f"I'd spotted a pattern: {pattern}, and no automation, alarm or routine already does it"):
             result = await self.speech.async_ask(
                 question,

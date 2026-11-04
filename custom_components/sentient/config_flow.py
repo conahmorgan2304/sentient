@@ -166,6 +166,7 @@ from .const import (
     DEFAULT_ANNOUNCE_VISITORS,
     DEFAULT_PARCEL_ALERTS,
     CONF_LEARN_ENTITIES,
+    CONF_LEARN_ANCHORS,
     CONF_SUGGEST_ROUTINES,
     CONF_LINK_TRIGGERS,
     DEFAULT_SUGGEST_ROUTINES,
@@ -562,6 +563,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_LEARN_ENTITIES, **d(CONF_LEARN_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["light", "switch", "fan", "input_boolean", "cover"], multiple=True)
             ),
+            vol.Required(CONF_LEARN_ANCHORS, **d(CONF_LEARN_ANCHORS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)

@@ -7,7 +7,7 @@ the past week. Plain statistics, no AI.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 from typing import Any
 
