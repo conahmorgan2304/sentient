@@ -669,7 +669,7 @@
             <button class="btn sm" type="submit">SAVE</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
         : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
-            <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
+            <a class="x${m.pinned ? " pin" : ""}" data-act="pin" data-id="${esc(m.id)}" title="${m.pinned ? "Pinned: always given to the voice — tap to unpin" : "Pin: always give this to the voice"}"><ha-icon icon="${m.pinned ? "mdi:pin" : "mdi:pin-outline"}"></ha-icon></a><a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">MEMORIES</div>
           <div class="bs">What the house knows and shares with every voice assistant. Tap one to edit it.</div></div>
           <div class="chips">${Object.entries(byCat).map(([c, n]) => `<span>${esc(c).toUpperCase()} ${n}</span>`).join("")}</div></div>
@@ -1505,6 +1505,11 @@
           (r) => this._status(r.ok ? `PLAYING ON ${String(r.speaker_name || "").toUpperCase()} ✓` : String(r.why || "COULDN'T PLAY IT").toUpperCase(), r.ok ? "ok" : "bad"),
           (e) => this._status(e.message || String(e), "bad"));
       }
+      else if (act === "pin") {
+        const m = (this._memories || []).find((x) => x.id === id);
+        if (m) this._hass.callWS({ type: "sentient/memory/update", memory_id: m.id, text: m.text, pinned: !m.pinned })
+          .then(() => { m.pinned = !m.pinned; this._drawMemories(); }, (e) => window.alert(e.message || e));
+      }
       else if (act === "docrun") this._drawDoctor(true);
       else if (act === "docspeak") {
         if (!window.confirm("Say a short test line on every speaker, one after another?")) return;
@@ -1925,7 +1930,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .pill.on{color:#00fff7;border-color:rgba(0,255,247,.5)} .pill.warn{color:#ffbe55;border-color:rgba(255,190,85,.5)}
 .night{flex-wrap:wrap} .night span{font-size:12px;color:rgba(150,220,235,.8)} .night input[type=time]{flex:none;width:auto;background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:4px 8px;color-scheme:dark}
 .mllist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:12px;margin-top:6px}
-.ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55} .doc.bad{border-left:3px solid var(--bad,#ff6b80)} .doc.warn{border-left:3px solid var(--warn,#ffbe55)} .doc.ok ha-icon{color:var(--ok,#3dffa8)}
+.ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55} .doc.bad{border-left:3px solid var(--bad,#ff6b80)} .doc.warn{border-left:3px solid var(--warn,#ffbe55)} .doc.ok ha-icon{color:var(--ok,#3dffa8)} .x.pin ha-icon{color:var(--accent,#00fff7)} .x ha-icon{--mdc-icon-size:16px}
 .r ha-icon.lit,.ml ha-icon.lit{color:#ffd76a;filter:drop-shadow(0 0 6px rgba(255,215,106,.7))}
 .mlsub{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(150,220,235,.75);margin:2px 0 8px} .mlsub ha-icon{--mdc-icon-size:14px;color:#5fd8e6}
 .chips.left{justify-content:flex-start}

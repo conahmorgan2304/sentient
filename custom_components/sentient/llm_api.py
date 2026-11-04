@@ -145,12 +145,14 @@ class RememberTool(_Tool):
         "Save a durable fact to the house's long-term memory so every voice and "
         "automation knows it later. Use for preferences, people, routines and facts "
         "the household tells you, or asks you to remember. One short sentence. "
-        "Never store passwords, card or account numbers, or health details."
+        "Never store passwords, card or account numbers, or health details. pin=true when they say it's "
+        "important or to always remember it: it's then given to every voice every time."
     )
     parameters = vol.Schema(
         {
             vol.Required("text"): cv.string,
             vol.Optional("category", default="fact"): vol.In(MEMORY_CATEGORIES),
+            vol.Optional("pin"): cv.boolean,
         }
     )
 
@@ -165,7 +167,9 @@ class RememberTool(_Tool):
             tool_input.tool_args.get("category", "fact"),
             source=llm_context.platform,
         )
-        return {"saved": memory.text, "id": memory.id}
+        if tool_input.tool_args.get("pin"):
+            rt.memory.pin(memory.id, True)
+        return {"saved": memory.text, "id": memory.id, "pinned": memory.pinned}
 
 
 class CorrectionTool(_Tool):
@@ -1792,6 +1796,8 @@ class SentientAPI(llm.API):
         """The newest memories — or, once there are more than fit, the ones that match what was asked plus the newest."""
         everything = [m for m in rt.memory.items if m.category != "correction"]
         newest = list(reversed(everything))
+        if hasattr(rt.memory, "for_prompt") and (relevant or any(getattr(m, "pinned", False) for m in everything)):
+            return rt.memory.for_prompt(self._asked() if relevant else "", limit)
         if not relevant or len(everything) <= limit or limit <= 0:
             return [m for m in rt.memory.recent(limit + 20) if m.category != "correction"][:limit]
         words = {w for w in re.findall(r"[a-z]{3,}", self._asked().lower()) if w not in STOPWORDS}

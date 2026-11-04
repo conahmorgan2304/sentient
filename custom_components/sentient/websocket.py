@@ -610,6 +610,7 @@ async def ws_save_settings(hass: HomeAssistant, connection, msg: dict[str, Any])
         vol.Required("memory_id"): str,
         vol.Required("text"): str,
         vol.Optional("category"): vol.In(MEMORY_CATEGORIES),
+        vol.Optional("pinned"): bool,
     }
 )
 @websocket_api.require_admin
@@ -627,7 +628,9 @@ def ws_update_memory(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     if item is None:
         connection.send_error(msg["id"], "not_found", "No such memory")
         return
-    connection.send_result(msg["id"], {"id": item.id, "text": item.text, "category": item.category})
+    if "pinned" in msg:
+        entry.runtime_data.memory.pin(item.id, msg["pinned"])
+    connection.send_result(msg["id"], {"id": item.id, "text": item.text, "category": item.category, "pinned": item.pinned})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memories"})

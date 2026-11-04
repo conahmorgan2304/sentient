@@ -47,6 +47,8 @@ class Memory:
     created: str = field(default_factory=lambda: dt_util.now().isoformat())
     source: str | None = None
     hits: int = 0
+    pinned: bool = False  # always given to the voice, never tidied away
+    used: str | None = None  # last time it was recalled or matched what was asked
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -64,7 +66,8 @@ class MemoryStore:
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
-        self._items = [Memory(**item) for item in data.get("items", [])]
+        known = set(Memory.__dataclass_fields__)
+        self._items = [Memory(**{k: v for k, v in item.items() if k in known}) for item in data.get("items", [])]
 
     @callback
     def _save(self) -> None:
@@ -148,10 +151,53 @@ class MemoryStore:
         scored.sort(key=lambda s: (s[0], s[1].created), reverse=True)
         result = [m for _, m in scored[:limit]]
         if count_hits and result:
+            now = dt_util.now().isoformat()
             for m in result:
                 m.hits += 1
+                m.used = now
             self._save()
         return result
+
+    def pin(self, memory_id: str, pinned: bool = True) -> Memory | None:
+        memory = self.get(memory_id)
+        if memory is not None:
+            memory.pinned = pinned
+            self._save()
+        return memory
+
+    def for_prompt(self, asked: str, limit: int) -> list[Memory]:
+        """What the voice is given: pinned ones, then those matching what was asked (words and word stems),
+        then the most used lately, then the newest — never more than *limit*."""
+        everything = [m for m in self._items if m.category != "correction"]
+        if limit <= 0:
+            return []
+        pinned = [m for m in everything if m.pinned][:limit]
+        rest = [m for m in everything if not m.pinned]
+        q = _words(asked)
+        matched: list[Memory] = []
+        if q:
+            scored = []
+            for i, m in enumerate(rest):
+                words = _words(m.text)
+                score = len(q & words) + 0.5 * sum(1 for a in q for b in words if a != b and len(a) > 3 and (a in b or b in a))
+                if score:
+                    scored.append((score, i, m))
+            scored.sort(key=lambda t: (-t[0], -t[1]))
+            matched = [m for _, _, m in scored][: max(0, (limit - len(pinned)) // 2)]
+            if matched:
+                now = dt_util.now().isoformat()
+                for m in matched:
+                    m.used = now
+        chosen = pinned + matched
+        left = [m for m in rest if m not in chosen]
+        used = sorted((m for m in left if m.used), key=lambda m: (m.used, m.hits), reverse=True)
+        newest = list(reversed(left))
+        for m in used[: max(0, (limit - len(chosen)) // 2)] + newest:
+            if len(chosen) >= limit:
+                break
+            if m not in chosen:
+                chosen.append(m)
+        return chosen
 
     def recent(self, limit: int) -> list[Memory]:
         return sorted(self._items, key=lambda m: (m.hits, m.created), reverse=True)[:limit]

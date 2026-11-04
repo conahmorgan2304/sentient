@@ -473,14 +473,18 @@ class Upkeep:
         if len(items) < TIDY_MIN_MEMORIES:
             self.last_tidy = {"time": dt_util.now().isoformat(), "result": "too few memories to tidy"}
             return self.last_tidy
-        listing = "\n".join(f"{m.id}: {m.text} ({m.category})" for m in items)
+        listing = "\n".join(f"{m.id}: {m.text} ({m.category}){' *' if getattr(m, 'pinned', False) else ''}" for m in items)
+        pinned = {m.id for m in items if getattr(m, "pinned", False)}
         reply = await self._ai(
             "Sentient: tidy memory",
             "These are a household's long-term memories (id: text (category)). Tidy them carefully:\n"
             "- remove: ids that are exact or near duplicates of another, nonsense, or clearly out of date;\n"
             "- merge: groups that say the same thing in parts, written as 'id1,id2 => one combined sentence', "
-            "one group per line.\n"
-            "Keep everything else. When unsure, keep it. Never invent facts.\n\n" + listing,
+            "one group per line;\n"
+            "- contradictions (\"bins on Thursday\" and later \"bins moved to Friday\"): merge them the same way, the "
+            "newer one (later in the list) winning, into one sentence that's true now.\n"
+            "Keep everything else. When unsure, keep it. Never invent facts. Pinned ones (marked *) are never "
+            "removed.\n\n" + listing,
             {
                 "remove": {"description": "Comma-separated ids to remove, or empty", "required": False,
                            "selector": {"text": {}}},
@@ -490,6 +494,7 @@ class Upkeep:
         )
         reply = reply if isinstance(reply, dict) else {}
         valid = {m.id for m in items}
+        before = {m.id: m.text for m in items}
         budget = max(1, int(len(items) * TIDY_MAX_SHARE))
         removed: list[str] = []
         merged: list[str] = []
@@ -501,7 +506,9 @@ class Upkeep:
             text = text.strip().strip('"')
             if len(ids) < 2 or not text or len(removed) + len(ids) - 1 > budget:
                 continue
-            keep, drop = ids[0], ids[1:]
+            keep, drop = ids[0], [i for i in ids[1:] if i not in pinned]
+            if not drop:
+                continue
             rt.memory.update(keep, text)
             for i in drop:
                 rt.memory.forget(i)
@@ -509,7 +516,7 @@ class Upkeep:
             removed.extend(drop)
             merged.append(text)
         for i in re.findall(r"[0-9a-f]{6,}", str(reply.get("remove") or "")):
-            if i in valid and len(removed) < budget:
+            if i in valid and i not in pinned and len(removed) < budget:
                 gone = rt.memory.forget(i)
                 if gone is not None:
                     removed.append(i)
@@ -520,4 +527,8 @@ class Upkeep:
             "merged": merged,
         }
         _LOGGER.info("Sentient memory tidy: %s", self.last_tidy["result"])
+        if merged or removed:  # what changed, so it can be checked (and put back by hand on the Memories page)
+            gone = "; ".join(before[i] for i in removed if i in before)[:400]
+            rt.timeline.add("learned", f"Tidied memories: merged {len(merged)}, removed {len(removed)}",
+                            ("now: " + " | ".join(merged)[:400] if merged else "") + (f" — was: {gone}" if gone else ""))
         return self.last_tidy
