@@ -586,7 +586,7 @@
           "event_clips": "Fetches Frigate's short clip of an event and has the AI watch it, so it can say what actually happened ('left a parcel and went'). Used after a camera-security alert, and when asked 'what happened at the door?'. Needs the Frigate integration. One AI call per clip. Off by default.",
           "notify_targets": "Notify entities, e.g. the Home Assistant app on each phone or watch.",
           "notify_when": "Each kind is sent at most once in ten minutes.",
-          "phone_buttons": "Through the companion app: at the door — the camera picture and a Show camera button; reminders — Snooze 10 min and Done. Empty: plain notifications as now.",
+          "phone_buttons": "Through the companion app: at the door — the camera picture and a Show camera button; reminders — Snooze 10 min and Done; questions — when the house wants to ask something (an offer, \"want me to do that for you?\", or ask-first before doing something) and nobody's near a speaker, it asks on the phones with Yes and No (not in quiet hours). Empty: plain notifications as now.",
           "phone_apps": "e.g. notify.mobile_app_pixel_8. Empty: the companion app behind each phone chosen above (notify.my_phone → mobile_app_my_phone) — never the tablets.",
           "bins_check": "The evening before collection, one camera look at where the bins go out. Only says something if they aren't out: 'Recycling tomorrow, and the bins aren't out yet.' Looks once more an hour later.",
           "bins_calendar": "Empty: a waste-collection calendar from the briefing calendars.",
@@ -979,7 +979,8 @@
     "phone_buttons": {
       "options": {
         "door": "At the door",
-        "reminders": "Reminders"
+        "reminders": "Reminders",
+        "questions": "Questions (Yes / No)"
       }
     },
     "conversation_style": {

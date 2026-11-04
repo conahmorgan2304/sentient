@@ -214,7 +214,7 @@ CONF_BINS_CALENDAR = "bins_calendar"
 CONF_BINS_TIME = "bins_time"
 DEFAULT_BINS_TIME = "19:00:00"
 CONF_PHONE_BUTTONS = "phone_buttons"  # which notifications get buttons: door, reminders
-PHONE_BUTTON_KINDS = ["door", "reminders"]
+PHONE_BUTTON_KINDS = ["door", "reminders", "questions"]
 CONF_PHONE_APPS = "phone_apps"  # the companion app's notify actions (notify.mobile_app_…) that can show buttons
 CONF_SMART_AI = "smart_ai_task"  # optional stronger AI for camera security and the overnight think; empty = the usual one
 CONF_FACES = "faces"  # names from face recognition (Frigate, doorbells); private, only when asked

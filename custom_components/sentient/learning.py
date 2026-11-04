@@ -818,8 +818,9 @@ class Learner:
         routine = self.next_to_offer()
         if routine is None or self.speech.guest_mode or self.speech.hushed():
             return
-        if self.tracker is not None and self.tracker.best_area() is None:
-            return  # nobody obviously about; try again later
+        if self.tracker is not None and self.tracker.best_area() is None and not (
+                getattr(self.speech, "phone", None) is not None and self.speech.phone.can_ask()):
+            return  # nobody obviously about (and not asking on phones); try again later
         evidence = self.options.get(CONF_ROUTINE_EVIDENCE, True)
         group = self.together(routine)
         if len(group) > 1:

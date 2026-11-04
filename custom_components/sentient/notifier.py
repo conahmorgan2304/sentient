@@ -32,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 _REPEAT = timedelta(minutes=10)
 ACTION = "SENTIENT"  # prefix of this integration's notification buttons
 SNOOZE = timedelta(minutes=10)
+PHONE_QUESTION_OPEN = timedelta(hours=2)  # a Yes tapped later than this does nothing
 
 
 def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
@@ -84,6 +85,7 @@ class Notifier:
         self._sent: dict[str, datetime] = {}
         self._pending: dict[str, str] = {}  # snooze token -> what to remind about
         self.on_snooze = None  # set by the runtime: (what, delay) -> remind again
+        self._questions: dict[str, dict[str, Any]] = {}  # token -> {on_answer, until, tag}: yes/no asked on phones
         self.holiday = None  # set by the runtime: on holiday, what it would have said and visitors go to phones
         self._unsubs: list = []
 
@@ -126,9 +128,45 @@ class Notifier:
             {"action": f"{ACTION}_DONE_{token}", "title": "Done"},
         ]}
 
+    # ----- questions answered from the phone ------------------------------------------------------
+    def can_ask(self) -> bool:
+        """Questions go to phones (with Yes / No) when nobody's near a speaker — if that's switched on."""
+        return "questions" in (self.options.get(CONF_PHONE_BUTTONS) or []) and bool(phone_apps(self.hass, self.options))
+
+    async def async_ask(self, question: str, on_answer: Any) -> bool:
+        apps = phone_apps(self.hass, self.options)
+        if not apps or "questions" not in (self.options.get(CONF_PHONE_BUTTONS) or []):
+            return False
+        token = uuid.uuid4().hex[:10]
+        now = dt_util.utcnow()
+        self._questions = {k: v for k, v in self._questions.items() if v["until"] > now}
+        self._questions[token] = {"on_answer": on_answer, "until": now + PHONE_QUESTION_OPEN, "tag": f"sentient-q-{token}"}
+        persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
+        await self._send_app(apps, f"{persona} · A question", question, {"tag": f"sentient-q-{token}", "actions": [
+            {"action": f"{ACTION}_YES_{token}", "title": "Yes"},
+            {"action": f"{ACTION}_NO_{token}", "title": "No"},
+        ]})
+        return True
+
+    async def _async_answer(self, token: str, kind: str) -> None:
+        question = self._questions.pop(token, None)
+        if question is None or question["until"] < dt_util.utcnow():
+            return
+        try:
+            reply = await question["on_answer"](kind)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Sentient couldn't act on a phone answer: %s", err)
+            reply = "That didn't work."
+        persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
+        await self._send_app(phone_apps(self.hass, self.options), persona, reply or "Okay.", {"tag": question["tag"]})
+
     @callback
     def _button(self, event: Event) -> None:
         action = str(event.data.get("action") or "")
+        for kind in ("YES", "NO"):
+            if action.startswith(f"{ACTION}_{kind}_"):
+                self.hass.async_create_task(self._async_answer(action.removeprefix(f"{ACTION}_{kind}_"), kind.lower()))
+                return
         if not action.startswith(f"{ACTION}_SNOOZE_"):
             return
         what = self._pending.pop(action.removeprefix(f"{ACTION}_SNOOZE_"), None)

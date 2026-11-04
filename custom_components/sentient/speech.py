@@ -210,6 +210,7 @@ class SpeechRouter:
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self.phone = None  # set by the runtime: asks yes/no questions on phones when nobody's near a speaker
         self.profiles = None  # set by the runtime: room profiles (own quiet time, volume, no offers)
         self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
@@ -674,6 +675,12 @@ class SpeechRouter:
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
+        if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
+            # nobody near a speaker: ask on the phones, with Yes / No buttons
+            if await self.phone.async_ask(text, on_answer):
+                self.hass.bus.async_fire(EVENT_SPOKE, {"message": text, "speakers": [], "priority": priority, "source": source,
+                                                       "question": True, "phone": True, "why": reason_for(source)})
+                return SpeechResult(True, "asked_phone", text, [])
         if not listening:
             return await self.async_say(text, priority, candidates, source)
         speaker = listening[0]
