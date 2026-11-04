@@ -153,6 +153,24 @@ def match(books: list[dict[str, Any]], title: str) -> dict[str, Any] | None:
     return best
 
 
+SPEECH_PIECE = 320  # characters: about 20 seconds of speech — speakers cope better than with a minute at once
+
+
+def speech_pieces(passage: str, size: int = SPEECH_PIECE) -> list[str]:
+    """A passage cut at sentence ends into pieces of about *size* characters (a long sentence stays whole)."""
+    sentences = [m.strip() for m in re.findall(r"[^.!?…]+(?:[.!?…]+[\"'”’)]*|$)", passage) if m.strip()]
+    pieces, current = [], ""
+    for sentence in sentences:
+        if current and len(current) + 1 + len(sentence) > size:
+            pieces.append(current)
+            current = sentence
+        else:
+            current = f"{current} {sentence}".strip()
+    if current:
+        pieces.append(current)
+    return pieces
+
+
 # ----- the reader ----------------------------------------------------------------------------
 class Books:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any], rt_getter) -> None:
@@ -289,8 +307,9 @@ class Books:
                     if until and dt_util.utcnow().timestamp() >= until:
                         await rt.speech.async_read_aloud("I'll stop there and keep your place.", speaker, story=True)
                         return
-                    if not await rt.speech.async_read_aloud(passages[ps], speaker, story=True):
-                        return  # couldn't speak: keep the place on this passage
+                    for piece in speech_pieces(passages[ps]):
+                        if not await rt.speech.async_read_aloud(piece, speaker, story=True):
+                            return  # couldn't speak: keep the place on this passage
                     ps += 1
                     self._mark(book["name"], speaker, ch, ps, chapters)  # only once it has been read
                 ch, ps = ch + 1, 0

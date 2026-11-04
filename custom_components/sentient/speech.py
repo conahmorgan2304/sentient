@@ -79,6 +79,7 @@ def important(source: str | None) -> bool:
     return str(source or "").startswith(IMPORTANT_SOURCES)
 
 
+INSTANT_SECONDS = 2.0  # an announcement handed back faster than this hasn't been spoken yet
 READING_WORDS_PER_SECOND = 2.5  # a steady reading voice, about 150 words a minute
 
 
@@ -457,24 +458,34 @@ class SpeechRouter:
         A story uses the reading voice from Settings when one is chosen (not on Echos — Alexa only has its own).
         Some satellites (a browser tablet, for one) accept an announcement and return straight away, so the
         wait is also paced by the passage's length — otherwise the next passage would cut this one off."""
-        started = asyncio.get_running_loop().time()
+        loop = asyncio.get_running_loop()
         text = clean_message(text, self.banned)
+        started = took = 0.0
         try:
             async with self._lock:
                 await self._wait_idle([speaker])
                 volume = await self._volumes([speaker])
                 async with delivered(self.hass, [speaker], volume, self.duck_level):
+                    started = loop.time()
                     receipts = None
                     if story and (engine := self.options.get(CONF_READING_TTS)):
                         receipts = await self._speak_voice(text, speaker, engine, self.options.get(CONF_READING_VOICE))
                     if receipts is None:  # no reading voice, or this speaker can't take one
                         receipts = await self._speak(text, [speaker], chime=False)
+                    took = loop.time() - started
         except HomeAssistantError:
             return False
         if not any(r["status"] == "accepted" for r in receipts or []):
             return False
-        await asyncio.sleep(max(0.0, reading_seconds(text) - (asyncio.get_running_loop().time() - started)))
-        for _ in range(60):  # and then until the speaker says it has finished
+        if took < INSTANT_SECONDS:
+            # handed straight back (a browser tablet, or a media player still starting): wait for the speech —
+            # a speaker that reports when it has finished (a voice satellite) needs no padding, and padding it
+            # only left silence whenever it finished early
+            if speaker.startswith("media_player."):
+                await asyncio.sleep(INSTANT_SECONDS)
+            else:
+                await asyncio.sleep(max(0.0, reading_seconds(text) - took))
+        for _ in range(int(reading_seconds(text)) + 30):  # and then until the speaker says it has finished
             st = self.hass.states.get(speaker)
             if st is None or st.state not in ("playing", "responding"):
                 break
@@ -488,7 +499,7 @@ class SpeechRouter:
         language = tts_language(self.hass, engine)
         options = {"voice": voice} if voice else None
         try:
-            async with asyncio.timeout(max(30.0, reading_seconds(text) * 2)):
+            async with asyncio.timeout(reading_seconds(text) * 3 + 45):  # making the audio can be slow (free voices)
                 if speaker.startswith("assist_satellite."):
                     media_id = tts_media_id(self.hass, text, engine, language, options)
                     await self.hass.services.async_call("assist_satellite", "announce", {
@@ -499,7 +510,8 @@ class SpeechRouter:
                         **({"language": language} if language else {}), **({"options": options} if options else {}),
                     }, target={"entity_id": engine}, blocking=True)
         except (HomeAssistantError, TimeoutError, ValueError) as err:
-            _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker, err)
+            _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker,
+                            str(err) or type(err).__name__)
             return None
         return [{"entity_id": speaker, "status": "accepted"}]
 
