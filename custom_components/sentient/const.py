@@ -96,6 +96,7 @@ CONF_TANDOOR_URL = "tandoor_url"
 CONF_TANDOOR_TOKEN = "tandoor_token"
 CONF_HOUSE_RULES = "house_rules"
 CONF_LEARN_ENTITIES = "learn_entities"
+CONF_OFFER_TOGETHER = "offer_together"  # habits done at the same time offered as one
 CONF_LEARN_ANCHORS = "learn_anchors"  # habits learned against sunset, sunrise or getting up, not just the clock
 CONF_SUGGEST_ROUTINES = "suggest_routines"
 CONF_LINK_TRIGGERS = "link_triggers"

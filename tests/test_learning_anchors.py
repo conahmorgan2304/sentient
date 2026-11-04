@@ -82,3 +82,35 @@ async def test_adopted_routine_runs_at_todays_sunset(hass) -> None:
     await hass.async_block_till_done()
     assert learner.anchors() == {}
     assert learner.minute_today(up, day) == 420  # back to its last clock time
+
+
+async def test_habits_done_together_offered_as_one(hass) -> None:
+    from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
+
+    from custom_components.sentient.const import DOMAIN
+
+    hass.states.async_set("assist_satellite.kitchen", "idle", {"supported_features": 0})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={"persona": "Nova", "quiet_start": "00:00:00", "quiet_end": "00:00:00",
+                                  "speakers": ["assist_satellite.kitchen"], "default_speaker": "assist_satellite.kitchen"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    learner = entry.runtime_data.learner
+    learner.tracker = None
+    days = [f"2026-10-{d:02d}" for d in range(7, 21)]
+    lamp = Routine("light.lamp", "lamp", "on", 1200, "every day", 0.9, 12, 4.0, dates=days[:12])
+    blinds = Routine("cover.blinds", "blinds", "closed", 1205, "every day", 0.85, 11, 4.0, dates=days[1:12])
+    tv = Routine("switch.tv", "tv", "on", 1260, "every day", 0.8, 11, 4.0, dates=days[1:12])  # an hour later
+    porch = Routine("light.porch", "porch light", "on", 1202, "every day", 0.7, 5, 4.0, dates=days[9:14])  # other days
+    learner.routines = {r.id: r for r in (lamp, blinds, tv, porch)}
+    assert [r.entity_id for r in learner.together(lamp)] == ["light.lamp", "cover.blinds"]
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    await learner._async_offer(dt_util.now())
+    await hass.async_block_till_done()
+    text = said[0].data["message"]
+    assert "around 8pm every day the lamp goes on and the blinds close — all of them on 11 days" in text
+    assert "all of that together" in text and lamp.suggested and blinds.suggested and not tv.suggested
+    hass.config_entries.async_update_entry(entry, options={**entry.data, "offer_together": False})
+    await hass.async_block_till_done()
+    assert learner.together(tv) == [tv]

@@ -36,6 +36,7 @@ from homeassistant.util import dt as dt_util
 from .reasons import because
 from .const import (
     CONF_LEARN_ANCHORS,
+    CONF_OFFER_TOGETHER,
     CONF_SLEEP,
     CONF_ROUTINE_EVIDENCE,
     CONF_LEARN_ENTITIES,
@@ -61,6 +62,9 @@ AUTOMATED_SPREAD_MIN = 1.0  # changes this precise are an automation already
 MAX_ROUTINES = 20
 # habits that follow the day rather than the clock: lamps at dusk, blinds at sunrise, the kettle after getting up
 ANCHOR_LIMITS = {"sunset": (-120, 120), "sunrise": (-120, 120), "getting up": (0, 180)}
+TOGETHER_MIN = 15  # habits within this many minutes of each other, on mostly the same days, are offered as one
+TOGETHER_OVERLAP = 0.7
+TOGETHER_MAX = 4
 ANCHOR_TIGHTER_BY = 5  # minutes: an anchor must explain the days this much more tightly than the clock
 SUGGEST_FROM, SUGGEST_UNTIL = time(10, 0), time(20, 0)
 
@@ -114,6 +118,7 @@ class Routine:
     declined: bool = False
     anchor: str = "clock"  # or "sunset", "sunrise", "getting up"
     offset: int = 0  # minutes after the anchor (negative: before)
+    dates: list[str] = field(default_factory=list)  # the days it happened (local, ISO) — to spot habits done together
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -136,9 +141,20 @@ class Routine:
             rel = f"about {abs(self.offset)} minutes {'after' if self.offset > 0 else 'before'} {self.anchor}"
         return rel + ("" if self.anchor == "getting up" else f" (about {self.when} today)")
 
+    @property
+    def verb(self) -> str:
+        plural = self.name.endswith("s") and not self.name.endswith("ss")  # "the blinds close", "the fairy lights go on"
+        if plural:
+            return {"on": "go on", "off": "go off", "open": "open", "closed": "close"}.get(self.state, self.state)
+        return {"on": "goes on", "off": "goes off", "open": "opens", "closed": "closes"}.get(self.state, self.state)
+
+    @property
+    def action(self) -> str:
+        """'the lamp goes on'."""
+        return f"the {self.name} {self.verb}"
+
     def describe(self) -> str:
-        verb = {"on": "goes on", "off": "goes off", "open": "opens", "closed": "closes"}.get(self.state, self.state)
-        return f"The {self.name} usually {verb} {self.timing} {self.days}."
+        return f"The {self.name} usually {self.verb} {self.timing} {self.days}."
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -173,19 +189,20 @@ def _changes_to(states: list[State], target: str, automated: set[int] | None = N
     return out
 
 
-def _fit(values: dict[Any, list[int]], days: list) -> tuple[float, int, int, float] | None:
-    """The best cluster of one value per day: (support, days seen, median, spread), or None."""
+def _fit(values: dict[Any, list[int]], days: list) -> tuple[float, int, int, float, list] | None:
+    """The best cluster of one value per day: (support, days seen, median, spread, those days), or None."""
     best = None
     for centre in sorted({m for d in days for m in values.get(d, [])}):
-        hits = []
+        hits, when = [], []
         for d in days:
             near = [m for m in values.get(d, []) if abs(m - centre) <= TOLERANCE_MIN]
             if near:
                 hits.append(min(near, key=lambda m: abs(m - centre)))
+                when.append(d)
         if len(hits) < MIN_DAYS or len(hits) / len(days) < MIN_SUPPORT:
             continue
         mid = round(median(hits))
-        fit = (len(hits) / len(days), len(hits), mid, median(abs(m - mid) for m in hits))
+        fit = (len(hits) / len(days), len(hits), mid, median(abs(m - mid) for m in hits), when)
         if best is None or fit[0] > best[0] + 0.1 or (abs(fit[0] - best[0]) <= 0.1 and fit[1] > best[1]):
             best = fit
     return best
@@ -239,14 +256,15 @@ def find_routines(
             anchor, fit = choice
             if fit is None:
                 continue
-            support, seen, mid, spread = fit
+            support, seen, mid, spread, when = fit
             if anchor == "clock":
                 minute = mid
             else:
                 base = (anchors or {})[anchor](today)
                 minute = (base + mid) % 1440 if base is not None else 0
             routine = Routine(entity_id, name, target, minute, label, round(support, 2), seen, spread,
-                              anchor=anchor, offset=mid if anchor != "clock" else 0)
+                              anchor=anchor, offset=mid if anchor != "clock" else 0,
+                              dates=sorted(d.isoformat() for d in when))
             # prefer 'every day' unless a narrower day type is clearly stronger
             if best is None or (support > best.support + 0.1) or (
                 abs(support - best.support) <= 0.1 and seen > best.seen
@@ -754,12 +772,35 @@ class Learner:
         await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True,
                                             context=own_context(self.hass, f"learned routine: {routine.describe()}"))
 
+    def _offerable(self, r: Routine | Link) -> bool:
+        return not (r.adopted or r.declined or r.suggested) and not (
+            self.feedback is not None and self.feedback.offers_blocked(r.entity_id))
+
+    def together(self, routine: Routine | Link) -> list[Routine]:
+        """This habit and others done at about the same time on mostly the same days — offered as one."""
+        if not isinstance(routine, Routine) or not self.options.get(CONF_OFFER_TOGETHER, True):
+            return [routine]
+        group = [routine]
+        mine = set(routine.dates)
+        for other in sorted(self.routines.values(), key=lambda r: (r.support, r.seen), reverse=True):
+            if other is routine or other.entity_id == routine.entity_id or not self._offerable(other):
+                continue
+            if other.days != routine.days or other.anchor != routine.anchor:
+                continue
+            gap = abs(other.offset - routine.offset) if routine.anchor != "clock" else abs(other.minute - routine.minute)
+            if gap > TOGETHER_MIN or not mine or not other.dates:
+                continue
+            if len(mine & set(other.dates)) < TOGETHER_OVERLAP * min(len(mine), len(other.dates)):
+                continue
+            if any(g.entity_id == other.entity_id for g in group):
+                continue
+            group.append(other)
+            if len(group) >= TOGETHER_MAX:
+                break
+        return group
+
     def next_to_offer(self) -> Routine | Link | None:
-        options = [
-            r for r in self.all()
-            if not (r.adopted or r.declined or r.suggested)
-            and not (self.feedback is not None and self.feedback.offers_blocked(r.entity_id))
-        ]
+        options = [r for r in self.all() if self._offerable(r)]
         return max(options, key=lambda r: (r.support, r.seen), default=None)
 
     async def _async_offer(self, local: datetime) -> None:
@@ -769,40 +810,55 @@ class Learner:
         if self.tracker is not None and self.tracker.best_area() is None:
             return  # nobody obviously about; try again later
         evidence = self.options.get(CONF_ROUTINE_EVIDENCE, True)
-        if isinstance(routine, Link):
+        group = self.together(routine)
+        if len(group) > 1:
+            things = [g.action for g in group]
+            listed = ", ".join(things[:-1]) + " and " + things[-1]
+            both = len(set(group[0].dates).intersection(*(set(g.dates) for g in group[1:])))
+            seen = f" — all of them on {both} days in the last two weeks" if evidence else ""
+            question = f"I've noticed that {routine.timing} {routine.days} {listed}{seen}. Want me to do all of that together from now on?"
+        elif isinstance(routine, Link):
             said = routine.describe()
             seen = f" ({routine.seen} times in the last two weeks)" if evidence else ""
             question = f"I've noticed that {said[0].lower()}{said[1:-1]}{seen}. Want me to do that for you from now on?"
         else:
             seen = f", {routine.evidence()}" if evidence else ""
             question = (
-                f"I've noticed the {routine.name} usually "
-                f"{'goes ' + routine.state if routine.state in ('on', 'off') else ('opens' if routine.state == 'open' else 'closes')}"
+                f"I've noticed the {routine.name} usually {routine.verb}"
                 f" {routine.timing} {routine.days}{seen}. Want me to do that for you from now on?"
             )
         async def answered(kind: str) -> str:
+            for g in group:
+                if kind == "yes":
+                    self.adopt(g.id, True)
+                elif kind == "done":  # something already does it: never offer it again
+                    self.dismiss(g.id, penalise=False)
+                else:
+                    self.adopt(g.id, False)
             if kind == "yes":
-                self.adopt(routine.id, True)
                 return "Okay, I'll do that from now on."
-            if kind == "done":  # something already does it: never offer it again
-                self.dismiss(routine.id, penalise=False)
-                return "Ah, right — I'll leave that one alone then."
-            self.adopt(routine.id, False)
+            if kind == "done":
+                return "Ah, right — I'll leave that alone then."
             return "Okay, I won't."
 
-        pattern = (f"{routine.describe().rstrip('.')} ({routine.seen} times in two weeks)" if isinstance(routine, Link)
-                   else f"the {routine.name} {routine.timing} {routine.days} ({routine.evidence()})")
+        if len(group) > 1:
+            pattern = f"{', '.join(g.action for g in group)} {routine.timing} {routine.days}, on mostly the same days"
+        else:
+            pattern = (f"{routine.describe().rstrip('.')} ({routine.seen} times in two weeks)" if isinstance(routine, Link)
+                       else f"the {routine.name} {routine.timing} {routine.days} ({routine.evidence()})")
+        ids = ", ".join(f"'{g.id}'" for g in group)
         with because(f"I'd spotted a pattern: {pattern}, and no automation, alarm or routine already does it"):
             result = await self.speech.async_ask(
                 question,
                 source="learning",
                 on_answer=answered,
                 extra_prompt=(
-                    f"If they say yes, call sentient_adopt_routine with routine '{routine.id}'. "
-                    f"If they say no, call sentient_adopt_routine with routine '{routine.id}' and adopt false."
+                    f"If they say yes, call sentient_adopt_routine for each of these routines: {ids}. "
+                    f"If they say no, call it for each with adopt false."
                 ),
             )
         if result.spoken:
-            routine.suggested = dt_util.utcnow().isoformat()
+            for g in group:
+                g.suggested = dt_util.utcnow().isoformat()
             self._asked_today = local.date().isoformat()
             self._save()
