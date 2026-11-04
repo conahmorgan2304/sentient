@@ -415,8 +415,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await learner.async_start()
     entry.async_on_unload(learner.async_stop)
     upkeep = Upkeep(hass, lambda: entry.runtime_data)
-    upkeep.async_start()
-    entry.async_on_unload(upkeep.async_stop)
     health = HouseHealth(hass, options, lambda: getattr(entry, "runtime_data", None))
     health.was_offline_before = lambda: {k.split(":", 1)[1] for k in (timeline._problems or {}) if k.startswith("offline:")}
     health.async_start()
@@ -435,11 +433,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     speech.mutes = mutes
     mutes.feedback = feedback
     critical = CriticalAlerts(hass, options, lambda: entry.runtime_data)
-    critical.async_start()
-    entry.async_on_unload(critical.async_stop)
     left_open = LeftOpen(hass, options, lambda: entry.runtime_data)
-    left_open.async_start()
-    entry.async_on_unload(left_open.async_stop)
     shortcuts = Shortcuts(hass, entry.entry_id)
     await shortcuts.async_load()
     heating = Heating(hass, entry.entry_id, options, timeline)
@@ -510,8 +504,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
     welcome = Welcome(hass, options, lambda: entry.runtime_data)
-    welcome.async_start()
-    entry.async_on_unload(welcome.async_stop)
     evidence = Evidence(hass, entry.entry_id, options)
     await evidence.async_start()
     entry.async_on_unload(evidence.async_stop)
@@ -553,6 +545,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
         threads=threads, focus=Focus(), selfaware=selfaware, goals=goals, books=books, recipes=recipes,
     )
+    # things that listen for events and use the runtime start only once it exists (an event during set-up
+    # would otherwise find no runtime_data)
+    for engine in (upkeep, critical, left_open, welcome):
+        engine.async_start()
+        entry.async_on_unload(engine.async_stop)
     for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch, selfaware, goals, books, recipes):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
