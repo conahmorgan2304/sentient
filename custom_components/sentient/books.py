@@ -202,11 +202,15 @@ class Books:
 
     def folder(self) -> str:
         sub = str(self.options.get(CONF_BOOKS_FOLDER) or DEFAULT_BOOKS_FOLDER).strip().strip("/")
+        if ".." in sub.split("/"):
+            sub = DEFAULT_BOOKS_FOLDER  # only ever a folder inside Home Assistant's media
         base = (self.hass.config.media_dirs or {}).get("local") or self.hass.config.path("media")
         return os.path.join(base, sub)
 
     def media_id(self, rel: str) -> str:
         sub = str(self.options.get(CONF_BOOKS_FOLDER) or DEFAULT_BOOKS_FOLDER).strip().strip("/")
+        if ".." in sub.split("/"):
+            sub = DEFAULT_BOOKS_FOLDER
         return f"media-source://media_source/local/{sub}/{rel}"
 
     async def async_books(self) -> list[dict[str, Any]]:

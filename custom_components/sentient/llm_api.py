@@ -612,6 +612,16 @@ class GoalTool(_Tool):
         return await rt.goals.async_set(a["title"], entity, a["aim"], a["days"])
 
 
+def _exposed(hass: HomeAssistant, entity_id: str) -> bool:
+    """Whether voice assistants may use this entity (Settings → Voice assistants → Expose)."""
+    try:
+        from homeassistant.components.homeassistant.exposed_entities import async_should_expose
+
+        return async_should_expose(hass, "conversation", entity_id)
+    except Exception:  # noqa: BLE001 - exposure settings not loaded (tests, early start-up)
+        return True
+
+
 def _speaker_here(hass: HomeAssistant, rt: Any, llm_context: llm.LLMContext, named: str | None = None) -> str | None:
     """The speaker someone is talking to (or the one they named)."""
     if named:
@@ -999,6 +1009,8 @@ class AlarmTool(_Tool):
                     continue
                 if blocked(hass, eid):
                     return {"error": f"{wanted} is on the never-touch list"}
+                if not _exposed(hass, eid):
+                    return {"error": f"{wanted} isn't exposed to voice assistants (Settings → Voice assistants → Expose)"}
                 actions.append({"action": f"{eid.split('.', 1)[0]}.{service}", "target": {"entity_id": eid}})
         if unknown:
             return {"error": "I couldn't find " + ", ".join(unknown)}
@@ -1327,7 +1339,8 @@ class ScenesTool(_Tool):
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
     ) -> JsonObjectType:
         rt = _runtime(hass)
-        scenes = [st for st in hass.states.async_all("scene")]
+        # only the scenes exposed to voice assistants, like Home Assistant's own tools
+        scenes = [st for st in hass.states.async_all("scene") if _exposed(hass, st.entity_id)]
         name = (tool_input.tool_args.get("name") or "").strip()
         if not name:
             listing = []

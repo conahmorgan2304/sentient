@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
 from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
@@ -660,7 +660,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
 def _runtime(hass: HomeAssistant) -> SentientRuntime:
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        raise vol.Invalid("Sentient is not set up")
+        raise ServiceValidationError("Sentient is not set up")
     return entries[0].runtime_data
 
 
@@ -699,7 +699,7 @@ def _register_services(hass: HomeAssistant) -> None:
             found = learner._find(call.data["routine"])
             routine = learner.adopt(found.id, not found.adopted) if found else None
         if routine is None:
-            raise vol.Invalid("No learned routine matches that")
+            raise ServiceValidationError("No learned routine matches that")
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
     async def forget_routine(call: ServiceCall) -> ServiceResponse:
@@ -709,7 +709,7 @@ def _register_services(hass: HomeAssistant) -> None:
             return {"restored": back, "note": "They can be learned again from the next nightly check."}
         item = learner.dismiss(call.data.get("routine") or "")
         if item is None:
-            raise vol.Invalid("No learned routine matches that")
+            raise ServiceValidationError("No learned routine matches that")
         return {"deleted": item.describe()}
 
     async def briefing(call: ServiceCall) -> ServiceResponse:
@@ -862,7 +862,7 @@ def _register_services(hass: HomeAssistant) -> None:
             from .const import CONF_FACE_FORGET_HOURS
 
             if not (rt.faces.enabled or rt.faces.teaching) or float(rt.options.get(CONF_FACE_FORGET_HOURS) or 0) <= 0:
-                raise HomeAssistantError("Forgetting unnamed faces is off: turn on faces and set how many hours to keep "
+                raise ServiceValidationError("Forgetting unnamed faces is off: turn on faces and set how many hours to keep "
                                          "unnamed faces in Settings first")
             return await rt.faces.async_forget_old()
         if what == "clip_watch":
@@ -963,7 +963,7 @@ def _register_services(hass: HomeAssistant) -> None:
 
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if not entries:
-            raise vol.Invalid("Sentient is not set up")
+            raise ServiceValidationError("Sentient is not set up")
         minutes = float(call.data["minutes"])
         until = dt_util.utcnow() + timedelta(minutes=minutes) if minutes > 0 else None
         hush(hass, entries[0], until)
