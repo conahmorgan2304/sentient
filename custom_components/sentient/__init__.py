@@ -915,6 +915,18 @@ def _register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins", "faces", "faces_forget", "clip_watch"])}),
     )
 
+    async def notice(call: ServiceCall) -> ServiceResponse:
+        """Pass something through Sentient's speech rules (and, by default, its decision whether it's worth saying)."""
+        return await _runtime(hass).noticer.async_notice(
+            call.data["message"], call.data.get("entity_id"), call.data["decide"], call.data["priority"])
+
+    hass.services.async_register(
+        DOMAIN, "notice", notice, supports_response=SupportsResponse.OPTIONAL,
+        schema=vol.Schema({vol.Required("message"): cv.string, vol.Optional("entity_id"): cv.entity_id,
+                           vol.Optional("decide", default=True): cv.boolean,
+                           vol.Optional("priority", default="normal"): vol.In(["low", "normal", "urgent"])}),
+    )
+
     async def look_ahead(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).foresight.async_look_ahead(speak=call.data.get("speak", False))
 

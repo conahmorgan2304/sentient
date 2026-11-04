@@ -1342,6 +1342,28 @@
         }
       }
     },
+    "notice": {
+      "name": "Notice",
+      "description": "Pass something that happened through Sentient — the same quiet hours, hush, guest and holiday rules, and (by default) its own decision whether it's worth saying and how.",
+      "fields": {
+        "message": {
+          "name": "What happened",
+          "description": "In plain words, e.g. 'The dishwasher has finished'."
+        },
+        "entity_id": {
+          "name": "Device",
+          "description": "The device it's about (optional) — gives the room and its state."
+        },
+        "decide": {
+          "name": "Let it decide",
+          "description": "On: the AI decides whether it's worth saying, and how (counts as noticing). Off: say it as given."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent still sounds in quiet hours; low never interrupts."
+        }
+      }
+    },
     "look_ahead": {
       "name": "Look ahead",
       "description": "Look at tomorrow now and say whether there's anything worth a heads-up.",
