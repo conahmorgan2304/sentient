@@ -131,6 +131,8 @@ class _Tool(llm.Tool):
                 return _result({"error": outside.REFUSED})
             try:
                 result = await inner(self, hass, tool_input, llm_context)
+                if (rt := _runtime(hass)) is not None and getattr(rt, "usage", None) is not None:
+                    rt.usage.tool(self.name)
                 if self.reads_outside:
                     outside.mark_read(hass)
                     result = outside.tag(result)

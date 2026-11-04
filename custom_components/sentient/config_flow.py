@@ -39,6 +39,7 @@ from .const import (
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
     CONF_WHATS_NEW,
+    CONF_SIMPLE,
     CONF_EVENT_CLIPS,
     CONF_KNOWN_CARS,
     CONF_RELEVANT_MEMORIES,
@@ -326,6 +327,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
             vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WHATS_NEW, **d(CONF_WHATS_NEW, True)): selector.BooleanSelector(),
+            vol.Required(CONF_SIMPLE, **d(CONF_SIMPLE, False)): selector.BooleanSelector(),
             vol.Required(CONF_AUTO_BACKUP, **d(CONF_AUTO_BACKUP, False)): selector.BooleanSelector(),
             vol.Required(CONF_BACKUP_KEEP, **d(CONF_BACKUP_KEEP, DEFAULT_BACKUP_KEEP)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=20, step=1, mode=selector.NumberSelectorMode.BOX)
@@ -816,7 +818,8 @@ class SentientConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_speech(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(title=self._data[CONF_PERSONA], data={**self._data, **user_input})
+            # a new house starts with the simpler settings page (essentials first; everything one tap away)
+            return self.async_create_entry(title=self._data[CONF_PERSONA], data={CONF_SIMPLE: True, **self._data, **user_input})
         return self.async_show_form(step_id="speech", data_schema=_speech_schema({}))
 
     @staticmethod

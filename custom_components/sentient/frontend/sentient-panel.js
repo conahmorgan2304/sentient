@@ -414,6 +414,7 @@
         rooms: ["mdi:door-open", "Rooms", n("rooms") !== null ? `${n("rooms")} with their own ways` : "Private, gentler, own volume or quiet"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
+        usage: ["mdi:chart-timeline-variant-shimmer", "How it's used", this._use ? `${this._use.never.length} on but never used` : "What's used, and what isn't"],
         privacy: ["mdi:shield-lock-outline", "What leaves the house", this._priv ? `${this._priv.totals.times} sent this week` : "AI calls and searches, and forgetting"],
         doctor: ["mdi:stethoscope", "Setup doctor", this._doc ? (this._doc.status === "ok" ? "All good" : `${this._doc.rows.filter((r) => r.status !== "ok").length} to look at`) : "Check the setup and what to fix"],
       };
@@ -427,7 +428,7 @@
       const menus = [
         ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "rooms", "voicebackup", "mutes", "phone"]],
         ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
-        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
+        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "usage", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
         ["extras", "home", "mdi:home-automation", "Home & routines", ["trust", "maintenance", "shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
@@ -462,7 +463,8 @@
           || '<div class="e">NOTHING MATCHES · TRY ANOTHER WORD</div>';
       } else {
         let section = "";
-        html = menus.map(([sec, mid, icon, title, ids]) => {
+        const simple = data.simple_settings && !this._showAll;
+        html = menus.filter((m) => !simple || m[0] === "essentials").map(([sec, mid, icon, title, ids]) => {
           const list = ids.filter((id) => pages[id]);
           if (!list.length) return "";
           const open = this._openMenus.has(mid);
@@ -474,6 +476,10 @@
             <button class="mh" data-act="menu" data-id="${esc(mid)}" aria-expanded="${esc(open)}"><ha-icon icon="${esc(icon)}"></ha-icon><span>${esc(title)}</span><u>${sec === "extras" ? `${on} ON` : list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
             <div class="mi">${list.map((id) => item(id)).join("")}</div></div>`;
         }).join("");
+      }
+      if (!q && data.simple_settings) {
+        html += this._showAll ? `<button class="btn ghost wizbtn" data-act="showless">SHOW LESS</button>`
+          : `<button class="btn ghost wizbtn" data-act="showall"><ha-icon icon="mdi:plus-circle-outline"></ha-icon>SHOW EVERYTHING</button>`;
       }
       this._$("snav").innerHTML = html + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
     }
@@ -498,6 +504,7 @@
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       if (this._group === "doctor") { this._form = null; this._drawDoctor(); return; }
       if (this._group === "privacy") { this._form = null; this._drawPrivacy(); return; }
+      if (this._group === "usage") { this._form = null; this._drawUsage(); return; }
       if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules", "rooms", "maintenance"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
@@ -943,6 +950,26 @@
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
         <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
         <div class="bar"><span id="status"></span><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
+    }
+
+    // ---------- how it's used ----------
+    async _drawUsage(refresh) {
+      const body = this._$("body");
+      if (!this._use || refresh) {
+        body.innerHTML = `<div class="e">LOADING…</div>`;
+        try { this._use = await this._hass.callWS({ type: "sentient/usage" }); } catch (e) { body.innerHTML = `<div class="e">${esc(e.message || String(e))}</div>`; return; }
+        this._drawSide();
+      }
+      if (this._group !== "usage") return;
+      const U = this._use;
+      const ago = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const row = (r, icon, right, act) => `<div class="r"><ha-icon icon="${esc(icon)}"></ha-icon><b class="wrap">${esc(r.name)}${r.last_used ? `<small>last used ${esc(ago(r.last_used))}</small>` : ""}</b>${right}${act ? `<button class="btn sm ghost" data-act="group" data-id="${esc(r.page)}">SETTINGS</button>` : ""}</div>`;
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:chart-timeline-variant-shimmer"></ha-icon><div><div class="bt">HOW IT'S USED</div>
+          <div class="bs">Which optional features are earning their keep — counted when you use one by voice or it says something. Anything on but never used is worth switching off to keep things simple.${U.since ? ` Counting since ${esc(ago(U.since))}.` : ""}</div></div></div>
+        <div class="card ml">${this._h("ON BUT NOT USED THIS MONTH", String(U.never.length))}${U.never.map((r) => row(r, "mdi:sleep", "", true)).join("") || `<div class="e">EVERYTHING THAT'S ON GETS USED</div>`}</div>
+        <div class="card ml" style="margin-top:12px">${this._h("USED THIS MONTH", String(U.used.length))}${U.used.map((r) => row(r, "mdi:check-circle-outline", `<u>${esc(String(r.used_this_month))}×</u>`)).join("") || '<div class="e">NOTHING COUNTED YET</div>'}</div>
+        ${U.off.length ? `<details class="caps"><summary>Switched off (${esc(String(U.off.length))})</summary>${U.off.map((r) => row(r, "mdi:minus-circle-outline", "", true)).join("")}</details>` : ""}
+        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="userun">REFRESH</button></div>`;
     }
 
     // ---------- what leaves the house ----------
@@ -1579,6 +1606,8 @@
       }
       else if (act === "docrun") this._drawDoctor(true);
       else if (act === "privrun") this._drawPrivacy(true);
+      else if (act === "userun") this._drawUsage(true);
+      else if (act === "showall" || act === "showless") { this._showAll = act === "showall"; this._drawSide(); }
       else if (act === "privforget") {
         if (!window.confirm("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
         this._hass.callWS({ type: "sentient/privacy/forget", hours: 48 }).then((r) => {

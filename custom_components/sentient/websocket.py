@@ -36,6 +36,7 @@ from .const import (
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
     CONF_WHATS_NEW,
+    CONF_SIMPLE,
     CONF_EVENT_CLIPS,
     CONF_KNOWN_CARS,
     CONF_RELEVANT_MEMORIES,
@@ -363,7 +364,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -508,9 +509,22 @@ async def ws_export_readable(hass: HomeAssistant, connection, msg: dict[str, Any
     connection.send_result(msg["id"], {"text": text})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/usage"})
+@websocket_api.require_admin
+@callback
+def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Which optional features are used this month, on but never used, or off."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "usage", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], entry.runtime_data.usage.report())
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_proposal)
+    websocket_api.async_register_command(hass, ws_usage)
     websocket_api.async_register_command(hass, ws_export_readable)
     websocket_api.async_register_command(hass, ws_whats_new)
     websocket_api.async_register_command(hass, ws_whats_new_seen)
