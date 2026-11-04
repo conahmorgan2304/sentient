@@ -31,6 +31,7 @@ _BY_SOURCE: dict[str, str] = {
     "welcome": "someone had just come home",
     "visitors": "someone was at the door",
     "parcel": "a parcel tracker said so",
+    "maintenance": "{name} was due by how much it's been used",
     "animals": "the animal cameras spotted something",
     "night_watch": "the night watch saw something",
     "critical": "a safety sensor went off",

@@ -221,6 +221,29 @@ class UndoLastTool(_Tool):
         return {"undone": restored}
 
 
+class MaintenanceTool(_Tool):
+    name = "sentient_maintenance"
+    description = (
+        "Maintenance jobs counted by use — 'is anything due?', 'when's the purifier filter due?', 'I've changed the "
+        "filter' / 'I've descaled the coffee machine'. action 'list' (what's due and how close the rest are) or "
+        "'done' with 'job' (starts its count again). For how to do one, use sentient_manual when it's available."
+    )
+    parameters = vol.Schema({vol.Required("action"): vol.In(["list", "done"]), vol.Optional("job"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "maintenance", None) is None:
+            return {"error": "Sentient is not loaded"}
+        a = tool_input.tool_args
+        if a["action"] == "done":
+            out = rt.maintenance.done(a.get("job") or "")
+            return out or {"error": f"no maintenance job called '{a.get('job')}'",
+                           "jobs": [i["name"] for i in rt.maintenance.items.enabled()]}
+        return {"jobs": [rt.maintenance.status(i) for i in rt.maintenance.items.enabled()]}
+
+
 class HolidayTool(_Tool):
     acts = True
     name = "sentient_holiday"
@@ -1678,7 +1701,7 @@ class SentientAPI(llm.API):
         from .voice_api import SessionTool, IncidentsTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),

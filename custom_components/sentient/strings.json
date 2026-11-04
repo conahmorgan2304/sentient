@@ -1347,6 +1347,16 @@
         }
       }
     },
+    "maintenance_done": {
+      "name": "Maintenance done",
+      "description": "Mark a maintenance job done (a filter changed, the machine descaled) so its count starts again.",
+      "fields": {
+        "job": {
+          "name": "Job",
+          "description": "Its name on the Maintenance page."
+        }
+      }
+    },
     "notice": {
       "name": "Notice",
       "description": "Pass something that happened through Sentient — the same quiet hours, hush, guest and holiday rules, and (by default) its own decision whether it's worth saying and how.",

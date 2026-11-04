@@ -318,6 +318,13 @@ cancel_follow_up:
       example: "the lounge warming up"
       selector:
         text:
+maintenance_done:
+  fields:
+    job:
+      required: true
+      example: Air purifier filter
+      selector:
+        text:
 notice:
   fields:
     message:

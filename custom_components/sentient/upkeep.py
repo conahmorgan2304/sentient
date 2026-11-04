@@ -180,6 +180,9 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
         if todo:
             out["to_do"] = todo
 
+    if (jobs := getattr(rt, "maintenance", None)) is not None and (due := jobs.due()):
+        out["maintenance_due"] = [f"{d['name']}: {d['why']}" for d in due[:4]]
+
     if (parcels := getattr(rt, "parcels", None)) is not None:
         if outside := parcels.outside():
             out["outside_information"] = outside
@@ -217,6 +220,8 @@ def plain_briefing(facts: dict[str, Any]) -> str:
     if open_now := facts.get("open_now"):
         out.append(("The " if len(open_now) == 1 else "Open now: ") + ", ".join(open_now[:4])
                    + (" is open." if len(open_now) == 1 else "."))
+    if due := facts.get("maintenance_due"):
+        out.append("Due: " + str(due[0]).split(":")[0] + ".")
     if facts.get("parcel_expected_today"):
         out.append("A parcel's out for delivery today.")
     if world := facts.get("outside_information"):

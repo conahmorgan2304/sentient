@@ -400,6 +400,7 @@
         announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
         autooff: ["mdi:timer-off-outline", "Auto-off", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
+        maintenance: ["mdi:wrench-clock", "Maintenance", n("maintenance") !== null ? `${n("maintenance")} counted by use` : "Filters and descaling, by use"],
         rooms: ["mdi:door-open", "Rooms", n("rooms") !== null ? `${n("rooms")} with their own ways` : "Private, gentler, own volume or quiet"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
@@ -419,7 +420,7 @@
         ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
-        ["extras", "home", "mdi:home-automation", "Home & routines", ["trust", "shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
+        ["extras", "home", "mdi:home-automation", "Home & routines", ["trust", "maintenance", "shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[4]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][4].push(id); });
@@ -487,7 +488,7 @@
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
       if (this._group === "doctor") { this._form = null; this._drawDoctor(); return; }
       if (this._group === "privacy") { this._form = null; this._drawPrivacy(); return; }
-      if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules", "rooms"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
+      if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules", "rooms", "maintenance"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
