@@ -18,6 +18,8 @@ from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .reasons import because
+
 if TYPE_CHECKING:
     from .speech import SpeechRouter
     from .timeline import Timeline
@@ -187,6 +189,7 @@ class FollowThrough:
         message = f"Sorry, the {what.lower()} didn't respond, so it isn't {verb}.{why}"
         self.timeline.add("health", f"Didn't happen: {what} {verb}", "asked by voice; the device didn't respond")
         try:
-            await self.speech.async_say(message, "urgent", [satellite], source="followthrough")
+            with because(f"you asked for the {what.lower()} to be {verb} and it still wasn't after I checked"):
+                await self.speech.async_say(message, "urgent", [satellite], source="followthrough")
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Could not report a failed action: %s", err)

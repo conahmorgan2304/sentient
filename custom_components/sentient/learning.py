@@ -33,6 +33,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .reasons import because
 from .const import (
     CONF_ROUTINE_EVIDENCE,
     CONF_LEARN_ENTITIES,
@@ -693,15 +694,18 @@ class Learner:
             self.adopt(routine.id, False)
             return "Okay, I won't."
 
-        result = await self.speech.async_ask(
-            question,
-            source="learning",
-            on_answer=answered,
-            extra_prompt=(
-                f"If they say yes, call sentient_adopt_routine with routine '{routine.id}'. "
-                f"If they say no, call sentient_adopt_routine with routine '{routine.id}' and adopt false."
-            ),
-        )
+        pattern = (f"{routine.describe().rstrip('.')} ({routine.seen} times in two weeks)" if isinstance(routine, Link)
+                   else f"the {routine.name} at about {routine.when} {routine.days} ({routine.evidence()})")
+        with because(f"I'd spotted a pattern: {pattern}, and no automation, alarm or routine already does it"):
+            result = await self.speech.async_ask(
+                question,
+                source="learning",
+                on_answer=answered,
+                extra_prompt=(
+                    f"If they say yes, call sentient_adopt_routine with routine '{routine.id}'. "
+                    f"If they say no, call sentient_adopt_routine with routine '{routine.id}' and adopt false."
+                ),
+            )
         if result.spoken:
             routine.suggested = dt_util.utcnow().isoformat()
             self._asked_today = local.date().isoformat()

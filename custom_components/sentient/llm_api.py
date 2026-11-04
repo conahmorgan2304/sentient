@@ -1455,7 +1455,8 @@ class WhyTool(_Tool):
         "changed, whether a person (and in which app), an automation or the house did it, the house's own log "
         "around then (including anything held back and why), and things it noticed but chose not to say. "
         "Includes a structured investigation with source-labelled evidence, current readings, delivery failures, "
-        "unknowns and one next question. Match the requested occurrence; nearby events are not proof of a cause. "
+        "unknowns and one next question. For something the house said, asked or offered, 'said_because' gives the "
+        "reason it recorded at the time — use that, in plain words. Match the requested occurrence; nearby events are not proof of a cause. "
         "Current state cannot establish historical availability; speech sent does not prove it was heard. "
         "Answer from supported findings and ask at most one useful next question. Never guess or change settings."
     )

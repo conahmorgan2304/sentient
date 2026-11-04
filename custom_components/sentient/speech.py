@@ -61,6 +61,7 @@ from .const import (
     PRIORITY_URGENT,
 )
 from .delivery import RoomLevels, delivered, playing_nearby
+from .reasons import reason_for
 from .presence import ActivityTracker, area_of
 
 _LOGGER = logging.getLogger(__name__)
@@ -449,7 +450,8 @@ class SpeechRouter:
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None, "deliveries": receipts},
+            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None,
+             "deliveries": receipts, "why": reason_for(source)},
         )
         if unheard and self.on_unheard is not None:
             self.on_unheard(text, priority, source, None)
@@ -686,7 +688,8 @@ class SpeechRouter:
             self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True},
+            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True,
+             "why": reason_for(source)},
         )
         return SpeechResult(True, "asked", text, [speaker])
 
@@ -719,7 +722,7 @@ class SpeechRouter:
 
     def _held(self, reason: str, text: str, source: str | None, priority: str | None = None) -> SpeechResult:
         _LOGGER.debug("Held speech (%s): %s", reason, text)
-        self.hass.bus.async_fire(EVENT_HELD, {"message": text, "reason": reason, "source": source})
+        self.hass.bus.async_fire(EVENT_HELD, {"message": text, "reason": reason, "source": source, "why": reason_for(source)})
         if reason in ("quiet_hours", "hushed") and priority and self.on_unheard is not None:
             self.on_unheard(text, priority, source, reason)
         return SpeechResult(False, reason, text, [])

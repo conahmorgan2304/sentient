@@ -18,6 +18,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
 from .items import Items
+from .reasons import because
 from .kinds import in_windows, variant
 from .presence import ActivityTracker, area_of
 from .shortcuts import async_run_actions
@@ -157,15 +158,32 @@ class Offers:
             await self.async_accept(offer["id"], False)
             return "Okay."
 
-        result = await rt.speech.async_ask(
-            question, source=f"offer:{offer['name']}", targets=targets, on_answer=answered,
-            extra_prompt=(
-                f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
-                f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
-                f"If they say no, call it with accept false. Then answer briefly."
-            ),
-        )
+        with because(self.why(offer, area)):
+            result = await rt.speech.async_ask(
+                question, source=f"offer:{offer['name']}", targets=targets, on_answer=answered,
+                extra_prompt=(
+                    f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
+                    f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
+                    f"If they say no, call it with accept false. Then answer briefly."
+                ),
+            )
         return result.as_dict()
+
+    def why(self, offer: dict[str, Any], area: str | None) -> str:
+        """The plain reasons it asked, for 'why did you offer that?'."""
+        bits = []
+        if area:
+            a = ar.async_get(self.hass).async_get_area(area)
+            bits.append(f"someone moved in the {a.name if a else area}")
+        below = offer.get("below_entity")
+        if offer.get("below") is not None and below and (value := reading(self.hass, below)) is not None:
+            bits.append(f"it read {value:g}, below the {float(offer['below']):g} the offer waits for")
+        if idle := offer.get("idle_entity"):
+            st = self.hass.states.get(idle)
+            bits.append(f"{st.name if st else idle} had been idle {float(offer.get('idle_minutes') or 0):g} minutes")
+        if offer.get("times"):
+            bits.append("it was within the offer's times")
+        return f"the '{offer['name']}' offer: " + (", ".join(bits) if bits else "its conditions were met")
 
     async def async_accept(self, offer_id: str, accept: bool, note: str | None = None) -> dict[str, Any]:
         rt = self._rt()

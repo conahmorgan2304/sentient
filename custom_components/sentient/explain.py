@@ -21,6 +21,32 @@ _SKIP = {"the", "a", "an", "why", "did", "go", "off", "on", "who", "turned", "tu
          "that", "didn't", "didnt", "not", "tell", "told", "me", "about", "when", "announce", "mention", "had", "has", "been"}
 
 
+_ABOUT_SPEECH = re.compile(
+    r"\b(say|said|says|ask|asked|offer|offered|suggest|suggested|tell|told|mention|mentioned|announce|announced|"
+    r"remark|question)\b", re.I)
+_LAST_THING = re.compile(r"\b(that|this|it|just now)\b", re.I)
+
+
+def _said_because(rt: Any, what: str, words: set[str], hours: float) -> list[dict[str, Any]]:
+    """What the house said or held back that matches, each with the reason it gave at the time."""
+    out = []
+    spoken = [i for i in rt.timeline.since(hours, None, 400) if i["kind"] in ("said", "held")]
+    words = {w for w in words if not _ABOUT_SPEECH.fullmatch(w) and w not in ("you", "your", "did", "why")}
+    if words:
+        found = [i for i in spoken
+                 if sum(1 for w in words if w in f"{i.get('text', '')} {i.get('why', '')}".lower()) >= max(1, len(words) // 2)]
+    else:
+        found = spoken[:1] if _LAST_THING.search(what) else []  # "why did you say that?": the last thing said
+    for item in found[:3]:
+        t = dt_util.as_local(dt_util.parse_datetime(item["time"]))
+        row = {"time": f"{t:%H:%M}", "text": item.get("text", ""),
+               "why": item.get("why") or "no reason was recorded (said before reasons were kept)"}
+        if item["kind"] == "held":
+            row["held_back"] = item.get("detail") or "held back"
+        out.append(row)
+    return out
+
+
 async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 12) -> dict[str, Any]:
     from .watches import resolve_entity
 
@@ -65,6 +91,8 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
             break
     if notes:
         out["house_log"] = notes
+    if _ABOUT_SPEECH.search(what) and (said := _said_because(rt, what, words, hours)):
+        out["said_because"] = said
     # things it noticed and decided not to say, and why (quiet hours, the hourly limit, not worth it…)
     quiet = []
     for d in list(getattr(rt.noticer, "decisions", []))[:60]:

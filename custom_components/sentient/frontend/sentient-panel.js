@@ -1305,7 +1305,7 @@
         if (d !== last) { html += `<div class="day">${d}</div>`; last = d; }
         const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
         html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
-          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
       }
       this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
     }

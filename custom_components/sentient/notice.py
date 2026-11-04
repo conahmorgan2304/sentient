@@ -28,6 +28,7 @@ from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .reasons import because
 from .ai import async_generate
 from .const import (
     personality_line,
@@ -265,10 +266,11 @@ class Noticer:
             message = decision["message"].strip()
             if self.feedback is not None:
                 self.feedback.remarked([c.entity_id for c in changes], message)
-            if decision.get("question"):
-                result = await self.speech.async_ask(message, source="notice")
-            else:
-                result = await self.speech.async_say(message, "normal", None, source="notice")
+            with because("I noticed " + "; ".join(record["changes"][:3]) + " and thought it worth mentioning"):
+                if decision.get("question"):
+                    result = await self.speech.async_ask(message, source="notice")
+                else:
+                    result = await self.speech.async_say(message, "normal", None, source="notice")
             record["result"] = result.reason
         return record
 
