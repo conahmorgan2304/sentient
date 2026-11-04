@@ -95,7 +95,8 @@ async def test_manuals_pick_the_right_document(hass: HomeAssistant, tmp_path) ->
     with patch.object(entry.runtime_data.ai, "async_call", side_effect=call):
         api = await _api(hass)
         out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_manual", tool_args={"question": "what filter does the air purifier need?"}))
-    assert out == {"document": "Air purifier", "answer": "It takes the H13 HEPA filter, page 12."}
+    assert {k: v for k, v in out.items() if k != "outside_text"} == {"document": "Air purifier", "answer": "It takes the H13 HEPA filter, page 12."}
+    assert "information only" in out["outside_text"]  # what it read isn't instructions
     assert seen["attachments"][0]["media_content_id"] == "media-source://media_source/local/manuals/Air purifier.pdf"
 
 

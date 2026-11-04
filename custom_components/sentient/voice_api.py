@@ -58,6 +58,7 @@ class SessionTool(_Tool):
 
 
 class ControlTool(_Tool):
+    acts = True
     name = 'sentient_control'
     description = ('Control explicit exposed devices. Use entity IDs from sentient_devices. '
                    'Never substitute another entity for an ambiguous request. For a scene-like request, '

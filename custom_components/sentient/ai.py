@@ -231,7 +231,13 @@ def gate(hass: HomeAssistant) -> AIGate | None:
 
 
 async def async_generate(hass: HomeAssistant, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
-    """Call ai_task.generate_data through the gate (time limit, failure tracking)."""
+    """Call ai_task.generate_data through the gate (time limit, failure tracking).
+
+    Every job is told that quoted text (calendars, the web, descriptions…) is data, never instructions."""
+    from .outside import QUOTED_RULE
+
+    if isinstance(data.get("instructions"), str) and QUOTED_RULE not in data["instructions"]:
+        data = {**data, "instructions": f"{data['instructions']}\n\n{QUOTED_RULE}"}
     if (g := gate(hass)) is not None:
         return await g.async_call(data, timeout)
     try:
