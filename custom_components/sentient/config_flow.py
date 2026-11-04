@@ -254,6 +254,7 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
+    CONF_PRICE_ENTITY,
     CONF_SEARCH_HINTS,
     CONF_REMARK_REPEAT_HOURS,
     DEFAULT_REMARK_REPEAT_HOURS,
@@ -518,6 +519,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_ENERGY_CURRENCY, **d(CONF_ENERGY_CURRENCY)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=CURRENCIES, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
+            vol.Optional(CONF_PRICE_ENTITY, **d(CONF_PRICE_ENTITY)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "event", "input_number"])
             ),
             vol.Required(CONF_SEARCH_HINTS, **d(CONF_SEARCH_HINTS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WEB_SEARCH, **d(CONF_WEB_SEARCH, False)): selector.BooleanSelector(),

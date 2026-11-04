@@ -45,6 +45,7 @@ CONF_ALEXA_SKILL = "alexa_skill"  # answer questions asked through an Alexa skil
 CONF_ALEXA_WAIT = "alexa_wait"
 CONF_ALEXA_LATE = "alexa_late_answers"
 DEFAULT_ALEXA_WAIT = 6
+CONF_PRICE_ENTITY = "price_entity"  # time-of-use price: cheap-electricity suggestions (empty: off)
 CONF_ENERGY_CURRENCY = "energy_currency"  # empty: Home Assistant's own currency
 CURRENCIES = ["GBP", "EUR", "USD", "CAD", "AUD", "NZD", "CHF", "SEK", "NOK", "DKK", "PLN", "CZK", "ZAR", "INR", "JPY"]
 CURRENCY_SYMBOLS = {"GBP": "£", "EUR": "€", "USD": "$", "CAD": "CA$", "AUD": "A$", "NZD": "NZ$", "CHF": "CHF ",
