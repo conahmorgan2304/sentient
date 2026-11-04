@@ -369,7 +369,7 @@
       this._loadMotion();
       this._loadMutes(true);
       this._loadShortcuts();
-      ["alarms", "offers", "announce", "checks", "autooff", "rules"].forEach((k) => this._loadItems(k));
+      ["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules"].forEach((k) => this._loadItems(k));
       if (!this._settings && !this._settingsErr) {
         try {
           this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language });
@@ -392,9 +392,10 @@
         memories: ["mdi:brain", "Memories", count !== "" ? `${count} remembered` : ""],
         mutes: ["mdi:volume-mute", "Shushed", this._mutes ? `${this._mutes.length} muted` : "Things it won't mention"],
         spots: ["mdi:selection-marker", "Camera spots", this._spots ? `${this._spots.length} taught` : "Named areas the AI zooms into"],
-        shortcuts: ["mdi:playlist-play", "Routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
+        shortcuts: ["mdi:playlist-play", "Voice routines", this._sc ? `${this._sc.length} · goodnight, morning…` : "Goodnight, good morning…"],
+        schedules: ["mdi:calendar-clock", "Automated routines", n("schedules") !== null ? `${n("schedules")} · on a schedule` : "Done by itself at a set time"],
         motion: ["mdi:motion-sensor", "Motion lights", this._ml ? `${this._ml.rules.length} light${this._ml.rules.length === 1 ? "" : "s"} · after dark` : "Lights that follow movement"],
-        alarms: ["mdi:alarm", "Alarms", n("alarms") !== null ? `${n("alarms")} set` : "Alarms, appointments, routines"],
+        alarms: ["mdi:alarm", "Alarms", n("alarms") !== null ? `${n("alarms")} set · said at a time` : "Wake-ups, bins, appointments"],
         offers: ["mdi:hand-heart-outline", "Offers", n("offers") !== null ? `${n("offers")} · fancy a brew?` : "Questions it asks — a brew?"],
         announce: ["mdi:bullhorn-outline", "Announcements", n("announce") !== null ? `${n("announce")} · doorbell, gate` : "Doorbell, gate…"],
         autooff: ["mdi:timer-off-outline", "Auto-off", n("autooff") !== null ? `${n("autooff")} · lights, coffee…` : "Off when left on or the room's empty"],
@@ -415,7 +416,7 @@
         ["essentials", "brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins"]],
-        ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "rules", "alarms", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
+        ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[4]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][4].push(id); });
@@ -481,7 +482,7 @@
       if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
-      if (["alarms", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
+      if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
@@ -815,8 +816,8 @@
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
           <div class="chips left">${r.check_open ? "<span>CHECKS DOORS &amp; WINDOWS</span>" : ""}${r.check_lights ? "<span>CHECKS LIGHTS</span>" : ""}${r.check_locks ? "<span>CHECKS LOCKS</span>" : ""}${r.inputs ? `<span>TAKES ${esc(r.inputs.split("\n").map((l) => l.split(":")[0].trim()).filter(Boolean).join(", ")).toUpperCase()}</span>` : ""}${r.say ? `<span>SAYS “${esc(r.say).toUpperCase()}”</span>` : ""}</div>
           ${r.last_run ? `<div class="hint">LAST RUN ${hm(r.last_run)}</div>` : ""}</div>`).join("");
-      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">ROUTINES</div>
-          <div class="bs">Named routines — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first.</div></div></div>
+      this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:playlist-play"></ha-icon><div><div class="bt">VOICE ROUTINES</div>
+          <div class="bs">Routines you start — “goodnight”, “good morning”, “leaving”. Say the name to any voice assistant, tap RUN, or call sentient.run_routine. They can check for anything left open or on first. Things that should happen by themselves at a set time are Automated routines.</div></div></div>
         <div class="mllist">${rows || '<div class="e">NO ROUTINES YET</div>'}</div><div id="scedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="scadd">+ NEW ROUTINE</button></div>`;
     }
@@ -865,7 +866,11 @@
       const body = this._$("body");
       if (!data || !data.meta) { body.innerHTML = `<div class="e">${esc((data && data.err) || "LOADING…")}</div>`; return; }
       const m = data.meta;
-      const when = (it) => kind === "alarms" && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
+      const when = (it) => (kind === "alarms" || kind === "schedules") && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
+      // learned habits the house took over: shown with the schedules, with a way to stop each one
+      const learned = (data.learned || []).length ? `<div class="h" style="margin-top:14px"><span class="t">LEARNED HABITS IT DOES FOR YOU</span><i></i></div>`
+        + data.learned.map((l) => `<div class="card ml"><div class="r"><ha-icon icon="mdi:school-outline"></ha-icon><b>${esc(l.text)}</b>
+            <button class="btn ghost sm" data-act="unadopt" data-id="${esc(l.id)}" data-text="${esc(l.text)}">STOP</button></div></div>`).join("") : "";
       const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${esc(m.icon)}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
             <label class="tg" title="On or off"><input type="checkbox" data-ittoggle="${esc(it.id)}"${it.enabled === false ? "" : " checked"}><i></i></label>
             <button class="btn ghost sm" data-act="ittest" data-id="${esc(it.id)}">TRY</button>
@@ -873,7 +878,7 @@
           <div class="mlsub">${esc(it._summary || "")}</div>${it.last_answer ? `<div class="hint">LAST: ${esc(it.last_answer).toUpperCase()}</div>` : ""}</div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(m.icon)}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
           <div class="bs">${esc(m.blurb)}</div></div></div>
-        <div class="mllist">${rows || '<div class="e">NONE YET</div>'}</div><div id="itedit"></div>
+        <div class="mllist">${rows || '<div class="e">NONE YET</div>'}</div>${learned}<div id="itedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="itadd">${esc(m.add)}</button></div>`;
       body.querySelectorAll("input[data-ittoggle]").forEach((cb) => cb.addEventListener("change", () => {
         const it = data.items.find((x) => x.id === cb.dataset.ittoggle);
@@ -1381,6 +1386,7 @@
       else if (act === "wonderx") this._call("wonder", { dismiss: text });
       else if (act === "fux") this._call("cancel_follow_up", { about: id }, `Stop checking: ${text}?`);
       else if (act === "adopt") this._call("adopt_routine", { routine: id }, text);
+      else if (act === "unadopt") this._call("adopt_routine", { routine: id, adopt: false }, `Stop doing this for you?\n\n${text}`).then(() => this._loadItems("schedules"));
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);

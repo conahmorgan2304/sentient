@@ -464,7 +464,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await heating.async_start()
     entry.async_on_unload(heating.async_stop)
     night_watch = NightWatch(hass, options, lambda: entry.runtime_data)
-    lists = {kind: Items(hass, entry.entry_id, kind, KINDS[kind]["defaults"]) for kind in KINDS}
+    lists = {kind: Items(hass, entry.entry_id, kind, KINDS[kind]["defaults"]) for kind in KINDS if "view_of" not in KINDS[kind]}
     for items in lists.values():
         await items.async_load()
     get_rt = lambda: entry.runtime_data  # noqa: E731

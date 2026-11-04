@@ -94,3 +94,28 @@ def test_wizard_leaves_voice_pipelines_alone_unless_ticked() -> None:
 
     js = (Path(__file__).parent.parent / "custom_components/sentient/frontend/sentient-panel.js").read_text()
     assert "backupPipeline: false" in js
+
+
+async def test_alarms_speak_and_automated_routines_just_happen(hass: HomeAssistant, hass_ws_client) -> None:
+    """One store, two pages: silent ones are Automated routines, the rest are Alarms; voice can make either."""
+    from homeassistant.helpers import llm
+
+    entry = await _setup(hass)
+    hass.states.async_set("switch.heated_blanket", "off", {"friendly_name": "Heated blanket"})
+    rt = entry.runtime_data
+    rt.alarms.set("Bins", "19:00", ["thu"], description="bin night")
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/items/save", "kind": "schedules", "item": {
+        "name": "Blanket off", "time": "23:00:00", "days": ["mon"],
+        "actions": [{"action": "switch.turn_off", "target": {"entity_id": "switch.heated_blanket"}}]}})
+    sched = (await ws.receive_json())["result"]
+    assert [i["name"] for i in sched["items"]] == ["Blanket off"] and sched["meta"]["title"] == "Automated routines"
+    await ws.send_json({"id": 2, "type": "sentient/items", "kind": "alarms"})
+    assert [i["name"] for i in (await ws.receive_json())["result"]["items"]] == ["Bins"]
+    api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args={
+        "action": "set", "name": "Blanket on", "time": "21:00", "days": "every day", "turn_on": "heated blanket"}))
+    out = getattr(out, "data", out)
+    assert out["kind"] == "automated routine"
+    made = rt.lists["alarms"].find("Blanket on")
+    assert made["silent"] and made["actions"][0]["action"] == "switch.turn_on"

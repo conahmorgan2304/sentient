@@ -123,8 +123,9 @@ KINDS: dict[str, dict[str, Any]] = {
     "alarms": {
         "title": "Alarms",
         "icon": "mdi:alarm",
-        "blurb": "Alarms and appointments: a time, which days, what to say, and a routine to run — lights on, kettle "
-                 "on. Optionally more actions the first time someone walks into a room afterwards.",
+        "blurb": "Things said at a time: wake-ups, bin night, appointments — what to say, where, and optionally things "
+                 "to do as well (lights on, kettle on), and more the first time someone walks into a room afterwards. "
+                 "Something that should just happen at a time, with nothing said, is an Automated routine.",
         "add": "+ NEW ALARM",
         "defaults": {
             "enabled": True, "time": "07:00:00", "days": [], "date": None, "description": "", "message": "",
@@ -139,7 +140,6 @@ KINDS: dict[str, dict[str, Any]] = {
             _sel("description", {"text": {}}),
             _sel("message", {"text": {"multiline": True}}),
             _sel("speakers", {"entity": {"domain": ["assist_satellite", "media_player"], "multiple": True}}),
-            _sel("silent", {"boolean": {}}),
             _sel("actions", {"action": {}}),
             _sel("room_area", {"area": {}}),
             _sel("room_actions", {"action": {}}),
@@ -153,6 +153,32 @@ KINDS: dict[str, dict[str, Any]] = {
             "silent": "Don't say anything — just do the actions (a schedule)",
             "actions": "When it goes off, do", "room_area": "Then, the first time someone walks into",
             "room_actions": "…do",
+        },
+    },
+    # The same store as alarms (the silent ones), shown on their own page: what the house does by itself at a time
+    "schedules": {
+        "view_of": "alarms",
+        "title": "Automated routines",
+        "icon": "mdi:calendar-clock",
+        "blurb": "Things the house does by itself at a set time, with nothing said — the heated blanket on at 9pm and "
+                 "off at 11pm, a tablet screen off overnight. Learned habits you've said yes to are listed here too.",
+        "add": "+ NEW AUTOMATED ROUTINE",
+        "defaults": {
+            "enabled": True, "time": "21:00:00", "days": [], "date": None, "description": "", "message": "",
+            "speakers": [], "actions": [], "room_area": None, "room_actions": [], "last_rang": None, "silent": True,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("time", {"time": {}}, True),
+            _sel("days", {"select": {"multiple": True, "mode": "list", "options": [{"value": d, "label": DAY_NAMES[d]} for d in DAYS]}}),
+            _sel("date", {"date": {}}),
+            _sel("description", {"text": {}}),
+            _sel("actions", {"action": {}}),
+        ],
+        "labels": {
+            "name": "Name", "enabled": "On", "time": "Time", "days": "Repeat on (none = just once)",
+            "date": "Date (for a one-off on another day)", "description": "Description (optional)", "actions": "At that time, do",
         },
     },
     "autooff": {
@@ -271,10 +297,10 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
         if item.get("skip_entity"):
             bits.append(f"not after {name_of(item['skip_entity'])}")
         return " · ".join(bits)
-    if kind == "alarms":
+    if kind in ("alarms", "schedules"):
         days = item.get("days") or []
         when = ("every day" if len(days) == 7 else ", ".join(DAY_NAMES[d] for d in DAYS if d in days)) if days else (item.get("date") or "once")
-        return f"{str(item.get('time') or '')[:5]} · {when}" + (f" · {item['description']}" if item.get("description") else "") + (" · silent" if item.get("silent") else "")
+        return f"{str(item.get('time') or '')[:5]} · {when}" + (f" · {item['description']}" if item.get("description") else "") + (" · silent" if item.get("silent") and kind == "alarms" else "")
     if kind == "autooff":
         bits = []
         if item.get("on_minutes"):
@@ -296,3 +322,17 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
 
         return describe(hass, item) + (" · made by voice" if item.get("made_by") == "voice" else "")
     return ""
+
+
+def store_of(kind: str) -> str:
+    """Where a page's items are kept (Automated routines are the silent alarms)."""
+    return KINDS[kind].get("view_of", kind)
+
+
+def belongs(kind: str, item: dict[str, Any]) -> bool:
+    """Whether an item shows on this page: alarms speak, automated routines don't."""
+    if kind == "alarms":
+        return not item.get("silent")
+    if kind == "schedules":
+        return bool(item.get("silent"))
+    return True
