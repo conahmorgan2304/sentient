@@ -32,6 +32,7 @@ from .const import (
     CONF_BRIEFING_TIME,
     CONF_DIGEST_TIME,
     CONF_MORNING_BRIEFING,
+    CONF_MORNING_BRIEFING_AREAS,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
     CONF_BRIEFINGS,
@@ -244,6 +245,41 @@ class Upkeep:
         from .sleep import EVENT_SLEEP
 
         self._unsubs.append(self.hass.bus.async_listen(EVENT_SLEEP, self._woke))
+        from homeassistant.const import EVENT_STATE_CHANGED
+
+        @callback
+        def _presence(data) -> bool:
+            return str(data["entity_id"]).startswith("binary_sensor.")
+
+        self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._room_entered, event_filter=_presence))
+
+    def _morning_due(self, rt) -> bool:
+        local = dt_util.now()
+        return bool(rt.options.get(CONF_BRIEFINGS, True) and rt.options.get(CONF_MORNING_BRIEFING)
+                    and getattr(self, "_morning_day", None) != local.date().isoformat() and 5 <= local.hour < 12
+                    and not rt.speech.hushed() and not rt.speech.guest_mode)
+
+    @callback
+    def _room_entered(self, event) -> None:
+        """With morning rooms chosen: the briefing the first time someone comes into one of them in the morning,
+        on that room's speaker (get up, wash and dress, then hear it downstairs)."""
+        rt = self._rt()
+        areas = set((rt.options.get(CONF_MORNING_BRIEFING_AREAS) or []) if rt else [])
+        new, old = event.data.get("new_state"), event.data.get("old_state")
+        if (not areas or new is None or new.state != "on" or (old is not None and old.state == "on")
+                or new.attributes.get("device_class") not in ("motion", "occupancy", "presence") or not self._morning_due(rt)):
+            return
+        from .presence import area_of
+
+        area = area_of(self.hass, new.entity_id)
+        if area not in areas:
+            return
+        room = [s for s in rt.speech.usable(rt.options.get("speakers"), False) if area_of(self.hass, s) == area]
+        if not room:
+            return
+        self._morning_day = dt_util.now().date().isoformat()
+        self.hass.async_create_background_task(self._async_scheduled(source="briefing:up", targets=room[:1]),
+                                               "sentient_morning_briefing")
 
     @callback
     def _woke(self, event) -> None:
@@ -252,15 +288,12 @@ class Upkeep:
         rt = self._rt()
         if event.data.get("asleep") or rt is None:
             return
-        local = dt_util.now()
-        if (not rt.options.get(CONF_BRIEFINGS, True) or not rt.options.get(CONF_MORNING_BRIEFING)
-                or getattr(self, "_morning_day", None) == local.date().isoformat() or not 5 <= local.hour < 12
-                or rt.speech.hushed() or rt.speech.guest_mode):
-            return
+        if not self._morning_due(rt) or rt.options.get(CONF_MORNING_BRIEFING_AREAS):
+            return  # with rooms chosen, it waits for someone to come into one of them
         room = rt.speech.pick_speaker(False)[:1]  # busiest first: just the room they're in
         if not room or rt.speech.nobody_about:
             return  # can't tell where they are: the usual check after quiet hours will catch them
-        self._morning_day = local.date().isoformat()
+        self._morning_day = dt_util.now().date().isoformat()
         self.hass.async_create_background_task(self._async_scheduled(source="briefing:up", targets=room), "sentient_morning_briefing")
 
     @callback
@@ -356,6 +389,7 @@ class Upkeep:
             and not rt.speech.quiet_now()
             and rt.tracker is not None
             and rt.tracker.best_area() is not None
+            and (not (areas := rt.options.get(CONF_MORNING_BRIEFING_AREAS)) or rt.tracker.best_area() in areas)
         ):
             # the first sign of someone up and about after quiet hours
             self._morning_day = local.date().isoformat()

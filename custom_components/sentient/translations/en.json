@@ -549,7 +549,7 @@
           "duck_media": "Anything playing in the same room is turned down while Sentient talks, then turned back up.",
           "critical_alerts": "Smoke, carbon monoxide, gas, water-leak and tamper sensors are found automatically, and so is the alarm going off. Said on every speaker, through quiet hours, hush and guest mode, repeated twice while still on, and sent to phones.",
           "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
-          "energy_price": "Optional: your unit rate in pence or cents per kWh (e.g. 24.5), to show today's cost.",
+          "energy_price": "Optional: your unit rate per kWh, to show today's cost of the Energy dashboard's devices \u2014 in pence or cents (24.5) or in pounds, dollars or euros (0.245); either works.",
           "energy_currency": "The currency costs are shown in. Empty: Home Assistant's own currency (Settings → System → General).",
           "search_hints": "When Voice Satellite LLM Tools (or Sentient's own search) is set up, the voice is told the search tools are there and to use them for anything outside the house — words on a speaker, pictures only on a tablet. No AI calls of its own.",
           "web_search": "A voice-only web search through your own SearXNG (for example the SearXNG add-on). Only used when Voice Satellite LLM Tools' web search isn't installed, so the voice never gets two. Off by default.",
@@ -571,7 +571,7 @@
           "night_watch_speakers": "Leave empty for every speaker.",
           "warm_by_weekdays": "Optional: when it should be warm on weekdays. Leave empty to use the learned getting-up time.",
           "warm_by_weekends": "Optional: the same for Saturdays and Sundays.",
-          "heating_limit": "When someone turns the heating up or on by voice or in the app, put it back (to its schedule, or off) after this many hours. 0 never does.",
+          "heating_limit": "When someone turns up or switches on one of the heating thermostats chosen above, by voice or in the app, put it back (to its schedule, or off) after this many hours. Only those thermostats; 0 (the default) never does.",
           "personality": "How the house sounds — in remarks, briefings, welcomes and to every voice assistant.",
           "personality_notes": "Optional, in your own words, e.g. 'Fond of the cats. Teases gently about how much tea gets made.'",
           "style_feedback": "A button next to the thumbs on anything it said: pick Shorter, Plainer, Less cheeky, More detail, or say how. The notes below are then followed everywhere it speaks. Off: no button, and the notes aren't used.",
@@ -676,7 +676,8 @@
           "briefing_system": "System sensors to report",
           "briefing_time": "Daily briefing at",
           "digest_time": "Daily digest at",
-          "morning_briefing": "Briefing when someone's first up"
+          "morning_briefing": "Briefing when someone's first up",
+          "morning_briefing_areas": "Morning briefing rooms"
         },
         "data_description": {
           "briefings": "Off turns off the button, the voice tool and the service.",
@@ -684,7 +685,8 @@
           "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
           "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
           "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
-          "morning_briefing": "Once a day, the first time someone's moving about after quiet hours end (before noon), in that room."
+          "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
+          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are."
         }
       }
     }

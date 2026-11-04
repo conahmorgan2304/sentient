@@ -142,7 +142,7 @@ async def test_strangers_forgotten(hass: HomeAssistant, aioclient_mock, tmp_path
     now = time.time()
     old = f"{now - 90000:.1f}-abc123-{now - 90000:.1f}-unknown-0.31.webp"
     new = f"{now - 600:.1f}-def456-{now - 600:.1f}-Sam-0.55.webp"
-    entry = await _setup(hass, tmp_path, face_forget_hours=24)
+    entry = await _setup(hass, tmp_path, faces=True, face_forget_hours=24)
     aioclient_mock.get(f"{URL}/api/faces", json={"train": [old, new], "Sam": ["c.webp"]})
     aioclient_mock.post(f"{URL}/api/faces/train/delete", json={"success": True})
     out = await entry.runtime_data.faces.async_forget_old()
@@ -213,3 +213,18 @@ async def test_extras_refused_then_the_clip_alone(hass: HomeAssistant, aioclient
     entry.runtime_data.clipwatch._message(_review())
     await hass.async_block_till_done()
     assert len(calls) == 2 and entry.runtime_data.clipwatch.items[0]["summary"] == "A man walked past."
+
+
+async def test_forget_now_is_refused_when_off_and_admin_only(hass: HomeAssistant, aioclient_mock, tmp_path, hass_read_only_user) -> None:
+    """check_now faces_forget never wipes Frigate's library with the default 0 hours, and needs an admin."""
+    import pytest
+    from homeassistant.core import Context
+    from homeassistant.exceptions import HomeAssistantError, Unauthorized
+
+    await _setup(hass, tmp_path, faces=True)  # face_forget_hours left at 0
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call("sentient", "check_now", {"what": "faces_forget"}, blocking=True, return_response=True)
+    assert not [c for c in aioclient_mock.mock_calls if c[0] == "POST"]
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call("sentient", "check_now", {"what": "rain"}, blocking=True, return_response=True,
+                                       context=Context(user_id=hass_read_only_user.id))

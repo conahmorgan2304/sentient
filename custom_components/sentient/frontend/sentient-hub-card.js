@@ -204,7 +204,7 @@
         const c = !s || s === "unavailable" ? "off" : LIVE[s] || "";
         const here = room && name.toLowerCase() === room && c !== "off";
         const icon = n.icon || (n.entity.includes("tablet") ? "mdi:tablet" : "mdi:speaker");
-        return `<div class="node ${c}${here ? " here" : ""}" title="${esc(n.entity)}"><i></i><ha-icon icon="${icon}"></ha-icon><span>${esc(name)}</span></div>`;
+        return `<div class="node ${c}${here ? " here" : ""}" title="${esc(n.entity)}"><i></i><ha-icon icon="${esc(icon)}"></ha-icon><span>${esc(name)}</span></div>`;
       }).join("");
 
       // quick buttons
@@ -212,7 +212,7 @@
       const showOn = on(party), showStyle = party && party.attributes.style;
       const shows = party ? (party.attributes.buttons || []).filter((s) => SHOWS[s]) : [];
       if (showOn && SHOWS[showStyle] && !shows.includes(showStyle)) shows.push(showStyle);
-      const btn = (act, id, icon, text, lit) => `<button class="q${lit ? " lit" : ""}" data-act="${act}" data-id="${esc(id || "")}"><ha-icon icon="${icon}"></ha-icon><span>${text}</span></button>`;
+      const btn = (act, id, icon, text, lit) => `<button class="q${lit ? " lit" : ""}" data-act="${esc(act)}" data-id="${esc(id || "")}"><ha-icon icon="${esc(icon)}"></ha-icon><span>${text}</span></button>`;
       const quick = [
         btn("brief", "", "mdi:text-box-outline", this._briefing ? "PREPARING" : "BRIEFING", this._briefing),
         hush ? btn("toggle", hush.entity_id, on(hush) ? "mdi:volume-off" : "mdi:volume-high", on(hush) ? "HUSHED" : "HUSH", on(hush)) : "",
@@ -227,7 +227,7 @@
       const saidCount = todays.filter((i) => i.kind === "said").length;
       const vis = this._st("visitors"), w = this._st("watches"), hl = this._st("health");
       const problems = hl ? parseInt(hl.state, 10) || 0 : 0;
-      const tile = (icon, val, lbl, cls, more) => `<div class="tile ${cls || ""}"${more ? ` data-act="more" data-id="${esc(more)}"` : ""}><ha-icon icon="${icon}"></ha-icon><b>${esc(val)}</b><span>${lbl}</span></div>`;
+      const tile = (icon, val, lbl, cls, more) => `<div class="tile ${cls || ""}"${more ? ` data-act="more" data-id="${esc(more)}"` : ""}><ha-icon icon="${esc(icon)}"></ha-icon><b>${esc(val)}</b><span>${lbl}</span></div>`;
       const memS = this._st("memories"), rou = this._st("routines"), dr = this._st("drive"), mind = this._st("mind");
       // a thought from overnight (this morning only), else what it's wondering about
       const ma = (mind && mind.attributes) || {};
@@ -250,7 +250,7 @@
       const feed = (this._items || []).filter((i) => FEED[i.kind] && !(i.kind === "noticed" && /decided it wasn't worth/.test(i.detail || "")))
         .slice(0, this._rows).map((i) => {
           const [icon, col] = FEED[i.kind];
-          return `<div class="fr${i.alert ? " alert" : ""}"><ha-icon icon="${icon}" style="color:${col}"></ha-icon><span>${esc(i.text)}</span><em>${hm(new Date(i.time))}</em></div>`;
+          return `<div class="fr${i.alert ? " alert" : ""}"><ha-icon icon="${esc(icon)}" style="color:${col}"></ha-icon><span>${esc(i.text)}</span><em>${hm(new Date(i.time))}</em></div>`;
         }).join("") || '<div class="fr dim"><span>Nothing yet today</span></div>';
 
       // vitals
@@ -274,12 +274,12 @@
 
       const fixed = parseInt(this._cfg.height, 10);
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
-        <ha-card class="${mode}" style="${fixed ? `height:${fixed}px` : ""}"><div class="grid"></div>
-          <div class="top"><span>${up}</span><span class="dots">${nodes.map((_, i) => `<i class="${LIVE[states[i]] || (states[i] === "unavailable" ? "off" : "")}"></i>`).join("")}</span>
-            <span class="${temp >= 75 ? "hot" : temp >= 60 ? "warm" : ""}">${temp != null ? Math.round(temp) + "°C" : ""}</span></div>
+        <ha-card class="${esc(mode)}" style="${fixed ? `height:${fixed}px` : ""}"><div class="grid"></div>
+          <div class="top"><span>${up}</span><span class="dots">${nodes.map((_, i) => `<i class="${esc(LIVE[states[i]] || (states[i] === "unavailable" ? "off" : ""))}"></i>`).join("")}</span>
+            <span class="${esc(temp >= 75 ? "hot" : temp >= 60 ? "warm" : "")}">${temp != null ? Math.round(temp) + "°C" : ""}</span></div>
           <div class="mid">
             <div class="talk"><button class="orb ${mode}" data-act="talk" title="Tap to talk"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
-              <span class="nuc"><ha-icon icon="${mode === "speak" ? "mdi:waveform" : mode === "think" ? "mdi:dots-horizontal" : "mdi:microphone"}"></ha-icon></span></button>
+              <span class="nuc"><ha-icon icon="${esc(mode === "speak" ? "mdi:waveform" : mode === "think" ? "mdi:dots-horizontal" : "mdi:microphone")}"></ha-icon></span></button>
               <span class="tl">${mode === "idle" ? "TAP TO TALK" : label}</span></div>
             <div class="info"><div class="st">${label}</div>
               <div class="said">${saidText ? "“" + esc(saidText) + "”" : "<i>Nothing said yet</i>"}</div>
@@ -287,10 +287,10 @@
           </div>
           <div class="nodes">${nodeHtml}</div>
           <div class="quick">${quick}</div>
-          ${next ? `<div class="next"><ha-icon icon="${next.icon}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
+          ${next ? `<div class="next"><ha-icon icon="${esc(next.icon)}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
           ${thought ? `<div class="next mind"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><span class="nl">${thought[0]}</span><span class="nt">${esc(thought[1])}</span></div>` : ""}
           <div class="tiles">${tiles}</div>
-          ${glance.length ? `<div class="glance">${glance.map((g) => `<div class="gl${g.cls ? " " + g.cls : ""}"${g.more ? ` data-act="more" data-id="${esc(g.more)}"` : ""}><ha-icon icon="${g.icon}"></ha-icon><div><b>${esc(g.val)}</b><span>${g.label}</span></div></div>`).join("")}</div>` : ""}
+          ${glance.length ? `<div class="glance">${glance.map((g) => `<div class="gl${g.cls ? " " + esc(g.cls) : ""}"${g.more ? ` data-act="more" data-id="${esc(g.more)}"` : ""}><ha-icon icon="${esc(g.icon)}"></ha-icon><div><b>${esc(g.val)}</b><span>${esc(g.label)}</span></div></div>`).join("")}</div>` : ""}
           <div class="fh"><span>FEED</span><i></i><button class="more" data-act="feed">ALL</button></div>
           <div class="feed">${feed}</div>
           ${bars.length ? `<div class="sys">${bars.join("")}</div>` : ""}

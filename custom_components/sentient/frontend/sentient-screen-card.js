@@ -101,7 +101,7 @@
     _draw() {
       this._drawClock();
       const wx = this._weather();
-      this._$("wx").innerHTML = wx ? `<ha-icon icon="${WX[wx.state] || "mdi:weather-partly-cloudy"}"></ha-icon><b>${Math.round(wx.attributes.temperature)}°</b>
+      this._$("wx").innerHTML = wx ? `<ha-icon icon="${esc(WX[wx.state] || "mdi:weather-partly-cloudy")}"></ha-icon><b>${Math.round(wx.attributes.temperature)}°</b>
         <i>${esc(String(wx.state).replace("partlycloudy", "partly cloudy").replace("-", " ")).toUpperCase()}</i>` : "";
       const screen = this._st("screen");
       const mode = screen ? screen.state : "idle";
@@ -123,11 +123,11 @@
     _cards(cards) {
       const [lead, ...rest] = cards;
       const cam = lead.camera && this._hass.states[lead.camera];
-      return `<div class="lead ${lead.kind}"><div class="lh"><ha-icon icon="${this._icon(lead.source)}"></ha-icon><span>${lead.kind === "alert" ? "ALERT" : "JUST NOW"} · ${hm(lead.time)}</span>
+      return `<div class="lead ${lead.kind}"><div class="lh"><ha-icon icon="${esc(this._icon(lead.source))}"></ha-icon><span>${lead.kind === "alert" ? "ALERT" : "JUST NOW"} · ${hm(lead.time)}</span>
           <a class="x" data-x="${esc(lead.id)}" title="Dismiss">✕</a></div>
           <div class="lt">${esc(lead.text)}</div>
           ${cam ? `<div class="cam" data-more="${esc(lead.camera)}"><img id="camimg" data-cam="${esc(lead.camera)}" alt=""><span>${esc(cam.attributes.friendly_name || lead.camera).toUpperCase()} · LIVE</span></div>` : ""}</div>`
-        + (rest.length ? `<div class="rest">${rest.map((c) => `<div class="row ${c.kind}"><ha-icon icon="${this._icon(c.source)}"></ha-icon><b>${esc(c.text)}</b><u>${hm(c.time)}</u><a class="x" data-x="${esc(c.id)}">✕</a></div>`).join("")}</div>` : "");
+        + (rest.length ? `<div class="rest">${rest.map((c) => `<div class="row ${c.kind}"><ha-icon icon="${esc(this._icon(c.source))}"></ha-icon><b>${esc(c.text)}</b><u>${hm(c.time)}</u><a class="x" data-x="${esc(c.id)}">✕</a></div>`).join("")}</div>` : "");
     }
 
     _refreshCamera(force) {
@@ -146,7 +146,7 @@
     _morning(m) {
       const hour = new Date().getHours();
       const hello = hour < 12 ? "GOOD MORNING" : "TODAY";
-      const sec = (icon, title, items) => (items && items.length ? `<div class="sec"><div class="sh"><ha-icon icon="${icon}"></ha-icon>${title}</div>${items.map((t) => `<div class="si">${esc(t)}</div>`).join("")}</div>` : "");
+      const sec = (icon, title, items) => (items && items.length ? `<div class="sec"><div class="sh"><ha-icon icon="${esc(icon)}"></ha-icon>${title}</div>${items.map((t) => `<div class="si">${esc(t)}</div>`).join("")}</div>` : "");
       const todo = m.to_do ? Object.entries(m.to_do).flatMap(([list, items]) => items.slice(0, 4).map((i) => `${i} · ${list}`)) : [];
       return `<div class="morning"><div class="mh"><span>${hello}</span><a class="x" data-x="morning" title="Dismiss">✕</a></div>
         ${m.weather ? `<div class="mw">${esc(m.weather)}</div>` : ""}
@@ -186,10 +186,10 @@
           return { icon: g.icon || (st && st.attributes.icon) || "mdi:information-outline", val: st ? `${st.state}${unit}` : "–", label: String(g.name || (st && st.attributes.friendly_name) || id).toUpperCase(), more: id };
         }),
       ];
-      return `<div class="idle"><div class="tiles">${tiles.map((t) => `<div class="tile ${t.cls || ""}"${t.more ? ` data-more="${esc(t.more)}"` : ""}><ha-icon icon="${t.icon}"></ha-icon><b>${esc(t.val)}</b><i>${esc(t.label)}</i></div>`).join("")}</div>
+      return `<div class="idle"><div class="tiles">${tiles.map((t) => `<div class="tile ${esc(t.cls || "")}"${t.more ? ` data-more="${esc(t.more)}"` : ""}><ha-icon icon="${esc(t.icon)}"></ha-icon><b>${esc(t.val)}</b><i>${esc(t.label)}</i></div>`).join("")}</div>
         <div class="lines">
           ${running.map((a) => `<div class="row"><ha-icon icon="mdi:washing-machine"></ha-icon><b>${esc(a.name)} running</b><u>${a.done_about ? "DONE ~" + esc(a.done_about) : ""}</u></div>`).join("")}
-          ${soon.length ? `<div class="soonh">COMING UP</div>` + soon.map((c) => `<div class="row"><ha-icon icon="${c.kind === "alarm" ? "mdi:alarm" : "mdi:bell-ring-outline"}"></ha-icon><b>${esc(c.what)}</b><u>${dayHm(c.at)}</u></div>`).join("") : ""}
+          ${soon.length ? `<div class="soonh">COMING UP</div>` + soon.map((c) => `<div class="row"><ha-icon icon="${esc(c.kind === "alarm" ? "mdi:alarm" : "mdi:bell-ring-outline")}"></ha-icon><b>${esc(c.what)}</b><u>${dayHm(c.at)}</u></div>`).join("") : ""}
           ${next ? `<div class="row"><ha-icon icon="mdi:eye-outline"></ha-icon><b>${esc(next.what)}</b><u>${hm(next.ends)}</u></div>` : ""}
           ${problems.slice(0, 2).map((p) => `<div class="row warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${esc(p.text || p.name)}</b></div>`).join("")}
           ${said ? `<div class="row dim"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(said.said)}</b><u>${hm(said.time)}</u></div>` : ""}
@@ -209,7 +209,7 @@
     }
 
     _lastHour() {
-      const rows = this._lh.length ? this._lh.map((i) => `<div class="row"><ha-icon icon="${this._icon(i.source || i.kind)}"></ha-icon><b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("")
+      const rows = this._lh.length ? this._lh.map((i) => `<div class="row"><ha-icon icon="${esc(this._icon(i.source || i.kind))}"></ha-icon><b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("")
         : '<div class="row dim"><b>Nothing in the last hour.</b></div>';
       return `<div class="morning"><div class="mh"><span>THE LAST HOUR</span><a class="x" data-lh="1" title="Close">✕</a></div><div class="lines">${rows}</div></div>`;
     }

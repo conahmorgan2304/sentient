@@ -72,3 +72,25 @@ async def test_spots_over_websocket(hass: HomeAssistant, hass_ws_client) -> None
     await ws.send_json({"id": 3, "type": "sentient/spots/forget", "name": "rabbit pen"})
     res = await ws.receive_json()
     assert res["result"]["result"] is True and res["result"]["spots"] == []
+
+
+async def test_non_admins_cannot_change_settings_through_say_it_differently(
+    hass: HomeAssistant, hass_ws_client, hass_read_only_access_token
+) -> None:
+    entry = await _setup(hass)
+    ws = await hass_ws_client(hass, hass_read_only_access_token)
+    await ws.send_json({"id": 1, "type": "sentient/feedback/style", "text": "Hello", "note": "Shorter"})
+    out = await ws.receive_json()
+    assert not out["success"] and out["error"]["code"] == "unauthorized"
+    assert "style_notes" not in entry.options
+    await ws.send_json({"id": 2, "type": "sentient/mutes", "clear": True})
+    assert (await ws.receive_json())["error"]["code"] == "unauthorized"
+    await ws.send_json({"id": 3, "type": "sentient/mutes"})
+    assert (await ws.receive_json())["success"]  # reading is fine
+
+
+def test_wizard_leaves_voice_pipelines_alone_unless_ticked() -> None:
+    from pathlib import Path
+
+    js = (Path(__file__).parent.parent / "custom_components/sentient/frontend/sentient-panel.js").read_text()
+    assert "backupPipeline: false" in js

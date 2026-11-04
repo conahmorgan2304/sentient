@@ -15,6 +15,8 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
+from homeassistant.helpers.service import async_register_admin_service
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
@@ -757,7 +759,8 @@ def _register_services(hass: HomeAssistant) -> None:
         }),
         supports_response=SupportsResponse.OPTIONAL,
     )
-    hass.services.async_register(DOMAIN, SERVICE_TIDY, tidy, supports_response=SupportsResponse.OPTIONAL)
+    # admin only: rewrites the memory store
+    async_register_admin_service(hass, DOMAIN, SERVICE_TIDY, tidy, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, SERVICE_ADOPT, adopt_routine,
         schema=vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt"): cv.boolean}),
@@ -772,9 +775,7 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, "party", party, schema=PARTY_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
-    hass.services.async_register(
-        DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL
-    )
+    async_register_admin_service(hass, DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, SERVICE_ASK, ask, schema=ASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
@@ -838,7 +839,13 @@ def _register_services(hass: HomeAssistant) -> None:
         if what == "bins":
             return await rt.bins.async_check(force=True)
         if what == "faces_forget":
-            return await rt.faces.async_forget_old(force=True)
+            # deletes from Frigate's face library: only when face recognition is on and forgetting has a time set
+            from .const import CONF_FACE_FORGET_HOURS
+
+            if not (rt.faces.enabled or rt.faces.teaching) or float(rt.options.get(CONF_FACE_FORGET_HOURS) or 0) <= 0:
+                raise HomeAssistantError("Forgetting unnamed faces is off: turn on faces and set how many hours to keep "
+                                         "unnamed faces in Settings first")
+            return await rt.faces.async_forget_old()
         if what == "clip_watch":
             cams = rt.clipwatch.cameras()
             return await rt.clipwatch.async_latest(cams[0]) if cams else {"error": "no clip camera chosen"}
@@ -847,8 +854,8 @@ def _register_services(hass: HomeAssistant) -> None:
             return await rt.faces.async_ask(cams[0], force=True) if cams else {"error": "no camera chosen"}
         return await rt.pets.async_cat(force=True)
 
-    hass.services.async_register(
-        DOMAIN, "check_now", check_now, supports_response=SupportsResponse.OPTIONAL,
+    async_register_admin_service(
+        hass, DOMAIN, "check_now", check_now, supports_response=SupportsResponse.OPTIONAL,
         schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins", "faces", "faces_forget", "clip_watch"])}),
     )
 
