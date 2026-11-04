@@ -216,6 +216,10 @@ from .const import (
     CONF_HOUSE_RULES,
     CONF_LEARN_ENTITIES,
     CONF_LEARN_ANCHORS,
+    CONF_TRUST_COVERS,
+    CONF_TRUST_HEATING,
+    CONF_TRUST_LIGHTS,
+    CONF_TRUST_SWITCHES,
     CONF_OFFER_TOGETHER,
     CONF_MOTION_WINDOW,
     CONF_NOTICE_ENTITIES,
@@ -317,6 +321,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("camwake", "Sleepy cameras", "mdi:camera-timer", "Battery cameras and others that go into standby show an old or black picture until they wake, so the AI would answer from it (\u201cthe drive is empty\u201d). Add actions that wake them \u2014 pressing a wake or refresh button, turning on a stream, running a script; {{ camera }} is the camera being looked at \u2014 and Sentient runs them first and waits for a fresh picture. Each camera is woken at most once a minute. No actions: off.", [
         CONF_CAMERA_WAKE, CONF_CAMERA_WAKE_CAMERAS, CONF_CAMERA_WAKE_SECONDS,
+    ]),
+    ("trust", "What the house does by itself", "mdi:hand-okay", "For things the house decides to do on its own — routines you've let it take over and warming the heating before you're up — whether it just does them, says so first, or asks. Garage doors and gates always ask; locks and the alarm are never done by the house.", [
+        CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, CONF_TRUST_COVERS, CONF_TRUST_HEATING,
     ]),
     ("away", "Away lights & holiday", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Holiday mode adds: nothing said out loud but safety alerts (it goes to the phones, with visitors), chosen thermostats down to frost protection, and everything back to normal when you're home.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,

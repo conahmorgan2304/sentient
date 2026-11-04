@@ -173,6 +173,7 @@ class SentientRuntime:
     selfaware: Any = None  # what it can do now, and how its behaviour is going down
     proposals: Any = None  # settings changes it would make, waiting for a yes
     holiday: Any = None  # holiday mode
+    trust: Any = None  # do, say-then-do or ask first, by kind of device
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     recipes: Any = None  # recipes and cooking mode
@@ -563,6 +564,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .selfaware import SelfAware
 
     selfaware = SelfAware(hass, options, get_rt)
+    from .trust import Trust
+
+    trust = Trust(hass, entry.entry_id, options, get_rt)
+    learner.trust = trust
+    heating.trust = trust
     from .holiday import Holiday
 
     holiday = Holiday(hass, entry.entry_id, options, get_rt)
@@ -589,14 +595,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, goals=goals, books=books, recipes=recipes,
     )
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)
     for engine in (upkeep, critical, left_open, welcome):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch, selfaware, goals, books, recipes, holiday):
+    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch, selfaware, goals, books, recipes, holiday, trust):
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
     await party.async_start()
@@ -669,7 +675,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday"):
+    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show

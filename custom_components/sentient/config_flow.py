@@ -173,6 +173,11 @@ from .const import (
     DEFAULT_PARCEL_ALERTS,
     CONF_LEARN_ENTITIES,
     CONF_LEARN_ANCHORS,
+    CONF_TRUST_COVERS,
+    CONF_TRUST_HEATING,
+    CONF_TRUST_LIGHTS,
+    CONF_TRUST_SWITCHES,
+    TRUST_LEVELS,
     CONF_OFFER_TOGETHER,
     CONF_SUGGEST_ROUTINES,
     CONF_LINK_TRIGGERS,
@@ -580,6 +585,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_LEARN_ANCHORS, **d(CONF_LEARN_ANCHORS, True)): selector.BooleanSelector(),
             vol.Required(CONF_OFFER_TOGETHER, **d(CONF_OFFER_TOGETHER, True)): selector.BooleanSelector(),
+            **{vol.Required(key, **d(key, "do")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=TRUST_LEVELS, translation_key="trust_level"))
+               for key in (CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, CONF_TRUST_COVERS, CONF_TRUST_HEATING)},
             vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)

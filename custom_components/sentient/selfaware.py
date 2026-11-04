@@ -229,7 +229,11 @@ class SelfAware:
                 f"Something in me logged {n} error{'s' if n > 1 else ''} in the last day — most often: {top[:140]}"),
                 "evidence": {"errors": n}})
 
-        # 6. the AI
+        # 6. things it keeps asking about and always gets a yes
+        if (trust := getattr(rt, "trust", None)) is not None:
+            findings.extend(trust.findings())
+
+        # 7. the AI
         ai = rt.ai.describe()
         week = list((ai.get("last_7_days") or {}).values())
         if ai.get("failed_today", 0) >= 3:

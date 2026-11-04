@@ -185,6 +185,7 @@ class Heating:
         self._done_day: dict[str, str] = {}
         self._unsubs: list = []
         self.learner = None  # set by the runtime: tells it which changes automations made
+        self.trust = None  # set by the runtime: ask or say before warming up
         self.own_contexts: set[str] = set()
 
     @property
@@ -407,21 +408,33 @@ class Heating:
             "until": dt_util.as_utc(until).isoformat(),
         }
         self._save()
-        try:
-            context = own_context(self.hass, "heating")
-            self.own_contexts.add(context.id)
-            await self.hass.services.async_call(
-                "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True,
-                context=context,
+
+        async def run() -> None:
+            try:
+                context = own_context(self.hass, "heating")
+                self.own_contexts.add(context.id)
+                await self.hass.services.async_call(
+                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True,
+                    context=context,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Sentient could not preheat %s: %s", entity_id, err)
+                self._boosted.pop(entity_id, None)
+                self._save()
+                return
+            self.timeline.add(
+                "heating", f"Warming {st.name} to {comfort:g}° for when people are up", f"usually up around {clock(wake)}"
             )
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Sentient could not preheat %s: %s", entity_id, err)
+
+        if self.trust is None:
+            await run()
+            return
+        outcome = await self.trust.async_act(
+            entity_id, f"Warming the {st.name.lower()} to {comfort:g} degrees", f"Shall I warm the {st.name.lower()} to {comfort:g} degrees?",
+            run, f"people are usually up around {clock(wake)}")
+        if outcome == "not asked":
             self._boosted.pop(entity_id, None)
             self._save()
-            return
-        self.timeline.add(
-            "heating", f"Warming {st.name} to {comfort:g}° for when people are up", f"usually up around {clock(wake)}"
-        )
 
     async def _async_restore(self, entity_id: str, boost: dict[str, Any]) -> None:
         self._boosted.pop(entity_id, None)

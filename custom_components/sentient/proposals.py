@@ -31,11 +31,12 @@ from .const import (
     DEFAULT_REMARK_REPEAT_HOURS,
     DOMAIN,
 )
+from .trust import KINDS as TRUST_KINDS
 
 MAX_OPEN = 2
 ASK_AGAIN_AFTER = timedelta(days=30)
 # the only settings a proposal may touch
-ALLOWED = {CONF_REMARK_REPEAT_HOURS, CONF_CHATTINESS, CONF_BRIEFING_SECTIONS, CONF_DAILY_AI_LIMIT}
+ALLOWED = {CONF_REMARK_REPEAT_HOURS, CONF_CHATTINESS, CONF_BRIEFING_SECTIONS, CONF_DAILY_AI_LIMIT, *TRUST_KINDS.values()}
 _QUIETER = {"chatty": "normal", "normal": "quiet"}  # one step at a time, never to off
 # what a question is about → the briefing section that would answer it
 _SECTION_FOR = [
@@ -101,6 +102,9 @@ class Proposals:
                 if section not in now:
                     out.append(self._make(f"briefing:{section}", f["text"], CONF_BRIEFING_SECTIONS, now, [*now, section],
                                           f"Add {section} to the briefing, since it's asked about so often"))
+            elif kind == "trust" and (key := TRUST_KINDS.get(str(f.get("about")))) and opts.get(key) == "ask":
+                out.append(self._make(f"trust:{f['about']}", f["text"], key, "ask", "tell",
+                                      f"Stop asking before the {f['about']} — just say what I'm doing"))
             elif kind == "ai" and f.get("about") == "limit":
                 now = int(opts.get(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT) or 0)
                 if now > 0:

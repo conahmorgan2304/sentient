@@ -430,6 +430,7 @@ class Learner:
         self.covered = None  # (entity_id, state, minute of day) -> True when one of Sentient's own schedules does it
         self.skip = None  # callable giving entities another feature already runs
         self.feedback = None  # set by the runtime: declines teach it what not to offer
+        self.trust = None  # set by the runtime: do, say-then-do or ask first, by kind of device
         self.woke_on = None  # (date) -> minute after midnight the house got up that day, or None
         self._sun: dict[tuple[str, Any], int | None] = {}
 
@@ -769,8 +770,18 @@ class Learner:
         _LOGGER.debug("Doing adopted routine: %s", routine.describe())
         from .own import own_context
 
-        await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True,
-                                            context=own_context(self.hass, f"learned routine: {routine.describe()}"))
+        async def run() -> None:
+            await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True,
+                                                context=own_context(self.hass, f"learned routine: {routine.describe()}"))
+
+        if self.trust is None:
+            await run()
+            return
+        name = state.name.lower()
+        verb = {"turn_on": ("Putting the {} on", "put the {} on"), "turn_off": ("Switching the {} off", "switch the {} off"),
+                "open_cover": ("Opening the {}", "open the {}"), "close_cover": ("Closing the {}", "close the {}")}[service]
+        await self.trust.async_act(routine.entity_id, verb[0].format(name), f"Shall I {verb[1].format(name)}?", run,
+                                   f"a routine you let the house do: {routine.describe().rstrip('.')}")
 
     def _offerable(self, r: Routine | Link) -> bool:
         return not (r.adopted or r.declined or r.suggested) and not (

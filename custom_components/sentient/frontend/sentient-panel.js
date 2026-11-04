@@ -418,7 +418,7 @@
         ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
-        ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
+        ["extras", "home", "mdi:home-automation", "Home & routines", ["trust", "shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[4]));
       Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][4].push(id); });
