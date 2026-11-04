@@ -450,6 +450,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security)
     websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_reading_try)
+    websocket_api.async_register_command(hass, ws_doctor)
+    websocket_api.async_register_command(hass, ws_doctor_speakers)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -515,6 +517,38 @@ def _voice_picker(hass: HomeAssistant, entry, groups: list[dict[str, Any]]) -> N
             if field["name"] == CONF_READING_VOICE:
                 field["selector"] = {"tts_voice": {"language": language}}
                 field["context"] = {"engineId": CONF_READING_TTS}
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/doctor"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_doctor(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The setup doctor: what's set up right and what to fix (read-only, no AI)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .doctor import async_check
+
+    connection.send_result(msg["id"], await async_check(hass, entry.runtime_data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/doctor/speakers"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_doctor_speakers(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Say a short test line on each speaker in turn and report which accepted it."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    results = []
+    for sp in [s for s in rt.options.get("speakers") or [] if hass.states.get(s)]:
+        st = hass.states.get(sp)
+        ok = await rt.speech.async_read_aloud(f"Testing — this is the {st.name}.", sp)
+        results.append({"speaker": st.name, "ok": ok})
+    connection.send_result(msg["id"], {"results": results})
 
 
 @websocket_api.websocket_command(

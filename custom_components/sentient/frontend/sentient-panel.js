@@ -402,6 +402,7 @@
         rules: ["mdi:script-text-outline", "Rules", n("rules") !== null ? `${n("rules")} · when this, do that` : "When this happens, do that"],
         checks: ["mdi:cctv", "Camera checks", n("checks") !== null ? `${n("checks")} watching` : "Delivery van outside?"],
         backup: ["mdi:backup-restore", "Backup", "Download or restore everything"],
+        doctor: ["mdi:stethoscope", "Setup doctor", this._doc ? (this._doc.status === "ok" ? "All good" : `${this._doc.rows.filter((r) => r.status !== "ok").length} to look at`) : "Check the setup and what to fix"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
       // Essentials first; optional features under Extras, each with its on/off state. Anything not listed lands last.
@@ -413,7 +414,7 @@
       const menus = [
         ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "voicebackup", "mutes", "phone"]],
         ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
-        ["essentials", "brain", "mdi:brain", "Brain & system", ["memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
+        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
         ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
         ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
         ["extras", "home", "mdi:home-automation", "Home & routines", ["shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
@@ -482,6 +483,7 @@
       if (this._group === "mutes") { this._form = null; this._loadMutes(); return; }
       if (this._group === "shortcuts") { this._form = null; this._loadShortcuts(); return; }
       if (this._group === "backup") { this._form = null; this._drawBackup(); return; }
+      if (this._group === "doctor") { this._form = null; this._drawDoctor(); return; }
       if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
@@ -907,6 +909,26 @@
         form.addEventListener("value-changed", (ev) => { this._itDraft = { ...ev.detail.value }; form.data = this._itDraft; });
         fw.innerHTML = ""; fw.appendChild(form); this._form = form;
       });
+    }
+
+    // ---------- setup doctor ----------
+    async _drawDoctor(refresh) {
+      const body = this._$("body");
+      if (!this._doc || refresh) {
+        body.innerHTML = `<div class="e">CHECKING…</div>`;
+        try { this._doc = await this._hass.callWS({ type: "sentient/doctor" }); } catch (e) { body.innerHTML = `<div class="e">${esc(e.message || String(e))}</div>`; return; }
+        this._drawSide();
+      }
+      if (this._group !== "doctor") return;
+      const ic = { ok: "mdi:check-circle-outline", warn: "mdi:alert-outline", bad: "mdi:close-circle-outline" };
+      const areas = [...new Set(this._doc.rows.map((r) => r.area))];
+      const rows = areas.map((a) => `<div class="h" style="margin-top:12px"><span class="t">${esc(a).toUpperCase()}</span><i></i></div>`
+        + this._doc.rows.filter((r) => r.area === a).map((r) => `<div class="card ml doc ${esc(r.status)}"><div class="r"><ha-icon icon="${esc(ic[r.status] || ic.warn)}"></ha-icon><b>${esc(r.name)}</b><u>${esc(r.status === "ok" ? "OK" : r.status === "bad" ? "FIX" : "CHECK")}</u></div>
+          <div class="mlsub">${esc(r.detail)}</div>${r.fix ? `<div class="hint">${esc(r.fix)}</div>` : ""}</div>`).join("")).join("");
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:stethoscope"></ha-icon><div><div class="bt">SETUP DOCTOR</div>
+          <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
+        <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
+        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
     }
 
     // ---------- backup ----------
@@ -1483,6 +1505,15 @@
           (r) => this._status(r.ok ? `PLAYING ON ${String(r.speaker_name || "").toUpperCase()} ✓` : String(r.why || "COULDN'T PLAY IT").toUpperCase(), r.ok ? "ok" : "bad"),
           (e) => this._status(e.message || String(e), "bad"));
       }
+      else if (act === "docrun") this._drawDoctor(true);
+      else if (act === "docspeak") {
+        if (!window.confirm("Say a short test line on every speaker, one after another?")) return;
+        this._status("TESTING…", "warn");
+        this._hass.callWS({ type: "sentient/doctor/speakers" }).then((r) => {
+          const bad = r.results.filter((x) => !x.ok).map((x) => x.speaker);
+          this._status(bad.length ? `DIDN'T ACCEPT IT: ${bad.join(", ").toUpperCase()}` : `ALL ${r.results.length} SPEAKERS ACCEPTED IT ✓`, bad.length ? "bad" : "ok");
+        }, (e) => this._status(e.message || String(e), "bad"));
+      }
       else if (act === "critest") {
         if (!window.confirm("Say a test safety alert on every speaker now?")) return;
         this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERT SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
@@ -1894,7 +1925,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .pill.on{color:#00fff7;border-color:rgba(0,255,247,.5)} .pill.warn{color:#ffbe55;border-color:rgba(255,190,85,.5)}
 .night{flex-wrap:wrap} .night span{font-size:12px;color:rgba(150,220,235,.8)} .night input[type=time]{flex:none;width:auto;background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:4px 8px;color-scheme:dark}
 .mllist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:12px;margin-top:6px}
-.ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55}
+.ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55} .doc.bad{border-left:3px solid var(--bad,#ff6b80)} .doc.warn{border-left:3px solid var(--warn,#ffbe55)} .doc.ok ha-icon{color:var(--ok,#3dffa8)}
 .r ha-icon.lit,.ml ha-icon.lit{color:#ffd76a;filter:drop-shadow(0 0 6px rgba(255,215,106,.7))}
 .mlsub{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(150,220,235,.75);margin:2px 0 8px} .mlsub ha-icon{--mdc-icon-size:14px;color:#5fd8e6}
 .chips.left{justify-content:flex-start}
