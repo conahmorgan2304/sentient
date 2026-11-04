@@ -1809,9 +1809,34 @@ class SentientAPI(llm.API):
         rest = [m for m in newest if m not in matched][: limit - len(matched)]
         return matched + rest
 
+    def _now_lines(self, rt: Any) -> list[str]:
+        """Right now, in a few words — so 'anything I should know?' gets a joined-up answer without tools.
+
+        Plain readings only (no AI); each part is skipped when there's nothing to say. Watches, appliances,
+        follow-ups and device problems have their own lines further down, so they aren't repeated here."""
+        bits: list[str] = []
+        sleep = getattr(rt, "sleep", None)
+        if sleep is not None and sleep.enabled and sleep.asleep:
+            bits.append("the house is asleep (keep it short and quiet)")
+        if rt.speech.hushed():
+            bits.append("hushed")
+        elif rt.speech.quiet_hours_now():
+            bits.append("quiet hours")
+        if rt.speech.guest_mode:
+            bits.append("guests in")
+        from .security import OPEN_CLASSES
+
+        opened = [st.name for st in self.hass.states.async_all("binary_sensor")
+                  if st.state == "on" and st.attributes.get("device_class") in OPEN_CLASSES]
+        opened += [st.name for st in self.hass.states.async_all("cover")
+                   if st.state in ("open", "opening") and st.attributes.get("device_class") in ("garage", "gate", "door")]
+        if opened := opened[:4]:
+            bits.append("open: " + ", ".join(opened))
+        return [f"Right now: {'; '.join(bits)}."] if bits else []
+
     def _recent_lines(self, rt: Any) -> list[str]:
         """The last hour at a glance, and where people seem to be — so 'what just happened?' needs no tool."""
-        out: list[str] = []
+        out: list[str] = self._now_lines(rt)
         areas = ar.async_get(self.hass)
         busy = [a.name for a_id in rt.tracker.occupied_areas() if (a := areas.async_get_area(a_id))]
         if busy:  # nothing convincing: say nothing (never that the house is empty)

@@ -30,6 +30,7 @@ async def _api(hass):
 
 
 async def test_self_check_finds_what_the_records_show(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.start_of_local_day() + timedelta(hours=8))  # the ticks below must stay in one day
     entry = await _setup(hass)
     tl = entry.runtime_data.timeline
     for n in range(4):  # the kettle remark, hushed straight after twice; the lounge speaker failing

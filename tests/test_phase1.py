@@ -140,3 +140,17 @@ def test_clock_words_and_self_test_hears_them() -> None:
         said = clock_words(datetime(2026, 10, 28, hh, mm))
         assert said == words
         assert (hh % 12) * 60 + mm in spoken_times(f"It's {said}.")
+
+
+async def test_right_now_picture(hass: HomeAssistant) -> None:
+    hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door", "friendly_name": "Back door"})
+    entry = await _setup(hass)
+    entry.runtime_data.speech.guest_mode = True
+    prompt = await _prompt(hass)
+    assert "Right now:" in prompt and "guests in" in prompt and "open: Back door" in prompt
+
+
+async def test_right_now_quiet_when_nothing(hass: HomeAssistant) -> None:
+    await _setup(hass)
+    prompt = await _prompt(hass)
+    assert "Right now:" not in prompt or "open:" not in prompt
