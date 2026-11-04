@@ -59,7 +59,7 @@
           <span>${on ? `${st.attributes.following_sound ? "♪ " : ""}${until ? "TILL " + until : "ON"}` : ""}</span></div>
         <div class="b">${list.map((s) => {
           const lit = on && style === s;
-          return `<button class="${s}${lit ? " on" : ""}" data-s="${s}"><ha-icon icon="${SHOWS[s][0]}"></ha-icon>${SHOWS[s][1]}${lit ? " · stop" : ""}</button>`;
+          return `<button class="${esc(s)}${lit ? " on" : ""}" data-s="${esc(s)}"><ha-icon icon="${esc(SHOWS[s][0])}"></ha-icon>${SHOWS[s][1]}${lit ? " · stop" : ""}</button>`;
         }).join("")}</div></ha-card>`;
       this.shadowRoot.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
         const s = b.dataset.s, cur = this._switch(this._hass);

@@ -194,6 +194,7 @@ from .const import (
     CONF_CHIME,
     CONF_DIGEST_TIME,
     CONF_MORNING_BRIEFING,
+    CONF_MORNING_BRIEFING_AREAS,
     CONF_WELCOME,
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
@@ -728,6 +729,7 @@ def _briefing_schema(current: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_BRIEFING_TIME, **d(CONF_BRIEFING_TIME)): selector.TimeSelector(),
             vol.Required(CONF_MORNING_BRIEFING, **d(CONF_MORNING_BRIEFING, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_MORNING_BRIEFING_AREAS, **d(CONF_MORNING_BRIEFING_AREAS, [])): selector.AreaSelector(selector.AreaSelectorConfig(multiple=True)),
             vol.Optional(CONF_DIGEST_TIME, **d(CONF_DIGEST_TIME)): selector.TimeSelector(),
         }
     )

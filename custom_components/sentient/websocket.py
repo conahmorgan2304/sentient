@@ -117,6 +117,7 @@ from .const import (
     CONF_CHIME,
     CONF_DIGEST_TIME,
     CONF_MORNING_BRIEFING,
+    CONF_MORNING_BRIEFING_AREAS,
     CONF_WELCOME,
     CONF_SPEAK_VOLUME,
     CONF_NIGHT_VOLUME,
@@ -248,7 +249,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,
-        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_DIGEST_TIME,
+        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
@@ -695,6 +696,7 @@ async def ws_forget_spot(hass: HomeAssistant, connection, msg: dict[str, Any]) -
         vol.Optional("spot"): str,
     }
 )
+@websocket_api.require_admin  # sends a camera picture to the AI
 @websocket_api.async_response
 async def ws_look(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Ask the AI about a camera (or one spot of it) right now."""
@@ -812,6 +814,9 @@ def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
     mutes = entry.runtime_data.mutes
+    if any(msg.get(k) for k in ("clear", "remove", "unlearn", "unlearn_all")) and not connection.user.is_admin:
+        connection.send_error(msg["id"], "unauthorized", "Only an administrator can change what Sentient has learned")
+        return
     if msg.get("clear"):
         mutes.remove(None)
     elif msg.get("remove"):
@@ -847,6 +852,7 @@ def ws_thumb(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/feedback/style", vol.Required("text"): str, vol.Required("note"): str,
 })
+@websocket_api.require_admin  # it changes the integration's settings (the style notes)
 @callback
 def ws_style(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """'Say it differently': a short note on how something should have been said, kept with the personality."""

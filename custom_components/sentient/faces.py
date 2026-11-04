@@ -368,10 +368,12 @@ class Faces:
         if float(self.options.get(CONF_FACE_FORGET_HOURS) or 0) > 0:
             self.hass.async_create_task(self.async_forget_old(), eager_start=False)
 
-    async def async_forget_old(self, force: bool = False) -> dict[str, Any]:
-        """Delete every unnamed face older than the setting (nobody named it, so it's someone we don't know)."""
+    async def async_forget_old(self) -> dict[str, Any]:
+        """Delete every unnamed face older than the setting (nobody named it, so it's someone we don't know).
+
+        Never when the face features are off or the setting is 0 — it deletes from Frigate's own face library."""
         hours = float(self.options.get(CONF_FACE_FORGET_HOURS) or 0)
-        if hours <= 0 and not force:
+        if hours <= 0 or not (self.enabled or self.teaching):
             return {"skipped": "forgetting unnamed faces is off"}
         try:
             faces = await self._get("faces")
@@ -379,7 +381,7 @@ class Faces:
             return {"error": f"couldn't reach Frigate: {err}"}
         if not isinstance(faces, dict):
             return {"error": "Frigate's face recognition is off"}
-        cutoff = dt_util.utcnow().timestamp() - max(hours, 0) * 3600
+        cutoff = dt_util.utcnow().timestamp() - hours * 3600
         old = [f for f in faces.get("train") or [] if (t := face_file_time(f)) is not None and t < cutoff]
         for i in range(0, len(old), 100):
             await self.async_forget(old[i:i + 100])

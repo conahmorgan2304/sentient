@@ -78,6 +78,22 @@ async def test_heating_turned_up_by_hand_goes_back_after_the_limit(hass: HomeAss
     assert presets and presets[0].data["preset_mode"] == "auto"
 
 
+async def test_heating_limit_is_off_by_default_and_never_on_unchosen_thermostats(hass: HomeAssistant) -> None:
+    for eid in ("climate.heating", "climate.office"):
+        hass.states.async_set(eid, "heat", {"temperature": 15, "current_temperature": 16, "friendly_name": eid})
+    async_mock_service(hass, "climate", "set_temperature")
+    entry = await _setup(hass)  # no limit set, no thermostats chosen
+    await hass.services.async_call("climate", "set_temperature", {"entity_id": "climate.heating", "temperature": 21}, blocking=True)
+    assert not entry.runtime_data.heating._boosted
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "heating_limit": 2, "heating_entities": ["climate.heating"]})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await hass.services.async_call("climate", "set_temperature", {"entity_id": "climate.office", "temperature": 21}, blocking=True)
+    assert "climate.office" not in entry.runtime_data.heating._boosted  # never picked in Sentient
+
+
 async def test_an_announcement_is_not_someone_asking(hass: HomeAssistant, freezer) -> None:
     await _setup(hass)
     said = async_mock_service(hass, "assist_satellite", "announce")

@@ -23,6 +23,7 @@ CONF_NOTIFY_TARGETS = "notify_targets"
 CONF_CHIME = "chime"
 CONF_DIGEST_TIME = "digest_time"
 CONF_MORNING_BRIEFING = "morning_briefing"
+CONF_MORNING_BRIEFING_AREAS = "morning_briefing_areas"  # only when someone first comes into one of these rooms
 CONF_WELCOME = "welcome_home"
 CONF_SPEAK_VOLUME = "speak_volume"
 CONF_NIGHT_VOLUME = "night_volume"
@@ -270,7 +271,7 @@ CONF_INSIDE_SENSORS = "inside_sensors"
 CONF_WARM_BY_WEEKDAYS = "warm_by_weekdays"
 CONF_WARM_BY_WEEKENDS = "warm_by_weekends"
 CONF_HEATING_LIMIT = "heating_limit"
-DEFAULT_HEATING_LIMIT = 3
+DEFAULT_HEATING_LIMIT = 0  # off unless set; only ever on the thermostats chosen in Sentient
 
 # night watch
 CONF_NIGHT_WATCH = "night_watch"

@@ -549,7 +549,7 @@
           "duck_media": "Le volume des médias diffusés dans la même pièce est réduit pendant les annonces Sentient, puis restauré.",
           "critical_alerts": "Les détecteurs de fumée, monoxyde de carbone, gaz, fuite d’eau et sabotage, ainsi que le déclenchement de l’alarme, sont détectés automatiquement. Les alertes sont annoncées sur tous les haut-parleurs, même en mode silencieux ou invités, répétées deux fois si elles persistent et envoyées aux téléphones.",
           "energy_insight": "Compare la consommation du jour des appareils du tableau de bord Énergie avec celle de la semaine passée. Affiche une carte Énergie, une section dans les résumés, un outil vocal et des observations sur les consommations inhabituelles. Désactivé : masque et arrête ces fonctions.",
-          "energy_price": "Facultatif : tarif unitaire en centimes par kWh, pour afficher le coût du jour.",
+          "energy_price": "Facultatif : tarif unitaire par kWh, pour afficher le coût du jour des appareils du tableau Énergie — en centimes (24,5) ou en euros (0,245) ; les deux fonctionnent.",
           "energy_currency": "Devise des coûts. Vide : la devise de Home Assistant.",
           "search_hints": "Quand Voice Satellite LLM Tools (ou la recherche de Sentient) est installé, la voix sait que les outils de recherche existent.",
           "web_search": "Recherche web vocale via votre SearXNG. Désactivée par défaut.",
@@ -571,7 +571,7 @@
           "night_watch_speakers": "Si vide : tous les haut-parleurs.",
           "warm_by_weekdays": "Facultatif : heure à laquelle la maison doit être chauffée en semaine. Si vide : utilise l’heure de réveil apprise.",
           "warm_by_weekends": "Facultatif : même réglage pour les samedis et dimanches.",
-          "heating_limit": "Lorsqu’une personne augmente ou active le chauffage par la voix ou l’application, restaure la programmation ou l’état éteint après ce nombre d’heures. 0 désactive le rétablissement automatique.",
+          "heating_limit": "Lorsqu’une personne augmente ou active l’un des thermostats choisis ci-dessus, par la voix ou l’application, restaure la programmation ou l’état éteint après ce nombre d’heures. Seulement ces thermostats ; 0 (par défaut) désactive le rétablissement.",
           "personality": "Ton employé par la maison dans ses remarques, résumés, accueils et interactions avec les assistants vocaux.",
           "personality_notes": "Facultatif, avec vos propres mots, par exemple « Aime les chats. Taquine gentiment sur la quantité de thé préparée ».",
           "style_feedback": "Un bouton près des évaluations permet de choisir « Plus court », « Plus simple », « Moins taquin », « Plus détaillé » ou de préciser une préférence. Les notes ci-dessous sont ensuite appliquées à toutes les annonces. Désactivé : aucun bouton et notes ignorées.",
@@ -676,7 +676,8 @@
           "briefing_system": "System sensors to report",
           "briefing_time": "Daily briefing at",
           "digest_time": "Daily digest at",
-          "morning_briefing": "Briefing when someone's first up"
+          "morning_briefing": "Briefing when someone's first up",
+          "morning_briefing_areas": "Morning briefing rooms"
         },
         "data_description": {
           "briefings": "Off turns off the button, the voice tool and the service.",
@@ -684,7 +685,8 @@
           "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
           "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
           "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
-          "morning_briefing": "Once a day, the first time someone's moving about after quiet hours end (before noon), in that room."
+          "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
+          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are."
         }
       }
     }

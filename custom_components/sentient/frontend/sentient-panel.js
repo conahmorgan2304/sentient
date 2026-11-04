@@ -191,7 +191,7 @@
       const top = Math.max(1, ...Object.values(scores));
       const bars = Object.entries(scores).slice(0, 5).map(([k, v]) =>
         `<div class="b"><span>${esc(k).toUpperCase()}</span><div><i style="width:${Math.round((v / top) * 100)}%"></i></div></div>`).join("");
-      const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${go}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
+      const stat = (n, l, go) => `<div class="s"${go ? ` data-act="goto" data-id="${esc(go)}"` : ""}><div class="n">${esc(n)}</div><div class="l">${l}</div></div>`;
       const st = (k) => (this._st(k) ? this._st(k).state : "—");
       const ai = ((this._st("mind") || {}).attributes || {}).ai || {};
       const aiTxt = ai.failing ? "AI NOT ANSWERING · PLAIN WORDS" : ai.capped ? "AI LIMIT REACHED · PLAIN WORDS" : `AI ${ai.today ?? this._attr("likely_room", "ai_checks_today", 0)}${ai.limit ? "/" + ai.limit : ""} TODAY`;
@@ -225,7 +225,7 @@
       const cl = this._clips || { on: false, items: [] };
       const clipIc = { delivery: "mdi:package-variant-closed", visitor: "mdi:account", household: "mdi:home-account", "passer-by": "mdi:walk", animal: "mdi:paw", vehicle: "mdi:car", suspicious: "mdi:alert-outline", nothing: "mdi:minus" };
       R("clipc").hidden = !cl.on && !(cl.items || []).length;
-      R("clipc").innerHTML = this._h("CLIPS WATCHED", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${clipIc[c.kind] || "mdi:filmstrip-box"}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
+      R("clipc").innerHTML = this._h("CLIPS WATCHED", `${(cl.items || []).length}`) + ((cl.items || []).slice(0, 12).map((c) => `<div class="r"><ha-icon icon="${esc(clipIc[c.kind] || "mdi:filmstrip-box")}"></ha-icon><b class="wrap">${esc(c.local)} · ${esc(c.camera.replace(/_/g, " ").toUpperCase())} — ${esc(c.summary)}${c.whose ? ` <i>(probably ${esc(c.whose)})</i>` : ""}</b>${c.event ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(c.event)}/clip.mp4" target="_blank" rel="noopener">PLAY</a>` : ""}</div>`).join("")
         || `<div class="e">NOTHING WATCHED YET${Object.keys(cl.skipped || {}).length ? " · SKIPPED: " + Object.entries(cl.skipped).map(([k, v]) => `${v} ${esc(k).toUpperCase()}`).join(", ") : " · IT WRITES HERE WHEN THE CAMERAS SEE SOMEONE"}</div>`);
 
       // routines
@@ -238,7 +238,7 @@
           const tag = r.adopted ? "HOUSE DOES IT" : r.declined ? "DECLINED" : r.offered ? "OFFERED" : "LEARNED";
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
-          return `<div class="r rtr ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}"><ha-icon icon="${r.adopted ? "mdi:robot-happy-outline" : "mdi:repeat"}"></ha-icon>
+          return `<div class="r rtr ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}"><ha-icon icon="${esc(r.adopted ? "mdi:robot-happy-outline" : "mdi:repeat")}"></ha-icon>
             <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
         }).join("") || '<div class="e">NO ROUTINES LEARNED YET · CHECKED EACH NIGHT</div>');
 
@@ -248,7 +248,7 @@
       const watches = this._attr("watches", "watches", []);
       if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REMINDERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
-        return `<div class="r"><ha-icon icon="${ic}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
+        return `<div class="r"><ha-icon icon="${esc(ic)}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
       }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">
@@ -284,7 +284,7 @@
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
-        : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock"}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
+        : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
@@ -344,16 +344,16 @@
       // visitors
       const visits = this._attr("visitors", "recent", []);
       R("visit").innerHTML = this._h("VISITORS", `${st("visitors")} TODAY`) + (visits.slice(0, 8).map((v) =>
-        `<div class="r"><ha-icon icon="${v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video"}"></ha-icon>
+        `<div class="r"><ha-icon icon="${esc(v.kind === "delivery" ? "mdi:package-variant-closed" : "mdi:doorbell-video")}"></ha-icon>
           <b>${v.name ? esc(v.name) + " — " : ""}${esc(v.description)}${v.parcel_left ? " · PARCEL LEFT" : ""}</b><u>${hm(v.time)}</u></div>`).join("")
         || '<div class="e">NO ONE AT THE DOOR YET</div>');
 
       // said & noticed (left alone while a "say it differently" note is being typed)
-      const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback;
+      const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback && !!(this._hass.user && this._hass.user.is_admin);  // it changes settings: admins only
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
       const log = this._attr("last_spoken", "log", []).slice(0, 7).map((l) => l.said
         ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
-          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${n}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
+          ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${esc(n)}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}</u></div>`).join("");
       const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
@@ -425,7 +425,7 @@
       const chip = (id) => SWITCH[id] && data[SWITCH[id]] !== undefined ? `<em class="onoff${data[SWITCH[id]] ? " on" : ""}">${data[SWITCH[id]] ? "ON" : "OFF"}</em>` : "";
       const item = (id, sub2) => {
         const [icon, title, sub] = pages[id];
-        return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${id}"><ha-icon icon="${icon}"></ha-icon><span><b>${esc(title)}</b>${(sub2 || sub) ? `<i>${esc(sub2 || sub)}</i>` : ""}</span>${chip(id)}</button>`;
+        return `<button class="nav${this._group === id ? " on" : ""}" data-act="group" data-id="${esc(id)}"><ha-icon icon="${esc(icon)}"></ha-icon><span><b>${esc(title)}</b>${(sub2 || sub) ? `<i>${esc(sub2 || sub)}</i>` : ""}</span>${chip(id)}</button>`;
       };
       const side = this._$("side");
       if (!side.querySelector("#sfind")) {
@@ -443,7 +443,7 @@
         for (const g of groups) for (const f of g.schema || []) {
           if (hit(labels[f.name]) || hit(helpers[f.name])) fieldHits.push([g.id, labels[f.name] || f.name]);
         }
-        html = (pageHits.map((id) => item(id)).join("") + fieldHits.slice(0, 30).map(([gid, label]) => `<button class="nav" data-act="group" data-id="${gid}"><ha-icon icon="mdi:tune-variant"></ha-icon><span><b>${esc(label)}</b><i>in ${esc(pages[gid] ? pages[gid][1] : gid)}</i></span></button>`).join(""))
+        html = (pageHits.map((id) => item(id)).join("") + fieldHits.slice(0, 30).map(([gid, label]) => `<button class="nav" data-act="group" data-id="${esc(gid)}"><ha-icon icon="mdi:tune-variant"></ha-icon><span><b>${esc(label)}</b><i>in ${esc(pages[gid] ? pages[gid][1] : gid)}</i></span></button>`).join(""))
           || '<div class="e">NOTHING MATCHES · TRY ANOTHER WORD</div>';
       } else {
         let section = "";
@@ -456,7 +456,7 @@
           const head = sec !== section ? `<div class="ssec">${sec === "essentials" ? "ESSENTIALS" : "EXTRAS · OPTIONAL FEATURES"}</div>` : "";
           section = sec;
           return head + `<div class="menu${open ? " open" : ""}${here ? " here" : ""}">
-            <button class="mh" data-act="menu" data-id="${mid}" aria-expanded="${open}"><ha-icon icon="${icon}"></ha-icon><span>${esc(title)}</span><u>${sec === "extras" ? `${on} ON` : list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
+            <button class="mh" data-act="menu" data-id="${esc(mid)}" aria-expanded="${esc(open)}"><ha-icon icon="${esc(icon)}"></ha-icon><span>${esc(title)}</span><u>${sec === "extras" ? `${on} ON` : list.length}</u><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>
             <div class="mi">${list.map((id) => item(id)).join("")}</div></div>`;
         }).join("");
       }
@@ -485,7 +485,7 @@
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
-      body.innerHTML = `<div class="bh"><ha-icon icon="${g.icon}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
+      body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
@@ -529,7 +529,7 @@
         this._$("wizc").innerHTML = `<div class="e">${esc(e.message || e)}</div><div class="wizbar"><button class="btn ghost" data-act="wizlater">CLOSE</button></div>`;
         return;
       }
-      this._wiz = { ...w, i: 0, draft: { ...w.data }, backupPipeline: true };
+      this._wiz = { ...w, i: 0, draft: { ...w.data }, backupPipeline: false }  // the pipelines are the user's: changing them is their choice;
       this._wizGo(0);
     }
 
@@ -538,9 +538,9 @@
     _wizGo(i) {
       const W = this._wiz, steps = W.steps, last = steps.length;  // one extra step at the end: test & finish
       W.i = Math.max(0, Math.min(i, last));
-      const dots = [...steps, { title: "Test" }].map((s, n) => `<i class="${n === W.i ? "on" : n < W.i ? "done" : ""}"></i>`).join("");
+      const dots = [...steps, { title: "Test" }].map((s, n) => `<i class="${esc(n === W.i ? "on" : n < W.i ? "done" : "")}"></i>`).join("");
       const head = (icon, title, blurb) => `<div class="wizh"><div class="wizdots">${dots}</div><div class="wizn">STEP ${W.i + 1} OF ${last + 1}</div></div>
-        <div class="bh"><ha-icon icon="${icon}"></ha-icon><div><div class="bt">${esc(title).toUpperCase()}</div><div class="bs">${esc(blurb)}</div></div></div>`;
+        <div class="bh"><ha-icon icon="${esc(icon)}"></ha-icon><div><div class="bt">${esc(title).toUpperCase()}</div><div class="bs">${esc(blurb)}</div></div></div>`;
       const c = this._$("wizc");
       if (W.i === last) {
         const persona = W.draft.persona || W.persona;
@@ -656,15 +656,15 @@
       const q = (this._find || "").toLowerCase().trim();
       const shown = q ? items.filter((m) => m.text.toLowerCase().includes(q) || m.category.includes(q)) : items;
       const cats = this._cats || [];
-      const opts = (sel) => cats.map((c) => `<option value="${c}"${c === sel ? " selected" : ""}>${c[0].toUpperCase() + c.slice(1)}</option>`).join("");
+      const opts = (sel) => cats.map((c) => `<option value="${esc(c)}"${c === sel ? " selected" : ""}>${c[0].toUpperCase() + c.slice(1)}</option>`).join("");
       const byCat = {};
       items.forEach((m) => { byCat[m.category] = (byCat[m.category] || 0) + 1; });
       const keepFocus = this.shadowRoot.activeElement && this.shadowRoot.activeElement.id === "mfind";
       const rows = shown.map((m) => this._editing === m.id
-        ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon>
+        ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon>
             <input name="text" value="${esc(m.text)}" autocomplete="off"><select name="category">${opts(m.category)}</select>
             <button class="btn sm" type="submit">SAVE</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
-        : `<div class="r mem"><ha-icon icon="${CAT_ICON[m.category] || "mdi:brain"}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
+        : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
             <a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">MEMORIES</div>
@@ -707,7 +707,7 @@
       }
       const here = spots.filter((sp) => sp.camera === this._cam);
       const box = (b, label, cls) => `<div class="box ${cls || ""}" style="left:${b[0] * 100}%;top:${b[1] * 100}%;width:${(b[2] - b[0]) * 100}%;height:${(b[3] - b[1]) * 100}%">${label ? `<span>${esc(label)}</span>` : ""}</div>`;
-      const poly = (pts, label, cls) => `<svg class="shape ${cls || ""}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${pts.map((p) => `${p[0] * 100},${p[1] * 100}`).join(" ")}"/></svg>`
+      const poly = (pts, label, cls) => `<svg class="shape ${cls || ""}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${esc(pts.map((p) => `${p[0] * 100},${p[1] * 100}`).join(" "))}"/></svg>`
         + (label ? `<div class="box lbl" style="left:${Math.min(...pts.map((p) => p[0])) * 100}%;top:${Math.min(...pts.map((p) => p[1])) * 100}%;width:0;height:0;border:0;box-shadow:none"><span>${esc(label)}</span></div>` : "");
       const mark = (sp) => (sp.points && sp.points.length >= 3 ? poly(sp.points, sp.name) : box(sp.box, sp.name));
       const pts = this._pts || [];
@@ -719,9 +719,9 @@
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:selection-marker"></ha-icon><div><div class="bt">CAMERA SPOTS</div>
           <div class="bs">Name a part of a camera's picture — "the rabbit pen", "the drive" — and other names for it. Questions that mention it use the camera that can see it, and send the AI just that part. Draw a shape to leave out what's next to it (a neighbour's car).</div></div></div>
         <div class="spotgrid"><div>
-          <div class="row"><select id="spcam">${cams.map((c) => `<option value="${c.id}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+          <div class="row"><select id="spcam">${cams.map((c) => `<option value="${esc(c.id)}"${c.id === this._cam ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
             <button class="btn ghost sm" data-act="snap">↻ NEW PICTURE</button></div>
-          <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${this._snapUrl(this._cam)}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
+          <div class="snap${this._drawing ? " drawing" : ""}" id="snap">${this._cam ? `<img src="${esc(this._snapUrl(this._cam))}" alt="" draggable="false">` : '<div class="e">NO CAMERAS</div>'}
             ${here.map(mark).join("")}${this._drawing ? draft : ""}</div>
           <div class="hint">${this._drawing ? (this._shape ? "TAP EACH CORNER OF THE AREA, THEN SAVE" : "DRAG ON THE PICTURE TO MARK THE SPOT") : "TIP: “DRAW IT” LETS YOU MARK IT YOURSELF — NO AI NEEDED"}</div>
         </div><div>
@@ -735,11 +735,11 @@
             ${this._drawing ? `<button class="btn sm" data-act="spsave" id="spsave"${ready ? "" : " disabled"}>SAVE SPOT</button>` : ""}</div>
           <div class="spmsg" id="spmsg">${esc(this._spMsg || "")}</div>
           <div class="h" style="margin-top:14px"><span class="t">ON THIS CAMERA</span><i></i><em>${here.length}</em></div>
-          ${here.map((sp) => `<div class="r"><ha-icon icon="${sp.points ? "mdi:vector-polygon" : "mdi:selection-marker"}"></ha-icon><b>${esc(sp.name)}</b>
+          ${here.map((sp) => `<div class="r"><ha-icon icon="${esc(sp.points ? "mdi:vector-polygon" : "mdi:selection-marker")}"></ha-icon><b>${esc(sp.name)}</b>
               <input class="alias" data-alias="${esc(sp.name)}" value="${esc(sp.aliases || "")}" placeholder="also called…">
               <a class="x" data-act="spforget" data-id="${esc(sp.name)}" title="Forget">✕</a></div>`).join("") || '<div class="e">NONE YET</div>'}
           <div class="h" style="margin-top:14px"><span class="t">ASK THE CAMERA</span><i></i></div>
-          <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?"}" autocomplete="off">
+          <form class="add" data-form="look"><ha-icon icon="mdi:eye-outline"></ha-icon><input name="q" placeholder="${esc(here[0] ? `Is anything in ${esc(here[0].name)}?` : "What can you see?")}" autocomplete="off">
             <select name="spot"><option value="">Whole picture</option>${here.map((sp) => `<option>${esc(sp.name)}</option>`).join("")}</select><button class="btn sm" type="submit">ASK</button></form>
           <div class="spmsg ans" id="spans">${esc(this._lookAns || "")}</div>
         </div></div>`;
@@ -866,12 +866,12 @@
       if (!data || !data.meta) { body.innerHTML = `<div class="e">${esc((data && data.err) || "LOADING…")}</div>`; return; }
       const m = data.meta;
       const when = (it) => kind === "alarms" && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
-      const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${m.icon}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
+      const rows = data.items.map((it) => `<div class="card ml${it.enabled === false ? " off" : ""}"><div class="r"><ha-icon icon="${esc(m.icon)}"></ha-icon><b>${esc(it.name)}</b>${when(it)}
             <label class="tg" title="On or off"><input type="checkbox" data-ittoggle="${esc(it.id)}"${it.enabled === false ? "" : " checked"}><i></i></label>
             <button class="btn ghost sm" data-act="ittest" data-id="${esc(it.id)}">TRY</button>
             <a class="x" data-act="itedit" data-id="${esc(it.id)}" title="Edit">✎</a><a class="x" data-act="itdel" data-id="${esc(it.id)}" data-text="${esc(it.name)}" title="Delete">✕</a></div>
           <div class="mlsub">${esc(it._summary || "")}</div>${it.last_answer ? `<div class="hint">LAST: ${esc(it.last_answer).toUpperCase()}</div>` : ""}</div>`).join("");
-      body.innerHTML = `<div class="bh"><ha-icon icon="${m.icon}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
+      body.innerHTML = `<div class="bh"><ha-icon icon="${esc(m.icon)}"></ha-icon><div><div class="bt">${esc(m.title).toUpperCase()}</div>
           <div class="bs">${esc(m.blurb)}</div></div></div>
         <div class="mllist">${rows || '<div class="e">NONE YET</div>'}</div><div id="itedit"></div>
         <div class="bar"><span id="status"></span><button class="btn" data-act="itadd">${esc(m.add)}</button></div>`;
@@ -958,7 +958,7 @@
     }
 
     _drawMutes() {
-      const rows = (this._mutes || []).map((m) => `<div class="r"><ha-icon icon="${m.kind === "entity" ? "mdi:volume-off" : "mdi:text-box-remove-outline"}"></ha-icon>
+      const rows = (this._mutes || []).map((m) => `<div class="r"><ha-icon icon="${esc(m.kind === "entity" ? "mdi:volume-off" : "mdi:text-box-remove-outline")}"></ha-icon>
           <b>${esc(m.name)}</b><u>${m.until ? "UNTIL " + hm(m.until) : "UNTIL UNSHUSHED"}</u><a class="x" data-act="unmute" data-id="${esc(m.id)}" title="Unshush">✕</a></div>`).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:volume-mute"></ha-icon><div><div class="bt">SHUSHED</div>
           <div class="bs">Things the house won't mention — say “stop telling me about the washing machine” (or “for tonight”). Urgent and safety alerts always get through.</div></div></div>
@@ -966,7 +966,7 @@
         ${rows ? '<div class="bar"><span></span><button class="btn ghost" data-act="unmuteall">UNSHUSH EVERYTHING</button></div>' : ""}
         <div class="bh" style="margin-top:22px"><ha-icon icon="mdi:school-outline"></ha-icon><div><div class="bt">LEARNED FROM FEEDBACK</div>
           <div class="bs">What the house has picked up from shushes, hushing it straight after a remark, and declined or deleted routines. It fades by itself over a month or so; ✕ forgets it now.</div></div></div>
-        ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline"}"></ha-icon>
+        ${(this._learnedQuiet || []).map((f) => `<div class="r"><ha-icon icon="${esc(f.kind === "offers" ? "mdi:calendar-remove-outline" : "mdi:comment-off-outline")}"></ha-icon>
           <b>${esc(f.name)}</b><u>${esc(f.effect).toUpperCase()} · ${esc((f.why || [])[0] || "")}</u><a class="x" data-act="unlearnq" data-id="${esc(f.key)}" title="Forget this">✕</a></div>`).join("") || '<div class="e">NOTHING YET</div>'}`;
     }
 
@@ -982,7 +982,7 @@
       if (!st) return "";
       const on = st.state === "on";
       const until = on && st.attributes.until ? ` · TILL ${hm(st.attributes.until)}` : "";
-      return `<button class="mode${on ? " on" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${icon}"></ha-icon>${on ? onLabel + until : offLabel}</button>`;
+      return `<button class="mode${on ? " on" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${esc(icon)}"></ha-icon>${on ? onLabel + until : offLabel}</button>`;
     }
 
     _showChips() {
@@ -997,7 +997,7 @@
         const lit = on && style === s;
         const until = lit && st.attributes.until ? ` · TILL ${hm(st.attributes.until)}` : "";
         const ear = lit && st.attributes.following_sound ? ' <ha-icon icon="mdi:music-note"></ha-icon>' : "";
-        return `<button class="mode${lit ? " on" : ""}" data-act="show" data-id="${s}"><ha-icon icon="${SHOWS[s][0]}"></ha-icon>${SHOWS[s][1]}${lit ? " ON" + until : ""}${ear}</button>`;
+        return `<button class="mode${lit ? " on" : ""}" data-act="show" data-id="${esc(s)}"><ha-icon icon="${esc(SHOWS[s][0])}"></ha-icon>${SHOWS[s][1]}${lit ? " ON" + until : ""}${ear}</button>`;
       }).join("");
     }
 
@@ -1005,7 +1005,7 @@
       const st = this._st("chime");
       if (!st) return "";
       const on = st.state === "on";
-      return `<button class="mode chime${on ? " lit" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${on ? "mdi:bell-ring-outline" : "mdi:bell-off-outline"}"></ha-icon>CHIME ${on ? "ON" : "OFF"}</button>`;
+      return `<button class="mode chime${on ? " lit" : ""}" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="${esc(on ? "mdi:bell-ring-outline" : "mdi:bell-off-outline")}"></ha-icon>CHIME ${on ? "ON" : "OFF"}</button>`;
     }
 
     _drawEnergy() {
@@ -1018,7 +1018,7 @@
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
-        + `<div class="hint">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW</div>`;
+        + `<div class="hint" title="Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW · ${en.cost_today != null ? "COST = THESE DEVICES × YOUR RATE · " : ""}${pct != null ? "% AGAINST A NORMAL DAY SO FAR" : ""}</div>`;
     }
 
     _drawAppliances(list) {
@@ -1032,7 +1032,7 @@
         const icon = a.entity_id.startsWith("vacuum.") ? "mdi:robot-vacuum" : /dish/i.test(a.name) ? "mdi:dishwasher" : /dry/i.test(a.name) ? "mdi:tumble-dryer" : "mdi:washing-machine";
         const tag = a.running ? `RUNNING ${dur(a.minutes_so_far || 0)}${a.done_about ? " · DONE ~" + esc(a.done_about) : ""}`
           : a.usual_minutes ? `USUALLY ${dur(a.usual_minutes)}` : `LEARNING · ${a.runs_seen}/3 RUNS`;
-        return `<div class="r${a.running ? " on" : " dim"}"><ha-icon icon="${icon}"></ha-icon><b>${esc(a.name)}</b><u>${tag}</u></div>`;
+        return `<div class="r${a.running ? " on" : " dim"}"><ha-icon icon="${esc(icon)}"></ha-icon><b>${esc(a.name)}</b><u>${tag}</u></div>`;
       }).join("");
     }
 
@@ -1084,10 +1084,10 @@
       const alarm = alarms[0];
       const armed = alarm && alarm.state.startsWith("armed");
       el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "ALL SHUT")
-        + open.map((o) => `<div class="r warn"><ha-icon icon="${o.icon}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
+        + open.map((o) => `<div class="r warn"><ha-icon icon="${esc(o.icon)}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
         + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
-        + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-off-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
+        + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${esc(armed ? "mdi:shield-lock" : "mdi:shield-off-outline")}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
     }
 
     _drawMlCard() {
@@ -1098,7 +1098,7 @@
       el.innerHTML = this._h("MOTION LIGHTS", ml.dark ? (ml.late_night ? "LATE NIGHT · DIMMED" : ml.quiet ? "QUIET HOURS" : "DARK · ACTIVE") : "DAYLIGHT · RESTING")
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
-          return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
+          return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${esc(lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline")}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
             <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : r.respect_quiet && ml.quiet ? "QUIET" : "READY"}</u>
             <label class="tg"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label></div>`;
         }).join("") + (on ? `<div class="hint">${on} ON BY MOTION NOW</div>` : "");
@@ -1124,7 +1124,7 @@
     _drawMotion() {
       if (this._view !== "settings" || this._group !== "motion") return;
       const ml = this._ml || { rules: [] };
-      const pill = (on, text, cls) => `<span class="pill ${on ? cls || "on" : ""}">${text}</span>`;
+      const pill = (on, text, cls) => `<span class="pill ${on ? cls || "on" : ""}">${esc(text)}</span>`;
       const rows = ml.rules.map((r) => {
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
@@ -1134,9 +1134,9 @@
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
         ].filter(Boolean);
-        return `<div class="card ml${r.enabled ? "" : " off"}"><div class="r"><ha-icon icon="${lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}" class="${lit ? "lit" : ""}"></ha-icon>
+        return `<div class="card ml${r.enabled ? "" : " off"}"><div class="r"><ha-icon icon="${esc(lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline")}" class="${esc(lit ? "lit" : "")}"></ha-icon>
             <b>${esc(this._name(r.light))}</b><s>${r.managing ? (r.timer ? "ON · COUNTING DOWN" : "ON BY MOTION") : lit ? "ON" : "OFF"}</s>
-            <label class="tg" title="${r.enabled ? "On" : "Off"}"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label>
+            <label class="tg" title="${esc(r.enabled ? "On" : "Off")}"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label>
             <a class="x" data-act="mledit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="mldel" data-id="${esc(r.id)}" data-text="${esc(this._name(r.light))}" title="Remove">✕</a></div>
           <div class="mlsub"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.motion.map((m) => esc(this._name(m))).join(" · ")}</div>
           <div class="chips left">${chips.map((c) => `<span>${c}</span>`).join("")}</div>
@@ -1264,7 +1264,7 @@
       const counts = {};
       (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
       this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
-        .map(([k, label, n]) => `<button class="${k === want ? "on" : ""}" data-act="tlkind" data-id="${k}">${label} <b>${n}</b></button>`).join("");
+        .map(([k, label, n]) => `<button class="${esc(k === want ? "on" : "")}" data-act="tlkind" data-id="${esc(k)}">${esc(label)} <b>${esc(n)}</b></button>`).join("");
       this._$("tlcount").textContent = "LAST 3 DAYS";
       const dayName = (d) => {
         const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1277,8 +1277,8 @@
         const d = dayName(i.time);
         if (d !== last) { html += `<div class="day">${d}</div>`; last = d; }
         const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
-        html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${icon}"></ha-icon></span>
-          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${label}</s></div>`;
+        html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
       }
       this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
     }
@@ -1620,7 +1620,7 @@
       R("mself").hidden = !me;
       if (me) {
         const ic = { ok: "mdi:check-circle-outline", limited: "mdi:alert-circle-outline", off: "mdi:minus-circle-outline" };
-        const row = (c) => `<div class="r${c.status === "ok" ? " dim" : c.status === "limited" ? " warn" : ""}"><ha-icon icon="${ic[c.status] || ic.off}"></ha-icon><b class="wrap">${esc(c.name)}${c.why ? `<small>${esc(c.why)}</small>` : ""}</b><u>${esc(c.status.toUpperCase())}</u></div>`;
+        const row = (c) => `<div class="r${c.status === "ok" ? " dim" : c.status === "limited" ? " warn" : ""}"><ha-icon icon="${esc(ic[c.status] || ic.off)}"></ha-icon><b class="wrap">${esc(c.name)}${c.why ? `<small>${esc(c.why)}</small>` : ""}</b><u>${esc(c.status.toUpperCase())}</u></div>`;
         const notOk = (me.status || []).filter((c) => c.status !== "ok").map(row).join("");
         const statusRows = (me.status || []).filter((c) => c.status === "ok").map(row).join("");
         const found = (me.findings || []).map((f) => `<div class="r"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><b class="wrap">${esc(f.text)}</b><s>SELF-CHECK</s></div>`).join("");

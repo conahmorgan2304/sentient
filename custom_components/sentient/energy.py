@@ -51,7 +51,11 @@ def _price(hass: HomeAssistant) -> float | None:
 
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     value = entries[0].runtime_data.options.get(CONF_ENERGY_PRICE) if entries else None
-    return float(value) if value else None
+    if not value:
+        return None
+    # in pence or cents per kWh (24.5); a rate under 1 can only be pounds or dollars (0.245, 0.1201): convert it
+    rate = float(value)
+    return rate * 100 if 0 < rate < 1 else rate
 
 
 def currency(hass: HomeAssistant) -> tuple[str, str]:

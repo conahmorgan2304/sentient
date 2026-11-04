@@ -164,3 +164,35 @@ async def test_morning_briefing_when_someone_gets_up_even_in_quiet_hours(hass: H
         hass.bus.async_fire(EVENT_SLEEP, {"asleep": False})
         await hass.async_block_till_done()
     assert len(said) == 1  # once a day
+
+
+async def test_morning_briefing_waits_for_a_chosen_room(hass: HomeAssistant, freezer) -> None:
+    """With morning rooms chosen, getting up upstairs says nothing; walking into the living room gives it there."""
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.sleep import EVENT_SLEEP
+
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=7, minute=10)))
+    lounge = ar.async_get(hass).async_create("Living room")
+    reg = er.async_get(hass)
+    reg.async_get_or_create("assist_satellite", "test", "lounge_sat", suggested_object_id="lounge")
+    reg.async_update_entity("assist_satellite.lounge", area_id=lounge.id)
+    reg.async_get_or_create("binary_sensor", "test", "lounge_motion", suggested_object_id="lounge_motion")
+    reg.async_update_entity("binary_sensor.lounge_motion", area_id=lounge.id)
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        **OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.lounge"], "quiet_start": "21:00:00",
+        "quiet_end": "09:30:00", "morning_briefing": True, "morning_briefing_areas": [lounge.id]})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    for s in ("assist_satellite.kitchen", "assist_satellite.lounge"):
+        hass.states.async_set(s, "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, "Morning. It's raining.")
+    hass.bus.async_fire(EVENT_SLEEP, {"asleep": False})
+    await hass.async_block_till_done()
+    assert not said  # up, but not in a morning room yet
+    hass.states.async_set("binary_sensor.lounge_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert said and said[-1].data["entity_id"] == ["assist_satellite.lounge"]

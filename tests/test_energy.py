@@ -73,3 +73,19 @@ async def test_currency_follows_the_setting_or_home_assistant(hass: HomeAssistan
     assert energy.currency(hass) == ("USD", "$")
     entry.runtime_data.options = {**entry.runtime_data.options, "energy_currency": "XYZ"}
     assert energy.money(hass, 2) == "XYZ 2.00"  # any code, shown as itself
+
+
+async def test_rate_in_pence_or_in_pounds_both_work(hass: HomeAssistant) -> None:
+    """24.5 means pence or cents; 0.1201 can only be dollars or pounds per kWh (5.51 kWh ≈ $0.66, not $0.01)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    entry.runtime_data.options = {**entry.runtime_data.options, "energy_price": 0.1201}
+    assert round(5.51 * energy._price(hass) / 100, 2) == 0.66
+    entry.runtime_data.options = {**entry.runtime_data.options, "energy_price": 24.5}
+    assert energy._price(hass) == 24.5

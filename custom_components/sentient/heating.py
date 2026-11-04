@@ -467,9 +467,10 @@ class Heating:
         data = event.data.get("service_data") or {}
         ids = data.get("entity_id") or []
         ids = [ids] if isinstance(ids, str) else list(ids)
+        chosen = set(self.options.get(CONF_HEATING_ENTITIES) or [])
         for entity_id in ids:
-            if entity_id not in self.entities:
-                continue
+            if entity_id not in chosen:
+                continue  # only thermostats someone picked in Sentient, never every one in the house
             st = self.hass.states.get(entity_id)
             if st is None:
                 continue
