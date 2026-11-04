@@ -68,6 +68,14 @@
       this._route = r;
       const path = String((r && r.path) || "");
       const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : "overview";
+      // a phone notification was tapped: show that moment on the timeline
+      try {
+        const item = new URLSearchParams(window.location.search).get("item");
+        if (want === "timeline" && item && item !== this._tlFocusDone) {
+          this._tlFocus = item; this._tlKind = "all";
+          if (this.shadowRoot && this._view === "timeline") this._openTimeline();  // already open: fetch it fresh
+        }
+      } catch (e) { /* no query string */ }
       if (this.shadowRoot && want !== this._view) this._show(want, false);
       else if (!this.shadowRoot) this._view = want;
     }
@@ -1362,10 +1370,11 @@
         <button class="btn sm" data-act="digest"${this._digBusy ? " disabled" : ""}>${this._digBusy ? "THINKING…" : "SUMMARISE 24H"}</button>
         <button class="btn sm ghost" data-act="weekly">THIS WEEK</button>`;
       const want = this._tlKind || "all";
-      const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : i.kind === want));
+      const items = (this._tlItems || []).filter((i) => (want === "all" ? i !== dig : want === "phones" ? i.phoned : i.kind === want));
+      const phoned = (this._tlItems || []).filter((i) => i.phoned).length;
       const counts = {};
       (this._tlItems || []).forEach((i) => { counts[i.kind] = (counts[i.kind] || 0) + 1; });
-      this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
+      this._$("tlf").innerHTML = [["all", "ALL", (this._tlItems || []).length], ["phones", "SENT TO PHONES", phoned], ...Object.entries(KIND).map(([k, v]) => [k, v[1], counts[k] || 0])]
         .map(([k, label, n]) => `<button class="${esc(k === want ? "on" : "")}" data-act="tlkind" data-id="${esc(k)}">${esc(label)} <b>${esc(n)}</b></button>`).join("");
       this._$("tlcount").textContent = "LAST 3 DAYS";
       const dayName = (d) => {
@@ -1379,10 +1388,17 @@
         const d = dayName(i.time);
         if (d !== last) { html += `<div class="day">${d}</div>`; last = d; }
         const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
-        html += `<div class="tli k-${esc(i.kind)}"><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
-          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
+        const focus = i.time === (this._tlFocus || this._tlFocusDone);
+        html += `<div class="tli k-${esc(i.kind)}${focus ? " focus" : ""}"${focus ? ' id="tlfocus"' : ""}><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}${i.phoned ? `<i>Sent to phones: ${esc(i.phoned)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
       }
-      this._$("tllist").innerHTML = html || '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>';
+      this._$("tllist").innerHTML = html || (want === "phones" ? '<div class="e">NOTHING SENT TO PHONES IN THE LAST 3 DAYS</div>' : '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>');
+      const spot = this._$("tlfocus");
+      if (spot && this._tlFocus && this._tlItems) {
+        this._tlFocusDone = this._tlFocus;
+        this._tlFocus = null;  // scroll there once; it stays highlighted
+        spot.scrollIntoView({ block: "center" });
+      }
     }
 
     _updateRow(info) {
@@ -2055,6 +2071,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .filters button b{font-weight:700;color:#7fefff;margin-left:4px} .filters button.on{color:#041016;background:#00fff7;border-color:#00fff7} .filters button.on b{color:#041016}
 .day{font-size:10px;font-weight:700;letter-spacing:.3em;color:#00fff7;margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(0,255,247,.18)}
 .tli{display:grid;grid-template-columns:48px 30px minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 4px;position:relative}
+.tli.focus{background:rgba(0,255,247,.08);outline:1px solid rgba(0,255,247,.45);border-radius:10px}
 .tli .tm{font-size:11px;font-weight:700;color:rgba(150,220,235,.7);text-align:right}
 .tli .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,255,247,.35);background:rgba(0,255,247,.06)}
 .tli .dot ha-icon{--mdc-icon-size:15px;color:#00fff7}

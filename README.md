@@ -20,6 +20,7 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Smarter routines** — habits that follow sunset or getting up, habits done together offered as one, and "no, the other one" put right in one go.
 - **Trust, rooms and privacy** — just do it, say so first or ask, per kind of device; private and gentler rooms; holiday mode; a page showing what leaves the house, with "forget the last 48 hours"; text it reads from the web or cameras can't make it act.
 - **The world outside** — energy price, weather warnings and parcels in the briefing; maintenance due by actual use; cheap-electricity nudges; music by asking with Music Assistant; questions answered from your phone; `sentient.notice` for your own automations.
+- **Phone notifications you can follow** — sent through the Home Assistant app with a title, and tapping one opens that moment on Sentient's timeline (a SENT TO PHONES filter shows them all).
 - **Simpler** — "how it's used", a simpler settings page for new installs, a "what's new" card after updates, a readable copy of everything it knows, stories without gaps, and a lighter start-up.
 
 Every new feature has its own switch in Settings.

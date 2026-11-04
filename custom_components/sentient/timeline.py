@@ -112,6 +112,15 @@ class Timeline:
         self.hass.bus.async_fire(EVENT_TIMELINE, item)
 
     @callback
+    def mark(self, time: str | None, **fields: Any) -> None:
+        """Add details to an item already on the timeline (e.g. that it went to the phones)."""
+        for item in self.items:
+            if item.get("time") == time:
+                item.update(fields)
+                self._save()
+                return
+
+    @callback
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"items": list(self.items), "problems": self._problems}, 10)
 

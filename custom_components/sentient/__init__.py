@@ -610,6 +610,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     profiles = RoomProfiles(hass, lists["rooms"])
     speech.profiles = profiles
     speech.phone = notifier
+    notifier.on_sent = lambda when, title: timeline.mark(when, phoned=title)
     from .trust import Trust
 
     trust = Trust(hass, entry.entry_id, options, get_rt)

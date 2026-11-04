@@ -17,6 +17,7 @@ from .const import CONF_WHATS_NEW, DOMAIN
 NOTES: dict[str, list[str]] = {
     "0.88.0": [
         "Stories read with a reading voice no longer pause between parts — the next part is made while this one is read.",
+        "Phone notifications now show what they're about, and tapping one opens that moment on the timeline. The timeline has a SENT TO PHONES filter to look back over them.",
         "This card: what's new after each update.",
         "The set-up wizard asks about people and phones, how much the house does by itself, private rooms and the world outside — run it again from Settings to see.",
         "Settings → Brain & system → How it's used: what you use, what you never have, and a simpler page for new houses.",
