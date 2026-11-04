@@ -178,6 +178,7 @@ class SentientRuntime:
     parcels: Any = None  # outside information and parcels on their way
     maintenance: Any = None  # filters, descaling and services due by use
     cheap_power: Any = None  # cheap-electricity suggestions
+    music: Any = None  # music by asking (made when first used)
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     recipes: Any = None  # recipes and cooking mode

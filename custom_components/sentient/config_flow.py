@@ -195,6 +195,7 @@ from .const import (
     CONF_FOCUSED_TOOLS,
     CONF_ASK_LATER,
     CONF_PUT_RIGHT,
+    CONF_MUSIC,
     CONF_HOUSE_RULES,
     CONF_NOTICE_ENTITIES,
     DEFAULT_CHATTINESS,
@@ -583,6 +584,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FOCUSED_TOOLS, **d(CONF_FOCUSED_TOOLS, False)): selector.BooleanSelector(),
             vol.Required(CONF_ASK_LATER, **d(CONF_ASK_LATER, False)): selector.BooleanSelector(),
             vol.Required(CONF_PUT_RIGHT, **d(CONF_PUT_RIGHT, True)): selector.BooleanSelector(),
+            vol.Required(CONF_MUSIC, **d(CONF_MUSIC, True)): selector.BooleanSelector(),
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),

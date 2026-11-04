@@ -34,6 +34,7 @@ from .const import (
     CONFIRM_KINDS,
     CONF_PROMPT_RECENT,
     CONF_PUT_RIGHT,
+    CONF_MUSIC,
     CONF_BRIEFING_WEATHER,
     personality_line,
     talk_line,
@@ -219,6 +220,59 @@ class UndoLastTool(_Tool):
             return {"undone": [], "note": "Nothing switched by voice in the last few minutes to put back — just do the corrected request."}
         rt.timeline.add("voice", f"Put back {', '.join(restored[:4])}", "corrected by voice")
         return {"undone": restored}
+
+
+def _music_on(hass: HomeAssistant) -> bool:
+    from .music import ma_entry
+
+    rt = _runtime(hass)
+    return rt is not None and bool(rt.options.get(CONF_MUSIC, True)) and ma_entry(hass) is not None
+
+
+class MusicTool(_Tool):
+    acts = True
+    name = "sentient_music"
+    description = (
+        "Music from the household's own Music Assistant library — 'play something calm in the kitchen', 'put the "
+        "radio on', 'stop the music'. action 'choices' lists their playlists and radio stations (favourites marked) "
+        "and the players; pick the one whose name best fits what they asked for, then action 'play' with 'media' "
+        "set to its uri (or a name, artist or song they said) and 'media_type' (playlist, radio, artist, album, "
+        "track). 'room' is where to play it; leave it out for the room they're in. radio_mode true plays more like "
+        "it. action 'stop' stops it in that room. Quiet hours and room quiet times are applied for you."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["choices", "play", "stop"]), vol.Optional("media"): cv.string,
+        vol.Optional("media_type"): vol.In(["playlist", "radio", "artist", "album", "track"]),
+        vol.Optional("room"): cv.string, vol.Optional("radio_mode", default=False): cv.boolean,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or not _music_on(hass):
+            return {"error": "Music by asking isn't available (Music Assistant isn't set up, or it's off in Settings)"}
+        from .music import Music, player_in
+
+        music = getattr(rt, "music", None) or Music(hass, rt)
+        rt.music = music
+        a = tool_input.tool_args
+        if a["action"] == "choices":
+            return await music.async_choices()
+        if a["action"] == "stop":
+            player = player_in(hass, a.get("room")) if a.get("room") else None
+            if player is None and llm_context.device_id:
+                from homeassistant.helpers import device_registry as dr
+
+                device = dr.async_get(hass).async_get(llm_context.device_id)
+                player = player_in(hass, area_id=device.area_id if device else None)
+            if player is None:
+                return {"error": "Which room?"}
+            await hass.services.async_call("media_player", "media_stop", {"entity_id": player}, blocking=True)
+            return {"stopped": player}
+        if not a.get("media"):
+            return {"error": "Say what to play (call with action 'choices' to see their playlists and stations)"}
+        return await music.async_play(a["media"], a.get("media_type"), a.get("room"), llm_context.device_id, a["radio_mode"])
 
 
 class MaintenanceTool(_Tool):
@@ -1701,7 +1755,7 @@ class SentientAPI(llm.API):
         from .voice_api import SessionTool, IncidentsTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
