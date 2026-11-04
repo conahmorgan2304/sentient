@@ -35,6 +35,7 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_WHATS_NEW,
     CONF_EVENT_CLIPS,
     CONF_KNOWN_CARS,
     CONF_RELEVANT_MEMORIES,
@@ -362,7 +363,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -472,9 +473,31 @@ def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new"})
+@callback
+def ws_whats_new(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "whats_new", None) is None:
+        connection.send_result(msg["id"], {"releases": []})
+        return
+    connection.send_result(msg["id"], entry.runtime_data.whats_new.listing())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new/seen"})
+@websocket_api.require_admin
+@callback
+def ws_whats_new_seen(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is not None and getattr(entry.runtime_data, "whats_new", None) is not None:
+        entry.runtime_data.whats_new.mark_seen()
+    connection.send_result(msg["id"], {"seen": True})
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_proposal)
+    websocket_api.async_register_command(hass, ws_whats_new)
+    websocket_api.async_register_command(hass, ws_whats_new_seen)
     websocket_api.async_register_command(hass, ws_privacy)
     websocket_api.async_register_command(hass, ws_privacy_forget)
     websocket_api.async_register_command(hass, ws_voice_check)

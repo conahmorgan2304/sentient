@@ -108,7 +108,7 @@
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
-            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
+            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
             <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div></section>
             <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="ins" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="rout" class="card"></div></section>
           </div></div>
@@ -206,6 +206,16 @@
       const warn = ai.failing ? `<ha-icon icon="mdi:robot-confused-outline"></ha-icon><b>The AI isn't answering right now<small>Remarks, camera looks and briefings use plain words until it's back${ai.last_error ? " · " + esc(String(ai.last_error).slice(0, 140)) : ""}</small></b>`
         : ai.capped ? `<ha-icon icon="mdi:counter"></ha-icon><b>Today's ${esc(String(ai.limit))} AI calls are used up<small>Plain words until midnight · the limit is in Settings → Mind</small></b>` : "";
       for (const id of ["aiwarn", "aiwarn2"]) { R(id).hidden = !warn; R(id).innerHTML = warn; }
+
+      // what's new since the last update it was seen (loaded once; GOT IT hides it)
+      if (this._newAt === undefined) {
+        this._newAt = Date.now();
+        this._hass.callWS({ type: "sentient/whats_new" }).then((r) => { this._new = r.releases || []; this._render(); }, () => { this._new = []; });
+      }
+      const news = this._new || [];
+      R("whatsnew").hidden = !news.length;
+      R("whatsnew").innerHTML = news.length ? this._h("WHAT'S NEW", esc(news[0].version)) + news.map((rel) => rel.items.map((t) => `<div class="r"><ha-icon icon="mdi:creation-outline"></ha-icon><b class="wrap">${esc(t)}</b></div>`).join("")).join("")
+        + `<div class="row"><button class="btn sm" data-act="newseen">GOT IT</button></div>` : "";
 
       // suggestions: things it could use but isn't (refreshed every ten minutes; empty when turned off)
       if (!this._sugAt || Date.now() - this._sugAt > 600000) {
@@ -1433,6 +1443,11 @@
           this._$("bkmsg").textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
           this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
         }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
+      }
+      else if (act === "newseen") {
+        this._new = [];
+        this._render();
+        this._hass.callWS({ type: "sentient/whats_new/seen" }).catch(() => {});
       }
       else if (act === "propyes" || act === "propno") {
         (this._propDone = this._propDone || new Set()).add(id);

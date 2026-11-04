@@ -184,6 +184,7 @@ CONF_BUDGET_NOTICING = "budget_noticing"
 CONF_BUDGET_CAMERAS = "budget_cameras"
 CONF_ROUTINE_EVIDENCE = "routine_evidence"  # routine offers say how often it's been seen
 CONF_SUGGESTIONS = "suggestions"  # the Sentient page offers things it could use
+CONF_WHATS_NEW = "whats_new"  # what's new after an update, on the Sentient page
 CONF_CONFIRM = "confirm_kinds"  # the voice asks "shall I?" before these; empty = never
 CONFIRM_KINDS = {
     "locks": "unlock or lock a door",
