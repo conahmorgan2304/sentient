@@ -137,6 +137,11 @@ from .const import (
     CONF_ANIMAL_SENSORS,
     CONF_AWAY_LIGHTS_ON,
     CONF_AWAY_PEOPLE,
+    CONF_HOLIDAY,
+    CONF_HOLIDAY_END_ON_RETURN,
+    CONF_HOLIDAY_FROST,
+    CONF_HOLIDAY_THERMOSTATS,
+    DEFAULT_HOLIDAY_FROST,
     CONF_AWAY_LIGHTS,
     CONF_AWAY_AFTER,
     DEFAULT_AWAY_AFTER,
@@ -356,6 +361,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_AWAY_AFTER, **d(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_HOLIDAY, **d(CONF_HOLIDAY, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_HOLIDAY_THERMOSTATS, **d(CONF_HOLIDAY_THERMOSTATS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="climate", multiple=True)
+            ),
+            vol.Required(CONF_HOLIDAY_FROST, **d(CONF_HOLIDAY_FROST, DEFAULT_HOLIDAY_FROST)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=15, step=0.5, unit_of_measurement="°", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_HOLIDAY_END_ON_RETURN, **d(CONF_HOLIDAY_END_ON_RETURN, True)): selector.BooleanSelector(),
             vol.Optional(CONF_CHAT_AGENT, **d(CONF_CHAT_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),

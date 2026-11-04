@@ -149,7 +149,12 @@ class Away:
 
     def due(self, now: datetime) -> bool:
         minutes = float(self.options.get(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER) or 0)
-        return (self.enabled and self.away_since is not None and now - self.away_since >= timedelta(minutes=minutes)
+        try:
+            holiday = getattr(self._rt(), "holiday", None)
+        except AttributeError:  # still starting up
+            holiday = None
+        on = self.enabled or (holiday is not None and holiday.active)
+        return (on and self.away_since is not None and now - self.away_since >= timedelta(minutes=minutes)
                 and self.dark() and self.movement_inside(now) is None)
 
     @callback

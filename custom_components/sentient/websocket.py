@@ -185,6 +185,10 @@ from .const import (
     CONF_ANIMAL_SENSORS,
     CONF_AWAY_LIGHTS_ON,
     CONF_AWAY_PEOPLE,
+    CONF_HOLIDAY,
+    CONF_HOLIDAY_END_ON_RETURN,
+    CONF_HOLIDAY_FROST,
+    CONF_HOLIDAY_THERMOSTATS,
     CONF_AWAY_LIGHTS,
     CONF_AWAY_AFTER,
     CONF_SCREEN,
@@ -314,8 +318,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("camwake", "Sleepy cameras", "mdi:camera-timer", "Battery cameras and others that go into standby show an old or black picture until they wake, so the AI would answer from it (\u201cthe drive is empty\u201d). Add actions that wake them \u2014 pressing a wake or refresh button, turning on a stream, running a script; {{ camera }} is the camera being looked at \u2014 and Sentient runs them first and waits for a fresh picture. Each camera is woken at most once a minute. No actions: off.", [
         CONF_CAMERA_WAKE, CONF_CAMERA_WAKE_CAMERAS, CONF_CAMERA_WAKE_SECONDS,
     ]),
-    ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
+    ("away", "Away lights & holiday", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Holiday mode adds: nothing said out loud but safety alerts (it goes to the phones, with visitors), chosen thermostats down to frost protection, and everything back to normal when you're home.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
+        CONF_HOLIDAY, CONF_HOLIDAY_THERMOSTATS, CONF_HOLIDAY_FROST, CONF_HOLIDAY_END_ON_RETURN,
     ]),
     ("bins", "Bins check", "mdi:delete-variant", "The evening before collection (from the bin calendar), one camera look at where the bins go out — said only if they aren't out yet.", [
         CONF_BINS_CHECK, CONF_BINS_CALENDAR, CONF_BINS_SPOT, CONF_BINS_TIME,

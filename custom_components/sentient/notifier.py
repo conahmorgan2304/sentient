@@ -45,6 +45,8 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
         return "Announcement"
     if kind == "held":
         reason = str(item.get("reason") or "")
+        if "holiday" in kinds and reason == "holiday":
+            return "While you're away"
         if "held_quiet" in kinds and reason == "quiet_hours":
             return "Held back for quiet hours"
         if "unheard" in kinds and reason == "no_speaker":
@@ -82,6 +84,7 @@ class Notifier:
         self._sent: dict[str, datetime] = {}
         self._pending: dict[str, str] = {}  # snooze token -> what to remind about
         self.on_snooze = None  # set by the runtime: (what, delay) -> remind again
+        self.holiday = None  # set by the runtime: on holiday, what it would have said and visitors go to phones
         self._unsubs: list = []
 
     @callback
@@ -138,6 +141,8 @@ class Notifier:
         if not targets:
             return
         kinds = set(self.options.get(CONF_NOTIFY_WHEN, DEFAULT_NOTIFY_WHEN) or [])
+        if self.holiday is not None and self.holiday.active:
+            kinds |= {"holiday", "visitors"}
         title = wanted(event.data, kinds)
         if title is None:
             return

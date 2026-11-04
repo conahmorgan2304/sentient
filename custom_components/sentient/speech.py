@@ -210,6 +210,7 @@ class SpeechRouter:
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
         self.nobody_about = False  # the last pick found nobody in any speaker's room
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
@@ -374,6 +375,8 @@ class SpeechRouter:
         """Shared rules; returns a held result, or None when it may speak."""
         if not text:
             return self._held("empty", text, source)
+        if self.holiday is not None and not self.holiday.speaks(source) and not str(source or "").startswith(REPLY_SOURCES):
+            return self._held("holiday", text, source)  # nobody's home to hear it: it goes to the phones
         if priority != PRIORITY_URGENT and not str(source or "").startswith(REPLY_SOURCES):
             if self.mutes is not None and (muted := self.mutes.text_muted(text)):
                 return self._held(f"muted:{muted}", text, source)

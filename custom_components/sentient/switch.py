@@ -22,7 +22,7 @@ DEFAULT_HUSH_MINUTES = 60
 async def async_setup_entry(
     hass: HomeAssistant, entry: SentientConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), MediaImportantOnlySwitch(entry), AwayLightsSwitch(entry), ScreenSwitch(entry)])
+    async_add_entities([HushSwitch(entry), GuestSwitch(entry), ChimeSwitch(entry), PartySwitch(entry), MediaSpeakersSwitch(entry), MediaImportantOnlySwitch(entry), AwayLightsSwitch(entry), ScreenSwitch(entry), HolidaySwitch(entry)])
 
 
 class _ModeSwitch(SwitchEntity, RestoreEntity):
@@ -309,3 +309,32 @@ def hush(hass: HomeAssistant, entry, until) -> None:
 def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
     entry.runtime_data.speech.guest_mode = on
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"guest_mode": on})
+
+
+class HolidaySwitch(_ModeSwitch):
+    """Holiday mode: quiet, away lights, phones get what would have been said, heating to frost protection."""
+
+    _attr_icon = "mdi:island"
+
+    def __init__(self, entry: SentientConfigEntry) -> None:
+        super().__init__(entry, "holiday")
+
+    @property
+    def available(self) -> bool:
+        return self._entry.runtime_data.holiday.enabled
+
+    @property
+    def is_on(self) -> bool:
+        return self._entry.runtime_data.holiday.active
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self._entry.runtime_data.holiday.describe()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._entry.runtime_data.holiday.async_begin()
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._entry.runtime_data.holiday.async_end("turned off")
+        self.async_write_ha_state()

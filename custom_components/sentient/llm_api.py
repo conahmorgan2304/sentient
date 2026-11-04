@@ -221,6 +221,42 @@ class UndoLastTool(_Tool):
         return {"undone": restored}
 
 
+class HolidayTool(_Tool):
+    acts = True
+    name = "sentient_holiday"
+    description = (
+        "Holiday mode — for 'we're going on holiday until Sunday', 'we're back', 'are we on holiday mode?'. "
+        "action 'on' (with 'until' as a date or date and time if they said when they're back), 'off' or 'status'. "
+        "While it's on, nothing is said out loud except safety alerts (it goes to phones), the away lights run and "
+        "any chosen thermostats are turned down to frost protection; it ends by itself when they're back."
+    )
+    parameters = vol.Schema({vol.Required("action"): vol.In(["on", "off", "status"]), vol.Optional("until"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None or getattr(rt, "holiday", None) is None:
+            return {"error": "Sentient is not loaded"}
+        a = tool_input.tool_args
+        if a["action"] == "status":
+            return rt.holiday.describe()
+        if a["action"] == "off":
+            return await rt.holiday.async_end("turned off by voice")
+        from datetime import timedelta
+
+        until = None
+        if a.get("until"):
+            until = dt_util.parse_datetime(a["until"])
+            if until is None and (day := dt_util.parse_date(a["until"])) is not None:
+                until = dt_util.start_of_local_day(day) + timedelta(hours=12)  # midday on the day they're back
+            if until is None:
+                return {"error": "Give 'until' as a date like 2026-11-15"}
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=dt_util.get_default_time_zone())
+        return await rt.holiday.async_begin(until)
+
+
 class CorrectionTool(_Tool):
     acts = True
     name = "sentient_correction"
@@ -1640,7 +1676,7 @@ class SentientAPI(llm.API):
         from .voice_api import SessionTool, IncidentsTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
@@ -1903,6 +1939,8 @@ class SentientAPI(llm.API):
             bits.append("quiet hours")
         if rt.speech.guest_mode:
             bits.append("guests in")
+        if (holiday := getattr(rt, "holiday", None)) is not None and holiday.active:
+            bits.append("holiday mode (only safety alerts are said out loud)")
         from .security import OPEN_CLASSES
 
         opened = [st.name for st in self.hass.states.async_all("binary_sensor")

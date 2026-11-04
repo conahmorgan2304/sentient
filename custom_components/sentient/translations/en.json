@@ -107,6 +107,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "away_lights_on": "Away lights",
+          "holiday_mode": "Holiday mode",
+          "holiday_thermostats": "Thermostats to turn down on holiday",
+          "holiday_frost": "Frost protection temperature",
+          "holiday_end_on_return": "End holiday mode when someone's home",
           "away_people": "Away when all of these are out",
           "away_lights": "Lights to use",
           "away_after": "Start after everyone's been out for",
@@ -220,6 +224,10 @@
           "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
           "away_people": "Empty: everyone with a person entry. You can pick phones (device trackers) instead of people.",
           "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "holiday_mode": "A 'Holiday mode' switch, and 'we're going on holiday until Sunday' by voice. While it's on, nothing is said out loud except safety alerts — what would have been said goes to the phones chosen for notifications, with visitors and parcels; the away lights run even if they're normally off; and the thermostats below are turned down. Off: no switch and no holiday by voice.",
+          "holiday_thermostats": "Turned down to frost protection while you're away, and put back exactly as they were when holiday mode ends. Empty: the heating isn't touched.",
+          "holiday_frost": "What the thermostats above are set to while you're away.",
+          "holiday_end_on_return": "Once everyone has gone out, the first person home ends holiday mode and puts the heating back. Off: it ends on its date or when switched off.",
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
@@ -446,6 +454,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "away_lights_on": "Away lights",
+          "holiday_mode": "Holiday mode",
+          "holiday_thermostats": "Thermostats to turn down on holiday",
+          "holiday_frost": "Frost protection temperature",
+          "holiday_end_on_return": "End holiday mode when someone's home",
           "away_people": "Away when all of these are out",
           "away_lights": "Lights to use",
           "away_after": "Start after everyone's been out for",
@@ -647,6 +659,10 @@
           "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
           "away_people": "Empty: everyone with a person entry. You can pick phones (device trackers) instead of people.",
           "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "holiday_mode": "A 'Holiday mode' switch, and 'we're going on holiday until Sunday' by voice. While it's on, nothing is said out loud except safety alerts — what would have been said goes to the phones chosen for notifications, with visitors and parcels; the away lights run even if they're normally off; and the thermostats below are turned down. Off: no switch and no holiday by voice.",
+          "holiday_thermostats": "Turned down to frost protection while you're away, and put back exactly as they were when holiday mode ends. Empty: the heating isn't touched.",
+          "holiday_frost": "What the thermostats above are set to while you're away.",
+          "holiday_end_on_return": "Once everyone has gone out, the first person home ends holiday mode and puts the heating back. Off: it ends on its date or when switched off.",
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
@@ -787,6 +803,9 @@
       },
       "screen": {
         "name": "Tablet screen"
+      },
+      "holiday": {
+        "name": "Holiday mode"
       }
     },
     "conversation": {
