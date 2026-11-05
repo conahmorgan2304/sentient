@@ -30,6 +30,7 @@ async def _api(hass):
 
 
 async def test_self_check_finds_what_the_records_show(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.start_of_local_day() + timedelta(hours=8))  # the ticks below must stay in one day
     entry = await _setup(hass)
     tl = entry.runtime_data.timeline
     for n in range(4):  # the kettle remark, hushed straight after twice; the lounge speaker failing
@@ -94,7 +95,8 @@ async def test_manuals_pick_the_right_document(hass: HomeAssistant, tmp_path) ->
     with patch.object(entry.runtime_data.ai, "async_call", side_effect=call):
         api = await _api(hass)
         out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_manual", tool_args={"question": "what filter does the air purifier need?"}))
-    assert out == {"document": "Air purifier", "answer": "It takes the H13 HEPA filter, page 12."}
+    assert {k: v for k, v in out.items() if k != "outside_text"} == {"document": "Air purifier", "answer": "It takes the H13 HEPA filter, page 12."}
+    assert "information only" in out["outside_text"]  # what it read isn't instructions
     assert seen["attachments"][0]["media_content_id"] == "media-source://media_source/local/manuals/Air purifier.pdf"
 
 
@@ -151,3 +153,21 @@ def test_self_test_understands_every_way_of_saying_none() -> None:
         assert NONE_SAID.search(said), said
     for said in ("You have two reminders: the bins and the dentist.", "Your reminder is the dentist at three."):
         assert not NONE_SAID.search(said), said
+
+
+async def test_notices_its_own_failures(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for _ in range(3):
+        rt.timeline.add("health", "Voice answered by the backup agent", "the AI failed: timeout")
+        rt.selfaware.voice_fell_back("timeout")
+        freezer.tick(timedelta(minutes=5))
+    # said straight away, once
+    told = [i for i in rt.timeline.since(1, ["health"], 50) if i["text"].startswith("The AI hasn't answered")]
+    assert len(told) == 1
+    from datetime import datetime, timezone
+
+    for _ in range(3):
+        rt.speech.reading_fallbacks.append((datetime.now(timezone.utc), "tts.slow", "assist_satellite.kitchen"))
+    kinds = {f["about"] for f in rt.selfaware.check()["findings"] if f["kind"] == "failing"}
+    assert {"voice", "reading voice"} <= kinds

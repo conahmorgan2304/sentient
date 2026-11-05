@@ -22,11 +22,12 @@ from statistics import median
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import EVENT_CALL_SERVICE
-from homeassistant.core import Context, Event, HomeAssistant, State, callback
+from homeassistant.core import Event, HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .own import is_own, own_context
 from .const import (
     CONF_COMFORT_TEMP,
     CONF_HEATING_ENTITIES,
@@ -184,6 +185,7 @@ class Heating:
         self._done_day: dict[str, str] = {}
         self._unsubs: list = []
         self.learner = None  # set by the runtime: tells it which changes automations made
+        self.trust = None  # set by the runtime: ask or say before warming up
         self.own_contexts: set[str] = set()
 
     @property
@@ -406,21 +408,33 @@ class Heating:
             "until": dt_util.as_utc(until).isoformat(),
         }
         self._save()
-        try:
-            context = Context()
-            self.own_contexts.add(context.id)
-            await self.hass.services.async_call(
-                "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True,
-                context=context,
+
+        async def run() -> None:
+            try:
+                context = own_context(self.hass, "heating")
+                self.own_contexts.add(context.id)
+                await self.hass.services.async_call(
+                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": comfort}, blocking=True,
+                    context=context,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Sentient could not preheat %s: %s", entity_id, err)
+                self._boosted.pop(entity_id, None)
+                self._save()
+                return
+            self.timeline.add(
+                "heating", f"Warming {st.name} to {comfort:g}° for when people are up", f"usually up around {clock(wake)}"
             )
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Sentient could not preheat %s: %s", entity_id, err)
+
+        if self.trust is None:
+            await run()
+            return
+        outcome = await self.trust.async_act(
+            entity_id, f"Warming the {st.name.lower()} to {comfort:g} degrees", f"Shall I warm the {st.name.lower()} to {comfort:g} degrees?",
+            run, f"people are usually up around {clock(wake)}")
+        if outcome == "not asked":
             self._boosted.pop(entity_id, None)
             self._save()
-            return
-        self.timeline.add(
-            "heating", f"Warming {st.name} to {comfort:g}° for when people are up", f"usually up around {clock(wake)}"
-        )
 
     async def _async_restore(self, entity_id: str, boost: dict[str, Any]) -> None:
         self._boosted.pop(entity_id, None)
@@ -428,7 +442,7 @@ class Heating:
         st = self.hass.states.get(entity_id)
         if st is None or st.state == "off":
             return
-        context = Context()
+        context = own_context(self.hass, "heating")
         self.own_contexts.add(context.id)
         try:
             if boost.get("was_off"):
@@ -458,7 +472,8 @@ class Heating:
     # ----- time limit on heating turned up by hand or by voice ----------------------------
     @callback
     def _on_call(self, event: Event) -> None:
-        if event.data.get("domain") != "climate" or event.context.id in self.own_contexts or event.context.parent_id:
+        if (event.data.get("domain") != "climate" or event.context.id in self.own_contexts or event.context.parent_id
+                or is_own(self.hass, event.context)):
             return  # the house's own changes, automations and scripts aren't limited
         hours = _num(self.options.get(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)) or 0
         if hours <= 0:

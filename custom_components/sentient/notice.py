@@ -28,6 +28,7 @@ from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .reasons import because
 from .ai import async_generate
 from .const import (
     personality_line,
@@ -83,6 +84,15 @@ _FINISHED_STATES = {"off", "idle", "standby", "done", "complete", "completed", "
                     "returning", "paused", "stopped", "end", "clean", "dry", "keep_warm", "keep warm"}
 _STARTED_STATES = {"on", "heating", "running", "boiling", "cleaning", "washing", "drying", "spinning", "active",
                    "brewing", "playing", "starting", "rinsing", "mopping"}
+
+
+@dataclass
+class Told(Change):
+    """Something an automation or integration passed in with sentient.notice, in its own words."""
+
+    def describe(self) -> str:
+        where = f" ({self.area})" if self.area else ""
+        return f"{dt_util.as_local(self.when):%H:%M} {self.name}{where}"
 
 
 def contradicts(message: str, changes: list[Change]) -> bool:
@@ -230,6 +240,23 @@ class Noticer:
             return "hourly_limit"
         return None
 
+    async def async_notice(self, what: str, entity_id: str | None = None, decide: bool = True,
+                           priority: str = "normal") -> dict[str, Any]:
+        """sentient.notice: something from an automation or integration, through the same rules and decision.
+
+        decide=True: the AI decides whether it's worth saying and how (counts as noticing); False: say it as given,
+        still under quiet hours, hush, guests and holiday."""
+        if not decide:
+            with because("an automation passed it on"):
+                result = await self.speech.async_say(what, priority, None, source="notice:automation")
+            return {"result": result.reason, "message": result.message}
+        st = self.hass.states.get(entity_id) if entity_id else None
+        area = area_of(self.hass, entity_id) if entity_id else None
+        if area and (entry := ar.async_get(self.hass).async_get_area(area)):
+            area = entry.name
+        told = Told(entity_id or "sentient.notice", what, area, None, st.state if st else "", "", dt_util.utcnow())
+        return await self.async_consider([told])
+
     async def async_consider(self, changes: list[Change]) -> dict[str, Any]:
         record = await self._async_decide(changes)
         self.hass.bus.async_fire(EVENT_NOTICED, record)
@@ -265,10 +292,11 @@ class Noticer:
             message = decision["message"].strip()
             if self.feedback is not None:
                 self.feedback.remarked([c.entity_id for c in changes], message)
-            if decision.get("question"):
-                result = await self.speech.async_ask(message, source="notice")
-            else:
-                result = await self.speech.async_say(message, "normal", None, source="notice")
+            with because("I noticed " + "; ".join(record["changes"][:3]) + " and thought it worth mentioning"):
+                if decision.get("question"):
+                    result = await self.speech.async_ask(message, source="notice")
+                else:
+                    result = await self.speech.async_say(message, "normal", None, source="notice")
             record["result"] = result.reason
         return record
 

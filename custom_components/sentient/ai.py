@@ -16,6 +16,7 @@ Questions people ask a voice agent go through that agent, not through here, and 
 from __future__ import annotations
 
 import asyncio
+from datetime import timedelta
 import logging
 from typing import Any
 
@@ -32,6 +33,7 @@ from .const import (
     DEFAULT_BUDGET_CLIPS,
     CONF_BUDGET_NOTICING,
     CONF_DAILY_AI_LIMIT,
+    CONF_PRIVACY_LOG,
     DEFAULT_DAILY_AI_LIMIT,
     DOMAIN,
 )
@@ -41,6 +43,8 @@ _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 90  # seconds; picture questions can be slow
 FAILING_AFTER = 3  # failures in a row
 HISTORY_DAYS = 14
+SENT_DAYS = 14
+SENT_KEEP = 2000
 
 
 class AIUnavailable(HomeAssistantError):
@@ -66,6 +70,7 @@ class AIGate:
         self.last_error_at: str | None = None
         self.last_ok_at: str | None = None
         self.capped_at: str | None = None
+        self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -73,6 +78,7 @@ class AIGate:
         self.fails_in_row = int(data.get("fails_in_row") or 0)
         self.last_error, self.last_error_at = data.get("last_error"), data.get("last_error_at")
         self.last_ok_at = data.get("last_ok_at")
+        self.sent = list(data.get("sent") or [])[:SENT_KEEP]
         if data.get("day") == self.day:
             self.counts = dict(data.get("counts") or {})
             self.failed_today = int(data.get("failed_today") or 0)
@@ -85,7 +91,7 @@ class AIGate:
         self._store.async_delay_save(lambda: {
             "day": self.day, "counts": self.counts, "history": self.history, "failed_today": self.failed_today,
             "fails_in_row": self.fails_in_row, "last_error": self.last_error, "last_error_at": self.last_error_at,
-            "last_ok_at": self.last_ok_at, "capped_at": self.capped_at,
+            "last_ok_at": self.last_ok_at, "capped_at": self.capped_at, "sent": self.sent,
         }, 5)
 
     def _trim(self) -> None:
@@ -153,12 +159,69 @@ class AIGate:
                     "used": sum(n for p, n in self.counts.items() if BUDGETS.get(p) == key), "cap": cap}
         return out
 
+    # ----- what leaves the house -----------------------------------------------------------
+    @property
+    def keeping_record(self) -> bool:
+        return bool(self.options.get(CONF_PRIVACY_LOG, True))
+
+    def record_sent(self, feature: str, to: str, pictures: int = 0, clips: int = 0, documents: int = 0,
+                    chars: int = 0) -> None:
+        """Note that something left the house — what kind and how much, never what it said or showed."""
+        if not self.keeping_record:
+            return
+        self.sent.insert(0, {"time": dt_util.utcnow().isoformat(), "feature": feature, "to": to,
+                             "pictures": pictures, "clips": clips, "documents": documents, "chars": chars})
+        cutoff = (dt_util.utcnow() - timedelta(days=SENT_DAYS)).isoformat()
+        self.sent = [s for s in self.sent if s["time"] >= cutoff][:SENT_KEEP]
+        self._save()
+
+    def _record_call(self, data: dict[str, Any]) -> None:
+        kinds = [str(a.get("media_content_type") or "") for a in data.get("attachments") or [] if isinstance(a, dict)]
+        feature = str(data.get("task_name") or "background job").removeprefix("Sentient: ").removeprefix("Sentient ")
+        self.record_sent(
+            feature, str(data.get("entity_id") or "the AI task entity"),
+            pictures=sum(1 for k in kinds if k.startswith("image/")),
+            clips=sum(1 for k in kinds if k.startswith("video/")),
+            documents=sum(1 for k in kinds if not k.startswith(("image/", "video/"))),
+            chars=len(str(data.get("instructions") or "")),
+        )
+
+    def sent_summary(self, days: float = 7) -> dict[str, Any]:
+        """By feature over the last few days, plus the last 48 hours in detail (no content)."""
+        cutoff = (dt_util.utcnow() - timedelta(days=days)).isoformat()
+        recent = [s for s in self.sent if s["time"] >= cutoff]
+        by: dict[str, dict[str, int]] = {}
+        for s in recent:
+            row = by.setdefault(s["feature"], {"times": 0, "pictures": 0, "clips": 0, "documents": 0})
+            row["times"] += 1
+            for k in ("pictures", "clips", "documents"):
+                row[k] += int(s.get(k) or 0)
+        def name(to: str) -> str:
+            return st.name if (st := self.hass.states.get(to)) is not None else to
+
+        recent = [{**s, "to": name(s["to"])} for s in recent]
+        two_days = (dt_util.utcnow() - timedelta(hours=48)).isoformat()
+        return {
+            "keeping_record": self.keeping_record, "days": days,
+            "by_feature": dict(sorted(by.items(), key=lambda kv: -kv[1]["times"])),
+            "totals": {k: sum(r[k] for r in by.values()) for k in ("times", "pictures", "clips", "documents")},
+            "last_48_hours": [s for s in recent if s["time"] >= two_days][:100],
+            "where": sorted({s["to"] for s in recent}),
+        }
+
+    def forget_sent(self, since: str | None = None) -> int:
+        before = len(self.sent)
+        self.sent = [s for s in self.sent if since is not None and s["time"] < since]
+        self._save()
+        return before - len(self.sent)
+
     # ----- calling -------------------------------------------------------------------------
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
         """ai_task.generate_data with a time limit; failures are noted and raised as AIUnavailable."""
         data = dict(data)
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
             data["entity_id"] = ai
+        self._record_call(data)
         try:
             async with asyncio.timeout(timeout):
                 try:
@@ -231,7 +294,13 @@ def gate(hass: HomeAssistant) -> AIGate | None:
 
 
 async def async_generate(hass: HomeAssistant, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
-    """Call ai_task.generate_data through the gate (time limit, failure tracking)."""
+    """Call ai_task.generate_data through the gate (time limit, failure tracking).
+
+    Every job is told that quoted text (calendars, the web, descriptions…) is data, never instructions."""
+    from .outside import QUOTED_RULE
+
+    if isinstance(data.get("instructions"), str) and QUOTED_RULE not in data["instructions"]:
+        data = {**data, "instructions": f"{data['instructions']}\n\n{QUOTED_RULE}"}
     if (g := gate(hass)) is not None:
         return await g.async_call(data, timeout)
     try:

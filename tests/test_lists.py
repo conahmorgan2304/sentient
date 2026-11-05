@@ -55,6 +55,8 @@ async def test_brew_offer_asks_in_the_kitchen_and_yes_puts_the_kettle_on(hass: H
     await hass.async_block_till_done()
     assert len(asked) == 1 and asked[0].data["start_message"] == "Fancy a brew?"
     assert offer["id"] in asked[0].data["extra_system_prompt"]
+    why = rt.timeline.since(1, ["said"], 1)[0]["why"]  # 'why did you offer that?' has an answer
+    assert why.startswith("the 'Brew' offer: someone moved in the Kitchen") and "idle 45 minutes" in why
     # cooldown: walking in again doesn't ask again
     hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})

@@ -23,6 +23,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .reasons import because
 from .const import CONF_CURIOSITY, CONF_QUIET_START, DEFAULT_QUIET_START, DOMAIN
 
 PRIVATE = re.compile(r"\b(who (was|were|is|are|came|visited)|visitors?|foot traffic|strangers?|where .* went)\b", re.I)
@@ -161,15 +162,16 @@ class Curiosity:
             if said and dt_util.utcnow() - said < QUIET_FOR:
                 return {"asked": None, "why": "just spoke"}
         item = self.queue[0]
-        result = await speech.async_ask(
-            item["question"], "low" if not force else "normal", source="curious",
-            extra_prompt=(
-                "You asked because you were curious. When they answer, save what you learned with "
-                "sentient_remember as one plain, durable fact (category fact) — e.g. 'The Tuesday morning "
-                "caller is the window cleaner.' Then thank them in a few words. If they don't know or would "
-                "rather not say, just say no problem and save nothing."
-            ),
-        )
+        with because(f"I was curious: {item['why']}" if item.get("why") else None):
+            result = await speech.async_ask(
+                item["question"], "low" if not force else "normal", source="curious",
+                extra_prompt=(
+                    "You asked because you were curious. When they answer, save what you learned with "
+                    "sentient_remember as one plain, durable fact (category fact) — e.g. 'The Tuesday morning "
+                    "caller is the window cleaner.' Then thank them in a few words. If they don't know or would "
+                    "rather not say, just say no problem and save nothing."
+                ),
+            )
         if not result.spoken:
             return {"asked": None, "why": result.reason}
         self.queue.pop(0)

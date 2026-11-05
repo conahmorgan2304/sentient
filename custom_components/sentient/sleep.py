@@ -67,6 +67,15 @@ class Sleep:
     def enabled(self) -> bool:
         return bool(self.options.get(CONF_SLEEP, True))
 
+    def woke_on(self, day) -> int | None:
+        """Minutes after midnight the house got up on that date (local), or None."""
+        for h in reversed(self.history):
+            if (t := dt_util.parse_datetime(h.get("woke") or "")) is not None:
+                local = dt_util.as_local(t)
+                if local.date() == day:
+                    return local.hour * 60 + local.minute
+        return None
+
     def usual(self) -> dict[str, str | None]:
         """Usual bedtime and getting-up time over the last three weeks (median, local)."""
         from statistics import median

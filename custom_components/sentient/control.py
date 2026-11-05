@@ -5,7 +5,6 @@ import asyncio
 import math
 from copy import deepcopy
 from datetime import timedelta
-from typing import Any
 
 from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose

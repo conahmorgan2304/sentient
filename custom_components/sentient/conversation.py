@@ -279,6 +279,12 @@ class BackedUpAgent(conversation.ConversationEntity):
         parts.extend(f"{r['entity_id']}: {r.get('reason', r['status'])}." for r in other)
         return " ".join(parts) or "No devices were changed."
 
+    def _plain_reply(self, user_input, text: str):
+        response = intent.IntentResponse(language=user_input.language)
+        response.async_set_speech(text)
+        return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id,
+                                               continue_conversation=False)
+
     async def async_process(self, user_input):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
         from homeassistant.util import dt as dt_util
@@ -290,6 +296,10 @@ class BackedUpAgent(conversation.ConversationEntity):
             last = self._carry.get(speaker)
             if last and (now - last[1]).total_seconds() < minutes * 60:
                 user_input = replace(user_input, conversation_id=last[0])
+        take = getattr(getattr(getattr(self._entry, "runtime_data", None), "speech", None), "async_take_answer", None)
+        if take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
+            # a plain answer to the house's own question: done without the AI
+            return self._plain_reply(user_input, said)
         from .focus import current_request, turn_flags
 
         flags: dict = {}
@@ -451,6 +461,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         rt = getattr(self._entry, "runtime_data", None)
         if rt is not None:
             rt.timeline.add("health", "Voice answered by the backup agent", f"the AI failed: {why[:120]}")
+            if (selfaware := getattr(rt, "selfaware", None)) is not None:
+                selfaware.voice_fell_back(why)
         try:
             async with asyncio.timeout(BACKUP_TIMEOUT):
                 result = await self._converse(self.backup_agent, user_input)

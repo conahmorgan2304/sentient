@@ -56,6 +56,25 @@ def build(rt: Any, days: int = 7) -> dict[str, Any]:
     held = sum(1 for i in items if i.get("kind") == "held")
     visitors = sum(1 for i in items if i.get("kind") == "visitor")
     out["activity"] = f"spoke {said} times, held back {held}, {visitors} visitor{'s' if visitors != 1 else ''} at the door"
+
+    # what it got wrong, plainly — and what it would change (each waits for a yes on the Mind page)
+    wrong: list[str] = []
+    corrections = [m.text for m in rt.memory.items if m.category == "correction" and _since(m.created, cutoff)]
+    if corrections:
+        wrong.append(f"corrected {len(corrections)} time{'s' if len(corrections) != 1 else ''} (e.g. {corrections[0]})")
+    missed = [i for i in items if i.get("kind") == "health" and str(i.get("text", "")).startswith("Didn't happen:")]
+    if missed:
+        wrong.append(f"{len(missed)} thing{'s' if len(missed) != 1 else ''} asked for by voice didn't happen")
+    fell_back = [i for i in items if i.get("kind") == "health" and str(i.get("text", "")).startswith("Voice answered by the backup agent")]
+    if fell_back:
+        wrong.append(f"the AI didn't answer {len(fell_back)} time{'s' if len(fell_back) != 1 else ''}")
+    test = getattr(getattr(rt, "selftest", None), "last", None) or {}
+    if _since(test.get("time"), cutoff) and (bad := [r for r in test.get("results", []) if not r.get("right")]):
+        wrong.append(f"the self-test got {len(bad)} answer{'s' if len(bad) != 1 else ''} wrong")
+    if wrong:
+        out["got_wrong"] = wrong
+    if (proposals := getattr(rt, "proposals", None)) is not None and (waiting := proposals.listing()):
+        out["would_change"] = [p["change"] for p in waiting]
     return out
 
 
@@ -74,5 +93,9 @@ def summary(report: dict[str, Any]) -> str:
         parts.append("Batteries running down: " + "; ".join(bats[:3]) + ".")
     if mem := report.get("new_memories"):
         parts.append(f"{len(mem)} new thing{'s' if len(mem) != 1 else ''} remembered.")
+    if wrong := report.get("got_wrong"):
+        parts.append("Got wrong: " + "; ".join(wrong[:3]) + ".")
+    if change := report.get("would_change"):
+        parts.append("I'd change: " + "; ".join(c[0].lower() + c[1:] for c in change) + " — yes or no on the Mind page.")
     parts.append(f"This week it {report.get('activity', '')}.")
     return " ".join(parts)

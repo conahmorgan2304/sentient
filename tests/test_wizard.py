@@ -127,3 +127,45 @@ async def test_thumbs_down_on_an_old_remark_finds_what_it_was_about(hass: HomeAs
     assert (await ws.receive_json())["result"]["about"] == ["Kettle Status"]
     fb = entry.runtime_data.feedback
     assert round(fb.score("sensor.kettle_status"), 2) == 1.0 and fb.score("source:notice") == 0
+
+
+async def test_wizard_new_steps_people_trust_and_outside(hass: HomeAssistant, hass_ws_client) -> None:
+    """People and phones, trust and private rooms, and the world outside — suggested, never heating."""
+    from homeassistant.helpers import area_registry as ar
+
+    entry = await _setup(hass)
+    hass.states.async_set("person.sam", "home", {"friendly_name": "Sam"})
+    other = MockConfigEntry(domain="mobile_app")
+    other.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create("notify", "mobile_app", "pixel", suggested_object_id="sams_phone",
+                                           config_entry=other)
+    hass.states.async_set("notify.sams_phone", "unknown", {"friendly_name": "Sam's phone"})
+    hass.states.async_set("sensor.royal_mail_parcels", "In transit", {"friendly_name": "Royal Mail parcels"})
+    hass.states.async_set("binary_sensor.met_office_wind_warning", "off", {"friendly_name": "Met Office wind warning"})
+    hass.states.async_set("sensor.octopus_current_rate", "0.24", {"friendly_name": "Octopus current rate",
+                                                                   "unit_of_measurement": "GBP/kWh"})
+    hass.states.async_set("sensor.octopus_standing_charge", "0.5", {"unit_of_measurement": "GBP/kWh"})
+    hass.states.async_set("climate.lounge", "heat", {"temperature": 20})
+    ws = await hass_ws_client(hass)
+    await ws.send_json_auto_id({"type": "sentient/wizard"})
+    out = (await ws.receive_json())["result"]
+    ids = [s["id"] for s in out["steps"]]
+    assert {"people", "trust", "outside"} <= set(ids)
+    d = out["data"]
+    assert d["away_people"] == ["person.sam"] and d["notify_targets"] == ["notify.sams_phone"]
+    assert d["parcel_trackers"] == ["sensor.royal_mail_parcels"]
+    assert d["outside_info"] == ["binary_sensor.met_office_wind_warning"]
+    assert d["price_entity"] == "sensor.octopus_current_rate"
+    assert not d.get("holiday_thermostats")  # heating is never picked for you
+    assert d["trust_lights"] == "do" and d["private_rooms"] == []
+    girls = ar.async_get(hass).async_create("Girls' room")
+    await ws.send_json_auto_id({"type": "sentient/wizard/save", "step": "trust",
+                                "data": {"trust_lights": "ask", "private_rooms": [girls.id]}})
+    res = await ws.receive_json()
+    assert res["success"] and res["result"]["data"]["private_rooms"] == [girls.id]
+    assert entry.options["trust_lights"] == "ask" and "private_rooms" not in entry.options
+    profile = entry.runtime_data.lists["rooms"].find("Private rooms")
+    assert profile["private"] and profile["areas"] == [girls.id]
+    await ws.send_json_auto_id({"type": "sentient/wizard/save", "step": "trust", "data": {"private_rooms": []}})
+    assert (await ws.receive_json())["success"]
+    assert not entry.runtime_data.lists["rooms"].find("Private rooms")["enabled"]

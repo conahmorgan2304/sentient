@@ -38,6 +38,8 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_WHATS_NEW,
+    CONF_SIMPLE,
     CONF_EVENT_CLIPS,
     CONF_KNOWN_CARS,
     CONF_RELEVANT_MEMORIES,
@@ -112,6 +114,8 @@ from .const import (
     CONF_NEVER_ENTITIES,
     CONF_SELF_CHECK,
     CONF_SELF_ADJUST,
+    CONF_PROPOSALS,
+    CONF_PRIVACY_LOG,
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
     DEFAULT_MANUALS_FOLDER,
@@ -120,6 +124,7 @@ from .const import (
     CONF_BOOKS_FOLDER,
     CONF_READING_TTS,
     CONF_READING_VOICE,
+    CONF_READ_AHEAD,
     DEFAULT_BOOKS_FOLDER,
     CONF_RECIPES,
     CONF_RECIPES_FOLDER,
@@ -135,6 +140,11 @@ from .const import (
     CONF_ANIMAL_SENSORS,
     CONF_AWAY_LIGHTS_ON,
     CONF_AWAY_PEOPLE,
+    CONF_HOLIDAY,
+    CONF_HOLIDAY_END_ON_RETURN,
+    CONF_HOLIDAY_FROST,
+    CONF_HOLIDAY_THERMOSTATS,
+    DEFAULT_HOLIDAY_FROST,
     CONF_AWAY_LIGHTS,
     CONF_AWAY_AFTER,
     DEFAULT_AWAY_AFTER,
@@ -151,6 +161,8 @@ from .const import (
     CONF_BRIEFING_CALENDARS,
     CONF_BRIEFING_SECTIONS,
     CONF_BRIEFING_SYSTEM,
+    CONF_OUTSIDE_INFO,
+    CONF_PARCEL_TRACKERS,
     CONF_BRIEFING_TIME,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
@@ -165,6 +177,13 @@ from .const import (
     DEFAULT_ANNOUNCE_VISITORS,
     DEFAULT_PARCEL_ALERTS,
     CONF_LEARN_ENTITIES,
+    CONF_LEARN_ANCHORS,
+    CONF_TRUST_COVERS,
+    CONF_TRUST_HEATING,
+    CONF_TRUST_LIGHTS,
+    CONF_TRUST_SWITCHES,
+    TRUST_LEVELS,
+    CONF_OFFER_TOGETHER,
     CONF_SUGGEST_ROUTINES,
     CONF_LINK_TRIGGERS,
     DEFAULT_SUGGEST_ROUTINES,
@@ -178,6 +197,8 @@ from .const import (
     MAX_CARRY_ON_MINUTES,
     CONF_FOCUSED_TOOLS,
     CONF_ASK_LATER,
+    CONF_PUT_RIGHT,
+    CONF_MUSIC,
     CONF_HOUSE_RULES,
     CONF_NOTICE_ENTITIES,
     DEFAULT_CHATTINESS,
@@ -237,6 +258,7 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
+    CONF_PRICE_ENTITY,
     CONF_SEARCH_HINTS,
     CONF_REMARK_REPEAT_HOURS,
     DEFAULT_REMARK_REPEAT_HOURS,
@@ -304,6 +326,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
             vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_WHATS_NEW, **d(CONF_WHATS_NEW, True)): selector.BooleanSelector(),
+            vol.Required(CONF_SIMPLE, **d(CONF_SIMPLE, False)): selector.BooleanSelector(),
             vol.Required(CONF_AUTO_BACKUP, **d(CONF_AUTO_BACKUP, False)): selector.BooleanSelector(),
             vol.Required(CONF_BACKUP_KEEP, **d(CONF_BACKUP_KEEP, DEFAULT_BACKUP_KEEP)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=20, step=1, mode=selector.NumberSelectorMode.BOX)
@@ -351,6 +375,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_AWAY_AFTER, **d(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=240, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_HOLIDAY, **d(CONF_HOLIDAY, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_HOLIDAY_THERMOSTATS, **d(CONF_HOLIDAY_THERMOSTATS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="climate", multiple=True)
+            ),
+            vol.Required(CONF_HOLIDAY_FROST, **d(CONF_HOLIDAY_FROST, DEFAULT_HOLIDAY_FROST)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=15, step=0.5, unit_of_measurement="°", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_HOLIDAY_END_ON_RETURN, **d(CONF_HOLIDAY_END_ON_RETURN, True)): selector.BooleanSelector(),
             vol.Optional(CONF_CHAT_AGENT, **d(CONF_CHAT_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
@@ -494,6 +526,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_ENERGY_CURRENCY, **d(CONF_ENERGY_CURRENCY)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=CURRENCIES, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN)
             ),
+            vol.Optional(CONF_PRICE_ENTITY, **d(CONF_PRICE_ENTITY)): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "event", "input_number"])
+            ),
             vol.Required(CONF_SEARCH_HINTS, **d(CONF_SEARCH_HINTS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WEB_SEARCH, **d(CONF_WEB_SEARCH, False)): selector.BooleanSelector(),
             vol.Optional(CONF_SEARXNG_URL, **d(CONF_SEARXNG_URL)): selector.TextSelector(
@@ -553,12 +588,19 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_FOCUSED_TOOLS, **d(CONF_FOCUSED_TOOLS, False)): selector.BooleanSelector(),
             vol.Required(CONF_ASK_LATER, **d(CONF_ASK_LATER, False)): selector.BooleanSelector(),
+            vol.Required(CONF_PUT_RIGHT, **d(CONF_PUT_RIGHT, True)): selector.BooleanSelector(),
+            vol.Required(CONF_MUSIC, **d(CONF_MUSIC, True)): selector.BooleanSelector(),
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),
             vol.Optional(CONF_LEARN_ENTITIES, **d(CONF_LEARN_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["light", "switch", "fan", "input_boolean", "cover"], multiple=True)
             ),
+            vol.Required(CONF_LEARN_ANCHORS, **d(CONF_LEARN_ANCHORS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_OFFER_TOGETHER, **d(CONF_OFFER_TOGETHER, True)): selector.BooleanSelector(),
+            **{vol.Required(key, **d(key, "do")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=TRUST_LEVELS, translation_key="trust_level"))
+               for key in (CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, CONF_TRUST_COVERS, CONF_TRUST_HEATING)},
             vol.Required(CONF_WELCOME, **d(CONF_WELCOME, False)): selector.BooleanSelector(),
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)
@@ -634,6 +676,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_SELF_CHECK, **d(CONF_SELF_CHECK, True)): selector.BooleanSelector(),
             vol.Required(CONF_SELF_ADJUST, **d(CONF_SELF_ADJUST, False)): selector.BooleanSelector(),
+            vol.Required(CONF_PROPOSALS, **d(CONF_PROPOSALS, True)): selector.BooleanSelector(),
+            vol.Required(CONF_PRIVACY_LOG, **d(CONF_PRIVACY_LOG, True)): selector.BooleanSelector(),
             vol.Required(CONF_GOALS, **d(CONF_GOALS, False)): selector.BooleanSelector(),
             vol.Required(CONF_MANUALS, **d(CONF_MANUALS, False)): selector.BooleanSelector(),
             vol.Optional(CONF_MANUALS_FOLDER, **d(CONF_MANUALS_FOLDER, DEFAULT_MANUALS_FOLDER)): selector.TextSelector(),
@@ -641,6 +685,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_BOOKS_FOLDER, **d(CONF_BOOKS_FOLDER, DEFAULT_BOOKS_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_READING_TTS, **d(CONF_READING_TTS, None)): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
             vol.Optional(CONF_READING_VOICE, **d(CONF_READING_VOICE, "")): selector.TextSelector(),
+            vol.Required(CONF_READ_AHEAD, **d(CONF_READ_AHEAD, True)): selector.BooleanSelector(),
             vol.Required(CONF_RECIPES, **d(CONF_RECIPES, False)): selector.BooleanSelector(),
             vol.Optional(CONF_RECIPES_FOLDER, **d(CONF_RECIPES_FOLDER, DEFAULT_RECIPES_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_RECIPES_LIST, **d(CONF_RECIPES_LIST, None)): selector.EntitySelector(selector.EntitySelectorConfig(domain="todo")),
@@ -738,6 +783,12 @@ def _briefing_schema(current: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_BRIEFING_SYSTEM, **d(CONF_BRIEFING_SYSTEM, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
             ),
+            vol.Optional(CONF_OUTSIDE_INFO, **d(CONF_OUTSIDE_INFO, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "binary_sensor", "event"], multiple=True)
+            ),
+            vol.Optional(CONF_PARCEL_TRACKERS, **d(CONF_PARCEL_TRACKERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor", "binary_sensor"], multiple=True)
+            ),
             vol.Optional(CONF_BRIEFING_TIME, **d(CONF_BRIEFING_TIME)): selector.TimeSelector(),
             vol.Required(CONF_MORNING_BRIEFING, **d(CONF_MORNING_BRIEFING, False)): selector.BooleanSelector(),
             vol.Optional(CONF_MORNING_BRIEFING_AREAS, **d(CONF_MORNING_BRIEFING_AREAS, [])): selector.AreaSelector(selector.AreaSelectorConfig(multiple=True)),
@@ -767,7 +818,8 @@ class SentientConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_speech(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(title=self._data[CONF_PERSONA], data={**self._data, **user_input})
+            # a new house starts with the simpler settings page (essentials first; everything one tap away)
+            return self.async_create_entry(title=self._data[CONF_PERSONA], data={CONF_SIMPLE: True, **self._data, **user_input})
         return self.async_show_form(step_id="speech", data_schema=_speech_schema({}))
 
     @staticmethod

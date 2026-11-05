@@ -27,7 +27,7 @@
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
           "daily_ai_limit": "AI calls per day",
-          "prompt_recent": "The last hour in the voice's context",
+          "prompt_recent": "Right now and the last hour in the voice's context",
           "rules": "Rules, and making them by voice",
           "relevant_memories": "Pick the memories that match what was asked",
           "look_cache_minutes": "Reuse a camera answer for",
@@ -43,8 +43,16 @@
           "carry_on_minutes": "Carry on a conversation for",
           "focused_tools": "Focused voice tools",
           "ask_later": "Ask how things went",
+          "put_right": "Put mistakes right in one go",
+          "music": "Music by asking (Music Assistant)",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
+          "learn_anchors": "Habits that follow the day",
+          "trust_lights": "Lights",
+          "trust_switches": "Switches, plugs and fans",
+          "trust_covers": "Blinds and curtains",
+          "trust_heating": "Heating",
+          "offer_together": "Offer habits done together as one",
           "link_triggers": "Also learn what follows these",
           "suggest_routines": "Offer to take over routines",
           "door_camera": "Door camera",
@@ -72,6 +80,8 @@
           "face_sensor": "Recognised name from",
           "sidebar_panel": "Show in the sidebar",
           "suggestions": "Suggestions on the Sentient page",
+          "whats_new": "What's new after an update",
+          "simple_settings": "Simpler settings page",
           "auto_backup": "Back up every week",
           "backup_keep": "How many to keep",
           "confirm_kinds": "Ask \"shall I?\" before",
@@ -82,6 +92,8 @@
           "never_entities": "Never touch these",
           "self_check": "Check itself each night",
           "self_adjust": "Adjust itself",
+          "proposals": "Suggest changes to its settings",
+          "privacy_log": "Keep a record of what leaves the house",
           "goals": "Goals",
           "manuals": "Answer from documents",
           "manuals_folder": "Documents folder",
@@ -89,6 +101,7 @@
           "books_folder": "Books folder",
           "reading_tts": "Reading voice: service",
           "reading_voice": "Reading voice",
+          "read_ahead": "Make the next part ready while reading",
           "recipes": "Recipes",
           "recipes_folder": "Recipes folder",
           "recipes_list": "Shopping list for ingredients",
@@ -102,6 +115,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "away_lights_on": "Away lights",
+          "holiday_mode": "Holiday mode",
+          "holiday_thermostats": "Thermostats to turn down on holiday",
+          "holiday_frost": "Frost protection temperature",
+          "holiday_end_on_return": "End holiday mode when someone's home",
           "away_people": "Away when all of these are out",
           "away_lights": "Lights to use",
           "away_after": "Start after everyone's been out for",
@@ -139,7 +156,7 @@
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
           "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
-          "prompt_recent": "A few lines on what happened in the last hour, and where there's been movement, so 'what just happened?' is answered straight away. Free: no extra AI calls.",
+          "prompt_recent": "A few lines on right now (asleep, hushed or quiet hours, guests, anything open, and readings not heard from for hours so they aren't given as current), what happened in the last hour and where there's been movement, so 'anything I should know?' and 'what just happened?' are answered straight away. Free: no extra AI calls.",
           "rules": "\"When this happens, do that\" rules (the Rules page), and the voice can make them: it reads the rule back and only saves it after a yes. Rules can never arm, disarm or unlock anything. Off: no rules run.",
           "relevant_memories": "Once there are more memories than fit in the voice's context, it gets the ones that share words with the question, then the newest. Free, no AI. Off: always the newest.",
           "look_cache_minutes": "The same question to the same camera within this time gets the last answer instead of a new AI look. 0 always looks again.",
@@ -155,8 +172,16 @@
           "carry_on_minutes": "Saying the wake word again this soon after talking carries on the same conversation from the same speaker, so \"and upstairs?\" still makes sense. 0 turns this off; Home Assistant forgets a conversation after five quiet minutes.",
           "focused_tools": "Give the voice only Sentient's tools that fit what was asked (cameras, heating, reminders…), plus memory and safety. A smaller choice makes cheaper models quicker and more accurate. Anything that doesn't clearly match still gets every tool.",
           "ask_later": "When someone mentions something coming up (a trip, a match, the vet), the voice can remember to ask how it went the next time anyone talks to it — once, never in quiet hours or with guests in, and never about anything private. It never speaks out of the blue. Switching this off forgets anything waiting to be asked.",
+          "put_right": "When you say \"no, the other one\" or \"not that light, the lamp\", the voice switches back what it just switched (on or off, within a few minutes) and does the request again with only the corrected part — no need to say it all again. Turning this off leaves putting it right to the voice agent.",
+          "music": "Only with Music Assistant set up: \"play something calm in the kitchen\" picks from your own playlists and radio stations and plays it on the Music Assistant player in that room — at the night volume in quiet hours, and not in a room in its own quiet time unless you're in it. Off: no music tool.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
+          "learn_anchors": "A habit that keeps time with sunset, sunrise or getting up rather than the clock (the lamp at dusk, the blinds at sunrise, the kettle after getting up) is learned that way, so a routine the house does for you moves with the seasons. Getting up needs the asleep and awake setting. Off: everything is learned against the clock, as before.",
+          "offer_together": "When a few things usually happen at about the same time on the same days (the lamp on, the blinds closed, the TV on around 8pm), they're offered once, together — one yes and the house does all of them. Off: each is offered on its own.",
+          "trust_lights": "When a routine you've let the house take over switches a light: just do it, say so first, or ask and only do it on a yes (nothing happens if nobody answers).",
+          "trust_switches": "The same for switches, smart plugs and fans.",
+          "trust_covers": "The same for blinds and curtains. Garage doors and gates always ask.",
+          "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
@@ -187,11 +212,15 @@
           "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
           "backup_keep": "Older ones are deleted.",
           "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
+          "whats_new": "After Sentient is updated, a short card on the Sentient page says what's new, in plain words, until you tap GOT IT.",
+          "simple_settings": "The settings list shows the essentials, with SHOW EVERYTHING for the optional features. New installs start this way. Changes nothing about what Sentient does.",
           "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
           "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
           "never_entities": "Sentient never switches, dims or changes these: not in rules, routines, offers, auto-off, away or motion lights, light shows, the heating or guarded voice control, and the voice is told to leave them alone. It can still read them and talk about them. Anything that would change one is skipped and noted.",
           "self_check": "Each night it looks back over its own records — what it said and how that went down, speakers that failed, things held back, questions asked again and again, the AI meter — and notes what it notices about itself, with the numbers behind it. No AI. Ask \"have you been annoying us?\" or \"what have you realised?\".",
           "self_adjust": "When the self-check finds a kind of remark the house keeps hushing, quieten it a little (the same as a thumbs down; it fades again). Never touches safety, security or anything it controls.",
+          "proposals": "When the self-check finds something it got wrong, suggest one small change on the Mind page — fewer remarks, not repeating one so often, a section added to the briefing, a higher AI limit — with the reason. Nothing changes until you say yes; a no isn't asked again for a month. Turning this off clears any waiting suggestions.",
+          "privacy_log": "Each AI call and web search Sentient makes is noted — which feature, how many pictures, clips or documents, and which service — never what was said or shown. See it under Brain & system → What leaves the house, with a button to forget the last 48 hours. Turning this off clears the record.",
           "goals": "Let the voice set goals over days or weeks (\"help us use less heating this month\"). A goal can follow a sensor: it compares each day with the usual week before and mentions progress when it fits. Nothing is changed in the house.",
           "manuals": "Answer questions from the documents in the folder below (one AI call each). Off: the documents are left alone.",
           "manuals_folder": "A folder in Home Assistant’s media (e.g. manuals = media/manuals). Name each file after what it’s for, e.g. \"Air purifier.pdf\".",
@@ -199,6 +228,7 @@
           "books_folder": "A folder in Home Assistant’s media (books = media/books). DRM-free .epub or .txt ebooks; audiobooks as one .mp3/.m4b/.m4a file, or a folder of parts named after the book.",
           "reading_tts": "A different text-to-speech service just for books and stories — Gemini or ElevenLabs voices are often better storytellers. Leave it blank to read in the usual voice. Echos always use Alexa's own voice.",
           "reading_voice": "Pick the voice from that service. Use TRY THE VOICE below to hear it on the default speaker before saving.",
+          "read_ahead": "With a reading voice, the next part of the story is made while this part is read, so a slow voice (a free or cloud one) doesn't leave a gap between parts. Uses that voice a little earlier, never more often.",
           "recipes": "\"Let’s make the lasagne\": the ingredients, then one step at a time — \"next\", \"repeat that\", \"go back\", \"what’s next?\" — remembering the step per speaker. \"Make it for 6\" scales it; ingredients can go on the shopping list.",
           "recipes_folder": "A folder in Home Assistant’s media (recipes = media/recipes) with PDFs, photos, text or Markdown. Each is tidied into steps by one AI call the first time, then kept. Mealie is used automatically if its integration is set up.",
           "recipes_list": "Where \"add the ingredients to the shopping list\" puts them. Empty: the list with \"shopping\" in its name.",
@@ -210,6 +240,10 @@
           "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
           "away_people": "Empty: everyone with a person entry. You can pick phones (device trackers) instead of people.",
           "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "holiday_mode": "A 'Holiday mode' switch, and 'we're going on holiday until Sunday' by voice. While it's on, nothing is said out loud except safety alerts — what would have been said goes to the phones chosen for notifications, with visitors and parcels; the away lights run even if they're normally off; and the thermostats below are turned down. Off: no switch and no holiday by voice.",
+          "holiday_thermostats": "Turned down to frost protection while you're away, and put back exactly as they were when holiday mode ends. Empty: the heating isn't touched.",
+          "holiday_frost": "What the thermostats above are set to while you're away.",
+          "holiday_end_on_return": "Once everyone has gone out, the first person home ends holiday mode and puts the heating back. Off: it ends on its date or when switched off.",
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
@@ -270,7 +304,7 @@
           "camera_cooldown": "Minimum gap between camera checks",
           "fallback_speakers": "Backup-only speakers",
           "daily_ai_limit": "AI calls per day",
-          "prompt_recent": "The last hour in the voice's context",
+          "prompt_recent": "Right now and the last hour in the voice's context",
           "rules": "Rules, and making them by voice",
           "relevant_memories": "Pick the memories that match what was asked",
           "look_cache_minutes": "Reuse a camera answer for",
@@ -286,8 +320,16 @@
           "carry_on_minutes": "Carry on a conversation for",
           "focused_tools": "Focused voice tools",
           "ask_later": "Ask how things went",
+          "put_right": "Put mistakes right in one go",
+          "music": "Music by asking (Music Assistant)",
           "house_rules": "House rules",
           "learn_entities": "Learn routines from",
+          "learn_anchors": "Habits that follow the day",
+          "trust_lights": "Lights",
+          "trust_switches": "Switches, plugs and fans",
+          "trust_covers": "Blinds and curtains",
+          "trust_heating": "Heating",
+          "offer_together": "Offer habits done together as one",
           "link_triggers": "Also learn what follows these",
           "suggest_routines": "Offer to take over routines",
           "door_camera": "Door camera",
@@ -315,6 +357,8 @@
           "face_sensor": "Recognised name from",
           "sidebar_panel": "Show in the sidebar",
           "suggestions": "Suggestions on the Sentient page",
+          "whats_new": "What's new after an update",
+          "simple_settings": "Simpler settings page",
           "auto_backup": "Back up every week",
           "backup_keep": "How many to keep",
           "confirm_kinds": "Ask \"shall I?\" before",
@@ -325,6 +369,8 @@
           "never_entities": "Never touch these",
           "self_check": "Check itself each night",
           "self_adjust": "Adjust itself",
+          "proposals": "Suggest changes to its settings",
+          "privacy_log": "Keep a record of what leaves the house",
           "goals": "Goals",
           "manuals": "Answer from documents",
           "manuals_folder": "Documents folder",
@@ -332,6 +378,7 @@
           "books_folder": "Books folder",
           "reading_tts": "Reading voice: service",
           "reading_voice": "Reading voice",
+          "read_ahead": "Make the next part ready while reading",
           "recipes": "Recipes",
           "recipes_folder": "Recipes folder",
           "recipes_list": "Shopping list for ingredients",
@@ -359,6 +406,7 @@
           "energy_insight": "Energy insight",
           "energy_price": "Electricity price",
           "energy_currency": "Currency",
+          "price_entity": "Time-of-use price (cheap-electricity suggestions)",
           "search_hints": "Tell the voice about search tools",
           "web_search": "Sentient's own web search",
           "searxng_url": "SearXNG address",
@@ -431,6 +479,10 @@
           "backup_agent": "Backup agent",
           "animal_sensors": "Animals' temperature sensors",
           "away_lights_on": "Away lights",
+          "holiday_mode": "Holiday mode",
+          "holiday_thermostats": "Thermostats to turn down on holiday",
+          "holiday_frost": "Frost protection temperature",
+          "holiday_end_on_return": "End holiday mode when someone's home",
           "away_people": "Away when all of these are out",
           "away_lights": "Lights to use",
           "away_after": "Start after everyone's been out for",
@@ -468,7 +520,7 @@
           "camera_cooldown": "A camera watch looks again at most this often, to keep AI costs down.",
           "fallback_speakers": "Only used when nobody is in any other speaker's room, e.g. a living room you'd rather not disturb.",
           "daily_ai_limit": "Background AI calls (camera checks, briefings, the nightly think, the doorbell…) stop for the day after this many, and it uses plain words instead. Questions you ask still get answered. 0 means no limit.",
-          "prompt_recent": "A few lines on what happened in the last hour, and where there's been movement, so 'what just happened?' is answered straight away. Free: no extra AI calls.",
+          "prompt_recent": "A few lines on right now (asleep, hushed or quiet hours, guests, anything open, and readings not heard from for hours so they aren't given as current), what happened in the last hour and where there's been movement, so 'anything I should know?' and 'what just happened?' are answered straight away. Free: no extra AI calls.",
           "rules": "\"When this happens, do that\" rules (the Rules page), and the voice can make them: it reads the rule back and only saves it after a yes. Rules can never arm, disarm or unlock anything. Off: no rules run.",
           "relevant_memories": "Once there are more memories than fit in the voice's context, it gets the ones that share words with the question, then the newest. Free, no AI. Off: always the newest.",
           "look_cache_minutes": "The same question to the same camera within this time gets the last answer instead of a new AI look. 0 always looks again.",
@@ -484,8 +536,16 @@
           "carry_on_minutes": "Saying the wake word again this soon after talking carries on the same conversation from the same speaker, so \"and upstairs?\" still makes sense. 0 turns this off; Home Assistant forgets a conversation after five quiet minutes.",
           "focused_tools": "Give the voice only Sentient's tools that fit what was asked (cameras, heating, reminders…), plus memory and safety. A smaller choice makes cheaper models quicker and more accurate. Anything that doesn't clearly match still gets every tool.",
           "ask_later": "When someone mentions something coming up (a trip, a match, the vet), the voice can remember to ask how it went the next time anyone talks to it — once, never in quiet hours or with guests in, and never about anything private. It never speaks out of the blue. Switching this off forgets anything waiting to be asked.",
+          "put_right": "When you say \"no, the other one\" or \"not that light, the lamp\", the voice switches back what it just switched (on or off, within a few minutes) and does the request again with only the corrected part — no need to say it all again. Turning this off leaves putting it right to the voice agent.",
+          "music": "Only with Music Assistant set up: \"play something calm in the kitchen\" picks from your own playlists and radio stations and plays it on the Music Assistant player in that room — at the night volume in quiet hours, and not in a room in its own quiet time unless you're in it. Off: no music tool.",
           "house_rules": "Plain sentences every voice must follow, one per line, e.g. 'Never say the house is empty.'",
           "learn_entities": "Lights, switches, fans and blinds people use by hand. Every night the last two weeks are checked for things done at about the same time most days, and for things done straight after something else (a door opening, another light going on).",
+          "learn_anchors": "A habit that keeps time with sunset, sunrise or getting up rather than the clock (the lamp at dusk, the blinds at sunrise, the kettle after getting up) is learned that way, so a routine the house does for you moves with the seasons. Getting up needs the asleep and awake setting. Off: everything is learned against the clock, as before.",
+          "offer_together": "When a few things usually happen at about the same time on the same days (the lamp on, the blinds closed, the TV on around 8pm), they're offered once, together — one yes and the house does all of them. Off: each is offered on its own.",
+          "trust_lights": "When a routine you've let the house take over switches a light: just do it, say so first, or ask and only do it on a yes (nothing happens if nobody answers).",
+          "trust_switches": "The same for switches, smart plugs and fans.",
+          "trust_covers": "The same for blinds and curtains. Garage doors and gates always ask.",
+          "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
@@ -516,11 +576,15 @@
           "auto_backup": "Sunday night, a backup of memories, spots, routines, motion lights, shushes and settings, saved in the config folder under sentient_backups.",
           "backup_keep": "Older ones are deleted.",
           "suggestions": "Things Sentient could use but isn't — a new speaker, a power sensor on the washing machine, a hutch thermometer — offered one line at a time. Yes adds it; no means it's never offered again. Free, no AI.",
+          "whats_new": "After Sentient is updated, a short card on the Sentient page says what's new, in plain words, until you tap GOT IT.",
+          "simple_settings": "The settings list shows the essentials, with SHOW EVERYTHING for the optional features. New installs start this way. Changes nothing about what Sentient does.",
           "chat_agent": "Who answers the page's Ask box — pick a voice agent that has Sentient ticked. Empty uses your preferred Assist pipeline.",
           "health_ignore": "Entities (and their devices) that shouldn't count as problems, e.g. something that's meant to be off.",
           "never_entities": "Sentient never switches, dims or changes these: not in rules, routines, offers, auto-off, away or motion lights, light shows, the heating or guarded voice control, and the voice is told to leave them alone. It can still read them and talk about them. Anything that would change one is skipped and noted.",
           "self_check": "Each night it looks back over its own records — what it said and how that went down, speakers that failed, things held back, questions asked again and again, the AI meter — and notes what it notices about itself, with the numbers behind it. No AI. Ask \"have you been annoying us?\" or \"what have you realised?\".",
           "self_adjust": "When the self-check finds a kind of remark the house keeps hushing, quieten it a little (the same as a thumbs down; it fades again). Never touches safety, security or anything it controls.",
+          "proposals": "When the self-check finds something it got wrong, suggest one small change on the Mind page — fewer remarks, not repeating one so often, a section added to the briefing, a higher AI limit — with the reason. Nothing changes until you say yes; a no isn't asked again for a month. Turning this off clears any waiting suggestions.",
+          "privacy_log": "Each AI call and web search Sentient makes is noted — which feature, how many pictures, clips or documents, and which service — never what was said or shown. See it under Brain & system → What leaves the house, with a button to forget the last 48 hours. Turning this off clears the record.",
           "goals": "Let the voice set goals over days or weeks (\"help us use less heating this month\"). A goal can follow a sensor: it compares each day with the usual week before and mentions progress when it fits. Nothing is changed in the house.",
           "manuals": "Answer questions from the documents in the folder below (one AI call each). Off: the documents are left alone.",
           "manuals_folder": "A folder in Home Assistant’s media (e.g. manuals = media/manuals). Name each file after what it’s for, e.g. \"Air purifier.pdf\".",
@@ -528,6 +592,7 @@
           "books_folder": "A folder in Home Assistant’s media (books = media/books). DRM-free .epub or .txt ebooks; audiobooks as one .mp3/.m4b/.m4a file, or a folder of parts named after the book.",
           "reading_tts": "A different text-to-speech service just for books and stories — Gemini or ElevenLabs voices are often better storytellers. Leave it blank to read in the usual voice. Echos always use Alexa's own voice.",
           "reading_voice": "Pick the voice from that service. Use TRY THE VOICE below to hear it on the default speaker before saving.",
+          "read_ahead": "With a reading voice, the next part of the story is made while this part is read, so a slow voice (a free or cloud one) doesn't leave a gap between parts. Uses that voice a little earlier, never more often.",
           "recipes": "\"Let’s make the lasagne\": the ingredients, then one step at a time — \"next\", \"repeat that\", \"go back\", \"what’s next?\" — remembering the step per speaker. \"Make it for 6\" scales it; ingredients can go on the shopping list.",
           "recipes_folder": "A folder in Home Assistant’s media (recipes = media/recipes) with PDFs, photos, text or Markdown. Each is tidied into steps by one AI call the first time, then kept. Mealie is used automatically if its integration is set up.",
           "recipes_list": "Where \"add the ingredients to the shopping list\" puts them. Empty: the list with \"shopping\" in its name.",
@@ -538,7 +603,7 @@
           "event_clips": "Fetches Frigate's short clip of an event and has the AI watch it, so it can say what actually happened ('left a parcel and went'). Used after a camera-security alert, and when asked 'what happened at the door?'. Needs the Frigate integration. One AI call per clip. Off by default.",
           "notify_targets": "Notify entities, e.g. the Home Assistant app on each phone or watch.",
           "notify_when": "Each kind is sent at most once in ten minutes.",
-          "phone_buttons": "Through the companion app: at the door — the camera picture and a Show camera button; reminders — Snooze 10 min and Done. Empty: plain notifications as now.",
+          "phone_buttons": "Through the companion app: at the door — the camera picture and a Show camera button; reminders — Snooze 10 min and Done; questions — when the house wants to ask something (an offer, \"want me to do that for you?\", or ask-first before doing something) and nobody's near a speaker, it asks on the phones with Yes and No (not in quiet hours). Empty: plain notifications as now.",
           "phone_apps": "e.g. notify.mobile_app_pixel_8. Empty: the companion app behind each phone chosen above (notify.my_phone → mobile_app_my_phone) — never the tablets.",
           "bins_check": "The evening before collection, one camera look at where the bins go out. Only says something if they aren't out: 'Recycling tomorrow, and the bins aren't out yet.' Looks once more an hour later.",
           "bins_calendar": "Empty: a waste-collection calendar from the briefing calendars.",
@@ -554,6 +619,7 @@
           "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
           "energy_price": "Optional: your unit rate per kWh, to show today's cost of the Energy dashboard's devices \u2014 in pence or cents (24.5) or in pounds, dollars or euros (0.245); either works.",
           "energy_currency": "The currency costs are shown in. Empty: Home Assistant's own currency (Settings → System → General).",
+          "price_entity": "Your electricity price now, from your supplier's integration (Octopus Energy, Nordpool…). If it lists the coming rates they're used; otherwise the usual price at each hour is learned from the last week. Once per appliance (washing machine, dishwasher, dryer) it asks in the evening whether you'd like a nudge to use the delay start when it's cheapest overnight. Empty: off.",
           "search_hints": "When Voice Satellite LLM Tools (or Sentient's own search) is set up, the voice is told the search tools are there and to use them for anything outside the house — words on a speaker, pictures only on a tablet. No AI calls of its own.",
           "web_search": "A voice-only web search through your own SearXNG (for example the SearXNG add-on). Only used when Voice Satellite LLM Tools' web search isn't installed, so the voice never gets two. Off by default.",
           "searxng_url": "For example http://localhost:8080 or the add-on's address. SearXNG must allow the json format (in its settings: search → formats).",
@@ -627,6 +693,10 @@
           "away_lights_on": "When everyone's out after dark, the lights copy how they were used at the same time last week (from Home Assistant's history), a few minutes either way. Doesn't start (or stops) if anyone's home or there's been movement inside lately, for people without a phone tracked, and puts back what it switched on. Also an 'Away lights' switch.",
           "away_people": "Empty: everyone with a person entry. You can pick phones (device trackers) instead of people.",
           "away_lights": "Empty: every light in a room, leaving out screens, LED rings, backlights and groups. Only lights that were used at that time last week come on.",
+          "holiday_mode": "A 'Holiday mode' switch, and 'we're going on holiday until Sunday' by voice. While it's on, nothing is said out loud except safety alerts — what would have been said goes to the phones chosen for notifications, with visitors and parcels; the away lights run even if they're normally off; and the thermostats below are turned down. Off: no switch and no holiday by voice.",
+          "holiday_thermostats": "Turned down to frost protection while you're away, and put back exactly as they were when holiday mode ends. Empty: the heating isn't touched.",
+          "holiday_frost": "What the thermostats above are set to while you're away.",
+          "holiday_end_on_return": "Once everyone has gone out, the first person home ends holiday mode and puts the heating back. Off: it ends on its date or when switched off.",
           "away_after": "So popping to the shop doesn't start it.",
           "animal_low": "Says once when it drops below this (held until morning in quiet hours), and warns the evening before a frost.",
           "animal_high": "Says once when it rises above this.",
@@ -680,6 +750,8 @@
           "briefing_todo": "To-do lists",
           "briefing_calendars": "Calendars",
           "briefing_system": "System sensors to report",
+          "outside_info": "Outside information",
+          "parcel_trackers": "Parcel trackers",
           "briefing_time": "Daily briefing at",
           "digest_time": "Daily digest at",
           "morning_briefing": "Briefing when someone's first up",
@@ -689,6 +761,8 @@
           "briefings": "Off turns off the button, the voice tool and the service.",
           "briefing_weather": "Leave empty to use the first weather entity.",
           "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
+          "outside_info": "Sensors from other integrations read into the briefing and the evening look at tomorrow: today's electricity price, a weather warning, parcels on the way, the next school inset day. Empty, zero and 'off' readings are left out. Text from these is treated as information only.",
+          "parcel_trackers": "When one says a parcel is out for delivery, it says so once and watches the door for it all day (even if parcel alerts are off); if it says delivered before anything's seen at the door, it says that too. Empty: off.",
           "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
           "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
           "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
@@ -767,6 +841,9 @@
       },
       "screen": {
         "name": "Tablet screen"
+      },
+      "holiday": {
+        "name": "Holiday mode"
       }
     },
     "conversation": {
@@ -862,6 +939,13 @@
         "appliances": "Starting appliances"
       }
     },
+    "trust_level": {
+      "options": {
+        "do": "Just do it",
+        "tell": "Say so, then do it",
+        "ask": "Ask first"
+      }
+    },
     "self_test": {
       "options": {
         "off": "Off",
@@ -913,7 +997,8 @@
     "phone_buttons": {
       "options": {
         "door": "At the door",
-        "reminders": "Reminders"
+        "reminders": "Reminders",
+        "questions": "Questions (Yes / No)"
       }
     },
     "conversation_style": {
@@ -1277,6 +1362,38 @@
         "about": {
           "name": "About",
           "description": "Its id, or words from what it's about."
+        }
+      }
+    },
+    "maintenance_done": {
+      "name": "Maintenance done",
+      "description": "Mark a maintenance job done (a filter changed, the machine descaled) so its count starts again.",
+      "fields": {
+        "job": {
+          "name": "Job",
+          "description": "Its name on the Maintenance page."
+        }
+      }
+    },
+    "notice": {
+      "name": "Notice",
+      "description": "Pass something that happened through Sentient — the same quiet hours, hush, guest and holiday rules, and (by default) its own decision whether it's worth saying and how.",
+      "fields": {
+        "message": {
+          "name": "What happened",
+          "description": "In plain words, e.g. 'The dishwasher has finished'."
+        },
+        "entity_id": {
+          "name": "Device",
+          "description": "The device it's about (optional) — gives the room and its state."
+        },
+        "decide": {
+          "name": "Let it decide",
+          "description": "On: the AI decides whether it's worth saying, and how (counts as noticing). Off: say it as given."
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Urgent still sounds in quiet hours; low never interrupts."
         }
       }
     },

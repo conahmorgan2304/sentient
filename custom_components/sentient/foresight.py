@@ -137,6 +137,8 @@ class Foresight:
             reminders = [w.what for w in rt.watches.watches if w.kind == "reminder" and start <= dt_util.as_local(w.until_dt) < end]
             if reminders:
                 out["reminders_tomorrow"] = reminders
+            if getattr(rt, "parcels", None) is not None and (outside := rt.parcels.outside()):
+                out["outside_information_now"] = outside
         return out
 
     async def async_look_ahead(self, speak: bool = True) -> dict[str, Any]:

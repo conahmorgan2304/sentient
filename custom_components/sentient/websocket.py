@@ -35,6 +35,8 @@ from .const import (
     CONF_PERSONALITY_NOTES,
     CONF_STYLE_FEEDBACK,
     CONF_SUGGESTIONS,
+    CONF_WHATS_NEW,
+    CONF_SIMPLE,
     CONF_EVENT_CLIPS,
     CONF_KNOWN_CARS,
     CONF_RELEVANT_MEMORIES,
@@ -68,6 +70,8 @@ from .const import (
     CONF_NEVER_ENTITIES,
     CONF_SELF_CHECK,
     CONF_SELF_ADJUST,
+    CONF_PROPOSALS,
+    CONF_PRIVACY_LOG,
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
     CONF_GOALS,
@@ -75,6 +79,7 @@ from .const import (
     CONF_BOOKS_FOLDER,
     CONF_READING_TTS,
     CONF_READING_VOICE,
+    CONF_READ_AHEAD,
     CONF_RECIPES,
     CONF_RECIPES_FOLDER,
     CONF_RECIPES_LIST,
@@ -154,6 +159,7 @@ from .const import (
     CONF_LEAVING_CHECK,
     CONF_ENERGY_PRICE,
     CONF_ENERGY_CURRENCY,
+    CONF_PRICE_ENTITY,
     CONF_SEARCH_HINTS,
     CONF_REMARK_REPEAT_HOURS,
     CONF_WEB_SEARCH,
@@ -172,6 +178,8 @@ from .const import (
     CONF_BRIEFING_CALENDARS,
     CONF_BRIEFING_SECTIONS,
     CONF_BRIEFING_SYSTEM,
+    CONF_OUTSIDE_INFO,
+    CONF_PARCEL_TRACKERS,
     CONF_BRIEFING_TIME,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
@@ -183,6 +191,10 @@ from .const import (
     CONF_ANIMAL_SENSORS,
     CONF_AWAY_LIGHTS_ON,
     CONF_AWAY_PEOPLE,
+    CONF_HOLIDAY,
+    CONF_HOLIDAY_END_ON_RETURN,
+    CONF_HOLIDAY_FROST,
+    CONF_HOLIDAY_THERMOSTATS,
     CONF_AWAY_LIGHTS,
     CONF_AWAY_AFTER,
     CONF_SCREEN,
@@ -195,6 +207,8 @@ from .const import (
     CONF_CARRY_ON_MINUTES,
     CONF_FOCUSED_TOOLS,
     CONF_ASK_LATER,
+    CONF_PUT_RIGHT,
+    CONF_MUSIC,
     CONF_DAILY_AI_LIMIT,
     CONF_APPLIANCES,
     CONF_APPLIANCE_ANNOUNCE,
@@ -208,6 +222,12 @@ from .const import (
     CONF_HEALTH_IGNORE,
     CONF_HOUSE_RULES,
     CONF_LEARN_ENTITIES,
+    CONF_LEARN_ANCHORS,
+    CONF_TRUST_COVERS,
+    CONF_TRUST_HEATING,
+    CONF_TRUST_LIGHTS,
+    CONF_TRUST_SWITCHES,
+    CONF_OFFER_TOGETHER,
     CONF_MOTION_WINDOW,
     CONF_NOTICE_ENTITIES,
     CONF_PARCEL_ALERTS,
@@ -239,7 +259,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
-        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
+        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
         CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
@@ -252,10 +272,10 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,
-        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, CONF_DIGEST_TIME,
+        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_OUTSIDE_INFO, CONF_PARCEL_TRACKERS, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
-        CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
+        CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LEARN_ANCHORS, CONF_OFFER_TOGETHER, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE,
         CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT,
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
@@ -288,7 +308,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -309,8 +329,12 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("camwake", "Sleepy cameras", "mdi:camera-timer", "Battery cameras and others that go into standby show an old or black picture until they wake, so the AI would answer from it (\u201cthe drive is empty\u201d). Add actions that wake them \u2014 pressing a wake or refresh button, turning on a stream, running a script; {{ camera }} is the camera being looked at \u2014 and Sentient runs them first and waits for a fresh picture. Each camera is woken at most once a minute. No actions: off.", [
         CONF_CAMERA_WAKE, CONF_CAMERA_WAKE_CAMERAS, CONF_CAMERA_WAKE_SECONDS,
     ]),
-    ("away", "Away lights", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Stops the moment anyone's home. Nothing is said.", [
+    ("trust", "What the house does by itself", "mdi:hand-okay", "For things the house decides to do on its own — routines you've let it take over and warming the heating before you're up — whether it just does them, says so first, or asks. Garage doors and gates always ask; locks and the alarm are never done by the house.", [
+        CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, CONF_TRUST_COVERS, CONF_TRUST_HEATING,
+    ]),
+    ("away", "Away lights & holiday", "mdi:home-export-outline", "When everyone's out after dark, the lights copy how they were used at the same time last week, a few minutes either way, so the house looks lived in. Holiday mode adds: nothing said out loud but safety alerts (it goes to the phones, with visitors), chosen thermostats down to frost protection, and everything back to normal when you're home.", [
         CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, CONF_AWAY_LIGHTS, CONF_AWAY_AFTER,
+        CONF_HOLIDAY, CONF_HOLIDAY_THERMOSTATS, CONF_HOLIDAY_FROST, CONF_HOLIDAY_END_ON_RETURN,
     ]),
     ("bins", "Bins check", "mdi:delete-variant", "The evening before collection (from the bin calendar), one camera look at where the bins go out — said only if they aren't out yet.", [
         CONF_BINS_CHECK, CONF_BINS_CALENDAR, CONF_BINS_SPOT, CONF_BINS_TIME,
@@ -328,10 +352,10 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
-        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
+        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
     ]),
-    ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices.", [
-        CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY,
+    ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.", [
+        CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
         CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE,
@@ -340,7 +364,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -406,8 +430,106 @@ def _with_defaults(current: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+@websocket_api.websocket_command(
+    {vol.Required("type"): "sentient/proposal", vol.Required("proposal"): str, vol.Required("accept"): bool}
+)
+@websocket_api.require_admin
+@callback
+def ws_proposal(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Yes or no to one of the self-check's suggested settings changes (it changes nothing without a yes)."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "proposals", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    result = entry.runtime_data.proposals.answer(msg["proposal"], msg["accept"])
+    if "error" in result:
+        connection.send_error(msg["id"], "gone", result["error"])
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/privacy", vol.Optional("days", default=7): vol.All(vol.Coerce(float), vol.Range(min=1, max=14))})
+@websocket_api.require_admin
+@callback
+def ws_privacy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """What has left the house, by feature (metadata only)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], entry.runtime_data.ai.sent_summary(msg["days"]))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/privacy/forget", vol.Optional("hours", default=48): vol.All(vol.Coerce(float), vol.Range(min=1, max=168))})
+@websocket_api.require_admin
+@callback
+def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Forget everything Sentient kept from the last few hours."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .privacy import forget_recent
+
+    connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new"})
+@callback
+def ws_whats_new(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "whats_new", None) is None:
+        connection.send_result(msg["id"], {"releases": []})
+        return
+    connection.send_result(msg["id"], entry.runtime_data.whats_new.listing())
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new/seen"})
+@websocket_api.require_admin
+@callback
+def ws_whats_new_seen(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is not None and getattr(entry.runtime_data, "whats_new", None) is not None:
+        entry.runtime_data.whats_new.mark_seen()
+    connection.send_result(msg["id"], {"seen": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/export/readable"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_export_readable(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Memories, routines, lists and settings as readable text (secrets and addresses left out)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .readable import async_labels, build
+
+    text = build(hass, entry.runtime_data, entry.title, await async_labels(hass))
+    connection.send_result(msg["id"], {"text": text})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/usage"})
+@websocket_api.require_admin
+@callback
+def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Which optional features are used this month, on but never used, or off."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "usage", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], entry.runtime_data.usage.report())
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_proposal)
+    websocket_api.async_register_command(hass, ws_usage)
+    websocket_api.async_register_command(hass, ws_export_readable)
+    websocket_api.async_register_command(hass, ws_whats_new)
+    websocket_api.async_register_command(hass, ws_whats_new_seen)
+    websocket_api.async_register_command(hass, ws_privacy)
+    websocket_api.async_register_command(hass, ws_privacy_forget)
     websocket_api.async_register_command(hass, ws_voice_check)
     websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
@@ -450,6 +572,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security)
     websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_reading_try)
+    websocket_api.async_register_command(hass, ws_doctor)
+    websocket_api.async_register_command(hass, ws_doctor_speakers)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_motion_save)
     websocket_api.async_register_command(hass, ws_motion_delete)
@@ -517,6 +641,38 @@ def _voice_picker(hass: HomeAssistant, entry, groups: list[dict[str, Any]]) -> N
                 field["context"] = {"engineId": CONF_READING_TTS}
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/doctor"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_doctor(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The setup doctor: what's set up right and what to fix (read-only, no AI)."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .doctor import async_check
+
+    connection.send_result(msg["id"], await async_check(hass, entry.runtime_data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/doctor/speakers"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_doctor_speakers(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Say a short test line on each speaker in turn and report which accepted it."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    results = []
+    for sp in [s for s in rt.options.get("speakers") or [] if hass.states.get(s)]:
+        st = hass.states.get(sp)
+        ok = await rt.speech.async_read_aloud(f"Testing — this is the {st.name}.", sp)
+        results.append({"speaker": st.name, "ok": ok})
+    connection.send_result(msg["id"], {"results": results})
+
+
 @websocket_api.websocket_command(
     {vol.Required("type"): "sentient/reading/try", vol.Optional("engine"): vol.Any(str, None),
      vol.Optional("voice"): vol.Any(str, None), vol.Optional("speaker"): vol.Any(str, None)}
@@ -576,6 +732,7 @@ async def ws_save_settings(hass: HomeAssistant, connection, msg: dict[str, Any])
         vol.Required("memory_id"): str,
         vol.Required("text"): str,
         vol.Optional("category"): vol.In(MEMORY_CATEGORIES),
+        vol.Optional("pinned"): bool,
     }
 )
 @websocket_api.require_admin
@@ -593,7 +750,9 @@ def ws_update_memory(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     if item is None:
         connection.send_error(msg["id"], "not_found", "No such memory")
         return
-    connection.send_result(msg["id"], {"id": item.id, "text": item.text, "category": item.category})
+    if "pinned" in msg:
+        entry.runtime_data.memory.pin(item.id, msg["pinned"])
+    connection.send_result(msg["id"], {"id": item.id, "text": item.text, "category": item.category, "pinned": item.pinned})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memories"})

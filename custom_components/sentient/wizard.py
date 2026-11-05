@@ -3,7 +3,7 @@
 Each step is a handful of settings. Anything already set is shown as it is; anything not set yet is
 suggested from Home Assistant itself — by device type and the room a device is in rather than by its
 name, wherever possible. Suggestions are only filled in, never saved, until the person presses Next.
-The last step says a test line on the chosen speakers.
+The last step says a test line on the chosen speakers, and offers the setup doctor.
 """
 
 from __future__ import annotations
@@ -18,6 +18,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
+    CONF_AWAY_PEOPLE,
+    CONF_HOLIDAY_THERMOSTATS,
+    CONF_NOTIFY_TARGETS,
+    CONF_OUTSIDE_INFO,
+    CONF_PARCEL_TRACKERS,
+    CONF_PRICE_ENTITY,
+    CONF_TRUST_COVERS,
+    CONF_TRUST_HEATING,
+    CONF_TRUST_LIGHTS,
+    CONF_TRUST_SWITCHES,
     CONF_AI_TASK_ENTITY,
     CONF_ANIMAL_SENSORS,
     CONF_APPLIANCES,
@@ -47,6 +57,8 @@ from .const import (
 )
 
 CONF_WIZARD_DONE = "wizard_done"
+PRIVATE_ROOMS = "private_rooms"  # not a setting: makes (or updates) one private room profile
+PRIVATE_PROFILE = "Private rooms"
 
 # (id, title, icon, what it's for, keys)
 STEPS: list[tuple[str, str, str, str, list[str]]] = [
@@ -62,6 +74,10 @@ STEPS: list[tuple[str, str, str, str, list[str]]] = [
     ("quiet", "Quiet hours", "mdi:weather-night",
      "When to keep it down: nothing but urgent messages between these times.",
      [CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP]),
+    ("people", "People & phones", "mdi:account-group",
+     "Who lives here, and the phones that get notifications. Holiday mode, \"while you're away\" messages, parcels "
+     "and questions answered from the phone all use these.",
+     [CONF_AWAY_PEOPLE, CONF_NOTIFY_TARGETS]),
     ("ai", "The AI", "mdi:robot-outline",
      "The AI you already have in Home Assistant. Background jobs (cameras, briefings, the nightly think) use an AI task; voices use a conversation agent, with Home Assistant's own as the backup.",
      [CONF_AI_TASK_ENTITY, CONF_VOICE_AGENT, CONF_BACKUP_AGENT, CONF_CHAT_AGENT, CONF_DAILY_AI_LIMIT]),
@@ -71,12 +87,25 @@ STEPS: list[tuple[str, str, str, str, list[str]]] = [
     ("extras", "Extras", "mdi:star-four-points-outline",
      "Optional. Appliances to follow (finished, or stuck), animals living outside, energy use, a morning briefing, and alerts on a tablet screen.",
      [CONF_APPLIANCES, CONF_ANIMAL_SENSORS, CONF_ENERGY, CONF_MORNING_BRIEFING, CONF_SCREEN]),
+    ("trust", "What it does by itself", "mdi:hand-okay",
+     "When the house does something on its own (a routine you let it take over, warming the heating before you're up): "
+     "just do it, say so first, or ask. Garage doors and gates always ask. And any rooms to keep private — a child's "
+     "room, say — where it won't bring up personal memories.",
+     [CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, CONF_TRUST_COVERS, CONF_TRUST_HEATING, PRIVATE_ROOMS]),
+    ("outside", "The world outside", "mdi:earth",
+     "Optional. Parcel trackers (a parcel out for delivery means the door's watched all day), weather warnings and "
+     "other readings for the briefing, your electricity price for cheap-electricity nudges, and thermostats to turn "
+     "down on holiday (none unless you pick them).",
+     [CONF_PARCEL_TRACKERS, CONF_OUTSIDE_INFO, CONF_PRICE_ENTITY, CONF_HOLIDAY_THERMOSTATS]),
 ]
 
 ANIMAL_NAMES = re.compile(r"hutch|kennel|coop|aviary|vivarium|terrarium|tank|stable|pen\b|run\b|kitten|puppy", re.I)
 APPLIANCE_NAMES = re.compile(r"wash|dryer|drier|dishwasher|tumble", re.I)
 DOOR_NAMES = re.compile(r"door|bell", re.I)
 RING_NAMES = re.compile(r"ring|bell|visitor|press|button", re.I)
+PARCEL_NAMES = re.compile(r"parcel|package|17track|aftership|royal.?mail|evri|hermes|dpd|yodel|parcelsapp|deliver", re.I)
+WARNING_NAMES = re.compile(r"(weather|met.?office|meteoalarm|wind|rain|snow|flood|storm|ice|heat).*(warning|alert)|(warning|alert).*(weather|wind|rain|snow|flood|storm|ice|heat)", re.I)
+PRICE_NAMES = re.compile(r"current.*(rate|price)|(rate|price).*current|electricity.*(rate|price)|unit.?rate", re.I)
 
 
 def _usable(hass: HomeAssistant, entity_id: str) -> bool:
@@ -149,6 +178,28 @@ def suggest(hass: HomeAssistant, options: dict[str, Any], own_agent: str | None)
                    if s.attributes.get("device_class") == "power" and APPLIANCE_NAMES.search(f"{s.entity_id} {s.name}")]
     if appliances:
         out[CONF_APPLIANCES] = appliances
+    people = [s.entity_id for s in states.async_all("person")]
+    if people:
+        out[CONF_AWAY_PEOPLE] = people
+    reg = er.async_get(hass)
+    phones = [s.entity_id for s in states.async_all("notify")
+              if (e := reg.async_get(s.entity_id)) is not None and e.platform == "mobile_app" and _usable(hass, s.entity_id)]
+    if phones:
+        out[CONF_NOTIFY_TARGETS] = phones
+    parcels = [s.entity_id for s in states.async_all(("sensor", "binary_sensor"))
+               if PARCEL_NAMES.search(f"{s.entity_id} {s.name}") and _usable(hass, s.entity_id)]
+    if parcels:
+        out[CONF_PARCEL_TRACKERS] = parcels[:4]
+    warnings = [s.entity_id for s in states.async_all(("sensor", "binary_sensor"))
+                if WARNING_NAMES.search(f"{s.entity_id} {s.name}") and _usable(hass, s.entity_id)]
+    if warnings:
+        out[CONF_OUTSIDE_INFO] = warnings[:4]
+    price = next((s.entity_id for s in states.async_all("sensor")
+                  if str(s.attributes.get("unit_of_measurement") or "").lower().endswith("/kwh")
+                  and PRICE_NAMES.search(f"{s.entity_id} {s.name}") and "standing" not in s.entity_id
+                  and "gas" not in s.entity_id and "export" not in s.entity_id), None)
+    if price:
+        out[CONF_PRICE_ENTITY] = price
     animals = [s.entity_id for s in states.async_all("sensor")
                if s.attributes.get("device_class") == "temperature" and ANIMAL_NAMES.search(f"{s.entity_id} {s.name}")]
     if animals:
@@ -164,6 +215,33 @@ def _preferred_agent(hass: HomeAssistant) -> str | None:
         return agent if agent and agent.startswith("conversation.") else None
     except Exception:  # noqa: BLE001 - no pipelines yet
         return None
+
+
+def _fields() -> dict[str, Any]:
+    """The settings' own fields, plus the wizard's private-rooms question."""
+    from homeassistant.helpers import selector
+
+    from .websocket import _all_fields
+
+    return {**_all_fields(), PRIVATE_ROOMS: (vol.Optional(PRIVATE_ROOMS, default=[]),
+                                             selector.AreaSelector(selector.AreaSelectorConfig(multiple=True)))}
+
+
+def _private_profile(entry) -> dict[str, Any] | None:
+    rooms = entry.runtime_data.lists.get("rooms")
+    return rooms.find(PRIVATE_PROFILE) if rooms is not None else None
+
+
+def _save_private_rooms(entry, areas: list[str]) -> None:
+    """The private-rooms answer becomes one room profile (made, updated or switched off)."""
+    rooms = entry.runtime_data.lists.get("rooms")
+    if rooms is None:
+        return
+    found = rooms.find(PRIVATE_PROFILE)
+    if found is None and not areas:
+        return
+    rooms.upsert({**(found or {}), "name": PRIVATE_PROFILE, "areas": list(areas), "private": True,
+                  "enabled": bool(areas)})
 
 
 def needs_setup(options: dict[str, Any]) -> bool:
@@ -183,7 +261,7 @@ def _entry_and_agent(hass: HomeAssistant):
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_wizard(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    from .websocket import _all_fields, _current, _labels, _serialize, _with_defaults
+    from .websocket import _current, _labels, _serialize, _with_defaults
 
     entry, own = _entry_and_agent(hass)
     if entry is None:
@@ -196,8 +274,13 @@ async def ws_wizard(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         if current.get(key) in (None, "", []):  # never over anything already chosen
             data[key] = value
             suggested.append(key)
-    fields = _all_fields()
+    fields = _fields()
+    profile = _private_profile(entry)
+    data[PRIVATE_ROOMS] = list(profile.get("areas") or []) if profile and profile.get("enabled", True) else []
     labels, helpers, selectors = await _labels(hass, msg.get("language") or hass.config.language)
+    labels = {**labels, PRIVATE_ROOMS: "Private rooms"}
+    helpers = {**helpers, PRIVATE_ROOMS: "No personal memories, other rooms' conversations or names from the door "
+                                         "there — a child's room, say. More on the Rooms page. Empty: none."}
     steps = [
         {"id": sid, "title": title, "icon": icon, "blurb": blurb,
          "schema": _serialize(vol.Schema({fields[k][0]: fields[k][1] for k in keys if k in fields}))}
@@ -215,14 +298,14 @@ async def ws_wizard(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_wizard_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    from .websocket import _all_fields, _current, _with_defaults
+    from .websocket import _current, _with_defaults
 
     entry, _own = _entry_and_agent(hass)
     keys = next((s[4] for s in STEPS if s[0] == msg["step"]), None)
     if entry is None or keys is None:
         connection.send_error(msg["id"], "unknown", "Sentient isn't set up, or there's no such step")
         return
-    fields = _all_fields()
+    fields = _fields()
     schema = vol.Schema({fields[k][0]: fields[k][1] for k in keys if k in fields})
     submitted = {k: v for k, v in msg["data"].items() if k in keys and v is not None and v != ""}
     try:
@@ -230,6 +313,8 @@ async def ws_wizard_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     except vol.Invalid as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
+    if PRIVATE_ROOMS in keys:
+        _save_private_rooms(entry, clean.pop(PRIVATE_ROOMS, []))
     options = _current(entry)
     for key in keys:  # only this step's settings change
         options.pop(key, None)
@@ -237,7 +322,10 @@ async def ws_wizard_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if CONF_PERSONA in clean:
         options[CONF_PERSONA] = str(clean[CONF_PERSONA]).strip() or DEFAULT_PERSONA
     hass.config_entries.async_update_entry(entry, options=options)
-    connection.send_result(msg["id"], {"saved": msg["step"], "data": _with_defaults(options)})
+    out = _with_defaults(options)
+    profile = _private_profile(entry)
+    out[PRIVATE_ROOMS] = list(profile.get("areas") or []) if profile and profile.get("enabled", True) else []
+    connection.send_result(msg["id"], {"saved": msg["step"], "data": out})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/wizard/finish", vol.Optional("test"): bool})

@@ -19,14 +19,15 @@ from datetime import datetime, time, timedelta
 import logging
 import math
 import re
+from collections.abc import Awaitable, Callable
 from typing import Any
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_ALEXA_TTS_ONLY, CONF_READING_TTS, CONF_READING_VOICE
+from .const import CONF_ALEXA_TTS_ONLY, CONF_READ_AHEAD, CONF_READING_TTS, CONF_READING_VOICE
 from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
 from .const import CONF_SPEECH_DELIVERY_HISTORY
 from .const import (
@@ -60,6 +61,7 @@ from .const import (
     PRIORITY_URGENT,
 )
 from .delivery import RoomLevels, delivered, playing_nearby
+from .reasons import reason_for
 from .presence import ActivityTracker, area_of
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,6 +82,7 @@ def important(source: str | None) -> bool:
 
 
 INSTANT_SECONDS = 2.0  # an announcement handed back faster than this hasn't been spoken yet
+QUESTION_OPEN = timedelta(seconds=90)  # a reply this soon after the house asked is an answer to it
 READING_WORDS_PER_SECOND = 2.5  # a steady reading voice, about 150 words a minute
 
 
@@ -198,6 +201,8 @@ class SpeechRouter:
         self._recent: dict[str, datetime] = {}
         self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
+        self.reading_fallbacks: deque[tuple[datetime, str, str]] = deque(maxlen=50)  # the reading voice failing
+        self._questions: dict[str, dict[str, Any]] = {}  # satellite -> the house's open question and what to do with the answer
         self._delivered_recent: dict[tuple[str, str], datetime] = {}
         self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
@@ -205,6 +210,10 @@ class SpeechRouter:
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
         self.rooms = RoomLevels()  # each room's usual loudness, for speaking up over noise
+        self._prepared: dict[str, Any] = {}  # reading voice audio being made ahead
+        self.phone = None  # set by the runtime: asks yes/no questions on phones when nobody's near a speaker
+        self.profiles = None  # set by the runtime: room profiles (own quiet time, volume, no offers)
+        self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
         self.nobody_about = False  # the last pick found nobody in any speaker's room
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
@@ -369,6 +378,8 @@ class SpeechRouter:
         """Shared rules; returns a held result, or None when it may speak."""
         if not text:
             return self._held("empty", text, source)
+        if self.holiday is not None and not self.holiday.speaks(source) and not str(source or "").startswith(REPLY_SOURCES):
+            return self._held("holiday", text, source)  # nobody's home to hear it: it goes to the phones
         if priority != PRIORITY_URGENT and not str(source or "").startswith(REPLY_SOURCES):
             if self.mutes is not None and (muted := self.mutes.text_muted(text)):
                 return self._held(f"muted:{muted}", text, source)
@@ -417,6 +428,11 @@ class SpeechRouter:
         if source != "critical":  # safety alerts always use every speaker
             targets = self.usable(targets, vital) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker(vital)
+        if self.profiles is not None and speakers:
+            allowed = self.profiles.allowed(speakers, priority, source)
+            if not allowed:
+                return self._held("room_quiet", text, source)  # those rooms' own quiet time
+            speakers = allowed
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
@@ -445,7 +461,8 @@ class SpeechRouter:
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None, "deliveries": receipts},
+            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None,
+             "deliveries": receipts, "why": reason_for(source)},
         )
         if unheard and self.on_unheard is not None:
             self.on_unheard(text, priority, source, None)
@@ -492,6 +509,36 @@ class SpeechRouter:
             await asyncio.sleep(1)
         return True
 
+    @callback
+    def prepare_reading(self, text: str, speaker: str) -> None:
+        """Make the next piece's audio in the reading voice while this one is read, so a slow voice leaves no gap."""
+        engine = self.options.get(CONF_READING_TTS)
+        if not engine or not self.options.get(CONF_READ_AHEAD, True) or self.hass.states.get(engine) is None:
+            return
+        if speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media":
+            return
+        text = clean_message(text, self.banned)
+        voice = self.options.get(CONF_READING_VOICE)
+        key = f"{engine}|{voice}|{text}"
+        if key in self._prepared:
+            return
+        try:
+            media_id = tts_media_id(self.hass, text, engine, tts_language(self.hass, engine), {"voice": voice} if voice else None)
+        except (HomeAssistantError, ValueError):
+            return
+        self._prepared[key] = self.hass.async_create_background_task(self._make_audio(media_id), "sentient read ahead")
+        while len(self._prepared) > 4:
+            self._prepared.pop(next(iter(self._prepared)))
+
+    async def _make_audio(self, media_id: str) -> None:
+        from homeassistant.components.tts import async_get_media_source_audio
+
+        try:
+            async with asyncio.timeout(120):
+                await async_get_media_source_audio(self.hass, media_id)  # cached: the real request is then instant
+        except Exception as err:  # noqa: BLE001 - only a head start; reading carries on without it
+            _LOGGER.debug("Couldn't make the next piece's audio ahead: %s", err)
+
     async def _speak_voice(self, text: str, speaker: str, engine: str, voice: str | None) -> list[dict[str, Any]] | None:
         """Speak with a chosen text-to-speech service and voice; None when this speaker can't (an Echo)."""
         if self.hass.states.get(engine) is None or (speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media"):
@@ -512,6 +559,7 @@ class SpeechRouter:
         except (HomeAssistantError, TimeoutError, ValueError) as err:
             _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker,
                             str(err) or type(err).__name__)
+            self.reading_fallbacks.append((dt_util.utcnow(), engine, speaker))
             return None
         return [{"entity_id": speaker, "status": "accepted"}]
 
@@ -600,6 +648,8 @@ class SpeechRouter:
         """The level to speak at: the usual one, raised in a noisy room (not in quiet hours),
         and full volume on the speakers chosen for that (outside quiet hours)."""
         out = await self._room_volumes(speakers)
+        if self.profiles is not None and (own := {s: v for s in speakers if (v := self.profiles.volume(s)) is not None}):
+            out = {**({s: out for s in speakers} if not isinstance(out, dict) else out), **own}
         full = set(self.options.get(CONF_FULL_VOLUME_SPEAKERS) or []) & set(speakers)
         if not full or self.quiet_hours_now():
             return out
@@ -632,8 +682,12 @@ class SpeechRouter:
         source: str | None = None,
         extra_prompt: str | None = None,
         preannounce: bool | None = None,
+        on_answer: Callable[[str], Awaitable[str]] | None = None,
     ) -> SpeechResult:
         """Ask out loud and open the microphone, so the reply goes to that speaker's voice agent.
+
+        With *on_answer*, a plain yes / no / "it already does that" reply is handled here without the AI:
+        on_answer('yes' | 'no' | 'done') does it and returns what to say back.
 
         Only one speaker can listen, so it's the busiest room's. Speakers that can't
         start a conversation get the question as a plain announcement instead.
@@ -643,11 +697,21 @@ class SpeechRouter:
             return held
         vital = important(source)
         candidates = self.usable(targets, vital) or self.pick_speaker(vital)
+        if self.profiles is not None and candidates:
+            candidates = self.profiles.allowed(candidates, priority, source)
+            if not candidates:
+                return self._held("room_quiet", text, source)
         listening = [
             s for s in candidates
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
+        if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
+            # nobody near a speaker: ask on the phones, with Yes / No buttons
+            if await self.phone.async_ask(text, on_answer):
+                self.hass.bus.async_fire(EVENT_SPOKE, {"message": text, "speakers": [], "priority": priority, "source": source,
+                                                       "question": True, "phone": True, "why": reason_for(source)})
+                return SpeechResult(True, "asked_phone", text, [])
         if not listening:
             return await self.async_say(text, priority, candidates, source)
         speaker = listening[0]
@@ -673,11 +737,31 @@ class SpeechRouter:
                 blocking=True,
             )
             self._remember_said(text)
+        if on_answer is not None:
+            self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True},
+            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True,
+             "why": reason_for(source)},
         )
         return SpeechResult(True, "asked", text, [speaker])
+
+    async def async_take_answer(self, satellite: str | None, text: str) -> str | None:
+        """If this satellite was just asked one of the house's questions and the reply is a plain answer,
+        act on it and return what to say back; None to let the AI handle it."""
+        from .answers import classify
+
+        question = self._questions.get(satellite or "")
+        if question is None:
+            return None
+        if dt_util.utcnow() > question["until"]:
+            self._questions.pop(satellite, None)
+            return None
+        kind = classify(text)
+        if kind is None:
+            return None  # not a plain answer: the AI reads it (and asks again if it's still unclear)
+        self._questions.pop(satellite, None)
+        return await question["on_answer"](kind)
 
     async def _wait_idle(self, speakers: list[str], timeout: float = 15) -> None:
         """Don't talk over a conversation that's already happening."""
@@ -691,7 +775,7 @@ class SpeechRouter:
 
     def _held(self, reason: str, text: str, source: str | None, priority: str | None = None) -> SpeechResult:
         _LOGGER.debug("Held speech (%s): %s", reason, text)
-        self.hass.bus.async_fire(EVENT_HELD, {"message": text, "reason": reason, "source": source})
+        self.hass.bus.async_fire(EVENT_HELD, {"message": text, "reason": reason, "source": source, "why": reason_for(source)})
         if reason in ("quiet_hours", "hushed") and priority and self.on_unheard is not None:
             self.on_unheard(text, priority, source, reason)
         return SpeechResult(False, reason, text, [])

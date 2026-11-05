@@ -13,11 +13,12 @@ import logging
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.helpers import area_registry as ar
 from homeassistant.util import dt as dt_util
 
 from .items import Items
+from .reasons import because
 from .kinds import in_windows, variant
 from .presence import ActivityTracker, area_of
 from .shortcuts import async_run_actions
@@ -72,6 +73,9 @@ class Offers:
         area = area_of(self.hass, new.entity_id)
         if area is None:
             return
+        profile = getattr(self._rt(), "profiles", None)
+        if profile is not None and not (profile.for_area(area) or {}).get("offers", True):
+            return  # this room doesn't take offers
         for offer in self.items.enabled():
             if area in (offer.get("areas") or []) and self.ready(offer):
                 self.hass.async_create_task(self.async_ask(offer, area))
@@ -147,15 +151,42 @@ class Offers:
             a = ar.async_get(self.hass).async_get_area(area)
             found = rt.speech.find_speaker(a.name if a else area)
             targets = [found] if found else None
-        result = await rt.speech.async_ask(
-            question, source=f"offer:{offer['name']}", targets=targets,
-            extra_prompt=(
-                f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
-                f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
-                f"If they say no, call it with accept false. Then answer briefly."
-            ),
-        )
+        async def answered(kind: str) -> str:
+            if kind == "yes":
+                out = await self.async_accept(offer["id"], True)
+                return "Done." if out.get("done") else str(out.get("error") or "That didn't work.")
+            if kind == "done":  # "it's already on": not a no to the offer itself
+                rt.timeline.add("mode", f"Already done: {offer['name']}")
+                return "Right, it's already sorted."
+            await self.async_accept(offer["id"], False)
+            return "Okay."
+
+        with because(self.why(offer, area)):
+            result = await rt.speech.async_ask(
+                question, source=f"offer:{offer['name']}", targets=targets, on_answer=answered,
+                extra_prompt=(
+                    f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
+                    f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
+                    f"If they say no, call it with accept false. Then answer briefly."
+                ),
+            )
         return result.as_dict()
+
+    def why(self, offer: dict[str, Any], area: str | None) -> str:
+        """The plain reasons it asked, for 'why did you offer that?'."""
+        bits = []
+        if area:
+            a = ar.async_get(self.hass).async_get_area(area)
+            bits.append(f"someone moved in the {a.name if a else area}")
+        below = offer.get("below_entity")
+        if offer.get("below") is not None and below and (value := reading(self.hass, below)) is not None:
+            bits.append(f"it read {value:g}, below the {float(offer['below']):g} the offer waits for")
+        if idle := offer.get("idle_entity"):
+            st = self.hass.states.get(idle)
+            bits.append(f"{st.name if st else idle} had been idle {float(offer.get('idle_minutes') or 0):g} minutes")
+        if offer.get("times"):
+            bits.append("it was within the offer's times")
+        return f"the '{offer['name']}' offer: " + (", ".join(bits) if bits else "its conditions were met")
 
     async def async_accept(self, offer_id: str, accept: bool, note: str | None = None) -> dict[str, Any]:
         rt = self._rt()
@@ -169,7 +200,8 @@ class Offers:
             rt.timeline.add("mode", f"Said no to: {offer['name']}")
             return {"offer": offer["name"], "done": False}
         try:
-            await async_run_actions(self.hass, offer.get("actions") or [], offer["name"])
+            # someone said yes: this is their request (checked like any other), not the house acting by itself
+            await async_run_actions(self.hass, offer.get("actions") or [], offer["name"], context=Context())
         except Exception as err:  # noqa: BLE001
             return {"offer": offer["name"], "error": f"It didn't work: {err}"}
         rt.timeline.add("mode", f"Yes to: {offer['name']}", note or None)

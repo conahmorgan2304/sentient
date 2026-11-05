@@ -196,3 +196,16 @@ async def test_morning_briefing_waits_for_a_chosen_room(hass: HomeAssistant, fre
     hass.states.async_set("binary_sensor.lounge_motion", "on", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert said and said[-1].data["entity_id"] == ["assist_satellite.lounge"]
+
+
+async def test_tidy_never_drops_pinned_and_says_what_changed(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    mem = entry.runtime_data.memory
+    ids = [mem.add(f"Fact number {n} about {w}").id for n, w in enumerate(
+        ["apples", "boats", "clocks", "doors", "eggs", "fields", "gates", "hills", "inks"])]
+    mem.pin(ids[0])
+    _ai(hass, {"remove": f"{ids[0]},{ids[1]}", "merge": ""})
+    await hass.services.async_call(DOMAIN, "tidy_memories", {}, blocking=True, return_response=True)
+    assert mem.get(ids[0]) is not None and mem.get(ids[1]) is None
+    note = entry.runtime_data.timeline.since(1, ["learned"], 10)[0]
+    assert note["text"].startswith("Tidied memories") and "boats" in note["detail"]

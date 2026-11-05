@@ -93,6 +93,8 @@ class Recipes:
     # ----- sources -------------------------------------------------------------------------
     def _folder(self) -> tuple[str, str]:
         sub = str(self.options.get(CONF_RECIPES_FOLDER) or DEFAULT_RECIPES_FOLDER).strip().strip("/")
+        if ".." in sub.split("/"):
+            sub = DEFAULT_RECIPES_FOLDER  # only ever a folder inside Home Assistant's media
         base = (self.hass.config.media_dirs or {}).get("local") or self.hass.config.path("media")
         return os.path.join(base, sub), f"media-source://media_source/local/{sub}"
 

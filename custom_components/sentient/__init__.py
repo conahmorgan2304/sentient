@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
-from typing import Any
+import time
+from typing import Any, Callable
 
 import voluptuous as vol
 
@@ -16,7 +17,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ServiceValidationError
 
 from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
 from .voice_checks import VoiceChecks
@@ -171,6 +172,20 @@ class SentientRuntime:
     screen: Screen
     threads: Any = None  # things to ask about later
     selfaware: Any = None  # what it can do now, and how its behaviour is going down
+    proposals: Any = None  # settings changes it would make, waiting for a yes
+    holiday: Any = None  # holiday mode
+    trust: Any = None  # do, say-then-do or ask first, by kind of device
+    profiles: Any = None  # room profiles
+    parcels: Any = None  # outside information and parcels on their way
+    maintenance: Any = None  # filters, descaling and services due by use
+    cheap_power: Any = None  # cheap-electricity suggestions
+    music: Any = None  # music by asking (made when first used)
+    whats_new: Any = None  # what's new after an update
+    usage: Any = None  # which features are used
+    own: Any = None  # what the house itself switched (so nothing mistakes it for a person)
+    outside_read: dict = field(default_factory=dict)  # conversation -> the turn outside text was last read in
+    dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
+    startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     recipes: Any = None  # recipes and cooking mode
@@ -398,10 +413,29 @@ async def async_register_card_resources(hass: HomeAssistant, version: str, tags:
     return done
 
 
+# optional parts that only start when switched on (and start the moment they are, without a restart)
+DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
+    "books": lambda o: bool(o.get("books")),
+    "recipes": lambda o: bool(o.get("recipes")),
+    "goals": lambda o: bool(o.get("goals")),
+    "clipwatch": lambda o: bool(o.get("clip_watch")),
+    "faces": lambda o: bool(o.get("faces") or o.get("face_teach") or float(o.get("face_forget_hours") or 0) > 0),
+    "rain": lambda o: bool(o.get("rain_warnings")),
+    "parcels": lambda o: bool(o.get("outside_info") or o.get("parcel_trackers")),
+    "cheap_power": lambda o: bool(o.get("price_entity")),
+}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
+    started_at = time.monotonic()
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
+    from .own import OwnActions
+
+    own = OwnActions(hass, entry.entry_id)  # first, so everything after can mark what it does as the house's own
+    await own.async_start()
+    entry.async_on_unload(own.async_stop)
     timeline = Timeline(hass, entry.entry_id)
     await timeline.async_start()
     entry.async_on_unload(timeline.async_stop)
@@ -487,6 +521,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     drive = Drive(hass, entry.entry_id, options, get_rt)
     foresight = Foresight(hass, options, get_rt)
     sleep = Sleep(hass, entry.entry_id, options, get_rt)
+    learner.woke_on = sleep.woke_on
     appliances = Appliances(hass, entry.entry_id, options, get_rt)
     animals = Animals(hass, options, get_rt)
     away = Away(hass, entry.entry_id, options, get_rt)
@@ -512,7 +547,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .clipwatch import ClipWatch
 
     clipwatch = ClipWatch(hass, entry.entry_id, options, get_rt)
-    learner.extra_automated = away.times
+    def _house_did() -> dict[str, set[int]]:  # away lights, and everything else the house switched itself
+        out = {k: set(v) for k, v in own.times().items()}
+        for entity, stamps in away.times().items():
+            out.setdefault(entity, set()).update(stamps)
+        return out
+
+    learner.extra_automated = _house_did
     learner.covered = lambda entity, state, minute: scheduled_by_alarm(lists["alarms"].listing(), entity, state, minute)
     watchdog = Watchdog(hass, entry.entry_id, options, get_rt)
     screen = Screen(hass, options, get_rt)
@@ -548,6 +589,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .selfaware import SelfAware
 
     selfaware = SelfAware(hass, options, get_rt)
+    from .usage import Usage
+
+    usage = Usage(hass, entry.entry_id, options, get_rt)
+    from .whatsnew import WhatsNew
+
+    whats_new = WhatsNew(hass, entry.entry_id, options)
+    from .tariff import CheapPower
+
+    cheap_power = CheapPower(hass, entry.entry_id, options, get_rt)
+    from .maintenance import Maintenance
+
+    maintenance = Maintenance(hass, lists["maintenance"], get_rt)
+    from .world import Parcels
+
+    parcels = Parcels(hass, entry.entry_id, options, get_rt)
+    visitors.expecting = lambda: parcels.trackers != [] and parcels.expecting_today
+    from .rooms import RoomProfiles
+
+    profiles = RoomProfiles(hass, lists["rooms"])
+    speech.profiles = profiles
+    speech.phone = notifier
+    notifier.on_sent = lambda when, title: timeline.mark(when, phoned=title)
+    from .trust import Trust
+
+    trust = Trust(hass, entry.entry_id, options, get_rt)
+    learner.trust = trust
+    heating.trust = trust
+    from .holiday import Holiday
+
+    holiday = Holiday(hass, entry.entry_id, options, get_rt)
+    speech.holiday = holiday
+    notifier.holiday = holiday
+    from .proposals import Proposals
+
+    proposals = Proposals(hass, entry, get_rt)
+    await proposals.async_start()
     goals = Goals(hass, entry.entry_id, options, get_rt)
     from .books import Books
     from .recipes import Recipes
@@ -565,16 +642,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)
     for engine in (upkeep, critical, left_open, welcome):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
-    for engine in (followyou, loops, conversations, curiosity, reflection, drive, foresight, sleep, appliances, animals, watchdog, screen, away, selftest, rain, pets, autobackup, bins, faces, clipwatch, selfaware, goals, books, recipes):
+    engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "curiosity": curiosity,
+               "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
+               "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
+               "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
+               "selfaware": selfaware, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
+               "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
+    timings: dict[str, float] = {}
+    for name, engine in engines.items():
+        if name in DORMANT_WHEN_OFF and not DORMANT_WHEN_OFF[name](options):
+            entry.runtime_data.dormant.add(name)  # switched off: not started (it starts when switched on)
+            continue
+        began = time.monotonic()
         await engine.async_start()
         entry.async_on_unload(engine.async_stop)
+        timings[name] = time.monotonic() - began
     await party.async_start()
     entry.async_on_unload(party.async_stop)
     night_watch.async_start()
@@ -585,6 +674,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.runtime_data.startup = {
+        "seconds": round(time.monotonic() - started_at, 2),
+        "slowest_parts": {k: round(v, 2) for k, v in sorted(timings.items(), key=lambda kv: -kv[1])[:5]},
+        "not_started_while_off": sorted(entry.runtime_data.dormant),
+    }
     return True
 
 
@@ -625,6 +719,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.voice_checks.options = options
     if not options.get(CONF_ASK_LATER):
         entry.runtime_data.threads.clear()  # switched off: nothing is kept to ask later
+    if not options.get("privacy_log", True):
+        entry.runtime_data.ai.forget_sent()  # switched off: the record of what left the house goes too
     if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
         entry.runtime_data.speech.deliveries.clear()
     entry.runtime_data.speech.options = options
@@ -643,9 +739,15 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes"):
+    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.drive.async_setup_triggers()
+    for name in sorted(entry.runtime_data.dormant):  # switched on just now: start it without a restart
+        if DORMANT_WHEN_OFF[name](options):
+            engine = getattr(entry.runtime_data, name)
+            await engine.async_start()
+            entry.async_on_unload(engine.async_stop)
+            entry.runtime_data.dormant.discard(name)
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
@@ -660,7 +762,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
 def _runtime(hass: HomeAssistant) -> SentientRuntime:
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        raise vol.Invalid("Sentient is not set up")
+        raise ServiceValidationError("Sentient is not set up")
     return entries[0].runtime_data
 
 
@@ -699,7 +801,7 @@ def _register_services(hass: HomeAssistant) -> None:
             found = learner._find(call.data["routine"])
             routine = learner.adopt(found.id, not found.adopted) if found else None
         if routine is None:
-            raise vol.Invalid("No learned routine matches that")
+            raise ServiceValidationError("No learned routine matches that")
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
     async def forget_routine(call: ServiceCall) -> ServiceResponse:
@@ -709,7 +811,7 @@ def _register_services(hass: HomeAssistant) -> None:
             return {"restored": back, "note": "They can be learned again from the next nightly check."}
         item = learner.dismiss(call.data.get("routine") or "")
         if item is None:
-            raise vol.Invalid("No learned routine matches that")
+            raise ServiceValidationError("No learned routine matches that")
         return {"deleted": item.describe()}
 
     async def briefing(call: ServiceCall) -> ServiceResponse:
@@ -862,7 +964,7 @@ def _register_services(hass: HomeAssistant) -> None:
             from .const import CONF_FACE_FORGET_HOURS
 
             if not (rt.faces.enabled or rt.faces.teaching) or float(rt.options.get(CONF_FACE_FORGET_HOURS) or 0) <= 0:
-                raise HomeAssistantError("Forgetting unnamed faces is off: turn on faces and set how many hours to keep "
+                raise ServiceValidationError("Forgetting unnamed faces is off: turn on faces and set how many hours to keep "
                                          "unnamed faces in Settings first")
             return await rt.faces.async_forget_old()
         if what == "clip_watch":
@@ -876,6 +978,27 @@ def _register_services(hass: HomeAssistant) -> None:
     async_register_admin_service(
         hass, DOMAIN, "check_now", check_now, supports_response=SupportsResponse.OPTIONAL,
         schema=vol.Schema({vol.Required("what"): vol.In(["self_test", "rain", "hutch", "cat", "bins", "faces", "faces_forget", "clip_watch"])}),
+    )
+
+    async def maintenance_done(call: ServiceCall) -> ServiceResponse:
+        out = _runtime(hass).maintenance.done(call.data["job"])
+        if out is None:
+            raise ServiceValidationError(f"No maintenance job called {call.data['job']}")
+        return out
+
+    hass.services.async_register(DOMAIN, "maintenance_done", maintenance_done, supports_response=SupportsResponse.OPTIONAL,
+                                 schema=vol.Schema({vol.Required("job"): cv.string}))
+
+    async def notice(call: ServiceCall) -> ServiceResponse:
+        """Pass something through Sentient's speech rules (and, by default, its decision whether it's worth saying)."""
+        return await _runtime(hass).noticer.async_notice(
+            call.data["message"], call.data.get("entity_id"), call.data["decide"], call.data["priority"])
+
+    hass.services.async_register(
+        DOMAIN, "notice", notice, supports_response=SupportsResponse.OPTIONAL,
+        schema=vol.Schema({vol.Required("message"): cv.string, vol.Optional("entity_id"): cv.entity_id,
+                           vol.Optional("decide", default=True): cv.boolean,
+                           vol.Optional("priority", default="normal"): vol.In(["low", "normal", "urgent"])}),
     )
 
     async def look_ahead(call: ServiceCall) -> ServiceResponse:
@@ -963,7 +1086,7 @@ def _register_services(hass: HomeAssistant) -> None:
 
         entries = hass.config_entries.async_loaded_entries(DOMAIN)
         if not entries:
-            raise vol.Invalid("Sentient is not set up")
+            raise ServiceValidationError("Sentient is not set up")
         minutes = float(call.data["minutes"])
         until = dt_util.utcnow() + timedelta(minutes=minutes) if minutes > 0 else None
         hush(hass, entries[0], until)

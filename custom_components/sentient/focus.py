@@ -30,7 +30,7 @@ def hand_off(say: str) -> None:
         flags["hand_off"] = say
 
 ALWAYS = {
-    "sentient_session", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_recall",
+    "sentient_session", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_undo_last", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
     "sentient_search", "sentient_ask_later", "sentient_self",
 }

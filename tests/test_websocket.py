@@ -113,8 +113,17 @@ async def test_alarms_speak_and_automated_routines_just_happen(hass: HomeAssista
     await ws.send_json({"id": 2, "type": "sentient/items", "kind": "alarms"})
     assert [i["name"] for i in (await ws.receive_json())["result"]["items"]] == ["Bins"]
     api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args={
-        "action": "set", "name": "Blanket on", "time": "21:00", "days": "every day", "turn_on": "heated blanket"}))
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    async_expose_entity(hass, "conversation", "switch.heated_blanket", True)
+    args = {"action": "set", "name": "Blanket on", "time": "21:00", "days": "every day", "turn_on": "heated blanket"}
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args=args))
+    out = getattr(out, "data", out)
+    assert out["read_back"] == "'Blanket on': at 21:00 every day, switch on the Heated blanket."
+    assert rt.lists["alarms"].find("Blanket on") is None  # nothing saved until they say yes
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args={**args, "confirmed": True}))
     out = getattr(out, "data", out)
     assert out["kind"] == "automated routine"
     made = rt.lists["alarms"].find("Blanket on")

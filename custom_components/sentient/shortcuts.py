@@ -19,6 +19,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.script import Script, async_validate_actions_config
 from homeassistant.helpers.storage import Store
 
+from .own import own_context
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ class Shortcuts:
             try:
                 sequence = await async_validate_actions_config(self.hass, cv.SCRIPT_SCHEMA(item.actions))
                 script = Script(self.hass, sequence, f"Sentient: {item.name}", DOMAIN, running_description="routine")
-                await script.async_run(run_variables=variables, context=context or Context())
+                await script.async_run(run_variables=variables, context=context or own_context(self.hass, f"routine: {item.name}"))
             except Exception as err:  # noqa: BLE001 - report it, don't crash the caller
                 _LOGGER.warning("Routine %s failed: %s", item.name, err)
                 return {"routine": item.name, "error": str(err)}
@@ -198,7 +199,7 @@ async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], 
         return
     sequence = await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(actions))
     script = Script(hass, sequence, f"Sentient: {name}", DOMAIN, running_description="actions")
-    await script.async_run(run_variables=variables, context=context or Context())
+    await script.async_run(run_variables=variables, context=context or own_context(hass, name))
 
 
 def _join(names: list[str]) -> str:

@@ -318,6 +318,35 @@ cancel_follow_up:
       example: "the lounge warming up"
       selector:
         text:
+maintenance_done:
+  fields:
+    job:
+      required: true
+      example: Air purifier filter
+      selector:
+        text:
+notice:
+  fields:
+    message:
+      required: true
+      example: "The dishwasher has finished and the door's still shut"
+      selector:
+        text:
+    entity_id:
+      selector:
+        entity:
+    decide:
+      default: true
+      selector:
+        boolean:
+    priority:
+      default: normal
+      selector:
+        select:
+          options:
+            - low
+            - normal
+            - urgent
 look_ahead:
   fields:
     speak:

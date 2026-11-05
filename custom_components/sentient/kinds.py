@@ -274,6 +274,67 @@ KINDS: dict[str, dict[str, Any]] = {
             "cooldown_minutes": "Then don't check again for",
         },
     },
+    "rooms": {
+        "title": "Rooms",
+        "icon": "mdi:door-open",
+        "blurb": "Make a room different: private (no personal memories there — a child's room), a gentler voice, its own "
+                 "volume, its own quiet time, and whether offers and questions are asked there. Rooms without one "
+                 "behave as usual. Safety alerts always sound everywhere.",
+        "add": "+ NEW ROOM PROFILE",
+        "defaults": {
+            "enabled": True, "areas": [], "private": False, "gentle": False, "volume": 0, "quiet": "", "offers": True,
+            "last": None,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("areas", {"area": {"multiple": True}}, True),
+            _sel("private", {"boolean": {}}),
+            _sel("gentle", {"boolean": {}}),
+            _sel("volume", {"number": {"min": 0, "max": 100, "step": 5, "unit_of_measurement": "%", "mode": "slider"}}),
+            _sel("quiet", {"text": {}}),
+            _sel("offers", {"boolean": {}}),
+        ],
+        "labels": {
+            "name": "Name (e.g. The girls' rooms)", "enabled": "On", "areas": "Rooms",
+            "private": "Private: no personal memories, other rooms' conversations or names from the door",
+            "gentle": "Gentler voice: softer, simpler replies",
+            "volume": "Announcement volume here (0 = as usual)",
+            "quiet": "Quiet here between (e.g. 19:00-07:30; urgent and safety alerts still sound)",
+            "offers": "Offers and questions may be asked here",
+        },
+    },
+    "maintenance": {
+        "title": "Maintenance",
+        "icon": "mdi:wrench-clock",
+        "blurb": "Filters, descaling and services due by how much something has actually run — or every so many days. "
+                 "Said once in the daytime when it's due (and again every few days until it's done), and in the briefing. "
+                 "Say \"I've changed the purifier filter\" to start the count again.",
+        "add": "+ NEW MAINTENANCE JOB",
+        "defaults": {
+            "enabled": True, "entity": None, "every_hours": 0, "every_days": 0, "used_hours": 0, "last_done": None,
+            "how": "", "said": None, "last": None,
+        },
+        "schema": [
+            _sel("name", {"text": {}}, True),
+            _sel("enabled", {"boolean": {}}),
+            _sel("entity", {"entity": {"domain": ["switch", "fan", "climate", "media_player", "sensor", "binary_sensor",
+                                                  "light", "vacuum", "humidifier", "water_heater"]}}),
+            _sel("every_hours", {"number": {"min": 0, "max": 100000, "unit_of_measurement": "h", "mode": "box"}}),
+            _sel("every_days", {"number": {"min": 0, "max": 3650, "unit_of_measurement": "days", "mode": "box"}}),
+            _sel("used_hours", {"number": {"min": 0, "max": 100000, "unit_of_measurement": "h", "mode": "box"}}),
+            _sel("last_done", {"date": {}}),
+            _sel("how", {"text": {"multiline": True}}),
+        ],
+        "labels": {
+            "name": "Job (e.g. Air purifier filter)", "enabled": "On",
+            "entity": "Counts the time this is on or running",
+            "every_hours": "Due after this much use (0 = not by use)",
+            "every_days": "Or every (0 = not by days)",
+            "used_hours": "Use so far (set it if it's been running a while)",
+            "last_done": "Last done", "how": "How to do it (optional; the manuals are used too)",
+        },
+    },
 }
 
 
@@ -315,6 +376,25 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
 
             what += [f"{a.name} lights" if (a := ar.async_get(hass).async_get_area(x)) else x for x in item["areas"]]
         return " · ".join([", ".join(what[:3]) + ("…" if len(what) > 3 else "")] + bits)
+    if kind == "maintenance":
+        bits = []
+        if float(item.get("every_hours") or 0):
+            bits.append(f"{round(float(item.get('used_hours') or 0))} of {float(item['every_hours']):g} h")
+        if float(item.get("every_days") or 0):
+            bits.append(f"every {float(item['every_days']):g} days")
+        if item.get("last_done"):
+            bits.append(f"last done {str(item['last_done'])[:10]}")
+        return " · ".join(bits) or "no schedule yet"
+    if kind == "rooms":
+        from homeassistant.helpers import area_registry as ar
+
+        names = [a.name if (a := ar.async_get(hass).async_get_area(x)) else x for x in item.get("areas") or []]
+        bits = [", ".join(names) or "no rooms yet"]
+        bits += [b for b, on in (("private", item.get("private")), ("gentle", item.get("gentle")),
+                                 (f"volume {item.get('volume'):g}%", float(item.get("volume") or 0) > 0),
+                                 (f"quiet {item.get('quiet')}", bool(item.get("quiet"))),
+                                 ("no offers", not item.get("offers", True))) if on]
+        return " · ".join(bits)
     if kind == "checks":
         return f"{name_of(item.get('camera'))} · {item.get('question') or ''}" + (" · says it" if item.get("say") else "")
     if kind == "rules":

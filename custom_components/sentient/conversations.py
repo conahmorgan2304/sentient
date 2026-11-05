@@ -160,6 +160,8 @@ class Conversations:
         detail = "by voice" + (f"; didn't work: {', '.join(bad)}" if bad else "")
         self.timeline.add("voice", f"{verb} {', '.join((ok or bad)[:4])}" + (f" and {len(ok) - 4} more" if len(ok) > 4 else ""), detail)
         if self.guard is not None and name in ("HassTurnOn", "HassTurnOff", "HassToggle"):
+            ours = self._ours.get(conversation_id or "") or {}
+            self.guard.note([conversation_id or "", ours.get("device_id") or ""], data.get("success") or [])
             ep = self._open.get(conversation_id or "") or {}
             said = next((t["text"] for t in reversed(ep.get("turns", [])) if t["who"] == "them"), "")
             if said:

@@ -19,7 +19,7 @@ from typing import Any
 import uuid
 
 from homeassistant.const import STATE_ON
-from homeassistant.core import CALLBACK_TYPE, Context, Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.sun import is_up
@@ -348,7 +348,9 @@ class MotionLights:
 
         if blocked(self.hass, rule.light):
             return  # on the "never touch" list
-        context = Context()
+        from .own import own_context
+
+        context = own_context(self.hass, "motion lights")
         self._ours.setdefault(rule.light, set()).add(context.id)
         self._sent[rule.light] = dt_util.utcnow()
         domain = rule.light.split(".", 1)[0]

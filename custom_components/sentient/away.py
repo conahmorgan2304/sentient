@@ -22,6 +22,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .presence import area_of
+from .own import LastingContext
 from .const import CONF_AWAY_AFTER, CONF_AWAY_LIGHTS, CONF_AWAY_LIGHTS_ON, CONF_AWAY_PEOPLE, DEFAULT_AWAY_AFTER, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,10 +61,14 @@ class Away:
         self._plan_for: datetime | None = None  # start of the window the plan covers
         self._applied: dict[str, bool] = {}  # what we last set each light to
         self.ours: set[str] = set()  # lights we switched on and haven't switched off
-        self.context = Context()
+        self._lasting = LastingContext(hass, "away lights")  # the house did this, not a person
         self.switched: dict[str, list[int]] = {}  # light -> when we switched it (epoch seconds), so learning skips them
         self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.away")
         self._unsubs: list = []
+
+    @property
+    def context(self) -> Context:
+        return self._lasting.get()
 
     # ----- settings ---------------------------------------------------------------------
     @property
@@ -148,7 +153,12 @@ class Away:
 
     def due(self, now: datetime) -> bool:
         minutes = float(self.options.get(CONF_AWAY_AFTER, DEFAULT_AWAY_AFTER) or 0)
-        return (self.enabled and self.away_since is not None and now - self.away_since >= timedelta(minutes=minutes)
+        try:
+            holiday = getattr(self._rt(), "holiday", None)
+        except AttributeError:  # still starting up
+            holiday = None
+        on = self.enabled or (holiday is not None and holiday.active)
+        return (on and self.away_since is not None and now - self.away_since >= timedelta(minutes=minutes)
                 and self.dark() and self.movement_inside(now) is None)
 
     @callback

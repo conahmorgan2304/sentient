@@ -40,7 +40,8 @@ HELD_REASONS = {
     "quiet_hours": "quiet hours", "hushed": "the house was hushed", "guest_mode": "guests were in",
     "said_recently": "said the same not long ago", "duplicate": "just said that", "thumbs_down": "a thumbs-down on these",
     "no_speaker": "no speaker to say it on", "busy": "already saying something", "hourly_limit": "enough said this hour",
-    "empty": "nothing to say",
+    "empty": "nothing to say", "holiday": "holiday mode (sent to phones instead)",
+    "room_quiet": "that room's own quiet time",
 }
 
 
@@ -111,6 +112,15 @@ class Timeline:
         self.hass.bus.async_fire(EVENT_TIMELINE, item)
 
     @callback
+    def mark(self, time: str | None, **fields: Any) -> None:
+        """Add details to an item already on the timeline (e.g. that it went to the phones)."""
+        for item in self.items:
+            if item.get("time") == time:
+                item.update(fields)
+                self._save()
+                return
+
+    @callback
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"items": list(self.items), "problems": self._problems}, 10)
 
@@ -123,13 +133,15 @@ class Timeline:
             area_entry = ar.async_get(self.hass).async_get_area(area) if area else None
             st = self.hass.states.get(sp)
             rooms.append(area_entry.name if area_entry else (st.name if st else sp))
-        self.add("said", d.get("message", ""), ", ".join(rooms) or None, priority=d.get("priority"), source=d.get("source"), deliveries=d.get("deliveries"))
+        self.add("said", d.get("message", ""), ", ".join(rooms) or ("asked on the phones" if d.get("phone") else None), priority=d.get("priority"), source=d.get("source"),
+                 deliveries=d.get("deliveries"), why=d.get("why"), question=d.get("question"))
 
     @callback
     def _held(self, event: Event) -> None:
         d = event.data
         why = held_reason(self.hass, str(d.get("reason") or ""))
-        self.add("held", d.get("message", ""), f"held back: {why}" if why else None, reason=d.get("reason"), source=d.get("source"))
+        self.add("held", d.get("message", ""), f"held back: {why}" if why else None, reason=d.get("reason"), source=d.get("source"),
+                 why=d.get("why"))
 
     @callback
     def _noticed(self, event: Event) -> None:

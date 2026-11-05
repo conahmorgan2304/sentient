@@ -20,6 +20,7 @@ from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
+from .own import LastingContext
 from .const import CONF_RULES
 from .items import Items
 from .kinds import in_windows
@@ -118,7 +119,11 @@ class Rules:
         self.items = items
         self._rt = runtime
         self._unsub = None
-        self.context = Context()
+        self._lasting = LastingContext(hass, "rule")  # the house did this, not a person
+
+    @property
+    def context(self) -> Context:
+        return self._lasting.get()
 
     @callback
     def async_start(self) -> None:

@@ -373,6 +373,7 @@ class MindSensor(_Base):
                 "ask_later": bool(rt.options.get("ask_later")),
             },
             "self": rt.selfaware.summary() if getattr(rt, "selfaware", None) is not None else None,
+            "proposals": rt.proposals.listing() if getattr(rt, "proposals", None) is not None else [],
             "goals": rt.goals.listing() if getattr(rt, "goals", None) is not None and rt.goals.enabled else [],
             "ask_later": [] if rt.speech.guest_mode or not rt.options.get("ask_later") or rt.threads is None
             else [{"question": t["question"], "about": t["about"], "due": t["due"]} for t in rt.threads.waiting()],

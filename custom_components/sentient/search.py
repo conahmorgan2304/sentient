@@ -58,6 +58,12 @@ async def async_search(hass: HomeAssistant, options: dict[str, Any], query: str)
     if not base:
         return {"error": "No SearXNG address is set in Sentient's settings"}
     params = {"q": query, "format": "json", "safesearch": "1", "language": hass.config.language or "en"}
+    from urllib.parse import urlparse
+
+    from .ai import gate
+
+    if (g := gate(hass)) is not None:
+        g.record_sent("web search", urlparse(base).hostname or "SearXNG", chars=len(query))
     try:
         async with asyncio.timeout(10):
             resp = await async_get_clientsession(hass).get(f"{base}/search", params=params)
