@@ -1140,8 +1140,10 @@ class AlarmTool(_Tool):
         "either days (list of mon..sun, or 'weekdays'/'weekends'/'every day') to repeat, or date (YYYY-MM-DD) "
         "for a one-off on another day (neither = next time it comes round); optional description and routine "
         "(the name of one of the household's voice routines to run). For an automated routine set silent=true "
-        "and turn_on / turn_off (devices by name). action 'list' shows both and when each next happens. "
-        "action 'cancel' with name deletes one; 'off'/'on' with name pauses or resumes it."
+        "and turn_on / turn_off (devices by name). Anything that switches devices or runs a routine is read back "
+        "first: call with confirmed false, read the read_back exactly and ask 'shall I set that up?'; only after a "
+        "clear yes, call again with the same details and confirmed true. action 'list' shows both and when each "
+        "next happens. action 'cancel' with name deletes one; 'off'/'on' with name pauses or resumes it."
     )
     parameters = vol.Schema({
         vol.Required("action"): vol.In(["set", "list", "cancel", "off", "on"]),
@@ -1150,6 +1152,7 @@ class AlarmTool(_Tool):
         vol.Optional("description"): cv.string, vol.Optional("routine"): cv.string,
         vol.Optional("silent"): cv.boolean, vol.Optional("turn_on"): vol.Any(cv.string, [cv.string]),
         vol.Optional("turn_off"): vol.Any(cv.string, [cv.string]),
+        vol.Optional("confirmed", default=False): cv.boolean,
     })
 
     async def async_call(
@@ -1184,7 +1187,7 @@ class AlarmTool(_Tool):
                     else DAYS[5:] if "weekend" in low else [d for d in DAYS if d in low])
         if a.get("routine") and rt.shortcuts.find(a["routine"]) is None:
             return {"error": f"There's no routine called {a['routine']}", "routines": [r.name for r in rt.shortcuts.items.values()]}
-        from .never import blocked
+        from .alarms import voice_actions_problem
         from .watches import resolve_entity
 
         actions, unknown = [], []
@@ -1195,16 +1198,21 @@ class AlarmTool(_Tool):
                 if not eid or "." not in eid:
                     unknown.append(wanted)
                     continue
-                if blocked(hass, eid):
-                    return {"error": f"{wanted} is on the never-touch list"}
-                if not _exposed(hass, eid):
-                    return {"error": f"{wanted} isn't exposed to voice assistants (Settings → Voice assistants → Expose)"}
                 actions.append({"action": f"{eid.split('.', 1)[0]}.{service}", "target": {"entity_id": eid}})
         if unknown:
             return {"error": "I couldn't find " + ", ".join(unknown)}
+        # the same guards as rules: only allowed actions, never-touch respected, and only what voice may control
+        if why := voice_actions_problem(hass, actions):
+            return {"error": why, "say": "Say plainly that an alarm made by voice can't do that."}
         silent = bool(a.get("silent")) or (bool(actions) and not a.get("description"))
+        if (actions or a.get("routine")) and not a.get("confirmed"):
+            from .alarms import describe_schedule
+
+            text = describe_schedule(hass, a["name"], a["time"], days, a.get("date"), actions, a.get("routine"), silent)
+            return {"read_back": text, "next": "Read this back and ask 'shall I set that up?'. Only after a clear yes, "
+                                               "call sentient_alarm again with exactly the same details and confirmed true."}
         item = rt.alarms.set(a["name"], a["time"], days, a.get("date"), a.get("description") or "", a.get("routine"),
-                             silent=silent, actions=actions)
+                             silent=silent, actions=actions, made_by="voice")
         nxt = next((x for x in rt.alarms.listing() if x["id"] == item["id"]), {})
         return {"set": item["name"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next"),
                 "kind": "automated routine" if item.get("silent") else "alarm"}

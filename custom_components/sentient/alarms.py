@@ -64,6 +64,65 @@ def next_ring(alarm: dict[str, Any], now: datetime) -> datetime | None:
     return None
 
 
+
+def exposed_to_voice(hass: HomeAssistant, entity_id: str) -> bool:
+    """Exposed to Assist (Settings → Voice assistants → Expose). Unknown counts as no."""
+    try:
+        from homeassistant.components.homeassistant.exposed_entities import async_should_expose
+
+        return bool(async_should_expose(hass, "conversation", entity_id))
+    except (KeyError, ImportError):
+        return False
+
+
+def voice_actions_problem(hass: HomeAssistant, actions: list[dict[str, Any]]) -> str | None:
+    """Why an alarm made by voice can't do these, or None. The same limits as rules (rules.safe_actions), the
+    never-touch list, and only entities exposed to voice assistants."""
+    from .never import blocked
+    from .rules import safe_actions
+
+    if why := safe_actions(actions):
+        return why.replace("rules", "alarms made by voice", 1)
+    for action in actions:
+        target = action.get("target") or {}
+        ids = target.get("entity_id") if isinstance(target, dict) else None
+        for eid in [ids] if isinstance(ids, str) else list(ids or []):
+            st = hass.states.get(eid)
+            name = st.name if st else eid
+            if blocked(hass, eid):
+                return f"{name} is on the never-touch list"
+            if not exposed_to_voice(hass, eid):
+                return f"{name} isn't exposed to voice assistants (Settings → Voice assistants → Expose)"
+    return None
+
+
+def describe_schedule(hass: HomeAssistant, name: str, at: str, days: list[str], on: str | None,
+                      actions: list[dict[str, Any]], routine: str | None, silent: bool) -> str:
+    """What's read back before an alarm made by voice is saved."""
+    names = {"mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday",
+             "sat": "Saturday", "sun": "Sunday"}
+    if days and len(days) == 7:
+        when = "every day"
+    elif days == DAYS[:5]:
+        when = "on weekdays"
+    elif days == DAYS[5:]:
+        when = "at weekends"
+    elif days:
+        when = "every " + ", ".join(names[d] for d in days if d in names)
+    else:
+        when = f"on {on}" if on else "once, the next time it comes round"
+    doing = []
+    for action in actions:
+        eid = (action.get("target") or {}).get("entity_id")
+        st = hass.states.get(eid) if isinstance(eid, str) else None
+        verb = "switch on" if str(action.get("action", "")).endswith("turn_on") else "switch off"
+        doing.append(f"{verb} the {st.name if st else eid}")
+    if routine:
+        doing.append(f"run the routine '{routine}'")
+    what = " and ".join(doing) or ("say it out loud" if not silent else "nothing")
+    return f"'{name}': at {str(at)[:5]} {when}, {what}" + ("" if silent else ", and say it out loud") + "."
+
+
 class Alarms:
     def __init__(self, hass: HomeAssistant, items: Items, runtime: Callable[[], Any]) -> None:
         self.hass = hass
@@ -89,6 +148,20 @@ class Alarms:
             if due(alarm, local):
                 self.hass.async_create_task(self.async_ring(alarm))
 
+    def _checked(self, alarm: dict[str, Any]) -> list[dict[str, Any]]:
+        """The actions to run. One made by voice is checked again when it goes off (exposure can change, and older
+        versions saved them without these checks); ones made by hand on the page are run as set."""
+        actions = alarm.get("actions") or []
+        if alarm.get("made_by") != "voice":
+            return actions
+        device = [x for x in actions if x.get("action") != "sentient.run_routine"]
+        if why := voice_actions_problem(self.hass, device):
+            _LOGGER.warning("Alarm %s: not run — %s", alarm["name"], why)
+            if (rt := self._rt()) is not None:
+                rt.timeline.add("health", f"Didn't run: {alarm['name']}", why)
+            return [x for x in actions if x.get("action") == "sentient.run_routine"]
+        return actions
+
     async def async_ring(self, alarm: dict[str, Any]) -> dict[str, Any]:
         rt = self._rt()
         now = dt_util.utcnow()
@@ -100,7 +173,7 @@ class Alarms:
         if alarm.get("silent"):
             rt.timeline.add("mode", alarm["name"], "schedule")
             try:
-                await async_run_actions(self.hass, alarm.get("actions") or [], f"alarm: {alarm['name']}")
+                await async_run_actions(self.hass, self._checked(alarm), f"alarm: {alarm['name']}")
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
             return {"spoken": False, "reason": "silent"}
@@ -118,7 +191,7 @@ class Alarms:
             self._room[alarm["id"]] = (alarm["room_area"], now + ROOM_WINDOW, alarm["room_actions"])
         result = await rt.speech.async_say(message, "urgent", speakers, source=f"alarm:{alarm['name']}")
         try:
-            await async_run_actions(self.hass, alarm.get("actions") or [], f"alarm: {alarm['name']}")
+            await async_run_actions(self.hass, self._checked(alarm), f"alarm: {alarm['name']}")
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
         return result.as_dict()
@@ -164,11 +237,11 @@ class Alarms:
     # ----- by voice ------------------------------------------------------------------------
     def set(self, name: str, at: str, days: list[str] | None = None, on: str | None = None,
             description: str = "", routine: str | None = None, silent: bool = False,
-            actions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+            actions: list[dict[str, Any]] | None = None, made_by: str = "") -> dict[str, Any]:
         """An alarm (said at a time) — or, silent, an automated routine (just done at a time)."""
         actions = list(actions or []) + ([{"action": "sentient.run_routine", "data": {"name": routine}}] if routine else [])
         item = {"name": name, "time": at if len(at) > 5 else f"{at}:00", "days": days or [], "date": on,
-                "description": description, "actions": actions, "enabled": True, "silent": silent}
+                "description": description, "actions": actions, "enabled": True, "silent": silent, "made_by": made_by}
         existing = self.items.find(name)
         if existing:
             item["id"] = existing["id"]
