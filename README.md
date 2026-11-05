@@ -10,7 +10,7 @@ Sentient gives your home one shared brain. Every voice assistant and automation 
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
-> **Status: beta.** In daily use in one house; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+> **Status: beta, in the HACS default list.** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
 
 ## New in 0.84–0.88
 
@@ -136,8 +136,8 @@ Every new feature has its own switch in Settings.
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=conahmorgan2304&repository=sentient&category=integration)
 
-1. HACS → ⋮ → *Custom repositories* → add this repo's URL as an **Integration** (or use the button above).
-2. Install **Sentient**, then restart Home Assistant.
+1. In HACS, search for **Sentient** and download it (or use the button above). It's in the HACS default list, so there's no custom repository to add.
+2. Restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Sentient*. Give it a name, pick your speakers and set quiet hours.
 4. *Settings → Voice assistants →* your agent → *Control Home Assistant* → tick **Sentient** as well as **Assist**.
 

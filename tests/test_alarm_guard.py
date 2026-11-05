@@ -83,3 +83,25 @@ async def test_plain_spoken_alarm_needs_no_read_back(hass: HomeAssistant) -> Non
         "action": "set", "name": "Wake up", "time": "07:00", "days": "weekdays"}))
     out = getattr(out, "data", out)
     assert out["set"] == "Wake up" and out["kind"] == "alarm"
+
+
+async def test_older_alarms_checked_until_saved_on_the_page(hass: HomeAssistant, hass_ws_client) -> None:
+    """Saved before 0.88 (no made_by): checked like voice ones; saving it on the page keeps it as set."""
+    entry, _api = await _setup(hass)
+    rt = entry.runtime_data
+    old = rt.lists["alarms"].upsert({"name": "Old", "time": "21:00:00", "days": ["mon"], "silent": True,
+                                     "actions": [{"action": "script.turn_on", "target": {"entity_id": "script.open_everything"}}]})
+    old.pop("made_by", None)
+    scripts = async_mock_service(hass, "script", "turn_on")
+    await rt.alarms.async_ring(old)
+    await hass.async_block_till_done()
+    assert not scripts
+    assert "save it once" in rt.timeline.since(1, ["health"], 1)[0]["detail"]
+    ws = await hass_ws_client(hass)
+    await ws.send_json_auto_id({"type": "sentient/items/save", "kind": "schedules", "item": {**old}})
+    assert (await ws.receive_json())["success"]
+    saved = rt.lists["alarms"].find("Old")
+    assert saved["made_by"] == "page"
+    await rt.alarms.async_ring(saved)
+    await hass.async_block_till_done()
+    assert scripts  # an admin set it on the page: runs as set

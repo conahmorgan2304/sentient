@@ -149,15 +149,18 @@ class Alarms:
                 self.hass.async_create_task(self.async_ring(alarm))
 
     def _checked(self, alarm: dict[str, Any]) -> list[dict[str, Any]]:
-        """The actions to run. One made by voice is checked again when it goes off (exposure can change, and older
-        versions saved them without these checks); ones made by hand on the page are run as set."""
+        """The actions to run. Only alarms saved on the Alarms page by an admin run exactly as set; everything else —
+        made by voice, or saved by a version before 0.88 that didn't record who made it — is checked again when it
+        goes off (allowed actions, the never-touch list, exposed to voice assistants)."""
         actions = alarm.get("actions") or []
-        if alarm.get("made_by") != "voice":
+        if alarm.get("made_by") == "page":
             return actions
         device = [x for x in actions if x.get("action") != "sentient.run_routine"]
         if why := voice_actions_problem(self.hass, device):
             _LOGGER.warning("Alarm %s: not run — %s", alarm["name"], why)
             if (rt := self._rt()) is not None:
+                if not alarm.get("made_by"):  # saved before 0.88: it may have been made on the page
+                    why += " — if you made it on the Alarms page, open it there and save it once to keep it as it is"
                 rt.timeline.add("health", f"Didn't run: {alarm['name']}", why)
             return [x for x in actions if x.get("action") == "sentient.run_routine"]
         return actions
