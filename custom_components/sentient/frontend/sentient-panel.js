@@ -1415,7 +1415,7 @@
       try {
         const result = await this._hass.callWS({ type: "sentient/update_check" });
         const hacs = !result.error && result.latest_version ? await this._refreshHacs() : false;
-        this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? (hacs ? "HACS has been told to look again; the update should show in HACS shortly." : "Update available in HACS (open Sentient there and choose Update information if it isn't showing).") : "No newer release found."}` : "Checker disabled.";
+        this._updatesFeedback = result.error ? `Check failed: ${result.error}` : result.latest_version ? `Latest stable release: ${result.latest_version}. ${result.update_available ? (hacs ? "HACS has been told to look again; the update should show in HACS shortly." : "Update available — under Settings → Updates (Marketplace), or in HACS on older Home Assistant.") : "No newer release found."}` : "Checker disabled.";
       } catch (error) {
         this._updatesFeedback = error.message || String(error);
       } finally {
@@ -1425,7 +1425,8 @@
     }
 
     async _refreshHacs() {
-      // best effort: HACS only refreshes custom repositories now and then, so a new release can take a while to show
+      // best effort, HACS only (before Home Assistant 2026.11): it refreshed repositories now and then, so a new release
+      // could take a while to show. The Marketplace has no such call, so this simply does nothing there.
       try {
         const repos = await this._hass.callWS({ type: "hacs/repositories/list", categories: ["integration"] });
         const repo = (repos || []).find((r) => String(r.full_name || "").toLowerCase() === "conahmorgan2304/sentient");

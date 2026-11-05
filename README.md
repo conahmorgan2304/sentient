@@ -10,7 +10,7 @@ Sentient gives your home one shared brain. Every voice assistant and automation 
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
-> **Status: beta, in the HACS default list.** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+> **Status: beta, in the Home Assistant Marketplace (formerly HACS).** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
 
 ## New in 0.84–0.88
 
@@ -134,10 +134,10 @@ Every new feature has its own switch in Settings.
 
 ## Install
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=conahmorgan2304&repository=sentient&category=integration)
+[![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=conahmorgan2304&repository=sentient)
 
-1. In HACS, search for **Sentient** and download it (or use the button above). It's in the HACS default list, so there's no custom repository to add.
-2. Restart Home Assistant.
+1. *Settings → Marketplace*, search for **Sentient** and install it (or use the button above). It's in the Marketplace catalogue, so there's nothing to add by link. On Home Assistant 2026.11 and later, a first install opens its set-up straight away; updates show under *Settings → Updates* and need a restart.
+2. On Home Assistant 2025.10–2026.10 it's the same through HACS: search for **Sentient**, download it, then restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Sentient*. Give it a name, pick your speakers and set quiet hours.
 4. *Settings → Voice assistants →* your agent → *Control Home Assistant* → tick **Sentient** as well as **Assist**.
 

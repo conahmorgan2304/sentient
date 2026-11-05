@@ -5,7 +5,7 @@ optional and adds a feature; skip what you don't need.
 
 ## 1. The basics
 
-1. Install through HACS (see the README) and restart Home Assistant.
+1. Install from *Settings → Marketplace* (HACS before Home Assistant 2026.11 — see the README).
 2. *Settings → Devices & services → Add integration → Sentient.* Give it a name — that's the
    persona every voice uses and the name on the sidebar page. Pick your speakers (Assist
    satellites) and a default one, and set quiet hours.

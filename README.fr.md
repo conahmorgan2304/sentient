@@ -30,8 +30,8 @@ Il fonctionne avec l’IA que vous avez déjà dans Home Assistant (Google Gemin
 
 ## Installation
 
-1. Dans HACS, cherchez **Sentient** (il est dans la liste par défaut de HACS, aucun dépôt personnalisé à ajouter).
-2. Téléchargez **Sentient**.
+1. *Paramètres → Marketplace* (Home Assistant 2026.11 et plus), cherchez **Sentient** et installez-le — il est dans le catalogue, rien à ajouter par lien. Avant 2026.11 : même chose dans HACS.
+2. Pour une mise à jour, redémarrez Home Assistant quand elle le demande.
 3. Redémarrez Home Assistant.
 4. Ajoutez l’intégration et suivez l’assistant.
 

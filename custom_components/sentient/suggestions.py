@@ -71,7 +71,7 @@ class Suggestions:
         sid = "companion|search"
         if sid not in self.dismissed and not self.hass.config_entries.async_entries(SEARCH_COMPANION):
             out.append({"id": sid, "key": "companion", "entity_id": None, "url": SEARCH_COMPANION_URL,
-                        "text": "Web, image and YouTube search for the voice: add Voice Satellite LLM Tools from HACS, "
+                        "text": "Web, image and YouTube search for the voice: add Voice Satellite LLM Tools from the Marketplace (HACS), "
                                 "then tick its tools under your AI agent's \"Control Home Assistant\""})
         return out[:6]
 
