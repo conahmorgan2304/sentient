@@ -274,7 +274,7 @@ async def test_silent_alarm_just_does_it(hass: HomeAssistant, freezer) -> None:
     on = async_mock_service(hass, "switch", "turn_on")
     entry.runtime_data.lists["alarms"].upsert({
         "name": "Heated blanket on", "time": "21:00:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-        "silent": True, "actions": [{"action": "switch.turn_on", "target": {"entity_id": "switch.blanket"}}],
+        "silent": True, "made_by": "page", "actions": [{"action": "switch.turn_on", "target": {"entity_id": "switch.blanket"}}],
     })
     freezer.tick(timedelta(seconds=40))
     async_fire_time_changed(hass)

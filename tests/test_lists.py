@@ -99,7 +99,7 @@ async def test_alarm_rings_runs_actions_then_room_actions(hass: HomeAssistant, f
     entry = await _setup(hass)
     rt = entry.runtime_data
     rt.lists["alarms"].upsert({
-        "name": "Work", "time": "05:45:00", "days": ["mon", "tue", "wed", "thu", "fri"],
+        "name": "Work", "time": "05:45:00", "days": ["mon", "tue", "wed", "thu", "fri"], "made_by": "page",
         "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.downstairs"}}],
         "room_area": entry.kitchen, "room_actions": [{"action": "switch.turn_on", "target": {"entity_id": "switch.kettle"}}],
     })

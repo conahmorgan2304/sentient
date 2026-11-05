@@ -1279,6 +1279,7 @@ async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
 
         if store_of(msg["kind"]) == "alarms":
             item["silent"] = msg["kind"] == "schedules"  # alarms speak; automated routines just do things
+            item["made_by"] = "page"  # set by an admin on the page: run as set (anything else is checked when it rings)
         entry.runtime_data.lists[store_of(msg["kind"])].upsert(item)
     except (vol.Invalid, ValueError, HomeAssistantError) as err:
         connection.send_error(msg["id"], "invalid", str(err))
