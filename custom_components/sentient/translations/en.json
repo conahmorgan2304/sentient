@@ -1467,7 +1467,7 @@
   "issues": {
     "update_available": {
       "title": "Sentient {latest} is available",
-      "description": "You have {installed}. In HACS, open Sentient and choose Download (or Update information if the update isn't showing yet), then restart Home Assistant. If Sentient was copied in by hand rather than installed through HACS, it will never update by itself: add the repository in HACS."
+      "description": "You have {installed}. Install it from Settings → Updates (Sentient comes from the Marketplace on Home Assistant 2026.11 and later; on older versions, open Sentient in HACS and choose Download), then restart Home Assistant. If Sentient was copied in by hand rather than installed from the Marketplace or HACS, it will never update by itself: install it from the Marketplace instead."
     }
   }
 }

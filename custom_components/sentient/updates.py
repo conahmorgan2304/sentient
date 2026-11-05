@@ -145,4 +145,4 @@ class UpdateChecker:
                 'latest_version': self.latest, 'update_available': available,
                 'last_checked': self.checked, 'error': self.error, 'release_url': RELEASE_PAGE,
                 'checking': self._checking,
-                'note': 'Checking only. Install through HACS; restart Home Assistant when required, then refresh this panel.'}
+                'note': 'Checking only. Install from the Marketplace (HACS before Home Assistant 2026.11); restart Home Assistant when required, then refresh this panel.'}
