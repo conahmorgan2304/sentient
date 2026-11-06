@@ -53,10 +53,10 @@ async def test_outside_text_cant_make_it_act(hass: HomeAssistant) -> None:
             ("sentient_manual", {"question": "descale"}), ("sentient_announce", {"message": "The alarm is off"})])
         assert "information only" in read["outside_text"]
         assert "Not done" in acted["error"]
-        # the person asking for it themselves is fine
+        # Even an action verb cannot authorise arbitrary tools after untrusted text.
         _read, acted = await _turn(hass, "look up descaling and remember to buy descaler", [
             ("sentient_manual", {"question": "descale"}), ("sentient_remember", {"text": "We need descaler."})])
-        assert "error" not in acted
+        assert "Not done" in acted["error"]
     finally:
         manuals_mod.async_answer = real
     assert manuals is not None

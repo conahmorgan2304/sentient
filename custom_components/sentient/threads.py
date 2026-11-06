@@ -44,7 +44,7 @@ class Threads:
         about = about.strip()[:80]
         self.items = [i for i in self.items if i["about"].casefold() != about.casefold()]  # one per subject
         item = {"id": uuid.uuid4().hex[:8], "about": about, "question": question.strip()[:200],
-                "due": (dt_util.utcnow() + timedelta(hours=hours)).isoformat(), "asked": None}
+                "created": dt_util.utcnow().isoformat(), "due": (dt_util.utcnow() + timedelta(hours=hours)).isoformat(), "asked": None}
         self.items = (self.items + [item])[-KEEP:]
         self._save()
         return item

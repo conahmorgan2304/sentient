@@ -106,7 +106,7 @@ class _Tool(llm.Tool):
     """Every Sentient tool says which integration provides it."""
 
     integration = DOMAIN
-    acts = False  # changes something: refused after outside text unless the person asked (see outside.py)
+    acts = False  # changes something: waits for a fresh user turn after outside text (see outside.py)
     reads_outside = False  # hands the voice text Sentient didn't write
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -1205,7 +1205,15 @@ class AlarmTool(_Tool):
         if why := voice_actions_problem(hass, actions):
             return {"error": why, "say": "Say plainly that an alarm made by voice can't do that."}
         silent = bool(a.get("silent")) or (bool(actions) and not a.get("description"))
-        if (actions or a.get("routine")) and not a.get("confirmed"):
+        from .alarm_confirmation import approved
+
+        schedule = {"name": a["name"], "time": a["time"], "days": days, "date": a.get("date"),
+                    "description": a.get("description") or "", "routine": a.get("routine"),
+                    "routine_details": vars(rt.shortcuts.find(a["routine"])) if a.get("routine") else None,
+                    "silent": silent, "actions": actions}
+        if (actions or a.get("routine")) and not approved(rt, llm_context, schedule, a.get("confirmed")):
+            if a.get("confirmed"):
+                return {"error": "No matching approval from the next user turn. Read the schedule back with confirmed false, then wait for their yes."}
             from .alarms import describe_schedule
 
             text = describe_schedule(hass, a["name"], a["time"], days, a.get("date"), actions, a.get("routine"), silent)

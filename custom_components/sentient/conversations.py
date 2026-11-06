@@ -108,6 +108,8 @@ class Conversations:
 
     @callback
     def _chat(self, conversation_id: str, event_type: Any, data: dict[str, Any]) -> None:
+        if conversation_id in self.skip:
+            return
         kind = str(event_type)
         if kind.endswith("deleted"):
             self._finish(conversation_id)

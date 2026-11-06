@@ -18,6 +18,10 @@ NO = re.compile(r"^(?:no|nope|nah|not (?:now|today|tonight|really|yet|at the mom
 YES = re.compile(r"^(?:yes|yeah|yep|yup|yea|aye|sure|ok|okay|alright|all right|please|go on|go ahead|do it|"
                  r"sounds good|why not|definitely|of course|please do|that'?d be (?:great|good|lovely)|lovely|great|"
                  r"perfect|go for it)\b", re.I)
+# Positive replies must consist entirely of assent and optional thanks.
+# A qualifier such as "yes, but tomorrow" needs clarification, never execution.
+PLAIN_YES = re.compile(r"(?:(?:" + YES.pattern.removeprefix("^").removesuffix(r"\b")
+                       + r")(?:\s+|$))+(?:thanks|thank you)?", re.I)
 NEGATED = re.compile(r"\b(?:no|not|don'?t|never|n'?t)\b", re.I)
 MAX_WORDS = 8  # longer replies are more than a yes or a no: the AI reads those
 
@@ -34,6 +38,6 @@ def classify(text: str) -> str | None:
         return None
     if NO.match(said):
         return "no"
-    if YES.match(said) and not NEGATED.search(" ".join(words[1:]).replace("why not", "")):
+    if PLAIN_YES.fullmatch(said) and not NEGATED.search(" ".join(words[1:]).replace("why not", "")):
         return "yes"
     return None
