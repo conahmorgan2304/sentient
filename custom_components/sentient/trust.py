@@ -14,6 +14,7 @@ yeses, the self-check suggests it stops asking — on the Mind page, changed onl
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from copy import deepcopy
 import logging
 from typing import Any
 
@@ -77,8 +78,18 @@ class Trust:
             return "done"
         kind = kind_of(self.hass, entity_id)
 
+        before = self.hass.states.get(entity_id)
+        options = deepcopy(self.options)
+
         async def answered(answer: str) -> str:
             if answer == "yes":
+                from .never import blocked
+
+                current = self.hass.states.get(entity_id)
+                if (options != self.options or blocked(self.hass, entity_id) or current is None
+                        or current.state in ("unknown", "unavailable") or before is None
+                        or current.state != before.state or current.attributes != before.attributes):
+                    return "Things have changed since I asked. No action was taken; please ask again."
                 await run()
                 self.yes_run[kind] = self.yes_run.get(kind, 0) + 1
                 self._save()

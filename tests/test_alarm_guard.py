@@ -1,6 +1,8 @@
 """Alarms made by voice get the same guards as rules: allowed actions only, exposed entities only, read back first,
 and checked again when they go off."""
 
+from homeassistant.components.conversation.chat_log import UserContent, async_get_chat_log
+from homeassistant.helpers import chat_session
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
@@ -53,17 +55,25 @@ async def test_not_exposed_refused(hass: HomeAssistant) -> None:
 
 async def test_read_back_first_then_saved(hass: HomeAssistant) -> None:
     entry, api = await _setup(hass)
-    out = await _alarm(api, turn_on="heated blanket")
+    with chat_session.async_get_chat_session(hass) as session, async_get_chat_log(hass, session) as chat:
+        chat.async_add_user_content(UserContent("Schedule the heated blanket"))
+        out = await _alarm(api, turn_on="heated blanket")
     assert out["read_back"].startswith("'Test': at 21:00 every day, switch on the Heated blanket")
     assert entry.runtime_data.lists["alarms"].find("Test") is None
-    out = await _alarm(api, turn_on="heated blanket", confirmed=True)
+    with chat_session.async_get_chat_session(hass, session.conversation_id) as session, async_get_chat_log(hass, session) as chat:
+        chat.async_add_user_content(UserContent("Yes please"))
+        out = await _alarm(api, turn_on="heated blanket", confirmed=True)
     made = entry.runtime_data.lists["alarms"].find("Test")
     assert out["set"] == "Test" and made["made_by"] == "voice"
 
 
 async def test_checked_again_when_it_goes_off(hass: HomeAssistant) -> None:
     entry, api = await _setup(hass)
-    await _alarm(api, turn_on="heated blanket", confirmed=True)
+    with chat_session.async_get_chat_session(hass) as session, async_get_chat_log(hass, session) as chat:
+        chat.async_add_user_content(UserContent("Schedule the heated blanket"))
+        await _alarm(api, turn_on="heated blanket")
+        chat.async_add_user_content(UserContent("Yes"))
+        await _alarm(api, turn_on="heated blanket", confirmed=True)
     rt = entry.runtime_data
     alarm = rt.lists["alarms"].find("Test")
     on = async_mock_service(hass, "switch", "turn_on")

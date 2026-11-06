@@ -29,7 +29,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_ALEXA_TTS_ONLY, CONF_READ_AHEAD, CONF_READING_TTS, CONF_READING_VOICE
 from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
-from .const import CONF_SPEECH_DELIVERY_HISTORY
+from .const import CONF_SPEECH_DELIVERY_HISTORY, CONF_PERSONA, DEFAULT_PERSONA
 from .const import (
     CONF_FALLBACK_SPEAKERS,
     CONF_ALL_OCCUPIED,
@@ -200,6 +200,7 @@ class SpeechRouter:
         self.tracker = tracker
         self._recent: dict[str, datetime] = {}
         self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
+        self._privacy_generation = 0
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
         self.reading_fallbacks: deque[tuple[datetime, str, str]] = deque(maxlen=50)  # the reading voice failing
         self._questions: dict[str, dict[str, Any]] = {}  # satellite -> the house's open question and what to do with the answer
@@ -421,6 +422,7 @@ class SpeechRouter:
         targets: list[str] | None = None,
         source: str | None = None,
     ) -> SpeechResult:
+        generation = self._privacy_generation
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
             return held
@@ -439,6 +441,8 @@ class SpeechRouter:
 
         async with self._lock:
             await self._wait_idle(speakers)
+            if generation != self._privacy_generation:
+                return SpeechResult(False, "cancelled", "", [])
             if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
                 return held
             now = dt_util.utcnow()
@@ -450,10 +454,14 @@ class SpeechRouter:
                 return self._held("duplicate", text, source)
             volume = await self._volumes(speakers)
             async with delivered(self.hass, speakers, volume, self.duck_level):
+                if generation != self._privacy_generation:
+                    return SpeechResult(False, "cancelled", "", [])
                 receipts = await self._speak(text, speakers)
             # Compatibility for injected/test delivery backends that return no receipts.
             receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
             accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
+            if generation != self._privacy_generation:
+                return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', text, accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
             self._remember_said(text)
@@ -577,6 +585,7 @@ class SpeechRouter:
 
     async def _speak(self, text: str, speakers: list[str], chime: bool | None = None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
+        generation = self._privacy_generation
         chime = self.chime if chime is None else chime
         rows = {eid: {'entity_id': eid, 'status': 'cancelled',
                       'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
@@ -609,7 +618,8 @@ class SpeechRouter:
                 async with asyncio.timeout(DELIVERY_TIMEOUT):
                     await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
                 row['status'] = 'accepted'
-                self._delivered_recent[(text.lower(), eid)] = dt_util.utcnow()
+                if generation == self._privacy_generation:
+                    self._delivered_recent[(text.lower(), eid)] = dt_util.utcnow()
             except asyncio.CancelledError:
                 row.update(status='cancelled', error='Delivery interrupted; playback outcome is unknown')
                 raise
@@ -622,9 +632,11 @@ class SpeechRouter:
         try:
             receipts = await asyncio.gather(*(send(eid) for eid in rows))
         except asyncio.CancelledError:
-            self._record_deliveries(text, list(rows.values()))
+            if generation == self._privacy_generation:
+                self._record_deliveries(text, list(rows.values()))
             raise
-        self._record_deliveries(text, receipts)
+        if generation == self._privacy_generation:
+            self._record_deliveries(text, receipts)
         if not any(r['status'] == 'accepted' for r in receipts):
             raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
         if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
@@ -692,6 +704,7 @@ class SpeechRouter:
         Only one speaker can listen, so it's the busiest room's. Speakers that can't
         start a conversation get the question as a plain announcement instead.
         """
+        generation = self._privacy_generation
         text = clean_message(question, self.banned)
         if (held := self._gate(text, priority, source)) is not None:
             return held
@@ -709,6 +722,8 @@ class SpeechRouter:
         if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
             # nobody near a speaker: ask on the phones, with Yes / No buttons
             if await self.phone.async_ask(text, on_answer):
+                if generation != self._privacy_generation:
+                    return SpeechResult(True, "asked_phone", text, [])
                 self.hass.bus.async_fire(EVENT_SPOKE, {"message": text, "speakers": [], "priority": priority, "source": source,
                                                        "question": True, "phone": True, "why": reason_for(source)})
                 return SpeechResult(True, "asked_phone", text, [])
@@ -723,6 +738,8 @@ class SpeechRouter:
             prompt += " " + extra_prompt
         async with self._lock:
             await self._wait_idle([speaker])
+            if generation != self._privacy_generation:
+                return SpeechResult(False, "cancelled", "", [])
             if (held := self._gate(text, priority, source)) is not None:
                 return held
             await self.hass.services.async_call(
@@ -736,6 +753,8 @@ class SpeechRouter:
                 target={"entity_id": speaker},
                 blocking=True,
             )
+            if generation != self._privacy_generation:
+                return SpeechResult(True, "asked", text, [speaker])
             self._remember_said(text)
         if on_answer is not None:
             self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
@@ -757,10 +776,12 @@ class SpeechRouter:
         if dt_util.utcnow() > question["until"]:
             self._questions.pop(satellite, None)
             return None
-        kind = classify(text)
+        from .sessions import is_conversation_end
+
+        self._questions.pop(satellite, None)  # a correction or topic change also cancels the old request
+        kind = "no" if is_conversation_end(text, question["asked"], self.options.get(CONF_PERSONA) or DEFAULT_PERSONA) else classify(text)
         if kind is None:
-            return None  # not a plain answer: the AI reads it (and asks again if it's still unclear)
-        self._questions.pop(satellite, None)
+            return None
         return await question["on_answer"](kind)
 
     async def _wait_idle(self, speakers: list[str], timeout: float = 15) -> None:

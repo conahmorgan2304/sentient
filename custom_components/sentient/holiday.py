@@ -13,6 +13,7 @@ comes home after everyone has been out. Plain rules, no AI.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
@@ -44,6 +45,8 @@ class Holiday:
         self.options = options
         self._rt = rt_getter
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.holiday")
+        self._lock = asyncio.Lock()
+        self._recovery_reported = False
         self.on = False
         self.since: str | None = None
         self.until: str | None = None
@@ -68,6 +71,9 @@ class Holiday:
             async_track_time_interval(self.hass, self._tick, timedelta(minutes=5)),
         ]
 
+        if not self.enabled or (not self.on and self.heating):
+            await self.async_end("recovery after restart")
+
     @callback
     def async_stop(self) -> None:
         while self._unsubs:
@@ -79,6 +85,15 @@ class Holiday:
 
     # ----- on and off ---------------------------------------------------------------------
     async def async_begin(self, until: datetime | None = None) -> dict[str, Any]:
+        async with self._lock:
+            if not self.on and self.heating:
+                await self._restore()
+                self._save()
+                if self.heating:
+                    return {"error": "Heating recovery is still pending; restore those thermostats before starting another holiday"}
+            return await self._begin(until)
+
+    async def _begin(self, until: datetime | None = None) -> dict[str, Any]:
         if not self.enabled:
             return {"error": "Holiday mode is turned off in Sentient's settings"}
         if until is not None and until <= dt_util.now():
@@ -99,18 +114,30 @@ class Holiday:
         return {"holiday": True, "until": self.until, "thermostats": list(self.heating)}
 
     async def async_end(self, why: str = "turned off") -> dict[str, Any]:
-        if not self.on:
+        async with self._lock:
+            return await self._end(why)
+
+    async def _end(self, why: str) -> dict[str, Any]:
+        if not self.on and not self.heating:
             return {"holiday": False}
+        was_on = self.on
         self.on, self.until, self.left = False, None, False
+        await self._store.async_save({"on": self.on, "since": self.since, "until": self.until,
+                                      "left": self.left, "heating": self.heating})
         restored = await self._restore()
         self._save()
         rt = self._rt()
         if rt is not None:
-            rt.timeline.add("mode", "Holiday mode off", why + (f"; heating put back: {', '.join(restored)}" if restored else ""))
-            if rt.away is not None and not rt.away.enabled:
+            if was_on or restored:
+                rt.timeline.add("mode", "Holiday mode off", why + (f"; heating put back: {', '.join(restored)}" if restored else ""))
+            if self.heating and not self._recovery_reported:
+                rt.timeline.add("health", "Holiday heating recovery pending",
+                                "Will retry every five minutes: " + ", ".join(self.heating))
+            self._recovery_reported = bool(self.heating)
+            if was_on and rt.away is not None and not rt.away.enabled:
                 await rt.away.async_finish("holiday over")
         self.hass.bus.async_fire(EVENT_MODE_CHANGED, {"holiday": False})
-        return {"holiday": False, "heating_put_back": restored}
+        return {"holiday": False, "heating_put_back": restored, "heating_pending": list(self.heating)}
 
     # ----- heating -------------------------------------------------------------------------
     async def _frost(self) -> None:
@@ -119,12 +146,17 @@ class Holiday:
             st = self.hass.states.get(entity_id)
             if st is None or st.state in ("unavailable", "unknown"):
                 continue
-            self.heating[entity_id] = {"hvac_mode": st.state, "temperature": st.attributes.get("temperature")}
             if st.state == "off":
-                continue  # already off: nothing to turn down
+                continue  # unchanged devices need no restoration
+            target = max(float(st.attributes.get("min_temp", frost)),
+                         min(frost, float(st.attributes.get("max_temp", frost))))
+            self.heating[entity_id] = {"hvac_mode": st.state, "temperature": st.attributes.get("temperature"),
+                                       "frost_temperature": target}
+            await self._store.async_save({"on": self.on, "since": self.since, "until": self.until,
+                                          "left": self.left, "heating": self.heating})
             try:
                 await self.hass.services.async_call(
-                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": frost}, blocking=True,
+                    "climate", "set_temperature", {"entity_id": entity_id, "temperature": target}, blocking=True,
                     context=own_context(self.hass, "holiday mode: frost protection"),
                 )
             except Exception as err:  # noqa: BLE001
@@ -134,7 +166,13 @@ class Holiday:
         done = []
         for entity_id, was in list(self.heating.items()):
             st = self.hass.states.get(entity_id)
-            if st is None:
+            if st is None or st.state in ("unavailable", "unknown"):
+                continue
+            # A person changing the target or mode supersedes the holiday setting.
+            # Older snapshots lack frost_temperature; retain their original restoration behaviour.
+            if "frost_temperature" in was and (st.state != was.get("hvac_mode") or
+                    st.attributes.get("temperature") not in (was.get("frost_temperature"), was.get("temperature"))):
+                self.heating.pop(entity_id, None)
                 continue
             try:
                 if was.get("temperature") is not None:
@@ -148,9 +186,9 @@ class Holiday:
                         blocking=True, context=own_context(self.hass, "holiday over: heating put back"),
                     )
                 done.append(st.name)
+                self.heating.pop(entity_id, None)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Holiday mode couldn't put %s back: %s", entity_id, err)
-        self.heating = {}
         return done
 
     # ----- coming home and the end date ----------------------------------------------------
@@ -176,7 +214,11 @@ class Holiday:
 
     @callback
     def _tick(self, now: datetime) -> None:
-        if self.active and self.until and (end := dt_util.parse_datetime(self.until)) and now >= end:
+        if not self.on and self.heating:
+            self.hass.async_create_task(self.async_end("retrying heating recovery"))
+        elif self.on and not self.enabled:
+            self.hass.async_create_task(self.async_end("disabled in settings"))
+        elif self.active and self.until and (end := dt_util.parse_datetime(self.until)) and now >= end:
             self.hass.async_create_task(self.async_end("the date it was set until"))
 
     def speaks(self, source: str | None) -> bool:
@@ -185,4 +227,5 @@ class Holiday:
 
     def describe(self) -> dict[str, Any]:
         return {"on": self.active, "since": self.since, "until": self.until,
-                "thermostats_turned_down": list(self.heating), "everyone_left": self.left}
+                "thermostats_turned_down": list(self.heating) if self.on else [], "everyone_left": self.left,
+                "heating_recovery_pending": list(self.heating) if not self.on else []}

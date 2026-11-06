@@ -1,8 +1,9 @@
-"""Forget the last few hours: everything Sentient itself kept about them, gone in one go.
+"""Forget recent conversation, observation and speech records across Sentient stores.
 
 Clears, for the chosen window: the timeline, past conversations, visitors at the door, clip descriptions,
 names seen by face recognition, memories made in that time (pinned ones stay — they were chosen to be
-kept), what it said lately and the record of what left the house. It can't recall anything already sent
+kept), speech delivery history, session traces/topics, live voice checks, security episodes, follow-up
+questions, what it said lately and the record of what left the house. It can't recall anything already sent
 to an AI service or what Home Assistant's own history and logbook recorded.
 """
 
@@ -34,9 +35,10 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     tl._save()
 
     conv = rt.conversations
-    keep_eps = [e for e in conv.episodes if not _after(e.get("start"), since)]
+    keep_eps = [e for e in conv.episodes if not _after(e.get("last") or e.get("start"), since)]
     gone["conversations"] = len(conv.episodes) - len(keep_eps) + len(conv._open)
     conv.episodes = keep_eps
+    conv.skip.update(conv._open)  # late replies from forgotten conversations must not recreate them
     conv._open.clear()
     conv._save()
 
@@ -68,10 +70,53 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         mem.forget(m.id)
     gone["memories"] = len(recent)
 
+    rt.speech._privacy_generation += 1
+    for attr in ("_recent", "_remarks", "_delivered_recent"):
+        cache = getattr(rt.speech, attr, {})
+        setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if stamp < since})
     said = rt.speech._said
     keep_s = [(t, text) for t, text in said if t < since]
     said.clear()
     said.extend(keep_s)
+
+    # These short-lived stores also contain verbatim requests and replies.
+    stores = [(rt.speech, "deliveries", "time", "speech_deliveries"),
+              (rt.sessions.memory, "traces", "time", "session_traces"),
+              (rt.sessions.memory, "topics", "saved_at", "conversation_topics")]
+    for owner, attr, stamp, label in stores:
+        rows = getattr(owner, attr)
+        keep = [row for row in rows if not _after(row.get(stamp), since)]
+        gone[label] = len(rows) - len(keep)
+        setattr(owner, attr, deque(keep, maxlen=rows.maxlen) if isinstance(rows, deque) else keep)
+    for key, session in list(rt.sessions.items.items()):
+        if session.touched >= since:
+            rt.sessions.close(session)
+            session.forgotten = True
+            session.topic = session.goal = session.missing_detail = ""
+            session.entities.clear()
+            session.last_action = session.resume_context = None
+            rt.sessions.items.pop(key, None)
+    checks = rt.voice_checks
+    if checks.run and (_after(checks.run.get("started"), since)
+                       or any(_after(s.get("time"), since) for s in checks.run.get("steps", []))):
+        checks.stop()
+        gone["voice_checks"] = 1
+    if (incidents := getattr(rt, "incidents", None)) is not None:
+        keep = [row for row in incidents.items if not _after(row.get("end"), since)]
+        gone["incidents"] = len(incidents.items) - len(keep)
+        incidents.items = keep
+        incidents._save()
+    if (threads := getattr(rt, "threads", None)) is not None:
+        # Older entries have no creation timestamp: clear them conservatively.
+        keep = [row for row in threads.items if row.get("created") and not _after(row["created"], since)]
+        gone["follow_up_questions"] = len(threads.items) - len(keep)
+        threads.items = keep
+        threads._save()
+    rt.alarm_confirmations.clear()
+    rt.notifier.invalidate_questions()
+    rt.speech._questions.clear()
+    rt.speech.hass.bus.async_fire("sentient_speech_delivery")
+    rt.speech.hass.bus.async_fire("sentient_voice_session")
 
     if (ai := getattr(rt, "ai", None)) is not None:
         gone["sent_records"] = ai.forget_sent(since.isoformat())

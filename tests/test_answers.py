@@ -14,7 +14,7 @@ from custom_components.sentient.const import DOMAIN
     ("Yes please", "yes"), ("yeah go on", "yes"), ("sure, why not", "yes"), ("Okay.", "yes"),
     ("No thanks", "no"), ("not now", "no"), ("nah I'm fine", "no"), ("leave it", "no"),
     ("It already does that for me", "done"), ("that's already set up", "done"), ("no, it already does it", "done"),
-    ("yes but not the kitchen", None), ("Yeah no", None), ("what time is it", None), ("I don't know", None),
+    ("yes but the kitchen instead", None), ("yes tomorrow", None), ("yes but not the kitchen", None), ("Yeah no", None), ("what time is it", None), ("I don't know", None),
 ])
 def test_plain_answers(said, kind) -> None:
     assert classify(said) == kind
@@ -33,6 +33,9 @@ async def test_already_done_is_not_taken_as_yes(hass: HomeAssistant) -> None:
     handler = AsyncMock(return_value="Ah, right — I'll leave that one alone then.")
     await speech.async_ask("Want me to switch the blanket off at 11?", targets=["assist_satellite.kitchen"], on_answer=handler)
     assert await speech.async_take_answer("assist_satellite.kitchen", "what's the weather?") is None  # not an answer
+    assert await speech.async_take_answer("assist_satellite.kitchen", "yes") is None  # topic change cancelled it
+    handler.assert_not_awaited()
+    await speech.async_ask("Want me to switch the blanket off at 12?", targets=["assist_satellite.kitchen"], on_answer=handler)
     said = await speech.async_take_answer("assist_satellite.kitchen", "It already does that")
     handler.assert_awaited_once_with("done")
     assert said.startswith("Ah, right")

@@ -1,5 +1,7 @@
 """The sidebar page's Settings tab: read, save and memories over websocket."""
 
+from homeassistant.components.conversation.chat_log import UserContent, async_get_chat_log
+from homeassistant.helpers import chat_session
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -119,12 +121,15 @@ async def test_alarms_speak_and_automated_routines_just_happen(hass: HomeAssista
     assert await async_setup_component(hass, "homeassistant", {})
     async_expose_entity(hass, "conversation", "switch.heated_blanket", True)
     args = {"action": "set", "name": "Blanket on", "time": "21:00", "days": "every day", "turn_on": "heated blanket"}
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args=args))
-    out = getattr(out, "data", out)
-    assert out["read_back"] == "'Blanket on': at 21:00 every day, switch on the Heated blanket."
-    assert rt.lists["alarms"].find("Blanket on") is None  # nothing saved until they say yes
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args={**args, "confirmed": True}))
-    out = getattr(out, "data", out)
-    assert out["kind"] == "automated routine"
-    made = rt.lists["alarms"].find("Blanket on")
-    assert made["silent"] and made["actions"][0]["action"] == "switch.turn_on"
+    with chat_session.async_get_chat_session(hass) as session, async_get_chat_log(hass, session) as chat:
+        chat.async_add_user_content(UserContent("Schedule the blanket"))
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args=args))
+        out = getattr(out, "data", out)
+        assert out["read_back"] == "'Blanket on': at 21:00 every day, switch on the Heated blanket."
+        assert rt.lists["alarms"].find("Blanket on") is None  # nothing saved until they say yes
+        chat.async_add_user_content(UserContent("Yes please"))
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_alarm", tool_args={**args, "confirmed": True}))
+        out = getattr(out, "data", out)
+        assert out["kind"] == "automated routine"
+        made = rt.lists["alarms"].find("Blanket on")
+        assert made["silent"] and made["actions"][0]["action"] == "switch.turn_on"

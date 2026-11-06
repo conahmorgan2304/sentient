@@ -183,6 +183,7 @@ class SentientRuntime:
     whats_new: Any = None  # what's new after an update
     usage: Any = None  # which features are used
     own: Any = None  # what the house itself switched (so nothing mistakes it for a person)
+    alarm_confirmations: dict = field(default_factory=dict)
     outside_read: dict = field(default_factory=dict)  # conversation -> the turn outside text was last read in
     dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
     startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
@@ -714,6 +715,10 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     options = _entry_options(entry)
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
+    entry.runtime_data.alarm_confirmations.clear()
+    entry.runtime_data.notifier.invalidate_questions()
+    entry.runtime_data.speech._questions.clear()
+    entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
@@ -741,6 +746,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.party.options = options
     for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
+    if not entry.runtime_data.holiday.enabled:
+        await entry.runtime_data.holiday.async_end("disabled in settings")
     entry.runtime_data.drive.async_setup_triggers()
     for name in sorted(entry.runtime_data.dormant):  # switched on just now: start it without a restart
         if DORMANT_WHEN_OFF[name](options):

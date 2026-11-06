@@ -128,6 +128,7 @@ class VoiceSession:
     running: bool = False
     authorised: bool = False
     closed: bool = False
+    forgotten: bool = False
     listen_override: bool | None = None
     mode: str = 'command'
     goal: str = ''
@@ -292,7 +293,7 @@ class Sessions:
         self.items[(session.id, *session.owner)] = session
 
     def record(self, session, text, result, guest=False):
-        if self.options.get(CONF_SESSIONS) and not guest:
+        if self.options.get(CONF_SESSIONS) and not guest and not session.forgotten:
             self.memory.record(session, text, result)
 
     def describe(self):

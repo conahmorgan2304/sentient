@@ -125,8 +125,14 @@ class Notifier:
 
     @callback
     def async_stop(self) -> None:
+        self.invalidate_questions()
         while getattr(self, "_unsubs", None):
             self._unsubs.pop()()
+
+    def invalidate_questions(self) -> None:
+        """Old notification buttons cannot authorise work after settings change or unload."""
+        self._questions.clear()
+        self._pending.clear()
 
     # ----- buttons on phone notifications (the companion app) -------------------------------------
     def buttons(self, kind: str) -> list[str]:
@@ -167,7 +173,7 @@ class Notifier:
         token = uuid.uuid4().hex[:10]
         now = dt_util.utcnow()
         self._questions = {k: v for k, v in self._questions.items() if v["until"] > now}
-        self._questions[token] = {"on_answer": on_answer, "until": now + PHONE_QUESTION_OPEN, "tag": f"sentient-q-{token}"}
+        self._questions[token] = {"on_answer": on_answer, "until": now + PHONE_QUESTION_OPEN, "tag": f"sentient-q-{token}", "apps": set(apps)}
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         await self._send_app(apps, f"{persona} · A question", question, {"tag": f"sentient-q-{token}", "actions": [
             {"action": f"{ACTION}_YES_{token}", "title": "Yes"},
@@ -177,7 +183,8 @@ class Notifier:
 
     async def _async_answer(self, token: str, kind: str) -> None:
         question = self._questions.pop(token, None)
-        if question is None or question["until"] < dt_util.utcnow():
+        if (question is None or question["until"] <= dt_util.utcnow() or kind not in ("yes", "no")
+                or not self.can_ask() or question["apps"] != set(phone_apps(self.hass, self.options))):
             return
         try:
             reply = await question["on_answer"](kind)
