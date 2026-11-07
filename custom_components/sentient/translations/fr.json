@@ -460,7 +460,9 @@
           "speech_delivery_history": "Historique des annonces par enceinte",
           "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
           "update_checker": "Vérifier les mises à jour de Sentient",
-          "conversation_recovery": "Annulation et reprise prudente des conversations"
+          "conversation_recovery": "Annulation et reprise prudente des conversations",
+          "automatic_language": "Prise en charge automatique des langues",
+          "voice_language": "Langue de la voix et des conversations"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -656,7 +658,9 @@
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
           "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
           "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
-          "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut."
+          "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut.",
+          "automatic_language": "Nécessite la traduction des phrases intégrées. Prépare les phrases courantes, les fins de conversation et les libellés d’alerte avec votre IA existante. Utilise le budget IA et un cache en mémoire. Désactivé par défaut. La désactivation efface les phrases préparées. Les alertes urgentes n’attendent jamais l’IA ; les phrases générées ne donnent aucune autorisation.",
+          "voice_language": "Choisissez auto pour la langue de Home Assistant, ou un code comme es, de ou pt-BR. Nécessite la traduction des phrases intégrées. La reconnaissance vocale et la voix TTS doivent également prendre en charge cette langue ; ce réglage ne reconfigure pas votre pipeline."
         }
       },
       "memories": {

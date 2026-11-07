@@ -130,7 +130,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     @property
     def supports_streaming(self) -> bool:
-        if self._options().get(CONF_GUARDED) or self._options().get(CONF_SESSIONS):
+        if self._options().get(CONF_GUARDED) or self._options().get(CONF_SESSIONS) or (self._options().get("automatic_language") and self._options().get("speak_house_language")):
             return False  # deterministic confirmation/session replies must be decided before speech
         agent = conversation.async_get_agent(self.hass, self.main_agent) if self.main_agent else None
         return bool(getattr(agent, "supports_streaming", False))
@@ -141,10 +141,13 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     # ----- answering ---------------------------------------------------------------------
     async def _converse(self, agent_id: str, user_input: conversation.ConversationInput) -> conversation.ConversationResult:
+        from .language import language_prompt
+
+        prompt = (user_input.extra_system_prompt or "") + "\n" + language_prompt(self.hass, self._options())
         return await conversation.async_converse(
             self.hass, user_input.text, user_input.conversation_id, user_input.context,
             language=user_input.language, agent_id=agent_id, device_id=user_input.device_id,
-            satellite_id=user_input.satellite_id, extra_system_prompt=user_input.extra_system_prompt,
+            satellite_id=user_input.satellite_id, extra_system_prompt=prompt,
         )
 
     def _guarded_configuration(self) -> bool:
@@ -303,7 +306,22 @@ class BackedUpAgent(conversation.ConversationEntity):
         take = getattr(getattr(getattr(self._entry, "runtime_data", None), "speech", None), "async_take_answer", None)
         if take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
             # a plain answer to the house's own question: done without the AI
-            return self._plain_reply(user_input, said)
+            return await self._localise_result(self._plain_reply(user_input, said))
+        from .language import async_language_ending
+
+        if self._options().get(CONF_SESSIONS) and self._options().get('automatic_language'):
+            session = self._entry.runtime_data.sessions.get(user_input)
+            known_end = is_conversation_end(user_input.text, session.question, self._options().get(CONF_PERSONA) or DEFAULT_PERSONA,
+                                            language=self._reply_language(user_input))
+            # Known endings/cancellation must reach the existing cancellation path without waiting for preparation.
+            if not known_end and not cancel(user_input.text, self._reply_language(user_input)) and await async_language_ending(self.hass, self._options(), user_input.text, session.question):
+                # Reuse the scoped cancellation path, without treating translated text as consent.
+                if self._options().get(CONF_RECOVERY):
+                    result = await self._recoverable_turn(replace(user_input, text="cancel that"))
+                else:
+                    self._cancel_session(user_input)
+                    result = self._plain_reply(user_input, "Okay.")
+                return await self._localise_result(result)
         from .focus import current_request, turn_flags
 
         flags: dict = {}
@@ -320,8 +338,9 @@ class BackedUpAgent(conversation.ConversationEntity):
             result.continue_conversation = False
             self._carry.pop(speaker, None)
             return result
+        result = await self._localise_result(result, user_input)
         if minutes and speaker and result.conversation_id:
-            if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA):
+            if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
                 self._carry.pop(speaker, None)  # "that's all" ends it: the next wake word starts afresh
             else:
                 self._carry[speaker] = (result.conversation_id, dt_util.utcnow())
@@ -330,8 +349,29 @@ class BackedUpAgent(conversation.ConversationEntity):
             self._ours.add(result.conversation_id)
         return result
 
+    async def _localise_result(self, result, user_input=None):
+        from .language import async_in_house_language
+
+        if self._options().get('automatic_language') and (text := spoken_text(result.response)):
+            translated = await async_in_house_language(self.hass, self._options(), text)
+            if translated != text:
+                result.response.async_set_speech(translated)
+                if user_input is not None and self._options().get(CONF_SESSIONS):
+                    key = (result.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+                    session = self._entry.runtime_data.sessions.items.get(key)
+                    if session and not session.closed and session.waiting:
+                        session.question = translated[-300:]
+        return result
+
     def _reply_language(self, user_input):
-        return user_input.language if self._options().get("speak_house_language") else None
+        from .language import selected_language
+
+        opts = self._options()
+        if not opts.get('speak_house_language'):
+            return None
+        if opts.get('automatic_language') or opts.get('voice_language', 'auto') != 'auto':
+            return selected_language(self.hass, opts)
+        return user_input.language
 
     def _cancel_session(self, user_input):
         rt = self._entry.runtime_data

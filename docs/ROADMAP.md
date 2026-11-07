@@ -139,3 +139,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Speaks the house's language: an optional setting translates Sentient's own English sentences (appliances, reminders, alerts…) into Home Assistant's language with the AI task before they're said — once per sentence, a short time limit, English if the AI can't; sentences already in that language cost nothing
 
 - [x] 0.90.0: immediate urgent language fallback, runtime translation privacy lifecycle, limited Finnish/French replies, optional scoped conversation cancellation and cautious command recovery.
+
+- [x] 0.91.0: optional automatic language preparation with a language override, bounded runtime cache, exact conversation endings, broader fixed consent tokens, multilingual question punctuation and immediate urgent fallback.

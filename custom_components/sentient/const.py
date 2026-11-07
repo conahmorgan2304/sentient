@@ -419,3 +419,6 @@ CONF_CAMERA_WAKE_SECONDS = "camera_wake_seconds"  # then wait this long for a fr
 DEFAULT_CAMERA_WAKE_SECONDS = 5
 
 CONF_RECOVERY = "conversation_recovery"
+
+CONF_AUTOMATIC_LANGUAGE = "automatic_language"
+CONF_VOICE_LANGUAGE = "voice_language"

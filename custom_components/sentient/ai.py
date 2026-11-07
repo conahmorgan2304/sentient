@@ -219,6 +219,16 @@ class AIGate:
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
         """ai_task.generate_data with a time limit; failures are noted and raised as AIUnavailable."""
         data = dict(data)
+        if (self.options.get('automatic_language') and self.options.get('speak_house_language')
+                and isinstance(data.get('instructions'), str)
+                and not str(data.get('task_name', '')).startswith(('Sentient: speech language', 'Sentient: prepare speech language'))):
+            from .language import selected_language
+
+            data['instructions'] += (
+                f"\nWrite prose intended to be spoken to the household in language '{selected_language(self.hass, self.options)}'. "
+                "Preserve JSON keys, required enum values, entity IDs, names and machine-readable output formats. "
+                "This applies only to user-facing prose, not classification labels or tool arguments."
+            )
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
             data["entity_id"] = ai
         self._record_call(data)

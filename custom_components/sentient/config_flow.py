@@ -225,6 +225,8 @@ from .const import (
     CONF_ROOM_VOLUME,
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
+    CONF_AUTOMATIC_LANGUAGE,
+    CONF_VOICE_LANGUAGE,
     CONF_SPEAK_HOUSE_LANGUAGE,
     CONF_MEDIA_SPEAKERS,
     CONF_MEDIA_IMPORTANT_ONLY,
@@ -406,6 +408,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="tts")
             ),
             vol.Required(CONF_SPEAK_HOUSE_LANGUAGE, **d(CONF_SPEAK_HOUSE_LANGUAGE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_AUTOMATIC_LANGUAGE, **d(CONF_AUTOMATIC_LANGUAGE, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_VOICE_LANGUAGE, **d(CONF_VOICE_LANGUAGE, "auto")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=["auto", "en", "es", "fr", "de", "pt", "it", "nl", "pl", "fi", "sv", "da", "nb", "tr", "ru", "uk", "ar", "hi", "bn", "zh", "ja", "ko", "id", "vi", "th", "he", "el", "cs", "ro", "hu"], custom_value=True)
+            ),
             vol.Required(CONF_FOLLOW_YOU, **d(CONF_FOLLOW_YOU, True)): selector.BooleanSelector(),
             vol.Required(CONF_FOLLOW_MINUTES, **d(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=720, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
