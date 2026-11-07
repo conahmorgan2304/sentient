@@ -61,6 +61,7 @@ from .const import (
     PRIORITY_URGENT,
 )
 from .delivery import RoomLevels, delivered, playing_nearby
+from .language import async_in_house_language
 from .reasons import reason_for
 from .presence import ActivityTracker, area_of
 
@@ -438,6 +439,9 @@ class SpeechRouter:
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
+        spoken = await async_in_house_language(
+            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT
+        )
 
         async with self._lock:
             await self._wait_idle(speakers)
@@ -456,12 +460,12 @@ class SpeechRouter:
             async with delivered(self.hass, speakers, volume, self.duck_level):
                 if generation != self._privacy_generation:
                     return SpeechResult(False, "cancelled", "", [])
-                receipts = await self._speak(text, speakers)
+                receipts = await self._speak(spoken, speakers)
             # Compatibility for injected/test delivery backends that return no receipts.
             receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
             accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
             if generation != self._privacy_generation:
-                return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', text, accepted, receipts)
+                return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
             self._remember_said(text)
@@ -469,12 +473,12 @@ class SpeechRouter:
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None,
+            {"message": spoken, "speakers": speakers, "priority": priority, "source": source, "unheard": unheard or None,
              "deliveries": receipts, "why": reason_for(source)},
         )
         if unheard and self.on_unheard is not None:
             self.on_unheard(text, priority, source, None)
-        return SpeechResult(True, reason, text, speakers, receipts)
+        return SpeechResult(True, reason, spoken, speakers, receipts)
 
     async def async_read_aloud(self, text: str, speaker: str, story: bool = False) -> bool:
         """One passage of a book or a recipe step someone asked for: straight to that speaker, not logged as
@@ -719,19 +723,20 @@ class SpeechRouter:
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
+        spoken = await async_in_house_language(self.hass, self.options, text, urgent=priority == PRIORITY_URGENT)
         if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
             # nobody near a speaker: ask on the phones, with Yes / No buttons
-            if await self.phone.async_ask(text, on_answer):
+            if await self.phone.async_ask(spoken, on_answer):
                 if generation != self._privacy_generation:
                     return SpeechResult(True, "asked_phone", text, [])
-                self.hass.bus.async_fire(EVENT_SPOKE, {"message": text, "speakers": [], "priority": priority, "source": source,
+                self.hass.bus.async_fire(EVENT_SPOKE, {"message": spoken, "speakers": [], "priority": priority, "source": source,
                                                        "question": True, "phone": True, "why": reason_for(source)})
                 return SpeechResult(True, "asked_phone", text, [])
         if not listening:
             return await self.async_say(text, priority, candidates, source)
         speaker = listening[0]
         prompt = (
-            f'You have just asked the person: "{text}". Handle their reply: if they say yes, '
+            f'You have just asked the person: "{spoken}". Handle their reply: if they say yes, '
             "do it with your tools and confirm in a few words; if no, acknowledge briefly."
         )
         if extra_prompt:
@@ -746,7 +751,7 @@ class SpeechRouter:
                 "assist_satellite",
                 "start_conversation",
                 {
-                    "start_message": text,
+                    "start_message": spoken,
                     "extra_system_prompt": prompt,
                     "preannounce": self.chime if preannounce is None else preannounce,
                 },
@@ -760,7 +765,7 @@ class SpeechRouter:
             self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
-            {"message": text, "speakers": [speaker], "priority": priority, "source": source, "question": True,
+            {"message": spoken, "speakers": [speaker], "priority": priority, "source": source, "question": True,
              "why": reason_for(source)},
         )
         return SpeechResult(True, "asked", text, [speaker])
