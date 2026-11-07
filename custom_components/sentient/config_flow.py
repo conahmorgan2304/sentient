@@ -13,6 +13,7 @@ from homeassistant.helpers import selector
 from .const import CONF_UPDATE_CHECKER
 from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
+from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 
 from .const import (
@@ -409,6 +410,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_LIVE_VOICE_CHECK, **d(CONF_LIVE_VOICE_CHECK, True)): selector.BooleanSelector(),
             vol.Required(CONF_SPEECH_DELIVERY_HISTORY, **d(CONF_SPEECH_DELIVERY_HISTORY, True)): selector.BooleanSelector(),
             vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
             vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),

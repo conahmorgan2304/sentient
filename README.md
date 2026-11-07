@@ -32,6 +32,8 @@ Every new feature has its own switch in Settings.
 - **Conversation sessions and guarded voice control (optional).** Keep a topic open with “let’s talk” and end it with “that’s all”; use a dedicated **Sentient guarded** API for enforced, separate-turn confirmation, explicit device control and cautious undo of recent light changes. State evidence distinguishes unknown readings and attempted actions from verified device reports. Security incidents group entry contacts, detections, alerts and clips with uncertain links labelled. These features are off by default; guarded control requires a specific agent/pipeline setup and disables unrestricted fallback. [Setup, supported actions and limitations](docs/VOICE_CONTROL.md).
 
 - **Shared long-term memory.** "Remember the rabbits' hutch is by the shed." Any voice in the house can then recall it. Near-duplicates are merged rather than piling up.
+- **Connected follow-ups and corrections (optional, off by default).** Keep the subject for “Why?” and “What about the kitchen?”, refresh permitted device readings, and ask which device an ambiguous “make that 20” refers to. Requires Conversation sessions; listening preferences and action confirmations are unchanged. [Enable it and see examples](docs/CONNECTED_FOLLOWUPS.md).
+
 - **One brain for every voice.** Tick **Sentient** under *Control Home Assistant* in any conversation agent. That agent gets the household's memories in its context, plus tools to remember, recall, forget and announce.
 - **House speech rules, in one place.** `sentient.say` and the voice tools:
   - respect quiet hours, which urgent messages still break through;
