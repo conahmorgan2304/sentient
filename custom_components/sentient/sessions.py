@@ -144,6 +144,10 @@ class VoiceSession:
     listen_reason: str = 'new_request'
     command_turn: bool = False
     language: str | None = None
+    specific_clarification: bool = False
+    turn_text: str = ""
+    clarification: dict | None = None
+    clarification_resolution: dict | None = None
     follow_up_context: dict | None = None
     correction: dict | None = None
     investigation: dict | None = None
@@ -157,6 +161,7 @@ class VoiceSession:
                 'entities': list(self.entities), 'unanswered_question': self.question,
                 'mode': self.mode, 'goal': self.goal, 'task_state': self.task_state,
                 'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
+                'clarification': self.clarification, 'clarification_resolution': self.clarification_resolution,
                 'correction': self.correction, 'investigation': self.investigation,
                 **({'follow_up_context': self.follow_up_context} if self.follow_up_context else {}),
                 'resumed_from': self.resumed_from, 'resume_context': self.resume_context,
@@ -205,6 +210,9 @@ class Sessions:
         return self.items[key]
 
     def begin(self, session, text, language=None):
+        session.specific_clarification = bool(self.options.get("specific_clarification") and self.options.get(CONF_SESSIONS))
+        session.turn_text = text[:300]
+        session.clarification_resolution = None
         session.language = language
         session.turn += 1
         session.touched = dt_util.utcnow()
@@ -315,6 +323,8 @@ class Sessions:
         session.undo.clear()
         session.correction = None
         session.follow_up_context = None
+        session.clarification = None
+        session.clarification_resolution = None
         session.investigation = None
 
     def rekey(self, session):

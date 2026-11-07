@@ -425,3 +425,5 @@ CONF_VOICE_LANGUAGE = "voice_language"
 
 CONF_REMEMBER_LANGUAGE_PHRASES = "remember_language_phrases"
 CONF_VOICE_TIMING_DIAGNOSTICS = "voice_timing_diagnostics"
+
+CONF_SPECIFIC_CLARIFICATION = "specific_clarification"

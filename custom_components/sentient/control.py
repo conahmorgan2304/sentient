@@ -160,12 +160,16 @@ class Control:
         return text
 
     async def propose(self, session, actions, context):
+        if session.clarification:
+            return {'error': 'Choose a device or value before proposing an action'}
         if not session.authorised or not session.running or session.closed:
             return {'error': 'Use the guarded API through the Sentient with backup voice agent'}
         try:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
             return {'error': str(err)}
+        if session.clarification:
+            return {'error': 'Choose a device or value before proposing an action'}
         if session.pending:
             return {'error': 'Answer or cancel the pending action before requesting another'}
         actions = deepcopy(actions)
@@ -224,7 +228,7 @@ class Control:
             try:
                 # Earlier calls can yield for seconds: recheck each target immediately before dispatch.
                 await self.validate([a], context)
-                if session.closed or not session.authorised or not session.running:
+                if session.closed or session.clarification or not session.authorised or not session.running:
                     outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'conversation no longer authorised'})
                     break
                 before = snapshot(self.hass.states.get(eid))
@@ -278,7 +282,7 @@ class Control:
                     await self.validate([{'entity_id': eid, 'action': op}], context)
                     # Permission checks can yield; never restore over a manual change during that wait.
                     state = self.hass.states.get(eid)
-                    if session.closed or not session.authorised or not session.running:
+                    if session.closed or session.clarification or not session.authorised or not session.running:
                         outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'conversation no longer authorised'})
                         break
                     if record['expires'] < dt_util.utcnow() or state is None or snapshot(state) != record['after']:

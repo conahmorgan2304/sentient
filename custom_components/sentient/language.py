@@ -184,7 +184,7 @@ async def _translate(hass, options, text, lang, owner, cache, key, generation):
         "instructions": (
             f"A smart-home voice is about to say the sentence below out loud. Translate it into the language "
             f"with the code '{lang}', short and natural for speech. Keep the names of people, rooms and "
-            "devices exactly as written. Reply with the translated sentence only, no quotes. If it is "
+            "devices exactly as written. Preserve numbered choices and their order. Reply with the translated sentence only, no quotes. If it is "
             "already in that language, reply with it unchanged.\n\n"
             f'Sentence: "{text}"'
         ),
