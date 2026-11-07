@@ -426,6 +426,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_LIVE_VOICE_CHECK, **d(CONF_LIVE_VOICE_CHECK, True)): selector.BooleanSelector(),
             vol.Required(CONF_SPEECH_DELIVERY_HISTORY, **d(CONF_SPEECH_DELIVERY_HISTORY, True)): selector.BooleanSelector(),
+            vol.Required("speech_failure_notification", **d("speech_failure_notification", False)): selector.BooleanSelector(),
             vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
             vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),

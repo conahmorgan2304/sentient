@@ -178,3 +178,5 @@ Every service is also listed, with its fields, under Developer tools → Actions
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+Speaker delivery diagnostics show per-speaker service stages and timings, with an optional failure notification. See [voice delivery diagnostics](docs/VOICE_DELIVERY.md).

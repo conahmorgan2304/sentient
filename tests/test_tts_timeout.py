@@ -101,3 +101,30 @@ async def test_normal_speaker_error_returns_to_model_without_backup(hass):
         result = await obj.async_process(request('Test the kitchen Echo'))
     assert calls.call_count == 1
     assert 'offline' in result.response.speech['plain']['speech']
+
+
+async def test_delivery_trace_distinguishes_service_acceptance_from_playback(hass):
+    router = SpeechRouter(hass, {})
+    hass.services.async_register('assist_satellite', 'announce', AsyncMock())
+    receipts = await router._speak('Test', ['assist_satellite.ready'])
+    assert receipts[0]['stage'] == 'service_completed'
+    assert receipts[0]['service'] == 'assist_satellite.announce'
+    assert receipts[0]['dispatched'] is True
+    assert receipts[0]['playback'] == 'unverified'
+    assert receipts[0]['duration_ms'] >= 0
+
+
+@pytest.mark.parametrize('enabled,guest,expected', [(False, False, False), (True, False, True), (True, True, False)])
+async def test_failure_notification_is_optional_and_contains_no_speech(hass, enabled, guest, expected):
+    router = SpeechRouter(hass, {'speech_failure_notification': enabled})
+    router.guest_mode = guest
+    with patch('homeassistant.components.persistent_notification.async_create') as notify:
+        with pytest.raises(HomeAssistantError):
+            await router._speak('Private spoken content', ['assist_satellite.missing'])
+    assert notify.called is expected
+    if expected:
+        assert 'Private spoken content' not in str(notify.call_args)
+    row = router.deliveries[0]['results'][0]
+    assert row['stage'] == 'routing'
+    assert row['dispatched'] is False
+    assert row['status'] == 'unroutable'
