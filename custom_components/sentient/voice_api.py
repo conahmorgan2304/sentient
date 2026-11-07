@@ -57,6 +57,25 @@ class SessionTool(_Tool):
         return session.describe()
 
 
+class ClarifyTool(_Tool):
+    name = 'sentient_clarify'
+    description = ('Ask a specific device or temperature question when the current request lacks that detail. '
+                   'For devices, provide two to five distinct real candidate entity IDs, not a guessed target. '
+                   'For temperature, use kind temperature. This stores no action plan and grants no permission. '
+                   'Read the returned question and wait; do not call control tools on this turn.')
+    parameters = vol.Schema({vol.Optional('kind', default='device'): vol.In(['device', 'temperature']),
+                             vol.Optional('candidates', default=[]): [str]})
+
+    async def async_call(self, hass, tool_input, llm_context):
+        from .clarification import enabled, offer
+
+        rt, session = _runtime(hass), current_session.get()
+        if rt is None or session is None or not enabled(rt.options):
+            return {'error': 'Specific clarification requires its Voice setting and Conversation sessions'}
+        return await offer(hass, session, tool_input.tool_args.get('candidates', []), llm_context.context,
+                           tool_input.tool_args.get('kind', 'device'))
+
+
 class ControlTool(_Tool):
     acts = True
     name = 'sentient_control'
@@ -134,7 +153,7 @@ class GuardedAPI(SentientAPI):
     async def async_get_api_instance(self, llm_context):
         instance = await super().async_get_api_instance(llm_context)
         instance.api = self
-        instance.tools = [t for t in instance.tools if t.name in SAFE_TOOLS or isinstance(t, (SessionTool, IncidentsTool))]
+        instance.tools = [t for t in instance.tools if t.name in SAFE_TOOLS or isinstance(t, (SessionTool, IncidentsTool, ClarifyTool))]
         instance.tools += [DevicesTool(), ControlTool()]
         instance.api_prompt += ('\nGuarded control: use sentient_devices to resolve exact exposed entities, then '
                                 'sentient_control. No scripts, scenes, alarms or arbitrary service execution. '

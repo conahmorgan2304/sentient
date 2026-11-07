@@ -124,6 +124,10 @@ class _Tool(llm.Tool):
             from . import outside
 
             try:
+                from .sessions import current_session
+
+                if self.acts and (clarifying := current_session.get()) is not None and clarifying.clarification:
+                    return _result({'error': 'Wait for the user to choose a device or value. A choice is not action approval.'})
                 tool_input.tool_args = self.parameters(dict(tool_input.tool_args or {}))
             except vol.Invalid as err:
                 return _result({"error": f"wrong arguments: {err}"})
@@ -1779,10 +1783,10 @@ class SentientAPI(llm.API):
             pass
         if conversation_id and (rt := _runtime(self.hass)) is not None:
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
-        from .voice_api import SessionTool, IncidentsTool
+        from .voice_api import SessionTool, IncidentsTool, ClarifyTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
                    RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),

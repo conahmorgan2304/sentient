@@ -66,6 +66,12 @@ async def refresh(hass, session, context):
     if not follow['previous_goal'] and follow['kind'] != 'clarification':
         return 'What would you like me to explain?' if follow['kind'] == 'explanation' else 'Which device or subject do you mean?'
     if follow['kind'] == 'adjustment' and len(readings) != 1:
+        from .clarification import offer
+
+        if session.specific_clarification and 2 <= len(readings) <= 5:
+            offered = await offer(hass, session, [row['entity_id'] for row in readings], context)
+            if offered.get('question'):
+                return offered['question']
         session.missing_detail = 'Which device the adjustment refers to'
         return 'Which device should I change?'
     return None

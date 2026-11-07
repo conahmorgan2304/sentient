@@ -519,7 +519,8 @@
           "automatic_language": "Automatic language support",
           "voice_language": "Speech and conversation language",
           "remember_language_phrases": "Remember common language phrases",
-          "voice_timing_diagnostics": "Voice response timing diagnostics"
+          "voice_timing_diagnostics": "Voice response timing diagnostics",
+          "specific_clarification": "Specific device and value questions"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -738,7 +739,8 @@
           "automatic_language": "Requires Say built-in sentences in the house language. Prepare common phrases, conversation endings and safety labels with your existing AI and budget. Off by default. Phrases stay in memory unless Remember common language phrases is enabled. Disabling clears them. Urgent alerts never wait for AI; generated replies never authorise critical actions.",
           "voice_language": "Use auto for Home Assistant’s language, or a language code such as es, de or pt-BR. Requires the speech language option. Your Assist speech recognition and TTS voice must also support this language; this does not reconfigure them.",
           "remember_language_phrases": "Requires both speech language options. Save only the generic phrase pack across restarts and unrelated Settings changes, never personal announcements. Off by default. Disabling, changing language/provider, or forgetting data clears it.",
-          "voice_timing_diagnostics": "Keep the last 20 voice response timings in memory, without transcripts or device/user IDs. Show agent, tool, translation and announcement timings in Mind. Stages can overlap; microphone capture and final pipeline playback are not measured. Off by default; Settings changes and forgetting clear the history."
+          "voice_timing_diagnostics": "Keep the last 20 voice response timings in memory, without transcripts or device/user IDs. Show agent, tool, translation and announcement timings in Mind. Stages can overlap; microphone capture and final pipeline playback are not measured. Off by default; Settings changes and forgetting clear the history.",
+          "specific_clarification": "Requires Conversation sessions. Offer named device choices and recognise exact names, English ordinals, both/all, and simple temperatures locally. One retry, then stop rather than repeat. Selection never confirms an action. Off by default; disabling clears pending choices. Use guarded control for enforced action restrictions."
         }
       },
       "memories": {

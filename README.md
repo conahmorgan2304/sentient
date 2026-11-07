@@ -27,6 +27,8 @@ Every new feature has its own switch in Settings.
 
 ## What it does today
 
+- **Specific device and value questions (optional, off by default).** Offer numbered real-device choices, understand exact short answers and temperatures, retain the original request, and stop repeated clarification loops. Selection is never action approval. [Setup and limits](docs/SPECIFIC_CLARIFICATION.md).
+
 - **Conversation reliability (0.92.0).** Optional saved generic language phrases avoid preparing them again after restart. Identical translations share work; failed translations have a short cooldown. Optional content-free voice timings show where agent work took time, and expanded live checks inspect final translated replies. [Setup and limits](docs/CONVERSATION_RELIABILITY.md).
 
 - **Optional update checker.** Check stable Sentient releases every six hours, inspect loaded/latest versions and refresh the sidebar after upgrading. Installation and restarts stay manual. [Setup and behaviour](docs/UPDATES.md).
