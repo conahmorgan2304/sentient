@@ -1,16 +1,34 @@
-# Language reliability and conversation recovery — 0.90.0
+# Language reliability and conversation recovery — 0.91.0
 
-## Speech language
+## Automatic language setup
 
-The existing **Settings → Voice → Say built-in sentences in the house's language** switch remains off by default. English houses and disabled translation bypass translation as before.
+In **Settings → Voice**:
 
-Ordinary English-looking sentences use the existing AI gateway with its ten-second limit, budget and English fallback. The detector is a heuristic, not a guarantee of language identification. Fixed Finnish and French translations cover built-in smoke, carbon-monoxide, gas, leak, safety, tamper and alarm announcements, preserving room/device names. Urgent messages never wait for a live AI translation: they use a fixed phrase, an existing cached translation or immediate original text. Unsupported languages therefore retain immediate English fallback for urgent messages.
+1. Enable **Say built-in sentences in the house's language**.
+2. Enable **Automatic language support** (off by default).
+3. Leave **Speech and conversation language** at `auto` to use Home Assistant’s language, or choose a code such as `es`, `de`, `pt-BR`, `ar` or `ja`. Custom language codes are accepted; the dropdown is not a support whitelist. Invalid codes fall back to English.
+4. Use matching speech recognition and a TTS voice in the Assist pipeline. Sentient cannot add languages to those engines or reconfigure the pipeline. For Sentient’s own selectable TTS engine it requests the chosen language if supported; otherwise the engine’s existing fallback applies.
+5. Enable **Conversation sessions** with the **Sentient with backup** agent for deterministic conversation endings. Add **Conversation cancellation and cautious recovery** if you also want cancellation of running requests.
 
-The bounded 300-entry cache belongs to the current integration runtime. Settings changes, forgetting recent data and unload clear it. A translation finishing after a clear cannot repopulate it. It is not saved across restarts.
+Normal AI conversations and user-facing background prose receive the selected language instruction. Existing AI tool schemas, IDs and required classification labels must remain unchanged. English-only defaults do not run translation/preparation calls.
 
-Question-to-announcement fallback reuses the one translation attempt, including failures. Spoken text is returned and recorded consistently; duplicate detection and follow-you delivery retain the original text. Partial/cancelled deliveries also retain original duplicate keys so accepted destinations need not be repeated.
+For non-English languages, the first ordinary utterance or session turn prepares a small phrase pack through the existing AI Task: a generic follow-up, acknowledgement, common explicit endings, negative replies, and safety labels. This may add up to ten seconds on first use. Concurrent preparations share one call; failures are retried on a later request after a five-minute cooldown, never polled. Both preparation and translation count towards the existing speech-language AI budget. A failed, malformed or over-budget preparation leaves the ordinary translation/original-text fallback in place.
 
-With speech-language support enabled, explicit Finnish/French yes/no replies and conversation endings are recognised before AI handling. Localised generic follow-up questions work with a plain local-language no. Qualified positive replies do not approve actions. Alarm/guarded confirmations still require their original separate-turn and ownership checks. This is limited locale support, not complete multilingual intent parsing; the connected-follow-up phrase recogniser remains English-based, and some deterministic status replies remain English.
+The pack works with any language the configured AI can translate, without writing a separate integration for each language. Quality varies by provider/language; this is broad automatic support, not a claim that every language has been validated. Ordinary translation still uses an English-word heuristic, so some short or mixed-language sentences may be missed or unnecessarily translated.
+
+Prepared endings are exact matches, never substrings. A bare negative closes a generic “anything else?” exchange, but not a specific question. Qualified replies remain with the conversation agent. Unknown wording is passed to the normal AI; a phrase pack cannot cover every dialect or expression. Arabic and full-width question marks count as questions for listening policy.
+
+**Permission remains separate.** Generated phrases can only end/reject, never grant consent. Fixed exact yes/no tokens cover Finnish, French, Spanish, German, Italian, Portuguese, Dutch, Polish, Swedish, Danish, Norwegian, Turkish, Russian, Ukrainian, Arabic, Hindi, Bengali, Japanese, Korean, Indonesian, Vietnamese, Hebrew, Greek, Czech, Romanian and Hungarian. Qualified positive answers are not accepted. English confirmation remains available; other languages without a fixed token must use an existing accepted confirmation, and all separate-turn/ownership/expiry checks still apply. This is not a replacement for multilingual STT or full multilingual parsing of Sentient’s rule-based corrections.
+
+## Speech reliability and privacy
+
+Ordinary English-looking sentences use the AI gateway with a ten-second limit and original-text fallback. Repeated translations are cached in a bounded 300-entry memory cache. Common prepared follow-ups can be attached to already-localised replies without another translation call.
+
+**Urgent speech never prepares a pack or waits for live translation.** Fixed Finnish/French safety wording takes precedence. Other languages use prepared safety labels when available, an existing cached translation, or immediate original English. Household names are appended locally to labels and preserved. After a restart or cache clear, an urgent alert may therefore be English until the next ordinary use prepares the pack. Machine-translated safety labels require real-house language checking; never depend on Sentient as the sole alarm.
+
+The runtime owns the pack and translation cache. Settings changes, forgetting recent data and unload clear both, including in-flight results; nothing is stored across restarts. Disabling Automatic language support clears prepared data and stops its preparation/conversation handling; the separate built-in speech translation option can remain on. Disable that too to stop all optional language work. Already dispatched AI requests cannot be recalled.
+
+Question-to-announcement fallback reuses a single translation attempt. Duplicate detection and follow-you delivery retain the original text. Actual spoken translations are returned by the speech engine, and automatic conversation replies update the waiting question text. Existing session history can still include the original deterministic wording recorded before the final translation.
 
 ## Cancellation and failure recovery
 

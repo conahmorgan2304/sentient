@@ -109,7 +109,7 @@ def spoken_text(response):
 
 
 def ends_in_question(text):
-    return text.rstrip().rstrip('"”’').rstrip().endswith("?")
+    return text.rstrip().rstrip('"”’」』').rstrip().endswith(("?", "？", "؟"))
 
 YES = re.compile(r'^(?:yes|yes please|yeah|confirm|go ahead|do it)[.! ]*$', re.I)
 NO = re.compile(r'^(?:no|no thanks|cancel|cancel that|don\'t|do not)[.! ]*$', re.I)

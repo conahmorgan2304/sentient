@@ -515,7 +515,9 @@
           "alexa_tts_only": "Use TTS only on Alexa",
           "update_checker": "Check for Sentient updates",
           "contextual_followups": "Connected follow-ups and corrections",
-          "conversation_recovery": "Conversation cancellation and cautious recovery"
+          "conversation_recovery": "Conversation cancellation and cautious recovery",
+          "automatic_language": "Automatic language support",
+          "voice_language": "Speech and conversation language"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -624,7 +626,7 @@
           "duck_media": "Anything playing in the same room is turned down while Sentient talks, then turned back up.",
           "critical_alerts": "Smoke, carbon monoxide, gas, water-leak and tamper sensors are found automatically, and so is the alarm going off. Said on every speaker, through quiet hours, hush and guest mode, repeated twice while still on, and sent to phones.",
           "energy_insight": "Today's use of the devices on the Energy dashboard compared with the past week: the Energy card, the briefing section, the voice tool and notes on unusual use. Off hides and stops all of it.",
-          "energy_price": "Optional: your unit rate per kWh, to show today's cost of the Energy dashboard's devices \u2014 in pence or cents (24.5) or in pounds, dollars or euros (0.245); either works.",
+          "energy_price": "Optional: your unit rate per kWh, to show today's cost of the Energy dashboard's devices — in pence or cents (24.5) or in pounds, dollars or euros (0.245); either works.",
           "energy_currency": "The currency costs are shown in. Empty: Home Assistant's own currency (Settings → System → General).",
           "price_entity": "Your electricity price now, from your supplier's integration (Octopus Energy, Nordpool…). If it lists the coming rates they're used; otherwise the usual price at each hour is learned from the last week. Once per appliance (washing machine, dishwasher, dryer) it asks in the evening whether you'd like a nudge to use the delay start when it's cheapest overnight. Empty: off.",
           "search_hints": "When Voice Satellite LLM Tools (or Sentient's own search) is set up, the voice is told the search tools are there and to use them for anything outside the house — words on a speaker, pictures only on a tablet. No AI calls of its own.",
@@ -682,7 +684,7 @@
           "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
-          "speak_house_language": "Translate ordinary English sentences with the existing AI task. Urgent alerts use fixed French/Finnish translations, cached text or immediate English, never waiting for AI. The temporary cache is cleared on Settings changes, forgetting data and unload. Simple French/Finnish yes/no replies and conversation endings are recognised; this is not full multilingual conversation support.",
+          "speak_house_language": "Translate ordinary English sentences using the existing AI task, with a time limit, temporary cache and original-text fallback. Urgent alerts never wait for AI. Use Automatic language support for prepared phrases and conversation endings; select the language below. Fixed exact yes/no tokens cover common languages. Settings changes, forgetting and unload clear cached data.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
           "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
@@ -730,7 +732,9 @@
           "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged.",
           "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
           "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context.",
-          "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling."
+          "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling.",
+          "automatic_language": "Requires Say built-in sentences in the house language. Prepare common phrases, conversation endings and safety labels automatically using your existing AI. Uses the AI budget and memory-only caching. Off by default. Disabling clears prepared phrases; urgent alerts never wait for AI. Generated replies never authorise critical actions.",
+          "voice_language": "Use auto for Home Assistant’s language, or a language code such as es, de or pt-BR. Requires the speech language option. Your Assist speech recognition and TTS voice must also support this language; this does not reconfigure them."
         }
       },
       "memories": {

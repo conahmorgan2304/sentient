@@ -61,7 +61,7 @@ from .const import (
     PRIORITY_URGENT,
 )
 from .delivery import RoomLevels, delivered, playing_nearby
-from .language import async_in_house_language
+from .language import async_in_house_language, selected_language
 from .reasons import reason_for
 from .presence import ActivityTracker, area_of
 
@@ -129,7 +129,7 @@ def in_quiet_hours(now: datetime, start: time, end: time) -> bool:
     return current >= start or current < end
 
 
-def tts_language(hass: HomeAssistant, engine: str) -> str | None:
+def tts_language(hass: HomeAssistant, engine: str, preferred: str | None = None) -> str | None:
     """The house's language as this text-to-speech service knows it (en-GB, en, or its own default)."""
     try:
         from homeassistant.components.tts.helper import get_engine_instance
@@ -140,7 +140,7 @@ def tts_language(hass: HomeAssistant, engine: str) -> str | None:
     if inst is None:
         return None
     langs = list(getattr(inst, "supported_languages", None) or [])
-    base = (hass.config.language or "en").replace("_", "-")
+    base = (preferred or hass.config.language or "en").replace("_", "-")
     wants = [base] + ([f"{base}-{hass.config.country}"] if "-" not in base and hass.config.country else [])
     low = {lang.lower(): lang for lang in langs}
     for want in reversed(wants):  # en-GB before en
@@ -536,7 +536,7 @@ class SpeechRouter:
         if key in self._prepared:
             return
         try:
-            media_id = tts_media_id(self.hass, text, engine, tts_language(self.hass, engine), {"voice": voice} if voice else None)
+            media_id = tts_media_id(self.hass, text, engine, tts_language(self.hass, engine, selected_language(self.hass, self.options) if self.options.get("speak_house_language") else None), {"voice": voice} if voice else None)
         except (HomeAssistantError, ValueError):
             return
         self._prepared[key] = self.hass.async_create_background_task(self._make_audio(media_id), "sentient read ahead")
@@ -556,7 +556,7 @@ class SpeechRouter:
         """Speak with a chosen text-to-speech service and voice; None when this speaker can't (an Echo)."""
         if self.hass.states.get(engine) is None or (speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media"):
             return None
-        language = tts_language(self.hass, engine)
+        language = tts_language(self.hass, engine, selected_language(self.hass, self.options) if self.options.get("speak_house_language") else None)
         options = {"voice": voice} if voice else None
         try:
             async with asyncio.timeout(reading_seconds(text) * 3 + 45):  # making the audio can be slow (free voices)
@@ -787,8 +787,15 @@ class SpeechRouter:
         from .sessions import is_conversation_end
 
         self._questions.pop(satellite, None)  # a correction or topic change also cancels the old request
-        lang = self.hass.config.language if self.options.get("speak_house_language") else None
+        from .language import selected_language
+
+        lang = selected_language(self.hass, self.options) if self.options.get("speak_house_language") else None
         kind = "no" if is_conversation_end(text, question["asked"], self.options.get(CONF_PERSONA) or DEFAULT_PERSONA, language=lang) else classify(text, language=lang)
+        if kind is None and self.options.get('automatic_language'):
+            from .language import async_language_rejection
+
+            if await async_language_rejection(self.hass, self.options, text):
+                kind = 'no'
         if kind is None:
             return None
         return await question["on_answer"](kind)

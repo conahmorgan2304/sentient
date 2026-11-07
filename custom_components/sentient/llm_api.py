@@ -1805,11 +1805,14 @@ class SentientAPI(llm.API):
         if rt is None:
             return "Sentient (the house's long-term brain) is not loaded right now."
         opts: dict[str, Any] = rt.options
+        from .language import language_prompt
+
         persona = opts.get(CONF_PERSONA) or DEFAULT_PERSONA
         lines = [
             f"You are {persona}, the brain of this home. The same memory is shared by "
             "every voice and automation in the house.",
             personality_line(opts),
+            language_prompt(self.hass, opts),
             *([talk] if (talk := talk_line(opts)) else []),
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')} — if asked the time, say this exact "
             f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it.",

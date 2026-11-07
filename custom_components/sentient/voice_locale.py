@@ -5,7 +5,9 @@ import unicodedata
 
 def clean(text):
     text = unicodedata.normalize('NFKC', text or '').casefold().replace('’', "'")
-    return ' '.join(re.sub(r"[^\w\s']", ' ', text).split())
+    # Combining vowel signs are meaningful in e.g. Hindi/Bengali; \w alone drops them.
+    text = ''.join(c if c.isspace() or c == "'" or unicodedata.category(c)[0] in 'LNM' else ' ' for c in text)
+    return ' '.join(text.split())
 
 
 ANSWERS = {
@@ -14,6 +16,18 @@ ANSWERS = {
     'fr': {'yes': {'oui', "oui s'il vous plaît", 'oui merci'}, 'no': {'non', 'non merci', 'annule', 'annuler'},
            'end': {'non merci', "c'est tout", 'ça suffit', "arrête d'écouter", 'annule', 'annuler'}},
 }
+
+# Fixed, exact tokens only. AI-generated phrase packs never extend consent.
+for _code, _yes, _no in (
+    ('es', 'sí', 'no'), ('de', 'ja', 'nein'), ('it', 'sì', 'no'), ('pt', 'sim', 'não'),
+    ('nl', 'ja', 'nee'), ('pl', 'tak', 'nie'), ('sv', 'ja', 'nej'), ('da', 'ja', 'nej'),
+    ('nb', 'ja', 'nei'), ('no', 'ja', 'nei'), ('tr', 'evet', 'hayır'),
+    ('ru', 'да', 'нет'), ('uk', 'так', 'ні'), ('ar', 'نعم', 'لا'), ('hi', 'हाँ', 'नहीं'),
+    ('bn', 'হ্যাঁ', 'না'), ('ja', 'はい', 'いいえ'), ('ko', '네', '아니요'),
+    ('id', 'ya', 'tidak'), ('vi', 'vâng', 'không'), ('he', 'כן', 'לא'),
+    ('el', 'ναι', 'όχι'), ('cs', 'ano', 'ne'), ('ro', 'da', 'nu'), ('hu', 'igen', 'nem'),
+):
+    ANSWERS[_code] = {'yes': {clean(_yes)}, 'no': {clean(_no)}, 'end': set()}
 
 
 def answer(text, language):
