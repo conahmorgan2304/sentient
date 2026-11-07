@@ -684,6 +684,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
+    from .language import clear_translations
+
+    clear_translations(entry.runtime_data.ai)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
@@ -713,6 +716,9 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
+    from .language import clear_translations
+
+    clear_translations(entry.runtime_data.ai)
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.alarm_confirmations.clear()

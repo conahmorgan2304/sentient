@@ -59,6 +59,10 @@ async def refresh(hass, session, context):
         session.entities = []
     else:
         session.entities = [row['entity_id'] for row in readings]
+    from .voice_locale import clean
+
+    if follow['kind'] == 'correction' and re.fullmatch(r"(?:no )?(?:i meant )?(?:the )?other (?:one|light|device|room)", clean(follow['request'])):
+        return 'Which device or room do you mean?'
     if not follow['previous_goal'] and follow['kind'] != 'clarification':
         return 'What would you like me to explain?' if follow['kind'] == 'explanation' else 'Which device or subject do you mean?'
     if follow['kind'] == 'adjustment' and len(readings) != 1:

@@ -61,15 +61,22 @@ FOLLOW_UPS = (
 
 def is_follow_up(text: str) -> bool:
     """One of our own 'anything else?' questions (not a real question from the model)."""
-    return (text or "").strip() in FOLLOW_UPS
+    from .voice_locale import FOLLOWUPS
+
+    return (text or "").strip() in (*FOLLOW_UPS, *FOLLOWUPS.values())
 
 
 def normalise(text):
     return text.strip().replace("’", "'")
 
 
-def is_conversation_end(text, question='', persona=''):
+def is_conversation_end(text, question='', persona='', language=None):
     """Recognise a complete spoken ending, tolerating STT punctuation and name addressing."""
+    from .voice_locale import ending, answer, generic_question
+
+    if ending(text, language) or (answer(text, language) == 'no' and (not question or generic_question(question, language) or GENERAL_FOLLOWUP.search(question))):
+        return True
+
     def clean(value):
         value = normalise(value).casefold()
         value = re.sub(r"\bthankyou\b", "thank you", value)
@@ -136,6 +143,7 @@ class VoiceSession:
     missing_detail: str = ''
     listen_reason: str = 'new_request'
     command_turn: bool = False
+    language: str | None = None
     follow_up_context: dict | None = None
     correction: dict | None = None
     investigation: dict | None = None
@@ -196,7 +204,8 @@ class Sessions:
             self.items[key] = VoiceSession(cid, owner, dt_util.utcnow())
         return self.items[key]
 
-    def begin(self, session, text):
+    def begin(self, session, text, language=None):
+        session.language = language
         session.turn += 1
         session.touched = dt_util.utcnow()
         session.waiting = False
@@ -266,7 +275,7 @@ class Sessions:
         if session.active and not ends_in_question(text) and self.options.get("conversation_style") != "natural":
             # brief style: keep a discussion going with a varied "anything else?"; the natural style asks its own
             # follow-up questions when they fit, so a stock one isn't added
-            text += " " + self.next_follow_up()
+            text += " " + self.next_follow_up(session.language)
             result.response.async_set_speech(text)
         session.waiting = ends_in_question(text)
         result.continue_conversation = session.waiting
@@ -280,9 +289,13 @@ class Sessions:
             session.listen_reason = 'completed_single_request'
         return result
 
-    def next_follow_up(self) -> str:
+    def next_follow_up(self, language=None) -> str:
         """A different 'anything else?' each time, never one of the last few."""
         import random
+        from .voice_locale import FOLLOWUPS
+
+        if local := FOLLOWUPS.get((language or "").split("-")[0].lower()):
+            return local
 
         recent = getattr(self, "_recent_follow_ups", [])
         choice = random.choice([f for f in FOLLOW_UPS if f not in recent] or list(FOLLOW_UPS))

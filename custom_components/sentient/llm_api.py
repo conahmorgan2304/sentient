@@ -129,7 +129,13 @@ class _Tool(llm.Tool):
                 return _result({"error": f"wrong arguments: {err}"})
             if self.acts and outside.blocked(hass):
                 return _result({"error": outside.REFUSED})
+            from .sessions import current_session
+
+            if self.acts and (session := current_session.get()) is not None and session.closed:
+                return _result({"error": "That conversation has ended. This action was not started."})
             try:
+                if self.acts and (attempt := speech_attempt.get()) is not None:
+                    attempt['action_started'] = True
                 result = await inner(self, hass, tool_input, llm_context)
                 if (rt := _runtime(hass)) is not None and getattr(rt, "usage", None) is not None:
                     rt.usage.tool(self.name)

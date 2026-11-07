@@ -137,3 +137,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] HACS review follow-up: alarms saved before 0.88 didn't record who made them, so they're now checked when they go off like ones made by voice; only alarms saved on the Alarms page run exactly as set (saving an older one there once keeps it as it is) (0.88.1)
 - [x] HACS is now the Home Assistant Marketplace (2026.11): install and update instructions, the update repair and the panel's update note say Marketplace, with HACS for older Home Assistant; the install badge opens Sentient in the Marketplace (0.88.2)
 - [x] Speaks the house's language: an optional setting translates Sentient's own English sentences (appliances, reminders, alerts…) into Home Assistant's language with the AI task before they're said — once per sentence, a short time limit, English if the AI can't; sentences already in that language cost nothing
+
+- [x] 0.90.0: immediate urgent language fallback, runtime translation privacy lifecycle, limited Finnish/French replies, optional scoped conversation cancellation and cautious command recovery.

@@ -24,6 +24,9 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .voice_actions import speech_attempt, BACKUP_TIMEOUT
+from .voice_locale import answer, cancel
+
+from .const import CONF_RECOVERY
 
 from .sessions import (CONF_SESSIONS, CONF_GUARDED, GUARDED_API, current_session, is_conversation_end, YES, NO, UNDO, normalise, spoken_text)
 
@@ -83,6 +86,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             identifiers={(DOMAIN, entry.entry_id)}, name=entry.title, manufacturer="Sentient",
             model="Home brain", entry_type=DeviceEntryType.SERVICE,
         )
+        self._turn_tasks: dict[tuple, asyncio.Task] = {}
         self.last_backup: str | None = None
         self._carry: dict[str, tuple[str, Any]] = {}  # speaker -> (conversation id, when it was last used)
         self._ours: set[str] = set()  # conversation ids this agent has answered
@@ -305,7 +309,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         flags: dict = {}
         token, ftoken = current_request.set(user_input.text), turn_flags.set(flags)
         try:
-            result = await self._process_turn(user_input)
+            result = await self._recoverable_turn(user_input)
         finally:
             current_request.reset(token)
             turn_flags.reset(ftoken)
@@ -326,6 +330,46 @@ class BackedUpAgent(conversation.ConversationEntity):
             self._ours.add(result.conversation_id)
         return result
 
+    def _reply_language(self, user_input):
+        return user_input.language if self._options().get("speak_house_language") else None
+
+    def _cancel_session(self, user_input):
+        rt = self._entry.runtime_data
+        session = rt.sessions.get(user_input)
+        rt.sessions.close(session)
+        for key in list(getattr(rt, "alarm_confirmations", {})):
+            if key == (session.id, user_input.device_id, user_input.context.user_id):
+                rt.alarm_confirmations.pop(key, None)
+        if speech := getattr(rt, "speech", None):
+            speech._questions.pop(user_input.satellite_id or "", None)
+        self._carry.pop(user_input.satellite_id or user_input.device_id, None)
+
+    async def _recoverable_turn(self, user_input):
+        if not (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)):
+            return await self._process_turn(user_input)
+        key = (user_input.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+        identified = any(key[1:])
+        running = self._turn_tasks.get(key) if identified else None
+        if cancel(user_input.text, self._reply_language(user_input)):
+            if running is not None and not running.done():
+                self._cancel_session(user_input)
+                running.cancel()
+                await asyncio.gather(running, return_exceptions=True)
+                return self._plain_reply(user_input, "Stopped waiting for that request. An action may already have happened; please check the device. I haven't retried or undone it.")
+            self._cancel_session(user_input)
+            return self._plain_reply(user_input, "Okay, I've cancelled the pending request. I haven't undone any earlier actions.")
+        if running is not None and not running.done():
+            return self._plain_reply(user_input, "I'm still handling the previous request. Say cancel that to stop waiting.")
+        if not identified:
+            return await self._process_turn(user_input)
+        task = self.hass.async_create_task(self._process_turn(user_input))
+        self._turn_tasks[key] = task
+        try:
+            return await task
+        finally:
+            if self._turn_tasks.get(key) is task:
+                self._turn_tasks.pop(key, None)
+
     async def _process_turn(self, user_input):
         opts = self._options()
         if not (opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED)):
@@ -338,8 +382,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             session.running = True
             token = current_session.set(session)
             try:
-                rt.sessions.begin(session, user_input.text)
-                if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA):
+                rt.sessions.begin(session, user_input.text, self._reply_language(user_input))
+                if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
                     rt.sessions.close(session)
                     return self._reply(user_input, session, "Okay.")
                 if opts.get(CONF_SESSIONS):
@@ -347,7 +391,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     if resumed is not None:
                         return resumed
                 if (session.resume_context or {}).get("needs_request"):
-                    if YES.fullmatch(user_input.text.strip()):
+                    if (YES.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "yes"):
                         session.listen_reason = "resume_needs_request"
                         return self._reply(user_input, session, "Earlier permissions have expired. What would you like me to check or do now?", True)
                     session.resume_context["needs_request"] = False
@@ -362,12 +406,12 @@ class BackedUpAgent(conversation.ConversationEntity):
                     result = await rt.control.undo(session, user_input.context)
                     return self._reply(user_input, session, self._action_text(result), session.active)
                 if session.pending:
-                    if YES.fullmatch(user_input.text.strip()):
+                    if (YES.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "yes"):
                         result = await rt.control.confirm(session, user_input.context)
                         session.question = ""
                         return self._reply(user_input, session, self._action_text(result), session.active)
                     session.pending = None  # a rejection, correction or topic change invalidates the old plan
-                    if NO.fullmatch(user_input.text.strip()):
+                    if (NO.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "no"):
                         return self._reply(user_input, session, "Cancelled. No action was taken.", session.active)
                 from .followups import refresh, INSTRUCTION
 
@@ -467,6 +511,12 @@ class BackedUpAgent(conversation.ConversationEntity):
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(text)
             return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
+        from .sessions import COMMAND
+        from .followups import classify
+
+        if attempt.get('action_started') or (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)
+                and (COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction'))):
+            return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
         _LOGGER.info("Sentient: the main voice agent failed (%s); using %s", why, self.backup_agent)
         from homeassistant.util import dt as dt_util
 

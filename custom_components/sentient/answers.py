@@ -26,8 +26,12 @@ NEGATED = re.compile(r"\b(?:no|not|don'?t|never|n'?t)\b", re.I)
 MAX_WORDS = 8  # longer replies are more than a yes or a no: the AI reads those
 
 
-def classify(text: str) -> str | None:
+def classify(text: str, language: str | None = None) -> str | None:
     """'done', 'no', 'yes', or None when it isn't a plain answer."""
+    from .voice_locale import answer
+
+    if local := answer(text, language):
+        return local
     words = re.sub(r"[^\w\s']", " ", (text or "").lower()).split()
     if not words:
         return None

@@ -13,13 +13,6 @@ OPTIONS = {"persona": "Nova", "speakers": ["assist_satellite.kitchen"], "default
            "quiet_start": "00:00:00", "quiet_end": "00:00:00", "speak_house_language": True}
 
 
-@pytest.fixture(autouse=True)
-def _fresh_cache():
-    language._kept.clear()
-    yield
-    language._kept.clear()
-
-
 async def _setup(hass: HomeAssistant, reply: str | None = "Pesukone on valmis.", **options) -> list[ServiceCall]:
     hass.config.language = options.pop("house_language", "fi")
     hass.states.async_set("assist_satellite.kitchen", "idle", {"friendly_name": "Kitchen"})
@@ -111,12 +104,12 @@ async def test_english_is_said_once_todays_ai_limit_is_used(hass: HomeAssistant)
     assert said[0].data["message"] == "Pesukone Job's finished." and not ai
 
 
-async def test_safety_alert_is_translated_even_at_the_limit(hass: HomeAssistant) -> None:
+async def test_safety_alert_uses_fixed_translation_without_ai_even_at_limit(hass: HomeAssistant) -> None:
     ai = await _setup(hass, reply="Savua keittiössä!", daily_ai_limit=1)
     hass.config_entries.async_entries(DOMAIN)[0].runtime_data.ai.spend("camera checks")
     said = async_mock_service(hass, "assist_satellite", "announce")
     await hass.services.async_call(DOMAIN, "say", {"message": "Smoke in the kitchen!", "priority": "urgent"}, blocking=True)
-    assert said[0].data["message"] == "Savua keittiössä!" and len(ai) == 1
+    assert said[0].data["message"] == "Savua havaittu: kitchen!" and not ai
 
 
 async def test_a_runaway_reply_is_not_said(hass: HomeAssistant) -> None:

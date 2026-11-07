@@ -127,7 +127,8 @@
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
           "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
-          "update_checker": "Vérifier les mises à jour de Sentient"
+          "update_checker": "Vérifier les mises à jour de Sentient",
+          "conversation_recovery": "Annulation et reprise prudente des conversations"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -233,7 +234,8 @@
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
           "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
-          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique."
+          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
+          "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut."
         }
       }
     },
@@ -457,7 +459,8 @@
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
           "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
-          "update_checker": "Vérifier les mises à jour de Sentient"
+          "update_checker": "Vérifier les mises à jour de Sentient",
+          "conversation_recovery": "Annulation et reprise prudente des conversations"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -610,7 +613,7 @@
           "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
-          "speak_house_language": "Les phrases simples de Sentient (un appareil qui a fini, un rappel, une alerte de sécurité) sont écrites en anglais. Avec cette option, et Home Assistant réglé sur une autre langue, l'IA les traduit juste avant de les dire. Chaque phrase n'est traduite qu'une fois ; les remarques de l'IA restent telles quelles. Si l'IA est lente, indisponible ou si la limite du jour est atteinte, l'anglais est dit.",
+          "speak_house_language": "Traduit les phrases anglaises ordinaires avec l'IA existante. Les alertes urgentes utilisent une traduction fixe (français/finnois), le cache ou l'anglais immédiatement, sans attendre l'IA. Le cache temporaire est vidé lors d'un changement de réglages, d'un oubli des données ou d'un déchargement. Les réponses simples oui/non et les fins de conversation sont reconnues en français et en finnois.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
           "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
@@ -652,7 +655,8 @@
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
           "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
-          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique."
+          "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
+          "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut."
         }
       },
       "memories": {

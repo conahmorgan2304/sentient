@@ -417,3 +417,5 @@ CONF_CAMERA_WAKE = "camera_wake"  # actions to run first ({{ camera }} is the ca
 CONF_CAMERA_WAKE_CAMERAS = "camera_wake_cameras"  # only these cameras (empty: every camera)
 CONF_CAMERA_WAKE_SECONDS = "camera_wake_seconds"  # then wait this long for a fresh picture
 DEFAULT_CAMERA_WAKE_SECONDS = 5
+
+CONF_RECOVERY = "conversation_recovery"
