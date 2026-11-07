@@ -132,6 +132,8 @@ from .const import (
     CONF_ROOM_VOLUME,
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
+    CONF_REMEMBER_LANGUAGE_PHRASES,
+    CONF_VOICE_TIMING_DIAGNOSTICS,
     CONF_AUTOMATIC_LANGUAGE,
     CONF_VOICE_LANGUAGE,
     CONF_SPEAK_HOUSE_LANGUAGE,
@@ -263,7 +265,7 @@ from .const import (
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
-        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
+        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
         CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, CONF_SESSIONS, CONF_CONTEXTUAL_FOLLOWUPS, CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE,
     ]),
@@ -1357,12 +1359,12 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
 
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/voice_check",
-    vol.Optional("action", default="status"): vol.In(["status", "start", "clear", "heard", "not_heard"]),
+    vol.Optional("action", default="status"): vol.In(["status", "start", "start_single", "start_question", "start_cancel", "clear", "heard", "not_heard"]),
     vol.Optional("run_id"): str,
 })
 @websocket_api.require_admin
-@callback
-def ws_voice_check(hass: HomeAssistant, connection, msg):
+@websocket_api.async_response
+async def ws_voice_check(hass: HomeAssistant, connection, msg):
     entry = _entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
@@ -1376,10 +1378,10 @@ def ws_voice_check(hass: HomeAssistant, connection, msg):
         return
     action = msg["action"]
     try:
-        if action == "start":
+        if action in ("start", "start_single", "start_question", "start_cancel"):
             if not rt.options.get(CONF_SESSIONS):
                 raise ValueError("Enable Conversation sessions and use the Sentient with backup agent in your voice pipeline")
-            rt.voice_checks.start()
+            await rt.voice_checks.async_start({"start": "conversation", "start_single": "single", "start_question": "question", "start_cancel": "cancel"}[action])
         elif action == "clear":
             rt.voice_checks.stop()
         elif action in ("heard", "not_heard"):

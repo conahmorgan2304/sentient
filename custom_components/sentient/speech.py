@@ -589,6 +589,12 @@ class SpeechRouter:
         return {"ok": any(r["status"] == "accepted" for r in receipts or []), "speaker": speaker}
 
     async def _speak(self, text: str, speakers: list[str], chime: bool | None = None, *, original: str | None = None) -> list[dict[str, Any]]:
+        from .voice_timing import measure
+
+        with measure('speech_delivery'):
+            return await self._speak_timed(text, speakers, chime, original=original)
+
+    async def _speak_timed(self, text: str, speakers: list[str], chime: bool | None = None, *, original: str | None = None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
         generation = self._privacy_generation
         chime = self.chime if chime is None else chime

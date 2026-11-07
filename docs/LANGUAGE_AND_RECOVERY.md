@@ -1,4 +1,4 @@
-# Language reliability and conversation recovery — 0.91.0
+# Language reliability and conversation recovery — 0.92.0
 
 ## Automatic language setup
 
@@ -26,7 +26,7 @@ Ordinary English-looking sentences use the AI gateway with a ten-second limit an
 
 **Urgent speech never prepares a pack or waits for live translation.** Fixed Finnish/French safety wording takes precedence. Other languages use prepared safety labels when available, an existing cached translation, or immediate original English. Household names are appended locally to labels and preserved. After a restart or cache clear, an urgent alert may therefore be English until the next ordinary use prepares the pack. Machine-translated safety labels require real-house language checking; never depend on Sentient as the sole alarm.
 
-The runtime owns the pack and translation cache. Settings changes, forgetting recent data and unload clear both, including in-flight results; nothing is stored across restarts. Disabling Automatic language support clears prepared data and stops its preparation/conversation handling; the separate built-in speech translation option can remain on. Disable that too to stop all optional language work. Already dispatched AI requests cannot be recalled.
+The runtime owns the pack and translation cache. By default, Settings changes, forgetting recent data and unload clear both, including in-flight results. With the new **Remember common language phrases** option enabled, only the generic pack survives restarts and unrelated Settings changes; personal sentence translations remain memory-only. Disabling persistence, changing language/provider or forgetting clears saved phrases. [Details and diagnostic tools](CONVERSATION_RELIABILITY.md). Disabling Automatic language support clears prepared data and stops its preparation/conversation handling; the separate built-in speech translation option can remain on. Disable that too to stop all optional language work. Already dispatched AI requests cannot be recalled.
 
 Question-to-announcement fallback reuses a single translation attempt. Duplicate detection and follow-you delivery retain the original text. Actual spoken translations are returned by the speech engine, and automatic conversation replies update the waiting question text. Existing session history can still include the original deterministic wording recorded before the final translation.
 

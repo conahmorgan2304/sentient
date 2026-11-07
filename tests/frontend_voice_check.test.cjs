@@ -91,3 +91,13 @@ test('a successful update check also asks HACS to look again', async () => {
   assert.equal(sent[2].repository, '42');
   assert.match(panel._updatesFeedback, /HACS has been told to look again/);
 });
+
+test('single-turn check exposes playback confirmation and separate check modes', async () => {
+  const panel = setup(async () => ({ ...panel.sensor, heard_replies: true }));
+  panel.sensor = { ...panel.sensor, mode: 'single', steps: [{}] };
+  panel._render();
+  assert.match(panel.html, /Did you hear the replies/);
+  for (const mode of ['start_single', 'start_question', 'start_cancel']) assert.ok(panel.html.includes(`data-id="${mode}"`));
+  await panel._voiceCheckAction('heard', 'run-one');
+  assert.match(panel.html, /SAVED · You confirmed/);
+});

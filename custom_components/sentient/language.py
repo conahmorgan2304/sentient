@@ -51,23 +51,30 @@ class TranslationCache:
     """Owned by the runtime AI gateway, never shared across Home Assistant instances."""
     def __init__(self):
         self.kept = OrderedDict()
+        self.failed = OrderedDict()
+        self.translation_locks = {}
         self.generation = 0
         self.pack = None
         self.pack_language = None
         self.retry_after = 0
         self.lock = asyncio.Lock()
 
-    def clear(self):
+    def clear(self, keep_pack=False):
         self.generation += 1
         self.kept.clear()
-        self.pack = None
-        self.pack_language = None
+        self.failed.clear()
+        self.translation_locks.clear()
+        if not keep_pack:
+            self.pack = None
+            self.pack_language = None
         self.retry_after = 0
 
 
-def clear_translations(ai):
+def clear_translations(ai, keep_pack=False):
     if (cache := getattr(ai, 'speech_language_cache', None)) is not None:
-        cache.clear()
+        cache.clear(keep_pack=keep_pack)
+    if not keep_pack and hasattr(ai, "_save"):
+        ai._save()
 
 
 def looks_english(text: str) -> bool:
@@ -104,7 +111,7 @@ def house_language(hass: HomeAssistant, options=None) -> str | None:
 
 
 async def async_in_house_language(
-    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False
+    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *, known_english: bool = False
 ) -> str:
     """What to actually say: *text* in the house's language, or *text* itself when that can't be done."""
     if not text or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
@@ -140,11 +147,36 @@ async def async_in_house_language(
                     if generation != cache.generation:
                         return text
                     return main + ' ' + cache.pack['followup']
-    if not looks_english(text):
+    if not known_english and not looks_english(text):
         return text
+    if len(cache.translation_locks) >= KEEP and key not in cache.translation_locks:
+        return text
+    pending = cache.translation_locks.setdefault(key, {'lock': asyncio.Lock(), 'users': 0})
+    pending['users'] += 1
+    try:
+        async with pending['lock']:
+            if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
+                return text
+            return await _translate(hass, options, text, lang, owner, cache, key, generation)
+    finally:
+        pending['users'] -= 1
+        if not pending['users'] and cache.translation_locks.get(key) is pending:
+            cache.translation_locks.pop(key, None)
+
+
+def _translation_failed(cache, key, generation):
+    if generation == cache.generation:
+        cache.failed[key] = time.monotonic() + 60
+        while len(cache.failed) > KEEP:
+            cache.failed.popitem(last=False)
+
+
+async def _translate(hass, options, text, lang, owner, cache, key, generation):
     if (kept := cache.kept.get(key)) is not None:
         cache.kept.move_to_end(key)
         return kept
+    if cache.failed.get(key, 0) > time.monotonic():
+        return text
     if not owner.spend(PURPOSE):
         return text  # today's AI limit is used up: the English it is
     data: dict[str, Any] = {
@@ -160,12 +192,18 @@ async def async_in_house_language(
     if ai := options.get(CONF_AI_TASK_ENTITY):
         data["entity_id"] = ai
     try:
-        response = await async_generate(hass, data, TIMEOUT)
+        from .voice_timing import measure
+
+        with measure("translation"):
+            response = await async_generate(hass, data, TIMEOUT)
     except AIUnavailable as err:
         _LOGGER.debug("Said in English, the AI couldn't translate it: %s", err)
+        _translation_failed(cache, key, generation)
         return text
-    out = " ".join(str((response or {}).get("data") or "").split()).strip().strip("\"'«»“”")
+    raw = response.get("data") if isinstance(response, dict) else None
+    out = " ".join(raw.split()).strip().strip("\"'«»“”") if isinstance(raw, str) else ""
     if not out or len(out) > 3 * len(text) + 40:
+        _translation_failed(cache, key, generation)
         return text
     if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
         return text  # disabling/forgetting while the AI runs must not recreate deleted data
@@ -213,41 +251,12 @@ async def async_prepare_language(hass, options):
         if entity := options.get(CONF_AI_TASK_ENTITY):
             data['entity_id'] = entity
         try:
-            response = await async_generate(hass, data, TIMEOUT)
-            raw = (response or {}).get('data')
-            if isinstance(raw, str) and len(raw) > 8000:
-                return None
-            if isinstance(raw, str) and raw.strip().startswith(('```json\n', '```\n')) and raw.strip().endswith('```'):
-                raw = raw.strip().split('\n', 1)[1].rsplit('```', 1)[0].strip()
-            pack = json.loads(raw) if isinstance(raw, str) else raw
-            if not isinstance(pack, dict):
-                return None
-            for key in ('followup', 'okay'):
-                if not isinstance(pack.get(key), str) or not 1 <= len(pack[key].strip()) <= 200:
-                    return None
-            for key, limit in (('end', 12), ('no', 4)):
-                if not isinstance(pack.get(key), list) or not 1 <= len(pack[key]) <= limit:
-                    return None
-                if any(not isinstance(x, str) or not 1 <= len(x.strip()) <= 80 for x in pack[key]):
-                    return None
-            if not isinstance(pack.get('alerts'), dict) or set(pack['alerts']) != set(_LABELS):
-                return None
-            if any(not isinstance(x, str) or not 1 <= len(x.strip()) <= 150 for x in pack['alerts'].values()):
-                return None
-            from .voice_locale import ANSWERS, clean
-            from .sessions import ends_in_question
+            from .voice_timing import measure
 
-            if not clean(pack['followup']) or not ends_in_question(pack['followup']):
-                return None
-            positives = {'yes', 'yes please', 'yeah', 'confirm', 'go ahead', 'do it'}
-            positives.update(clean(x) for catalog in ANSWERS.values() for x in catalog.get('yes', ()))
-            negatives = {clean(x) for x in pack['no']}
-            negatives.update(clean(x) for catalog in ANSWERS.values() for x in catalog.get('no', ()))
-            # Never let a generated bare "no" become an unconditional ending of a specific question.
-            pack = {**pack, 'no': [x for x in pack['no'] if clean(x) and clean(x) not in positives],
-                    'end': [x for x in pack['end'] if clean(x) and clean(x) not in positives
-                            and clean(x) not in negatives and clean(x) not in {'thanks', 'thank you'}]}
-            if not pack['no'] or not pack['end']:
+            with measure("language_preparation"):
+                response = await async_generate(hass, data, TIMEOUT)
+            pack = validate_pack(response.get('data') if isinstance(response, dict) else None)
+            if pack is None:
                 return None
         except (AIUnavailable, ValueError, TypeError):
             return None
@@ -255,6 +264,8 @@ async def async_prepare_language(hass, options):
                 or not options.get('automatic_language') or not options.get(CONF_SPEAK_HOUSE_LANGUAGE)):
             return None
         cache.pack, cache.pack_language = pack, lang
+        if options.get("remember_language_phrases"):
+            owner._save()
         return pack
 
 
@@ -306,3 +317,68 @@ async def async_language_rejection(hass, options, text):
         return False
     from .voice_locale import clean
     return clean(text) in {clean(x) for x in (*pack['end'], *pack['no'])}
+
+
+def validate_pack(raw):
+    """Validate generated and saved generic data with the same bounded rules."""
+    if isinstance(raw, str) and len(raw) > 8000:
+        return None
+    if isinstance(raw, str) and raw.strip().startswith(('```json\n', '```\n')) and raw.strip().endswith('```'):
+        raw = raw.strip().split('\n', 1)[1].rsplit('```', 1)[0].strip()
+    pack = json.loads(raw) if isinstance(raw, str) else raw
+    if not isinstance(pack, dict):
+        return None
+    for key in ('followup', 'okay'):
+        if not isinstance(pack.get(key), str) or not 1 <= len(pack[key].strip()) <= 200:
+            return None
+    for key, limit in (('end', 12), ('no', 4)):
+        if not isinstance(pack.get(key), list) or not 1 <= len(pack[key]) <= limit:
+            return None
+        if any(not isinstance(x, str) or not 1 <= len(x.strip()) <= 80 for x in pack[key]):
+            return None
+    if not isinstance(pack.get('alerts'), dict) or set(pack['alerts']) != set(_LABELS):
+        return None
+    if any(not isinstance(x, str) or not 1 <= len(x.strip()) <= 150 for x in pack['alerts'].values()):
+        return None
+    from .voice_locale import ANSWERS, clean
+    from .sessions import ends_in_question
+
+    if not clean(pack['followup']) or not ends_in_question(pack['followup']):
+        return None
+    positives = {'yes', 'yes please', 'yeah', 'confirm', 'go ahead', 'do it'}
+    positives.update(clean(x) for catalog in ANSWERS.values() for x in catalog.get('yes', ()))
+    negatives = {clean(x) for x in pack['no']}
+    negatives.update(clean(x) for catalog in ANSWERS.values() for x in catalog.get('no', ()))
+    # Never let a generated bare "no" become an unconditional ending of a specific question.
+    pack = {**pack, 'no': [x for x in pack['no'] if clean(x) and clean(x) not in positives],
+            'end': [x for x in pack['end'] if clean(x) and clean(x) not in positives
+                    and clean(x) not in negatives and clean(x) not in {'thanks', 'thank you'}]}
+    if not pack['no'] or not pack['end']:
+        return None
+    return {key: pack[key] for key in ('followup', 'okay', 'end', 'no', 'alerts')}
+
+
+def saved_phrases(ai):
+    """Only generic prepared phrases; never the arbitrary sentence translation cache."""
+    if not all(ai.options.get(k) for k in ('remember_language_phrases', 'automatic_language', 'speak_house_language')):
+        return None
+    cache = getattr(ai, 'speech_language_cache', None)
+    if cache is None or not cache.pack or cache.pack_language != selected_language(ai.hass, ai.options):
+        return None
+    return {'version': 1, 'language': cache.pack_language, 'provider': ai.options.get(CONF_AI_TASK_ENTITY), 'pack': cache.pack}
+
+
+def restore_phrases(ai, data):
+    if not all(ai.options.get(k) for k in ('remember_language_phrases', 'automatic_language', 'speak_house_language')):
+        return
+    if not isinstance(data, dict) or data.get('version') != 1 or data.get('language') != selected_language(ai.hass, ai.options):
+        return
+    if data.get('provider') != ai.options.get(CONF_AI_TASK_ENTITY):
+        return
+    try:
+        pack = validate_pack(data.get('pack'))
+    except (ValueError, TypeError):
+        return
+    if pack:
+        cache = ai.speech_language_cache = TranslationCache()
+        cache.pack, cache.pack_language = pack, data['language']

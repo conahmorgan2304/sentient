@@ -517,7 +517,9 @@
           "contextual_followups": "Connected follow-ups and corrections",
           "conversation_recovery": "Conversation cancellation and cautious recovery",
           "automatic_language": "Automatic language support",
-          "voice_language": "Speech and conversation language"
+          "voice_language": "Speech and conversation language",
+          "remember_language_phrases": "Remember common language phrases",
+          "voice_timing_diagnostics": "Voice response timing diagnostics"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -684,7 +686,7 @@
           "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
-          "speak_house_language": "Translate ordinary English sentences using the existing AI task, with a time limit, temporary cache and original-text fallback. Urgent alerts never wait for AI. Use Automatic language support for prepared phrases and conversation endings; select the language below. Fixed exact yes/no tokens cover common languages. Settings changes, forgetting and unload clear cached data.",
+          "speak_house_language": "Translate ordinary English sentences using the existing AI task, with a time limit, temporary sentence cache and original-text fallback. Urgent alerts never wait for AI. Use Automatic language support for prepared phrases and conversation endings; select the language below. Fixed exact yes/no tokens cover common languages. Personal sentence translations are never saved across restarts.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
           "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
@@ -733,8 +735,10 @@
           "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
           "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context.",
           "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling.",
-          "automatic_language": "Requires Say built-in sentences in the house language. Prepare common phrases, conversation endings and safety labels automatically using your existing AI. Uses the AI budget and memory-only caching. Off by default. Disabling clears prepared phrases; urgent alerts never wait for AI. Generated replies never authorise critical actions.",
-          "voice_language": "Use auto for Home Assistant’s language, or a language code such as es, de or pt-BR. Requires the speech language option. Your Assist speech recognition and TTS voice must also support this language; this does not reconfigure them."
+          "automatic_language": "Requires Say built-in sentences in the house language. Prepare common phrases, conversation endings and safety labels with your existing AI and budget. Off by default. Phrases stay in memory unless Remember common language phrases is enabled. Disabling clears them. Urgent alerts never wait for AI; generated replies never authorise critical actions.",
+          "voice_language": "Use auto for Home Assistant’s language, or a language code such as es, de or pt-BR. Requires the speech language option. Your Assist speech recognition and TTS voice must also support this language; this does not reconfigure them.",
+          "remember_language_phrases": "Requires both speech language options. Save only the generic phrase pack across restarts and unrelated Settings changes, never personal announcements. Off by default. Disabling, changing language/provider, or forgetting data clears it.",
+          "voice_timing_diagnostics": "Keep the last 20 voice response timings in memory, without transcripts or device/user IDs. Show agent, tool, translation and announcement timings in Mind. Stages can overlap; microphone capture and final pipeline playback are not measured. Off by default; Settings changes and forgetting clear the history."
         }
       },
       "memories": {

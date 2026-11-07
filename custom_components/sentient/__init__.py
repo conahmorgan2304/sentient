@@ -686,7 +686,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
     from .language import clear_translations
 
-    clear_translations(entry.runtime_data.ai)
+    clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
+    entry.runtime_data.ai.voice_timings.clear()
+    await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
@@ -718,7 +720,14 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     options = _entry_options(entry)
     from .language import clear_translations
 
-    clear_translations(entry.runtime_data.ai)
+    from .language import selected_language
+
+    old = entry.runtime_data.options
+    keep_pack = (all(options.get(k) for k in ('remember_language_phrases', 'automatic_language', 'speak_house_language'))
+                 and selected_language(hass, old) == selected_language(hass, options)
+                 and old.get('ai_task_entity') == options.get('ai_task_entity'))
+    clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
+    entry.runtime_data.ai.voice_timings.clear()
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.alarm_confirmations.clear()
@@ -752,6 +761,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.party.options = options
     for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
+    entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:
         await entry.runtime_data.holiday.async_end("disabled in settings")
     entry.runtime_data.drive.async_setup_triggers()

@@ -70,10 +70,18 @@ class AIGate:
         self.last_error_at: str | None = None
         self.last_ok_at: str | None = None
         self.capped_at: str | None = None
+        from .voice_timing import VoiceTimings
+
+        self.voice_timings = VoiceTimings(hass)
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
+        from .language import restore_phrases
+
+        restore_phrases(self, data.get("language_phrases"))
+        if data.get("language_phrases") and not getattr(self, "speech_language_cache", None):
+            self._save()  # remove disabled, stale or invalid saved phrases
         self.history = dict(data.get("history") or {})
         self.fails_in_row = int(data.get("fails_in_row") or 0)
         self.last_error, self.last_error_at = data.get("last_error"), data.get("last_error_at")
@@ -87,12 +95,21 @@ class AIGate:
             self.history[data["day"]] = sum(data["counts"].values())
             self._trim()
 
-    def _save(self) -> None:
-        self._store.async_delay_save(lambda: {
+    def _storage_data(self):
+        from .language import saved_phrases
+
+        return {
+            "language_phrases": saved_phrases(self),
             "day": self.day, "counts": self.counts, "history": self.history, "failed_today": self.failed_today,
             "fails_in_row": self.fails_in_row, "last_error": self.last_error, "last_error_at": self.last_error_at,
             "last_ok_at": self.last_ok_at, "capped_at": self.capped_at, "sent": self.sent,
-        }, 5)
+        }
+
+    def _save(self) -> None:
+        self._store.async_delay_save(self._storage_data, 5)
+
+    async def async_flush(self):
+        await self._store.async_save(self._storage_data())
 
     def _trim(self) -> None:
         for day in sorted(self.history)[:-HISTORY_DAYS]:

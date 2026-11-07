@@ -27,6 +27,8 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     from .language import clear_translations
 
     clear_translations(rt.ai)
+    if timing := getattr(rt.ai, "voice_timings", None):
+        timing.clear()
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {}

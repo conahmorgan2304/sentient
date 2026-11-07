@@ -144,11 +144,14 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .language import language_prompt
 
         prompt = (user_input.extra_system_prompt or "") + "\n" + language_prompt(self.hass, self._options())
-        return await conversation.async_converse(
-            self.hass, user_input.text, user_input.conversation_id, user_input.context,
-            language=user_input.language, agent_id=agent_id, device_id=user_input.device_id,
-            satellite_id=user_input.satellite_id, extra_system_prompt=prompt,
-        )
+        from .voice_timing import measure
+
+        with measure('backup_agent' if agent_id == self.backup_agent else 'main_agent'):
+            return await conversation.async_converse(
+                self.hass, user_input.text, user_input.conversation_id, user_input.context,
+                language=user_input.language, agent_id=agent_id, device_id=user_input.device_id,
+                satellite_id=user_input.satellite_id, extra_system_prompt=prompt,
+            )
 
     def _guarded_configuration(self) -> bool:
         """Fail closed for unknown agents or combined/unrestricted control APIs."""
@@ -186,8 +189,6 @@ class BackedUpAgent(conversation.ConversationEntity):
     def _record(self, user_input, session, result):
         rt = self._entry.runtime_data
         rt.sessions.record(session, user_input.text, result, self._guest())
-        if not self._guest() and (checks := getattr(rt, "voice_checks", None)) is not None:
-            checks.observe(user_input, result)
 
     def _guest(self):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))
@@ -293,6 +294,31 @@ class BackedUpAgent(conversation.ConversationEntity):
                                                continue_conversation=False)
 
     async def async_process(self, user_input):
+        """Observe only the final response, including translated and early-exit replies."""
+        from contextlib import nullcontext
+        from .voice_timing import VoiceTimings
+
+        rt = self._entry.runtime_data
+        checks = getattr(rt, 'voice_checks', None)
+        check_generation = getattr(checks, 'generation', None)
+        if self._options().get('voice_timing_diagnostics') and not self._guest():
+            if not isinstance(getattr(rt.ai, 'voice_timings', None), VoiceTimings):
+                rt.ai.voice_timings = VoiceTimings(self.hass)
+            manager = rt.ai.voice_timings.turn(allowed=lambda: bool(self._options().get('voice_timing_diagnostics')) and not self._guest())
+        else:
+            manager = nullcontext(None)
+        with manager as trace:
+            result = await self._async_process_impl(user_input)
+            if trace is not None:
+                trace['listen'] = result.continue_conversation
+                trace['outcome'] = 'error_reply' if result.response.response_type == intent.IntentResponseType.ERROR else 'completed'
+                if self._guest() or not self._options().get('voice_timing_diagnostics'):
+                    rt.ai.voice_timings.clear()
+            if not self._guest() and checks is not None and checks.generation == check_generation:
+                checks.observe(user_input, result)
+            return result
+
+    async def _async_process_impl(self, user_input):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
         from homeassistant.util import dt as dt_util
 

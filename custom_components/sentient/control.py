@@ -204,6 +204,12 @@ class Control:
             return await self._execute(session, actions, context)
 
     async def _execute(self, session, actions, context, expected=None):
+        from .voice_timing import measure
+
+        with measure("guarded_actions"):
+            return await self._execute_timed(session, actions, context, expected)
+
+    async def _execute_timed(self, session, actions, context, expected=None):
         try:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
