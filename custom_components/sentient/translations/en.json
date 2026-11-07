@@ -147,7 +147,8 @@
           "update_checker": "Check for Sentient updates",
           "contextual_followups": "Connected follow-ups and corrections",
           "conversation_recovery": "Conversation cancellation and cautious recovery",
-          "speech_failure_notification": "Notify about speaker delivery failures"
+          "speech_failure_notification": "Notify about speaker delivery failures",
+          "recent_followup_context": "Short follow-ups after a fresh wake word"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -273,7 +274,8 @@
           "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
           "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context.",
           "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling.",
-          "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed."
+          "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed.",
+          "recent_followup_context": "Use a recently completed subject after a fresh wake word on the same speaker and user. Requires conversation sessions and contextual follow-ups. Uses the session timeout; never restores confirmation or listening. Off by default. Ending or forgetting clears context."
         }
       }
     },
@@ -524,7 +526,8 @@
           "voice_timing_diagnostics": "Voice response timing diagnostics",
           "specific_clarification": "Specific device and value questions",
           "action_recovery": "Device results and cautious recovery",
-          "speech_failure_notification": "Notify about speaker delivery failures"
+          "speech_failure_notification": "Notify about speaker delivery failures",
+          "recent_followup_context": "Short follow-ups after a fresh wake word"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -746,7 +749,8 @@
           "voice_timing_diagnostics": "Keep the last 20 voice response timings in memory, without transcripts or device/user IDs. Show agent, tool, translation and announcement timings in Mind. Stages can overlap; microphone capture and final pipeline playback are not measured. Off by default; Settings changes and forgetting clear the history.",
           "specific_clarification": "Requires Conversation sessions. Offer named device choices and recognise exact names, English ordinals, both/all, and simple temperatures locally. One retry, then stop rather than repeat. Selection never confirms an action. Off by default; disabling clears pending choices. Use guarded control for enforced action restrictions.",
           "action_recovery": "Requires Conversation sessions and guarded control for device results and retries. Give named partial results and inspect the last guarded request when you say that did not work. Only actions never dispatched can be offered again, with fresh confirmation. Uncertain or successful actions are not replayed. Off by default; records expire after two minutes and clear on Settings changes or forgetting.",
-          "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed."
+          "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed.",
+          "recent_followup_context": "Use a recently completed subject after a fresh wake word on the same speaker and user. Requires conversation sessions and contextual follow-ups. Uses the session timeout; never restores confirmation or listening. Off by default. Ending or forgetting clears context."
         }
       },
       "memories": {

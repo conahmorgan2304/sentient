@@ -429,6 +429,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("speech_failure_notification", **d("speech_failure_notification", False)): selector.BooleanSelector(),
             vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
             vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
+            vol.Required("recent_followup_context", **d("recent_followup_context", False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),
             vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),

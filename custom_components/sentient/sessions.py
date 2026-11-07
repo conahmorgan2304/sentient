@@ -312,6 +312,12 @@ class Sessions:
         return choice
 
     def close(self, session):
+        if self.options.get('recent_followup_context'):
+            for other in self.items.values():
+                if other is not session and other.owner == session.owner:
+                    other.goal = other.topic = ''
+                    other.entities.clear()
+                    other.last_action = None
         self.memory.discard(session)
         session.resume_choices.clear()
         session.active = False
