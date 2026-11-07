@@ -520,7 +520,8 @@
           "voice_language": "Speech and conversation language",
           "remember_language_phrases": "Remember common language phrases",
           "voice_timing_diagnostics": "Voice response timing diagnostics",
-          "specific_clarification": "Specific device and value questions"
+          "specific_clarification": "Specific device and value questions",
+          "action_recovery": "Device results and cautious recovery"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -740,7 +741,8 @@
           "voice_language": "Use auto for Home Assistant’s language, or a language code such as es, de or pt-BR. Requires the speech language option. Your Assist speech recognition and TTS voice must also support this language; this does not reconfigure them.",
           "remember_language_phrases": "Requires both speech language options. Save only the generic phrase pack across restarts and unrelated Settings changes, never personal announcements. Off by default. Disabling, changing language/provider, or forgetting data clears it.",
           "voice_timing_diagnostics": "Keep the last 20 voice response timings in memory, without transcripts or device/user IDs. Show agent, tool, translation and announcement timings in Mind. Stages can overlap; microphone capture and final pipeline playback are not measured. Off by default; Settings changes and forgetting clear the history.",
-          "specific_clarification": "Requires Conversation sessions. Offer named device choices and recognise exact names, English ordinals, both/all, and simple temperatures locally. One retry, then stop rather than repeat. Selection never confirms an action. Off by default; disabling clears pending choices. Use guarded control for enforced action restrictions."
+          "specific_clarification": "Requires Conversation sessions. Offer named device choices and recognise exact names, English ordinals, both/all, and simple temperatures locally. One retry, then stop rather than repeat. Selection never confirms an action. Off by default; disabling clears pending choices. Use guarded control for enforced action restrictions.",
+          "action_recovery": "Requires Conversation sessions and guarded control for device results and retries. Give named partial results and inspect the last guarded request when you say that did not work. Only actions never dispatched can be offered again, with fresh confirmation. Uncertain or successful actions are not replayed. Off by default; records expire after two minutes and clear on Settings changes or forgetting."
         }
       },
       "memories": {

@@ -465,7 +465,8 @@
           "voice_language": "Langue de la voix et des conversations",
           "remember_language_phrases": "Mémoriser les phrases courantes traduites",
           "voice_timing_diagnostics": "Diagnostic du temps de réponse vocale",
-          "specific_clarification": "Questions précises sur les appareils et les valeurs"
+          "specific_clarification": "Questions précises sur les appareils et les valeurs",
+          "action_recovery": "Résultats des appareils et récupération prudente"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -666,7 +667,8 @@
           "voice_language": "Choisissez auto pour la langue de Home Assistant, ou un code comme es, de ou pt-BR. Nécessite la traduction des phrases intégrées. La reconnaissance vocale et la voix TTS doivent également prendre en charge cette langue ; ce réglage ne reconfigure pas votre pipeline.",
           "remember_language_phrases": "Nécessite les deux options de langue. Enregistre uniquement les phrases génériques après un redémarrage, jamais les annonces personnelles. Désactivé par défaut. La désactivation, un changement de langue ou de fournisseur, ou l’oubli des données efface ces phrases.",
           "voice_timing_diagnostics": "Conserve en mémoire les 20 derniers temps de réponse, sans transcription ni identifiant personnel. Affiche les étapes dans Mind. Les durées peuvent se chevaucher ; le microphone et la lecture finale ne sont pas mesurés. Désactivé par défaut ; les changements de réglages et l’oubli effacent cet historique.",
-          "specific_clarification": "Nécessite les sessions de conversation. Propose des appareils nommés et reconnaît localement leurs noms exacts, les numéros, les ordinaux anglais et les températures simples. Une nouvelle tentative, puis arrêt des questions répétées. Un choix ne confirme jamais une action. Désactivé par défaut ; la désactivation efface les choix en attente. Utilisez le contrôle protégé pour imposer les restrictions."
+          "specific_clarification": "Nécessite les sessions de conversation. Propose des appareils nommés et reconnaît localement leurs noms exacts, les numéros, les ordinaux anglais et les températures simples. Une nouvelle tentative, puis arrêt des questions répétées. Un choix ne confirme jamais une action. Désactivé par défaut ; la désactivation efface les choix en attente. Utilisez le contrôle protégé pour imposer les restrictions.",
+          "action_recovery": "Nécessite les sessions et le contrôle protégé. Nomme les résultats partiels et vérifie les états actuels après une demande de récupération. Seules les actions jamais envoyées peuvent être proposées à nouveau, avec une nouvelle confirmation. Les actions réussies ou incertaines ne sont pas répétées. Désactivé par défaut ; historique temporaire de deux minutes, effacé par les réglages ou l’oubli."
         }
       },
       "memories": {
