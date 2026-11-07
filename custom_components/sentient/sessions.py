@@ -131,6 +131,7 @@ class VoiceSession:
     undo: list[dict] = field(default_factory=list)
     undo_turn: int = -1
     last_action: dict | None = None
+    recovery_record: dict | None = None
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     running: bool = False
     authorised: bool = False
@@ -325,6 +326,7 @@ class Sessions:
         session.follow_up_context = None
         session.clarification = None
         session.clarification_resolution = None
+        session.recovery_record = None
         session.investigation = None
 
     def rekey(self, session):

@@ -57,6 +57,22 @@ class Control:
     def __init__(self, hass, options, timeline):
         self.hass, self.options, self.timeline = hass, options, timeline
         self._lock = asyncio.Lock()
+        self.recovery_records = {}
+        self.recovery_generation = 0
+        self.recovery_turns = {}
+        self.recovery_serial = 0
+
+    def clear_recovery(self):
+        self.recovery_generation += 1
+        self.recovery_records.clear()
+        self.recovery_turns.clear()
+
+    def invalidate_recovery(self, owner):
+        self.recovery_serial += 1
+        self.recovery_turns[owner] = self.recovery_serial
+        self.recovery_records.pop(owner, None)
+        while len(self.recovery_turns) > 100:
+            self.recovery_turns.pop(next(iter(self.recovery_turns)))
 
     async def validate(self, actions, context):
         if not isinstance(actions, list) or not 1 <= len(actions) <= 20:
@@ -189,6 +205,7 @@ class Control:
 
     async def confirm(self, session, context):
         pending, session.pending = session.pending, None  # consume before awaiting; never execute twice
+        recovery_stamp = (self.recovery_generation, self.recovery_turns.get(session.owner))
         if not pending or pending['turn'] >= session.turn or pending['expires'] < dt_util.utcnow():
             return {'error': 'That confirmation has expired; please ask again'}
         if not session.authorised or session.closed:
@@ -201,28 +218,58 @@ class Control:
             for eid, before in pending['before'].items():
                 if snapshot(self.hass.states.get(eid)) != before:
                     return {'error': 'A device changed while waiting; please ask again'}
-            return await self._execute(session, pending['actions'], context, expected=pending['before'])
+            return await self._execute(session, pending['actions'], context, expected=pending['before'], recovery_stamp=recovery_stamp)
 
     async def execute(self, session, actions, context):
+        recovery_stamp = (self.recovery_generation, self.recovery_turns.get(session.owner))
         async with self._lock:
-            return await self._execute(session, actions, context)
+            return await self._execute(session, actions, context, recovery_stamp=recovery_stamp)
 
-    async def _execute(self, session, actions, context, expected=None):
+    async def _execute(self, session, actions, context, expected=None, recovery_stamp=None):
         from .voice_timing import measure
 
-        with measure("guarded_actions"):
-            return await self._execute_timed(session, actions, context, expected)
+        generation, request_token = recovery_stamp or (self.recovery_generation, self.recovery_turns.get(session.owner))
+        batch_turn = (session.id, session.turn, request_token)
+        session.recovery_record = None
+        result = None
+        try:
+            with measure("guarded_actions"):
+                result = await self._execute_timed(session, actions, context, expected)
+            return result
+        finally:
+            record = session.recovery_record
+            session.recovery_record = None
+            if record and generation == self.recovery_generation and self.recovery_turns.get(session.owner) == request_token and not session.closed and self.options.get('action_recovery'):
+                outcomes = {row['entity_id']: row for row in (result or {}).get('actions', [])}
+                for row in record['rows']:
+                    outcome = outcomes.get(row['action']['entity_id'])
+                    row['status'] = outcome['status'] if outcome else ('attempted' if row['dispatched'] else 'not_started')
+                previous = self.recovery_records.get(session.owner)
+                if previous and previous.get('batch_turn') == batch_turn:
+                    combined = {r['action']['entity_id']: r for r in previous['rows']}
+                    combined.update({r['action']['entity_id']: r for r in record['rows']})
+                    record['rows'] = list(combined.values())[-20:]
+                record['batch_turn'] = batch_turn
+                if result is not None:
+                    result['recovery_outcomes'] = [{'entity_id': r['action']['entity_id'], 'status': r['status'], 'dispatched': r['dispatched']} for r in record['rows']]
+                self.recovery_records[session.owner] = record
+                while len(self.recovery_records) > 20:
+                    self.recovery_records.pop(next(iter(self.recovery_records)))
 
     async def _execute_timed(self, session, actions, context, expected=None):
         try:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
             return {'error': str(err)}
+        if self.options.get('action_recovery') and self.options.get('conversation_sessions') and any(session.owner):
+            session.recovery_record = {'expires': dt_util.utcnow() + timedelta(minutes=2),
+                                      'rows': [{'action': deepcopy(a), 'status': 'not_started', 'dispatched': False} for a in actions]}
         if session.undo_turn != session.turn:
             session.undo = []
             session.undo_turn = session.turn
         outcomes = []
-        for a in actions:
+        for index, a in enumerate(actions):
+            dispatched = False
             eid = a['entity_id']
             data = {k: v for k, v in a.items() if k not in ('entity_id', 'action')}
             try:
@@ -235,6 +282,9 @@ class Control:
                 if expected is not None and before != expected[eid]:
                     outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'device changed since confirmation'})
                     break
+                dispatched = True
+                if session.recovery_record:
+                    session.recovery_record['rows'][index]['dispatched'] = True
                 async with asyncio.timeout(10):
                     await self.hass.services.async_call(eid.split('.')[0], a['action'], {'entity_id': eid, **data}, blocking=True,
                                                         context=context or Context())
@@ -254,8 +304,11 @@ class Control:
                     session.undo.append({'entity_id': eid, 'before': before, 'after': snapshot(state),
                                          'expires': dt_util.utcnow() + timedelta(minutes=5)})
             except (HomeAssistantError, TimeoutError, ValueError, TypeError) as err:
-                outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err)})
+                outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err), 'dispatched': dispatched})
                 break  # never replay a partly completed batch
+        if self.options.get('action_recovery'):
+            seen = {row['entity_id'] for row in outcomes}
+            outcomes.extend({'entity_id': a['entity_id'], 'status': 'not_started', 'reason': 'batch stopped before dispatch'} for a in actions if a['entity_id'] not in seen)
         result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(), 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),

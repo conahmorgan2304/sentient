@@ -687,6 +687,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     from .language import clear_translations
 
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
+    entry.runtime_data.control.clear_recovery()
     entry.runtime_data.ai.voice_timings.clear()
     await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -727,6 +728,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
                  and selected_language(hass, old) == selected_language(hass, options)
                  and old.get('ai_task_entity') == options.get('ai_task_entity'))
     clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
+    entry.runtime_data.control.clear_recovery()
     entry.runtime_data.ai.voice_timings.clear()
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations

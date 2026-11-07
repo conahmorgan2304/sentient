@@ -271,8 +271,11 @@ class BackedUpAgent(conversation.ConversationEntity):
         reply += "No earlier actions or confirmations have been resumed. What would you like to check next?"
         return self._reply(user_input, session, reply, True)
 
-    @staticmethod
-    def _action_text(result):
+    def _action_text(self, result):
+        if self._options().get("action_recovery") and result.get("actions") and not result.get("error"):
+            from .action_recovery import outcome_text
+
+            return outcome_text(self.hass, result)
         if result.get("error"):
             return result["error"]
         rows = result.get("actions", result.get("undo", []))
@@ -308,7 +311,11 @@ class BackedUpAgent(conversation.ConversationEntity):
         else:
             manager = nullcontext(None)
         with manager as trace:
-            result = await self._async_process_impl(user_input)
+            try:
+                result = await self._async_process_impl(user_input)
+            finally:
+                if self._guest():
+                    rt.control.clear_recovery()
             if trace is not None:
                 trace['listen'] = result.continue_conversation
                 trace['outcome'] = 'error_reply' if result.response.response_type == intent.IntentResponseType.ERROR else 'completed'
@@ -322,6 +329,15 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
         from homeassistant.util import dt as dt_util
 
+        from .action_recovery import requested as recovery_requested
+
+        recovery_control = getattr(self._entry.runtime_data, 'control', None)
+        if recovery_control is not None and self._options().get("action_recovery"):
+            owner = (user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+            if self._guest():
+                recovery_control.clear_recovery()
+            elif not recovery_requested(user_input.text):
+                recovery_control.invalidate_recovery(owner)
         minutes = min(float(self._options().get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
         speaker = user_input.satellite_id or user_input.device_id
         now = dt_util.utcnow()
@@ -478,6 +494,15 @@ class BackedUpAgent(conversation.ConversationEntity):
                     return self._reply(user_input, session,
                         "Guarded control needs a supported AI agent with only Sentient guarded selected under Control Home Assistant. "
                         "Use this Sentient with backup agent in your Assist pipeline.")
+                from .action_recovery import enabled as recovery_enabled, requested as recovery_requested, inspect as inspect_action
+
+                if recovery_enabled(opts) and recovery_requested(user_input.text):
+                    if self._guest():
+                        return self._reply(user_input, session, 'Action recovery is unavailable in guest mode.')
+                    result = await inspect_action(rt.control, session, user_input.context)
+                    session.question = result['text'] if result.get('listen') else ''
+                    session.listen_reason = 'action_recovery'
+                    return self._reply(user_input, session, result['text'], result.get('listen', False))
                 if UNDO.fullmatch(user_input.text.strip()):
                     session.pending = None
                     result = await rt.control.undo(session, user_input.context)
@@ -509,6 +534,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 if clarification_enabled(opts):
                     prompt += "\nUse sentient_clarify for ambiguous device choices or a missing temperature. Do not guess. When clarification_resolution is present, combine its original request with the selected detail and current readings. Selection is not permission: use the normal control and fresh confirmation path. If an earlier action happened, acknowledge it; never silently replay or undo it. For an English correction such as 'no, the bedroom', retain the action but resolve the new target."
 
+                prior_action_result = session.last_action
                 request = replace(user_input, conversation_id=session.id, extra_system_prompt=prompt)
                 if guarded:
                     # Never replay a partially executed request on an unrestricted fallback agent.
@@ -527,6 +553,10 @@ class BackedUpAgent(conversation.ConversationEntity):
                 if session.pending:
                     session.question = session.pending.get("question") or f"Shall I {session.pending['summary']}?"
                     return self._reply(user_input, session, session.question, True)
+                if opts.get('action_recovery') and session.last_action is not prior_action_result and session.last_action and session.last_action.get('actions'):
+                    from .action_recovery import outcome_text
+
+                    result.response.async_set_speech(outcome_text(self.hass, session.last_action))
                 if session.correction and result.response.response_type != intent.IntentResponseType.ERROR:
                     notice = rt.control.correction_notice(session)
                     if notice and (text := spoken_text(result.response)):

@@ -226,6 +226,7 @@ from .const import (
     CONF_FULL_VOLUME_SPEAKERS,
     CONF_TTS_ENTITY,
     CONF_REMEMBER_LANGUAGE_PHRASES,
+    CONF_ACTION_RECOVERY,
     CONF_SPECIFIC_CLARIFICATION,
     CONF_VOICE_TIMING_DIAGNOSTICS,
     CONF_AUTOMATIC_LANGUAGE,
@@ -415,6 +416,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_REMEMBER_LANGUAGE_PHRASES, **d(CONF_REMEMBER_LANGUAGE_PHRASES, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_TIMING_DIAGNOSTICS, **d(CONF_VOICE_TIMING_DIAGNOSTICS, False)): selector.BooleanSelector(),
             vol.Required(CONF_SPECIFIC_CLARIFICATION, **d(CONF_SPECIFIC_CLARIFICATION, False)): selector.BooleanSelector(),
+            vol.Required(CONF_ACTION_RECOVERY, **d(CONF_ACTION_RECOVERY, False)): selector.BooleanSelector(),
             vol.Optional(CONF_VOICE_LANGUAGE, **d(CONF_VOICE_LANGUAGE, "auto")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=["auto", "en", "es", "fr", "de", "pt", "it", "nl", "pl", "fi", "sv", "da", "nb", "tr", "ru", "uk", "ar", "hi", "bn", "zh", "ja", "ko", "id", "vi", "th", "he", "el", "cs", "ro", "hu"], custom_value=True)
             ),
