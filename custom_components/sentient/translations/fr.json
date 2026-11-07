@@ -462,7 +462,9 @@
           "update_checker": "Vérifier les mises à jour de Sentient",
           "conversation_recovery": "Annulation et reprise prudente des conversations",
           "automatic_language": "Prise en charge automatique des langues",
-          "voice_language": "Langue de la voix et des conversations"
+          "voice_language": "Langue de la voix et des conversations",
+          "remember_language_phrases": "Mémoriser les phrases courantes traduites",
+          "voice_timing_diagnostics": "Diagnostic du temps de réponse vocale"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -660,7 +662,9 @@
           "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
           "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut.",
           "automatic_language": "Nécessite la traduction des phrases intégrées. Prépare les phrases courantes, les fins de conversation et les libellés d’alerte avec votre IA existante. Utilise le budget IA et un cache en mémoire. Désactivé par défaut. La désactivation efface les phrases préparées. Les alertes urgentes n’attendent jamais l’IA ; les phrases générées ne donnent aucune autorisation.",
-          "voice_language": "Choisissez auto pour la langue de Home Assistant, ou un code comme es, de ou pt-BR. Nécessite la traduction des phrases intégrées. La reconnaissance vocale et la voix TTS doivent également prendre en charge cette langue ; ce réglage ne reconfigure pas votre pipeline."
+          "voice_language": "Choisissez auto pour la langue de Home Assistant, ou un code comme es, de ou pt-BR. Nécessite la traduction des phrases intégrées. La reconnaissance vocale et la voix TTS doivent également prendre en charge cette langue ; ce réglage ne reconfigure pas votre pipeline.",
+          "remember_language_phrases": "Nécessite les deux options de langue. Enregistre uniquement les phrases génériques après un redémarrage, jamais les annonces personnelles. Désactivé par défaut. La désactivation, un changement de langue ou de fournisseur, ou l’oubli des données efface ces phrases.",
+          "voice_timing_diagnostics": "Conserve en mémoire les 20 derniers temps de réponse, sans transcription ni identifiant personnel. Affiche les étapes dans Mind. Les durées peuvent se chevaucher ; le microphone et la lecture finale ne sont pas mesurés. Désactivé par défaut ; les changements de réglages et l’oubli effacent cet historique."
         }
       },
       "memories": {

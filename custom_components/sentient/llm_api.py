@@ -136,7 +136,10 @@ class _Tool(llm.Tool):
             try:
                 if self.acts and (attempt := speech_attempt.get()) is not None:
                     attempt['action_started'] = True
-                result = await inner(self, hass, tool_input, llm_context)
+                from .voice_timing import measure
+
+                with measure("sentient_tools"):
+                    result = await inner(self, hass, tool_input, llm_context)
                 if (rt := _runtime(hass)) is not None and getattr(rt, "usage", None) is not None:
                     rt.usage.tool(self.name)
                 if self.reads_outside:
