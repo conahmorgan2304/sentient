@@ -22,6 +22,8 @@ def classify(text):
     text = text.strip().replace('’', "'")
     if _ADJUST.search(text):
         return 'adjustment'
+    if re.fullmatch(r'(?:the )?other (?:one|light|device|room)[.!? ]*', text, re.I):
+        return 'correction'
     if _RETARGET.search(text):
         return 'correction'
     if _REFERENCE.fullmatch(text):
@@ -86,3 +88,51 @@ INSTRUCTION = (
     'For a correction, explain any previous action that already happened and offer available undo; do not repeat '
     'or undo it automatically. Keep completed commands brief and preserve the configured listening policy.'
 )
+
+
+async def restore_recent(hass, sessions, session, text, context, allowed):
+    """Copy discussion evidence into a fresh turn, never the previous authority."""
+    from copy import deepcopy
+    from datetime import timedelta
+    from homeassistant.util import dt as dt_util
+
+    def enabled():
+        return (allowed() and sessions.options.get('recent_followup_context')
+                and sessions.options.get('conversation_sessions')
+                and sessions.options.get(CONF_CONTEXTUAL_FOLLOWUPS))
+
+    if not enabled() or session.turn or not any(session.owner) or not classify(text):
+        return
+    candidates = [s for s in sessions.items.values() if s is not session and s.owner == session.owner]
+    if not candidates:
+        return
+    previous = max(candidates, key=lambda s: s.touched)
+    touched = previous.touched
+    def valid():
+        return (enabled() and not session.closed and not session.forgotten and not previous.closed
+                and not previous.forgotten and not previous.running
+                and previous.touched == touched and previous.task_state == 'completed'
+                and not previous.pending and not previous.waiting
+                and touched >= dt_util.utcnow() - timedelta(seconds=sessions.seconds)
+                and any(s is previous for s in sessions.items.values())
+                and not any(s is not session and s is not previous and s.owner == session.owner
+                            and s.touched >= touched for s in sessions.items.values()))
+    if not valid():
+        return
+    user = await hass.auth.async_get_user(context.user_id) if context.user_id else None
+    entities = set(previous.entities)
+    entities.update(r['entity_id'] for r in (previous.last_action or {}).get('actions', []))
+    if context.user_id and (user is None or not user.is_active):
+        return
+    if any(not async_should_expose(hass, 'conversation', eid)
+           or (user and not user.permissions.check_entity(eid, POLICY_READ)) for eid in entities):
+        return
+    if not valid():
+        return
+    session.goal, session.topic = previous.goal, previous.topic
+    session.entities = list(previous.entities)
+    session.last_action = deepcopy(previous.last_action)
+    # Source evidence is consumed: it cannot reappear after a later unrelated turn.
+    previous.goal = previous.topic = ''
+    previous.entities.clear()
+    previous.last_action = None

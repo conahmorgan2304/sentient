@@ -464,6 +464,9 @@ class BackedUpAgent(conversation.ConversationEntity):
             session.running = True
             token = current_session.set(session)
             try:
+                from .followups import restore_recent
+
+                await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
                 rt.sessions.begin(session, user_input.text, self._reply_language(user_input))
                 if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
                     rt.sessions.close(session)
