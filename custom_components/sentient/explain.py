@@ -31,6 +31,9 @@ def _said_because(rt: Any, what: str, words: set[str], hours: float) -> list[dic
     """What the house said or held back that matches, each with the reason it gave at the time."""
     out = []
     spoken = [i for i in rt.timeline.since(hours, None, 400) if i["kind"] in ("said", "held")]
+    # A suppressed event cannot explain why an announcement was spoken (or vice versa).
+    negative = bool(re.search(r"\b(?:didn't|didnt|did not|wasn't|was not)\b", what.replace('’', "'"), re.I))
+    spoken = [i for i in spoken if i['kind'] == ('held' if negative else 'said')]
     words = {w for w in words if not _ABOUT_SPEECH.fullmatch(w) and w not in ("you", "your", "did", "why")}
     if words:
         found = [i for i in spoken
@@ -40,6 +43,7 @@ def _said_because(rt: Any, what: str, words: set[str], hours: float) -> list[dic
     for item in found[:3]:
         t = dt_util.as_local(dt_util.parse_datetime(item["time"]))
         row = {"time": f"{t:%H:%M}", "text": item.get("text", ""),
+               "kind": item["kind"], "recorded_at": item["time"],
                "why": item.get("why") or "no reason was recorded (said before reasons were kept)"}
         if item["kind"] == "held":
             row["held_back"] = item.get("detail") or "held back"
