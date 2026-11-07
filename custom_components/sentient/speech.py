@@ -407,14 +407,14 @@ class SpeechRouter:
             return self._held("duplicate", text, source)
         return None
 
-    def _remember_said(self, text: str) -> None:
+    def _remember_said(self, text: str, spoken: str | None = None) -> None:
         now = dt_util.utcnow()
         key = _remark_key(text)
         self._remarks = {k: v for k, v in getattr(self, "_remarks", {}).items() if now - v < timedelta(hours=24)}
         self._remarks[key] = now
         self._recent = {k: v for k, v in self._recent.items() if now - v < _DUPLICATE_WINDOW}
         self._recent[text.lower()] = now
-        self._said.appendleft((now, text))
+        self._said.appendleft((now, spoken if spoken is not None else text))
 
     async def async_say(
         self,
@@ -422,6 +422,7 @@ class SpeechRouter:
         priority: str = "normal",
         targets: list[str] | None = None,
         source: str | None = None,
+        *, _spoken: str | None = None,
     ) -> SpeechResult:
         generation = self._privacy_generation
         text = clean_message(message, self.banned)
@@ -439,7 +440,7 @@ class SpeechRouter:
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
-        spoken = await async_in_house_language(
+        spoken = _spoken if _spoken is not None else await async_in_house_language(
             self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT
         )
 
@@ -460,7 +461,7 @@ class SpeechRouter:
             async with delivered(self.hass, speakers, volume, self.duck_level):
                 if generation != self._privacy_generation:
                     return SpeechResult(False, "cancelled", "", [])
-                receipts = await self._speak(spoken, speakers)
+                receipts = await self._speak(spoken, speakers, original=text)
             # Compatibility for injected/test delivery backends that return no receipts.
             receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
             accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
@@ -468,7 +469,7 @@ class SpeechRouter:
                 return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
-            self._remember_said(text)
+            self._remember_said(text, spoken)
         speakers = accepted
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
@@ -587,7 +588,7 @@ class SpeechRouter:
             receipts = await self._speak(READING_SAMPLE, [speaker], chime=False)
         return {"ok": any(r["status"] == "accepted" for r in receipts or []), "speaker": speaker}
 
-    async def _speak(self, text: str, speakers: list[str], chime: bool | None = None) -> list[dict[str, Any]]:
+    async def _speak(self, text: str, speakers: list[str], chime: bool | None = None, *, original: str | None = None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
         generation = self._privacy_generation
         chime = self.chime if chime is None else chime
@@ -623,7 +624,7 @@ class SpeechRouter:
                     await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
                 row['status'] = 'accepted'
                 if generation == self._privacy_generation:
-                    self._delivered_recent[(text.lower(), eid)] = dt_util.utcnow()
+                    self._delivered_recent[((original if original is not None else text).lower(), eid)] = dt_util.utcnow()
             except asyncio.CancelledError:
                 row.update(status='cancelled', error='Delivery interrupted; playback outcome is unknown')
                 raise
@@ -723,17 +724,19 @@ class SpeechRouter:
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
-        spoken = await async_in_house_language(self.hass, self.options, text, urgent=priority == PRIORITY_URGENT)
+        spoken = await async_in_house_language(self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT)
+        if generation != self._privacy_generation:
+            return SpeechResult(False, "cancelled", "", [])
         if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
             # nobody near a speaker: ask on the phones, with Yes / No buttons
             if await self.phone.async_ask(spoken, on_answer):
                 if generation != self._privacy_generation:
-                    return SpeechResult(True, "asked_phone", text, [])
+                    return SpeechResult(True, "asked_phone", spoken, [])
                 self.hass.bus.async_fire(EVENT_SPOKE, {"message": spoken, "speakers": [], "priority": priority, "source": source,
                                                        "question": True, "phone": True, "why": reason_for(source)})
-                return SpeechResult(True, "asked_phone", text, [])
+                return SpeechResult(True, "asked_phone", spoken, [])
         if not listening:
-            return await self.async_say(text, priority, candidates, source)
+            return await self.async_say(text, priority, candidates, source, _spoken=spoken)
         speaker = listening[0]
         prompt = (
             f'You have just asked the person: "{spoken}". Handle their reply: if they say yes, '
@@ -759,16 +762,16 @@ class SpeechRouter:
                 blocking=True,
             )
             if generation != self._privacy_generation:
-                return SpeechResult(True, "asked", text, [speaker])
-            self._remember_said(text)
+                return SpeechResult(True, "asked", spoken, [speaker])
+            self._remember_said(text, spoken)
         if on_answer is not None:
-            self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": text}
+            self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": spoken}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": spoken, "speakers": [speaker], "priority": priority, "source": source, "question": True,
              "why": reason_for(source)},
         )
-        return SpeechResult(True, "asked", text, [speaker])
+        return SpeechResult(True, "asked", spoken, [speaker])
 
     async def async_take_answer(self, satellite: str | None, text: str) -> str | None:
         """If this satellite was just asked one of the house's questions and the reply is a plain answer,
@@ -784,7 +787,8 @@ class SpeechRouter:
         from .sessions import is_conversation_end
 
         self._questions.pop(satellite, None)  # a correction or topic change also cancels the old request
-        kind = "no" if is_conversation_end(text, question["asked"], self.options.get(CONF_PERSONA) or DEFAULT_PERSONA) else classify(text)
+        lang = self.hass.config.language if self.options.get("speak_house_language") else None
+        kind = "no" if is_conversation_end(text, question["asked"], self.options.get(CONF_PERSONA) or DEFAULT_PERSONA, language=lang) else classify(text, language=lang)
         if kind is None:
             return None
         return await question["on_answer"](kind)

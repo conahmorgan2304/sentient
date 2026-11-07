@@ -8,6 +8,7 @@ from homeassistant.util import dt as dt_util
 
 from .outside import _turn
 from .sessions import YES, normalise
+from .voice_locale import answer
 
 
 def approved(rt, context, schedule, confirmed):
@@ -28,7 +29,8 @@ def approved(rt, context, schedule, confirmed):
             return False
         previous = pending.pop(key, None)
         return bool(previous and number == previous["turn"] + 1
-                    and YES.fullmatch(normalise(text)) and previous["schedule"] == schedule)
+                    and (YES.fullmatch(normalise(text)) or answer(text, context.language if rt.options.get("speak_house_language") else None) == "yes")
+                    and previous["schedule"] == schedule)
     pending[key] = {"schedule": deepcopy(schedule), "turn": number, "until": now + timedelta(minutes=2)}
     while len(pending) > 100:
         pending.pop(next(iter(pending)))

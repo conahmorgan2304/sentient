@@ -9,7 +9,7 @@ is put into that language by the AI task just before it's said:
 * each sentence is translated once and kept, so a sentence the house says every day is free after
   the first time;
 * there is a short time limit, and the English is said if the AI is slow, down or today's AI limit
-  is used up (safety alerts are always allowed, and only wait a few seconds).
+  is used up; urgent alerts never wait for AI and use a fixed translation, cache or English.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PURPOSE = "speech language"
 TIMEOUT = 10  # seconds
-URGENT_TIMEOUT = 4  # a safety alert must not wait long
+
 KEEP = 300  # translated sentences kept
 
 # English words that are not also common short words in other languages ("on" is Finnish,
@@ -39,12 +39,25 @@ from has have had been being are were would should could can not yes please just
 back welcome good morning evening night finished done ready running left closed door window minutes
 minute hours hour today tomorrow tonight reminder someone nobody everyone something nothing anything
 outside inside house turned off put take time earlier while out about after before because what
-when where who why how which been started stopped might already
+when where who why how which been started stopped might already smoke detected monoxide gas leak alarm alert
 """.split())
 _CONTRACTION = re.compile(r"[a-z]'(s|t|re|ve|ll|m|d)\b", re.IGNORECASE)
 _WORD = re.compile(r"[^\W\d_]+(?:'[^\W\d_]+)?", re.UNICODE)
 
-_kept: OrderedDict[tuple[str, str], str] = OrderedDict()
+class TranslationCache:
+    """Owned by the runtime AI gateway, never shared across Home Assistant instances."""
+    def __init__(self):
+        self.kept = OrderedDict()
+        self.generation = 0
+
+    def clear(self):
+        self.generation += 1
+        self.kept.clear()
+
+
+def clear_translations(ai):
+    if (cache := getattr(ai, 'speech_language_cache', None)) is not None:
+        cache.clear()
 
 
 def looks_english(text: str) -> bool:
@@ -70,13 +83,25 @@ async def async_in_house_language(
     """What to actually say: *text* in the house's language, or *text* itself when that can't be done."""
     if not text or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
         return text
-    if (lang := house_language(hass)) is None or not looks_english(text):
+    if (lang := house_language(hass)) is None:
         return text
+    owner = gate(hass)
+    if owner is None:
+        return text
+    if (cache := getattr(owner, 'speech_language_cache', None)) is None:
+        cache = owner.speech_language_cache = TranslationCache()
+    generation = cache.generation
     key = (lang, text)
-    if (kept := _kept.get(key)) is not None:
-        _kept.move_to_end(key)
+    if urgent:
+        from .voice_locale import safety_sentence
+
+        return safety_sentence(text, lang) or cache.kept.get(key) or text
+    if not looks_english(text):
+        return text
+    if (kept := cache.kept.get(key)) is not None:
+        cache.kept.move_to_end(key)
         return kept
-    if (g := gate(hass)) is not None and not g.spend(PURPOSE, force=urgent):
+    if not owner.spend(PURPOSE):
         return text  # today's AI limit is used up: the English it is
     data: dict[str, Any] = {
         "task_name": "Sentient: speech language",
@@ -91,14 +116,16 @@ async def async_in_house_language(
     if ai := options.get(CONF_AI_TASK_ENTITY):
         data["entity_id"] = ai
     try:
-        response = await async_generate(hass, data, URGENT_TIMEOUT if urgent else TIMEOUT)
+        response = await async_generate(hass, data, TIMEOUT)
     except AIUnavailable as err:
         _LOGGER.debug("Said in English, the AI couldn't translate it: %s", err)
         return text
     out = " ".join(str((response or {}).get("data") or "").split()).strip().strip("\"'«»“”")
     if not out or len(out) > 3 * len(text) + 40:
         return text
-    _kept[key] = out
-    while len(_kept) > KEEP:
-        _kept.popitem(last=False)
+    if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
+        return text  # disabling/forgetting while the AI runs must not recreate deleted data
+    cache.kept[key] = out
+    while len(cache.kept) > KEEP:
+        cache.kept.popitem(last=False)
     return out

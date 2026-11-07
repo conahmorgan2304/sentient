@@ -145,7 +145,8 @@
           "speech_delivery_history": "Speaker delivery history",
           "alexa_tts_only": "Use TTS only on Alexa",
           "update_checker": "Check for Sentient updates",
-          "contextual_followups": "Connected follow-ups and corrections"
+          "contextual_followups": "Connected follow-ups and corrections",
+          "conversation_recovery": "Conversation cancellation and cautious recovery"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -269,7 +270,8 @@
           "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
           "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged.",
           "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
-          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context."
+          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context.",
+          "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling."
         }
       }
     },
@@ -512,7 +514,8 @@
           "speech_delivery_history": "Speaker delivery history",
           "alexa_tts_only": "Use TTS only on Alexa",
           "update_checker": "Check for Sentient updates",
-          "contextual_followups": "Connected follow-ups and corrections"
+          "contextual_followups": "Connected follow-ups and corrections",
+          "conversation_recovery": "Conversation cancellation and cautious recovery"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -679,7 +682,7 @@
           "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
           "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
           "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
-          "speak_house_language": "Sentient's own plain sentences (an appliance finishing, a reminder, a safety alert) are written in English. With this on, and Home Assistant set to another language, the AI task puts each English sentence into that language just before it's said. Each sentence is translated once and kept; the AI's own remarks are left alone. If the AI is slow, down or today's AI limit is used up, the English is said.",
+          "speak_house_language": "Translate ordinary English sentences with the existing AI task. Urgent alerts use fixed French/Finnish translations, cached text or immediate English, never waiting for AI. The temporary cache is cleared on Settings changes, forgetting data and unload. Simple French/Finnish yes/no replies and conversation endings are recognised; this is not full multilingual conversation support.",
           "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
           "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
           "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
@@ -726,7 +729,8 @@
           "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
           "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged.",
           "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
-          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context."
+          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context.",
+          "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling."
         }
       },
       "memories": {

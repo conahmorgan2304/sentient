@@ -24,6 +24,9 @@ def _after(stamp: Any, since) -> bool:
 
 
 def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
+    from .language import clear_translations
+
+    clear_translations(rt.ai)
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {}
