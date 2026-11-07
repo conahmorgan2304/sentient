@@ -147,3 +147,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.93.0: optional specific device/value clarification, local exact selections, bounded retries, preserved correction history and revalidated choices with no restored action permission.
 
 - [x] 0.94.0: optional named partial guarded results, fresh-state recovery for the last speaker/user request, and separate-turn confirmation for never-dispatched actions without replaying uncertain or successful ones.
+
+- [x] 0.95.0 — Per-speaker delivery stages and timings, with optional content-free failure notifications.

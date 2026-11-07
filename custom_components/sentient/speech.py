@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 import logging
 import math
+from time import monotonic
 import re
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -602,6 +603,8 @@ class SpeechRouter:
                       'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
         async def send(eid):
             row = rows[eid]
+            started = monotonic()
+            row.update(stage='routing', dispatched=False, playback='unverified')
             row['status'] = 'failed'
             row.pop('error', None)
             try:
@@ -619,6 +622,7 @@ class SpeechRouter:
                 else:
                     row.update(status='unroutable', error='No usable announcement or TTS service is configured')
                     return row
+                row['service'] = f'{domain}.{service}'
                 if not self.hass.services.has_service(domain, service):
                     row.update(status='unroutable', error=f'{domain}.{service} is unavailable')
                     return row
@@ -626,9 +630,10 @@ class SpeechRouter:
                 if state is not None and state.state == 'unavailable':
                     row.update(status='unavailable', error='Speaker reports unavailable')
                     return row
+                row.update(stage='service_call', dispatched=True)
                 async with asyncio.timeout(DELIVERY_TIMEOUT):
                     await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
-                row['status'] = 'accepted'
+                row.update(status='accepted', stage='service_completed')
                 if generation == self._privacy_generation:
                     self._delivered_recent[((original if original is not None else text).lower(), eid)] = dt_util.utcnow()
             except asyncio.CancelledError:
@@ -638,6 +643,8 @@ class SpeechRouter:
                 row.update(status='timed_out', error='Delivery timed out; playback outcome is unknown')
             except Exception as err:  # one failed destination must not cancel another
                 row['error'] = (str(err) or type(err).__name__)[:200]
+            finally:
+                row['duration_ms'] = round((monotonic() - started) * 1000)
             return row
 
         try:
@@ -648,6 +655,15 @@ class SpeechRouter:
             raise
         if generation == self._privacy_generation:
             self._record_deliveries(text, receipts)
+            if (self.options.get('speech_failure_notification', False) and not self.guest_mode
+                    and any(r['status'] != 'accepted' for r in receipts)):
+                from homeassistant.components import persistent_notification
+
+                persistent_notification.async_create(
+                    self.hass, 'Speaker delivery was not confirmed for: '
+                    + ', '.join(r['entity_id'] for r in receipts if r['status'] != 'accepted')
+                    + '. Playback may still occur; speech has not been retried.',
+                    title='Sentient speaker delivery', notification_id='sentient_speech_failure')
         if not any(r['status'] == 'accepted' for r in receipts):
             raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
         if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
