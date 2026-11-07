@@ -144,7 +144,8 @@
           "live_voice_check": "Live voice check",
           "speech_delivery_history": "Speaker delivery history",
           "alexa_tts_only": "Use TTS only on Alexa",
-          "update_checker": "Check for Sentient updates"
+          "update_checker": "Check for Sentient updates",
+          "contextual_followups": "Connected follow-ups and corrections"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -267,7 +268,8 @@
           "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
           "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
           "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged.",
-          "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks."
+          "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
+          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context."
         }
       }
     },
@@ -508,7 +510,8 @@
           "live_voice_check": "Live voice check",
           "speech_delivery_history": "Speaker delivery history",
           "alexa_tts_only": "Use TTS only on Alexa",
-          "update_checker": "Check for Sentient updates"
+          "update_checker": "Check for Sentient updates",
+          "contextual_followups": "Connected follow-ups and corrections"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -720,7 +723,8 @@
           "live_voice_check": "Show the user-started voice check in the Mind panel. Turning this off clears the current check and stops recording check turns. Requires Conversation sessions to start a check.",
           "speech_delivery_history": "Keep recent per-speaker announcement results in the Mind panel. Turning this off clears this history. Speaker failure detection and safe retry handling remain active.",
           "alexa_tts_only": "Use plain TTS instead of Alexa announcements if announcements are unreliable. This bypasses Alexa announcement chimes; other speakers are unchanged.",
-          "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks."
+          "update_checker": "Check GitHub for stable releases when enabled, at startup and every six hours. No AI calls, automatic installation or automatic restarts. Disable to stop checks.",
+          "contextual_followups": "Requires Conversation sessions and the Sentient with backup agent. Keep the subject for short follow-ups, refresh exposed device readings, and clarify ambiguous adjustments. Does not grant action permissions or change listening rules. Off by default; turning it off clears temporary conversation context."
         }
       },
       "memories": {

@@ -136,6 +136,7 @@ class VoiceSession:
     missing_detail: str = ''
     listen_reason: str = 'new_request'
     command_turn: bool = False
+    follow_up_context: dict | None = None
     correction: dict | None = None
     investigation: dict | None = None
     resume_choices: list[str] = field(default_factory=list)
@@ -149,6 +150,7 @@ class VoiceSession:
                 'mode': self.mode, 'goal': self.goal, 'task_state': self.task_state,
                 'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
                 'correction': self.correction, 'investigation': self.investigation,
+                **({'follow_up_context': self.follow_up_context} if self.follow_up_context else {}),
                 'resumed_from': self.resumed_from, 'resume_context': self.resume_context,
                 'pending_action': self.pending.get('summary') if self.pending else None,
                 'confirmation_expires': self.pending['expires'].isoformat() if self.pending and self.pending.get('expires') else None,
@@ -201,8 +203,24 @@ class Sessions:
         session.listen_reason = 'new_request'
         session.listen_override = None
         text = normalise(text)
+        from .followups import CONF_CONTEXTUAL_FOLLOWUPS, classify
+
+        connected = self.options.get(CONF_SESSIONS) and self.options.get(CONF_CONTEXTUAL_FOLLOWUPS)
+        prior_follow = session.follow_up_context or {}
+        kind = classify(text) if connected else None
+        if (connected and prior_follow.get('needs_clarification') and not kind
+                and not COMMAND.search(text) and not INFORMATION.search(text)):
+            kind = 'clarification'
+        session.follow_up_context = ({'kind': kind, 'request': text[:300], 'previous_goal': session.goal,
+                                      'previous_topic': session.topic, 'candidate_entities': list(session.entities)} if kind else None)
+        if kind == 'clarification':
+            session.follow_up_context['previous_request'] = prior_follow.get('previous_request') or prior_follow['request']
+            if not session.goal:
+                session.goal = f"{prior_follow['request']} ({text})"[:200]
+        elif connected and not kind and (COMMAND.search(text) or INFORMATION.search(text)):
+            session.entities = []  # an explicit new subject must not inherit old targets
         session.correction = None
-        if CORRECTION.search(text) and (session.goal or session.pending or session.last_action):
+        if (CORRECTION.search(text) or kind in ('correction', 'adjustment')) and (session.goal or session.pending or session.last_action):
             session.correction = {
                 'request': text[:300], 'previous_goal': session.goal,
                 'previous_entities': list(session.entities),
@@ -210,10 +228,10 @@ class Sessions:
                 'previous_action': deepcopy(session.last_action),
             }
             session.task_state = 'in_progress'
-        session.command_turn = bool(COMMAND.search(text))
+        session.command_turn = bool(COMMAND.search(text)) or kind == "adjustment"
         # Preserve the unanswered question through the next model call, so short answers
         # and corrections retain the task they belong to.
-        if not session.correction and (not session.question or session.command_turn):
+        if not kind and not session.correction and (not session.question or session.command_turn):
             session.goal = text[:200]
             session.task_state = 'in_progress'
             session.missing_detail = ''
@@ -221,8 +239,9 @@ class Sessions:
             if START.search(text) or (not session.command_turn and INFORMATION.search(text)):
                 session.active = True
                 session.mode = 'discussion'
-                session.topic = text[:200]
-                session.goal = text[:200]
+                if not kind:
+                    session.topic = text[:200]
+                    session.goal = text[:200]
                 session.listen_reason = 'information_discussion'
 
     def finish(self, session, result):
@@ -282,6 +301,7 @@ class Sessions:
         session.waiting = False
         session.undo.clear()
         session.correction = None
+        session.follow_up_context = None
         session.investigation = None
 
     def rekey(self, session):
