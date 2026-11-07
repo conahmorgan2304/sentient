@@ -182,3 +182,5 @@ See [docs/ROADMAP.md](docs/ROADMAP.md).
 Speaker delivery diagnostics show per-speaker service stages and timings, with an optional failure notification. See [voice delivery diagnostics](docs/VOICE_DELIVERY.md).
 
 Optional [short follow-ups after a fresh wake word](docs/RECENT_FOLLOWUPS.md) retain a recently completed subject without restoring permission or listening.
+
+Optional [behaviour explanations](docs/BEHAVIOUR_EXPLANATIONS.md) answer short listening/action questions from recorded evidence without another model call.

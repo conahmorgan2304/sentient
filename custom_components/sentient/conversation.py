@@ -464,6 +464,16 @@ class BackedUpAgent(conversation.ConversationEntity):
             session.running = True
             token = current_session.set(session)
             try:
+                from homeassistant.util import dt as dt_util
+                from .behaviour import answer as explain_behaviour
+
+                explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
+                if explanation is not None:
+                    # This read-only turn must not consume a pending clarification or confirmation.
+                    session.turn += 1
+                    session.touched = dt_util.utcnow()
+                    question = session.question if session.pending or session.clarification else ''
+                    return self._reply(user_input, session, explanation + (' ' + question if question else ''), bool(question))
                 from .followups import restore_recent
 
                 await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())

@@ -151,3 +151,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.95.0 — Per-speaker delivery stages and timings, with optional content-free failure notifications.
 
 - [x] 0.96.0 — Optional same-owner context for short follow-ups after a fresh wake word; ambiguous “the other one” asks for a target.
+
+- [x] 0.97.0 — Optional direct explanations of listening/action decisions; spoken and suppressed announcement evidence matched separately.
