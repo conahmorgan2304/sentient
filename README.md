@@ -10,9 +10,20 @@ Sentient gives your home one shared brain. Every voice assistant and automation 
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
-> **Status: beta, in the Home Assistant Marketplace (formerly HACS).** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+> **Status: beta (0.98), in the Home Assistant Marketplace (formerly HACS).** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
 
-## New in 0.84–0.88
+## New in 0.89–0.98
+
+Conversation and reliability took most of this stretch. The new features below each have their own switch in Settings (off by default); the reliability fixes are always on.
+
+- **Speaks your language.** Pick Home Assistant's language or an override and Sentient says its built-in sentences in it, prepares common phrases with the AI you already have and keeps them for next time. Urgent alerts never wait for a translation. The settings are also in French and Hungarian. [Setup and limits](docs/LANGUAGE_AND_RECOVERY.md)
+- **Talks more like a conversation.** Connected follow-ups ("why?", "what about the kitchen?"), short follow-ups after a fresh wake word, specific questions when a request could mean several devices ("which light, 1 or 2?"), and plain answers to "why did you listen?" or "why didn't you do that?" from what it recorded, with no extra AI call. [Follow-ups](docs/CONNECTED_FOLLOWUPS.md), [short follow-ups](docs/RECENT_FOLLOWUPS.md), [clarification](docs/SPECIFIC_CLARIFICATION.md), [explanations](docs/BEHAVIOUR_EXPLANATIONS.md)
+- **Honest about what happened.** Partly-done requests name the devices that did and didn't change, and "that didn't work" checks fresh states and offers only what was never sent. A request it can't confirm is reported as unconfirmed rather than failed, and a warning is dropped if the device has recovered by then. Each speaker's delivery shows its stages and timings, with an optional failure notification. [Recovery](docs/ACTION_RECOVERY.md), [delivery](docs/VOICE_DELIVERY.md)
+- **Knows the house right now.** Conversations get a small snapshot of the relevant live readings and recent changes (only what's exposed to Assist, private rooms kept private), and can optionally say once when heating you asked for has been reached. [Details](docs/CURRENT_HOUSE_CONTEXT.md)
+- **Safer by review (0.98.1–0.98.10).** Late replies can't speak after guest mode, a settings change or "forget"; invalid sensor readings are ignored; AI retries are counted and shown; auto-off waits until every motion sensor says clear; memories that only look alike stay separate; approved routines keep their meaning when relearned; heating is only put back if Sentient set it; restore adds without overwriting; and goals use Home Assistant's own daily statistics. No new AI calls. See the review notes in [docs](docs/), starting with [the full review](docs/FULL_REVIEW_0988.md).
+
+<details>
+<summary>Earlier: 0.84–0.88</summary>
 
 - **Knows its own actions** — nothing it switches is mistaken for a person, learned as a habit or reported as "didn't happen".
 - **Setup doctor** — one page that checks the AI, voice pipeline, speakers, voices, cameras and folders and says what to fix.
@@ -24,6 +35,8 @@ It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, 
 - **Simpler** — "how it's used", a simpler settings page for new installs, a "what's new" card after updates, a readable copy of everything it knows, stories without gaps, and a lighter start-up.
 
 Every new feature has its own switch in Settings.
+
+</details>
 
 ## What it does today
 
@@ -178,11 +191,3 @@ Every service is also listed, with its fields, under Developer tools → Actions
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
-
-Speaker delivery diagnostics show per-speaker service stages and timings, with an optional failure notification. See [voice delivery diagnostics](docs/VOICE_DELIVERY.md).
-
-Optional [short follow-ups after a fresh wake word](docs/RECENT_FOLLOWUPS.md) retain a recently completed subject without restoring permission or listening.
-
-Optional [behaviour explanations](docs/BEHAVIOUR_EXPLANATIONS.md) answer short listening/action questions from recorded evidence without another model call.
-
-Optional [current house context](docs/CURRENT_HOUSE_CONTEXT.md) connects relevant live reports, recent changes and the current unfinished task in conversations. A separate optional heating update can speak once when a confirmed requested temperature is reported as reached.
