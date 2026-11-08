@@ -307,7 +307,10 @@ def hush(hass: HomeAssistant, entry, until) -> None:
 
 @callback
 def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
-    entry.runtime_data.speech.guest_mode = on
+    speech = entry.runtime_data.speech
+    if on:
+        speech._guest_generation = getattr(speech, '_guest_generation', 0) + 1
+    speech.guest_mode = on
     if on and (house_context := getattr(entry.runtime_data, "house_context", None)):
         house_context.clear()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"guest_mode": on})
