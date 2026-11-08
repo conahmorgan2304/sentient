@@ -170,11 +170,10 @@ class HouseHealth:
             if entry is not None and entry.platform == "mobile_app":
                 continue  # phones and tablets charge every day: not a house problem
             if st.domain == "sensor":
-                try:
-                    level = float(st.state)
-                except ValueError:
-                    continue
-                if level >= threshold:
+                from .numeric import finite_float
+
+                level = finite_float(st.state)
+                if level is None or not 0 <= level <= 100 or level >= threshold:
                     continue
                 item = {"kind": "battery", "name": st.name, "level": round(level), "entity_id": st.entity_id}
             elif st.state == "on":

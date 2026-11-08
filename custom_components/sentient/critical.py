@@ -47,10 +47,12 @@ class CriticalAlerts:
         self.options = options
         self._rt = rt_getter
         self._unsub = None
+        self._stopped = False
         self._timers: dict[str, Any] = {}
 
     @callback
     def async_start(self) -> None:
+        self._stopped = False
         @callback
         def _wanted(data) -> bool:
             new = data.get("new_state")
@@ -67,6 +69,7 @@ class CriticalAlerts:
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -106,13 +109,16 @@ class CriticalAlerts:
     @callback
     def _raise(self, entity_id: str, repeats_left: int) -> None:
         st = self.hass.states.get(entity_id)
-        if not is_active(st):
+        if (self._stopped or not self.options.get(CONF_CRITICAL, True)
+                or entity_id in (self.options.get(CONF_CRITICAL_IGNORE) or []) or not is_active(st)):
+            if unsub := self._timers.pop(entity_id, None):
+                unsub()
             return
         text = self.message(entity_id)
         rt = self._rt()
         if repeats_left == REPEATS:
             rt.timeline.add("critical", text, st.name)
-        self.hass.async_create_task(self._say(rt, text))
+        self.hass.async_create_task(self._say_if_active(entity_id, text))
 
         if repeats_left > 0:
             @callback
@@ -121,6 +127,13 @@ class CriticalAlerts:
                 self._raise(entity_id, repeats_left - 1)
 
             self._timers[entity_id] = async_call_later(self.hass, REPEAT_SECONDS, _again)
+
+    async def _say_if_active(self, entity_id: str, text: str) -> None:
+        # A setting can change after the event callback queued this task.
+        if (not self._stopped and self.options.get(CONF_CRITICAL, True)
+                and entity_id not in (self.options.get(CONF_CRITICAL_IGNORE) or [])
+                and is_active(self.hass.states.get(entity_id))):
+            await self._say(self._rt(), text)
 
     async def async_test(self) -> dict[str, Any]:
         """Say a test alert on every speaker (from the Settings page)."""

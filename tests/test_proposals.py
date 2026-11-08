@@ -73,6 +73,12 @@ async def test_weekly_says_what_it_got_wrong(hass: HomeAssistant) -> None:
 
 
 async def test_stale_reading_flagged(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.setup import async_setup_component
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    async_expose_entity(hass, "conversation", "sensor.hall_temp", True)
+    async_expose_entity(hass, "conversation", "sensor.loft_temp", True)
     hass.states.async_set("sensor.hall_temp", "19.5", {"device_class": "temperature", "friendly_name": "Hall temperature"})
     hass.states.async_set("sensor.loft_temp", "11", {"device_class": "temperature", "friendly_name": "Loft temperature"})
     await _setup(hass)

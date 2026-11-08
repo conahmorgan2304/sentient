@@ -811,8 +811,8 @@ def _exposed(hass: HomeAssistant, entity_id: str) -> bool:
         from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 
         return async_should_expose(hass, "conversation", entity_id)
-    except Exception:  # noqa: BLE001 - exposure settings not loaded (tests, early start-up)
-        return True
+    except Exception:  # noqa: BLE001 - unavailable exposure information is not permission
+        return False
 
 
 def _speaker_here(hass: HomeAssistant, rt: Any, llm_context: llm.LLMContext, named: str | None = None) -> str | None:

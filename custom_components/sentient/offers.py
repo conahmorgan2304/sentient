@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .items import Items
 from .reasons import because
+from .numeric import finite_float
 from .kinds import in_windows, variant
 from .presence import ActivityTracker, area_of
 from .shortcuts import async_run_actions
@@ -28,10 +29,7 @@ GAP = timedelta(minutes=5)  # never two offers on top of each other
 
 
 def reading_attr(st, name: str) -> float | None:
-    try:
-        return float(st.attributes.get(name))
-    except (TypeError, ValueError):
-        return None
+    return finite_float(st.attributes.get(name))
 
 
 def reading(hass: HomeAssistant, entity_id: str | None) -> float | None:
@@ -39,10 +37,7 @@ def reading(hass: HomeAssistant, entity_id: str | None) -> float | None:
     if st is None:
         return None
     value = st.attributes.get("current_temperature") if st.domain in ("climate", "water_heater") else st.state
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    return finite_float(value)
 
 
 class Offers:

@@ -1640,7 +1640,7 @@
         this._status("TESTING…", "warn");
         this._hass.callWS({ type: "sentient/doctor/speakers" }).then((r) => {
           const bad = r.results.filter((x) => !x.ok).map((x) => x.speaker);
-          this._status(bad.length ? `DIDN'T ACCEPT IT: ${bad.join(", ").toUpperCase()}` : `ALL ${r.results.length} SPEAKERS ACCEPTED IT ✓`, bad.length ? "bad" : "ok");
+          this._status(!r.results.length ? "NO SPEAKERS CONFIGURED" : bad.length ? `DIDN'T ACCEPT IT: ${bad.join(", ").toUpperCase()}` : `ALL ${r.results.length} SPEAKERS ACCEPTED IT ✓`, !r.results.length || bad.length ? "bad" : "ok");
         }, (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "critest") {

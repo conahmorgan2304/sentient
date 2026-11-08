@@ -20,6 +20,12 @@ async def test_security_report(hass: HomeAssistant) -> None:
 
 
 async def test_scene_tool(hass: HomeAssistant) -> None:
+    from homeassistant.setup import async_setup_component
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    async_expose_entity(hass, "conversation", "scene.movie_night", True)
+    async_expose_entity(hass, "conversation", "light.lamp", True)
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
