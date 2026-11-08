@@ -61,6 +61,7 @@ class Control:
         self.recovery_generation = 0
         self.recovery_turns = {}
         self.recovery_serial = 0
+        self.on_result = None
 
     def clear_recovery(self):
         self.recovery_generation += 1
@@ -241,6 +242,8 @@ class Control:
         try:
             with measure("guarded_actions"):
                 result = await self._execute_timed(session, actions, context, expected, deadline)
+            if self.on_result and not session.closed:
+                self.on_result(session, actions, result, context)
             return result
         finally:
             record = session.recovery_record

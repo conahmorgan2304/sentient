@@ -149,7 +149,10 @@
           "conversation_recovery": "Conversation cancellation and cautious recovery",
           "speech_failure_notification": "Notify about speaker delivery failures",
           "recent_followup_context": "Short follow-ups after a fresh wake word",
-          "behaviour_explanations": "Explain listening and action decisions"
+          "behaviour_explanations": "Explain listening and action decisions",
+          "current_house_context": "Current house context",
+          "house_context_entities": "Additional context entities",
+          "house_context_updates": "Tell me when requested heating is reached"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -277,7 +280,10 @@
           "conversation_recovery": "Requires Conversation sessions and the Sentient with backup agent. Cancel a pending or running request from the same conversation/device/user, and avoid replaying uncertain device commands after an AI failure. Cannot undo an action already sent or make hardware accept speech while busy. Off by default; disabling stops this extra handling.",
           "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed.",
           "recent_followup_context": "Use a recently completed subject after a fresh wake word on the same speaker and user. Requires conversation sessions and contextual follow-ups. Uses the session timeout; never restores confirmation or listening. Off by default. Ending or forgetting clears context.",
-          "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored."
+          "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored.",
+          "current_house_context": "Give conversations a compact relevant snapshot of exposed device reports, recent changes and the current unfinished task. Off by default. No background AI calls. Guest mode suppresses it. Recent changes expire after 30 minutes; disabling or forgetting clears memory-only context.",
+          "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
+          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates."
         }
       }
     },
@@ -530,7 +536,10 @@
           "action_recovery": "Device results and cautious recovery",
           "speech_failure_notification": "Notify about speaker delivery failures",
           "recent_followup_context": "Short follow-ups after a fresh wake word",
-          "behaviour_explanations": "Explain listening and action decisions"
+          "behaviour_explanations": "Explain listening and action decisions",
+          "current_house_context": "Current house context",
+          "house_context_entities": "Additional context entities",
+          "house_context_updates": "Tell me when requested heating is reached"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -754,7 +763,10 @@
           "action_recovery": "Requires Conversation sessions and guarded control for device results and retries. Give named partial results and inspect the last guarded request when you say that did not work. Only actions never dispatched can be offered again, with fresh confirmation. Uncertain or successful actions are not replayed. Off by default; records expire after two minutes and clear on Settings changes or forgetting.",
           "speech_failure_notification": "Show a Home Assistant notification when speaker delivery fails or is uncertain. Off by default. Does not include spoken content or repeat speech. Disabled in guest mode; existing notifications remain until dismissed.",
           "recent_followup_context": "Use a recently completed subject after a fresh wake word on the same speaker and user. Requires conversation sessions and contextual follow-ups. Uses the session timeout; never restores confirmation or listening. Off by default. Ending or forgetting clears context.",
-          "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored."
+          "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored.",
+          "current_house_context": "Give conversations a compact relevant snapshot of exposed device reports, recent changes and the current unfinished task. Off by default. No background AI calls. Guest mode suppresses it. Recent changes expire after 30 minutes; disabling or forgetting clears memory-only context.",
+          "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
+          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates."
         }
       },
       "memories": {

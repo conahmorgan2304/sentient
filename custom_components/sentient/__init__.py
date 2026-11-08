@@ -111,6 +111,7 @@ class SentientRuntime:
 
     options: dict[str, Any]
     evidence: Any
+    house_context: Any
     sessions: Any
     updates: Any
     voice_checks: Any
@@ -632,8 +633,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     books = Books(hass, entry.entry_id, options, get_rt)
     recipes = Recipes(hass, entry.entry_id, options, get_rt)
+    from .house_context import HouseContext
+
+    house_context = HouseContext(hass, lambda: entry.runtime_data)
     entry.runtime_data = SentientRuntime(
-        evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
+        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -645,6 +649,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
         threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
+    house_context.configure()
+    entry.runtime_data.control.on_result = house_context.track
+    entry.async_on_unload(house_context.stop)
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)
     for engine in (upkeep, critical, left_open, welcome):
@@ -737,6 +744,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._questions.clear()
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
+    entry.runtime_data.house_context.configure()
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
     if not options.get(CONF_ASK_LATER):

@@ -1,0 +1,19 @@
+# Current house context
+
+Enable **Current house context** under Voice. It is off by default. Both the standard Sentient and Sentient guarded APIs receive a relevant, bounded snapshot on their normal conversation requests. No separate model call, AI summary timer or persistent store is added. The extra prompt content can increase tokens on those existing requests.
+
+The snapshot contains up to eight current exposed/accessible device reports, up to six recent changes for those devices, the unfinished goal in the current scoped conversation, and same-owner heating observations awaiting measured progress. Each reading has a source, report time and age; each recent change has a source, time and 30-minute expiry. Changes are observed after enabling, including heating attributes such as target and measured temperature. At most 64 devices' latest transitions are held in memory. It does not reconstruct events from before enabling or a restart.
+
+Relevance comes from the request's device/name words and the talking device's room. General house questions include climate, opening/security and presence reports; **Additional context entities** lets you include appliance status or other sensors in those summaries. States from different domains are reported as data; power use or motion alone is not labelled “cooking”, “someone arrived” or a named person's activity. The snapshot is partial, and an unavailable sensor never proves the house is fine. It replaces the older broad recent-activity prompt block when enabled, so unrelated history is not duplicated there. Other existing memory/tool features retain their own settings.
+
+Current read access and Assist exposure are checked before inclusion. Private-room profiles restrict the snapshot to that room. Guest mode suppresses context and clears pending context/updates. Disabling, Settings changes, forgetting and unloading clear the memory and invalidate queued updates. Re-enabling starts fresh. A snapshot is conversation data, never permission to execute an unfinished task. Existing listening and confirmation rules still apply.
+
+## Optional heating follow-up
+
+**Tell me when requested heating is reached** is a separate switch, off by default and dependent on Current house context. Current house context can track a verified guarded `climate.set_temperature` action as a pending observation for relevant same-owner conversations, including when spoken updates are off. With spoken updates enabled, if the measured room temperature is below the requested target, Sentient can observe the same thermostat for up to one hour. It says once that the thermostat now reports the temperature requested, when a new device event reports reaching or exceeding that target.
+
+Changing the target, turning the climate off, an unknown/unavailable report, guest mode, forgetting or disabling cancels it. It never changes the heating. Unverified actions and requests through other integrations do not arm it. At most five observations are retained and at most one update is attempted per 15 minutes across this feature. Normal speech gates, quiet hours, duplicates and speaker routing apply; an update held back or failing delivery is not retried. A valid originating Assist satellite is preferred, otherwise existing house speaker routing is used. Speech translation, if separately enabled, uses its existing gateway/cache.
+
+This follow-up uses only the thermostat's own measured temperature and target; it does not infer boiler operation, whole-room comfort, a person's identity or physical verification.
+
+After installation, try “how is everything?” with a selected appliance sensor, and ask about a room after changing its heating. For the optional follow-up, use a guarded heating request below the desired temperature, then check a later thermostat report reaches it. Real speaker/device testing is still needed.
