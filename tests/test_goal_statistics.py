@@ -328,3 +328,13 @@ async def test_overdue_goal_reads_its_own_final_days_not_post_goal_history(goals
     assert history.await_args_list[1].args[2] == 4
     assert history.await_args_list[1].args[3] == at(5,12)
     assert goal['checks'] == [{'day':'2026-11-04','value':8}] and goal['closed']
+
+
+async def test_house_timezone_change_pauses_daily_period_comparisons(goals):
+    with patch('custom_components.sentient.goals.daily_values', new=AsyncMock(return_value=[('2026-11-08',10)])):
+        await goals.async_set('Use less', EID)
+    dt_util.set_default_time_zone(ZoneInfo('Europe/London'))
+    with patch('custom_components.sentient.goals.daily_values', new=AsyncMock()) as read:
+        await goals.async_check()
+    read.assert_not_awaited()
+    assert goals.items[0]['needs_rebaseline'] and 'time zone' in goals.items[0]['statistics_note']

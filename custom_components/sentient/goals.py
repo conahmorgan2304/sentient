@@ -75,7 +75,8 @@ class Goals:
         state = self.hass.states.get(entity_id) if entity_id else None
         return {'unit': state.attributes.get('unit_of_measurement') if state else None,
                 'state_class': state.attributes.get('state_class') if state else None,
-                'device_class': state.attributes.get('device_class') if state else None}
+                'device_class': state.attributes.get('device_class') if state else None,
+                'time_zone': str(dt_util.get_default_time_zone())}
 
     async def async_set(self, title: str, entity_id: str | None = None, aim: str = "lower", days: int = 30) -> dict[str, Any]:
         if self._stopped or not self.enabled:
@@ -103,8 +104,8 @@ class Goals:
             return {'error': 'Goal settings changed while reading history; nothing was added'}
         if len(self.open()) >= MAX_OPEN:
             return {'error': f'there are already {MAX_OPEN} goals; close one first'}
-        if self._metric(entity_id) != {key: goal[key] for key in ('unit', 'state_class', 'device_class')}:
-            return {'error': 'The sensor unit or type changed while reading history; please try again'}
+        if self._metric(entity_id) != {key: goal[key] for key in ('unit', 'state_class', 'device_class', 'time_zone')}:
+            return {'error': 'The sensor unit, type or house time zone changed while reading history; please try again'}
         if entity_id and goal['baseline'] is None:
             goal['statistics_note'] = 'No comparable baseline history is available'
         self.items.append(goal)
@@ -122,9 +123,9 @@ class Goals:
         if len(matches) != 1:
             return None
         goal = matches[0]
-        if goal.get('entity_id') and self._metric(goal['entity_id']) != {key: goal.get(key) for key in ('unit', 'state_class', 'device_class')}:
+        if goal.get('entity_id') and self._metric(goal['entity_id']) != {key: goal.get(key) for key in ('unit', 'state_class', 'device_class', 'time_zone')}:
             goal['needs_rebaseline'] = True
-            goal['statistics_note'] = 'Sensor unit or type changed; the old comparison is not used'
+            goal['statistics_note'] = 'Sensor unit, type or house time zone changed; the old comparison is not used'
         goal['closed'] = dt_util.utcnow().isoformat()
         self._save()
         return goal
@@ -182,9 +183,9 @@ class Goals:
                 g['statistics_note'] = 'Sensor is unavailable; comparison is paused'
                 self._finish(g, now, rt)
                 continue
-            if entity and g.get('statistics_version') == VERSION and metric != {key: g.get(key) for key in ('unit', 'state_class', 'device_class')}:
+            if entity and g.get('statistics_version') == VERSION and metric != {key: g.get(key) for key in ('unit', 'state_class', 'device_class', 'time_zone')}:
                 g['needs_rebaseline'] = True
-                g['statistics_note'] = 'Sensor unit or type changed; recreate this goal for a comparable baseline'
+                g['statistics_note'] = 'Sensor unit, type or house time zone changed; recreate this goal for a comparable baseline'
             if g.get('needs_rebaseline'):
                 self._finish(g, now, rt)
                 continue
@@ -249,7 +250,7 @@ class Goals:
             entity = g.get('entity_id')
             st = self.hass.states.get(entity) if entity else None
             known_method = g.get('statistics_version') == VERSION
-            matching = not entity or self._metric(entity) == {key: g.get(key) for key in ('unit', 'state_class', 'device_class')}
+            matching = not entity or self._metric(entity) == {key: g.get(key) for key in ('unit', 'state_class', 'device_class', 'time_zone')}
             available = not entity or st is not None and st.state not in ('unknown', 'unavailable')
             comparable = known_method and matching and available and not g.get('needs_rebaseline')
             note = g.get('statistics_note')
@@ -258,7 +259,7 @@ class Goals:
             elif not available:
                 note = 'Sensor is unavailable; comparison is paused'
             elif not matching or g.get('needs_rebaseline'):
-                note = 'Sensor unit or type changed; recreate this goal for a comparable baseline'
+                note = 'Sensor unit, type or house time zone changed; recreate this goal for a comparable baseline'
             out.append({'id': g['id'], 'title': g['title'], 'follows': st.name if st else None,
                         'usual': g.get('baseline') if comparable else None, 'baseline_days': g.get('baseline_days'),
                         'unit': st.attributes.get('unit_of_measurement') if st else None, 'baseline_unit': g.get('unit'),
