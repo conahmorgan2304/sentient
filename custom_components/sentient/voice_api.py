@@ -12,6 +12,7 @@ from .evidence import describe_state
 
 # Explicit whitelist: no arbitrary routine, scene, rule, offer or heating execution.
 SAFE_TOOLS = {'sentient_remember', 'sentient_correction', 'sentient_recall', 'sentient_forget',
+              'sentient_security_event', 'sentient_security_feedback',
               'sentient_house_check', 'sentient_conversations', 'sentient_why', 'sentient_security',
               'sentient_energy', 'sentient_timeline', 'sentient_visitors', 'sentient_watches',
               'sentient_routines', 'sentient_heating', 'sentient_night_watch', 'sentient_weekly_report',

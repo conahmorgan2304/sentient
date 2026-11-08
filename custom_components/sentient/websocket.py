@@ -25,6 +25,8 @@ from .config_flow import _briefing_schema, _speech_schema
 from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .const import CONF_RECOVERY
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
+from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
+from .clip_analysis import CONF_SHARED_CLIPS
 
 from .const import (
     CONF_COMFORT_TEMP,
@@ -292,6 +294,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
+        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK,
     ]),
     ("heating", "Heating", "mdi:radiator", "What it learns about the heating, and warming up before people are up.", [
         CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
@@ -302,7 +305,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("clips", "Event clips", "mdi:filmstrip-box-multiple", "Watches Frigate's recorded clips from chosen cameras and writes down what happened — on the timeline, the Sentient page and for the voice. Never spoken. The clip is deleted once watched.", [
         CONF_CLIP_WATCH, CONF_CLIP_CAMERAS, CONF_CLIP_SCOPE, CONF_CLIP_WHEN, CONF_CLIP_NOTIFY, CONF_CLIP_SOURCE, CONF_CLIP_WHOSE, CONF_CLIP_LOOKS,
-        CONF_BUDGET_CLIPS, CONF_CLIP_DAYS, CONF_CLIP_KEEP,
+        CONF_BUDGET_CLIPS, CONF_CLIP_DAYS, CONF_CLIP_KEEP, CONF_SHARED_CLIPS,
     ]),
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
@@ -483,6 +486,22 @@ def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
     connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
+                                  vol.Required("event_id"): str, vol.Required("value"): vol.In(FEEDBACK)})
+@websocket_api.require_admin
+@callback
+def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    result = entry.runtime_data.security_events.feedback(msg["event_id"], msg["value"])
+    if result.get("error"):
+        connection.send_error(msg["id"], "not_available", result["error"])
+    else:
+        connection.send_result(msg["id"], result)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new"})
 @callback
 def ws_whats_new(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
@@ -532,6 +551,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)
     websocket_api.async_register_command(hass, ws_export_readable)

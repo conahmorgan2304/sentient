@@ -313,13 +313,37 @@ class ClipWatch:
             worth = threat is not None and threat >= 1
             answer = {"summary": summary.strip(), "kind": "suspicious" if worth else "visitor", "worth": worth}
         else:
-            if rt is not None and not rt.watches.spend("clip watch", force=force):
-                self._skip("budget")
-                return {"skipped": "today's clip allowance is used up"}
             self._last[camera] = now
             self._busy.add(camera)
             try:
-                answer = await self._ask_ai(camera, start, end, event, current)
+                shared = getattr(rt, "clip_analysis", None)
+                metadata = None
+                if shared is not None and shared.enabled and event and len(detections) == 1:
+                    metadata = await rt.security_events.async_event(camera, event)
+                if not current():
+                    return {"skipped": "clip watch context changed"}
+                limited = False
+
+                async def produce(a=start, b=end):
+                    nonlocal limited
+                    if not current():
+                        return None
+                    if rt is not None and not rt.watches.spend("clip watch", force=force):
+                        limited = True
+                        self._skip("budget")
+                        return None
+                    return await self._ask_ai(camera, a, b, event, current)
+
+                if metadata and metadata["end"] is not None:
+                    a, b = metadata["start"], min(metadata["end"], metadata["start"] + MAX_SECONDS)
+                    answer = await shared.analyse(camera, event, a, b, self.options.get(CONF_AI_TASK_ENTITY),
+                                                  "household" if self.options.get(CONF_CLIP_WHOSE) else "neutral",
+                                                  lambda: produce(a, b))
+                    start = a
+                else:
+                    answer = await produce()
+                if limited:
+                    return {"skipped": "today's clip allowance is used up"}
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Sentient couldn't watch a clip from %s: %s", camera, err)
                 return {"error": str(err)}
@@ -330,7 +354,7 @@ class ClipWatch:
         self._last[camera] = now
         if not isinstance(answer, dict) or not isinstance(answer.get("summary"), str) or not answer["summary"].strip():
             return {"error": "no answer"}
-        return self._record(camera, start, event, review.get("id"), answer)
+        return self._record(camera, start, event, review.get("id"), answer, event_bound=len(detections) == 1)
 
     async def _download(self, path: str, name: str, refuse: tuple[bytes, ...] = ()) -> str | None:
         """Fetch bounded media, returning its media-source id or None if unavailable.
@@ -405,19 +429,21 @@ class ClipWatch:
         return await self._download(f"{span}/preview.mp4", name)
 
     async def _ask_ai(self, camera: str, start: float, end: float, event: str | None = None,
-                      current: Callable[[], bool] | None = None) -> dict[str, Any] | None:
+                      current: Callable[[], bool] | None = None, *, identity: bool | None = None,
+                      provider: str | None = None) -> dict[str, Any] | None:
         # Unique files avoid an old reload deleting media prepared by a new runtime.
         name = f"clipwatch_{camera}_{uuid.uuid4().hex}.mp4"
         keep = bool(self.options.get(CONF_CLIP_KEEP))
         try:
-            return await self._analyse_clip(camera, start, end, event, name, current)
+            return await self._analyse_clip(camera, start, end, event, name, current, identity, provider)
         finally:
             if not (keep and self.options.get(CONF_CLIP_KEEP)) or (current is not None and not current()):
                 await self._remove(name)
                 await self._remove(name.removesuffix(".mp4") + ".webp")
 
     async def _analyse_clip(self, camera: str, start: float, end: float, event: str | None, name: str,
-                            current: Callable[[], bool] | None) -> dict[str, Any] | None:
+                            current: Callable[[], bool] | None, identity: bool | None = None,
+                            provider: str | None = None) -> dict[str, Any] | None:
         media = await self._video(camera, start, end, name)
         if current is not None and not current():
             return None
@@ -446,8 +472,9 @@ class ClipWatch:
         if len(attachments) > 1:
             instructions += " The clip is a small preview; a full-size still of the clearest moment follows it."
         refs: list[tuple[str, str]] = []
-        looks = self.looks() if self.options.get(CONF_CLIP_WHOSE) else {}
-        if self.options.get(CONF_CLIP_WHOSE):
+        use_identity = self.options.get(CONF_CLIP_WHOSE) if identity is None else identity
+        looks = self.looks() if use_identity else {}
+        if use_identity:
             try:
                 refs = await self._references()
             except Exception as err:  # noqa: BLE001
@@ -473,7 +500,7 @@ class ClipWatch:
                                   "required": False, "selector": {"text": {}}}
         data: dict[str, Any] = {"task_name": "Sentient: clip watch", "instructions": instructions,
                                 "structure": structure, "attachments": attachments}
-        if ai := self.options.get(CONF_AI_TASK_ENTITY):
+        if ai := provider or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
         if current is not None and not current():
             return None
@@ -494,12 +521,13 @@ class ClipWatch:
 
     # ----- results ------------------------------------------------------------------------
     def _record(self, camera: str, start: float, event: str | None, review_id: str | None,
-                answer: dict[str, Any]) -> dict[str, Any]:
+                answer: dict[str, Any], *, event_bound: bool = True) -> dict[str, Any]:
         when = dt_util.utc_from_timestamp(start) if start else dt_util.utcnow()
         kind = answer.get("kind") if answer.get("kind") in KINDS else "visitor"
         summary = str(answer.get("summary")).strip().rstrip(".") + "."
         item = {"time": when.isoformat(), "camera": camera, "summary": summary, "kind": kind,
-                "worth": answer.get("worth") is True, "whose": answer.get("whose"), "event": event, "review": review_id}
+                "worth": answer.get("worth") is True, "whose": answer.get("whose"), "event": event, "review": review_id,
+                "event_bound": event_bound}
         self.items.insert(0, item)
         self._prune()
         self._save()
@@ -510,6 +538,8 @@ class ClipWatch:
             rt.timeline.add("clip", text + who, "clip watched", camera=camera, event=event)
             if getattr(rt, "incidents", None) is not None:
                 rt.incidents.add(f"camera.{camera}", summary, "clip", evidence="inferred", when=when, event_id=event or review_id)
+            if getattr(rt, "security_events", None) is not None and event and event_bound:
+                rt.security_events.analysis(event, camera, answer)
         self._notify(item, text + who)
         return {"recorded": item}
 

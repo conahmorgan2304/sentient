@@ -117,6 +117,8 @@ class SentientRuntime:
     voice_checks: Any
     control: Any
     incidents: Any
+    security_events: Any
+    clip_analysis: Any
     memory: MemoryStore
     speech: SpeechRouter
     tracker: ActivityTracker
@@ -549,6 +551,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .clipwatch import ClipWatch
 
     clipwatch = ClipWatch(hass, entry.entry_id, options, get_rt)
+    from .security_events import SecurityEvents
+    from .clip_analysis import ClipAnalysis
+
+    security_events = SecurityEvents(hass, entry.entry_id, options, get_rt)
+    clip_analysis = ClipAnalysis(get_rt)
     def _house_did() -> dict[str, set[int]]:  # away lights, and everything else the house switched itself
         out = {k: set(v) for k, v in own.times().items()}
         for entity, stamps in away.times().items():
@@ -637,7 +644,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     house_context = HouseContext(hass, lambda: entry.runtime_data)
     entry.runtime_data = SentientRuntime(
-        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents,
+        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents, security_events=security_events, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -650,6 +657,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
     house_context.configure()
+    await security_events.async_start()
+    entry.async_on_unload(security_events.async_stop)
+    entry.async_on_unload(clip_analysis.clear)
     entry.runtime_data.control.on_result = house_context.track
     entry.async_on_unload(house_context.stop)
     # things that listen for events and use the runtime start only once it exists (an event during set-up
@@ -753,12 +763,14 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.camsec.clear()
     entry.runtime_data.clipwatch.invalidate()
     entry.runtime_data.clips.invalidate()
+    entry.runtime_data.clip_analysis.clear()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.alarm_confirmations.clear()
     entry.runtime_data.notifier.invalidate_questions()
     entry.runtime_data.speech._questions.clear()
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
+    entry.runtime_data.security_events.configure(options)
     entry.runtime_data.house_context.configure()
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options

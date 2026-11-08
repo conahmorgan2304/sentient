@@ -42,6 +42,9 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
             "retained_summaries": len(rt.clipwatch.items),
             "skipped": dict(rt.clipwatch.skipped),
         },
+        "shared_clip_analysis": rt.clip_analysis.describe(),
+        "event_evidence": {"enabled": rt.security_events.on("security_event_evidence"),
+                           "retained": len(rt.security_events.items), "mqtt_subscribed": rt.security_events._unsub is not None},
         "noticing": [async_redact_data(d, {"changes", "message"}) for d in list(rt.noticer.decisions)[:10]],
         "routines": [
             {"entity_id": r.entity_id, "state": r.state, "days": getattr(r, "days", "link"), "support": r.support,

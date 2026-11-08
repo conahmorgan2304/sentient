@@ -250,6 +250,7 @@ class CameraSecurity:
     @callback
     def _alert(self, sensor: str, text: str, why: str) -> None:
         stamp = self._stamp()
+        when = dt_util.utcnow()
         if not self._valid(stamp, sensor):
             return
         incidents = getattr(self._rt(), "incidents", None)
@@ -269,7 +270,7 @@ class CameraSecurity:
         async def deliver() -> None:
             nonlocal started
             started = True
-            await self._async_alert(sensor, text, incident_id, why, stamp)
+            await self._async_alert(sensor, text, incident_id, why, stamp, when)
 
         def done(task: asyncio.Task) -> None:
             self._tasks.discard(task)
@@ -288,7 +289,7 @@ class CameraSecurity:
         task.add_done_callback(done)
 
     async def _async_alert(self, sensor: str, text: str, incident_id: str | None = None, reason: str = "night",
-                           stamp: tuple | None = None) -> None:
+                           stamp: tuple | None = None, when: datetime | None = None) -> None:
         stamp = self._stamp() if stamp is None else stamp
         rt = self._rt()
         from .incidents import ALERT_LEVELS
@@ -300,16 +301,34 @@ class CameraSecurity:
             local = dt_util.as_local(dt_util.utcnow())
             detail = None
             camera = camera_for(self.hass, sensor)
+            events = getattr(rt, "security_events", None)
+            from .security_events import CONF_EVENT_EVIDENCE
+
+            event_mode = events is not None and events.on(CONF_EVENT_EVIDENCE)
+            event = await events.async_match(camera, when or dt_util.utcnow()) if camera and event_mode else None
+            if not self._valid(stamp, sensor):
+                return
             if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
-                seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor))
+                if event is not None:
+                    seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor), event)
+                else:
+                    seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor))
                 if seen is False:
-                    detail = "No person was visible in the later snapshot; the earlier sensor detection is unverified."
+                    detail = ("No person was visible in the matched event snapshot; the sensor detection is unverified."
+                              if event and event.get("_snapshot_used") else
+                              "No person was visible in the later snapshot; the earlier sensor detection is unverified.")
             if not self._valid(stamp, sensor):
                 return
             if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
-                self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text, rt.clips._stamp()), "sentient_clip")
-            rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred")
+                if event:
+                    self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text, rt.clips._stamp(), event["id"]), "sentient_clip")
+                elif not event_mode:
+                    self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text, rt.clips._stamp()), "sentient_clip")
+            rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred",
+                            **({"event_id": event["id"], "camera": camera, "event_link": "camera/time candidate"} if event else {}))
             accepted = True
+            if event:
+                events.alert(event["id"], sensor, reason, text, incident_id)
             if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
                 speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
                 await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),
@@ -324,19 +343,33 @@ class CameraSecurity:
                 if accepted and self._valid(stamp, sensor):
                     self._last_alert[key] = dt_util.utcnow()
 
-    async def _describe(self, camera: str, current: Callable[[], bool] | None = None) -> tuple[bool | None, str | None]:
+    async def _describe(self, camera: str, current: Callable[[], bool] | None = None,
+                        event: dict | None = None) -> tuple[bool | None, str | None]:
         """(is anyone actually there, one sentence on them). (None, None) if the AI couldn't look."""
         from .camwake import async_wake
 
-        try:
-            await async_wake(self.hass, self.options, camera)
-        except HomeAssistantError:
-            return None, None  # retain the sensor alert; an unchecked image cannot dismiss it
+        snapshot = None
+        if event is not None:
+            snapshot = await self._rt().security_events.async_snapshot(event)
+            event["_snapshot_used"] = snapshot is not None
+            if current is not None and not current():
+                if snapshot:
+                    await self.hass.async_add_executor_job(lambda: snapshot[1].unlink(missing_ok=True))
+                return None, None
+        if snapshot is None:
+            try:
+                await async_wake(self.hass, self.options, camera)
+            except HomeAssistantError:
+                return None, None  # retain the sensor alert; an unchecked image cannot dismiss it
         if current is not None and not current():
+            if snapshot:
+                await self.hass.async_add_executor_job(lambda: snapshot[1].unlink(missing_ok=True))
             return None, None
         data: dict[str, Any] = {
             "task_name": "Sentient: who's there",
-            "instructions": "A home security sensor reported a person earlier. This is a later snapshot, which cannot disprove that detection. Is a person visible in this "
+            "instructions": ("This is a recorded snapshot from a Frigate event matched by camera and time, not a live view. "
+                             "Describe visible actions in the past tense; do not claim continued presence. " if snapshot else
+                             "A home security sensor reported a person earlier. This is a later snapshot, which cannot disprove that detection. ") + "Is a person visible in this "
                             "picture? If so, in one short sentence describe them and what they're doing (e.g. 'A man "
                             "in a dark hoodie is trying the shed door'). No guesses at names.",
             "structure": {
@@ -345,7 +378,7 @@ class CameraSecurity:
                 "description": {"description": "One short sentence on them; empty if nobody", "required": False,
                                 "selector": {"text": {}}},
             },
-            "attachments": [{"media_content_id": f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}],
+            "attachments": [{"media_content_id": snapshot[0] if snapshot else f"media-source://camera/{camera}", "media_content_type": "image/jpeg"}],
         }
         if ai := self.options.get(CONF_SMART_AI) or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
@@ -354,6 +387,9 @@ class CameraSecurity:
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("No description: %s", err)
             return None, None
+        finally:
+            if snapshot:
+                await self.hass.async_add_executor_job(lambda: snapshot[1].unlink(missing_ok=True))
         result = (response or {}).get("data")
         if not isinstance(result, dict):
             return None, None

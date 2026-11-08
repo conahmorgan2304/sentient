@@ -16,6 +16,8 @@ from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .const import CONF_RECOVERY
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
+from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK
+from .clip_analysis import CONF_SHARED_CLIPS
 
 from .const import (
     CONF_COMFORT_TEMP,
@@ -439,6 +441,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_INCIDENTS, **d(CONF_INCIDENTS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_EVENT_EVIDENCE, **d(CONF_EVENT_EVIDENCE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_EVENT_CONTEXT, **d(CONF_EVENT_CONTEXT, False)): selector.BooleanSelector(),
+            vol.Required(CONF_EVENT_FEEDBACK, **d(CONF_EVENT_FEEDBACK, False)): selector.BooleanSelector(),
+            vol.Required(CONF_SHARED_CLIPS, **d(CONF_SHARED_CLIPS, False)): selector.BooleanSelector(),
             vol.Required(CONF_SESSION_SECONDS, **d(CONF_SESSION_SECONDS, 60)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=15, max=300, step=15, unit_of_measurement="s", mode=selector.NumberSelectorMode.BOX)
             ),

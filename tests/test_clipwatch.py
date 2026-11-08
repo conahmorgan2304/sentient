@@ -4,6 +4,7 @@ and doing nothing when off."""
 import json
 import time
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import llm
@@ -72,7 +73,8 @@ async def test_gate_clip_watched_written_down_and_deleted(hass: HomeAssistant, a
     # the voice answers from what's already been watched — no new AI call
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en",
                                                                 assistant=None, device_id=None))
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "gate"}))
+    with patch("custom_components.sentient.security_voice.async_should_expose", return_value=True):
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "gate"}))
     assert len(ai) == 1 and out["already_watched"][0]["what"] == "A man walked a dog past the gate."
 
 

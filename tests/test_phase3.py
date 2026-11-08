@@ -213,7 +213,8 @@ async def test_event_clip_watched(hass: HomeAssistant, aioclient_mock, tmp_path)
 
     hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
     api = await _api(hass)
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "front door"}))
+    with patch("custom_components.sentient.security_voice.async_should_expose", return_value=True):
+        out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_what_happened", tool_args={"camera": "front door"}))
     assert out["what_happened"] == "A courier left a parcel by the door and went."
     assert sent[0].data["attachments"][0]["media_content_type"] == "video/mp4"
     await hass.async_block_till_done()

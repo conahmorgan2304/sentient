@@ -681,8 +681,11 @@ class WhatHappenedTool(_Tool):
         "Watch the latest recorded clip from a camera and say what actually happened — for 'what happened at the "
         "door?', 'what was that in the garden?', 'who was at the gate just now?'. 'camera' is the camera's name or "
         "area. Uses the event clip, not a live picture; for what's there right now, use sentient_look."
+        " Use event_id for a specific/selected event, so a newer clip cannot take its place. "
+        "With security conversation context enabled, omit camera to reuse that conversation's selected event."
     )
-    parameters = vol.Schema({vol.Required("camera"): cv.string, vol.Optional("question"): cv.string})
+    parameters = vol.Schema({vol.Optional("camera"): cv.string, vol.Optional("question"): cv.string,
+                             vol.Optional("event_id"): cv.string})
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
@@ -692,10 +695,45 @@ class WhatHappenedTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        camera = resolve_entity(hass, tool_input.tool_args["camera"], "camera")
+        args = tool_input.tool_args
+        events = getattr(rt, "security_events", None)
+        event_stamp = events.stamp() if events is not None else None
+        event_id = args.get("event_id")
+        if event_id and (events is None or not events.tracking):
+            return {"error": "Enable a security event feature to select a retained event ID"}
+        if events is not None and events.tracking and (event_id or not args.get("camera")):
+            from .security_voice import select
+
+            row, clarification = await select(hass, rt, llm_context, event_id=event_id, camera=args.get("camera"))
+            if row is None:
+                return clarification
+            camera, event_id = f"camera.{row['camera']}", row["id"]
+        else:
+            from .security_voice import camera_named
+
+            camera = camera_named(hass, args["camera"]) if args.get("camera") else None
         if camera is None or not camera.startswith("camera."):
-            return {"error": f"no camera called '{tool_input.tool_args['camera']}'"}
-        return await rt.clips.async_what_happened(camera, tool_input.tool_args.get("question"), force=True)
+            return {"error": "Choose a camera or a specific security event"}
+        from .security_voice import allowed, owner
+
+        if not await allowed(hass, llm_context, camera):
+            return {"error": "That camera is not exposed or you do not have permission to read it"}
+        if events is not None and event_stamp != events.stamp():
+            return {"skipped": "Security event context changed; ask again"}
+        out = await rt.clips.async_what_happened(camera, args.get("question"), force=True, **({"event_id": event_id} if event_id else {}))
+        if events is not None and event_stamp != events.stamp():
+            return {"skipped": "Security event context changed; ask again"}
+        if events is not None and out.get("event_id") in events.items:
+            events.focus(owner(llm_context), out["event_id"])
+            if correction := events.correction(out["event_id"]):
+                out["household_correction"] = correction
+        if events is not None and (watched := out.get("already_watched")):
+            for item in watched:
+                if correction := events.correction(item.get("event_id")):
+                    item["household_correction"] = correction
+            if len(watched) == 1 and watched[0].get("event_id") in events.items:
+                events.focus(owner(llm_context), watched[0]["event_id"])
+        return out
 
 
 class SearchTool(_Tool):
@@ -1784,6 +1822,7 @@ class SentientAPI(llm.API):
         if conversation_id and (rt := _runtime(self.hass)) is not None:
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         from .voice_api import SessionTool, IncidentsTool, ClarifyTool
+        from .security_voice import SecurityEventTool, SecurityFeedbackTool
 
         rt0 = _runtime(self.hass)
         tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
@@ -1793,6 +1832,10 @@ class SentientAPI(llm.API):
                  *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else []),
                  *([BookTool()] if rt0 is not None and rt0.options.get("books") else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else [])]
+        if rt0 is not None and getattr(rt0, "security_events", None) is not None and rt0.security_events.tracking:
+            tools.append(SecurityEventTool())
+            if rt0.security_events.on("security_event_feedback"):
+                tools.append(SecurityFeedbackTool())
         rt = _runtime(self.hass)
         if rt is not None and rt.options.get("focused_tools") and getattr(rt, "focus", None) is not None:
             from .focus import current_request
@@ -1808,6 +1851,10 @@ class SentientAPI(llm.API):
         if rt is not None and (house_context := getattr(rt, 'house_context', None)) is not None:
             context_line = context_prompt(await house_context.snapshot(
                 llm_context.context, llm_context.device_id, current_request.get() or self._asked(), current_session.get()))
+        if rt is not None:
+            from .security_voice import reference_prompt
+
+            context_line += await reference_prompt(self.hass, rt, llm_context)
         return llm.APIInstance(
             api=self,
             api_prompt=self._prompt(llm_context, conversation_id) + context_line,
