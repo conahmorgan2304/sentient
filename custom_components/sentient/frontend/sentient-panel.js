@@ -207,12 +207,12 @@
         <div class="m"><div class="ti">${esc(persona).toUpperCase()}</div>
           <div class="sub">${(this._st("house") || {}).state === "asleep" ? "HOUSE ASLEEP" : this._attr("likely_room", "quiet_hours") ? "QUIET HOURS" : "AWAKE"} · PEOPLE IN ${esc(room.state).toUpperCase()} · ${aiTxt}</div>
           <div class="modes">${this._modeChip("hush", "mdi:volume-off", "HUSH 1 HOUR", "HUSHED")}${this._modeChip("guest_mode", "mdi:account-multiple", "GUEST MODE", "GUESTS IN")}${this._holidayChip()}${this._showChips()}${this._chimeChip()}${(this._sc || []).map((r) => `<button class="mode run" data-act="scrun" data-id="${esc(r.id)}"><ha-icon icon="mdi:play-circle-outline"></ha-icon>${esc(r.name).toUpperCase()}</button>`).join("")}</div>
-          <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI CALLS / ${ai.limit}` : "AI CALLS")}</div></div>
+          <div class="st">${stat(st("memories"), "MEMORIES ›", "memories")}${stat(st("watches"), "WATCHING")}${stat(st("routines"), "ROUTINES")}${stat(st("visitors"), "VISITORS")}${stat(st("health"), "PROBLEMS")}${stat(ai.today ?? 0, ai.limit ? `AI TASKS / ${ai.limit}` : "AI TASKS")}</div></div>
         <div class="rm"><div class="t">WHERE PEOPLE ARE</div>${bars || '<div class="b">NO RECENT MOTION</div>'}</div>`;
 
       // when the AI keeps failing or today's calls are used up, say so plainly at the top
       const warn = ai.failing ? `<ha-icon icon="mdi:robot-confused-outline"></ha-icon><b>The AI isn't answering right now<small>Remarks, camera looks and briefings use plain words until it's back${ai.last_error ? " · " + esc(String(ai.last_error).slice(0, 140)) : ""}</small></b>`
-        : ai.capped ? `<ha-icon icon="mdi:counter"></ha-icon><b>Today's ${esc(String(ai.limit))} AI calls are used up<small>Plain words until midnight · the limit is in Settings → Mind</small></b>` : "";
+        : ai.capped ? `<ha-icon icon="mdi:counter"></ha-icon><b>Today's ${esc(String(ai.limit))} AI tasks are used up<small>Plain words until midnight · the limit is in Settings → Mind</small></b>` : "";
       for (const id of ["aiwarn", "aiwarn2"]) { R(id).hidden = !warn; R(id).innerHTML = warn; }
 
       // what's new since the last update it was seen (loaded once; GOT IT hides it)
@@ -300,7 +300,7 @@
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
         ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
-        : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI calls are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
+        : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
         : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
@@ -339,7 +339,7 @@
       const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
           <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NOTHING IN THE LAST HOUR</div>') : "";
       const mindTitle = mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`;
-      const meter = (top) => ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, top).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}</div>` : "";
+      const meter = (top) => ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, top).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}${ai.service_attempts_today != null ? ` · ${esc(ai.service_attempts_today)} SERVICE ATTEMPTS (${esc(ai.retry_attempts_today || 0)} RETRIES)` : ""}</div>` : "";
       // the overview keeps a short summary; everything else lives on the MIND tab
       R("mind").innerHTML = this._h("MIND", mindTitle)
         + (thinkList.slice(0, 4).join("") || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
@@ -1777,10 +1777,10 @@
       const later = mind.ask_later || [];
       const used = ai.limit ? Math.min(100, Math.round(((ai.today || 0) / ai.limit) * 100)) : 0;
       R("mbrain").innerHTML = `<div class="brh"><div class="brl">${this._h("MIND", ai.failing ? "AI NOT ANSWERING" : ai.capped ? "AI LIMIT REACHED" : "THINKING NORMALLY")}
-          <div class="st">${tile(ai.today ?? 0, ai.limit ? `AI CALLS OF ${ai.limit}` : "AI CALLS")}${tile(ai.failed_today || 0, "FAILED TODAY", ai.failed_today ? "warn" : "")}${tile(this._st("mind") ? this._st("mind").state : 0, "TALKS TODAY")}${tile(this._st("memories") ? this._st("memories").state : 0, "MEMORIES")}${tile((mind.follow_ups || []).length + later.length, "TO COME BACK TO")}</div>
+          <div class="st">${tile(ai.today ?? 0, ai.limit ? `AI TASKS OF ${ai.limit}` : "AI TASKS")}${tile(ai.failed_today || 0, "FAILED TODAY", ai.failed_today ? "warn" : "")}${tile(this._st("mind") ? this._st("mind").state : 0, "TALKS TODAY")}${tile(this._st("memories") ? this._st("memories").state : 0, "MEMORIES")}${tile((mind.follow_ups || []).length + later.length, "TO COME BACK TO")}</div>
           ${ai.limit ? `<div class="use"><i style="width:${used}%"></i></div>` : ""}
           <div class="tchips">${chip(tk.style === "natural", tk.style === "natural" ? "NATURAL TALK" : "BRIEF TALK")}${chip(tk.carry_on_minutes > 0, tk.carry_on_minutes > 0 ? `CARRIES ON ${esc(String(tk.carry_on_minutes))} MIN` : "NEW CHAT EACH TIME")}${chip(tk.focused_tools, "FOCUSED TOOLS")}${chip(tk.ask_later, "ASKS HOW THINGS WENT")}</div></div>
-        <div class="week"><div class="wt">AI CALLS · LAST WEEK${ai.average_per_day != null ? ` · USUALLY ${esc(String(ai.average_per_day))} A DAY` : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
+        <div class="week"><div class="wt">AI TASKS · LAST WEEK${ai.average_per_day != null ? ` · USUALLY ${esc(String(ai.average_per_day))} A DAY` : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
       // about itself: what works right now, and what its own records show
       const me = mind.self;
       R("mself").hidden = !me;

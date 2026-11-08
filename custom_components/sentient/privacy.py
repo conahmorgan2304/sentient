@@ -49,6 +49,26 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
             noticer._flush_unsub()
             noticer._flush_unsub = None
 
+    watches = rt.watches
+    gone['cached_camera_answers'] = len(getattr(watches, '_looks', {}))
+    watches.clear_camera_cache()
+    cleared = 0
+    for watch in watches.watches:
+        if _after(watch.last_checked, since):
+            watch.last_result = watch.last_checked = None
+            cleared += 1
+    if cleared:
+        watches._save()
+    gone['camera_watch_results'] = cleared
+    checks = getattr(rt, 'lists', {}).get('checks')
+    if checks is not None:
+        cleared = 0
+        for row in list(checks.items.values()):
+            if _after(row.get('last'), since):
+                checks.update(row['id'], last=None, last_answer=None)
+                cleared += 1
+        gone['standing_camera_results'] = cleared
+
     tl = rt.timeline
     keep = [i for i in tl.items if not _after(i.get("time"), since)]
     gone["timeline"] = len(tl.items) - len(keep)

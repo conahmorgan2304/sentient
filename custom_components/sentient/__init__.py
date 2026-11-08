@@ -19,7 +19,7 @@ from homeassistant.helpers import llm
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.exceptions import ServiceValidationError
 
-from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY
+from .const import CONF_ASK_LATER, CONF_SPEECH_DELIVERY_HISTORY, CONF_AI_TASK_ENTITY
 from .voice_checks import VoiceChecks
 from .updates import UpdateChecker
 from .sessions import Sessions
@@ -695,6 +695,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     from .camwake import clear as clear_camera_wakes
 
     clear_camera_wakes(hass)
+    entry.runtime_data.ai.invalidate_requests()
+    entry.runtime_data.watches.clear_camera_cache()
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.ai.voice_timings.clear()
@@ -735,7 +737,11 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     from .camwake import clear as clear_camera_wakes
 
     clear_camera_wakes(hass)
+    entry.runtime_data.ai.invalidate_requests()
+    entry.runtime_data.watches.clear_camera_cache()
     old = entry.runtime_data.options
+    if old.get(CONF_AI_TASK_ENTITY) != options.get(CONF_AI_TASK_ENTITY):
+        entry.runtime_data.ai.reset_provider_health()
     keep_pack = (all(options.get(k) for k in ('remember_language_phrases', 'automatic_language', 'speak_house_language'))
                  and selected_language(hass, old) == selected_language(hass, options)
                  and old.get('ai_task_entity') == options.get('ai_task_entity'))

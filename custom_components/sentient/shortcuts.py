@@ -15,6 +15,7 @@ from typing import Any
 import uuid
 
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.script import Script, async_validate_actions_config
 from homeassistant.helpers.storage import Store
@@ -188,7 +189,7 @@ class Shortcuts:
 
 
 async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], name: str, context: Context | None = None,
-                            variables: dict[str, Any] | None = None) -> None:
+                            variables: dict[str, Any] | None = None, before_run=None) -> None:
     """Run a list of ordinary Home Assistant actions (as built in HA's action editor)."""
     if not actions:
         return
@@ -198,6 +199,8 @@ async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], 
         _LOGGER.warning("Sentient: %s not run — it would change %s, which is on the never-touch list", name, names(hass, hit))
         return
     sequence = await async_validate_actions_config(hass, cv.SCRIPT_SCHEMA(actions))
+    if before_run is not None and not before_run():
+        raise HomeAssistantError('Settings or permissions changed before the actions started')
     script = Script(hass, sequence, f"Sentient: {name}", DOMAIN, running_description="actions")
     await script.async_run(run_variables=variables, context=context or own_context(hass, name))
 
