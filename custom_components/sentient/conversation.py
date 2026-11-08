@@ -330,13 +330,14 @@ class BackedUpAgent(conversation.ConversationEntity):
         from homeassistant.util import dt as dt_util
 
         from .action_recovery import requested as recovery_requested
+        from .behaviour import requested as explanation_requested
 
         recovery_control = getattr(self._entry.runtime_data, 'control', None)
         if recovery_control is not None and self._options().get("action_recovery"):
             owner = (user_input.device_id, user_input.satellite_id, user_input.context.user_id)
             if self._guest():
                 recovery_control.clear_recovery()
-            elif not recovery_requested(user_input.text):
+            elif not recovery_requested(user_input.text) and not explanation_requested(self._options(), user_input.text):
                 recovery_control.invalidate_recovery(owner)
         minutes = min(float(self._options().get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
         speaker = user_input.satellite_id or user_input.device_id
@@ -465,14 +466,14 @@ class BackedUpAgent(conversation.ConversationEntity):
             token = current_session.set(session)
             try:
                 from homeassistant.util import dt as dt_util
-                from .behaviour import answer as explain_behaviour
+                from .behaviour import answer as explain_behaviour, repeat_question
 
                 explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
                 if explanation is not None:
                     # This read-only turn must not consume a pending clarification or confirmation.
                     session.turn += 1
                     session.touched = dt_util.utcnow()
-                    question = session.question if session.pending or session.clarification else ''
+                    question = await repeat_question(self.hass, session, user_input.context, lambda: not self._guest() and bool(self._options().get('behaviour_explanations')))
                     return self._reply(user_input, session, explanation + (' ' + question if question else ''), bool(question))
                 from .followups import restore_recent
 

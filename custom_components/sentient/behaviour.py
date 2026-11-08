@@ -23,9 +23,13 @@ REASONS = {
 }
 
 
+def requested(options, text):
+    return bool(options.get(CONF) and options.get('conversation_sessions') and clean(text) in LISTEN | ACTION)
+
+
 async def answer(hass, sessions, session, text, context, allowed):
     query = clean(text)
-    if not (sessions.options.get(CONF) and sessions.options.get('conversation_sessions')) or query not in LISTEN | ACTION:
+    if not requested(sessions.options, text):
         return None
     if not allowed():
         return 'Recorded conversation details are unavailable in guest mode.'
@@ -64,3 +68,32 @@ async def answer(hass, sessions, session, text, context, allowed):
         return 'The recorded devices are not currently accessible.'
     return ('For the last recorded guarded action in this session: ' + outcome_text(hass, {'actions': visible})
             + ' These are recorded results, not a fresh check or proof of physical success. I have not repeated any action.')
+
+
+async def repeat_question(hass, session, context, allowed):
+    """Repeat only a still-valid, accessible question; never revive stale consent."""
+    pending, clarification = session.pending, session.clarification
+    if not pending and not clarification:
+        return ''
+    def valid():
+        return (allowed() and not session.closed and not session.forgotten
+                and session.owner[2] == context.user_id
+                and session.pending is pending and session.clarification is clarification
+                and (not pending or pending.get('expires', dt_util.utcnow()) > dt_util.utcnow()))
+    if not valid():
+        if session.pending is pending and session.clarification is clarification:
+            session.pending = session.clarification = None
+            session.question = ''
+        return ''
+    ids = ([a['entity_id'] for a in pending.get('actions', [])] if pending else
+           [r['entity_id'] for r in clarification.get('choices', [])])
+    user = await hass.auth.async_get_user(context.user_id) if context.user_id else None
+    accessible = (not context.user_id or (user is not None and user.is_active)) and all(
+        async_should_expose(hass, 'conversation', eid)
+        and (user is None or user.permissions.check_entity(eid, POLICY_READ)) for eid in ids)
+    if not valid() or not accessible:
+        if session.pending is pending and session.clarification is clarification:
+            session.pending = session.clarification = None
+            session.question = ''
+        return ''
+    return session.question

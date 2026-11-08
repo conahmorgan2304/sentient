@@ -22,7 +22,7 @@ async def test_direct_explanation_does_not_call_model_or_consume_confirmation(ha
     obj, rt = agent(hass, {'conversation_sessions': True, 'behaviour_explanations': True})
     session = rt.sessions.get(request('test'))
     session.turn = 1
-    session.pending = {'summary': 'turn on hallway', 'actions': [], 'turn': 1}
+    session.pending = {'summary': 'turn on hallway', 'actions': [], 'turn': 1, 'expires': dt_util.utcnow() + timedelta(seconds=60)}
     session.question = 'Shall I turn on the hallway light?'
     with patch.object(obj, '_async_process_legacy', new=AsyncMock()) as model:
         result = await obj.async_process(request('Why are you still listening?'))
