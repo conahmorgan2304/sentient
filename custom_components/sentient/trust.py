@@ -31,6 +31,7 @@ LEVELS = ["do", "tell", "ask"]
 KINDS = {"lights": CONF_TRUST_LIGHTS, "switches": CONF_TRUST_SWITCHES, "blinds": CONF_TRUST_COVERS,
          "heating": CONF_TRUST_HEATING}
 ALWAYS_ASK = {"garage", "gate", "door"}  # cover device classes
+_UNCERTAIN = object()
 YES_RUN = 5  # yeses in a row before it offers to stop asking
 
 
@@ -67,7 +68,8 @@ class Trust:
         return value if value in LEVELS else "do"
 
     async def async_act(self, entity_id: str, doing: str, asking: str, run: Callable[[], Awaitable[Any]],
-                        why: str, *, valid: Callable[[], bool] | None = None) -> str:
+                        why: str, *, valid: Callable[[], bool] | None = None,
+                        state_matches: Callable[[Any, Any], bool] | None = None) -> str:
         """Submit a current action using its configured trust level; a submission is not physical verification."""
         from .never import blocked
         rt = self._rt()
@@ -88,7 +90,8 @@ class Trust:
                     and entity_id.split('.', 1)[0] not in ('lock', 'alarm_control_panel')
                     and not blocked(self.hass, entity_id) and before is not None and state is not None
                     and state.state not in ('unknown', 'unavailable')
-                    and state.state == before.state and state.attributes == before.attributes
+                    and (state_matches(before, state) if state_matches else
+                         state.state == before.state and state.attributes == before.attributes)
                     and (valid is None or valid()))
         async def submit():
             if entity_id in self._busy or not current():
@@ -96,16 +99,21 @@ class Trust:
             self._busy.add(entity_id)
             try:
                 return await run() is not False
+            except Exception as err:
+                _LOGGER.warning('Background action for %s did not finish; no retry: %s', entity_id, err)
+                return _UNCERTAIN
             finally:
                 self._busy.discard(entity_id)
         if not current():
             return "not asked"
         if level == "do":
-            return "done" if await submit() else "not asked"
+            sent = await submit()
+            return "unconfirmed" if sent is _UNCERTAIN else "done" if sent else "not asked"
         if level == "tell":
             with because(why):
                 await speech.async_say(f"{doing}.", "low", None, source="trust")
-            return "done" if await submit() else "not asked"
+            sent = await submit()
+            return "unconfirmed" if sent is _UNCERTAIN else "done" if sent else "not asked"
         kind = kind_of(self.hass, entity_id)
         async def answered(answer: str) -> str:
             nonlocal consumed
@@ -115,7 +123,10 @@ class Trust:
             if not current():
                 return "Things have changed since I asked. No action was taken; please ask again."
             if answer == "yes":
-                if not await submit():
+                sent = await submit()
+                if sent is _UNCERTAIN:
+                    return "The request did not finish. I cannot confirm whether it happened, and I haven't retried it. Please check the device."
+                if not sent:
                     return "Things have changed since I asked. No action was taken; please ask again."
                 if policy_current():
                     self.yes_run[kind] = self.yes_run.get(kind, 0) + 1
