@@ -162,6 +162,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 
 - [x] 0.98.2 — Recheck queued auto-off conditions and accepted outcomes, refresh rain-warning evidence after forecasts, and share bounded camera wake work without caching failures. See BACKGROUND_DEVICE_REVIEW_0982.md.
 
+- [x] 0.98.9 — Reset-aware recorder goal statistics, duration-weighted history fallback, calendar-day boundaries, comparable units and versioned goal refresh. See GOAL_STATISTICS_REVIEW_0989.md.
 - [x] 0.98.8 — Additive and faithful restore, unique serialised backups, bounded/current settings proposals, goal lifecycle/numeric guards and stale summary suppression. See FULL_REVIEW_0988.md.
 - [x] 0.98.7 — Observed heating ownership, current-context preheat, conservative rollback and unconfirmed-request diagnostics. See HEATING_OWNERSHIP_REVIEW_0987.md.
 - [x] 0.98.6 — Approved learned plans retain their meaning, current-context trust and suggestion answers, atomic learning updates and more honest anchor/link evidence. See LEARNED_AUTONOMY_REVIEW_0986.md.
