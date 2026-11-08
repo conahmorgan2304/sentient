@@ -355,3 +355,14 @@ def test_reflection_material_includes_latest_correction(hass):
     _, talk = obj._material(rt)
     assert 'No, I meant the bedroom lamp.' in talk[0]
     assert 'Earlier turn 0' not in talk[0]
+
+
+async def test_tidy_orders_actual_instants_across_daylight_saving_change(tidy):
+    obj, rt = tidy
+    earlier, later = rt.memory.items[:2]
+    earlier.created = '2026-10-25T01:50:00+01:00'
+    later.created = '2026-10-25T01:10:00+00:00'
+    with patch.object(obj, '_ai', new=AsyncMock(return_value={})) as ai:
+        await obj.async_tidy()
+    listing = ai.call_args.args[1]
+    assert listing.index(earlier.id) < listing.index(later.id)

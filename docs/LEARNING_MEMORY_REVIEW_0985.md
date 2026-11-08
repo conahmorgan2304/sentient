@@ -32,4 +32,4 @@ Live testing should include a final spoken correction followed by reflection, ed
 
 ## Validation
 
-All **1,176 Python tests** pass, including **58 new regression cases** in `test_learning_memory_reliability.py`. All **6 JavaScript tests** pass. Python compilation, frontend syntax, patch whitespace and English translation parity were checked. Live Home Assistant hardware and real provider delays/outages remain to be tested after installation.
+All **1,177 Python tests** pass, including **59 new regression cases** in `test_learning_memory_reliability.py`. All **6 JavaScript tests** pass. Python compilation, frontend syntax, patch whitespace and English translation parity were checked. Live Home Assistant hardware and real provider delays/outages remain to be tested after installation.

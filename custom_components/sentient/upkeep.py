@@ -506,7 +506,10 @@ class Upkeep:
             self._tidying = False
 
     async def _async_tidy(self, rt, current) -> dict[str, Any]:
-        items = sorted(rt.memory.items, key=lambda m: m.created)
+        def created_at(memory):
+            when = dt_util.parse_datetime(memory.created)
+            return dt_util.as_utc(when).timestamp() if when else 0
+        items = sorted(rt.memory.items, key=created_at)
         if len(items) < TIDY_MIN_MEMORIES:
             self.last_tidy = {"time": dt_util.now().isoformat(), "result": "too few memories to tidy"}
             return self.last_tidy
