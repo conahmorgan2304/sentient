@@ -105,6 +105,27 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         if names:
             faces._store.async_delay_save(lambda: {"seen": faces.seen}, 1)
 
+    reflection = getattr(rt, 'reflection', None)
+    if reflection is not None and reflection.last and _after(reflection.last.get('time'), since):
+        reflection.last = None
+        reflection._store.async_delay_save(lambda: {"last": reflection.last}, 2)
+        gone['reflection'] = 1
+    curiosity = getattr(rt, 'curiosity', None)
+    if curiosity is not None:
+        queued = [q for q in curiosity.queue if not _after(q.get('added'), since)]
+        asked = {key: row for key, row in curiosity.asked.items() if not _after(row.get('time'), since)}
+        gone['curiosity_records'] = len(curiosity.queue) - len(queued) + len(curiosity.asked) - len(asked)
+        curiosity.queue, curiosity.asked = queued, asked
+        if gone['curiosity_records']:
+            curiosity._save()
+    followyou = getattr(rt, 'followyou', None)
+    if followyou is not None:
+        queued = [q for q in followyou.queue if not _after(q.get('kept'), since)]
+        gone['queued_messages'] = len(followyou.queue) - len(queued)
+        followyou.queue = queued
+        if gone['queued_messages']:
+            followyou._save()
+
     mem = rt.memory
     recent = [m for m in mem.items if _after(m.created, since) and not m.pinned]
     for m in recent:

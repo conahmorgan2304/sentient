@@ -49,8 +49,11 @@ class Curiosity:
         self.asked: dict[str, dict[str, Any]] = {}  # key -> {question, time}
         self.last_day: str | None = None
         self._unsub = None
+        self._busy = False
+        self._stopped = False
 
     async def async_start(self) -> None:
+        self._stopped = False
         data = await self._store.async_load() or {}
         self.queue = data.get("queue", [])
         self.asked = data.get("asked", {})
@@ -59,6 +62,7 @@ class Curiosity:
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -133,7 +137,7 @@ class Curiosity:
     # ----- asking ----------------------------------------------------------------------------
     @callback
     def _tick(self, now: datetime) -> None:
-        if not self.enabled:
+        if self._stopped or not self.enabled:
             return
         local = dt_util.as_local(now)
         if local.minute == 0 and local.hour == 9:
@@ -149,11 +153,24 @@ class Curiosity:
         self.hass.async_create_task(self.async_ask(), eager_start=False)
 
     async def async_ask(self, force: bool = False) -> dict[str, Any]:
+        if self._busy or self._stopped or (not force and not self.enabled):
+            return {"asked": None, "why": "curiosity is off or already asking"}
+        self._busy = True
+        try:
+            return await self._async_ask(force)
+        finally:
+            self._busy = False
+
+    async def _async_ask(self, force: bool) -> dict[str, Any]:
         rt = self._rt()
         if rt is None or not self.queue:
             return {"asked": None, "why": "nothing to ask"}
         speech = rt.speech
+        options = self.options
+        stamp = (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0))
         if not force:
+            if self.last_day == dt_util.now().date().isoformat():
+                return {"asked": None, "why": "already asked today"}
             if speech.guest_mode or speech.quiet_now():
                 return {"asked": None, "why": "not a good time"}
             if rt.tracker.best_area() is None:
@@ -172,6 +189,10 @@ class Curiosity:
                     "rather not say, just say no problem and save nothing."
                 ),
             )
+        if (self._stopped or self.options is not options or (not force and not self.enabled)
+                or stamp != (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0))
+                or not self.queue or self.queue[0] is not item):
+            return {"asked": None, "why": "the question was invalidated while asking"}
         if not result.spoken:
             return {"asked": None, "why": result.reason}
         self.queue.pop(0)

@@ -162,5 +162,6 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 
 - [x] 0.98.2 — Recheck queued auto-off conditions and accepted outcomes, refresh rain-warning evidence after forecasts, and share bounded camera wake work without caching failures. See BACKGROUND_DEVICE_REVIEW_0982.md.
 
+- [x] 0.98.5 — More faithful multilingual memory recall, protected pinned facts and correction categories, current-snapshot memory tidy, reflection lifecycle/deduplication and forgetting of derived questions/thoughts. See LEARNING_MEMORY_REVIEW_0985.md.
 - [x] 0.98.4 — Scoped wake-word continuation, privacy/guest invalidation, uncertain camera-watch results and recovery, and queued state-watch lifecycle checks. See WATCH_CONTEXT_REVIEW_0984.md.
 - [x] 0.98.3 — AI retry/health lifecycle and attempt visibility, camera-check concurrency and typed results, and version-bound saved offer answers. See AI_WORK_REVIEW_0983.md.
