@@ -440,9 +440,10 @@ class WatchManager:
             return False
         if watch.to_state is not None:
             return state.state.lower() == watch.to_state.lower()
-        try:
-            value = float(state.state)
-        except ValueError:
+        from .numeric import finite_float
+
+        value = finite_float(state.state)
+        if value is None:
             return False
         if watch.above is not None and value <= watch.above:
             return False

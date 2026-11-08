@@ -664,6 +664,9 @@ async def ws_doctor(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     connection.send_result(msg["id"], await async_check(hass, entry.runtime_data))
 
 
+SPEAKER_TEST_TIMEOUT = 30
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/doctor/speakers"})
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -675,11 +678,24 @@ async def ws_doctor_speakers(hass: HomeAssistant, connection, msg: dict[str, Any
         return
     rt = entry.runtime_data
     results = []
-    for sp in [s for s in rt.options.get("speakers") or [] if hass.states.get(s)]:
+    import asyncio
+
+    for sp in dict.fromkeys(rt.options.get("speakers") or []):
         st = hass.states.get(sp)
-        ok = await rt.speech.async_read_aloud(f"Testing — this is the {st.name}.", sp)
-        results.append({"speaker": st.name, "ok": ok})
-    connection.send_result(msg["id"], {"results": results})
+        row = {"speaker": st.name if st else sp, "entity_id": sp, "ok": False}
+        if st is None:
+            row["error"] = "Speaker no longer exists"
+        else:
+            try:
+                async with asyncio.timeout(SPEAKER_TEST_TIMEOUT):
+                    row["ok"] = await rt.speech.async_read_aloud(f"Testing — this is the {st.name}.", sp)
+            except TimeoutError:
+                row["error"] = "Speaker test timed out; playback is unconfirmed. No retry was sent."
+            except Exception as err:
+                row["error"] = (str(err) or type(err).__name__)[:200]
+        results.append(row)
+    connection.send_result(msg["id"], {"results": results,
+        "note": "Acceptance does not independently confirm audibility."})
 
 
 @websocket_api.websocket_command(

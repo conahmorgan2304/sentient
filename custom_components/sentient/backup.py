@@ -185,7 +185,22 @@ class AutoBackup:
 
         def write() -> None:
             self.folder.mkdir(exist_ok=True)
-            (self.folder / name).write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
+            import os
+            import tempfile
+
+            payload = json.dumps(data, indent=1, default=str)
+            temporary = None
+            try:
+                with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=self.folder,
+                                                 prefix=".sentient-", suffix=".tmp", delete=False) as stream:
+                    temporary = Path(stream.name)
+                    stream.write(payload)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, self.folder / name)
+            finally:
+                if temporary is not None:
+                    temporary.unlink(missing_ok=True)
             for old in sorted(self.folder.glob("sentient-*.json"))[:-keep]:
                 old.unlink(missing_ok=True)
 

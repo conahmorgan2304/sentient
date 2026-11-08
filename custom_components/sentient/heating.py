@@ -58,10 +58,9 @@ RESTORE_AFTER = timedelta(minutes=45)
 
 
 def _num(value: Any) -> float | None:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    from .numeric import finite_float
+
+    return finite_float(value)
 
 
 def warmup_rate(states: list[State]) -> tuple[float | None, int]:

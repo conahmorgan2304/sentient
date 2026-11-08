@@ -106,10 +106,9 @@ def contradicts(message: str, changes: list[Change]) -> bool:
 
 
 def _number(value: str | None) -> float | None:
-    try:
-        return float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
+    from .numeric import finite_float
+
+    return finite_float(value)
 
 
 class Noticer:
@@ -136,6 +135,7 @@ class Noticer:
         self._flush_unsub = None
         self._unsub = None
         self.feedback = None  # set by the runtime
+        self._generation = 0
 
     # ----- settings -------------------------------------------------------------
     @property
@@ -153,6 +153,7 @@ class Noticer:
 
     @callback
     def async_stop(self) -> None:
+        self._generation += 1
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -173,6 +174,9 @@ class Noticer:
         if self.feedback is not None and self.feedback.remark_level(new.entity_id) == "quiet":
             return  # learned from feedback: nobody wants to hear about this
         old = event.data["old_state"]
+        invalid_numbers = {'nan', 'inf', '+inf', '-inf', 'infinity', '+infinity', '-infinity'}
+        if old is not None and ({old.state.casefold(), new.state.casefold()} & invalid_numbers):
+            return
         if old is None or old.state in _IGNORED or new.state in _IGNORED or old.state == new.state:
             return  # appearing at start-up, coming back from unavailable, or attribute-only
         if new.domain == "weather" and not ({old.state, new.state} & _WET_WEATHER):
@@ -247,6 +251,8 @@ class Noticer:
         decide=True: the AI decides whether it's worth saying and how (counts as noticing); False: say it as given,
         still under quiet hours, hush, guests and holiday."""
         if not decide:
+            if self.speech.guest_mode:
+                return {'result': 'guest_mode', 'message': ''}
             with because("an automation passed it on"):
                 result = await self.speech.async_say(what, priority, None, source="notice:automation")
             return {"result": result.reason, "message": result.message}
@@ -263,6 +269,7 @@ class Noticer:
         return record
 
     async def _async_decide(self, changes: list[Change]) -> dict[str, Any]:
+        generation = (getattr(self.speech, "_privacy_generation", 0), self._generation)
         record: dict[str, Any] = {
             "time": dt_util.now().isoformat(),
             "changes": [c.describe() for c in changes],
@@ -277,23 +284,37 @@ class Noticer:
         try:
             decision = await self._async_ask_ai(changes)
         except HomeAssistantError as err:
+            if generation != (getattr(self.speech, "_privacy_generation", 0), self._generation):
+                record.clear()
+                record.update(time=dt_util.now().isoformat(), changes=[], result='cancelled')
+                return record
             record["result"] = f"error: {err}"
             _LOGGER.warning("Sentient could not decide about %s: %s", record["changes"], err)
             return record
-        speak = bool(decision.get("speak")) and bool((decision.get("message") or "").strip())
-        if speak and contradicts(decision["message"], changes):
+        if generation != (getattr(self.speech, "_privacy_generation", 0), self._generation):
+            record.clear()
+            record.update(time=dt_util.now().isoformat(), changes=[], result='cancelled')
+            return record
+        if reason := self._free_rules():
+            record['result'] = f'skipped: {reason}'
+            if reason == 'guest_mode':
+                record['changes'] = []
+            return record
+        raw_message = decision.get("message")
+        message = raw_message.strip() if isinstance(raw_message, str) else ''
+        speak = decision.get("speak") is True and bool(message)
+        if speak and contradicts(message, changes):
             record["result"] = "held: said something had finished, but it had only just started"
             record["message"] = decision.get("message")
             return record
         record["result"] = "spoke" if speak else "stayed quiet"
-        record["message"] = decision.get("message")
+        record["message"] = message
         if speak:
             self._remarks.append(dt_util.utcnow())
-            message = decision["message"].strip()
             if self.feedback is not None:
                 self.feedback.remarked([c.entity_id for c in changes], message)
             with because("I noticed " + "; ".join(record["changes"][:3]) + " and thought it worth mentioning"):
-                if decision.get("question"):
+                if decision.get("question") is True:
                     result = await self.speech.async_ask(message, source="notice")
                 else:
                     result = await self.speech.async_say(message, "normal", None, source="notice")

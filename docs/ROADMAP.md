@@ -157,3 +157,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.97.1 — Preserve recovery evidence during explanation questions, revalidate repeated questions, and enforce confirmation deadlines through queued/per-device dispatch.
 
 - [x] 0.98.0 — Bounded current-house context for standard and guarded conversations; optional event-driven follow-up when confirmed heating reaches its requested temperature.
+
+- [x] 0.98.1 — Reliability review: finite sensor readings, late noticing/privacy safeguards, strict AI decision types, disabled safety-repeat checks, exposure failures denied, resilient speaker checks and atomic backups. See RELIABILITY_REVIEW_0981.md.

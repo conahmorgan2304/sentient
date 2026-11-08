@@ -37,6 +37,18 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {}
 
+    noticer = getattr(rt, 'noticer', None)
+    if noticer is not None:
+        decisions = noticer.decisions
+        retained = [row for row in decisions if not _after(row.get('time'), since)]
+        gone['noticing_decisions'] = len(decisions) - len(retained)
+        noticer.decisions = deque(retained, maxlen=decisions.maxlen)
+        noticer._pending = [change for change in noticer._pending if change.when < since]
+        noticer._last_seen = {eid: stamp for eid, stamp in noticer._last_seen.items() if stamp < since}
+        if not noticer._pending and noticer._flush_unsub:
+            noticer._flush_unsub()
+            noticer._flush_unsub = None
+
     tl = rt.timeline
     keep = [i for i in tl.items if not _after(i.get("time"), since)]
     gone["timeline"] = len(tl.items) - len(keep)
