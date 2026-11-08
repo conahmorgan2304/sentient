@@ -1365,8 +1365,8 @@ async def ws_items_test(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
             result = {"ran": item["name"]}
         elif kind == "autooff":
             on = [e for e in rt.autooff.targets(item) if hass.states.get(e) and hass.states.get(e).state == "on"]
-            await rt.autooff.async_switch_off(item, on)
-            result = {"switched_off": on}
+            accepted = await rt.autooff.async_switch_off(item, on, force=True)
+            result = {"switched_off": accepted, "note": "Service requests accepted; physical results are not independently verified."}
         else:
             result = await rt.checks.async_check(item, force=True)
     except Exception as err:  # noqa: BLE001

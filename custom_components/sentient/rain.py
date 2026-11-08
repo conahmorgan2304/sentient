@@ -8,6 +8,7 @@ hours (it's held like any other remark). Off by default.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
@@ -18,10 +19,12 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_BRIEFING_WEATHER, CONF_RAIN, CONF_RAIN_ENTITIES
 from .security import OPEN_CLASSES
+from .numeric import finite_float
 
 _LOGGER = logging.getLogger(__name__)
 
 WET = {"rainy", "pouring", "lightning-rainy", "hail", "snowy-rainy", "snowy"}
+FORECAST_TIMEOUT = 10
 LIKELY = 60  # % chance of rain that counts, when the forecast gives one
 AGAIN_AFTER = timedelta(hours=3)
 
@@ -33,12 +36,18 @@ class Rain:
         self._rt = rt_getter
         self._last_said: datetime | None = None
         self._unsub = None
+        self._generation = 0
+        self._stopped = False
+        self._lock = asyncio.Lock()
 
     async def async_start(self) -> None:
+        self._stopped = False
         self._unsub = async_track_time_interval(self.hass, self._tick, timedelta(minutes=10))
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
+        self._generation += 1
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -64,28 +73,45 @@ class Rain:
         if not weather_id:
             return False
         try:
-            resp = await self.hass.services.async_call(
-                "weather", "get_forecasts", {"entity_id": weather_id, "type": "hourly"},
-                blocking=True, return_response=True,
-            )
+            async with asyncio.timeout(FORECAST_TIMEOUT):
+                resp = await self.hass.services.async_call(
+                    "weather", "get_forecasts", {"entity_id": weather_id, "type": "hourly"},
+                    blocking=True, return_response=True,
+                )
         except Exception as err:  # noqa: BLE001 - no hourly forecast: nothing to say
             _LOGGER.debug("No hourly forecast: %s", err)
             return False
         now = dt_util.utcnow()
-        for f in (resp or {}).get(weather_id, {}).get("forecast", []):
-            when = dt_util.parse_datetime(str(f.get("datetime") or ""))
-            if when is None or when > now + timedelta(hours=1):
+        data = resp.get(weather_id) if isinstance(resp, dict) else None
+        forecast = data.get('forecast') if isinstance(data, dict) else None
+        if not isinstance(forecast, list):
+            return False
+        for f in forecast:
+            if not isinstance(f, dict):
                 continue
-            if when < now - timedelta(hours=1):
+            when = dt_util.parse_datetime(str(f.get('datetime') or ''))
+            if when is None or when.tzinfo is None or not now <= when <= now + timedelta(hours=1):
                 continue
-            chance = f.get("precipitation_probability")
-            if f.get("condition") in WET and (chance is None or chance >= LIKELY):
+            raw = f.get('precipitation_probability')
+            chance = finite_float(raw)
+            if raw is not None and (chance is None or not 0 <= chance <= 100):
+                continue
+            if f.get('condition') in WET and (chance is None or chance >= LIKELY):
                 return True
             if chance is not None and chance >= 80:
                 return True
         return False
 
     async def async_check(self, force: bool = False) -> dict[str, Any]:
+        if self._lock.locked():
+            return {'skipped': 'rain check already running'}
+        async with self._lock:
+            return await self._async_check(force)
+
+    async def _async_check(self, force: bool) -> dict[str, Any]:
+        generation, options = self._generation, self.options
+        if self._stopped:
+            return {'skipped': 'rain checks stopped'}
         if not self.enabled and not force:
             return {"skipped": "rain warnings are off"}
         opened = self.open_now()
@@ -96,6 +122,12 @@ class Rain:
             return {"skipped": "already said"}
         if not await self.async_rain_due():
             return {"rain": False, "open": opened}
+        if (self._stopped or generation != self._generation or self.options is not options
+                or (not force and not self.enabled)):
+            return {'skipped': 'rain settings changed while checking'}
+        opened = self.open_now()
+        if not opened:
+            return {'rain': True, 'open': [], 'said': False}
         rt = self._rt()
         if rt is None:
             return {"rain": True, "open": opened}
@@ -104,5 +136,5 @@ class Rain:
         result = await rt.speech.async_say(
             f"Rain's on the way in the next hour, and the {things.lower()} {verb} open.", "normal", None, source="rain")
         if result.spoken:
-            self._last_said = now
+            self._last_said = dt_util.utcnow()
         return {"rain": True, "open": opened, "said": result.spoken}

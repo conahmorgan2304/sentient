@@ -12,6 +12,8 @@ then on (up to an hour), noted on the timeline.
 
 from __future__ import annotations
 
+import asyncio
+
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
@@ -28,6 +30,7 @@ from .kinds import in_windows
 
 _LOGGER = logging.getLogger(__name__)
 
+REQUEST_TIMEOUT = 10
 BACK_ON_WITHIN = timedelta(minutes=3)
 LEARN_STEP = 5  # minutes added each time a room turns out not to be empty
 LEARN_MAX = 60
@@ -46,6 +49,8 @@ class AutoOff:
         self._rt = runtime
         self._unsub = None
         self._unsub_back = None
+        self._stopped = False
+        self._busy = set()
         self._lasting = LastingContext(hass, "auto-off")  # the house did this, not a person
         self._switched: dict[str, tuple[datetime, str]] = {}  # entity -> (when the house switched it off, item id)
 
@@ -55,11 +60,13 @@ class AutoOff:
 
     @callback
     def async_start(self) -> None:
+        self._stopped = False
         self._unsub = async_track_time_interval(self.hass, self._tick, timedelta(seconds=30))
         self._unsub_back = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._back_on)
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -70,7 +77,11 @@ class AutoOff:
     @callback
     def _back_on(self, event) -> None:
         """Someone switched it straight back on: the room wasn't empty — wait longer there from now on."""
-        new = event.data.get("new_state")
+        if self._stopped:
+            return
+        new, old = event.data.get("new_state"), event.data.get("old_state")
+        if (old is None or old.state in ('unknown', 'unavailable') or is_on(old)):
+            return
         if new is None or new.entity_id not in self._switched or not is_on(new) or new.context.parent_id:
             return
         when, item_id = self._switched.pop(new.entity_id)
@@ -113,8 +124,7 @@ class AutoOff:
     def _empty_for(self, item: dict[str, Any], now: datetime) -> timedelta | None:
         """How long every motion sensor has been clear; None if one sees movement."""
         sensors = [self.hass.states.get(e) for e in item.get("motion") or []]
-        sensors = [s for s in sensors if s is not None and s.state not in ("unavailable", "unknown")]
-        if not sensors or any(s.state == "on" for s in sensors):
+        if not sensors or any(s is None or s.state != "off" for s in sensors):
             return None
         return now - max(s.last_changed for s in sensors)
 
@@ -145,33 +155,47 @@ class AutoOff:
             if due := self.due(item, now):
                 self.hass.async_create_task(self.async_switch_off(item, due), eager_start=False)
 
-    async def async_switch_off(self, item: dict[str, Any], entities: list[str]) -> None:
-        ctx = Context(parent_id=self._parent.id)  # the house did this, not a person
+    async def async_switch_off(self, item: dict[str, Any], entities: list[str], *, force: bool = False) -> list[str]:
+        """Recheck each queued target and report accepted requests, never assumed success."""
         from .never import allowed
 
-        for entity_id in allowed(self.hass, entities):
-            domain = entity_id.split(".", 1)[0]
-            service = "turn_off"
-            if domain == "media_player":
-                service = "media_stop" if self.hass.states.get(entity_id).state == "playing" else "turn_off"
+        accepted = []
+        for entity_id in dict.fromkeys(entities):
+            if self._stopped or self.items.items.get(item['id']) is not item:
+                break
+            if entity_id in self._busy or not allowed(self.hass, [entity_id]):
+                continue
+            eligible = self.targets(item) if force else self.due(item, dt_util.utcnow())
+            state = self.hass.states.get(entity_id)
+            if entity_id not in eligible or not is_on(state):
+                continue
+            domain = entity_id.split('.', 1)[0]
+            service = 'media_stop' if domain == 'media_player' and state.state == 'playing' else 'turn_off'
+            ctx = Context(parent_id=self._parent.id)
+            self._busy.add(entity_id)
             try:
-                await self.hass.services.async_call(domain, service, {"entity_id": entity_id}, blocking=True, context=ctx)
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.debug("Auto-off couldn't switch off %s: %s", entity_id, err)
-        self.items.update(item["id"], last=dt_util.utcnow().isoformat())
+                async with asyncio.timeout(REQUEST_TIMEOUT):
+                    await self.hass.services.async_call(domain, service, {'entity_id': entity_id}, blocking=True, context=ctx)
+            except Exception as err:  # a failed destination does not establish an off state
+                _LOGGER.debug('Auto-off request failed for %s: %s', entity_id, err)
+            else:
+                accepted.append(entity_id)
+            finally:
+                self._busy.discard(entity_id)
+        if not accepted or self._stopped or self.items.items.get(item['id']) is not item:
+            return accepted
         now = dt_util.utcnow()
+        self.items.update(item['id'], last=now.isoformat())
         self._switched = {e: v for e, v in self._switched.items() if now - v[0] < BACK_ON_WITHIN}
-        for e in entities:
-            self._switched[e] = (now, item["id"])
+        for eid in accepted:
+            self._switched[eid] = (now, item['id'])
         rt = self._rt()
         if rt is None:
-            return
-        names = [st.name for e in entities if (st := self.hass.states.get(e))]
-        why = []
-        if item.get("motion"):
-            why.append(f"no movement for {float(item.get('empty_minutes') or 20):g} min")
-        if float(item.get("on_minutes") or 0) > 0:
-            why.append(f"on for {float(item['on_minutes']):g} min")
-        rt.timeline.add("light", f"{', '.join(names)} off", f"auto-off ({item['name']}): {' or '.join(why)}")
-        if (say := (item.get("say") or "").strip()):
-            await rt.speech.async_say(say, "low", None, source=f"autooff:{item['name']}")
+            return accepted
+        names = [st.name for eid in accepted if (st := self.hass.states.get(eid))]
+        rt.timeline.add('light', f"Switch-off requested: {', '.join(names)}", f"auto-off ({item['name']}); service accepted, physical result unverified", evidence='attempted')
+        if (say := (item.get('say') or '').strip()):
+            # A configured 'off' sentence is appropriate only after every target reports off.
+            if len(accepted) == len(set(entities)) and all((st := self.hass.states.get(eid)) is not None and st.state in ('off', 'idle', 'standby', 'paused') for eid in accepted):
+                await rt.speech.async_say(say, 'low', None, source=f"autooff:{item['name']}")
+        return accepted
