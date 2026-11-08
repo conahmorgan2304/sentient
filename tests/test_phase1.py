@@ -126,6 +126,7 @@ async def test_routine_offers_say_how_often(hass: HomeAssistant) -> None:
     assert "4 of the last 4 weekend days" in asked[-1]
     r.suggested = None
     learner.options = {**learner.options, "routine_evidence": False}
+    learner._asked_today = None  # explicitly allow another test suggestion today
     await learner._async_offer(dt_util.now())
     assert "of the last" not in asked[-1]
 
