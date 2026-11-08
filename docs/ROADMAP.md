@@ -162,6 +162,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 
 - [x] 0.98.2 — Recheck queued auto-off conditions and accepted outcomes, refresh rain-warning evidence after forecasts, and share bounded camera wake work without caching failures. See BACKGROUND_DEVICE_REVIEW_0982.md.
 
+- [x] 0.98.7 — Observed heating ownership, current-context preheat, conservative rollback and unconfirmed-request diagnostics. See HEATING_OWNERSHIP_REVIEW_0987.md.
 - [x] 0.98.6 — Approved learned plans retain their meaning, current-context trust and suggestion answers, atomic learning updates and more honest anchor/link evidence. See LEARNED_AUTONOMY_REVIEW_0986.md.
 - [x] 0.98.5 — More faithful multilingual memory recall, protected pinned facts and correction categories, current-snapshot memory tidy, reflection lifecycle/deduplication and forgetting of derived questions/thoughts. See LEARNING_MEMORY_REVIEW_0985.md.
 - [x] 0.98.4 — Scoped wake-word continuation, privacy/guest invalidation, uncertain camera-watch results and recovery, and queued state-watch lifecycle checks. See WATCH_CONTEXT_REVIEW_0984.md.
