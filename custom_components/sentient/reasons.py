@@ -35,6 +35,7 @@ _BY_SOURCE: dict[str, str] = {
     "animals": "the animal cameras spotted something",
     "night_watch": "the night watch saw something",
     "critical": "a safety sensor went off",
+    "house_context": "a thermostat reported reaching the temperature requested in a confirmed guarded action",
     "followthrough": "a device didn't do what was asked",
     "followyou": "it was following someone from room to room",
     "followup": "a follow-up you'd set was due",

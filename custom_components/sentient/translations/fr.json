@@ -131,7 +131,10 @@
           "conversation_recovery": "Annulation et reprise prudente des conversations",
           "speech_failure_notification": "Signaler les échecs de diffusion vocale",
           "recent_followup_context": "Suivis courts après un nouveau mot de réveil",
-          "behaviour_explanations": "Expliquer les décisions d’écoute et d’action"
+          "behaviour_explanations": "Expliquer les décisions d’écoute et d’action",
+          "current_house_context": "Contexte actuel de la maison",
+          "house_context_entities": "Entités supplémentaires du contexte",
+          "house_context_updates": "Signaler quand la température demandée est atteinte"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -241,7 +244,10 @@
           "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut.",
           "speech_failure_notification": "Afficher une notification Home Assistant si la diffusion échoue ou reste incertaine. Désactivé par défaut et en mode invité. Sans contenu vocal ni répétition. Les notifications existantes restent affichées jusqu’à leur fermeture.",
           "recent_followup_context": "Réutiliser un sujet récemment terminé après un nouveau mot de réveil, pour le même appareil et utilisateur. Nécessite les sessions et les suivis contextuels. Respecte le délai de session, sans restaurer une autorisation ni l’écoute. Désactivé par défaut. Terminer ou oublier efface le contexte.",
-          "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire."
+          "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire.",
+          "current_house_context": "Fournir aux conversations un aperçu pertinent des états exposés, des changements récents et de la tâche en cours. Désactivé par défaut et en mode invité, sans appel IA en arrière-plan. Les changements expirent après 30 minutes. Désactiver ou oublier efface ce contexte en mémoire.",
+          "house_context_entities": "Appareils à inclure dans les résumés généraux, avec le chauffage et les capteurs d’ouverture ou de présence. Seuls les appareils exposés et accessibles sont partagés, avec huit relevés pertinents au maximum.",
+          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente."
         }
       }
     },
@@ -475,7 +481,10 @@
           "action_recovery": "Résultats des appareils et récupération prudente",
           "speech_failure_notification": "Signaler les échecs de diffusion vocale",
           "recent_followup_context": "Suivis courts après un nouveau mot de réveil",
-          "behaviour_explanations": "Expliquer les décisions d’écoute et d’action"
+          "behaviour_explanations": "Expliquer les décisions d’écoute et d’action",
+          "current_house_context": "Contexte actuel de la maison",
+          "house_context_entities": "Entités supplémentaires du contexte",
+          "house_context_updates": "Signaler quand la température demandée est atteinte"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -680,7 +689,10 @@
           "action_recovery": "Nécessite les sessions et le contrôle protégé. Nomme les résultats partiels et vérifie les états actuels après une demande de récupération. Seules les actions jamais envoyées peuvent être proposées à nouveau, avec une nouvelle confirmation. Les actions réussies ou incertaines ne sont pas répétées. Désactivé par défaut ; historique temporaire de deux minutes, effacé par les réglages ou l’oubli.",
           "speech_failure_notification": "Afficher une notification Home Assistant si la diffusion échoue ou reste incertaine. Désactivé par défaut et en mode invité. Sans contenu vocal ni répétition. Les notifications existantes restent affichées jusqu’à leur fermeture.",
           "recent_followup_context": "Réutiliser un sujet récemment terminé après un nouveau mot de réveil, pour le même appareil et utilisateur. Nécessite les sessions et les suivis contextuels. Respecte le délai de session, sans restaurer une autorisation ni l’écoute. Désactivé par défaut. Terminer ou oublier efface le contexte.",
-          "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire."
+          "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire.",
+          "current_house_context": "Fournir aux conversations un aperçu pertinent des états exposés, des changements récents et de la tâche en cours. Désactivé par défaut et en mode invité, sans appel IA en arrière-plan. Les changements expirent après 30 minutes. Désactiver ou oublier efface ce contexte en mémoire.",
+          "house_context_entities": "Appareils à inclure dans les résumés généraux, avec le chauffage et les capteurs d’ouverture ou de présence. Seuls les appareils exposés et accessibles sont partagés, avec huit relevés pertinents au maximum.",
+          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente."
         }
       },
       "memories": {

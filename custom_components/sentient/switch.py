@@ -90,7 +90,7 @@ class GuestSwitch(_ModeSwitch):
         await super().async_added_to_hass()
         last = await self.async_get_last_state()
         if last and last.state == "on":
-            self._entry.runtime_data.speech.guest_mode = True
+            set_guest_mode(self.hass, self._entry, True)
 
     @property
     def is_on(self) -> bool:
@@ -308,6 +308,8 @@ def hush(hass: HomeAssistant, entry, until) -> None:
 @callback
 def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
     entry.runtime_data.speech.guest_mode = on
+    if on and (house_context := getattr(entry.runtime_data, "house_context", None)):
+        house_context.clear()
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"guest_mode": on})
 
 

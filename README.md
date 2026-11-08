@@ -184,3 +184,5 @@ Speaker delivery diagnostics show per-speaker service stages and timings, with a
 Optional [short follow-ups after a fresh wake word](docs/RECENT_FOLLOWUPS.md) retain a recently completed subject without restoring permission or listening.
 
 Optional [behaviour explanations](docs/BEHAVIOUR_EXPLANATIONS.md) answer short listening/action questions from recorded evidence without another model call.
+
+Optional [current house context](docs/CURRENT_HOUSE_CONTEXT.md) connects relevant live reports, recent changes and the current unfinished task in conversations. A separate optional heating update can speak once when a confirmed requested temperature is reported as reached.

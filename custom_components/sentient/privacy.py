@@ -27,6 +27,8 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     from .language import clear_translations
 
     clear_translations(rt.ai)
+    if house_context := getattr(rt, "house_context", None):
+        house_context.clear()
     if control := getattr(rt, "control", None):
         control.clear_recovery()
     if timing := getattr(rt.ai, "voice_timings", None):

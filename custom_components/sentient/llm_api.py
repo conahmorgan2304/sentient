@@ -1800,9 +1800,17 @@ class SentientAPI(llm.API):
             wanted = rt.focus.tools_for(current_request.get(), conversation_id)
             if wanted is not None:
                 tools = [t for t in tools if t.name in wanted]
+        from .house_context import prompt as context_prompt
+        from .focus import current_request
+        from .sessions import current_session
+
+        context_line = ''
+        if rt is not None and (house_context := getattr(rt, 'house_context', None)) is not None:
+            context_line = context_prompt(await house_context.snapshot(
+                llm_context.context, llm_context.device_id, current_request.get() or self._asked(), current_session.get()))
         return llm.APIInstance(
             api=self,
-            api_prompt=self._prompt(llm_context, conversation_id),
+            api_prompt=self._prompt(llm_context, conversation_id) + context_line,
             llm_context=llm_context,
             tools=tools,
         )
@@ -1877,7 +1885,7 @@ class SentientAPI(llm.API):
             )
         if profile and profile.get("gentle"):
             lines.append("In this room speak gently: short, calm, simple words, nothing alarming or sarcastic.")
-        if opts.get(CONF_PROMPT_RECENT, True):
+        if opts.get(CONF_PROMPT_RECENT, True) and not opts.get("current_house_context"):
             lines.extend(self._recent_lines(rt))
         if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
             lines.append(
