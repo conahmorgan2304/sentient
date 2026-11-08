@@ -41,6 +41,10 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {'action_checks': gone_checks}
+    if cache := getattr(rt, "clip_analysis", None):
+        cache.clear()
+    if events := getattr(rt, "security_events", None):
+        gone["security_events"] = events.forget(since)
 
     noticer = getattr(rt, 'noticer', None)
     if noticer is not None:

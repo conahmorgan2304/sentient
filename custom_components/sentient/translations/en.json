@@ -152,7 +152,11 @@
           "behaviour_explanations": "Explain listening and action decisions",
           "current_house_context": "Current house context",
           "house_context_entities": "Additional context entities",
-          "house_context_updates": "Tell me when requested heating is reached"
+          "house_context_updates": "Tell me when requested heating is reached",
+          "security_event_evidence": "Link security alerts to Frigate events",
+          "security_conversation_context": "Keep the security event in the conversation",
+          "security_event_feedback": "Record feedback on camera events",
+          "share_clip_analysis": "Reuse matching clip analyses"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -283,7 +287,11 @@
           "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored.",
           "current_house_context": "Give conversations a compact relevant snapshot of exposed device reports, recent changes and the current unfinished task. Off by default. No background AI calls. Guest mode suppresses it. Recent changes expire after 30 minutes; disabling or forgetting clears memory-only context.",
           "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
-          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates."
+          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates.",
+          "security_event_evidence": "Use Frigate event IDs, snapshots and clips on configured cameras. A unique camera/time match is a candidate link, not proof that a sensor identified that event. Keep up to 200 event records for seven days locally. Off by default. Disabling hides links and stops matching; retained records expire or can be forgotten.",
+          "security_conversation_context": "Remember the selected event for up to five minutes within the same conversation, device and user. Follow-up questions use that event and fresh occupancy reports; no identity or continued presence is assumed. Tracks configured camera events. Off by default. Disabling clears conversation references; event records retain their normal expiry.",
+          "security_event_feedback": "Admins can mark a specific event useful, not useful, a false positive or a cat. Corrections stay with that event for seven days and help reveal repeated camera problems. No automatic detector, alarm or notification-rule changes. Tracks configured camera events. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
+          "share_clip_analysis": "Share compatible generic analyses of the same finished Frigate event across automatic clip watching and event-clip questions. Provider, footage coverage and identity settings must match. Custom questions are analysed separately. Keep at most 100 results in memory for six hours. Off by default. Disabling, changing settings or forgetting clears the cache."
         }
       }
     },
@@ -539,7 +547,11 @@
           "behaviour_explanations": "Explain listening and action decisions",
           "current_house_context": "Current house context",
           "house_context_entities": "Additional context entities",
-          "house_context_updates": "Tell me when requested heating is reached"
+          "house_context_updates": "Tell me when requested heating is reached",
+          "security_event_evidence": "Link security alerts to Frigate events",
+          "security_conversation_context": "Keep the security event in the conversation",
+          "security_event_feedback": "Record feedback on camera events",
+          "share_clip_analysis": "Reuse matching clip analyses"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -766,7 +778,11 @@
           "behaviour_explanations": "Answer short questions about listening and recorded device results directly, without an AI call. Requires conversation sessions. Uses existing session records, respects guest mode and device access, and never repeats an action. Off by default; no additional history is stored.",
           "current_house_context": "Give conversations a compact relevant snapshot of exposed device reports, recent changes and the current unfinished task. Off by default. No background AI calls. Guest mode suppresses it. Recent changes expire after 30 minutes; disabling or forgetting clears memory-only context.",
           "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
-          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates."
+          "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates.",
+          "security_event_evidence": "Use Frigate event IDs, snapshots and clips on configured cameras. A unique camera/time match is a candidate link, not proof that a sensor identified that event. Keep up to 200 event records for seven days locally. Off by default. Disabling hides links and stops matching; retained records expire or can be forgotten.",
+          "security_conversation_context": "Remember the selected event for up to five minutes within the same conversation, device and user. Follow-up questions use that event and fresh occupancy reports; no identity or continued presence is assumed. Tracks configured camera events. Off by default. Disabling clears conversation references; event records retain their normal expiry.",
+          "security_event_feedback": "Admins can mark a specific event useful, not useful, a false positive or a cat. Corrections stay with that event for seven days and help reveal repeated camera problems. No automatic detector, alarm or notification-rule changes. Tracks configured camera events. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
+          "share_clip_analysis": "Share compatible generic analyses of the same finished Frigate event across automatic clip watching and event-clip questions. Provider, footage coverage and identity settings must match. Custom questions are analysed separately. Keep at most 100 results in memory for six hours. Off by default. Disabling, changing settings or forgetting clears the cache."
         }
       },
       "memories": {

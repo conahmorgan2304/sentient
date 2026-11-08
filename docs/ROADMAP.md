@@ -173,3 +173,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.10 — Cancel stale voice outcome checks, recheck recovered devices before reporting, validate completion feedback and distinguish unconfirmed requests from proven failures. See FOLLOWTHROUGH_REVIEW_09810.md.
 
 - [x] 0.98.11 — Preserve camera sensor evidence, require known boundary history, resolve camera views conservatively, invalidate stale alerts/clip summaries, prevent overlapping/replayed clip analysis and expose content-free camera diagnostics. See CAMERA_SECURITY_REVIEW_09811.md.
+
+- [x] 0.98.12 — Optional Frigate event-bound evidence and clip reviews, owner-scoped security conversation references, shared compatible clip analyses and reversible event feedback with camera review suggestions. All four features have Settings switches. See SECURITY_EVENTS_09812.md.

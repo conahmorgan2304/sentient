@@ -321,7 +321,7 @@
         ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
         ...(mind.conversation_diagnostics || []).slice(0, 8).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
       ].join("");
-      const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`).join("");
+      const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`).join("") + this._securityEventRows(mind);
       const thinkList = [
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
@@ -1467,12 +1467,50 @@
       }
     }
 
+    _securityEventRows(mind) {
+      const events = (mind.security_events || []).slice(0, 8);
+      const feedbackOn = !!mind.security_event_feedback_enabled && !!this._hass.user?.is_admin;
+      this._securityFeedbackReplies ||= new Map();
+      for (const key of this._securityFeedbackReplies.keys()) {
+        if (!events.some(e => e.id === key) || !feedbackOn) this._securityFeedbackReplies.delete(key);
+      }
+      const summaries = (mind.security_event_feedback_summary || []).map(c => `<div class="r dim"><b class="wrap">${esc(c.camera)} · ${esc(c.reviewed)} EVENTS REVIEWED<small>Useful: ${esc(c.useful)} · Not useful: ${esc(c.not_useful)} · False positives: ${esc(c.false_positive)} · Cats: ${esc(c.cat)}</small>${c.suggestion ? `<small>${esc(c.suggestion)}</small>` : ""}<small>${esc(c.limits)}</small></b></div>`).join("");
+      return events.map(e => {
+        const ack = this._securityFeedbackReplies.get(e.id);
+        const feedback = ack && ack.sensor === e.feedback ? ack.value : e.feedback;
+        if (ack && ack.sensor !== e.feedback) this._securityFeedbackReplies.delete(e.id);
+        const pending = this._securityFeedbackSaving === e.id;
+        const error = feedbackOn && this._securityFeedbackError?.id === e.id ? this._securityFeedbackError.message : "";
+        const action = (value, label) => `<button class="btn sm ghost" ${pending ? "disabled" : ""} data-act="securityfeedback" data-id="${esc(e.id)}" data-value="${value}">${label}</button>`;
+        return `<div class="r"><ha-icon icon="mdi:cctv"></ha-icon><b class="wrap">${esc(e.camera)} · FRIGATE REPORTED ${esc(e.label)}<small>EVENT · ${esc(e.id)}</small>${e.analysis ? `<small>AI INFERENCE · ${esc(e.analysis.summary)}</small>` : ""}<details><summary>Evidence and alert reasons</summary>${(e.alerts || []).map(a => `<small>${esc(a.reason)} · ${esc(a.text)}<br>${esc(a.link)}</small>`).join("")}<small>${esc(e.limits)}</small></details>${feedback ? `<small role="status">Saved feedback: ${esc(feedback.value.replaceAll("_", " "))} · household correction</small>` : ""}${e.snapshot ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg" target="_blank" rel="noopener">SNAPSHOT</a>` : ""}${e.clip ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(e.id)}/clip.mp4" target="_blank" rel="noopener">CLIP</a>` : ""}${feedbackOn ? `<div>${action("useful", "USEFUL")}${action("not_useful", "NOT USEFUL")}${action("false_positive", "FALSE POSITIVE")}${action("cat", "CAT")}${feedback ? action("clear", "CLEAR") : ""}</div>` : ""}${pending ? '<small role="status">Saving event feedback…</small>' : ""}${error ? `<small role="alert">${esc(error)}</small>` : ""}</b></div>`;
+      }).join("") + summaries;
+    }
+
+    async _securityFeedback(id, value) {
+      if (this._securityFeedbackSaving || !this._hass.user?.is_admin || !this._st("mind")?.attributes?.security_event_feedback_enabled) return;
+      this._securityFeedbackSaving = id;
+      this._securityFeedbackError = null;
+      this._render();
+      try {
+        const result = await this._hass.callWS({ type: "sentient/security/event/feedback", event_id: id, value });
+        const source = this._st("mind")?.attributes?.security_events?.find(e => e.id === id)?.feedback;
+        this._securityFeedbackReplies ||= new Map();
+        this._securityFeedbackReplies.set(id, { value: result.feedback, sensor: source });
+      } catch (error) {
+        this._securityFeedbackError = { id, message: error.message || String(error) };
+      } finally {
+        this._securityFeedbackSaving = null;
+        this._render();
+      }
+    }
+
     // ---------- events ----------
     _click(ev) {
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
       if (act === "checkupdates") this._checkUpdates();
+      else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
       else if (act === "refreshpanel") window.location.reload();
       else if (act === "voicecheck") {
         this._voiceCheckAction(id, el.dataset.run);

@@ -119,7 +119,7 @@ class Clips:
         return f"media-source://media_source/local/sentient/{name}"
 
     async def async_what_happened(self, camera: str, question: str | None = None, since: float | None = None,
-                                  force: bool = False) -> dict[str, Any]:
+                                  force: bool = False, event_id: str | None = None) -> dict[str, Any]:
         """Watch the latest event, unless a valid cached clip summary answers already."""
         stamp = self._stamp()
         rt = self._rt()
@@ -129,9 +129,9 @@ class Clips:
 
         if self._stopped:
             return {"skipped": "event clip review stopped"}
-        if rt is not None and since is None and (cw := getattr(rt, "clipwatch", None)) is not None and cw.enabled \
+        if rt is not None and since is None and event_id is None and not question and (cw := getattr(rt, "clipwatch", None)) is not None and cw.enabled \
                 and self.camera_name(camera) in cw.cameras() and (seen := cw.recent(self.camera_name(camera), 12)):
-            return {"already_watched": [{"when": i["local"], "what": i["summary"], **({"probably": i["whose"]} if i.get("whose") else {})}
+            return {"already_watched": [{"when": i["local"], "what": i["summary"], "event_id": i.get("event") if i.get("event_bound", True) else None, **({"probably": i["whose"]} if i.get("whose") else {})}
                                         for i in seen[:8]],
                     "note": "Clips from this camera in the last 12 hours, newest first. Say only what's asked."}
         if not current():
@@ -141,21 +141,29 @@ class Clips:
             return {"skipped": "clip review already running for this camera"}
         self._busy.add(key)
         try:
-            return await self._analyse(camera, question, since, force, current)
+            return await self._analyse(camera, question, since, force, current, event_id)
         finally:
             self._busy.discard(key)
 
     async def _analyse(self, camera: str, question: str | None, since: float | None, force: bool,
-                       current: Callable[[], bool]) -> dict[str, Any]:
+                       current: Callable[[], bool], event_id: str | None = None) -> dict[str, Any]:
         rt = self._rt()
         try:
-            event = await self.async_latest_event(camera, since)
+            if event_id is not None:
+                row = await rt.security_events.async_event(camera, event_id) if getattr(rt, "security_events", None) is not None else None
+                event = {"id": row["id"], "camera": row["camera"], "label": row["label"],
+                         "start_time": row["start"], "end_time": row["end"], "has_snapshot": row["has_snapshot"],
+                         "has_clip": row["has_clip"], "zones": row["zones"]} if row else None
+            else:
+                event = await self.async_latest_event(camera, since)
         except Exception as err:  # noqa: BLE001
             return {"error": f"couldn't reach Frigate: {err}"}
         if not current():
             return {"skipped": "event clip context changed"}
         if not isinstance(event, dict) or not event.get("id"):
             return {"error": "no recent clip from that camera"}
+        if event.get("camera") and event["camera"] != self.camera_name(camera):
+            return {"error": "the event does not belong to that camera"}
         start = finite_float(event.get("start_time"))
         end = finite_float(event.get("end_time")) if event.get("end_time") else (start + 20 if start is not None else None)
         if start is None or end is None or start <= 0 or end < start:
@@ -165,6 +173,44 @@ class Clips:
             dt_util.utc_from_timestamp(end)
         except (ValueError, OverflowError, OSError):
             return {"error": "invalid clip times"}
+        shared = getattr(rt, "clip_analysis", None)
+        if shared is not None and shared.enabled and not question and event.get("end_time") and event.get("camera") == self.camera_name(camera):
+            # Both paths use the same neutral schema and the same bounded event footage.
+            from .clipwatch import MAX_SECONDS
+
+            provider = self.options.get(CONF_SMART_AI) or self.options.get(CONF_AI_TASK_ENTITY)
+            limited = False
+
+            async def produce():
+                nonlocal limited
+                if not current():
+                    return None
+                if not rt.watches.spend("clips", force=force):
+                    limited = True
+                    return None
+                return await rt.clipwatch._ask_ai(self.camera_name(camera), start, min(end, start + MAX_SECONDS),
+                                                 event["id"], current, identity=False, provider=provider)
+
+            try:
+                result = await shared.analyse(camera, event["id"], start, min(end, start + MAX_SECONDS),
+                                              provider, "neutral", produce)
+            except Exception as err:  # noqa: BLE001
+                return {"error": str(err)}
+            if not current():
+                return {"skipped": "event clip context changed"}
+            if limited:
+                return {"skipped": "daily AI limit reached"}
+            if not result:
+                return {"error": "no clip description returned"}
+            answer = result["summary"]
+            self.last = {"camera": camera, "event": event["id"], "answer": answer, "time": when.isoformat()}
+            rt.security_events.ingest(event)
+            rt.security_events.analysis(event["id"], camera, result)
+            if getattr(rt, "incidents", None) is not None:
+                rt.incidents.add(camera if camera.startswith("camera.") else f"camera.{camera}", answer,
+                                 "clip", evidence="inferred", when=when, event_id=event["id"])
+            return {"what_happened": answer, "when": when.strftime("%H:%M"), "label": event.get("label"),
+                    "event_id": event["id"], "coverage_seconds": min(end - start, MAX_SECONDS)}
         if rt is not None and not rt.watches.spend("clips", force=force):
             return {"skipped": "daily AI limit reached"}
         name = f"clip_{self.camera_name(camera)}_{uuid.uuid4().hex}.mp4"
@@ -201,9 +247,14 @@ class Clips:
         if rt is not None and getattr(rt, "incidents", None) is not None:
             rt.incidents.add(camera if camera.startswith("camera.") else f"camera.{camera}", answer,
                              "clip", evidence="inferred", when=when, event_id=event["id"])
-        return {"what_happened": answer, "when": when.strftime("%H:%M"), "label": event.get("label")}
+        if getattr(rt, "security_events", None) is not None:
+            rt.security_events.ingest(event)
+            if not question:
+                rt.security_events.analysis(event["id"], camera, {"summary": answer})
+        return {"what_happened": answer, "when": when.strftime("%H:%M"), "label": event.get("label"), "event_id": event["id"]}
 
-    async def async_after_alert(self, camera: str, text: str, stamp: tuple | None = None) -> None:
+    async def async_after_alert(self, camera: str, text: str, stamp: tuple | None = None,
+                               event_id: str | None = None) -> None:
         """Once the event's over, watch the clip and add the fuller story to the timeline."""
         stamp = self._stamp() if stamp is None else stamp
         if self._stopped or not self.enabled or stamp != self._stamp():
@@ -212,7 +263,10 @@ class Clips:
         await asyncio.sleep(SETTLE)
         if self._stopped or not self.enabled or stamp != self._stamp():
             return
-        out = await self.async_what_happened(camera, since=started)
+        if event_id is not None:
+            out = await self.async_what_happened(camera, since=started, event_id=event_id)
+        else:
+            out = await self.async_what_happened(camera, since=started)
         if (not self._stopped and self.enabled and stamp == self._stamp()
                 and (rt := self._rt()) is not None and out.get("what_happened")):
             rt.timeline.add("security", f"Clip: {out['what_happened']}", f"after: {text[:80]}")

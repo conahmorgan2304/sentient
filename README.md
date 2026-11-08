@@ -191,3 +191,9 @@ Every service is also listed, with its fields, under Developer tools → Actions
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md).
+
+### Optional security event continuity (0.98.12)
+
+In **Settings → Camera security**, enable **Link security alerts to Frigate events**, **Keep the security event in the conversation** and/or **Record feedback on camera events**. Events come from Frigate MQTT (with bounded local REST matching when needed), on configured cameras only. A unique camera/time match remains a candidate link. The Mind page shows event evidence and admin feedback controls; voice follow-ups can select an event, ask why it alerted, or fetch current sensor reports without treating an old clip as live evidence. Corrections stay attached to the event and never change Frigate thresholds automatically.
+
+In **Settings → Event clips**, **Reuse matching clip analyses** shares compatible generic reviews of the same finished event between the two clip services. It checks provider, footage coverage and identity profile; custom questions and multi-event reviews remain separate. All four additions are off by default. Event metadata, summaries and feedback retain at most 200 records for seven days; shared answers retain at most 100 entries for six hours in memory. Turning features off hides their controls and clears conversation references/shared answers. Retained event records expire or can be erased using **Forget recent data**. Existing event-clip/clip-watch settings still control AI reviews.
