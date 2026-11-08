@@ -211,21 +211,27 @@ class Control:
         if not session.authorised or session.closed:
             return {'error': 'Guarded control is not active'}
         async with self._lock:
+            if pending['expires'] < dt_util.utcnow():
+                return {'error': 'That confirmation expired while waiting; please ask again'}
             try:
                 await self.validate(pending['actions'], context)
             except (ValueError, TypeError) as err:
                 return {'error': str(err)}
+            if pending['expires'] < dt_util.utcnow():
+                return {'error': 'That confirmation expired while checking permissions; please ask again'}
+            if session.closed or not session.authorised or not session.running:
+                return {'error': 'Guarded control is no longer active'}
             for eid, before in pending['before'].items():
                 if snapshot(self.hass.states.get(eid)) != before:
                     return {'error': 'A device changed while waiting; please ask again'}
-            return await self._execute(session, pending['actions'], context, expected=pending['before'], recovery_stamp=recovery_stamp)
+            return await self._execute(session, pending['actions'], context, expected=pending['before'], recovery_stamp=recovery_stamp, deadline=pending['expires'])
 
     async def execute(self, session, actions, context):
         recovery_stamp = (self.recovery_generation, self.recovery_turns.get(session.owner))
         async with self._lock:
             return await self._execute(session, actions, context, recovery_stamp=recovery_stamp)
 
-    async def _execute(self, session, actions, context, expected=None, recovery_stamp=None):
+    async def _execute(self, session, actions, context, expected=None, recovery_stamp=None, deadline=None):
         from .voice_timing import measure
 
         generation, request_token = recovery_stamp or (self.recovery_generation, self.recovery_turns.get(session.owner))
@@ -234,7 +240,7 @@ class Control:
         result = None
         try:
             with measure("guarded_actions"):
-                result = await self._execute_timed(session, actions, context, expected)
+                result = await self._execute_timed(session, actions, context, expected, deadline)
             return result
         finally:
             record = session.recovery_record
@@ -256,7 +262,7 @@ class Control:
                 while len(self.recovery_records) > 20:
                     self.recovery_records.pop(next(iter(self.recovery_records)))
 
-    async def _execute_timed(self, session, actions, context, expected=None):
+    async def _execute_timed(self, session, actions, context, expected=None, deadline=None):
         try:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
@@ -275,6 +281,9 @@ class Control:
             try:
                 # Earlier calls can yield for seconds: recheck each target immediately before dispatch.
                 await self.validate([a], context)
+                if deadline is not None and deadline < dt_util.utcnow():
+                    outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'confirmation expired before dispatch'})
+                    break
                 if session.closed or session.clarification or not session.authorised or not session.running:
                     outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'conversation no longer authorised'})
                     break

@@ -9,3 +9,5 @@ Listening explanations describe the agent's recorded decision, not whether hardw
 The existing `sentient_why` tool handles questions about announcements and things withheld. Its occurrence matching now separates spoken events from suppressed events and includes the original timestamp and event kind. Nearby events still do not prove causation. Specific questions naming the message and time are preferable when several similar events exist. These broader questions continue through the existing model/tool route.
 
 After installation, test a command followed by “did you actually do it?”, and ask “why are you still listening?” while a confirmation is pending. Check that explaining never triggers the action.
+
+In 0.97.1, direct explanation questions preserve existing action-recovery evidence. Repeating a pending question rechecks expiry, guest mode and current device visibility/read access; an invalid question is discarded rather than repeated. Confirmation expiry is rechecked after queuing, permission checks and immediately before each device dispatch.
