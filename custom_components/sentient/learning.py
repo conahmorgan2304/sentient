@@ -19,6 +19,7 @@ time most days ("the hallway light goes on around 5:30pm on weekdays").
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, time, timedelta
 import hashlib
@@ -180,6 +181,7 @@ def _changes_to(states: list[State], target: str, automated: set[int] | None = N
     previous: str | None = None
     for st in states:
         if st.state in ("unavailable", "unknown"):
+            previous = None  # recovery is not evidence of a deliberate change
             continue
         if st.state == target and previous is not None and previous != target:
             stamp = round(st.last_changed.timestamp())
@@ -247,7 +249,8 @@ def find_routines(
             clock = _fit(by_day, days)
             choice = ("clock", clock)
             for anchor, rel in relative.items():
-                fit = _fit(rel, [d for d in days if d in rel] or days)
+                eligible = [d for d in days if (anchors or {})[anchor](d) is not None]
+                fit = _fit(rel, eligible)
                 if fit is None:
                     continue
                 current = choice[1]
@@ -341,8 +344,7 @@ def _state_at(states: list[State], when: datetime) -> str | None:
     for st in states:
         if st.last_changed > when:
             break
-        if st.state not in ("unavailable", "unknown"):
-            found = st.state
+        found = st.state if st.state not in ("unavailable", "unknown") else None
     return found
 
 
@@ -366,14 +368,14 @@ def find_links(
         if edomain not in _SUPPORTED:
             continue
         for es in _SUPPORTED[edomain]:
-            done = [t for t in _changes_to(estates, es, automated.get(effect)) if t >= start]
+            done = [t for t in _changes_to(estates, es, automated.get(effect)) if start <= t <= now]
             if len(done) < LINK_MIN_SEEN:
                 continue
             for cause, (cname, cclass, cstates) in causes.items():
                 if cause == effect:
                     continue
                 for cs in _CAUSE_STATES.get(cause.split(".", 1)[0], ()):
-                    happened = [t for t in _changes_to(cstates, cs) if t >= start]
+                    happened = [t for t in _changes_to(cstates, cs) if start <= t <= now]
                     # only the times it could have been done: it wasn't already that way
                     eligible = [t for t in happened if _state_at(estates, t) not in (es, None)]
                     if len(eligible) < LINK_MIN_SEEN:
@@ -433,9 +435,15 @@ class Learner:
         self.trust = None  # set by the runtime: do, say-then-do or ask first, by kind of device
         self.woke_on = None  # (date) -> minute after midnight the house got up that day, or None
         self._sun: dict[tuple[str, Any], int | None] = {}
+        self._stopped = False
+        self._learning = False
+        self._offering = False
+        self._busy: set[str] = set()
+        self._last_due: dict[str, tuple] = {}
 
     # ----- lifecycle --------------------------------------------------------------
     async def async_start(self) -> None:
+        self._stopped = False
         data = await self._store.async_load() or {}
         for item in data.get("routines", []):
             try:
@@ -461,6 +469,7 @@ class Learner:
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         while self._unsubs:
             self._unsubs.pop()()
 
@@ -489,6 +498,7 @@ class Learner:
             return None
         self.routines.pop(item.id, None)
         self.links.pop(item.id, None)
+        self._last_due.pop(item.id, None)
         self.dismissed[item.id] = item.describe()
         if penalise and self.feedback is not None:  # "it already does that" isn't a complaint about the device
             from .feedback import DELETED
@@ -603,19 +613,50 @@ class Learner:
                     out.setdefault(entity_id, set()).add(round(row["when"]))
         return out
 
+    def _version(self, item: Routine | Link) -> dict:
+        data = item.as_dict()
+        for key in ('support', 'seen', 'spread', 'dates', 'learned', 'suggested'):
+            data.pop(key, None)
+        if isinstance(item, Routine) and item.anchor != 'clock':
+            data.pop('minute', None)  # today's displayed clock time follows the approved anchor/offset
+        return data
+
+    def _privacy_stamp(self):
+        return (getattr(self.speech, '_privacy_generation', 0), getattr(self.speech, '_guest_generation', 0))
+
     async def async_learn(self) -> list[Routine]:
-        """Re-learn routines, keeping the user's decisions about ones seen before."""
+        """Re-learn only while settings and the user's current decisions remain unchanged."""
+        if self._learning or self._stopped:
+            return list(self.routines.values())
+        self._learning = True
+        options, values, privacy = self.options, deepcopy(self.options), self._privacy_stamp()
+        def decisions():
+            return [(r.id, self._version(r), r.suggested) for r in self.all()], dict(self.dismissed)
+        before = decisions()
+        def current():
+            return (not self._stopped and self.options is options and self.options == values
+                    and self._privacy_stamp() == privacy and decisions() == before)
+        try:
+            return await self._async_learn(current)
+        finally:
+            self._learning = False
+
+    async def _async_learn(self, current) -> list[Routine]:
         entity_ids = [e for e in self.entities if e.split(".", 1)[0] in _SUPPORTED]
         try:
             history = await self._async_history(entity_ids)
         except Exception:  # noqa: BLE001 - learning is best effort
             _LOGGER.warning("Sentient could not read history to learn routines", exc_info=True)
             return list(self.routines.values())
+        if not current():
+            return list(self.routines.values())
         try:
             automated = await self._async_automated(entity_ids)
         except Exception:  # noqa: BLE001 - fall back to the to-the-minute rule
             _LOGGER.debug("Could not read the logbook; using timing alone", exc_info=True)
             automated = {}
+        if not current():
+            return list(self.routines.values())
         if self.extra_automated is not None:  # the house's own switching (away lights) isn't a habit either
             for entity_id, stamps in self.extra_automated().items():
                 automated.setdefault(entity_id, set()).update(stamps)
@@ -634,17 +675,24 @@ class Learner:
                 if old is not None:
                     routine.adopted, routine.declined, routine.suggested = old.adopted, old.declined, old.suggested
                     routine.learned = old.learned
+                    if old.adopted:
+                        routine = old  # approval stays attached to its agreed schedule, not a fresh estimate
                 fresh[routine.id] = routine
         # adopted routines are kept even if a quiet fortnight made them fade
         for rid, old in self.routines.items():
             if old.adopted and rid not in fresh:
                 fresh[rid] = old
         ranked = sorted(fresh.values(), key=lambda r: (r.adopted, r.support, r.seen), reverse=True)
-        self.routines = {r.id: r for r in ranked[:MAX_ROUTINES]}
         try:
-            await self._async_learn_links(entity_ids, history, automated)
+            links = await self._async_learn_links(entity_ids, history, automated)
         except Exception:  # noqa: BLE001 - learning is best effort
             _LOGGER.warning("Sentient could not learn links", exc_info=True)
+            links = self.links
+        if not current():
+            return list(self.routines.values())
+        self.routines = {r.id: r for r in ranked[:MAX_ROUTINES]}
+        self.links = links
+        self._last_due = {rid: due for rid, due in self._last_due.items() if rid in self.routines}
         self.last_run = dt_util.utcnow().isoformat()
         self._save()
         return list(self.routines.values())
@@ -663,7 +711,9 @@ class Learner:
 
     async def _async_learn_links(
         self, effect_ids: list[str], history: dict[str, list[State]], automated: dict[str, set[int]]
-    ) -> None:
+    ) -> dict[str, Link]:
+        if not effect_ids:
+            return {lid: old for lid, old in self.links.items() if old.adopted}
         causes = self._cause_candidates(effect_ids)
         missing = [c for c in causes if c not in history]
         if missing:
@@ -689,16 +739,19 @@ class Learner:
                 continue
             if old := self.links.get(link.id):
                 link.adopted, link.declined, link.suggested, link.learned = old.adopted, old.declined, old.suggested, old.learned
+                if old.adopted:
+                    link = old
             fresh[link.id] = link
         for lid, old in self.links.items():
             if old.adopted and lid not in fresh:
                 fresh[lid] = old
-        self.links = fresh
-        self._save()
+        return fresh
 
     # ----- doing adopted links ----------------------------------------------------------
     @callback
     def _on_state_changed(self, event: Event[EventStateChangedData]) -> None:
+        if self._stopped:
+            return
         new, old = event.data["new_state"], event.data["old_state"]
         if new is None or old is None or old.state in ("unavailable", "unknown") or old.state == new.state:
             return
@@ -739,6 +792,8 @@ class Learner:
     # ----- every minute: do adopted routines, maybe offer a new one --------------------
     @callback
     def _every_minute(self, now: datetime) -> None:
+        if self._stopped:
+            return
         local = dt_util.as_local(now)
         minute = local.hour * 60 + local.minute
         for routine in self.routines.values():
@@ -746,7 +801,9 @@ class Learner:
                 continue
             if routine.anchor != "clock" and (due := self.minute_today(routine, local.date())) is not None:
                 routine.minute = due  # follows the sun (or getting up) from day to day
-            if self.minute_today(routine, local.date()) == minute:
+            due = (local.date(), minute)
+            if self.minute_today(routine, local.date()) == minute and self._last_due.get(routine.id) != due:
+                self._last_due[routine.id] = due
                 self.hass.async_create_task(self._async_do(routine))
         if (
             self.options.get(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)
@@ -758,30 +815,41 @@ class Learner:
 
     async def _async_do(self, routine: Routine | Link) -> None:
         from .never import blocked
-
-        state = self.hass.states.get(routine.entity_id)
-        if state is None or state.state == routine.state or blocked(self.hass, routine.entity_id):
+        version, options, values, privacy = self._version(routine), self.options, deepcopy(self.options), self._privacy_stamp()
+        def valid():
+            state = self.hass.states.get(routine.entity_id)
+            return (not self._stopped and self.get(routine.id) is routine and routine.adopted
+                    and self._version(routine) == version and self.options is options and self.options == values
+                    and self._privacy_stamp() == privacy and state is not None
+                    and state.state not in ('unknown', 'unavailable', routine.state)
+                    and routine.entity_id.split('.', 1)[0] in _SUPPORTED
+                    and routine.state in _SUPPORTED[routine.entity_id.split('.', 1)[0]]
+                    and not blocked(self.hass, routine.entity_id)
+                    and not (self.skip and routine.entity_id in self.skip()))
+        if routine.id in self._busy or not valid():
             return
-        domain = routine.entity_id.split(".", 1)[0]
-        if domain == "cover":
-            service = "open_cover" if routine.state == "open" else "close_cover"
-        else:
-            service = "turn_on" if routine.state == "on" else "turn_off"
-        _LOGGER.debug("Doing adopted routine: %s", routine.describe())
-        from .own import own_context
-
-        async def run() -> None:
-            await self.hass.services.async_call(domain, service, target={"entity_id": routine.entity_id}, blocking=True,
-                                                context=own_context(self.hass, f"learned routine: {routine.describe()}"))
-
-        if self.trust is None:
-            await run()
-            return
-        name = state.name.lower()
-        verb = {"turn_on": ("Putting the {} on", "put the {} on"), "turn_off": ("Switching the {} off", "switch the {} off"),
-                "open_cover": ("Opening the {}", "open the {}"), "close_cover": ("Closing the {}", "close the {}")}[service]
-        await self.trust.async_act(routine.entity_id, verb[0].format(name), f"Shall I {verb[1].format(name)}?", run,
-                                   f"a routine you let the house do: {routine.describe().rstrip('.')}")
+        self._busy.add(routine.id)
+        try:
+            state = self.hass.states.get(routine.entity_id)
+            domain = routine.entity_id.split('.', 1)[0]
+            service = ('open_cover' if routine.state == 'open' else 'close_cover') if domain == 'cover' else ('turn_on' if routine.state == 'on' else 'turn_off')
+            from .own import own_context
+            async def run():
+                if not valid():
+                    return False
+                await self.hass.services.async_call(domain, service, target={'entity_id': routine.entity_id}, blocking=True,
+                    context=own_context(self.hass, f'learned routine: {routine.describe()}'))
+                return True
+            if self.trust is None:
+                await run()
+                return
+            name = state.name.lower()
+            verb = {'turn_on': ('Putting the {} on', 'put the {} on'), 'turn_off': ('Switching the {} off', 'switch the {} off'),
+                    'open_cover': ('Opening the {}', 'open the {}'), 'close_cover': ('Closing the {}', 'close the {}')}[service]
+            await self.trust.async_act(routine.entity_id, verb[0].format(name), f'Shall I {verb[1].format(name)}?', run,
+                f'a routine you let the house do: {routine.describe().rstrip(".")}', valid=valid)
+        finally:
+            self._busy.discard(routine.id)
 
     def _offerable(self, r: Routine | Link) -> bool:
         return not (r.adopted or r.declined or r.suggested) and not (
@@ -815,6 +883,16 @@ class Learner:
         return max(options, key=lambda r: (r.support, r.seen), default=None)
 
     async def _async_offer(self, local: datetime) -> None:
+        if (self._offering or self._stopped or not self.options.get(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)
+                or self._asked_today == local.date().isoformat()):
+            return
+        self._offering = True
+        try:
+            await self._offer(local)
+        finally:
+            self._offering = False
+
+    async def _offer(self, local: datetime) -> None:
         routine = self.next_to_offer()
         if routine is None or self.speech.guest_mode or self.speech.hushed():
             return
@@ -839,7 +917,20 @@ class Learner:
                 f"I've noticed the {routine.name} usually {routine.verb}"
                 f" {routine.timing} {routine.days}{seen}. Want me to do that for you from now on?"
             )
+        versions = [self._version(g) for g in group]
+        options, values, privacy = self.options, deepcopy(self.options), self._privacy_stamp()
+        expires, consumed = dt_util.utcnow() + timedelta(minutes=2), False
+        def current():
+            return (not self._stopped and self.options is options and self.options == values
+                    and self.options.get(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)
+                    and not self.speech.guest_mode and self._privacy_stamp() == privacy
+                    and dt_util.utcnow() < expires
+                    and all(self.get(g.id) is g and self._version(g) == version for g, version in zip(group, versions)))
         async def answered(kind: str) -> str:
+            nonlocal consumed
+            if consumed or not current():
+                return "That suggestion has changed or expired. I haven't changed any routines."
+            consumed = True
             for g in group:
                 if kind == "yes":
                     self.adopt(g.id, True)
@@ -869,7 +960,7 @@ class Learner:
                     f"If they say no, call it for each with adopt false."
                 ),
             )
-        if result.spoken:
+        if result.spoken and current():
             for g in group:
                 g.suggested = dt_util.utcnow().isoformat()
             self._asked_today = local.date().isoformat()

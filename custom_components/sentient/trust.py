@@ -16,10 +16,12 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from copy import deepcopy
 import logging
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import CONF_TRUST_COVERS, CONF_TRUST_HEATING, CONF_TRUST_LIGHTS, CONF_TRUST_SWITCHES, DOMAIN
 from .reasons import because
@@ -44,12 +46,15 @@ class Trust:
         self._rt = rt_getter
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.trust")
         self.yes_run: dict[str, int] = {}
+        self._stopped = False
+        self._busy: set[str] = set()
 
     async def async_start(self) -> None:
+        self._stopped = False
         self.yes_run = dict((await self._store.async_load() or {}).get("yes_run") or {})
 
     def async_stop(self) -> None:
-        return
+        self._stopped = True
 
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"yes_run": self.yes_run}, 5)
@@ -62,47 +67,68 @@ class Trust:
         return value if value in LEVELS else "do"
 
     async def async_act(self, entity_id: str, doing: str, asking: str, run: Callable[[], Awaitable[Any]],
-                        why: str) -> str:
-        """Do *run* as this kind's trust level says. doing: 'Putting the lamp on'; asking: 'Shall I put the lamp on?'.
-
-        Returns 'done', 'asked' (waiting for a yes) or 'not asked' (couldn't ask, so not done)."""
-        level = self.level(entity_id)
+                        why: str, *, valid: Callable[[], bool] | None = None) -> str:
+        """Submit a current action using its configured trust level; a submission is not physical verification."""
+        from .never import blocked
         rt = self._rt()
-        if level == "do" or rt is None:
-            await run()
-            return "done"
+        if rt is None:
+            return "not asked"
+        level = self.level(entity_id)
+        options, values = self.options, deepcopy(self.options)
+        speech = rt.speech
+        stamp = (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0))
+        before = self.hass.states.get(entity_id)
+        expires, consumed = dt_util.utcnow() + timedelta(minutes=2), False
+        def policy_current():
+            return (not self._stopped and self._rt() is rt and self.options is options and self.options == values
+                    and stamp == (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0)))
+        def current():
+            state = self.hass.states.get(entity_id)
+            return (policy_current() and dt_util.utcnow() < expires and self.level(entity_id) == level
+                    and entity_id.split('.', 1)[0] not in ('lock', 'alarm_control_panel')
+                    and not blocked(self.hass, entity_id) and before is not None and state is not None
+                    and state.state not in ('unknown', 'unavailable')
+                    and state.state == before.state and state.attributes == before.attributes
+                    and (valid is None or valid()))
+        async def submit():
+            if entity_id in self._busy or not current():
+                return False
+            self._busy.add(entity_id)
+            try:
+                return await run() is not False
+            finally:
+                self._busy.discard(entity_id)
+        if not current():
+            return "not asked"
+        if level == "do":
+            return "done" if await submit() else "not asked"
         if level == "tell":
             with because(why):
-                await rt.speech.async_say(f"{doing}.", "low", None, source="trust")
-            await run()
-            return "done"
+                await speech.async_say(f"{doing}.", "low", None, source="trust")
+            return "done" if await submit() else "not asked"
         kind = kind_of(self.hass, entity_id)
-
-        before = self.hass.states.get(entity_id)
-        options = deepcopy(self.options)
-
         async def answered(answer: str) -> str:
+            nonlocal consumed
+            if consumed:
+                return "That answer has already been handled. No further action was taken."
+            consumed = True
+            if not current():
+                return "Things have changed since I asked. No action was taken; please ask again."
             if answer == "yes":
-                from .never import blocked
-
-                current = self.hass.states.get(entity_id)
-                if (options != self.options or blocked(self.hass, entity_id) or current is None
-                        or current.state in ("unknown", "unavailable") or before is None
-                        or current.state != before.state or current.attributes != before.attributes):
+                if not await submit():
                     return "Things have changed since I asked. No action was taken; please ask again."
-                await run()
-                self.yes_run[kind] = self.yes_run.get(kind, 0) + 1
-                self._save()
-                return "Done."
+                if policy_current():
+                    self.yes_run[kind] = self.yes_run.get(kind, 0) + 1
+                    self._save()
+                return "Request sent."
             self.yes_run[kind] = 0
             self._save()
             return "Okay, I'll leave it." if answer == "no" else "Right, it's already sorted."
-
         with because(why):
-            result = await rt.speech.async_ask(
-                asking, source="trust", on_answer=answered,
-                extra_prompt="If they say yes, do exactly that and nothing else; if no, leave it.",
-            )
+            result = await speech.async_ask(asking, source="trust", on_answer=answered,
+                extra_prompt="If they say yes, do exactly that and nothing else; if no, leave it.")
+        if not policy_current():
+            return "not asked"
         if not result.spoken:
             rt.timeline.add("mode", f"Didn't {asking[9:].rstrip('?')}" if asking.startswith("Shall I ") else f"Didn't: {asking}",
                             "set to ask first, and couldn't ask")

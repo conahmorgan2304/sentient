@@ -224,7 +224,7 @@ async def test_changed_device_invalidates_delayed_trust_answer(hass):
     entry = await _setup(hass, trust_lights='ask')
     calls = async_mock_service(hass, 'light', 'turn_on')
     async_mock_service(hass, 'assist_satellite', 'start_conversation')
-    await entry.runtime_data.learner._async_do(LAMP)
+    await entry.runtime_data.learner._async_do(entry.runtime_data.learner.get(LAMP.id))
     hass.states.async_set('light.lamp', 'on', {'friendly_name': 'Lamp'})
     reply = await entry.runtime_data.speech.async_take_answer('assist_satellite.kitchen', 'yes')
     assert 'No action was taken' in reply and not calls

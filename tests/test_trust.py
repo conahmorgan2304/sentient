@@ -1,6 +1,7 @@
 """Trust levels: just do it, say then do, or ask first — and offering to stop asking after a run of yeses."""
 
 from datetime import timedelta
+from copy import deepcopy
 
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
@@ -20,6 +21,8 @@ async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+    lamp = deepcopy(LAMP)
+    entry.runtime_data.learner.routines[lamp.id] = lamp
     return entry
 
 
@@ -30,7 +33,7 @@ async def test_just_do_it_is_the_default(hass: HomeAssistant) -> None:
     entry = await _setup(hass)
     on = async_mock_service(hass, "light", "turn_on")
     said = async_mock_service(hass, "assist_satellite", "announce")
-    await entry.runtime_data.learner._async_do(LAMP)
+    await entry.runtime_data.learner._async_do(entry.runtime_data.learner.get(LAMP.id))
     assert on and not said
 
 
@@ -38,7 +41,7 @@ async def test_say_then_do(hass: HomeAssistant) -> None:
     entry = await _setup(hass, trust_lights="tell")
     on = async_mock_service(hass, "light", "turn_on")
     said = async_mock_service(hass, "assist_satellite", "announce")
-    await entry.runtime_data.learner._async_do(LAMP)
+    await entry.runtime_data.learner._async_do(entry.runtime_data.learner.get(LAMP.id))
     await hass.async_block_till_done()
     assert on and said[0].data["message"] == "Putting the lamp on."
 
@@ -50,9 +53,9 @@ async def test_ask_first_and_offer_to_stop_asking(hass: HomeAssistant, freezer) 
     asked = async_mock_service(hass, "assist_satellite", "start_conversation")
     for n in range(5):
         freezer.tick(timedelta(days=1))
-        await rt.learner._async_do(LAMP)
+        await rt.learner._async_do(entry.runtime_data.learner.get(LAMP.id))
         assert asked[-1].data["start_message"] == "Shall I put the lamp on?" and len(on) == n  # not before a yes
-        assert await rt.speech.async_take_answer("assist_satellite.kitchen", "yes please") == "Done."
+        assert await rt.speech.async_take_answer("assist_satellite.kitchen", "yes please") == "Request sent."
         assert len(on) == n + 1
     [finding] = rt.trust.findings()
     added = rt.proposals.refresh([finding])
