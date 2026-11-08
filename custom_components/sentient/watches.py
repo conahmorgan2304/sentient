@@ -218,6 +218,7 @@ class WatchManager:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any], speech: SpeechRouter) -> None:
         self.hass = hass
         self._looks: dict[tuple[str, str, str], tuple[datetime, dict[str, Any]]] = {}  # recent camera answers
+        self._cache_generation = 0
         self._prints: dict[str, list[int]] = {}  # check/watch -> thumbnail at its last AI look
         self.skipped = 0  # AI looks saved because the picture hadn't changed
         self.options = options
@@ -257,6 +258,7 @@ class WatchManager:
 
     @callback
     def async_stop(self) -> None:
+        self.clear_camera_cache()
         while self._unsubs:
             self._unsubs.pop()()
         for unsub in self._timers.values():
@@ -463,11 +465,20 @@ class WatchManager:
         last = dt_util.parse_datetime(watch.last_checked) if watch.last_checked else None
         if last and dt_util.utcnow() - last < self._cooldown():
             return
+        generation, options = self._cache_generation, self.options
+        def current():
+            return (generation == self._cache_generation and self.options is options
+                    and self._watches.get(watch.id) is watch and watch.until_dt > dt_util.utcnow())
         self._busy.add(watch.id)
         try:
             # give the camera a moment so the subject is in frame
             await asyncio.sleep(1)
-            if await self.unchanged(f"watch:{watch.id}", watch.entity_id, watch.spot):
+            if not current():
+                return
+            same = await self.unchanged(f"watch:{watch.id}", watch.entity_id, watch.spot)
+            if not current():
+                return
+            if same:
                 watch.last_result = "skipped: the picture hasn't changed"
                 self._save()
                 return
@@ -478,15 +489,21 @@ class WatchManager:
             watch.last_checked = dt_util.utcnow().isoformat()
             watch.checks += 1
             answer, description, unsure = await self._async_ask(watch)
+            if not current():
+                return
             second = self.options.get(CONF_SECOND_OPINION)
             if unsure and second and second != self.options.get(CONF_AI_TASK_ENTITY) and self.spend("watches"):
                 answer, description, _unsure = await self._async_ask(watch, second)
                 watch.second_opinions += 1
+            if not current():
+                return
             watch.last_result = description or ("yes" if answer else "no")
             self._save()
             if answer:
                 await self._async_fire(watch, description, None)
         except HomeAssistantError as err:
+            if not current():
+                return
             _LOGGER.warning("Camera watch '%s' could not check: %s", watch.what, err)
             watch.last_result = f"error: {err}"
             self._save()
@@ -494,6 +511,7 @@ class WatchManager:
             self._busy.discard(watch.id)
 
     async def _async_ask(self, watch: Watch, ai_entity: str | None = None) -> tuple[bool, str | None, bool]:
+        generation, options = self._cache_generation, self.options
         data: dict[str, Any] = {
             "task_name": f"Sentient watch: {watch.what}"[:100],
             "instructions": (
@@ -511,6 +529,9 @@ class WatchManager:
             },
             "attachments": [await self._attachment(watch.entity_id, watch.spot)],
         }
+        if (generation != self._cache_generation or self.options is not options
+                or self._watches.get(watch.id) is not watch or watch.until_dt <= dt_util.utcnow()):
+            raise HomeAssistantError('Camera watch changed while preparing; no AI request was sent')
         if ai_entity := ai_entity or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         response = await async_generate(self.hass, data)
@@ -539,6 +560,11 @@ class WatchManager:
         self._ai_checks += 1
         return True
 
+    def clear_camera_cache(self):
+        self._cache_generation += 1
+        self._looks.clear()
+        self._prints.clear()
+
     async def unchanged(self, key: str, camera: str, spot: str | None) -> bool:
         """The picture (or the spot) looks just as it did at this check's last AI look — no need to ask again.
 
@@ -549,14 +575,20 @@ class WatchManager:
             return False
         from .spots import _key, changed_share
 
+        generation, options = self._cache_generation, self.options
         fingerprint = await self.spots.async_fingerprint(camera, _key(spot) if spot else None, whole=True)
+        if generation != self._cache_generation or self.options is not options:
+            return False
         if fingerprint is None:
             return False
         before = self._prints.get(key)
         if before is not None and changed_share(fingerprint, before) < PREFILTER_CHANGED:
             self.skipped += 1
             return True
+        self._prints.pop(key, None)
         self._prints[key] = fingerprint
+        while len(self._prints) > 200:
+            self._prints.pop(next(iter(self._prints)))
         return False
 
     async def _attachment(self, camera: str, spot: str | None) -> dict[str, str]:
@@ -578,6 +610,7 @@ class WatchManager:
         A spot named in the question (or by another name for it — "the drive", "the driveway")
         decides the camera, whatever camera was asked for: it's the one that can see it.
         """
+        generation, options = self._cache_generation, self.options
         spot_key = None
         if self.spots is not None:
             spot_key = self.spots.find_any(spot) if spot else None
@@ -608,11 +641,18 @@ class WatchManager:
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
+        if generation != self._cache_generation or self.options is not options:
+            raise HomeAssistantError('Camera request changed while preparing; please ask again')
         self.spend("question", force=True)  # someone asked, so always look; it still counts towards today's total
         self._save()
         response = await async_generate(self.hass, data)
+        if generation != self._cache_generation or self.options is not options:
+            raise HomeAssistantError('Camera request was invalidated; please ask again')
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            raise HomeAssistantError('The camera is no longer available')
         answer = (response or {}).get("data")
-        out = {"camera": self.hass.states.get(entity_id).name, "answer": str(answer or "").strip()}
+        out = {"camera": state.name, "answer": str(answer or "").strip()}
         if spot:
             out["spot"] = spot
         if out["answer"]:

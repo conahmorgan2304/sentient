@@ -8,6 +8,7 @@ feedback, so an offer that keeps getting turned down is asked less.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
@@ -25,6 +26,13 @@ from .presence import ActivityTracker, area_of
 from .shortcuts import async_run_actions
 
 _LOGGER = logging.getLogger(__name__)
+ANSWER_FOR = timedelta(minutes=2)
+
+
+def version(offer):
+    return deepcopy({k: v for k, v in offer.items() if k != 'last'})
+
+
 GAP = timedelta(minutes=5)  # never two offers on top of each other
 
 
@@ -47,13 +55,18 @@ class Offers:
         self._rt = runtime
         self._last_any: datetime | None = None
         self._unsub = None
+        self._generation = 0
+        self._stopped = False
 
     @callback
     def async_start(self) -> None:
+        self._stopped = False
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed)
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
+        self._generation += 1
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -73,7 +86,7 @@ class Offers:
             return  # this room doesn't take offers
         for offer in self.items.enabled():
             if area in (offer.get("areas") or []) and self.ready(offer):
-                self.hass.async_create_task(self.async_ask(offer, area))
+                self.hass.async_create_task(self.async_ask(offer, area, force=False))
                 break
 
     def ready(self, offer: dict[str, Any], now: datetime | None = None) -> bool:
@@ -81,7 +94,7 @@ class Offers:
         now = now or dt_util.utcnow()
         local = dt_util.as_local(now)
         speech = rt.speech
-        if speech.guest_mode or speech.hushed() or speech.quiet_now():
+        if self._stopped or not offer.get('enabled', True) or speech.guest_mode or speech.hushed() or speech.quiet_now():
             return False
         if self._last_any and now - self._last_any < GAP:
             return False
@@ -134,9 +147,21 @@ class Offers:
                     continue
         return False
 
-    async def async_ask(self, offer: dict[str, Any], area: str | None = None) -> dict[str, Any]:
+    async def async_ask(self, offer: dict[str, Any], area: str | None = None, *, force=True) -> dict[str, Any]:
         rt = self._rt()
+        if self._stopped or self.items.items.get(offer['id']) is not offer or (not force and not self.ready(offer)):
+            return {'error': 'That offer is no longer ready'}
+        generation, options = self._generation, rt.options
+        privacy = getattr(rt.speech, '_privacy_generation', 0)
+        expected = version(offer)
         now = dt_util.utcnow()
+        until = now + ANSWER_FOR
+        consumed = False
+        def valid():
+            return (not self._stopped and generation == self._generation and rt.options is options
+                    and getattr(rt.speech, '_privacy_generation', 0) == privacy and not rt.speech.guest_mode
+                    and self.items.items.get(offer['id']) is offer and version(offer) == expected
+                    and dt_util.utcnow() <= until)
         self._last_any = now
         self.items.update(offer["id"], last=now.isoformat())
         value = reading(self.hass, offer.get("value_entity") or offer.get("below_entity"))
@@ -147,9 +172,13 @@ class Offers:
             found = rt.speech.find_speaker(a.name if a else area)
             targets = [found] if found else None
         async def answered(kind: str) -> str:
+            nonlocal consumed
+            if consumed or not valid():
+                return 'That offer is no longer awaiting an answer. Please ask again.'
+            consumed = True
             if kind == "yes":
-                out = await self.async_accept(offer["id"], True)
-                return "Done." if out.get("done") else str(out.get("error") or "That didn't work.")
+                out = await self.async_accept(offer["id"], True, expected=expected, allowed=valid, allow_disabled=force)
+                return "Request sent." if out.get("done") else str(out.get("error") or "That didn't work.")
             if kind == "done":  # "it's already on": not a no to the offer itself
                 rt.timeline.add("mode", f"Already done: {offer['name']}")
                 return "Right, it's already sorted."
@@ -183,7 +212,7 @@ class Offers:
             bits.append("it was within the offer's times")
         return f"the '{offer['name']}' offer: " + (", ".join(bits) if bits else "its conditions were met")
 
-    async def async_accept(self, offer_id: str, accept: bool, note: str | None = None) -> dict[str, Any]:
+    async def async_accept(self, offer_id: str, accept: bool, note: str | None = None, *, expected=None, allowed=None, allow_disabled=False) -> dict[str, Any]:
         rt = self._rt()
         offer = self.items.find(offer_id)
         if offer is None:
@@ -194,10 +223,28 @@ class Offers:
             rt.feedback.record(f"offer:{offer['id']}", DECLINED, "said no", "offers")
             rt.timeline.add("mode", f"Said no to: {offer['name']}")
             return {"offer": offer["name"], "done": False}
+        from .never import touches
+
+        expected = version(offer) if expected is None else expected
+        generation, options = self._generation, rt.options
+        privacy = getattr(rt.speech, '_privacy_generation', 0)
+        actions = deepcopy(offer.get('actions') or [])
+        if not actions:
+            return {'error': 'That offer has no configured actions'}
+        def valid():
+            return (not self._stopped and generation == self._generation and rt.options is options
+                    and getattr(rt.speech, '_privacy_generation', 0) == privacy and not rt.speech.guest_mode
+                    and (offer.get('enabled', True) or allow_disabled)
+                    and self.items.items.get(offer['id']) is offer and version(offer) == expected
+                    and (allowed is None or allowed()) and not touches(self.hass, actions))
+        if not valid():
+            return {'error': 'That offer changed or is no longer allowed; please ask again'}
         try:
-            # someone said yes: this is their request (checked like any other), not the house acting by itself
-            await async_run_actions(self.hass, offer.get("actions") or [], offer["name"], context=Context())
+            await async_run_actions(self.hass, actions, offer['name'], context=Context(), before_run=valid)
         except Exception as err:  # noqa: BLE001
             return {"offer": offer["name"], "error": f"It didn't work: {err}"}
+        if (self._stopped or generation != self._generation or rt.options is not options
+                or getattr(rt.speech, '_privacy_generation', 0) != privacy or rt.speech.guest_mode):
+            return {'done': None, 'error': 'Actions were started, but the offer context changed. Check the devices before asking again.'}
         rt.timeline.add("mode", f"Yes to: {offer['name']}", note or None)
-        return {"offer": offer["name"], "done": True, "note": "Done — tell them briefly, in your own words."}
+        return {"offer": offer["name"], "done": True, "note": "The configured actions completed; physical device results are not independently verified."}

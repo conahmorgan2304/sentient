@@ -70,6 +70,9 @@ class AIGate:
         self.last_error_at: str | None = None
         self.last_ok_at: str | None = None
         self.capped_at: str | None = None
+        self.service_attempts = 0
+        self.retry_attempts = 0
+        self._generation = 0
         from .voice_timing import VoiceTimings
 
         self.voice_timings = VoiceTimings(hass)
@@ -86,9 +89,15 @@ class AIGate:
         self.fails_in_row = int(data.get("fails_in_row") or 0)
         self.last_error, self.last_error_at = data.get("last_error"), data.get("last_error_at")
         self.last_ok_at = data.get("last_ok_at")
-        self.sent = list(data.get("sent") or [])[:SENT_KEEP]
+        loaded_sent = list(data.get("sent") or [])
+        cutoff = (dt_util.utcnow() - timedelta(days=SENT_DAYS)).isoformat()
+        self.sent = [row for row in loaded_sent if isinstance(row, dict) and isinstance(row.get('time'), str) and row['time'] >= cutoff][:SENT_KEEP] if self.keeping_record else []
+        if self.sent != loaded_sent:
+            self._save()
         if data.get("day") == self.day:
             self.counts = dict(data.get("counts") or {})
+            self.service_attempts = int(data.get('service_attempts') or 0)
+            self.retry_attempts = int(data.get('retry_attempts') or 0)
             self.failed_today = int(data.get("failed_today") or 0)
             self.capped_at = data.get("capped_at")
         elif data.get("day") and data.get("counts"):
@@ -100,6 +109,7 @@ class AIGate:
 
         return {
             "language_phrases": saved_phrases(self),
+            "service_attempts": self.service_attempts, "retry_attempts": self.retry_attempts,
             "day": self.day, "counts": self.counts, "history": self.history, "failed_today": self.failed_today,
             "fails_in_row": self.fails_in_row, "last_error": self.last_error, "last_error_at": self.last_error_at,
             "last_ok_at": self.last_ok_at, "capped_at": self.capped_at, "sent": self.sent,
@@ -123,6 +133,7 @@ class AIGate:
             self.history[self.day] = sum(self.counts.values())
             self._trim()
         self.day, self.counts, self.failed_today, self.capped_at = today, {}, 0, None
+        self.service_attempts = self.retry_attempts = 0
         self._save()
 
     # ----- the meter and the cap ----------------------------------------------------------
@@ -161,6 +172,7 @@ class AIGate:
 
     def over_budget(self, purpose: str) -> str | None:
         """This feature has used its own daily allowance (if it has one): the setting's name, else None."""
+        self._roll()
         key = BUDGETS.get(purpose)
         cap = int(float(self.options.get(key, BUDGET_DEFAULTS.get(key, 0)) or 0)) if key else 0
         if not cap:
@@ -169,6 +181,7 @@ class AIGate:
         return key if used >= cap else None
 
     def budgets(self) -> dict[str, dict[str, int]]:
+        self._roll()
         out = {}
         for key in dict.fromkeys(BUDGETS.values()):
             if cap := int(float(self.options.get(key, BUDGET_DEFAULTS.get(key, 0)) or 0)):
@@ -226,7 +239,17 @@ class AIGate:
             "where": sorted({s["to"] for s in recent}),
         }
 
+    def invalidate_requests(self):
+        """Prevent old jobs retrying or altering the current provider's health."""
+        self._generation += 1
+
+    def reset_provider_health(self):
+        self.fails_in_row = 0
+        self.last_error = self.last_error_at = self.last_ok_at = None
+        self._save()
+
     def forget_sent(self, since: str | None = None) -> int:
+        self.invalidate_requests()
         before = len(self.sent)
         self.sent = [s for s in self.sent if since is not None and s["time"] < since]
         self._save()
@@ -235,6 +258,7 @@ class AIGate:
     # ----- calling -------------------------------------------------------------------------
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
         """ai_task.generate_data with a time limit; failures are noted and raised as AIUnavailable."""
+        generation, options = self._generation, self.options
         data = dict(data)
         if (self.options.get('automatic_language') and self.options.get('speak_house_language')
                 and isinstance(data.get('instructions'), str)
@@ -248,25 +272,39 @@ class AIGate:
             )
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
             data["entity_id"] = ai
-        self._record_call(data)
+        async def attempt(retry=False):
+            self._roll()
+            self.service_attempts += 1
+            self.retry_attempts += int(retry)
+            self._record_call(data)
+            self._save()
+            return await self.hass.services.async_call(
+                'ai_task', 'generate_data', data, blocking=True, return_response=True)
+
+        def current():
+            return generation == self._generation and self.options is options
+
         try:
             async with asyncio.timeout(timeout):
                 try:
-                    response = await self.hass.services.async_call(
-                        "ai_task", "generate_data", data, blocking=True, return_response=True
-                    )
+                    response = await attempt()
                 except Exception as err:  # noqa: BLE001
                     if not busy(err):
                         raise
-                    # "high demand" / rate limited: usually gone in a moment, so try once more
+                    if not current():
+                        raise AIUnavailable('AI settings or privacy changed; retry cancelled') from err
                     await asyncio.sleep(RETRY_AFTER)
-                    response = await self.hass.services.async_call(
-                        "ai_task", "generate_data", data, blocking=True, return_response=True
-                    )
+                    if not current():
+                        raise AIUnavailable('AI settings or privacy changed; retry cancelled')
+                    response = await attempt(retry=True)
+                if response is not None and not isinstance(response, dict):
+                    raise HomeAssistantError('The AI service returned an invalid response format')
         except Exception as err:  # noqa: BLE001 - every failure means "use the plain version"
-            self.failed(err)
+            if current():
+                self.failed(err)
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
-        self.ok()
+        if current():
+            self.ok()
         return response or {}
 
     def failed(self, err: BaseException) -> None:
@@ -279,11 +317,9 @@ class AIGate:
         self._save()
 
     def ok(self) -> None:
-        was = self.fails_in_row
         self.fails_in_row = 0
         self.last_ok_at = dt_util.utcnow().isoformat()
-        if was:
-            self._save()
+        self._save()
 
     def describe(self) -> dict[str, Any]:
         self._roll()
@@ -291,6 +327,9 @@ class AIGate:
         week = [self.history[d] for d in days]
         return {
             "today": self.used,
+            "service_attempts_today": self.service_attempts,
+            "retry_attempts_today": self.retry_attempts,
+            "meter_note": "Daily limits count logical jobs. Service attempts include Sentient retries of ai_task.generate_data, not provider billing or provider-internal retries.",
             "limit": self.limit,
             "capped": self.capped,
             "by_purpose": dict(sorted(self.counts.items(), key=lambda kv: -kv[1])),

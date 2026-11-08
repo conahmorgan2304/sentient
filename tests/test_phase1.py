@@ -82,7 +82,7 @@ async def test_camera_check_skipped_when_the_picture_hasnt_changed(hass: HomeAss
         return same
 
     rt.spots.async_fingerprint = fingerprint
-    check = {"id": "c1", "name": "Delivery van", "camera": "camera.front", "question": "Is there a delivery van?"}
+    check = rt.lists['checks'].upsert({"name": "Delivery van", "camera": "camera.front", "question": "Is there a delivery van?", "cooldown_minutes": 0})
     first = await rt.checks.async_check(check)
     second = await rt.checks.async_check(check)
     assert len(ai) == 1 and "skipped" in second and "match" in first
