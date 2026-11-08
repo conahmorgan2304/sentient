@@ -10,6 +10,7 @@ the house controls.
 from __future__ import annotations
 
 from datetime import timedelta
+from copy import deepcopy
 import re
 from typing import Any, Callable
 
@@ -34,6 +35,7 @@ from .const import (
 from .trust import KINDS as TRUST_KINDS
 
 MAX_OPEN = 2
+MAX_AGE = timedelta(days=7)
 ASK_AGAIN_AFTER = timedelta(days=30)
 # the only settings a proposal may touch
 ALLOWED = {CONF_REMARK_REPEAT_HOURS, CONF_CHATTINESS, CONF_BRIEFING_SECTIONS, CONF_DAILY_AI_LIMIT, *TRUST_KINDS.values()}
@@ -66,7 +68,7 @@ class Proposals:
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
-        self.open = [p for p in data.get("open", []) if p.get("option") in ALLOWED]
+        self.open = [p for p in data.get("open", []) if self._valid(p)]
         self.answered = dict(data.get("answered") or {})
 
     def _save(self) -> None:
@@ -108,15 +110,35 @@ class Proposals:
             elif kind == "ai" and f.get("about") == "limit":
                 now = int(opts.get(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT) or 0)
                 if now > 0:
-                    new = int(round(now * 1.5 / 10) * 10)
+                    new = min(5000, max(now + 1, int(round(now * 1.5 / 10) * 10)))
+                    if new <= now:
+                        continue
                     out.append(self._make("ai_limit", f["text"], CONF_DAILY_AI_LIMIT, now, new,
                                           f"Allow {new} background AI calls a day instead of {now} (your AI provider may charge for more)"))
         return out
 
     @staticmethod
     def _make(key: str, because: str, option: str, was: Any, value: Any, change: str) -> dict[str, Any]:
-        return {"id": key, "because": because, "option": option, "was": was, "value": value, "change": change,
+        return {"id": key, "because": because, "option": option, "was": deepcopy(was), "value": deepcopy(value), "change": change,
                 "made": dt_util.utcnow().isoformat()}
+
+    @staticmethod
+    def _valid(p):
+        if not isinstance(p, dict) or not isinstance(p.get('id'), str) or not isinstance(p.get('option'), str) or p['option'] not in ALLOWED:
+            return False
+        if not all(key in p for key in ('was', 'value', 'change', 'because', 'made')):
+            return False
+        if not isinstance(p['change'], str) or not isinstance(p['because'], str):
+            return False
+        when = dt_util.parse_datetime(p['made']) if isinstance(p['made'], str) else None
+        return when is not None and timedelta(0) <= dt_util.utcnow() - dt_util.as_utc(when) < MAX_AGE
+
+    def _effective(self, key):
+        defaults = {CONF_REMARK_REPEAT_HOURS: DEFAULT_REMARK_REPEAT_HOURS, CONF_CHATTINESS: DEFAULT_CHATTINESS,
+                    CONF_BRIEFING_SECTIONS: DEFAULT_BRIEFING_SECTIONS, CONF_DAILY_AI_LIMIT: DEFAULT_DAILY_AI_LIMIT,
+                    **{k: 'do' for k in TRUST_KINDS.values()}}
+        value = self.options.get(key)
+        return defaults.get(key) if value is None else value
 
     def refresh(self, findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """After the self-check: add new proposals (not ones turned down lately), drop ones that no longer fit."""
@@ -126,7 +148,7 @@ class Proposals:
                 self._save()
             return []
         opts, now = self.options, dt_util.utcnow()
-        self.open = [p for p in self.open if opts.get(p["option"]) in (p["was"], None) or p["option"] not in opts]
+        self.open = [p for p in self.open if self._valid(p) and self._effective(p['option']) == p['was']]
         added = []
         for p in self.candidates(findings):
             if len(self.open) >= MAX_OPEN or any(o["id"] == p["id"] for o in self.open):
@@ -140,13 +162,29 @@ class Proposals:
         return added
 
     def listing(self) -> list[dict[str, Any]]:
-        return [{k: p[k] for k in ("id", "change", "because")} for p in self.open] if self.enabled else []
+        return [{k: p[k] for k in ("id", "change", "because")} for p in self.open if self._valid(p)] if self.enabled else []
 
     # ----- answering -----------------------------------------------------------------
     def answer(self, proposal_id: str, yes: bool) -> dict[str, Any]:
+        if not self.enabled:
+            return {'error': 'Settings suggestions are switched off'}
         p = next((o for o in self.open if o["id"] == proposal_id), None)
         if p is None:
             return {"error": "That suggestion has gone — it may already have been answered"}
+        if not self._valid(p) or self._effective(p['option']) != p['was']:
+            self.open.remove(p)
+            self._save()
+            return {'error': 'That suggestion is out of date; no setting was changed'}
+        from .numeric import finite_float
+        key, value = p['option'], p['value']
+        valid_value = (value == 'tell' and p['was'] == 'ask') if key in TRUST_KINDS.values() else (
+            value == _QUIETER.get(p['was']) if key == CONF_CHATTINESS else
+            isinstance(value, list) and all(isinstance(s, str) for s in value) if key == CONF_BRIEFING_SECTIONS else
+            type(value) in (int, float) and finite_float(value) is not None and finite_float(p['was']) is not None
+            and float(value) > float(p['was']) and float(value) <= (5000 if key == CONF_DAILY_AI_LIMIT else 24)
+            and (key != CONF_DAILY_AI_LIMIT or type(value) is int))
+        if not valid_value:
+            return {'error': 'That suggestion contains an invalid change'}
         self.open.remove(p)
         self.answered[p["id"]] = {"answer": "yes" if yes else "no", "time": dt_util.utcnow().isoformat()}
         self._save()
@@ -157,9 +195,6 @@ class Proposals:
             return {"changed": False}
         if p["option"] not in ALLOWED:
             return {"error": "That setting can't be changed this way"}
-        current = self.options.get(p["option"])
-        if current is not None and current != p["was"]:
-            return {"error": "That setting has been changed since, so I've left it"}
         self.hass.config_entries.async_update_entry(self.entry, options={**self.options, p["option"]: p["value"]})
         if rt is not None:
             rt.timeline.add("mind", f"Changed: {p['change'][0].lower()}{p['change'][1:]}", "you said yes")

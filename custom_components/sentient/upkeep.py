@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timedelta
 import logging
 import re
@@ -371,9 +372,19 @@ class Upkeep:
         except HomeAssistantError as err:
             _LOGGER.debug("Daily digest skipped: %s", err)
 
+    def _work_guard(self, rt):
+        options, values = rt.options, deepcopy(rt.options)
+        def stamp():
+            return (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0), rt.speech.guest_mode)
+        before = stamp()
+        return lambda: not self._stopped and self._rt() is rt and rt.options is options and rt.options == values and stamp() == before
+
     async def async_digest(self, hours: float = 24) -> dict[str, Any]:
         """A few sentences on what the house did and noticed — written to the timeline."""
         rt = self._rt()
+        current = self._work_guard(rt)
+        if not current():
+            return {'skipped': 'digest is no longer active'}
         items = list(reversed(rt.timeline.since(hours, ["said", "held", "visitor", "watch", "light", "health", "mode", "energy", "critical"], 150)))
         if not items:
             text = "A quiet day — nothing to report."
@@ -390,7 +401,10 @@ class Upkeep:
                 "Never say or imply the house is or was empty. " + personality_line(rt.options) + "\n\n" + "\n".join(lines),
                 None,
             )
-            text = str(result or "").strip() or "Nothing worth mentioning."
+            if not current():
+                return {'skipped': 'digest changed while waiting; nothing was published'}
+            text = result.strip() if isinstance(result, str) else ''
+            text = text or 'Nothing worth mentioning.'
         rt.timeline.add("digest", text, f"last {int(hours)} hours")
         return {"digest": text, "entries": len(items)}
 
@@ -458,7 +472,15 @@ class Upkeep:
         rt = self._rt()
         if not rt.options.get(CONF_BRIEFINGS, True):
             raise HomeAssistantError("Briefings are turned off in Sentient's settings")
+        current = self._work_guard(rt)
+        changed = {'spoken': False, 'reason': 'briefing_changed', 'message': '', 'speakers': []}
+        if not current():
+            return changed
         facts = await gather_briefing(self.hass, rt)
+        if not current() or not rt.options.get(CONF_BRIEFINGS, True):
+            return changed
+        thought_ids = {q['id'] for q in rt.followyou.queue if q.get('source') == 'thought'
+                       and q.get('text') in (facts.get('overnight_thoughts') or [])}
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         rules = (rt.options.get(CONF_HOUSE_RULES) or "").strip()
         try:
@@ -477,12 +499,17 @@ class Upkeep:
         except AIUnavailable as err:
             _LOGGER.info("Briefing in plain words: %s", err)
             text = None
+        if not current():
+            return changed
         message = str(text or "").strip() if isinstance(text, (str, type(None))) else ""
         if not message:
             message = plain_briefing(facts)  # the AI couldn't: say the facts plainly
         result = await rt.speech.async_say(message, priority, targets, source=source)
-        if result.spoken and facts.get("overnight_thoughts"):
-            rt.followyou.take_thoughts()  # said in the briefing: don't say them again
+        if not current():
+            return {**changed, 'spoken': result.spoken}  # dispatched speech cannot be recalled; do not return old content
+        if result.spoken and thought_ids:
+            rt.followyou.queue = [q for q in rt.followyou.queue if q['id'] not in thought_ids]
+            rt.followyou._save()
         return {**result.as_dict(), "facts": facts}
 
     # ----- memory tidy -------------------------------------------------------------

@@ -9,6 +9,7 @@ its own; nothing is changed in the house. Off until switched on.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any, Callable
 import uuid
@@ -25,10 +26,8 @@ MAX_OPEN = 8
 
 
 def _num(v: Any) -> float | None:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return None
+    from .numeric import finite_float
+    return finite_float(v)
 
 
 async def daily_values(hass: HomeAssistant, entity_id: str, days: int, end: datetime | None = None) -> list[tuple[str, float]]:
@@ -67,17 +66,21 @@ class Goals:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.goals")
         self.items: list[dict[str, Any]] = []
         self._unsub = None
+        self._stopped = False
+        self._checking = False
 
     @property
     def enabled(self) -> bool:
         return bool(self.options.get(CONF_GOALS))
 
     async def async_start(self) -> None:
+        self._stopped = False
         self.items = list((await self._store.async_load() or {}).get("items", []))
         self._unsub = async_track_time_change(self.hass, self._nightly, hour=4, minute=50, second=0)
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -89,7 +92,16 @@ class Goals:
     def open(self) -> list[dict[str, Any]]:
         return [g for g in self.items if not g.get("closed")]
 
+    def _stamp(self):
+        speech = getattr(self._rt(), 'speech', None)
+        return (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0))
+
     async def async_set(self, title: str, entity_id: str | None = None, aim: str = "lower", days: int = 30) -> dict[str, Any]:
+        if self._stopped or not self.enabled:
+            return {'error': 'Goals are switched off'}
+        if not title.strip():
+            return {'error': 'A goal needs a title'}
+        options, values, stamp = self.options, deepcopy(self.options), self._stamp()
         if len(self.open()) >= MAX_OPEN:
             return {"error": f"there are already {MAX_OPEN} goals; close one first"}
         days = max(1, min(int(days), 120))
@@ -101,7 +113,13 @@ class Goals:
                 return {"error": f"no sensor called {entity_id}"}
             week = await daily_values(self.hass, entity_id, 7)
             if week:
-                goal["baseline"] = round(sum(v for _, v in week) / len(week), 2)
+                valid = [v for _, raw in week if (v := _num(raw)) is not None]
+                baseline = _num(sum(valid) / len(valid)) if valid else None
+                goal['baseline'] = round(baseline, 2) if baseline is not None else None
+        if (self._stopped or not self.enabled or self.options is not options or self.options != values or self._stamp() != stamp):
+            return {'error': 'Goal settings changed while reading history; nothing was added'}
+        if len(self.open()) >= MAX_OPEN:
+            return {'error': f'there are already {MAX_OPEN} goals; close one first'}
         self.items.append(goal)
         self._save()
         if (rt := self._rt()) is not None:
@@ -109,21 +127,28 @@ class Goals:
         return {"goal": goal["title"], "usual_per_day": goal["baseline"], "ends": goal["ends"]}
 
     def close(self, words: str) -> dict[str, Any] | None:
-        low = words.lower().strip()
-        for g in self.open():
-            if g["id"] == low or low in g["title"].lower():
-                g["closed"] = dt_util.utcnow().isoformat()
-                self._save()
-                return g
-        return None
+        low = words.casefold().strip()
+        if not low:
+            return None
+        exact = [g for g in self.open() if g['id'] == low or g['title'].casefold() == low]
+        matches = exact or [g for g in self.open() if low in g['title'].casefold()]
+        if len(matches) != 1:
+            return None
+        goal = matches[0]
+        goal['closed'] = dt_util.utcnow().isoformat()
+        self._save()
+        return goal
 
     @staticmethod
     def progress(goal: dict[str, Any]) -> str | None:
-        if not goal.get("checks") or goal.get("baseline") in (None, 0):
+        baseline = _num(goal.get('baseline'))
+        recent = [value for c in goal.get('checks', [])[-7:] if (value := _num(c.get('value'))) is not None]
+        if not recent or baseline in (None, 0):
             return None
-        recent = goal["checks"][-7:]
-        avg = sum(c["value"] for c in recent) / len(recent)
-        change = (avg - goal["baseline"]) / abs(goal["baseline"]) * 100
+        avg = _num(sum(recent) / len(recent))
+        change = _num((avg - baseline) / abs(baseline) * 100) if avg is not None else None
+        if change is None:
+            return None
         better = change < 0 if goal["aim"] == "lower" else change > 0
         return (f"{abs(round(change))}% {'lower' if change < 0 else 'higher'} than usual over the last {len(recent)} day"
                 f"{'s' if len(recent) > 1 else ''} — {'going the right way' if better and abs(change) >= 3 else 'about the same' if abs(change) < 3 else 'going the wrong way'}")
@@ -134,13 +159,29 @@ class Goals:
             self.hass.async_create_task(self.async_check(), eager_start=False)
 
     async def async_check(self) -> None:
+        if self._checking or self._stopped or not self.enabled:
+            return
+        self._checking = True
+        options, values, stamp = self.options, deepcopy(self.options), self._stamp()
+        def current():
+            return not self._stopped and self.enabled and self.options is options and self.options == values and self._stamp() == stamp
+        try:
+            await self._async_check(current)
+        finally:
+            self._checking = False
+
+    async def _async_check(self, current):
         rt = self._rt()
         now = dt_util.utcnow()
         for g in self.open():
-            if g.get("entity_id"):
-                vals = await daily_values(self.hass, g["entity_id"], 1)
-                if vals and not any(c["day"] == vals[-1][0] for c in g["checks"]):
-                    g["checks"] = (g["checks"] + [{"day": vals[-1][0], "value": vals[-1][1]}])[-120:]
+            before = deepcopy(g)
+            vals = await daily_values(self.hass, g['entity_id'], 1) if g.get('entity_id') else []
+            if not current():
+                return
+            if not any(row is g for row in self.items) or g != before or g.get('closed'):
+                continue
+            if vals and (value := _num(vals[-1][1])) is not None and not any(c['day'] == vals[-1][0] for c in g['checks']):
+                g['checks'] = (g['checks'] + [{'day': vals[-1][0], 'value': value}])[-120:]
             if (end := dt_util.parse_datetime(g["ends"])) and now >= end:
                 g["closed"] = now.isoformat()
                 if rt is not None:
