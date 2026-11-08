@@ -95,12 +95,18 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     vis._save()
 
     if (cw := getattr(rt, "clipwatch", None)) is not None:
+        cw.invalidate()
         keep_c = [i for i in cw.items if not _after(i.get("time"), since)]
         gone["clip_descriptions"] = len(cw.items) - len(keep_c)
         cw.items = keep_c
         cw._save()
-    if (clips := getattr(rt, "clips", None)) is not None and _after((clips.last or {}).get("time"), since):
-        clips.last = {}
+    if (camsec := getattr(rt, "camsec", None)) is not None:
+        gone["camera_journeys"] = len(camsec.journeys)
+        camsec.clear()
+    if (clips := getattr(rt, "clips", None)) is not None:
+        clips.invalidate()
+        if _after((clips.last or {}).get("time"), since):
+            clips.last = {}
 
     if (faces := getattr(rt, "faces", None)) is not None:
         names = [n for n, s in faces.seen.items() if _after(s.get("time"), since)]

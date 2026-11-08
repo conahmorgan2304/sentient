@@ -99,7 +99,7 @@ async def test_new_incident_can_alert_within_old_sensor_cooldown(hass, freezer):
     from unittest.mock import AsyncMock
     incidents = Incidents(hass, 'test', {'security_incidents': True})
     rt = SimpleNamespace(incidents=incidents)
-    security = CameraSecurity(hass, {}, lambda: rt)
+    security = CameraSecurity(hass, {"camera_security": True, "camera_security_sensors": ["binary_sensor.gate_person"]}, lambda: rt)
     with patch.object(security, '_async_alert', AsyncMock()) as say, patch('custom_components.sentient.camsecurity.camera_for', return_value='camera.gate'):
         security._alert('binary_sensor.gate_person', 'At gate', 'night')
         await hass.async_block_till_done()

@@ -28,7 +28,7 @@ async def test_media_reads_until_eof_and_enforces_limit(hass, tmp_path, kind, ov
     module = f'custom_components.sentient.{kind}'
     if kind == 'clips':
         obj = Clips(hass, {}, lambda: None)
-        operation = lambda: obj.async_save_clip('event1', 'camera.gate')
+        operation = lambda: obj.async_save_clip('event1', 'camera.gate', name='clip_gate.mp4')
         url_patch = patch.object(obj, 'frigate_url', return_value='http://frigate')
         filename = 'clip_gate.mp4'
     else:

@@ -23,6 +23,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import uuid
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
@@ -57,6 +58,7 @@ from .const import (
 )
 from .faces import frigate_url
 from .notifier import phone_apps
+from .numeric import finite_float
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -93,6 +95,8 @@ class ClipWatch:
         self.via: str | None = None
         self.skipped: dict[str, int] = {}
         self._stopped = False
+        self._generation = 0
+        self._busy: set[str] = set()
         self.hevc: set[str] = set()  # cameras that record H.265
 
     # ----- settings -----------------------------------------------------------------------
@@ -110,6 +114,7 @@ class ClipWatch:
 
     # ----- lifecycle ----------------------------------------------------------------------
     async def async_start(self) -> None:
+        self._stopped = False
         self.items = (await self._store.async_load() or {}).get("items", [])
         self._prune()
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._occupancy))
@@ -124,7 +129,11 @@ class ClipWatch:
 
             if not await mqtt.async_wait_for_mqtt_client(self.hass) or self._stopped:
                 return
-            self._unsubs.append(await mqtt.async_subscribe(self.hass, f"{frigate_prefix(self.hass)}/reviews", self._message))
+            unsub = await mqtt.async_subscribe(self.hass, f"{frigate_prefix(self.hass)}/reviews", self._message)
+            if self._stopped:
+                unsub()
+                return
+            self._unsubs.append(unsub)
             self.via = "mqtt"
         except Exception as err:  # noqa: BLE001 - the occupancy sensors still work
             _LOGGER.debug("Sentient couldn't listen for Frigate reviews: %s", err)
@@ -132,8 +141,21 @@ class ClipWatch:
     @callback
     def async_stop(self) -> None:
         self._stopped = True
+        self.invalidate()
         while self._unsubs:
             self._unsubs.pop()()
+
+    @callback
+    def invalidate(self) -> None:
+        """Late results and queued notifications cannot repopulate forgotten data."""
+        self._generation += 1
+
+    def _stamp(self) -> tuple:
+        rt = self._rt()
+        speech = getattr(rt, "speech", None)
+        return (self._generation, id(self.options), getattr(speech, "_privacy_generation", 0),
+                getattr(speech, "_guest_generation", 0), getattr(speech, "guest_mode", False),
+                getattr(getattr(rt, "ai", None), "_generation", 0))
 
     @callback
     def _nightly(self, _now: datetime) -> None:
@@ -153,7 +175,7 @@ class ClipWatch:
     # ----- what starts a watch ------------------------------------------------------------
     def wanted(self, review: dict[str, Any]) -> str | None:
         """None if this review should be watched, else why not."""
-        if not self.enabled:
+        if self._stopped or not self.enabled:
             return "off"
         if review.get("camera") not in self.cameras():
             return "camera"
@@ -180,7 +202,11 @@ class ClipWatch:
             payload = json.loads(msg.payload)
         except (TypeError, ValueError):
             return
+        if not isinstance(payload, dict):
+            return
         kind, review = payload.get("type"), payload.get("after") or {}
+        if not isinstance(review, dict) or not isinstance(review.get("data", {}), dict):
+            return
         source = self._opt(CONF_CLIP_SOURCE, SOURCES)
         if (kind == "end" and source == "sentient") or (kind == "genai" and source == "frigate"):
             if why := self.wanted(review):
@@ -192,7 +218,7 @@ class ClipWatch:
     @callback
     def _occupancy(self, event: Event) -> None:
         """Without MQTT: a person leaving a chosen camera's view starts a watch of its latest event."""
-        if self.via == "mqtt" or not self.enabled:
+        if self._stopped or self.via == "mqtt" or not self.enabled:
             return
         entity = event.data.get("entity_id", "")
         if not entity.endswith("_person_occupancy"):
@@ -205,6 +231,9 @@ class ClipWatch:
             self.hass.async_create_task(self._from_latest_event(camera), eager_start=False)
 
     async def _from_latest_event(self, camera: str) -> None:
+        stamp = self._stamp()
+        if self._stopped or not self.enabled or camera not in self.cameras():
+            return
         url = frigate_url(self.hass)
         if not url:
             return
@@ -215,7 +244,7 @@ class ClipWatch:
                 events = await resp.json() if resp.status == 200 else []
         except Exception:  # noqa: BLE001
             return
-        if not events:
+        if not events or stamp != self._stamp() or self._stopped:
             return
         ev = events[0]
         review = {"id": ev["id"], "camera": camera, "start_time": ev.get("start_time"), "end_time": ev.get("end_time"),
@@ -228,39 +257,78 @@ class ClipWatch:
 
     # ----- watching -----------------------------------------------------------------------
     async def async_watch(self, review: dict[str, Any], frigate_summary: bool = False, force: bool = False) -> dict[str, Any]:
+        if not isinstance(review, dict) or not isinstance(review.get("data") or {}, dict):
+            return {"error": "invalid clip metadata"}
+        stamp = self._stamp()
         camera = str(review.get("camera") or "")
+
+        def current() -> bool:
+            return (not self._stopped and self.enabled and stamp == self._stamp()
+                    and camera in self.cameras() and (force or self.wanted(review) is None))
+
+        if not current():
+            return {"skipped": "clip watch is no longer active for this camera"}
+        if camera in self._busy:
+            self._skip("already running")
+            return {"skipped": "already running"}
         now = dt_util.utcnow()
         if not force and (last := self._last.get(camera)) and now - last < COOLDOWN:
             self._skip("cooldown")
             return {"skipped": "cooldown"}
-        start = float(review.get("start_time") or 0)
-        end = float(review.get("end_time") or 0) or start + 10
+        if review.get("id") and any(i.get("review") == review["id"] and i.get("camera") == camera for i in self.items):
+            self._skip("already watched")
+            return {"skipped": "already watched"}
+        start = finite_float(review.get("start_time"))
+        end = finite_float(review.get("end_time")) if review.get("end_time") is not None else None
+        if start is None or start <= 0 or (review.get("end_time") is not None and end is None):
+            return {"error": "invalid clip times"}
+        end = end or start + 10
+        try:
+            dt_util.utc_from_timestamp(start)
+            dt_util.utc_from_timestamp(end)
+        except (ValueError, OverflowError, OSError):
+            return {"error": "invalid clip times"}
+        if end < start:
+            return {"error": "invalid clip times"}
         if end - start < MIN_SECONDS and not force:
             self._skip("too short")
             return {"skipped": "too short"}
         end = min(end, start + MAX_SECONDS)
         data = review.get("data") or {}
-        event = (data.get("detections") or [None])[0]
+        if not isinstance(data, dict):
+            return {"error": "invalid clip metadata"}
+        detections = data.get("detections") or []
+        if not isinstance(detections, list):
+            return {"error": "invalid clip metadata"}
+        event = detections[0] if detections else None
         rt = self._rt()
         if frigate_summary:
             meta = data.get("metadata") or {}
-            summary = str(meta.get("shortSummary") or meta.get("title") or meta.get("scene") or "").strip()
-            if not summary:
+            if not isinstance(meta, dict):
+                return {"error": "invalid clip metadata"}
+            summary = meta.get("shortSummary") or meta.get("title") or meta.get("scene") or ""
+            if not isinstance(summary, str) or not summary.strip():
                 return {"skipped": "no Frigate summary"}
-            threat = int(meta.get("potential_threat_level") or 0)
-            answer = {"summary": summary, "kind": "suspicious" if threat else "visitor", "worth": threat >= 1}
+            threat = finite_float(meta.get("potential_threat_level"))
+            worth = threat is not None and threat >= 1
+            answer = {"summary": summary.strip(), "kind": "suspicious" if worth else "visitor", "worth": worth}
         else:
             if rt is not None and not rt.watches.spend("clip watch", force=force):
                 self._skip("budget")
                 return {"skipped": "today's clip allowance is used up"}
             self._last[camera] = now
+            self._busy.add(camera)
             try:
-                answer = await self._ask_ai(camera, start, end, event)
+                answer = await self._ask_ai(camera, start, end, event, current)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Sentient couldn't watch a clip from %s: %s", camera, err)
                 return {"error": str(err)}
+            finally:
+                self._busy.discard(camera)
+        if not current():
+            return {"skipped": "clip watch context changed"}
         self._last[camera] = now
-        if not answer or not str(answer.get("summary") or "").strip():
+        if not isinstance(answer, dict) or not isinstance(answer.get("summary"), str) or not answer["summary"].strip():
             return {"error": "no answer"}
         return self._record(camera, start, event, review.get("id"), answer)
 
@@ -336,14 +404,28 @@ class ClipWatch:
                 self.hevc.add(camera)
         return await self._download(f"{span}/preview.mp4", name)
 
-    async def _ask_ai(self, camera: str, start: float, end: float, event: str | None = None) -> dict[str, Any] | None:
-        name = f"clipwatch_{camera}.mp4"
+    async def _ask_ai(self, camera: str, start: float, end: float, event: str | None = None,
+                      current: Callable[[], bool] | None = None) -> dict[str, Any] | None:
+        # Unique files avoid an old reload deleting media prepared by a new runtime.
+        name = f"clipwatch_{camera}_{uuid.uuid4().hex}.mp4"
+        keep = bool(self.options.get(CONF_CLIP_KEEP))
+        try:
+            return await self._analyse_clip(camera, start, end, event, name, current)
+        finally:
+            if not (keep and self.options.get(CONF_CLIP_KEEP)) or (current is not None and not current()):
+                await self._remove(name)
+                await self._remove(name.removesuffix(".mp4") + ".webp")
+
+    async def _analyse_clip(self, camera: str, start: float, end: float, event: str | None, name: str,
+                            current: Callable[[], bool] | None) -> dict[str, Any] | None:
         media = await self._video(camera, start, end, name)
+        if current is not None and not current():
+            return None
         if media is None:
             raise RuntimeError("the clip isn't available")
         attachments = [{"media_content_id": media, "media_content_type": "video/mp4"}]
         if camera in self.hevc and event:  # the preview is small: add Frigate's best full-size still of it
-            still = await self._download(f"/api/events/{event}/snapshot-clean.webp", f"clipwatch_{camera}.webp")
+            still = await self._download(f"/api/events/{event}/snapshot-clean.webp", name.removesuffix(".mp4") + ".webp")
             if still:
                 attachments.append({"media_content_id": still, "media_content_type": "image/webp"})
         structure: dict[str, Any] = {
@@ -393,19 +475,16 @@ class ClipWatch:
                                 "structure": structure, "attachments": attachments}
         if ai := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
+        if current is not None and not current():
+            return None
         try:
-            try:
-                response = await async_generate(self.hass, data)
-            except Exception:  # noqa: BLE001 - an extra picture the AI won't take: try the clip alone once
-                if len(attachments) == 1:
-                    raise
-                names = []
-                data.update(instructions=plain[0], structure=plain[1], attachments=attachments[:1])
-                response = await async_generate(self.hass, data)
-        finally:
-            if not self.options.get(CONF_CLIP_KEEP):
-                await self._remove(name)
-                await self._remove(f"clipwatch_{camera}.webp")
+            response = await async_generate(self.hass, data)
+        except Exception:  # noqa: BLE001 - an extra picture the AI won't take: try the clip alone once
+            if len(attachments) == 1 or (current is not None and not current()):
+                raise
+            names = []
+            data.update(instructions=plain[0], structure=plain[1], attachments=attachments[:1])
+            response = await async_generate(self.hass, data)
         answer = (response or {}).get("data")
         if not isinstance(answer, dict):
             return {"summary": str(answer or ""), "kind": "visitor", "worth": False}
@@ -420,7 +499,7 @@ class ClipWatch:
         kind = answer.get("kind") if answer.get("kind") in KINDS else "visitor"
         summary = str(answer.get("summary")).strip().rstrip(".") + "."
         item = {"time": when.isoformat(), "camera": camera, "summary": summary, "kind": kind,
-                "worth": bool(answer.get("worth")), "whose": answer.get("whose"), "event": event, "review": review_id}
+                "worth": answer.get("worth") is True, "whose": answer.get("whose"), "event": event, "review": review_id}
         self.items.insert(0, item)
         self._prune()
         self._save()
@@ -451,11 +530,15 @@ class ClipWatch:
 
         async def send() -> None:
             for app in apps:
+                if (self._stopped or not self.enabled or stamp != self._stamp()
+                        or item["camera"] not in self.cameras()):
+                    return
                 try:
                     await self.hass.services.async_call("notify", app, msg, blocking=True)
                 except Exception as err:  # noqa: BLE001
                     _LOGGER.warning("Sentient couldn't send a clip notification to %s: %s", app, err)
 
+        stamp = self._stamp()
         self.hass.async_create_task(send(), eager_start=False)
 
     def recent(self, camera: str | None = None, hours: float = 24) -> list[dict[str, Any]]:
@@ -470,12 +553,17 @@ class ClipWatch:
 
     async def async_latest(self, camera: str) -> dict[str, Any]:
         """Watch the latest review from this camera now (check_now)."""
+        stamp = self._stamp()
+        if self._stopped or not self.enabled or camera not in self.cameras():
+            return {"skipped": "clip watch is not active for this camera"}
         url = frigate_url(self.hass)
         if not url:
             return {"error": "Frigate isn't set up in Home Assistant"}
         async with asyncio.timeout(15):
             resp = await async_get_clientsession(self.hass).get(f"{url}/api/review", params={"cameras": camera, "limit": "1"})
             reviews = await resp.json() if resp.status == 200 else []
+        if stamp != self._stamp() or self._stopped:
+            return {"skipped": "clip watch context changed"}
         if not reviews:
             return {"error": "no recent review from that camera"}
         return await self.async_watch(reviews[0], force=True)

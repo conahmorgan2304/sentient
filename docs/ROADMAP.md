@@ -171,3 +171,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.3 — AI retry/health lifecycle and attempt visibility, camera-check concurrency and typed results, and version-bound saved offer answers. See AI_WORK_REVIEW_0983.md.
 
 - [x] 0.98.10 — Cancel stale voice outcome checks, recheck recovered devices before reporting, validate completion feedback and distinguish unconfirmed requests from proven failures. See FOLLOWTHROUGH_REVIEW_09810.md.
+
+- [x] 0.98.11 — Preserve camera sensor evidence, require known boundary history, resolve camera views conservatively, invalidate stale alerts/clip summaries, prevent overlapping/replayed clip analysis and expose content-free camera diagnostics. See CAMERA_SECURITY_REVIEW_09811.md.

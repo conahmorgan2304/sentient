@@ -195,26 +195,27 @@ async def test_downloaded_diagnostics_redact_additional_personal_options(hass):
 
 
 @pytest.mark.parametrize('grouped', [True, False])
-async def test_rejected_camera_alert_does_not_suppress_next_real_detection(hass, grouped):
+async def test_empty_snapshot_retains_sensor_alert_without_duplicate_delivery(hass, grouped):
     from types import SimpleNamespace
     from custom_components.sentient.camsecurity import CameraSecurity
     incidents = Incidents(hass, 'audit', {'security_incidents': grouped})
     rt = SimpleNamespace(incidents=incidents, timeline=Mock(), watches=Mock(), clips=None,
                          speech=Mock())
     rt.speech.quiet_hours_now.return_value = False
-    camera = CameraSecurity(hass, {'camera_security_describe': True}, lambda: rt)
+    camera = CameraSecurity(hass, {'camera_security': True, 'camera_security_describe': True,
+                                 'camera_security_sensors': ['binary_sensor.person']}, lambda: rt)
     from custom_components.sentient.const import CONF_CAMSEC_DESCRIBE
     camera.options[CONF_CAMSEC_DESCRIBE] = True
     with patch('custom_components.sentient.camsecurity.camera_for', return_value='camera.gate'), patch.object(camera, '_describe', AsyncMock(side_effect=[(False, None), (True, 'A person')])):
         camera._alert('binary_sensor.person', 'Person at gate', 'night')
         await hass.async_block_till_done()
         if grouped:
-            assert incidents.recent()[0]['alert_level'] == 0
+            assert incidents.recent()[0]['alert_level'] == 1
         camera._alert('binary_sensor.person', 'Person at gate', 'night')
         await hass.async_block_till_done()
     if grouped:
         assert incidents.recent()[0]['alert_level'] == 1
-    assert any(call.args[0] == 'security' for call in rt.timeline.add.call_args_list)
+    assert sum(call.args[0] == 'security' for call in rt.timeline.add.call_args_list) == 1
     assert not incidents._pending_alerts and not camera._pending_alert_keys
 
 

@@ -58,7 +58,7 @@ async def test_daytime_journey_through_the_gate_is_logged_not_alerted(hass: Home
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     items = list(entry.runtime_data.timeline.items)
-    assert any(i["text"] == "Someone walked Gate → Garden → Shed" for i in items)
+    assert any(i["text"] == "Possible route: Gate → Garden → Shed" for i in items)
     assert not any(i.get("alert") for i in items) and not said
 
 
@@ -77,7 +77,7 @@ async def test_daytime_pottering_is_not_logged_and_long_trips_are_short(hass: Ho
     freezer.tick(timedelta(minutes=4))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert not any(i["text"].startswith("Someone walked") for i in entry.runtime_data.timeline.items)
+    assert not any(i["text"].startswith("Possible route:") for i in entry.runtime_data.timeline.items)
     # in from the gate, back and forth a lot: one short line, each place once
     for s in ("gate_person", "garden_person", "shed_person", "garden_person", "shed_person", "gate_person"):
         await _see(hass, s)
@@ -86,8 +86,8 @@ async def test_daytime_pottering_is_not_logged_and_long_trips_are_short(hass: Ho
     freezer.tick(timedelta(minutes=4))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    walked = [i["text"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Someone walked")]
-    assert walked == ["Someone walked Gate → Garden → Shed"]
+    walked = [i["text"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Possible route:")]
+    assert walked == ["Possible route: Gate → Garden → Shed"]
 
 
 async def test_in_the_garden_without_the_gate_opening_is_an_alert(hass: HomeAssistant, freezer) -> None:
@@ -96,7 +96,7 @@ async def test_in_the_garden_without_the_gate_opening_is_an_alert(hass: HomeAssi
     freezer.tick(timedelta(minutes=20))
     await _see(hass, "garden_person")
     alerts = [i for i in entry.runtime_data.timeline.items if i.get("alert")]
-    assert alerts and alerts[0]["text"].startswith("Someone is in the garden, but the gate and doors didn't open")
+    assert alerts and alerts[0]["text"].startswith("A person was reported in the garden, with no recent entry opening recorded")
 
 
 async def test_anyone_at_night_with_nobody_up_is_said(hass: HomeAssistant, freezer) -> None:
@@ -104,10 +104,10 @@ async def test_anyone_at_night_with_nobody_up_is_said(hass: HomeAssistant, freez
     entry = await _setup(hass)
     said = async_mock_service(hass, "assist_satellite", "announce")
     await _see(hass, "gate_person")
-    assert said and said[0].data["message"].startswith("Heads up: someone is by the gate and nobody's up")
+    assert said and said[0].data["message"].startswith("Heads up: a person was reported by the gate, with no recent indoor activity detected")
 
 
-async def test_ai_sees_nobody_so_no_alarm(hass: HomeAssistant, freezer) -> None:
+async def test_empty_later_snapshot_preserves_sensor_alert(hass: HomeAssistant, freezer) -> None:
     from unittest.mock import patch
 
     freezer.move_to(dt_util.as_utc(_t(21, 23, 30)))
@@ -125,6 +125,7 @@ async def test_ai_sees_nobody_so_no_alarm(hass: HomeAssistant, freezer) -> None:
     with patch("custom_components.sentient.camsecurity.async_generate", fake), \
             patch("custom_components.sentient.camsecurity.camera_for", lambda *_: "camera.shed"):
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
-        assert not said and not any(i.get("alert") for i in entry.runtime_data.timeline.items)
+        assert said and any(i.get("alert") for i in entry.runtime_data.timeline.items)
+        assert "No person was visible in the later snapshot" in said[-1].data["message"]
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
     assert said and "A man is at the shed door." in said[-1].data["message"]
