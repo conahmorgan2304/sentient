@@ -9,6 +9,7 @@ Silent when it worked. No AI.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import TYPE_CHECKING, Any
@@ -19,6 +20,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .reasons import because
+from .numeric import finite_float
 
 if TYPE_CHECKING:
     from .speech import SpeechRouter
@@ -47,7 +49,8 @@ def expected(domain: str, service: str, data: dict[str, Any]) -> tuple[str, Any]
         mode = data.get("hvac_mode")
         return ("off", None) if mode == "off" else ("state", mode)
     if domain in ("climate", "water_heater") and service == "set_temperature" and "temperature" in data:
-        return ("temperature", float(data["temperature"]))
+        value = finite_float(data['temperature'])
+        return ('temperature', value) if value is not None else None
     if domain == "cover" and service in ("open_cover", "close_cover"):
         return ("state", "open" if service == "open_cover" else "closed")
     if domain == "lock" and service in ("lock", "unlock"):
@@ -69,12 +72,16 @@ def worked(state, want: tuple[str, Any]) -> bool | None:
     if kind == "off":
         return state.state in _OFF or state.state == "off"
     if kind == "state":
-        return state.state == value or (value in ("open", "closed") and state.state in (f"{value}ing",))
+        if value in ('open', 'closed') and state.domain in ('cover', 'valve'):
+            if state.state in ('opening', 'closing'):
+                return False
+            position = finite_float(state.attributes.get('current_position'))
+            if position is not None:
+                return position >= 99 if value == 'open' else position <= 1
+        return state.state == value
     if kind == "temperature":
-        try:
-            return abs(float(state.attributes.get("temperature")) - value) < 0.26 and state.state != "off"
-        except (TypeError, ValueError):
-            return None
+        actual = finite_float(state.attributes.get('temperature'))
+        return abs(actual - value) < 0.26 and state.state != 'off' if actual is not None else None
     return None
 
 
@@ -90,19 +97,46 @@ class FollowThrough:
         self._unsubs: list = []
         # entity -> what the latest voice request wants from it, whether it has got there yet, and its check
         self._pending: dict[str, dict[str, Any]] = {}
+        self._stopped = False
 
     @callback
     def async_start(self) -> None:
+        self._stopped = False
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._state))
         self._unsubs.append(self.hass.bus.async_listen(EVENT_CALL_SERVICE, self._call))
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
+        self.clear()
         while self._unsubs:
             self._unsubs.pop()()
 
+    def _stamp(self):
+        return (getattr(self.speech, '_privacy_generation', 0), getattr(self.speech, '_guest_generation', 0),
+                getattr(self.speech, 'guest_mode', False), id(getattr(self.speech, 'options', None)))
+
+    @staticmethod
+    def _cancel(pending):
+        if cancel := pending.get('cancel'):
+            cancel()
+        task = pending.get('task')
+        if task is not None and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+
+    def clear(self):
+        for pending in self._pending.values():
+            self._cancel(pending)
+        self._pending.clear()
+        self._voice = None
+
+    def _current(self, entity_id, pending):
+        return not self._stopped and self._pending.get(entity_id) is pending and pending.get('stamp') == self._stamp()
+
     @callback
     def _state(self, event: Event) -> None:
+        if self._stopped:
+            return
         new = event.data.get("new_state")
         if new is not None and new.domain == "assist_satellite" and new.state in VOICE_STATES:
             self._voice = (new.entity_id, dt_util.utcnow())
@@ -121,6 +155,8 @@ class FollowThrough:
         domain, service = event.data.get("domain"), event.data.get("service")
         from .own import is_own
 
+        if self._stopped:
+            return
         if (domain not in DOMAINS or event.context.parent_id or event.context.id in self.own_contexts
                 or is_own(self.hass, event.context)):
             return  # automations and scripts have a parent; the house's own changes are its business
@@ -144,9 +180,11 @@ class FollowThrough:
 
         for entity_id in targets:
             # the newest request for a device is the one that counts: "20 degrees… actually make it 21"
-            if (old := self._pending.pop(entity_id, None)) and old.get("cancel"):
-                old["cancel"]()
-            pending = {"want": want, "satellite": satellite, "reached": False}
+            if old := self._pending.pop(entity_id, None):
+                self._cancel(old)
+            state = self.hass.states.get(entity_id)
+            pending = {"want": want, "satellite": satellite, "reached": False, 'stamp': self._stamp(),
+                       'name': state.name if state else entity_id}
             self._pending[entity_id] = pending
             pending["cancel"] = async_call_later(self.hass, CHECK_AFTER, self._later(entity_id, pending, late=False))
 
@@ -159,10 +197,15 @@ class FollowThrough:
 
     @callback
     def _check(self, entity_id: str, pending: dict[str, Any], late: bool) -> None:
-        if self._pending.get(entity_id) is not pending:
-            return  # a newer request took over
+        if not self._current(entity_id, pending):
+            if self._pending.get(entity_id) is pending:
+                self._pending.pop(entity_id, None)
+            return  # a newer request or lifecycle/privacy change took over
+        if pending.get('reporting'):
+            return
         st = self.hass.states.get(entity_id)
-        if pending["reached"] or worked(st, pending["want"]) is not False:
+        status = worked(st, pending['want'])
+        if pending["reached"] or status is True or (status is None and st is not None):
             self._pending.pop(entity_id, None)
             return
         offline = st is None or st.state in ("unavailable", "unknown")
@@ -170,14 +213,22 @@ class FollowThrough:
             # not there yet but still talking to us: some devices report back slowly — look again later
             pending["cancel"] = async_call_later(self.hass, LATE_CHECK, self._later(entity_id, pending, late=True))
             return
-        self._pending.pop(entity_id, None)
-        self.hass.async_create_task(self._async_report([st], pending["want"], pending["satellite"]))
+        pending['reporting'] = True
+        pending['task'] = self.hass.async_create_task(self._async_report([st], pending["want"], pending["satellite"], entity_id, pending))
 
-    async def _async_report(self, failed: list, want, satellite: str) -> None:
+    async def _async_report(self, failed: list, want, satellite: str, entity_id=None, pending=None) -> None:
+        if pending is not None:
+            if not self._current(entity_id, pending):
+                return
+            current = self.hass.states.get(entity_id)
+            if pending['reached'] or worked(current, want) is True:
+                self._pending.pop(entity_id, None)
+                return
+            failed = [current] if current is not None else []
         failed = [s for s in failed if s is not None]
-        if not failed:
+        if not failed and pending is None:
             return
-        names = [s.name for s in failed]
+        names = [s.name for s in failed] or [pending['name']]
         what = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
         offline = all(s.state in ("unavailable", "unknown") for s in failed)
         kind, value = want
@@ -186,10 +237,13 @@ class FollowThrough:
             " It looks offline. If it runs on batteries, they may be flat." if offline
             else " It may not have received the command."
         )
-        message = f"Sorry, the {what.lower()} didn't respond, so it isn't {verb}.{why}"
-        self.timeline.add("health", f"Didn't happen: {what} {verb}", "asked by voice; the device didn't respond")
+        message = f"I couldn't confirm the {what.lower()} was {verb} after the request.{why}"
+        self.timeline.add("health", f"Unconfirmed voice request: {what} {verb}", "asked by voice; the requested state was not confirmed")
         try:
             with because(f"you asked for the {what.lower()} to be {verb} and it still wasn't after I checked"):
                 await self.speech.async_say(message, "urgent", [satellite], source="followthrough")
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Could not report a failed action: %s", err)
+        finally:
+            if pending is not None and self._pending.get(entity_id) is pending:
+                self._pending.pop(entity_id, None)

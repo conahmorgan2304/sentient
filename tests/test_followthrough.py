@@ -42,7 +42,7 @@ async def test_says_so_only_when_it_did_not_happen(hass: HomeAssistant, freezer)
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert [c.data["message"] for c in said] == [
-        "Sorry, the heating didn't respond, so it isn't on. It looks offline. If it runs on batteries, they may be flat."
+        "I couldn't confirm the heating was on after the request. It looks offline. If it runs on batteries, they may be flat."
     ]
     assert said[0].data.get("entity_id", said[0].data) is not None
 

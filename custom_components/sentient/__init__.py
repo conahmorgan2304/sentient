@@ -749,6 +749,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.ai.voice_timings.clear()
     entry.runtime_data.voice_checks.stop()
+    entry.runtime_data.followthrough.clear()
     entry.runtime_data.sessions.stop()  # settings changes invalidate pending authorisations
     entry.runtime_data.alarm_confirmations.clear()
     entry.runtime_data.notifier.invalidate_questions()

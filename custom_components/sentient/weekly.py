@@ -65,6 +65,10 @@ def build(rt: Any, days: int = 7) -> dict[str, Any]:
     missed = [i for i in items if i.get("kind") == "health" and str(i.get("text", "")).startswith("Didn't happen:")]
     if missed:
         wrong.append(f"{len(missed)} thing{'s' if len(missed) != 1 else ''} asked for by voice didn't happen")
+    unconfirmed = sum(1 for i in items if i.get('kind') == 'health'
+                      and str(i.get('text', '')).startswith('Unconfirmed voice request:'))
+    if unconfirmed:
+        out['unconfirmed_requests'] = unconfirmed
     fell_back = [i for i in items if i.get("kind") == "health" and str(i.get("text", "")).startswith("Voice answered by the backup agent")]
     if fell_back:
         wrong.append(f"the AI didn't answer {len(fell_back)} time{'s' if len(fell_back) != 1 else ''}")
@@ -93,6 +97,8 @@ def summary(report: dict[str, Any]) -> str:
         parts.append("Batteries running down: " + "; ".join(bats[:3]) + ".")
     if mem := report.get("new_memories"):
         parts.append(f"{len(mem)} new thing{'s' if len(mem) != 1 else ''} remembered.")
+    if count := report.get('unconfirmed_requests'):
+        parts.append(f"Unconfirmed: {count} voice request{'s' if count != 1 else ''}; the final device state could not be verified.")
     if wrong := report.get("got_wrong"):
         parts.append("Got wrong: " + "; ".join(wrong[:3]) + ".")
     if change := report.get("would_change"):

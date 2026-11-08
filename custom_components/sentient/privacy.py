@@ -31,11 +31,16 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         house_context.clear()
     if control := getattr(rt, "control", None):
         control.clear_recovery()
+    if followthrough := getattr(rt, 'followthrough', None):
+        gone_checks = len(followthrough._pending)
+        followthrough.clear()
+    else:
+        gone_checks = 0
     if timing := getattr(rt.ai, "voice_timings", None):
         timing.clear()
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
-    gone: dict[str, int] = {}
+    gone: dict[str, int] = {'action_checks': gone_checks}
 
     noticer = getattr(rt, 'noticer', None)
     if noticer is not None:
