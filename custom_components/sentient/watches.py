@@ -219,6 +219,7 @@ class WatchManager:
         self.hass = hass
         self._looks: dict[tuple[str, str, str], tuple[datetime, dict[str, Any]]] = {}  # recent camera answers
         self._cache_generation = 0
+        self._stopped = False
         self._prints: dict[str, list[int]] = {}  # check/watch -> thumbnail at its last AI look
         self.skipped = 0  # AI looks saved because the picture hadn't changed
         self.options = options
@@ -235,6 +236,7 @@ class WatchManager:
 
     # ----- lifecycle ---------------------------------------------------------------
     async def async_start(self) -> None:
+        self._stopped = False
         data = await self._store.async_load() or {}
         for item in data.get("watches", []):
             try:
@@ -258,6 +260,7 @@ class WatchManager:
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         self.clear_camera_cache()
         while self._unsubs:
             self._unsubs.pop()()
@@ -457,7 +460,7 @@ class WatchManager:
         return timedelta(seconds=float(self.options.get(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)))
 
     async def _async_check_camera(self, watch: Watch) -> None:
-        if watch.id in self._busy or watch.id not in self._watches:
+        if self._stopped or watch.id in self._busy or self._watches.get(watch.id) is not watch:
             return
         if watch.until_dt <= dt_util.utcnow():
             self._expire()
@@ -469,18 +472,28 @@ class WatchManager:
         def current():
             return (generation == self._cache_generation and self.options is options
                     and self._watches.get(watch.id) is watch and watch.until_dt > dt_util.utcnow())
+        prefilter_key = f"watch:{watch.id}"
+        evaluated = False
         self._busy.add(watch.id)
         try:
+            if self._budget_blocked():
+                watch.last_result = "skipped: daily AI limit reached"
+                self._save()
+                return
             # give the camera a moment so the subject is in frame
             await asyncio.sleep(1)
             if not current():
                 return
-            same = await self.unchanged(f"watch:{watch.id}", watch.entity_id, watch.spot)
+            same = await self.unchanged(prefilter_key, watch.entity_id, watch.spot)
             if not current():
                 return
             if same:
+                evaluated = True
                 watch.last_result = "skipped: the picture hasn't changed"
                 self._save()
+                return
+            attachment = await self._attachment(watch.entity_id, watch.spot)
+            if not current():
                 return
             if not self.spend("watches"):
                 watch.last_result = "skipped: daily AI limit reached"
@@ -488,15 +501,22 @@ class WatchManager:
                 return
             watch.last_checked = dt_util.utcnow().isoformat()
             watch.checks += 1
-            answer, description, unsure = await self._async_ask(watch)
+            watch.last_result = "unknown: no current result"
+            self._save()
+            answer, description, unsure = await self._async_ask(watch, None, attachment)
             if not current():
                 return
             second = self.options.get(CONF_SECOND_OPINION)
             if unsure and second and second != self.options.get(CONF_AI_TASK_ENTITY) and self.spend("watches"):
-                answer, description, _unsure = await self._async_ask(watch, second)
                 watch.second_opinions += 1
+                answer, description, unsure = await self._async_ask(watch, second, attachment)
             if not current():
                 return
+            if unsure:
+                watch.last_result = "unknown: the picture is unclear"
+                self._save()
+                return
+            evaluated = True
             watch.last_result = description or ("yes" if answer else "no")
             self._save()
             if answer:
@@ -508,9 +528,18 @@ class WatchManager:
             watch.last_result = f"error: {err}"
             self._save()
         finally:
+            if not evaluated:
+                self._prints.pop(prefilter_key, None)
             self._busy.discard(watch.id)
 
-    async def _async_ask(self, watch: Watch, ai_entity: str | None = None) -> tuple[bool, str | None, bool]:
+    def _budget_blocked(self) -> bool:
+        if self.gate is not None:
+            return self.gate.capped or self.gate.over_budget("watches")
+        if dt_util.now().date().isoformat() != self.ai_day:
+            return False
+        return self._ai_checks >= int(self.options.get(CONF_DAILY_AI_LIMIT, DEFAULT_DAILY_AI_LIMIT))
+
+    async def _async_ask(self, watch: Watch, ai_entity: str | None = None, attachment: dict | None = None) -> tuple[bool, str | None, bool]:
         generation, options = self._cache_generation, self.options
         data: dict[str, Any] = {
             "task_name": f"Sentient watch: {watch.what}"[:100],
@@ -527,7 +556,7 @@ class WatchManager:
                 "unsure": {"description": "True if the picture is too dark, blurry or ambiguous to be sure",
                            "required": False, "selector": {"boolean": {}}},
             },
-            "attachments": [await self._attachment(watch.entity_id, watch.spot)],
+            "attachments": [attachment if attachment is not None else await self._attachment(watch.entity_id, watch.spot)],
         }
         if (generation != self._cache_generation or self.options is not options
                 or self._watches.get(watch.id) is not watch or watch.until_dt <= dt_util.utcnow()):
@@ -535,13 +564,16 @@ class WatchManager:
         if ai_entity := ai_entity or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         response = await async_generate(self.hass, data)
-        result = (response or {}).get("data") or {}
-        if isinstance(result, str):  # model ignored the structure
-            return result.strip().lower().startswith(("yes", "true")), None, False
-        def flag(value: Any) -> bool:
-            return value.strip().lower() in {"true", "yes"} if isinstance(value, str) else bool(value)
-
-        return flag(result.get("answer")), (result.get("description") or "").strip() or None, flag(result.get("unsure"))
+        result = response.get("data") if isinstance(response, dict) else None
+        if isinstance(result, str):  # tolerate only an unambiguous legacy yes/no, never arbitrary prose
+            word = result.strip().lower().rstrip(".! ")
+            if word in {"yes", "true", "no", "false"}:
+                return word in {"yes", "true"}, None, False
+        if (not isinstance(result, dict) or type(result.get("answer")) is not bool
+                or type(result.get("unsure", False)) is not bool
+                or not isinstance(result.get("description", ""), (str, type(None)))):
+            raise HomeAssistantError("Invalid camera AI result; nothing was announced")
+        return result["answer"], (result.get("description") or "").strip() or None, result.get("unsure", False)
 
     @property
     def ai_checks_today(self) -> int:
@@ -662,7 +694,10 @@ class WatchManager:
         return out
 
     async def _async_fire(self, watch: Watch, description: str | None, state: State | None) -> None:
-        if watch.id not in self._watches:
+        if self._stopped or self._watches.get(watch.id) is not watch:
+            return
+        if watch.kind != KIND_REMINDER and watch.until_dt <= dt_util.utcnow():
+            self._expire()
             return
         watch.fired += 1
         if not watch.repeat:

@@ -404,7 +404,7 @@ async def test_late_camera_watch_result_does_not_fire(hass, changed):
     with patch('custom_components.sentient.watches.asyncio.sleep', new=AsyncMock()), patch.object(rt.watches, 'unchanged', new=AsyncMock(return_value=False)), patch.object(rt.watches, '_async_ask', side_effect=ask), patch.object(rt.watches, '_async_fire', new=AsyncMock()) as fire:
         await rt.watches._async_check_camera(watch)
     fire.assert_not_awaited()
-    assert watch.last_result is None
+    assert watch.last_result == (None if changed == 'forgotten' else 'unknown: no current result')
     assert not rt.watches._busy
 
 

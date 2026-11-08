@@ -88,8 +88,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         )
         self._turn_tasks: dict[tuple, asyncio.Task] = {}
         self.last_backup: str | None = None
-        self._carry: dict[str, tuple[str, Any]] = {}  # speaker -> (conversation id, when it was last used)
-        self._ours: set[str] = set()  # conversation ids this agent has answered
+        self._carry: dict[tuple, tuple[str, Any, dict, tuple]] = {}  # exact owner -> id, time, options, privacy generation
+        self._ours: set[tuple] = set()  # conversation id and exact owner this agent has answered
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -189,6 +189,10 @@ class BackedUpAgent(conversation.ConversationEntity):
     def _record(self, user_input, session, result):
         rt = self._entry.runtime_data
         rt.sessions.record(session, user_input.text, result, self._guest())
+
+    def _history_generation(self):
+        speech = getattr(self._entry.runtime_data, "speech", None)
+        return (getattr(speech, "_privacy_generation", 0), getattr(speech, "_guest_generation", 0))
 
     def _guest(self):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))
@@ -339,12 +343,19 @@ class BackedUpAgent(conversation.ConversationEntity):
                 recovery_control.clear_recovery()
             elif not recovery_requested(user_input.text) and not explanation_requested(self._options(), user_input.text):
                 recovery_control.invalidate_recovery(owner)
-        minutes = min(float(self._options().get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
+        options = self._options()
+        privacy = self._history_generation()
+        owner = (user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+        minutes = min(float(options.get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
         speaker = user_input.satellite_id or user_input.device_id
         now = dt_util.utcnow()
-        if minutes and speaker and user_input.conversation_id not in self._ours:
-            last = self._carry.get(speaker)
-            if last and (now - last[1]).total_seconds() < minutes * 60:
+        self._carry = {key: value for key, value in self._carry.items()
+                       if minutes and value[2] is options and value[3] == privacy
+                       and 0 <= (now - value[1]).total_seconds() < minutes * 60}
+        if self._guest():
+            self._carry.clear()
+        elif minutes and speaker and (user_input.conversation_id, *owner) not in self._ours:
+            if last := self._carry.get(owner):
                 user_input = replace(user_input, conversation_id=last[0])
         take = getattr(getattr(getattr(self._entry, "runtime_data", None), "speech", None), "async_take_answer", None)
         if take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
@@ -379,17 +390,22 @@ class BackedUpAgent(conversation.ConversationEntity):
             # the satellite isn't waiting for an answer over the top of it and no "anything else?" is added
             result.response.async_set_speech(flags["hand_off"])
             result.continue_conversation = False
-            self._carry.pop(speaker, None)
+            self._carry.pop(owner, None)
             return result
         result = await self._localise_result(result, user_input)
-        if minutes and speaker and result.conversation_id:
+        if (minutes and speaker and result.conversation_id and not self._guest()
+                and self._options() is options
+                and self._history_generation() == privacy):
             if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
-                self._carry.pop(speaker, None)  # "that's all" ends it: the next wake word starts afresh
+                self._carry.pop(owner, None)  # "that's all" ends it: the next wake word starts afresh
             else:
-                self._carry[speaker] = (result.conversation_id, dt_util.utcnow())
+                self._carry.pop(owner, None)
+                self._carry[owner] = (result.conversation_id, dt_util.utcnow(), options, privacy)
+                while len(self._carry) > 100:
+                    self._carry.pop(next(iter(self._carry)))
             if len(self._ours) > 500:
                 self._ours.clear()
-            self._ours.add(result.conversation_id)
+            self._ours.add((result.conversation_id, *owner))
         return result
 
     async def _localise_result(self, result, user_input=None):
@@ -425,7 +441,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 rt.alarm_confirmations.pop(key, None)
         if speech := getattr(rt, "speech", None):
             speech._questions.pop(user_input.satellite_id or "", None)
-        self._carry.pop(user_input.satellite_id or user_input.device_id, None)
+        self._carry.pop((user_input.device_id, user_input.satellite_id, user_input.context.user_id), None)
 
     async def _recoverable_turn(self, user_input):
         if not (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)):
