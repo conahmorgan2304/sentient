@@ -21,6 +21,7 @@ import logging
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later
@@ -255,7 +256,10 @@ class CameraSecurity:
         """(is anyone actually there, one sentence on them). (None, None) if the AI couldn't look."""
         from .camwake import async_wake
 
-        await async_wake(self.hass, self.options, camera)
+        try:
+            await async_wake(self.hass, self.options, camera)
+        except HomeAssistantError:
+            return None, None  # retain the sensor alert; an unchecked image cannot dismiss it
         data: dict[str, Any] = {
             "task_name": "Sentient: who's there",
             "instructions": "A home security camera thinks it just saw a person. Is there really a person in this "

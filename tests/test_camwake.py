@@ -10,7 +10,7 @@ from custom_components.sentient.const import DOMAIN
 
 
 async def test_wakes_the_camera_once_before_looking(hass: HomeAssistant) -> None:
-    camwake._woken.clear()
+    camwake.clear(hass)
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
         "persona": "Nova", "speakers": [], "camera_wake_seconds": 3,
         "camera_wake": [{"action": "button.press", "target": {"entity_id": "button.{{ camera.split('.')[1] }}_wake"}}]})

@@ -692,7 +692,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
     from .language import clear_translations
+    from .camwake import clear as clear_camera_wakes
 
+    clear_camera_wakes(hass)
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.ai.voice_timings.clear()
@@ -730,6 +732,9 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
 
     from .language import selected_language
 
+    from .camwake import clear as clear_camera_wakes
+
+    clear_camera_wakes(hass)
     old = entry.runtime_data.options
     keep_pack = (all(options.get(k) for k in ('remember_language_phrases', 'automatic_language', 'speak_house_language'))
                  and selected_language(hass, old) == selected_language(hass, options)
