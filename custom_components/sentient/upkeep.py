@@ -248,9 +248,12 @@ class Upkeep:
         self._rt = rt_getter
         self._unsub = None
         self.last_tidy: dict[str, Any] | None = None
+        self._tidying = False
+        self._stopped = False
 
     @callback
     def async_start(self) -> None:
+        self._stopped = False
         self._started = dt_util.utcnow()
         # Sundays at 03:45
         self._unsubs = [
@@ -313,6 +316,7 @@ class Upkeep:
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         for unsub in getattr(self, "_unsubs", []):
             unsub()
         self._unsubs = []
@@ -484,7 +488,25 @@ class Upkeep:
     # ----- memory tidy -------------------------------------------------------------
     async def async_tidy(self) -> dict[str, Any]:
         rt = self._rt()
-        items = rt.memory.items
+        if self._tidying or self._stopped or rt.speech.guest_mode:
+            return {"skipped": "memory tidy is running or unavailable"}
+        self._tidying = True
+        options = rt.options
+        stamp = (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0))
+        def snapshot():
+            return [(m.id, m.text, m.category, m.source, m.created, m.pinned) for m in rt.memory.items]
+        before = snapshot()
+        def current():
+            return (not self._stopped and rt.options is options and not rt.speech.guest_mode
+                    and stamp == (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0))
+                    and snapshot() == before)
+        try:
+            return await self._async_tidy(rt, current)
+        finally:
+            self._tidying = False
+
+    async def _async_tidy(self, rt, current) -> dict[str, Any]:
+        items = sorted(rt.memory.items, key=lambda m: m.created)
         if len(items) < TIDY_MIN_MEMORIES:
             self.last_tidy = {"time": dt_util.now().isoformat(), "result": "too few memories to tidy"}
             return self.last_tidy
@@ -507,31 +529,39 @@ class Upkeep:
                           "selector": {"text": {"multiline": True}}},
             },
         )
+        if not current():
+            return {"skipped": "memory changed while tidying; nothing was changed"}
         reply = reply if isinstance(reply, dict) else {}
         valid = {m.id for m in items}
         before = {m.id: m.text for m in items}
         budget = max(1, int(len(items) * TIDY_MAX_SHARE))
         removed: list[str] = []
         merged: list[str] = []
-        for line in str(reply.get("merge") or "").splitlines():
+        merged_keepers: set[str] = set()
+        categories = {m.id: m.category for m in items}
+        merge_text = reply.get("merge") if isinstance(reply.get("merge"), str) else ""
+        for line in merge_text.splitlines():
             if "=>" not in line:
                 continue
             ids_part, text = line.split("=>", 1)
-            ids = [i for i in re.findall(r"[0-9a-f]{6,}", ids_part) if i in valid]
+            ids = list(dict.fromkeys(i for i in re.findall(r"[0-9a-f]{6,}", ids_part) if i in valid))
             text = text.strip().strip('"')
-            if len(ids) < 2 or not text or len(removed) + len(ids) - 1 > budget:
+            if (len(ids) < 2 or ids[0] in pinned or len({categories[i] for i in ids}) > 1
+                    or not text or len(removed) + len(ids) - 1 > budget):
                 continue
             keep, drop = ids[0], [i for i in ids[1:] if i not in pinned]
             if not drop:
                 continue
             rt.memory.update(keep, text)
+            merged_keepers.add(keep)
             for i in drop:
                 rt.memory.forget(i)
                 valid.discard(i)
             removed.extend(drop)
             merged.append(text)
-        for i in re.findall(r"[0-9a-f]{6,}", str(reply.get("remove") or "")):
-            if i in valid and i not in pinned and len(removed) < budget:
+        remove_text = reply.get("remove") if isinstance(reply.get("remove"), str) else ""
+        for i in re.findall(r"[0-9a-f]{6,}", remove_text):
+            if i in valid and i not in pinned and i not in merged_keepers and len(removed) < budget:
                 gone = rt.memory.forget(i)
                 if gone is not None:
                     removed.append(i)

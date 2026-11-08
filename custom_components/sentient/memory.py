@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, field
 import re
 from typing import Any
 import uuid
+import unicodedata
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
@@ -25,7 +26,7 @@ from .const import (
     MEMORY_STORAGE_VERSION,
 )
 
-_WORD = re.compile(r"[a-z0-9']+")
+_WORD = re.compile(r"[^\W_]+(?:'[^\W_]+)*", re.UNICODE)
 _STOP = {
     "the", "a", "an", "is", "are", "was", "to", "of", "and", "in", "on", "at",
     "it", "my", "me", "i", "you", "do", "does", "what", "who", "when", "where",
@@ -34,7 +35,16 @@ _STOP = {
 
 
 def _words(text: str) -> set[str]:
-    return {w for w in _WORD.findall(text.lower()) if w not in _STOP and len(w) > 1}
+    return {w for w in _WORD.findall(_normalise(text)) if w not in _STOP and (len(w) > 1 or w.isdigit())}
+
+
+def _normalise(text: str) -> str:
+    return unicodedata.normalize("NFC", text).casefold().replace("’", "'")
+
+
+def _identity(text: str) -> tuple[str, ...]:
+    # Order, targets, numbers and negation all carry meaning. Only ignore articles and punctuation.
+    return tuple(w for w in _WORD.findall(_normalise(text)) if w not in {"the", "a", "an"})
 
 
 @dataclass
@@ -81,29 +91,28 @@ class MemoryStore:
         return list(self._items)
 
     def add(self, text: str, category: str = "fact", source: str | None = None) -> Memory:
-        """Add a memory, replacing a near-duplicate rather than piling up copies."""
+        """Add a memory; reuse only a wording-equivalent item, preserving meaningful differences."""
         text = " ".join(text.split()).strip()
         if not text:
             raise ValueError("Nothing to remember")
         if category not in MEMORY_CATEGORIES:
             category = "fact"
-        new_words = _words(text)
+        identity = _identity(text)
         for existing in self._items:
-            old_words = _words(existing.text)
-            if new_words and old_words:
-                overlap = len(new_words & old_words) / len(new_words | old_words)
-                if overlap >= 0.8:
-                    existing.text = text
-                    existing.category = category
-                    existing.created = dt_util.now().isoformat()
+            if existing.category == category and identity and _identity(existing.text) == identity:
+                # A repeated inference must not rewrite an explicit fact, or make old facts look new.
+                if source and source != "reflection" and existing.source in (None, "reflection"):
+                    existing.source = source
                     self._save()
-                    return existing
+                return existing
+        if len(self._items) >= MEMORY_MAX_ITEMS:
+            candidates = [m for m in self._items if not m.pinned]
+            if not candidates:
+                raise ValueError("Memory is full of pinned items; unpin or forget one before adding another")
+            drop = min(candidates, key=lambda m: (m.category != "note", m.hits, m.created))
+            self._items.remove(drop)
         memory = Memory(text=text, category=category, source=source)
         self._items.append(memory)
-        if len(self._items) > MEMORY_MAX_ITEMS:
-            # Drop the least useful old notes first.
-            self._items.sort(key=lambda m: (m.category != "note", m.hits, m.created))
-            self._items = self._items[-MEMORY_MAX_ITEMS:]
         self._save()
         return memory
 
@@ -125,7 +134,7 @@ class MemoryStore:
     def forget(self, memory_id_or_text: str) -> Memory | None:
         """Remove by id, or by the best text match."""
         target = next((m for m in self._items if m.id == memory_id_or_text), None)
-        if target is None:
+        if target is None and _words(memory_id_or_text):
             found = self.search(memory_id_or_text, limit=1, count_hits=False)
             target = found[0] if found else None
         if target is not None:

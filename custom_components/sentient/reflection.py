@@ -14,6 +14,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+import hashlib
+import json
+from copy import deepcopy
 from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant, callback
@@ -54,20 +57,26 @@ class Reflection:
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.reflection")
         self.last: dict[str, Any] | None = None
         self._unsub = None
+        self._busy = False
+        self._stopped = False
 
     async def async_start(self) -> None:
+        self._stopped = False
         self.last = (await self._store.async_load() or {}).get("last")
         self._unsub = async_track_time_change(self.hass, self._tick, second=5)
 
     @callback
     def async_stop(self) -> None:
+        self._stopped = True
         if self._unsub:
             self._unsub()
             self._unsub = None
 
     @callback
     def _tick(self, now: datetime) -> None:
-        if not self.options.get(CONF_REFLECTION, True):
+        if self._stopped or not self.options.get(CONF_REFLECTION, True):
+            return
+        if self.last and (last := dt_util.parse_datetime(self.last.get("time") or "")) and dt_util.as_local(last).date() == dt_util.as_local(now).date():
             return
         at = str(self.options.get(CONF_REFLECTION_TIME) or DEFAULT_REFLECTION_TIME)[:5]
         if dt_util.as_local(now).strftime("%H:%M") == at:
@@ -97,14 +106,38 @@ class Reflection:
         for ep in reversed(rt.conversations.recent(hours=24, limit=60)):
             when = dt_util.as_local(dt_util.parse_datetime(ep["start"])).strftime("%a %H:%M")
             room = f" in the {ep['room']}" if ep.get("room") else ""
-            turns = " / ".join(f"{'Them' if t['who'] == 'them' else 'You'}: {t['text'][:200]}" for t in ep["turns"][:8])
+            turns = " / ".join(f"{'Them' if t['who'] == 'them' else 'You'}: {t['text'][:200]}" for t in ep["turns"][-8:])
             talk.append(f"{when}{room}: {turns}")
         return log, talk
 
     async def async_reflect(self) -> dict[str, Any]:
         rt = self._rt()
+        if self._busy:
+            return {"skipped": "reflection already running"}
+        if self._stopped or not rt.options.get(CONF_REFLECTION, True) or rt.speech.guest_mode:
+            return {"skipped": "reflection is off or unavailable in guest mode"}
+        self._busy = True
+        options = rt.options
+        stamp = (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0))
+        def current():
+            return (not self._stopped and rt.options is options and options.get(CONF_REFLECTION, True)
+                    and not rt.speech.guest_mode
+                    and stamp == (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0)))
+        try:
+            return await self._async_reflect(rt, current)
+        finally:
+            self._busy = False
+
+    async def _async_reflect(self, rt, current) -> dict[str, Any]:
         log, talk = self._material(rt)
-        result: dict[str, Any] = {"time": dt_util.utcnow().isoformat(), "memories": [], "thoughts": [], "question": None, "lessons": []}
+        context = {key: rt.options.get(key) for key in (CONF_PERSONA, CONF_HOUSE_RULES, CONF_SMART_AI,
+                   CONF_AI_TASK_ENTITY, 'voice_language', 'speak_house_language', 'automatic_language')}
+        fingerprint = hashlib.sha256(json.dumps([log, talk, context], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+        if self.last and self.last.get("material") == fingerprint:
+            when = dt_util.parse_datetime(self.last.get("time") or "")
+            if when and dt_util.as_local(when).date() == dt_util.now().date():
+                return {**deepcopy(self.last), "note": "already reflected on this material today"}
+        result: dict[str, Any] = {"time": dt_util.utcnow().isoformat(), "memories": [], "thoughts": [], "question": None, "lessons": [], "material": fingerprint}
         if not log and not talk:
             result["note"] = "a quiet day: nothing to think over"
             self._keep(result)
@@ -153,34 +186,46 @@ class Reflection:
         if ai_entity := rt.options.get(CONF_SMART_AI) or rt.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         if not rt.watches.spend("overnight"):
-            result["note"] = "today's AI limit was used up: no reflection tonight"
-            self._keep(result)
-            return result
+            return {"skipped": "today's AI limit was used up: no reflection tonight"}
         response = await async_generate(self.hass, data)
-        out = (response or {}).get("data") or {}
+        if not current():
+            return {"skipped": "reflection changed while waiting; nothing was kept"}
+        out = response.get("data") if isinstance(response, dict) else None
         if not isinstance(out, dict):
-            out = {}
+            return {"error": "The reflection returned an invalid result; nothing was kept"}
 
         def _list(value: Any) -> list[str]:
             if isinstance(value, str):
                 value = [value]
-            return [" ".join(str(v).split()) for v in (value or []) if str(v).strip()]
+            if not isinstance(value, list):
+                return []
+            return [" ".join(v.split()) for v in value if isinstance(v, str) and v.strip() and len(v) <= 1000]
 
+        known_ids = {m.id for m in rt.memory.items}
         for text in _list(out.get("memories"))[:MAX_MEMORIES]:
             if any(p in text.lower() for p in PRIVATE):
                 continue
             try:
-                result["memories"].append(rt.memory.add(text, "fact", source="reflection").text)
+                memory = rt.memory.add(text, "fact", source="reflection")
+                if memory.id not in known_ids:
+                    result["memories"].append(memory.text)
+                    known_ids.add(memory.id)
             except ValueError:
                 pass
         result["lessons"] = []
         for text in _list(out.get("lessons"))[:3]:
+            if any(p in text.lower() for p in PRIVATE):
+                continue
             try:
-                result["lessons"].append(rt.memory.add(text, "correction", source="reflection").text)
+                memory = rt.memory.add(text, "correction", source="reflection")
+                if memory.id not in known_ids:
+                    result["lessons"].append(memory.text)
+                    known_ids.add(memory.id)
             except ValueError:
                 pass
         result["thoughts"] = _list(out.get("thoughts"))[:MAX_THOUGHTS]
-        question = " ".join(str(out.get("question") or "").split())
+        raw_question = out.get("question")
+        question = " ".join(raw_question.split()) if isinstance(raw_question, str) and len(raw_question) <= 1000 else ""
         if question and rt.curiosity.wonder(question, why="overnight reflection", source="reflection"):
             result["question"] = question
         if result["thoughts"]:
