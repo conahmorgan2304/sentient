@@ -285,7 +285,7 @@ async def test_failed_camera_wake_retains_plain_sensor_alert(hass):
     from custom_components.sentient.const import CONF_CAMSEC_DESCRIBE
     rt = SimpleNamespace(incidents=None, timeline=Mock(), watches=SimpleNamespace(spend=lambda *a: True),
                          clips=None, speech=SimpleNamespace(quiet_hours_now=lambda: False))
-    camera = CameraSecurity(hass, {**WAKE, CONF_CAMSEC_DESCRIBE: True}, lambda: rt)
+    camera = CameraSecurity(hass, {**WAKE, CONF_CAMSEC_DESCRIBE: True, "camera_security": True, "camera_security_sensors": ["binary_sensor.person"]}, lambda: rt)
     with patch('custom_components.sentient.camsecurity.camera_for', return_value='camera.garden'), patch('custom_components.sentient.camwake.async_wake', new=AsyncMock(side_effect=HomeAssistantError('offline'))):
         await camera._async_alert('binary_sensor.person', 'Person detected', incident_id=None, reason='night')
     assert rt.timeline.add.call_args.args[0] == 'security'

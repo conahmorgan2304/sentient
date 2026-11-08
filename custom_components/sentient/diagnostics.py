@@ -17,6 +17,8 @@ TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "nam
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SentientConfigEntry) -> dict[str, Any]:
     rt = entry.runtime_data
+    from .camsecurity import camera_for
+
     out_startup = getattr(rt, "startup", None) or {}
     return {
         "startup": out_startup,
@@ -29,6 +31,17 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
             for w in rt.watches.watches
         ],
         "ai": rt.ai.describe(),
+        "camera_security": {
+            "enabled": bool(rt.camsec.options.get("camera_security")),
+            "camera_matches": [{"sensor": sensor, "camera": camera_for(hass, sensor)} for sensor in rt.camsec.sensors],
+            "pending_alert_checks": len(rt.camsec._tasks),
+        },
+        "clip_watch": {
+            "enabled": rt.clipwatch.enabled,
+            "active_cameras": sorted(rt.clipwatch._busy),
+            "retained_summaries": len(rt.clipwatch.items),
+            "skipped": dict(rt.clipwatch.skipped),
+        },
         "noticing": [async_redact_data(d, {"changes", "message"}) for d in list(rt.noticer.decisions)[:10]],
         "routines": [
             {"entity_id": r.entity_id, "state": r.state, "days": getattr(r, "days", "link"), "support": r.support,

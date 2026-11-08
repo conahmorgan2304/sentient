@@ -112,10 +112,10 @@ class Incidents:
         if item is None:
             return True, None
         level = ALERT_LEVELS.get(reason, 1)
-        pending = self._pending_alerts.setdefault(item['id'], set())
+        pending = self._pending_alerts.get(item['id'], set())
         if level <= max([item['alert_level'], *pending]):
             return False, item['id']
-        pending.add(level)  # reserve while the camera check runs; do not persist a delivered alert yet
+        self._pending_alerts.setdefault(item['id'], set()).add(level)  # reserve only work that will run
         return True, item['id']
 
     def finish_alert(self, incident_id, level, accepted):
