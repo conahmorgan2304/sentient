@@ -106,7 +106,8 @@ async def test_manuals_and_goals_off_by_default(hass: HomeAssistant) -> None:
     assert "sentient_manual" not in names and "sentient_goal" not in names and "sentient_self" in names
 
 
-async def test_goal_follows_a_sensor(hass: HomeAssistant) -> None:
+async def test_goal_follows_a_sensor(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(year=2026, month=11, day=2, hour=12)))
     hass.states.async_set("sensor.heating_hours", "5", {"friendly_name": "Heating hours", "unit_of_measurement": "h"})
     entry = await _setup(hass, goals=True)
     with patch("custom_components.sentient.goals.daily_values", AsyncMock(return_value=[("2026-11-01", 6.0), ("2026-10-31", 5.0)])):
@@ -114,6 +115,7 @@ async def test_goal_follows_a_sensor(hass: HomeAssistant) -> None:
         out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_goal", tool_args={
             "action": "set", "title": "Use less heating this month", "entity": "sensor.heating_hours", "aim": "lower", "days": 30}))
         assert out["usual_per_day"] == 5.5
+    freezer.tick(timedelta(days=1))
     with patch("custom_components.sentient.goals.daily_values", AsyncMock(return_value=[("2026-11-02", 4.4)])):
         await entry.runtime_data.goals.async_check()
     listing = entry.runtime_data.goals.listing()
