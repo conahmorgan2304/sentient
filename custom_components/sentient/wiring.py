@@ -59,6 +59,8 @@ LABELS: dict[str, str] = {
     CONF_CHAT_AGENT: "chat agent", CONF_TTS_ENTITY: "voice (TTS)", CONF_BINS_CALENDAR: "bins calendar",
     CONF_INSIDE_SENSORS: "inside sensors", CONF_BUSY_ENTITIES: "busy signal", CONF_LEARN_ENTITIES: "habit learning",
 }
+# lists where a thing switched off at the wall for a while is normal: only report it once it is gone for good
+ONLY_WHEN_GONE = {CONF_LEARN_ENTITIES}
 
 
 def _ids(value: Any) -> list[str]:
@@ -83,7 +85,8 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
                 if domain == "notify" and hass.services.has_service("notify", object_id):
                     continue  # an old-style notify action, not an entity
                 out.append({"kind": "wiring", "name": eid, "entity_id": eid, "setting": label, "gone": True})
-            elif st.state == STATE_UNAVAILABLE and (st.attributes.get("restored") or now - st.last_changed > DEAD_FOR):
+            elif st.state == STATE_UNAVAILABLE and (st.attributes.get("restored") or (
+                    key not in ONLY_WHEN_GONE and now - st.last_changed > DEAD_FOR)):
                 # "restored" means the integration no longer provides it at all (and every restart resets
                 # last_changed, so a long-dead entity would otherwise never look old enough)
                 out.append({"kind": "wiring", "name": st.name or eid, "entity_id": eid, "setting": label,

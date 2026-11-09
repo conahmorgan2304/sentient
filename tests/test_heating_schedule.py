@@ -68,3 +68,22 @@ async def test_it_runs_at_its_time_and_not_when_switched_off(hass: HomeAssistant
     out = await entry.runtime_data.alarms.async_ring(alarm)
     assert out == {"skipped": "heating schedules are switched off in Settings"} and len(calls) == 1
     assert alarm["heating"]["temperature"] == 21.0  # the saved time is still there
+
+
+async def test_switched_off_and_deleted_from_the_page(hass: HomeAssistant, hass_ws_client, hass_admin_user) -> None:
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/heating/save", "entity_id": ZONE, "time": "06:30", "days": ["mon"], "temperature": 21})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 2, "type": "sentient/heating"})
+    item = (await ws.receive_json())["result"]["schedules"][0]
+    await ws.send_json({"id": 3, "type": "sentient/heating/save", "item_id": item["id"], "entity_id": ZONE, "time": "06:30",
+                        "days": ["mon"], "temperature": None, "enabled": False})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 4, "type": "sentient/heating"})
+    edited = (await ws.receive_json())["result"]["schedules"]
+    assert len(edited) == 1 and edited[0]["enabled"] is False and edited[0]["temperature"] is None
+    await ws.send_json({"id": 5, "type": "sentient/items/delete", "kind": "heating", "item_id": item["id"]})
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 6, "type": "sentient/heating"})
+    assert (await ws.receive_json())["result"]["schedules"] == []

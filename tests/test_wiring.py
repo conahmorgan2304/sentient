@@ -44,3 +44,10 @@ async def test_restored_entities_are_dead_even_straight_after_a_restart(hass: Ho
                           "learn_entities": ["binary_sensor.old_car"]})
     assert {(f["entity_id"], f["setting"]) for f in found} == {
         ("binary_sensor.old_car", "drive sensors"), ("binary_sensor.old_car", "habit learning")}
+
+
+async def test_an_unplugged_habit_switch_is_not_a_problem(hass: HomeAssistant, freezer) -> None:
+    hass.states.async_set("switch.projector", "unavailable")
+    freezer.tick(timedelta(hours=5))
+    assert broken(hass, {"learn_entities": ["switch.projector"]}) == []
+    assert broken(hass, {"drive_triggers": ["switch.projector"]})  # but a doorbell or drive sensor is
