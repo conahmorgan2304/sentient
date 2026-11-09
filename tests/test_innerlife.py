@@ -165,3 +165,25 @@ async def test_bedroom_sensor_does_not_keep_the_house_awake(hass, freezer):
         sleep._tick(dt_util.utcnow())
         await hass.async_block_till_done()
         sleep.async_set.assert_not_called()
+
+
+async def test_shares_one_learning_an_evening(hass):
+    from types import SimpleNamespace as NS
+
+    said = []
+
+    async def say(text, priority, source=None):
+        said.append(text)
+        return NS(spoken=True)
+    rt = NS(speech=NS(async_say=say), memory=None, learner=None, timeline=FakeTimeline())
+    inner = _inner(hass, rt)
+    inner._think("undo:x", "I've stopped doing this one: the landing light at 18:00.", "why", "lesson")
+    morning = dt_util.now().replace(hour=9, minute=0)
+    assert inner.to_share(morning) is None  # only in the evening
+    evening = dt_util.now().replace(hour=18, minute=0)
+    pick = inner.to_share(evening)
+    assert pick and await inner.async_share(pick, evening)
+    assert said == ["Something I've learned: I've stopped doing this one: the landing light at 18:00."]
+    assert inner.to_share(evening) is None  # once an evening
+    inner.shared_day = None
+    assert inner.to_share(evening) is None  # and never the same thing twice

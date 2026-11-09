@@ -80,6 +80,7 @@ from .const import (
     CONF_LEARN_CORRECTIONS,
     CONF_NORMAL_DAY,
     CONF_THOUGHTS,
+    CONF_SHARE_LEARNING,
     CONF_SELF_ADJUST,
     CONF_PROPOSALS,
     CONF_PRIVACY_LOG,
@@ -343,7 +344,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [

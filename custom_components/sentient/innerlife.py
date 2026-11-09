@@ -28,7 +28,7 @@ from homeassistant.helpers.event import async_track_time_change, async_track_tim
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, DOMAIN
+from .const import CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_SHARE_LEARNING, CONF_THOUGHTS, DOMAIN
 from .own import own_actions
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,6 +75,8 @@ class InnerLife:
         self._unsubs: list[Callable[[], None]] = []
         self._inside: set[str] = set()
         self._inside_at = 0.0
+        self.shared: list[str] = []  # learnings already said aloud
+        self.shared_day: str | None = None
 
     # ----- switches ----------------------------------------------------------------------
     @property
@@ -97,6 +99,8 @@ class InnerLife:
         self.scores = [int(x) for x in data.get("scores") or []][-SCORES_KEPT:]
         self.thoughts = list(data.get("thoughts") or [])
         self.dismissed = list(data.get("dismissed") or [])
+        self.shared = list(data.get("shared") or [])
+        self.shared_day = data.get("shared_day")
         self._unsubs = [
             self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state),
             async_track_time_change(self.hass, self._nightly, hour=4, minute=50, second=0),
@@ -113,7 +117,8 @@ class InnerLife:
 
     def _data(self) -> dict[str, Any]:
         return {"corrections": self.corrections[-300:], "transitions": self.transitions, "scores": self.scores[-SCORES_KEPT:],
-                "thoughts": self.thoughts[-THOUGHTS_KEPT:], "dismissed": self.dismissed[-200:]}
+                "thoughts": self.thoughts[-THOUGHTS_KEPT:], "dismissed": self.dismissed[-200:],
+                "shared": self.shared[-200:], "shared_day": self.shared_day}
 
     # ----- watching ----------------------------------------------------------------------
     @callback
@@ -254,6 +259,45 @@ class InnerLife:
     def _every_ten_minutes(self, now) -> None:
         if self.day_on:
             self.check_day(dt_util.as_local(now))
+        if self.options.get(CONF_SHARE_LEARNING, True):
+            local = dt_util.as_local(now)
+            if (pick := self.to_share(local)) is not None:
+                self.hass.async_create_background_task(self.async_share(pick, local), "sentient_share_learning")
+
+    def to_share(self, local: datetime) -> dict[str, Any] | None:
+        """Once an evening: the freshest thing learned in the last two days that hasn't been said yet."""
+        if not (17 * 60 <= local.hour * 60 + local.minute <= 20 * 60 + 30) or self.shared_day == local.date().isoformat():
+            return None
+        since = dt_util.utcnow().timestamp() - 2 * 86400
+        fresh = [t for t in self.thoughts if t["t"] >= since and t["key"] not in self.shared and t["kind"] in ("lesson", "day")]
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        for c in (getattr(memory, "changed", None) or []):
+            when = dt_util.parse_datetime(c.get("time") or "")
+            if c.get("kind") == "replaced" and when and when.timestamp() >= since and f"mem:{c['time']}" not in self.shared:
+                fresh.append({"key": f"mem:{c['time']}", "t": when.timestamp(), "text": f"I've updated what I know: {c['new'].rstrip('.')}."})
+        learner = getattr(rt, "learner", None) if rt is not None else None
+        for r in (learner.all() if learner is not None else []):
+            when = dt_util.parse_datetime(getattr(r, "learned", "") or "")
+            if when and when.timestamp() >= since and f"habit:{r.id}" not in self.shared and not getattr(r, "declined", False):
+                fresh.append({"key": f"habit:{r.id}", "t": when.timestamp(), "text": f"I've spotted a habit: {r.describe().rstrip('.')}."})
+        p = self.prediction()
+        if p["trusted"] and "guess:trusted" not in self.shared:
+            fresh.append({"key": "guess:trusted", "t": dt_util.utcnow().timestamp(),
+                          "text": f"I can now usually tell which room someone's heading to next — right {round(p['rate'] * 100)}% of the time."})
+        return max(fresh, key=lambda t: t["t"]) if fresh else None
+
+    async def async_share(self, pick: dict[str, Any], local: datetime) -> bool:
+        rt = self._rt()
+        if rt is None:
+            return False
+        result = await rt.speech.async_say(f"Something I've learned: {pick['text']}", "normal", source="learning")
+        if not getattr(result, "spoken", False):
+            return False  # quiet time, nobody about or hushed: try again later this evening
+        self.shared_day = local.date().isoformat()
+        self.shared = (self.shared + [pick["key"]])[-200:]
+        self._save()
+        return True
 
     def check_day(self, local: datetime) -> bool:
         """Nobody up yet when someone usually is by now: noted once a day, nothing said or switched."""

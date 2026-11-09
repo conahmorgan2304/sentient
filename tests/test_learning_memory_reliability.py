@@ -366,3 +366,15 @@ async def test_tidy_orders_actual_instants_across_daylight_saving_change(tidy):
         await obj.async_tidy()
     listing = ai.call_args.args[1]
     assert listing.index(earlier.id) < listing.index(later.id)
+
+
+def test_reflection_folds_up_motion_light_noise(hass):
+    now = dt_util.utcnow()
+    items = [{'time': (now - timedelta(minutes=m)).isoformat(), 'kind': 'light', 'text': 'Hallway light: on with motion'} for m in range(1, 60)]
+    items += [{'time': now.isoformat(), 'kind': 'noticed', 'text': 'Kettle', 'detail': "noticed, decided it wasn't worth saying"},
+              {'time': now.isoformat(), 'kind': 'visitor', 'text': 'Someone at the door'}]
+    rt = SimpleNamespace(timeline=SimpleNamespace(since=lambda *args: list(reversed(items))),
+                         conversations=SimpleNamespace(recent=lambda **kwargs: []))
+    log, _ = Reflection(hass, 'fold', {}, lambda: rt)._material(rt)
+    assert sum('Hallway light' in line for line in log) == 1 and '59 times' in next(l for l in log if 'Hallway' in l)
+    assert not any('Kettle' in line for line in log) and any('door' in line for line in log)
