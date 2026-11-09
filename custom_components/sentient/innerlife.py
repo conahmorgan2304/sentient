@@ -291,7 +291,11 @@ class InnerLife:
         rt = self._rt()
         if rt is None:
             return False
-        result = await rt.speech.async_say(f"Something I've learned: {pick['text']}", "normal", source="learning")
+        try:
+            result = await rt.speech.async_say(f"Something I've learned: {pick['text']}", "normal", source="learning")
+        except Exception as err:  # noqa: BLE001 - no speaker answered: try again later this evening
+            _LOGGER.debug("Couldn't say what it learned: %s", err)
+            return False
         if not getattr(result, "spoken", False):
             return False  # quiet time, nobody about or hushed: try again later this evening
         self.shared_day = local.date().isoformat()
