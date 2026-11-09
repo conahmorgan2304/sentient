@@ -194,8 +194,9 @@ def speech_pieces(passage: str, size: int = SPEECH_PIECE) -> list[str]:
 
 
 # ----- the reader ----------------------------------------------------------------------------
-CUT_SHORT_LIMIT = 3  # pieces in a row cut short before the story pauses itself
+CUT_SHORT_LIMIT = 2  # pieces in a row cut short before the story pauses itself
 CUT_SHORT_RATIO = 0.35  # a piece over in under this share of its time was cut short
+CUT_HARD_RATIO = 0.25  # over in under this share is a deliberate stop (a double-tap or the stop word) on a voice satellite
 CUT_SHORT_MIN_SECONDS = 6.0  # shorter pieces are too quick to tell
 
 
@@ -351,16 +352,18 @@ class Books:
                         began = loop.time()
                         if not await rt.speech.async_read_aloud(piece, speaker, story=True):
                             return  # couldn't speak: keep the place on this passage
-                        if self._cut_short(piece, loop.time() - began):
+                        if cut := self._cut_short(piece, loop.time() - began):
                             if not cuts:
                                 first = (ch, ps)
                             cuts += 1
-                            if cuts >= CUT_SHORT_LIMIT:
-                                # a tap on the screen ends the sound but not the story: stop rather than skip on,
-                                # and keep the place where the first cut-off piece began
-                                self._mark(book["name"], speaker, *first, chapters)
+                            # a double-tap or the stop word on a voice satellite ends only the piece being played, not the
+                            # story: that is a clear "stop", so stop at once; otherwise two cut-off pieces in a row
+                            deliberate = cut == 2 and speaker.startswith("assist_satellite.")
+                            if deliberate or cuts >= CUT_SHORT_LIMIT:
+                                self._mark(book["name"], speaker, *first, chapters)  # the place where the first cut-off piece began
                                 await rt.speech.async_read_aloud(
-                                    "I've paused the story because it keeps being interrupted. Say carry on when you want it back.",
+                                    "Okay, I've stopped. Say carry on when you want it back." if deliberate
+                                    else "I've paused the story because it keeps being interrupted. Say carry on when you want it back.",
                                     speaker, story=True)
                                 return
                         else:
@@ -379,12 +382,14 @@ class Books:
                 self.reading.pop(speaker, None)
 
     @staticmethod
-    def _cut_short(piece: str, took: float) -> bool:
-        """A piece that was over far sooner than it takes to say was stopped (a tap on the screen), not read."""
+    def _cut_short(piece: str, took: float) -> int:
+        """0 read through; 1 over far sooner than it takes to say (cut short); 2 over almost at once (stopped)."""
         from .speech import reading_seconds
 
         expected = reading_seconds(piece)
-        return expected >= CUT_SHORT_MIN_SECONDS and took < expected * CUT_SHORT_RATIO
+        if expected < CUT_SHORT_MIN_SECONDS:
+            return 0
+        return 2 if took < expected * CUT_HARD_RATIO else 1 if took < expected * CUT_SHORT_RATIO else 0
 
     async def async_silence(self, speaker: str | None = None) -> dict[str, Any]:
         """Stop whatever is being read, and the sound itself, without needing to be heard or understood.

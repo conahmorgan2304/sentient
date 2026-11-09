@@ -293,7 +293,7 @@ async def test_next_piece_made_while_this_one_is_read(hass: HomeAssistant, tmp_p
         made.append(media_id)
 
     with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), \
-            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), \
+            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), patch("custom_components.sentient.books.Books._cut_short", return_value=0), \
             patch("custom_components.sentient.speech.tts_media_id", side_effect=lambda h, text, *a: f"tts:{text}"), \
             patch.object(rt.speech, "_make_audio", side_effect=make):
         orig = rt.speech.prepare_reading
@@ -342,7 +342,7 @@ def test_damaged_and_oversized_books_give_no_text_instead_of_crashing(tmp_path, 
     assert books.read_chapters(str(big))
 
 
-async def test_a_story_that_keeps_being_cut_short_pauses_and_keeps_the_place(hass: HomeAssistant, tmp_path) -> None:
+async def test_a_dismissed_piece_on_a_tablet_stops_the_story_and_keeps_the_place(hass: HomeAssistant, tmp_path) -> None:
     """Tapping a tablet's screen ends the passage being played; the reader used to carry on to the next one,
     so a child tapping skipped through the book with no way to stop it."""
     (tmp_path / "books").mkdir()
@@ -366,10 +366,42 @@ async def test_a_story_that_keeps_being_cut_short_pauses_and_keeps_the_place(has
         task = books.reading["assist_satellite.bedroom"]["task"]
         await asyncio.wait_for(task, 5)
     assert "assist_satellite.bedroom" not in books.reading  # it stopped by itself
-    assert len([s for s in spoken if "Sentence" in s]) == 3  # after three cut-off pieces, not the whole book
-    assert "paused" in spoken[-1].lower()
+    assert len([s for s in spoken if "Sentence" in s]) == 1  # a double-tap on a satellite stops it at once
+    assert "stopped" in spoken[-1].lower()
     mark = books.place("Flump", "assist_satellite.bedroom")
     assert (mark["chapter"], mark["passage"]) == (0, 0)  # nothing counts as heard
+
+
+async def test_cut_pieces_on_another_speaker_pause_after_two_in_a_row(hass: HomeAssistant, tmp_path) -> None:
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    books = entry.runtime_data.books
+    spoken: list[str] = []
+    real_sleep = asyncio.sleep
+
+    async def quick_sleep(_seconds):
+        await real_sleep(0)
+
+    async def cut_short(text, speaker, story=False):
+        spoken.append(text)
+        return True
+
+    with patch.object(entry.runtime_data.speech, "async_read_aloud", cut_short), \
+            patch.object(entry.runtime_data.speech, "prepare_reading"), \
+            patch("custom_components.sentient.books.asyncio.sleep", quick_sleep):
+        await books.async_read("Flump", "media_player.bedroom")
+        await asyncio.wait_for(books.reading["media_player.bedroom"]["task"], 5)
+    assert len([s for s in spoken if "Sentence" in s]) == 2 and "paused" in spoken[-1].lower()
+    assert books.place("Flump", "media_player.bedroom")["passage"] == 0
+
+
+def test_how_cut_short_a_piece_was() -> None:
+    from custom_components.sentient.books import Books
+
+    piece = "word " * 50  # about 20 seconds
+    assert Books._cut_short(piece, 18) == 0 and Books._cut_short(piece, 6) == 1 and Books._cut_short(piece, 1) == 2
+    assert Books._cut_short("a short line", 0.1) == 0  # too quick to tell
 
 
 async def test_stop_reading_service_stops_even_without_the_voice(hass: HomeAssistant, tmp_path) -> None:
