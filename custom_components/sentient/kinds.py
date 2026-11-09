@@ -181,6 +181,21 @@ KINDS: dict[str, dict[str, Any]] = {
             "date": "Date (for a one-off on another day)", "description": "Description (optional)", "actions": "At that time, do",
         },
     },
+    # Heating schedules: silent alarms tagged with a heating spec, made and shown on the House tab
+    "heating": {
+        "view_of": "alarms",
+        "title": "Heating schedule",
+        "icon": "mdi:radiator",
+        "blurb": "Set a thermostat to a temperature, or off, at a time on chosen days. Made on the House tab.",
+        "add": "+ NEW HEATING TIME",
+        "defaults": {
+            "enabled": True, "time": "06:30:00", "days": [], "date": None, "description": "", "message": "",
+            "speakers": [], "actions": [], "room_area": None, "room_actions": [], "last_rang": None, "silent": True,
+            "heating": None,
+        },
+        "schema": [_sel("name", {"text": {}}, True), _sel("enabled", {"boolean": {}}), _sel("time", {"time": {}}, True)],
+        "labels": {"name": "Name", "enabled": "On", "time": "Time"},
+    },
     "autooff": {
         "title": "Auto-off",
         "icon": "mdi:timer-off-outline",
@@ -358,7 +373,7 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
         if item.get("skip_entity"):
             bits.append(f"not after {name_of(item['skip_entity'])}")
         return " · ".join(bits)
-    if kind in ("alarms", "schedules"):
+    if kind in ("alarms", "schedules", "heating"):
         days = item.get("days") or []
         when = ("every day" if len(days) == 7 else ", ".join(DAY_NAMES[d] for d in DAYS if d in days)) if days else (item.get("date") or "once")
         return f"{str(item.get('time') or '')[:5]} · {when}" + (f" · {item['description']}" if item.get("description") else "") + (" · silent" if item.get("silent") and kind == "alarms" else "")
@@ -414,5 +429,7 @@ def belongs(kind: str, item: dict[str, Any]) -> bool:
     if kind == "alarms":
         return not item.get("silent")
     if kind == "schedules":
-        return bool(item.get("silent"))
+        return bool(item.get("silent")) and not item.get("heating")
+    if kind == "heating":
+        return bool(item.get("silent")) and bool(item.get("heating"))
     return True

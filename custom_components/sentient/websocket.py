@@ -7,6 +7,7 @@ schemas in config_flow.py.
 
 from __future__ import annotations
 
+import re
 import functools
 import inspect
 from typing import Any
@@ -121,6 +122,7 @@ from .const import (
     CONF_NIGHT_WATCH_ANNOUNCE,
     CONF_NIGHT_WATCH_ENTITIES,
     CONF_NIGHT_WATCH_SPEAKERS,
+    CONF_HEATING_SCHEDULE,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     CONF_AI_TASK_ENTITY,
@@ -310,8 +312,11 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
         CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK,
     ]),
-    ("heating", "Heating", "mdi:radiator", "What it learns about the heating, and warming up before people are up.", [
-        CONF_HEATING_ENTITIES, CONF_PREHEAT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
+    ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, comfort temperature, time limit and warm-by times, and the heating schedule, are on the House tab.", [
+        CONF_PREHEAT, CONF_HEATING_SCHEDULE,
+    ]),
+    ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
+        CONF_HEATING_ENTITIES, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_FACE_CAMERAS, CONF_FACE_FORGET_HOURS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS, CONF_ZONE_VISITS, CONF_ZONE_DOOR_SENSORS,
@@ -471,6 +476,85 @@ def ws_cameras(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], {"cameras": rows, "hidden": len(hidden_cameras(hass, options))})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/heating"})
+@page_access
+@callback
+def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The heating zones now, what has been learned about them, and the heating schedule — for the House tab."""
+    from .heating_schedule import MAX_TEMP, MIN_TEMP, describe, enabled
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_result(msg["id"], {"zones": [], "schedule_on": False, "schedules": []})
+        return
+    rt = entry.runtime_data
+    report = rt.heating.report()
+    zones = []
+    for eid, plan in zip(rt.heating.entities, report["zones"]):
+        st = hass.states.get(eid)
+        zones.append({"entity_id": eid, "name": plan["name"], "state": st.state if st else "unavailable",
+                      "now": plan.get("now"), "target": st.attributes.get("temperature") if st else None,
+                      "action": st.attributes.get("hvac_action") if st else None,
+                      "warms_per_hour": plan.get("warms_per_hour"), "comfortable_at": plan.get("comfortable_at")})
+    schedules = []
+    for item in rt.lists["alarms"].listing():
+        if not item.get("heating"):
+            continue
+        nxt = next((a["next"] for a in rt.alarms.listing() if a["id"] == item["id"]), None)
+        schedules.append({"id": item["id"], "name": item["name"], "time": str(item.get("time"))[:5], "days": item.get("days") or [],
+                          "enabled": item.get("enabled", True), "entity_id": item["heating"].get("entity_id"),
+                          "temperature": item["heating"].get("temperature"), "what": describe(hass, item["heating"]), "next": nxt})
+    schedules.sort(key=lambda x: x["time"])
+    connection.send_result(msg["id"], {
+        "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
+        "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
+        "admin": connection.user.is_admin,
+    })
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/heating/save",
+    vol.Optional("item_id"): str,
+    vol.Required("entity_id"): str,
+    vol.Required("time"): str,
+    vol.Optional("days", default=[]): [vol.In(["mon", "tue", "wed", "thu", "fri", "sat", "sun"])],
+    vol.Optional("temperature"): vol.Any(None, vol.Coerce(float)),
+    vol.Optional("enabled", default=True): bool,
+})
+@websocket_api.require_admin
+@callback
+def ws_heating_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .heating_schedule import describe, enabled, heating_actions
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if not enabled(rt.options):
+        connection.send_error(msg["id"], "off", "Heating schedules are switched off in Settings → Heating")
+        return
+    if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d(:00)?", msg["time"]):
+        connection.send_error(msg["id"], "invalid", "That isn't a time")
+        return
+    spec = {"entity_id": msg["entity_id"], "temperature": msg.get("temperature")}
+    _actions, why = heating_actions(hass, rt.options, spec)
+    if why:
+        connection.send_error(msg["id"], "invalid", why)
+        return
+    at = msg["time"][:5]
+    days = [d for d in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] if d in msg["days"]]
+    item = {"name": f"Heating: {describe(hass, spec)} at {at}", "time": f"{at}:00", "days": days, "enabled": msg["enabled"],
+            "silent": True, "made_by": "page", "heating": spec, "actions": _actions}
+    if msg.get("item_id"):
+        if msg["item_id"] not in rt.lists["alarms"].items or not rt.lists["alarms"].items[msg["item_id"]].get("heating"):
+            connection.send_error(msg["id"], "not_found", "That heating time is gone")
+            return
+        item["id"] = msg["item_id"]
+    rt.lists["alarms"].upsert(item)
+    connection.send_result(msg["id"], {"saved": item["name"]})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/clips"})
 @page_access
 @callback
@@ -626,6 +710,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
+    websocket_api.async_register_command(hass, ws_heating)
+    websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)

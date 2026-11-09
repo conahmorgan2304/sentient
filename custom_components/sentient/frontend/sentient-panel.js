@@ -129,7 +129,7 @@
           </div></div>
         <div class="page" id="hp" hidden>
           <div class="lanes mp2">
-            <section class="lane" aria-label="Energy and appliances"><div class="lt">ENERGY &amp; APPLIANCES</div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
+            <section class="lane" aria-label="Heating, energy and appliances"><div class="lt">HEATING, ENERGY &amp; APPLIANCES</div><div id="heat" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
             <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
@@ -249,6 +249,8 @@
       R("sug").innerHTML = sug.length ? this._h("SUGGESTIONS", `${sug.length}`) + sug.map((s) => `<div class="r"><ha-icon icon="mdi:lightbulb-auto-outline"></ha-icon><b class="wrap">${esc(s.text)}</b>
           ${s.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">HOW</a>` : `<button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button>`}<a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
 
+      // heating zones and schedule (refreshed every 30 seconds while the House tab is open)
+      if (this._view === "house" && (!this._heatAt || Date.now() - this._heatAt > 30000) && !this._heatEdit) this._loadHeat();
       // the real cameras (refreshed every minute)
       if (!this._camAt || Date.now() - this._camAt > 60000) {
         this._camAt = Date.now();
@@ -1208,6 +1210,94 @@
       return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
     }
 
+    // ---------- heating (House tab) ----------
+    _loadHeat() {
+      this._heatAt = Date.now();
+      return this._hass.callWS({ type: "sentient/heating" }).then((r) => { this._heat = r; this._drawHeat(); }, () => { this._heat = null; this._drawHeat(); });
+    }
+
+    _drawHeat() {
+      const el = this._$("heat");
+      if (!el || this._heatEdit) return;
+      const h = this._heat;
+      if (!h) { el.innerHTML = this._h("HEATING", "") + '<div class="e">LOADING THE HEATING…</div>'; return; }
+      const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"], DN = { mon: "MON", tue: "TUE", wed: "WED", thu: "THU", fri: "FRI", sat: "SAT", sun: "SUN" };
+      const daysTxt = (d) => (!d.length ? "ONCE" : d.length === 7 ? "EVERY DAY" : d.join() === D.slice(0, 5).join() ? "WEEKDAYS" : d.join() === "sat,sun" ? "WEEKENDS" : d.map((x) => DN[x]).join(" "));
+      const zone = (z) => {
+        const live = this._hass.states[z.entity_id], mode = live ? live.state : z.state;
+        const tag = ["unavailable", "unknown"].includes(mode) ? "OFFLINE" : mode === "off" ? "OFF" : z.action === "heating" ? "HEATING" : "IDLE";
+        const nums = [z.now != null ? `${z.now}° NOW` : "", z.target != null && mode !== "off" ? `TARGET ${z.target}°` : "", z.warms_per_hour ? `WARMS ${z.warms_per_hour}°/H` : ""].filter(Boolean).join(" · ");
+        return `<div class="r${tag === "HEATING" ? " on" : tag === "OFFLINE" ? " bad" : tag === "OFF" ? " dim" : ""}"><ha-icon icon="${esc(tag === "HEATING" ? "mdi:radiator" : tag === "OFF" ? "mdi:radiator-off" : "mdi:radiator-disabled")}"></ha-icon><b>${esc(z.name)}</b><u>${esc(nums)}${nums ? " · " : ""}${tag}</u></div>`;
+      };
+      let html = this._h("HEATING", h.zones.length ? `${h.zones.length} ZONE${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + h.warming_now.join(", ").toUpperCase() : ""}` : "NO THERMOSTATS CHOSEN")
+        + (h.zones.map(zone).join("") || '<div class="e">CHOOSE YOUR THERMOSTATS UNDER ZONE SETTINGS</div>');
+      const up = [h.usually_up && h.usually_up.weekdays && `UP ${h.usually_up.weekdays} WEEKDAYS`, h.warm_by && h.warm_by.weekdays && `WARM BY ${h.warm_by.weekdays}`].filter(Boolean).join(" · ");
+      if (up) html += `<div class="hint">${esc(up)}</div>`;
+      if (h.schedule_on) {
+        html += `<div class="sub">SCHEDULE</div>` + (h.schedules.map((x) => `<div class="r${x.enabled ? "" : " dim"}"><ha-icon icon="mdi:calendar-clock"></ha-icon><b>${esc(x.time)} · ${esc(x.what)}</b><u>${esc(daysTxt(x.days))}</u>`
+          + (h.admin ? `<button class="btn sm ghost" data-act="heatonoff" data-id="${esc(x.id)}">${x.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="heatdel" data-id="${esc(x.id)}" title="Delete">✕</button>` : "")
+          + `</div>`).join("") || '<div class="e">NOTHING SCHEDULED YET</div>');
+        if (h.admin && h.zones.length) {
+          html += `<form class="hform" id="heatform"><select name="entity_id">${h.zones.map((z) => `<option value="${esc(z.entity_id)}">${esc(z.name)}</option>`).join("")}</select>`
+            + `<input type="time" name="time" value="06:30" required>`
+            + `<input type="number" name="temperature" min="${h.min}" max="${h.max}" step="0.5" value="21" aria-label="Temperature"><label class="offl"><input type="checkbox" name="off"> OFF</label>`
+            + `<div class="dchips">${D.map((d) => `<label><input type="checkbox" name="d_${d}"${["mon", "tue", "wed", "thu", "fri"].includes(d) ? " checked" : ""}><span>${DN[d]}</span></label>`).join("")}</div>`
+            + `<button class="btn sm" type="submit" data-act="heatadd">ADD</button><span id="heatmsg" class="hint"></span></form>`;
+        }
+      } else {
+        html += `<div class="hint">HEATING SCHEDULE IS OFF · <a class="lnk" data-act="goto" data-id="heating">TURN IT ON IN SETTINGS</a></div>`;
+      }
+      if (h.admin) html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button></div><div id="heatzones"></div>`;
+      el.innerHTML = html;
+      const form = this._$("heatform");
+      if (form && !form._wired) { form._wired = true; form.addEventListener("submit", (e) => { e.preventDefault(); this._heatAdd(form); }); }
+      if (this._heatZonesOpen) this._openHeatZones(true);
+    }
+
+    async _heatAdd(form) {
+      const f = new FormData(form), off = f.get("off") === "on";
+      const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].filter((d) => f.get("d_" + d) === "on");
+      const msg = this._$("heatmsg");
+      try {
+        await this._hass.callWS({ type: "sentient/heating/save", entity_id: f.get("entity_id"), time: f.get("time"), days, temperature: off ? null : Number(f.get("temperature")) });
+        this._heatAt = 0; await this._loadHeat();
+      } catch (e) { if (msg) msg.textContent = (e.message || String(e)).toUpperCase(); }
+    }
+
+    async _openHeatZones(keep) {
+      const wrap = this._$("heatzones");
+      if (!wrap) return;
+      if (!keep && this._heatZonesOpen) { this._heatZonesOpen = false; this._heatEdit = false; wrap.innerHTML = ""; return; }
+      this._heatZonesOpen = true; this._heatEdit = true;
+      try { if (!this._settings) this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language }); }
+      catch (e) { wrap.innerHTML = `<div class="e">${esc(e.message || e)}</div>`; return; }
+      const g = this._settings.groups.find((x) => x.id === "heating_zones");
+      if (!g || !(await loadForm())) { wrap.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD</div>'; return; }
+      const S = this._settings;
+      this._heatDraft = { ...S.data };
+      const form = document.createElement("ha-form");
+      form.hass = this._hass; form.schema = g.schema; form.data = this._heatDraft;
+      form.computeLabel = (sc) => S.labels[sc.name] || sc.name;
+      form.computeHelper = (sc) => S.helpers[sc.name] || "";
+      form.localizeValue = (key) => S.selector[key] || key.split(".").pop();
+      form.addEventListener("value-changed", (ev) => { this._heatDraft = { ...ev.detail.value }; form.data = this._heatDraft; });
+      wrap.innerHTML = '<div class="bar"><span id="heatzmsg"></span><button class="btn sm" data-act="heatzsave">SAVE ZONE SETTINGS</button></div>';
+      wrap.insertBefore(form, wrap.firstChild);
+    }
+
+    async _saveHeatZones() {
+      const g = this._settings.groups.find((x) => x.id === "heating_zones");
+      const data = {};
+      for (const n of g.schema.map((x) => x.name)) if (this._heatDraft[n] !== undefined && this._heatDraft[n] !== null && this._heatDraft[n] !== "") data[n] = this._heatDraft[n];
+      const msg = this._$("heatzmsg");
+      try {
+        const res = await this._hass.callWS({ type: "sentient/settings/save", group: "heating_zones", data });
+        this._settings.data = res.data;
+        if (msg) msg.textContent = "SAVED ✓";
+        this._heatEdit = false; this._heatAt = 0; await this._loadHeat();
+      } catch (e) { if (msg) msg.textContent = (e.message || String(e)).toUpperCase(); }
+    }
+
     _drawCameras() {
       const el = this._$("camc");
       if (!el) return;
@@ -1561,6 +1651,13 @@
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
       else if (act === "openmind") this._show("mind", true);
+      else if (act === "heatzones") this._openHeatZones(false);
+      else if (act === "heatzsave") this._saveHeatZones();
+      else if (act === "heatdel") { if (window.confirm("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "heatonoff") {
+        const x = ((this._heat || {}).schedules || []).find((i) => i.id === id);
+        if (x) this._hass.callWS({ type: "sentient/heating/save", item_id: id, entity_id: x.entity_id, time: x.time, days: x.days, temperature: x.temperature, enabled: !x.enabled }).then(() => { this._heatAt = 0; this._loadHeat(); });
+      }
       else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Saved ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
       else if (act === "bkrestore") {
         if (!window.confirm(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
@@ -2010,6 +2107,13 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 :host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar,:host([view="security"])::-webkit-scrollbar,:host([view="house"])::-webkit-scrollbar{display:none}
 #mp .flow{columns:2}
 #scp .lanes,#hp .lanes{align-items:start}
+.sub{font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(150,220,235,.7);margin:12px 2px 4px}
+.hform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.hform select,.hform input[type=time],.hform input[type=number]{background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;color:#cfeff5;color-scheme:dark;font:inherit;font-size:12px}
+.hform input[type=number]{width:70px}.offl{font-size:10px;letter-spacing:.12em;color:rgba(150,220,235,.8)}
+.dchips{display:flex;gap:4px;flex-wrap:wrap;flex-basis:100%}.dchips label{cursor:pointer}.dchips input{position:absolute;opacity:0;pointer-events:none}
+.dchips span{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;padding:4px 7px;border-radius:8px;border:1px solid rgba(0,255,247,.25);color:rgba(150,220,235,.6)}
+.dchips input:checked+span{color:#041014;background:#7fefff;border-color:#7fefff}
 .r b small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);white-space:normal}
 .r b details{display:block;margin-top:3px} .r b summary{cursor:pointer;font-size:11px;color:#7fefff;list-style:none}
 .r b summary::-webkit-details-marker{display:none} .r b summary::before{content:"▸ "} .r b details[open] summary::before{content:"▾ "}
