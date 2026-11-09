@@ -141,7 +141,7 @@ async def test_tool_tracks_corrections_and_cannot_open_command_discussion(hass):
 
 async def test_discussion_confirmation_is_separate_and_keeps_followup(hass):
     from pytest_homeassistant_custom_component.common import async_mock_service
-    obj, rt = agent(hass, {'conversation_sessions': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'conversation_sessions': True, 'voice_unlock': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
     hass.states.async_set('lock.front', 'locked')
     calls = async_mock_service(hass, 'lock', 'unlock')
     async def model(_agent, user_input):
@@ -162,7 +162,7 @@ async def test_discussion_confirmation_is_separate_and_keeps_followup(hass):
 
 
 async def test_user_ending_clears_pending_even_if_agent_configuration_changed(hass):
-    obj, rt = agent(hass, {'conversation_sessions': True, 'guarded_control': True})
+    obj, rt = agent(hass, {'conversation_sessions': True, 'voice_unlock': True, 'guarded_control': True})
     session = rt.sessions.get(request('start'))
     session.pending = {'summary': 'unlock'}
     with patch.object(obj, '_guarded_configuration', return_value=False):

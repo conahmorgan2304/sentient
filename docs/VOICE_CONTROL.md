@@ -99,3 +99,11 @@ Replay tests cover timeout resumption, ambiguous topics, owner isolation, expire
 Stop detection tolerates punctuation, repeated spaces, “thankyou”/“thank-you”, and addressing the configured persona by name. “No thankyou”, “No, thank you”, “that's enough”, “I'm finished” and similar complete endings are handled locally: no model call, no new anything-else question, and listening stops. Pending confirmations and the current discussion's bookmarks are discarded.
 
 A bare “no”, “nope” or “nah” closes a generic anything-else follow-up. After a specific question such as “Can you hear the kitchen speaker?”, it remains an answer for the model to interpret. Corrections and commands such as “no, the landing” or “no thanks, check the gate instead” are not swallowed as sign-offs.
+
+## Unlocking by voice (0.98.14)
+
+Enforced voice confirmation can lock doors and close covers as before. **Unlocking a door by voice is its own setting, "Allow unlocking by voice", off by default**, because the separate "yes" does not prove who said it. With it off, an unlock request is refused with a plain explanation; locking is unaffected. Turning it off keeps no data and changes nothing already saved.
+
+## Who can open the Sentient page (0.98.14)
+
+"Only administrators can open this page" (Settings, This page) hides the sidebar page from other users and makes the page's read-only commands refuse non-administrators. It is off by default so the household keeps access; it deletes nothing.

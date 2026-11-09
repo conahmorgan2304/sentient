@@ -8,11 +8,16 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
 from . import SentientConfigEntry
-from .const import CONF_HOUSE_RULES, CONF_PERSONA, CONF_SEARXNG_URL, CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL
+from .const import (
+    CONF_AWAY_PEOPLE, CONF_BINS_CALENDAR, CONF_BRIEFING_CALENDARS, CONF_FACE_SENSOR, CONF_HOUSE_RULES, CONF_NOTIFY_TARGETS,
+    CONF_PERSONA, CONF_PHONE_APPS, CONF_SEARXNG_URL, CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL, CONF_WELCOME_PEOPLE,
+)
 
 TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "name", "message", "what", "text",
              "personality_notes", "style_notes", "known_cars", "face_people", "clip_looks",
-             CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL, CONF_SEARXNG_URL}  # secrets and addresses on the house's network
+             CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL, CONF_SEARXNG_URL,  # secrets and addresses on the house's network
+             CONF_NOTIFY_TARGETS, CONF_PHONE_APPS, CONF_WELCOME_PEOPLE, CONF_AWAY_PEOPLE, CONF_BRIEFING_CALENDARS,
+             CONF_BINS_CALENDAR, CONF_FACE_SENSOR}  # phones, people and calendars name who lives here
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SentientConfigEntry) -> dict[str, Any]:

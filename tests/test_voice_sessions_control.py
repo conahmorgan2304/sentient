@@ -56,7 +56,7 @@ async def test_control_does_not_accept_model_confirmation(hass):
     _, session = active()
     hass.states.async_set('lock.front', 'locked')
     service = async_mock_service(hass, 'lock', 'unlock')
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     with patch('custom_components.sentient.control.async_should_expose', return_value=True):
         result = await control.propose(session, [{'entity_id': 'lock.front', 'action': 'unlock', 'confirmed': True}], Context())
         assert result.get('error') and not service
@@ -70,7 +70,7 @@ async def test_pending_action_is_revalidated(hass, freezer, change):
     _, session = active()
     hass.states.async_set('lock.front', 'locked')
     service = async_mock_service(hass, 'lock', 'unlock')
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     with patch('custom_components.sentient.control.async_should_expose', return_value=True) as expose:
         await control.propose(session, [{'entity_id': 'lock.front', 'action': 'unlock'}], Context())
         session.turn += 1
@@ -92,7 +92,7 @@ async def test_exact_pending_batch_executes_once(hass):
         calls.append(call)
         hass.states.async_set('lock.front', 'unlocked')
     hass.services.async_register('lock', 'unlock', unlock)
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     action = {'entity_id': 'lock.front', 'action': 'unlock'}
     with patch('custom_components.sentient.control.async_should_expose', return_value=True):
         await control.propose(session, [action], Context())
@@ -108,7 +108,7 @@ async def test_exact_pending_batch_executes_once(hass):
 async def test_unrestricted_actions_are_not_available(hass, entity, op):
     _, session = active()
     hass.states.async_set(entity, 'on')
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     assert (await control.propose(session, [{'entity_id': entity, 'action': op}], Context())).get('error')
 
 
@@ -174,7 +174,7 @@ async def test_simple_commands_and_questions_preserve_behaviour(hass):
 
 
 async def test_agent_confirms_directly_without_second_model_call(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
     hass.states.async_set('lock.front', 'locked')
     calls = []
     async def unlock(call):
@@ -196,7 +196,7 @@ async def test_agent_confirms_directly_without_second_model_call(hass):
 
 
 async def test_guarded_misconfiguration_and_failure_never_fall_back(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
     with patch.object(obj, '_converse', AsyncMock(side_effect=RuntimeError('offline'))) as main, patch.object(obj, '_async_process_legacy', AsyncMock()) as backup:
         result = await obj.async_process(request('turn on the light'))
         assert 'only Sentient guarded' in result.response.speech['plain']['speech']
@@ -212,7 +212,7 @@ async def test_supported_agent_requires_only_guarded_api(hass):
     entry = MockConfigEntry(domain='openai_conversation', options={'llm_hass_api': [GUARDED_API]})
     entry.add_to_hass(hass)
     registered = er.async_get(hass).async_get_or_create('conversation', 'openai_conversation', 'test', config_entry=entry)
-    obj, _ = agent(hass, {'guarded_control': True, 'voice_agent': registered.entity_id})
+    obj, _ = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': registered.entity_id})
     assert obj._guarded_configuration()
     hass.config_entries.async_update_entry(entry, options={'llm_hass_api': [GUARDED_API, 'assist']})
     assert not obj._guarded_configuration()
@@ -220,7 +220,7 @@ async def test_supported_agent_requires_only_guarded_api(hass):
 
 async def test_guarded_api_excludes_bypasses_and_rejects_direct_use(hass):
     from tests.test_phase3 import _setup
-    await _setup(hass, guarded_control=True)
+    await _setup(hass, guarded_control=True, voice_unlock=True)
     ctx = llm.LLMContext(platform='test', context=Context(), language='en', assistant='conversation', device_id=None)
     api = await GuardedAPI(hass).async_get_api_instance(ctx)
     names = {t.name for t in api.tools}
@@ -251,7 +251,7 @@ async def test_undo_combines_light_changes_within_one_turn(hass):
 
 
 async def test_correction_cancels_pending_action_and_other_speaker_cannot_confirm(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
     hass.states.async_set('lock.front', 'locked')
     calls = async_mock_service(hass, 'lock', 'unlock')
     async def main(_agent, user_input):
@@ -279,7 +279,7 @@ async def test_user_permissions_are_checked_independently_of_exposure(hass):
 
 
 async def test_temperature_and_cover_confirmation(hass):
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     hass.states.async_set('climate.lounge', 'heat', {'temperature': 19})
     hass.states.async_set('cover.gate', 'closed')
     assert not control.needs_confirmation([{'entity_id': 'climate.lounge', 'action': 'set_temperature', 'temperature': 20}])
@@ -317,14 +317,14 @@ async def test_guarded_configuration_uses_selected_subentry(hass):
     registered = er.async_get(hass).async_get_or_create(
         'conversation', 'openai_conversation', 'guarded-sub', config_entry=entry,
         config_subentry_id=sub.subentry_id)
-    obj, _ = agent(hass, {'guarded_control': True, 'voice_agent': registered.entity_id})
+    obj, _ = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': registered.entity_id})
     assert obj._guarded_configuration()
     hass.config_entries.async_update_subentry(entry, sub, data={'llm_hass_api': [GUARDED_API, 'assist']})
     assert not obj._guarded_configuration()
 
 
 async def test_undo_cancels_an_unrelated_pending_confirmation(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_undo': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_undo': True, 'voice_agent': 'conversation.ai'})
     session = rt.sessions.get(request('start'))
     session.pending = {'summary': 'unlock front', 'turn': 0,
                        'expires': dt_util.utcnow() + timedelta(seconds=60)}

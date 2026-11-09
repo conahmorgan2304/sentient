@@ -36,6 +36,7 @@ from .const import (
     CONF_DOOR_TRIGGERS,
     CONF_DOORSTEP_SENSORS,
     CONF_FACE_SENSOR,
+    CONF_FACES,
     CONF_PARCEL_ALERTS,
     DEFAULT_ANNOUNCE_VISITORS,
     DEFAULT_PARCEL_ALERTS,
@@ -127,6 +128,8 @@ class Visitors:
 
     def recognised_name(self) -> str | None:
         """A name from the face-recognition sensor, if one appeared just now."""
+        if not self.options.get(CONF_FACES):
+            return None  # Faces is off: names stay out of the timeline, notifications and summaries
         entity_id = self.options.get(CONF_FACE_SENSOR)
         st = self.hass.states.get(entity_id) if entity_id else None
         if st is None or st.state.strip().lower() in _NO_NAME:
