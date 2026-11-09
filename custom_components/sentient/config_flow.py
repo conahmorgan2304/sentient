@@ -313,6 +313,7 @@ from .const import (
     CONF_BUDGET_CAMERAS,
     CONF_ROUTINE_EVIDENCE,
     CONF_QUIET_END,
+    CONF_BUSY_ENTITIES,
     CONF_QUIET_START,
     CONF_SPEAKERS,
     CONF_SUPPRESS_ENTITIES,
@@ -589,6 +590,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),
             vol.Required(CONF_QUIET_END, **d(CONF_QUIET_END, DEFAULT_QUIET_END)): selector.TimeSelector(),
+            vol.Optional(CONF_BUSY_ENTITIES, **d(CONF_BUSY_ENTITIES, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["binary_sensor", "input_boolean", "switch", "calendar", "sensor"], multiple=True)
+            ),
             vol.Required(CONF_MOTION_WINDOW, **d(CONF_MOTION_WINDOW, DEFAULT_MOTION_WINDOW)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),

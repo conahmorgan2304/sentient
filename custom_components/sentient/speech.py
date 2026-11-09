@@ -38,6 +38,7 @@ from .const import (
     CONF_BANNED_WORDS,
     CONF_DEFAULT_SPEAKER,
     CONF_QUIET_END,
+    CONF_BUSY_ENTITIES,
     CONF_QUIET_START,
     CONF_SPEAKERS,
     CONF_SUPPRESS_ENTITIES,
@@ -191,6 +192,10 @@ def clean_message(message: str, banned: list[str]) -> str:
     return text
 
 
+# what a switch, calendar or phone Do Not Disturb sensor says when the household is busy
+HOUSE_BUSY_STATES = {"on", "true", "busy", "priority_only", "alarms_only", "total_silence", "do_not_disturb", "dnd"}
+
+
 class SpeechRouter:
     """Decides whether, where and how to speak."""
 
@@ -260,7 +265,17 @@ class SpeechRouter:
         raw = self.options.get(CONF_BANNED_WORDS, DEFAULT_BANNED_WORDS) or ""
         return [w.strip() for w in raw.split(",") if w.strip()]
 
+    def busy(self) -> bool:
+        """A chosen "busy" signal is on: a meeting, a Do Not Disturb phone, a focus switch."""
+        for entity_id in self.options.get(CONF_BUSY_ENTITIES) or []:
+            st = self.hass.states.get(entity_id)
+            if st is not None and st.state.lower() in HOUSE_BUSY_STATES:
+                return True
+        return False
+
     def hushed(self) -> bool:
+        if self.busy():
+            return True  # held like a hush; urgent things still speak
         if self.hush_until is None:
             return False
         if dt_util.utcnow() >= self.hush_until:

@@ -16,6 +16,7 @@
           "default_speaker": "Default speaker",
           "quiet_start": "Quiet hours start",
           "quiet_end": "Quiet hours end",
+          "busy_entities": "Stay quiet while busy",
           "motion_window": "Room awareness window",
           "banned_words": "Never use these words (comma separated)",
           "suppress_entities": "Stay quiet after these automations or scripts",
@@ -165,6 +166,7 @@
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
           "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
+          "busy_entities": "While any of these is on (a meeting calendar, a Focus switch, a phone in Do Not Disturb), Sentient holds back speech that can wait, as if hushed. Safety alerts and replies you ask for still come through. Leave empty to turn this off.",
           "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
           "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",
@@ -325,6 +327,7 @@
           "default_speaker": "Default speaker",
           "quiet_start": "Quiet hours start",
           "quiet_end": "Quiet hours end",
+          "busy_entities": "Stay quiet while busy",
           "motion_window": "Room awareness window",
           "banned_words": "Never use these words (comma separated)",
           "suppress_entities": "Stay quiet after these automations or scripts",
@@ -570,6 +573,7 @@
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
           "suppress_entities": "e.g. your doorbell announcement, so background remarks don't talk over it.",
+          "busy_entities": "While any of these is on (a meeting calendar, a Focus switch, a phone in Do Not Disturb), Sentient holds back speech that can wait, as if hushed. Safety alerts and replies you ask for still come through. Leave empty to turn this off.",
           "prompt_memories": "How many memories are given to the voice assistant up front. The rest can still be searched.",
           "pass_through_areas": "Hallways, landings and stairs. Walking through these counts for much less, so a passer-by doesn't steal an announcement.",
           "all_occupied": "On: everyone who's home hears it. Off: only the busiest room.",

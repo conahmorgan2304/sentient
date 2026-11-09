@@ -9,6 +9,7 @@ CONF_PERSONA = "persona"
 CONF_SPEAKERS = "speakers"
 CONF_DEFAULT_SPEAKER = "default_speaker"
 CONF_QUIET_START = "quiet_start"
+CONF_BUSY_ENTITIES = "busy_entities"  # while any is on, non-urgent speech is held back like a hush
 CONF_QUIET_END = "quiet_end"
 CONF_MOTION_WINDOW = "motion_window"
 CONF_BANNED_WORDS = "banned_words"

@@ -16,6 +16,7 @@
           "default_speaker": "Haut-parleur par défaut",
           "quiet_start": "Début des heures de silence",
           "quiet_end": "Fin des heures de silence",
+          "busy_entities": "Rester silencieux quand occupé",
           "motion_window": "Période de détection de présence",
           "banned_words": "Ne jamais utiliser ces mots (séparés par des virgules)",
           "suppress_entities": "Rester silencieux après ces automatisations ou scripts",
@@ -143,6 +144,7 @@
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
           "suppress_entities": "Par exemple, l’annonce de la sonnette, afin que les commentaires en arrière-plan ne la couvrent pas.",
+          "busy_entities": "Tant que l’un d’eux est activé (calendrier de réunion, interrupteur Concentration, téléphone en Ne pas déranger), Sentient retient ce qui peut attendre, comme en mode silence. Les alertes de sécurité et les réponses demandées passent toujours. Laissez vide pour désactiver.",
           "prompt_memories": "Nombre de souvenirs transmis initialement à l’assistant vocal. Les autres restent consultables.",
           "pass_through_areas": "Couloirs, paliers et escaliers. Le passage dans ces zones compte beaucoup moins pour éviter qu’une annonce soit dirigée vers une personne qui ne fait que passer.",
           "all_occupied": "Activé : toutes les personnes présentes l’entendent. Désactivé : uniquement la pièce la plus occupée.",
@@ -281,6 +283,7 @@
           "default_speaker": "Haut-parleur par défaut",
           "quiet_start": "Début des heures de silence",
           "quiet_end": "Fin des heures de silence",
+          "busy_entities": "Rester silencieux quand occupé",
           "motion_window": "Période de détection de présence",
           "banned_words": "Ne jamais utiliser ces mots (séparés par des virgules)",
           "suppress_entities": "Rester silencieux après ces automatisations ou scripts",
@@ -503,6 +506,7 @@
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
           "suppress_entities": "Par exemple, l’annonce de la sonnette, afin que les commentaires en arrière-plan ne la couvrent pas.",
+          "busy_entities": "Tant que l’un d’eux est activé (calendrier de réunion, interrupteur Concentration, téléphone en Ne pas déranger), Sentient retient ce qui peut attendre, comme en mode silence. Les alertes de sécurité et les réponses demandées passent toujours. Laissez vide pour désactiver.",
           "prompt_memories": "Nombre de souvenirs transmis initialement à l’assistant vocal. Les autres restent consultables.",
           "pass_through_areas": "Couloirs, paliers et escaliers. Le passage dans ces zones compte beaucoup moins pour éviter qu’une annonce soit dirigée vers une personne qui ne fait que passer.",
           "all_occupied": "Activé : toutes les personnes présentes l’entendent. Désactivé : uniquement la pièce la plus occupée.",
