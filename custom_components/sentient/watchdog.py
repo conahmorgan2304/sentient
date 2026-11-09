@@ -202,8 +202,10 @@ class Watchdog:
     async def async_check_cameras(self) -> None:
         from homeassistant.components.camera import CameraEntityFeature, async_get_image
 
+        from .cameras import cameras as real_cameras
+
         now = dt_util.utcnow()
-        for st in self.hass.states.async_all("camera"):
+        for st in real_cameras(self.hass, self.options):
             if st.state in ("unavailable", "unknown") or not int(st.attributes.get("supported_features", 0)) & CameraEntityFeature.STREAM:
                 continue  # snapshot cameras (one picture per detection) never "move"
             try:

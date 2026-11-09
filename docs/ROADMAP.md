@@ -175,3 +175,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.11 — Preserve camera sensor evidence, require known boundary history, resolve camera views conservatively, invalidate stale alerts/clip summaries, prevent overlapping/replayed clip analysis and expose content-free camera diagnostics. See CAMERA_SECURITY_REVIEW_09811.md.
 
 - [x] 0.98.12 — Optional Frigate event-bound evidence and clip reviews, owner-scoped security conversation references, shared compatible clip analyses and reversible event feedback with camera review suggestions. All four features have Settings switches. See SECURITY_EVENTS_09812.md.
+- [x] 0.98.13 — Cameras: extra views (HD/SD streams, screenshots, maps) are no longer counted as cameras, with a switch and a "Cameras to ignore" list. The nightly self-test no longer counts as people asking; the Mind sensor stays under the recorder's size limit; one deprecated Home Assistant call removed.

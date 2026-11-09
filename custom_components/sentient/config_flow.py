@@ -115,6 +115,8 @@ from .const import (
     DEFAULT_WEEKLY_REPORT,
     CONF_BATTERY_THRESHOLD,
     CONF_HEALTH_IGNORE,
+    CONF_HIDE_SUBSTREAMS,
+    CONF_IGNORE_CAMERAS,
     CONF_NEVER_ENTITIES,
     CONF_SELF_CHECK,
     CONF_SELF_ADJUST,
@@ -702,6 +704,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_BATTERY_FORECAST, **d(CONF_BATTERY_FORECAST, True)): selector.BooleanSelector(),
             vol.Optional(CONF_HEALTH_IGNORE, **d(CONF_HEALTH_IGNORE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Required(CONF_HIDE_SUBSTREAMS, **d(CONF_HIDE_SUBSTREAMS, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_IGNORE_CAMERAS, **d(CONF_IGNORE_CAMERAS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="camera", multiple=True)
             ),
             vol.Optional(CONF_NEVER_ENTITIES, **d(CONF_NEVER_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(multiple=True)

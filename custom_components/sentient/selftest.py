@@ -226,6 +226,8 @@ class SelfTest:
                 )
                 answer = result.response.speech.get("plain", {}).get("speech", "") or ""
                 tools = self._tools_used(result.conversation_id)
+                if result.conversation_id:
+                    rt.conversations.drop(result.conversation_id)  # HA gave it its own id: not a person talking
             except Exception as err:  # noqa: BLE001
                 answer = f"(no answer: {err})"
             right, expected = q.check(answer)

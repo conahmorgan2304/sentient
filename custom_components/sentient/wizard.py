@@ -155,7 +155,9 @@ def suggest(hass: HomeAssistant, options: dict[str, Any], own_agent: str | None)
     if own_agent:
         out[CONF_CHAT_AGENT] = own_agent
 
-    cams = [s for s in states.async_all("camera") if _usable(hass, s.entity_id)]
+    from .cameras import cameras as real_cameras
+
+    cams = [s for s in real_cameras(hass, options) if _usable(hass, s.entity_id)]
     door = next((c.entity_id for c in cams if DOOR_NAMES.search(f"{c.entity_id} {c.name}")), None)
     if door:
         out[CONF_DOOR_CAMERA] = door
