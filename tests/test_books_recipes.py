@@ -317,3 +317,25 @@ async def test_next_piece_made_while_this_one_is_read(hass: HomeAssistant, tmp_p
     orig("Another piece.", "assist_satellite.bedroom")
     await hass.async_block_till_done()
     assert len(made) == n  # off: nothing made ahead
+
+
+def test_damaged_and_oversized_books_give_no_text_instead_of_crashing(tmp_path, monkeypatch):
+    import zipfile
+
+    from custom_components.sentient import books
+
+    broken = tmp_path / "broken.epub"
+    broken.write_bytes(b"not a zip file")
+    assert books.read_chapters(str(broken)) == []
+
+    no_package = tmp_path / "nopackage.epub"
+    with zipfile.ZipFile(no_package, "w") as z:
+        z.writestr("META-INF/container.xml", "<container></container>")
+    assert books.read_chapters(str(no_package)) == []
+
+    big = tmp_path / "big.txt"
+    big.write_text("word " * 100)
+    monkeypatch.setattr(books, "MAX_BOOK_BYTES", 10)
+    assert books.read_chapters(str(big)) == []
+    monkeypatch.setattr(books, "MAX_BOOK_BYTES", 10_000)
+    assert books.read_chapters(str(big))

@@ -14,6 +14,7 @@ house's own audio files, so through an Echo an ebook comes one passage per reque
 from __future__ import annotations
 
 import asyncio
+import logging
 from html.parser import HTMLParser
 import os
 import posixpath
@@ -32,6 +33,10 @@ from .const import CONF_BOOKS, CONF_BOOKS_FOLDER, DEFAULT_BOOKS_FOLDER, DOMAIN
 STORAGE_VERSION = 1
 EBOOK = {".epub", ".txt"}
 AUDIO = {".mp3": "audio/mpeg", ".m4b": "audio/mp4", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".opus": "audio/ogg"}
+_LOGGER = logging.getLogger(__name__)
+
+MAX_BOOK_BYTES = 30 * 1024 * 1024  # a book longer than this is refused rather than loaded into memory
+MAX_PART_BYTES = 8 * 1024 * 1024  # one chapter file inside an epub
 PASSAGE_CHARS = 700  # about 45 seconds of speech
 _WORD = re.compile(r"[a-z0-9]+")
 
@@ -69,7 +74,18 @@ def _html_text(html: str) -> str:
 
 
 def read_chapters(path: str) -> list[dict[str, Any]]:
-    """[{title, passages: [str]}] for an .epub or .txt file."""
+    """[{title, passages: [str]}] for an .epub or .txt file; empty when it is too big or can't be read."""
+    try:
+        if os.path.getsize(path) > MAX_BOOK_BYTES:
+            _LOGGER.warning("Book %s is over %d MB and was skipped", os.path.basename(path), MAX_BOOK_BYTES // 1024 // 1024)
+            return []
+        return _read_chapters(path)
+    except (OSError, zipfile.BadZipFile, KeyError, AttributeError, ValueError) as err:
+        _LOGGER.warning("Couldn't read book %s: %s", os.path.basename(path), err)
+        return []
+
+
+def _read_chapters(path: str) -> list[dict[str, Any]]:
     chapters: list[tuple[str, str]] = []
     if path.lower().endswith(".txt"):
         with open(path, encoding="utf-8", errors="replace") as f:
@@ -81,7 +97,10 @@ def read_chapters(path: str) -> list[dict[str, Any]]:
     else:
         with zipfile.ZipFile(path) as z:
             container = z.read("META-INF/container.xml").decode("utf-8", "replace")
-            opf_path = re.search(r'full-path="([^"]+)"', container).group(1)
+            found = re.search(r'full-path="([^"]+)"', container)
+            if found is None:
+                raise ValueError("no package file listed in the epub")
+            opf_path = found.group(1)
             opf = z.read(opf_path).decode("utf-8", "replace")
             base = posixpath.dirname(opf_path)
             manifest = {m.group(1): m.group(2) for m in re.finditer(r'<item\b[^>]*\bid="([^"]+)"[^>]*\bhref="([^"]+)"', opf)}
@@ -90,8 +109,11 @@ def read_chapters(path: str) -> list[dict[str, Any]]:
                 href = manifest.get(idref)
                 if not href:
                     continue
+                member = posixpath.normpath(posixpath.join(base, href))
                 try:
-                    html = z.read(posixpath.normpath(posixpath.join(base, href))).decode("utf-8", "replace")
+                    if z.getinfo(member).file_size > MAX_PART_BYTES:
+                        continue  # a chapter that big is not text
+                    html = z.read(member).decode("utf-8", "replace")
                 except KeyError:
                     continue
                 text = _html_text(html)
