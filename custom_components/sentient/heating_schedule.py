@@ -16,6 +16,7 @@ from .const import CONF_HEATING_ENTITIES, CONF_HEATING_SCHEDULE
 
 MIN_TEMP = 5.0
 MAX_TEMP = 28.0
+ON_MODES = ("heat", "heat_cool", "auto")  # what to switch an 'off' thermostat to, in order of preference
 
 
 def enabled(options: dict[str, Any]) -> bool:
@@ -41,7 +42,14 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], "The temperature must be a number"
     if not MIN_TEMP <= degrees <= MAX_TEMP:
         return [], f"The temperature must be between {MIN_TEMP:g}° and {MAX_TEMP:g}°"
-    return [{"action": "climate.set_temperature", "target": target, "data": {"temperature": degrees}}], None
+    data: dict[str, Any] = {"temperature": degrees}
+    st = hass.states.get(entity_id)
+    if st is not None and st.state == "off":
+        # a temperature alone doesn't wake a thermostat that is off (an earlier "off" time may have done that)
+        modes = list(st.attributes.get("hvac_modes") or [])
+        if mode := next((m for m in ON_MODES if m in modes), None):
+            data["hvac_mode"] = mode
+    return [{"action": "climate.set_temperature", "target": target, "data": data}], None
 
 
 def describe(hass: HomeAssistant, spec: dict[str, Any]) -> str:

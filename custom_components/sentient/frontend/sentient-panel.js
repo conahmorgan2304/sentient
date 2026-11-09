@@ -381,7 +381,7 @@
       R("minc").innerHTML = incidentRows ? this._h("SECURITY INCIDENTS", "") + incidentRows : "";
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
-      this._loadInner();
+      if (this._view === "mind") this._loadInner();
       this._drawBrain(mind, ai);
       this._drawAppliances(mind.appliances || []);
 
