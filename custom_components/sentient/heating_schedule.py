@@ -228,3 +228,28 @@ class HeatingProgrammes:
         if done and rt is not None:
             rt.timeline.add("mode", "Heating schedule: " + ", ".join(done), name)
         return done
+
+
+def suggest(zones: list[str], wake: dict[str, int | None], learned: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """A starting schedule from what's been learned: warm by when people usually get up (started early enough for
+    how fast the house warms), off a couple of hours later on weekdays, back on for the evening. A suggestion only:
+    nothing is saved until someone says so."""
+    if not zones:
+        return []
+    rates = [r for z in zones if (r := (learned.get(z) or {}).get("rate"))]
+    comforts = [c for z in zones if (c := (learned.get(z) or {}).get("comfort"))]
+    temp = max(19.0, round(sum(comforts) / len(comforts) * 2) / 2) if comforts else 20.0
+    rate = sum(rates) / len(rates) if rates else 1.0
+    lead = max(30, min(90, round(2 / max(rate, 0.3) * 60 / 15) * 15))  # about two degrees' warming, to the quarter-hour
+
+    def hhmm(minute: int) -> str:
+        minute %= 1440
+        return f"{minute // 60:02d}:{minute % 60:02d}"
+    wd = wake.get("weekdays") or 6 * 60 + 30
+    we = wake.get("weekends") or 8 * 60
+    return [
+        {"name": "Weekdays (suggested)", "heaters": list(zones), "days": list(DAYS[:5]), "enabled": True,
+         "periods": [{"on": hhmm(wd - lead), "off": hhmm(wd + 120), "temp": temp}, {"on": "17:00", "off": "22:00", "temp": temp}]},
+        {"name": "Weekends (suggested)", "heaters": list(zones), "days": list(DAYS[5:]), "enabled": True,
+         "periods": [{"on": hhmm(we - lead), "off": "22:00", "temp": temp}]},
+    ]

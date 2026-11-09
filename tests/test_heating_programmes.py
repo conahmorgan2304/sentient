@@ -120,3 +120,33 @@ async def test_schedule_takes_over_from_a_hand_boost(hass: HomeAssistant, freeze
     rt.heating._boosted[LOUNGE] = {"origin": "limit", "status": "active", "until": "2099-01-01T00:00:00+00:00"}
     done = await rt.heat_prog.async_run([(LOUNGE, "on", 21.0, "Weekdays")], at(0, 6, 0))
     assert done and LOUNGE not in rt.heating._boosted  # its "put it back later" would undo the schedule
+
+
+def test_a_suggested_schedule_from_what_was_learned():
+    from custom_components.sentient.heating_schedule import suggest
+
+    progs = suggest([LOUNGE], {"weekdays": 6 * 60 + 30, "weekends": 8 * 60}, {LOUNGE: {"rate": 1.0, "comfort": 20.5}})
+    wd, we = progs
+    assert wd["days"] == WEEKDAYS and wd["periods"][0] == {"on": "05:00", "off": "08:30", "temp": 20.5}
+    assert we["periods"][0]["on"] == "06:30" and we["periods"][0]["off"] == "22:00"
+    for p in progs:  # each one passes the same checks as one made by hand
+        clean_programme(OPTS, p)
+    assert suggest([], {}, {}) == []
+
+
+async def test_stop_watching_and_memory_check_up_over_the_websocket(hass: HomeAssistant, hass_ws_client, hass_admin_user):
+    entry = await _setup(hass, notice_entities=["sensor.kettle", "sensor.window"])
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/notice/unwatch", "entity_id": "sensor.kettle"})
+    assert (await ws.receive_json())["result"]["notice_entities"] == ["sensor.window"]
+    await hass.async_block_till_done()
+    assert entry.options["notice_entities"] == ["sensor.window"]
+    mem = entry.runtime_data.memory
+    a = mem.add("Keep the hall light on at night", "preference")
+    mem.pin(a.id)
+    mem.add("Keep the hall light off at night", "preference")
+    await ws.send_json({"id": 2, "type": "sentient/memory/review"})
+    pairs = (await ws.receive_json())["result"]["pairs"]
+    assert pairs and pairs[0]["kind"] == "conflict"
+    await ws.send_json({"id": 3, "type": "sentient/memory/resolve", "pair": pairs[0]["pair"], "keep": a.id})
+    assert (await ws.receive_json())["result"]["ok"] and [m.text for m in mem.items] == ["Keep the hall light on at night"]

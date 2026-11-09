@@ -273,6 +273,7 @@ class Noticer:
         record: dict[str, Any] = {
             "time": dt_util.now().isoformat(),
             "changes": [c.describe() for c in changes],
+            "entities": sorted({c.entity_id for c in changes}),
         }
         self.decisions.appendleft(record)
         if reason := self._free_rules():

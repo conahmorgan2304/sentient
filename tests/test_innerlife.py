@@ -216,3 +216,14 @@ async def test_bedroom_sensors_stirring_dont_wake_the_house(hass, freezer):
         sleep._changed(ev("binary_sensor.kitchen"))  # someone really up
         await hass.async_block_till_done()
         sleep.async_set.assert_called_once()
+
+
+async def test_spots_what_it_keeps_deciding_isnt_worth_saying(hass):
+    from types import SimpleNamespace as NS
+
+    hass.states.async_set("sensor.kettle", "standby", {"friendly_name": "Kettle status"})
+    items = [{"kind": "noticed", "detail": "noticed, decided it wasn't worth saying", "entities": ["sensor.kettle"]}] * 14
+    items += [{"kind": "noticed", "detail": "noticed, decided it wasn't worth saying", "entities": ["sensor.window"]}] * 3
+    rt = NS(timeline=NS(since=lambda h, kinds, limit: items))
+    inner = _inner(hass, rt, notice_entities=["sensor.kettle", "sensor.window"])
+    assert inner.noisy() == [{"entity_id": "sensor.kettle", "name": "Kettle status", "times": 14}]

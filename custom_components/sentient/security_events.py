@@ -60,12 +60,17 @@ def normal_event(data):
             "has_snapshot": data.get("has_snapshot") is True, "has_clip": data.get("has_clip") is True}
 
 
+PARKABLE = {"car", "bicycle", "motorcycle", "boat", "truck", "bus", "van"}
+PARKED_WITHIN = 30 * 60  # seconds: the same kind of vehicle found again this soon on the same camera is the same one
+
+
 class SecurityEvents:
     def __init__(self, hass, entry_id, options, runtime):
         self.hass, self.options, self.runtime = hass, options, runtime
         self._store = Store(hass, 1, f"sentient.{entry_id}.security_events")
         self.items = {}
         self._focus = {}
+        self._parked_seen = {}  # (camera, label) -> when a vehicle was last seen there (a parked bike keeps being re-found)
         self._generation = 0
         self._stopped = False
         self._unsub = None
@@ -212,10 +217,24 @@ class SecurityEvents:
         self.items[event["id"]] = event
         self._save()
         rt = self.runtime()
-        if self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
+        if self._parked(event, data):
+            event["parked"] = True
+            self.items[event["id"]] = event
+        elif self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
             rt.incidents.add(f"camera.{event['camera']}", f"Frigate reported {event['label']}", "event",
                              when=dt_util.utc_from_timestamp(event["start"]), event_id=event["id"])
         return deepcopy(event)
+
+    def _parked(self, event, data) -> bool:
+        """A vehicle that hasn't moved — a bike or car parked in view — keeps being 'found' all day. Those are
+        noted but kept out of incidents, the linked-events timeline and alerts. People always count."""
+        if event["label"] not in PARKABLE:
+            return False
+        key, now = (event["camera"], event["label"]), event["start"]
+        last = self._parked_seen.get(key)
+        self._parked_seen[key] = max(now, last or 0)
+        still = isinstance(data, dict) and (data.get("stationary") is True or data.get("position_changes") == 0 and (data.get("motionless_count") or 0) > 0)
+        return bool(still or (last is not None and 0 <= now - last <= PARKED_WITHIN))
 
     async def async_event(self, camera, event_id):
         """Fetch this exact event, never the latest event in place of it."""
@@ -343,7 +362,10 @@ class SecurityEvents:
         if not self.tracking:
             return []
         self._prune()
-        return [self.describe(row) for row in self.items.values() if row["camera"] in self.cameras()][:12]
+        rows = [row for row in self.items.values() if row["camera"] in self.cameras()]
+        # a parked bike re-found all day mustn't push real sightings off the list
+        rows = [r for r in rows if not r.get("parked")] + [r for r in rows if r.get("parked")]
+        return [self.describe(row) for row in rows[:12]]
 
     def feedback_summary(self):
         if not self.on(CONF_EVENT_FEEDBACK):

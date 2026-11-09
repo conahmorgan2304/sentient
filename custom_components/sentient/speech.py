@@ -25,7 +25,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_ALEXA_TTS_ONLY, CONF_READ_AHEAD, CONF_READING_TTS, CONF_READING_VOICE
@@ -368,9 +368,11 @@ class SpeechRouter:
             area_id = self._area_of(speaker)
             area = areas.async_get_area(area_id) if area_id else None
             state = self.hass.states.get(speaker)
-            friendly = (state.attributes.get("friendly_name") or "") if state else ""
+            friendly = (state.name or "") if state else ""  # the composed name (2026.11 naming), not the old attribute
             object_id = speaker.split(".", 1)[-1]
-            names = [n for n in (friendly, area.name if area else "", object_id) if n]
+            reg = er.async_get(self.hass).async_get(speaker)
+            aliases = [a for a in (reg.aliases if reg else ()) if isinstance(a, str)]  # what people call it in Assist
+            names = [n for n in (friendly, area.name if area else "", object_id, *aliases) if n]
             literal = {self._squash(n) for n in names}
             exact = literal | {self._core(n) for n in names}
             exact.discard("")
@@ -399,7 +401,7 @@ class SpeechRouter:
             area_id = self._area_of(speaker)
             area = areas.async_get_area(area_id) if area_id else None
             state = self.hass.states.get(speaker)
-            friendly = state.attributes.get("friendly_name") if state else None
+            friendly = state.name if state else None
             parts.append(f"{speaker} ({friendly or 'unnamed'}, {area.name if area else 'no area'})")
         return ", ".join(parts)
 

@@ -66,3 +66,9 @@ async def test_named_echo_is_used_even_when_echos_are_important_only(hass: HomeA
     ):
         await router.async_say("Dinner is ready", "normal", [KITCHEN_ECHO], source="conversation")
     assert [c.data["target"] for c in calls] == [KITCHEN_ECHO]
+
+
+async def test_an_assist_alias_finds_the_speaker(hass: HomeAssistant) -> None:
+    router = _setup(hass, [LIVING_ECHO, KITCHEN_ECHO, KITCHEN_SAT])
+    er.async_get(hass).async_update_entity(KITCHEN_ECHO, aliases={"big echo"})
+    assert router.find_speaker("big echo") == KITCHEN_ECHO

@@ -548,6 +548,42 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], out)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/memory/review"})
+@page_access
+@callback
+def ws_memory_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Memories to look at: ones that contradict each other, or say the same thing twice."""
+    entry = _entry(hass)
+    connection.send_result(msg["id"], {"pairs": entry.runtime_data.memory.review() if entry is not None else []})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/memory/resolve", vol.Required("pair"): str,
+                                  vol.Optional("keep"): vol.Any(str, None)})
+@websocket_api.require_admin
+@callback
+def ws_memory_resolve(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    ok = bool(entry is not None and entry.runtime_data.memory.resolve(msg["pair"], msg.get("keep")))
+    connection.send_result(msg["id"], {"ok": ok})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/notice/unwatch", vol.Required("entity_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_notice_unwatch(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Stop noticing one thing (from the Mind page's 'I keep deciding this isn't worth saying')."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    options = _current(entry)
+    watched = list(options.get(CONF_NOTICE_ENTITIES) or [])
+    if msg["entity_id"] in watched:
+        watched.remove(msg["entity_id"])
+        hass.config_entries.async_update_entry(entry, options={**options, CONF_NOTICE_ENTITIES: watched})
+    connection.send_result(msg["id"], {"notice_entities": watched})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/inner"})
 @page_access
 @callback
@@ -628,7 +664,11 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     for z in zones:
         p = wanted_on(progs, z["entity_id"], now)
         z["scheduled"] = {"on": True, "until": p["off"], "temp": p["temp"]} if p else {"on": False}
+    from .heating_schedule import suggest
+
+    suggested = [] if progs else suggest(list(rt.heating.entities), dict(rt.heating.wake or {}), dict(rt.heating.zones or {}))
     connection.send_result(msg["id"], {
+        "suggested": suggested,
         "programmes": sorted(progs, key=lambda p: p["name"].lower()), "next": next_change(progs, now) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
@@ -838,6 +878,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
+    websocket_api.async_register_command(hass, ws_notice_unwatch)
+    websocket_api.async_register_command(hass, ws_memory_review)
+    websocket_api.async_register_command(hass, ws_memory_resolve)
     websocket_api.async_register_command(hass, ws_today)
     websocket_api.async_register_command(hass, ws_heating_programme_save)
     websocket_api.async_register_command(hass, ws_heating_programme_delete)
