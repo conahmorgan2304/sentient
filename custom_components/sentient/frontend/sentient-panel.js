@@ -128,8 +128,9 @@
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden>
-          <div class="lanes mp2">
-            <section class="lane" aria-label="Heating, energy and appliances"><div class="lt">HEATING, ENERGY &amp; APPLIANCES</div><div id="heat" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
+          <div class="lanes ov3">
+            <section class="lane" aria-label="Heating"><div class="lt">HEATING</div><div id="heat" class="card"></div></section>
+            <section class="lane" aria-label="Energy and appliances"><div class="lt">ENERGY &amp; APPLIANCES</div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
             <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
@@ -2283,7 +2284,33 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
   .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
   .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
+/* Tablet and up: Overview, House, Mind and Security fit the screen. The cards share the height with no gaps,
+   and a long list scrolls inside its own card (no visible scroll bar). Small or short screens keep the flowing page. */
+@media (min-width: 900px) and (min-height: 520px){
+  :host([view="overview"]),:host([view="house"]),:host([view="mind"]),:host([view="security"]){overflow-y:hidden}
+  #ov,#hp,#mp,#scp{height:calc(100vh - 56px);height:calc(100dvh - 56px);display:flex;flex-direction:column;gap:10px;padding:10px 12px}
+  #ov>*,#mp>*{margin-top:0}
+  #ov>.card.head,#ov>.warnbar,#mp>.warnbar,#mp>.brain{flex:none;margin:0}
+  .lanes{flex:1 1 auto;min-height:0;margin-top:0;gap:10px;align-items:stretch !important}
+  .lanes{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+  .ov3>.lane:nth-child(3){display:flex !important;grid-column:auto !important}
+  .lane{gap:10px;min-height:0;overflow:hidden}
+  .lanes>.lane:not(:has(>.card:not([hidden]))){display:none !important}
+  .lane>.lt{flex:none;margin:0 4px -2px}
+  .lane>.card,.lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding:10px 12px}
+  .lane>.card::-webkit-scrollbar{display:none}
+  .card .h{margin-bottom:7px}
+  .r{padding:5px 9px;margin-bottom:4px}
+  .head{gap:14px;padding:10px 14px}
+  .head img{width:84px;height:84px;border-radius:14px}
+  .ti{font-size:21px}
+  .st{margin-top:7px}
+  .s{padding:5px 8px}
+  .s .n{font-size:17px}
+  .brh{gap:16px}
+  .wbars{min-height:70px}
+  .tchips{margin-top:8px}
+}
 `;
-
   customElements.define("sentient-panel", SentientPanel);
 })();
