@@ -1446,26 +1446,31 @@
       const stream = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
       const key = cam + "|" + stream;
       const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
-      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a></div>`;
+      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
       const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
-      if (this._liveCamKey !== cam || !el.querySelector(".lv")) {
-        // Home Assistant's own camera card streams live (WebRTC where the camera offers it, which Frigate's go2rtc
-        // does) with no lag; the plain picture stream is the fallback if the card can't be made
-        this._liveCamKey = cam;
+      // the plain picture stream works for every camera; Home Assistant's own player (smoother, WebRTC/HLS) is
+      // opt-in per camera, because a stream it can't play (an H.265 camera, a restream it can't reach) shows black
+      let smooth = false;
+      try { smooth = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam); } catch (e) { /* storage off */ }
+      const canSmooth = ((st.attributes.supported_features || 0) & 2) === 2;
+      const mode = cam + "|" + (smooth && canSmooth ? "smooth" : "picture");
+      if (this._liveCamKey !== mode || !el.querySelector(".lv")) {
+        this._liveCamKey = mode;
         this._liveKey = key;
+        this._liveCard = null;
         el.innerHTML = head + `<div class="lv"><div class="lvc"></div><div class="lvo">${badge}</div></div>` + chips;
         const holder = el.querySelector(".lvc");
-        const fallback = () => { holder.innerHTML = `<img alt="" src="${esc(stream)}">`; };
-        if (window.loadCardHelpers) {
+        const picture = () => { holder.innerHTML = `<img alt="" src="${esc(stream)}">`; };
+        if (smooth && canSmooth && window.loadCardHelpers) {
           window.loadCardHelpers().then((helpers) => {
-            if (this._liveCamKey !== cam) return;
+            if (this._liveCamKey !== mode) return;
             const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
             card.hass = this._hass;
             this._liveCard = card;
             holder.innerHTML = "";
             holder.appendChild(card);
-          }, fallback);
-        } else fallback();
+          }, picture);
+        } else picture();
       } else {
         if (this._liveCard) this._liveCard.hass = this._hass;
         const img = el.querySelector(".lvc img");
@@ -1884,6 +1889,13 @@
       else if (act === "unwatch") this._hass.callWS({ type: "sentient/notice/unwatch", entity_id: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "innerno") this._hass.callWS({ type: "sentient/inner/dismiss", key: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "livecam") { this._liveCam = id; this._liveFollow = false; this._render(); }
+      else if (act === "livesmooth") {
+        try {
+          const list = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]");
+          localStorage.setItem("sentient-live-smooth", JSON.stringify(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
+        } catch (e) { /* storage off: stays on the picture stream */ }
+        this._render();
+      }
       else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
