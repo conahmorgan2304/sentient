@@ -455,6 +455,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await tracker.async_start()
     entry.async_on_unload(tracker.async_stop)
     speech = SpeechRouter(hass, options, tracker)
+    await speech.async_load_remarks(entry.entry_id)
     ai = AIGate(hass, entry.entry_id, options)
     await ai.async_start()
     watches = WatchManager(hass, entry.entry_id, options, speech)

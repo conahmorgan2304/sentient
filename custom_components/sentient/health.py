@@ -8,6 +8,7 @@ blip doesn't count.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 from typing import Any, Callable
 
@@ -32,6 +33,18 @@ RECHECK = timedelta(hours=6)
 SPEECH_FAILED_FOR = timedelta(hours=6)  # a speaker that failed shows until it works again, or this long
 STUCK_ON = timedelta(hours=6)  # a motion sensor "on" this long is stuck
 STUCK_QUIET = timedelta(days=3)  # ...or one that's seen nothing this long while others have
+
+
+_PERSONAL = re.compile(r"\b(phone|iphone|smartphone|mobile|pixel|galaxy|ipad|watch)\b", re.I)
+
+
+def _personal_device(hass, state, entry, ent_reg) -> bool:
+    """A phone or watch by another app (not only the companion app): named as one, or a device that is tracked."""
+    if _PERSONAL.search(f"{state.name} {state.entity_id.split('.', 1)[1].replace('_', ' ')}"):
+        return True
+    if entry is not None and entry.device_id:
+        return any(e.domain == "device_tracker" for e in er.async_entries_for_device(ent_reg, entry.device_id))
+    return False
 
 
 class HouseHealth:
@@ -170,7 +183,7 @@ class HouseHealth:
             if st.entity_id in ignore or st.attributes.get("device_class") != "battery":
                 continue
             entry = ent_reg.async_get(st.entity_id)
-            if entry is not None and entry.platform == "mobile_app":
+            if entry is not None and entry.platform == "mobile_app" or _personal_device(self.hass, st, entry, ent_reg):
                 continue  # phones and tablets charge every day: not a house problem
             if st.domain == "sensor":
                 from .numeric import finite_float
