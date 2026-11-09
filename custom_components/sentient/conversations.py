@@ -50,6 +50,34 @@ ACTION_WORDS = {
     "HassSetVolume": "Set the volume of", "HassMediaNext": "Skipped on",
 }
 
+SELFTEST_QUESTIONS = frozenset({
+    "what's the temperature outside right now?", "is anything open?", "what reminders have i got?",
+    "is the alarm on?", "what time is it?",
+})
+
+
+def drop_selftest_bursts(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Remove the self-test's questions from history: three or more of its questions within a minute."""
+    def first(ep: dict[str, Any]) -> str:
+        return next((t["text"] for t in ep.get("turns", []) if t.get("who") == "them"), "").strip().lower()
+
+    marked = sorted((e for e in episodes if first(e) in SELFTEST_QUESTIONS), key=lambda e: e["start"])
+    doomed: set[int] = set()
+    group: list[dict[str, Any]] = []
+
+    def close() -> None:
+        if len({first(e) for e in group}) >= 3:
+            doomed.update(id(e) for e in group)
+
+    for ep in marked:
+        if group and (dt_util.parse_datetime(ep["start"]) - dt_util.parse_datetime(group[-1]["start"])).total_seconds() > 60:
+            close()
+            group = []
+        group.append(ep)
+    close()
+    return [e for e in episodes if id(e) not in doomed]
+
+
 class Conversations:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
         self.hass = hass
@@ -66,6 +94,9 @@ class Conversations:
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
         self.episodes = data.get("episodes", [])
+        if (kept := drop_selftest_bursts(self.episodes)) != self.episodes:
+            self.episodes = kept  # older versions kept the nightly self-test as if people had asked
+            self._save()
         try:
             from homeassistant.components.conversation.chat_log import async_subscribe_chat_logs
         except ImportError:  # older Home Assistant: nothing to listen to
