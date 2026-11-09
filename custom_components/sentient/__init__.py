@@ -577,7 +577,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     noticer.skip = appliances.handled  # appliances (and the rest of their device) say "finished" themselves, without the AI
     shortcuts.on_run = sleep.routine_ran
     speech.on_unheard = followyou.unheard
-    welcome = Welcome(hass, options, lambda: entry.runtime_data)
+    welcome = Welcome(hass, options, lambda: entry.runtime_data, entry.entry_id)
+    await welcome.async_load()
     evidence = Evidence(hass, entry.entry_id, options)
     await evidence.async_start()
     entry.async_on_unload(evidence.async_stop)
