@@ -108,22 +108,15 @@ test('an offline gate is unconfirmed, and open doors and triggered alarms remain
   assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
 });
 
-test('replay shows exact elapsed time, a recorded coverage gap and the selected clip', () => {
+test('camera pipeline health remains visible on the Security page', () => {
   const panel = new Panel(), el = { querySelector: () => null };
-  panel._$ = (id) => id === "replay" ? el : null;
-  panel._replayOpen = true;
-  panel._replayData = { enabled: true, points: {'camera.shed': [65, 20]}, image: '/local/floorplan.png', incidents: [],
-    selected: { id: 'abc', start: '2026-11-09T21:14:00Z', label: 'Gate and Shed', steps: [
-      { offset: 0, source: 'binary_sensor.gate', kind: 'contact', name: 'Gate', text: 'Opened' },
-      { offset: 12, source: 'camera.shed', kind: 'event', name: 'Shed', text: 'Person reported',
-        gaps: [{entity: 'camera.garden', name: 'Garden', state: 'unavailable'}],
-        clip: '/api/frigate/notifications/123.event/clip.mp4' },
-    ] } };
-  panel._replayStep = 1;
-  panel._drawReplay();
-  assert.match(el.innerHTML, /left:65%;top:20%/);
-  assert.match(el.innerHTML, /Garden · unavailable/);
-  assert.match(el.innerHTML, /\+12s/);
-  assert.match(el.innerHTML, /123\.event\/clip\.mp4/);
-  assert.match(el.innerHTML, /route unconfirmed/);
+  panel._$ = (id) => id === "frigatehealth" ? el : null;
+  panel._drawFrigateHealth({ enabled: true, availability: "online", stats_fresh: true, cameras: [
+    { name: "Shed", processing: "reporting", process_fps: 5, ha_report: "idle" },
+    { name: "Garden", processing: "zero_rate", ha_report: "idle" },
+  ] });
+  assert.equal(el.hidden, false);
+  assert.match(el.innerHTML, /Shed.*5.0 FPS PROCESSING/);
+  assert.match(el.innerHTML, /Garden.*ZERO PROCESSING RATE/);
+  assert.match(el.innerHTML, /none received this session/);
 });

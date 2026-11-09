@@ -18,7 +18,6 @@ from .const import CONF_RECOVERY
 from .household_tasks import CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS
 from .incidents import CONF_COVERAGE
 from .frigate_health import CONF_FRIGATE_HEALTH
-from .incident_replay import CONF_REPLAY, CONF_REPLAY_IMAGE, CONF_REPLAY_POINTS, CONF_REPLAY_TABLET
 from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK
@@ -479,12 +478,6 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_EVENT_EVIDENCE, **d(CONF_EVENT_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_COVERAGE, **d(CONF_COVERAGE, False)): selector.BooleanSelector(),
             vol.Required(CONF_FRIGATE_HEALTH, **d(CONF_FRIGATE_HEALTH, False)): selector.BooleanSelector(),
-            vol.Required(CONF_REPLAY, **d(CONF_REPLAY, False)): selector.BooleanSelector(),
-            vol.Optional(CONF_REPLAY_IMAGE, **d(CONF_REPLAY_IMAGE, "")): selector.TextSelector(),
-            vol.Optional(CONF_REPLAY_POINTS, **d(CONF_REPLAY_POINTS, {})): selector.ObjectSelector(),
-            vol.Optional(CONF_REPLAY_TABLET, **d(CONF_REPLAY_TABLET)): selector.DeviceSelector(
-                selector.DeviceSelectorConfig(integration="fully_kiosk")
-            ),
             vol.Required(CONF_EVENT_CONTEXT, **d(CONF_EVENT_CONTEXT, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_FEEDBACK, **d(CONF_EVENT_FEEDBACK, False)): selector.BooleanSelector(),
             vol.Required(CONF_SHARED_CLIPS, **d(CONF_SHARED_CLIPS, False)): selector.BooleanSelector(),
