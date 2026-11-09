@@ -510,8 +510,11 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         out["weather"] = {"condition": w.state, "temp": w.attributes.get("temperature"), "unit": w.attributes.get("temperature_unit"),
                           "humidity": w.attributes.get("humidity"), "wind": w.attributes.get("wind_speed")}
     people = []
+    trackers = list(opts.get("welcome_people") or [])  # a phone chosen for welcome home is better evidence than a person who never leaves
     for st in hass.states.async_all("person"):
-        people.append({"name": st.name, "home": st.state == "home", "where": st.state})
+        mine = [t for t in st.attributes.get("device_trackers") or [] if t in trackers]
+        where = hass.states.get(mine[0]).state if mine and hass.states.get(mine[0]) is not None else st.state
+        people.append({"name": st.name, "home": where == "home", "where": where})
     if not people:
         for eid in opts.get("welcome_people") or []:
             if (st := hass.states.get(eid)) is not None:

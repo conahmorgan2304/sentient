@@ -98,3 +98,16 @@ async def test_runs_on_and_off_through_the_page(hass: HomeAssistant, freezer, ha
     await hass.async_block_till_done(wait_background_tasks=True)
     assert len(temps) == 1
     assert entry.runtime_data.heat_prog.items.remove(saved["id"])
+
+
+async def test_today_for_the_overview_and_screen(hass: HomeAssistant, hass_ws_client, hass_admin_user):
+    await _setup(hass, briefing_weather="weather.home", welcome_people=["device_tracker.phone"])
+    hass.states.async_set("weather.home", "rainy", {"temperature": 9, "temperature_unit": "°C"})
+    hass.states.async_set("device_tracker.phone", "not_home")
+    hass.states.async_set("person.sam", "home", {"friendly_name": "Sam", "device_trackers": ["device_tracker.phone"]})
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/today"})
+    out = (await ws.receive_json())["result"]
+    assert out["weather"]["temp"] == 9
+    assert out["people"] == [{"name": "Sam", "home": False, "where": "not_home"}]  # the phone, not the always-home person
+    assert {z["name"] for z in out["heating"]["zones"]} == {"Lounge", "Bedroom"}

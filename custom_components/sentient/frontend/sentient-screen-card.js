@@ -43,12 +43,20 @@
     connectedCallback() {
       this._clock = setInterval(() => this._drawClock(), 10000);
       this._cam = setInterval(() => this._refreshCamera(), 1500);
+      this._todayTimer = setInterval(() => this._loadToday(), 60000);
+      this._loadToday();
     }
-    disconnectedCallback() { clearInterval(this._clock); clearInterval(this._cam); }
+    _loadToday() {
+      if (!this._hass) return;
+      this._todayAt = Date.now();
+      this._hass.callWS({ type: "sentient/today" }).then((r) => { this._today = r; this._sig = ""; this.hass = this._hass; }, () => {});
+    }
+    disconnectedCallback() { clearInterval(this._clock); clearInterval(this._cam); clearInterval(this._todayTimer); }
 
     set hass(h) {
       this._hass = h;
       if (!this.shadowRoot) this._build();
+      if (!this._todayAt) this._loadToday();
       const ids = this._ids();
       const wx = this._weather();
       const sig = [...KEYS.map((k) => (ids[k] && h.states[ids[k]] ? h.states[ids[k]].last_updated : "")),
@@ -186,14 +194,25 @@
           return { icon: g.icon || (st && st.attributes.icon) || "mdi:information-outline", val: st ? `${st.state}${unit}` : "–", label: String(g.name || (st && st.attributes.friendly_name) || id).toUpperCase(), more: id };
         }),
       ];
-      return `<div class="idle"><div class="tiles">${tiles.map((t) => `<div class="tile ${esc(t.cls || "")}"${t.more ? ` data-more="${esc(t.more)}"` : ""}><ha-icon icon="${esc(t.icon)}"></ha-icon><b>${esc(t.val)}</b><i>${esc(t.label)}</i></div>`).join("")}</div>
+      const t = this._today || {};
+      const hz = ((t.heating || {}).zones || [])[0];
+      if (hz && hz.now != null) tiles.splice(1, 0, { icon: hz.action === "heating" ? "mdi:radiator" : "mdi:thermometer", val: `${Math.round(hz.now * 10) / 10}°`, label: hz.state === "off" ? "INSIDE · HEATING OFF" : `INSIDE · SET ${hz.target ?? "–"}°`, cls: hz.action === "heating" ? "warm" : "" });
+      const nh = (t.heating || {}).next;
+      const ev = (mind.security_events || []).find((e) => e.has_snapshot);
+      const people = (t.people || []);
+      const side = (ev || people.length || nh) ? `<div class="side">
+          ${ev ? `<div class="seen"><img alt="" src="/api/frigate/notifications/${encodeURIComponent(ev.id)}/thumbnail.jpg"><span>LAST SEEN · ${esc(String(ev.camera).replace(/_/g, " ").toUpperCase())} · ${esc(String(ev.label).toUpperCase())} · ${esc(new Date(ev.start * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }))}</span></div>` : ""}
+          ${people.length ? `<div class="ppl">${people.map((p) => `<span class="${p.home ? "home" : ""}">${esc(p.name.toUpperCase())} · ${p.home ? "HOME" : "OUT"}</span>`).join("")}</div>` : ""}
+          ${nh ? `<div class="row dim"><ha-icon icon="mdi:radiator"></ha-icon><b>Heating ${nh.what === "on" ? "on to " + esc(nh.temp) + "°" : "off"}</b><u>${dayHm(nh.time)}</u></div>` : ""}
+        </div>` : "";
+      return `<div class="idle${side ? " two" : ""}"><div class="col"><div class="tiles">${tiles.map((x) => `<div class="tile ${esc(x.cls || "")}"${x.more ? ` data-more="${esc(x.more)}"` : ""}><ha-icon icon="${esc(x.icon)}"></ha-icon><b>${esc(x.val)}</b><i>${esc(x.label)}</i></div>`).join("")}</div>
         <div class="lines">
           ${running.map((a) => `<div class="row"><ha-icon icon="mdi:washing-machine"></ha-icon><b>${esc(a.name)} running</b><u>${a.done_about ? "DONE ~" + esc(a.done_about) : ""}</u></div>`).join("")}
           ${soon.length ? `<div class="soonh">COMING UP</div>` + soon.map((c) => `<div class="row"><ha-icon icon="${esc(c.kind === "alarm" ? "mdi:alarm" : "mdi:bell-ring-outline")}"></ha-icon><b>${esc(c.what)}</b><u>${dayHm(c.at)}</u></div>`).join("") : ""}
           ${next ? `<div class="row"><ha-icon icon="mdi:eye-outline"></ha-icon><b>${esc(next.what)}</b><u>${hm(next.ends)}</u></div>` : ""}
           ${problems.slice(0, 2).map((p) => `<div class="row warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${esc(p.text || p.name)}</b></div>`).join("")}
           ${said ? `<div class="row dim"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(said.said)}</b><u>${hm(said.time)}</u></div>` : ""}
-        </div></div>`;
+        </div></div>${side}</div>`;
     }
 
     // "what happened this last hour?" — straight from the timeline, no AI; closes itself after a minute
@@ -265,7 +284,16 @@ ha-card{overflow:hidden;border-radius:22px;border:1px solid rgba(0,255,247,.25);
 .tile[data-more]{cursor:pointer} .tile ha-icon{--mdc-icon-size:24px;color:#00fff7} .tile b{font-size:24px;font-weight:400;color:#fff}
 .tile i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.2em;color:rgba(150,220,235,.7)}
 .tile.warn ha-icon{color:#ffbe55}
-.idle{display:flex;flex-direction:column;gap:16px}
+.idle{display:flex;flex-direction:column;gap:16px} .idle .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.idle.two{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start}
+.side{display:flex;flex-direction:column;gap:12px}
+.seen{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(0,255,247,.3);background:#000;aspect-ratio:16/10}
+.seen img{width:100%;height:100%;object-fit:cover;display:block}
+.seen span{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:.16em;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.ppl{display:flex;flex-wrap:wrap;gap:8px} .ppl span{font-size:10px;font-weight:700;letter-spacing:.16em;padding:6px 12px;border-radius:999px;color:rgba(150,220,235,.55);border:1px solid rgba(150,220,235,.2)}
+.ppl span.home{color:#7fefff;border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.08)}
+.tile.warm ha-icon{color:#ffbe55}
+@media (max-width:900px){.idle.two{grid-template-columns:1fr}}
 .foot{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:.24em;color:rgba(150,220,235,.6)}
 .dot{width:8px;height:8px;border-radius:50%;background:#00fff7;box-shadow:0 0 8px #00fff7} .dot.alert{background:#ff6b80;box-shadow:0 0 10px #ff6b80;animation:blink 1s infinite}
 .dot.notice{background:#7fefff} .dot.morning{background:#ffd27f;box-shadow:0 0 8px #ffd27f}
