@@ -190,11 +190,15 @@ class RememberTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        memory = rt.memory.add(
-            tool_input.tool_args["text"],
-            tool_input.tool_args.get("category", "fact"),
-            source=llm_context.platform,
-        )
+        from .focus import current_request
+        from .memory import _normalise
+
+        text = tool_input.tool_args["text"]
+        request = _normalise(" ".join((current_request.get() or "").split())).rstrip(".?!")
+        stated = re.fullmatch(r"(?:please )?remember(?: that)? (.+)", request)
+        origin = "explicit" if stated and stated[1] == _normalise(" ".join(text.split())).rstrip(".?!") else None
+        memory = rt.memory.add(text, tool_input.tool_args.get("category", "fact"),
+                               source=llm_context.platform, origin=origin)
         if tool_input.tool_args.get("pin"):
             rt.memory.pin(memory.id, True)
         return {"saved": memory.text, "id": memory.id, "pinned": memory.pinned}
@@ -378,7 +382,9 @@ class RecallTool(_Tool):
     name = "sentient_recall"
     description = (
         "Search the house's long-term memory. Use before answering questions about "
-        "the household's people, preferences, routines or anything you were told earlier."
+        "the household's people, preferences, routines or anything you were told earlier. "
+        "For 'how do you know/where did you learn that?', cite the returned memory source and date. "
+        "A saved memory does not establish a current device state."
     )
     parameters = vol.Schema({vol.Required("query"): cv.string})
 
@@ -391,13 +397,24 @@ class RecallTool(_Tool):
         found = rt.memory.search(tool_input.tool_args["query"])
         if getattr(rt, "profiles", None) is not None and (rt.profiles.for_device(llm_context.device_id) or {}).get("private"):
             found = [m for m in found if m.category == "correction"]  # a private room: only how things are named
-        return {"memories": [{"id": m.id, "text": m.text, "category": m.category} for m in found]}
+        return {"memories": [
+            {"id": m.id, "text": m.text, "category": m.category, "first_saved_at": m.created,
+             "source": m.source,
+             "basis": ("explicitly asked to remember this wording" if m.origin == "explicit" else
+                       "memory was edited after it was first saved" if m.origin == "edited" else
+                       "inferred in reflection" if m.source == "reflection" else
+                       "entered in settings" if m.source == "settings" else
+                       "saved through a Home Assistant service" if m.source == "service" else
+                       "saved by a conversation tool, exact origin unverified" if m.source else "source unknown")}
+            for m in found
+        ]}
 
 
 class ForgetTool(_Tool):
     acts = True
     name = "sentient_forget"
-    description = "Remove something from the house's long-term memory when asked to forget it."
+    description = ("Remove a specific saved memory when asked. When there are several matches, ask which one. "
+                   "Use an exact memory ID only after the user identifies the intended memory.")
     parameters = vol.Schema({vol.Required("what"): cv.string})
 
     async def async_call(
@@ -406,7 +423,13 @@ class ForgetTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        removed = rt.memory.forget(tool_input.tool_args["what"])
+        candidates = rt.memory.forget_candidates(tool_input.tool_args["what"])
+        if len(candidates) > 1:
+            profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) else None
+            if getattr(getattr(rt, "speech", None), "guest_mode", False) or (profile or {}).get("private"):
+                return {"forgotten": None, "error": "Several memories match. Name the exact memory to forget."}
+            return {"forgotten": None, "choose_memory": [{"id": m.id, "text": m.text} for m in candidates[:8]]}
+        removed = rt.memory.forget(candidates[0].id) if candidates else None
         return {"forgotten": removed.text if removed else None}
 
 
@@ -1594,9 +1617,9 @@ class SecurityTool(_Tool):
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
     ) -> JsonObjectType:
-        from .security import check
+        from .security import check_for_voice
 
-        return check(hass)
+        return await check_for_voice(hass, llm_context.context)
 
 
 class ScenesTool(_Tool):
@@ -1774,9 +1797,9 @@ class HouseCheckTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        from .security import check
+        from .security import check_for_voice
 
-        sec = check(hass)
+        sec = await check_for_voice(hass, llm_context.context)
         out: dict[str, Any] = {
             "security": {"summary": sec["summary"], "open": [i["name"] for i in sec["open"]],
                          "unlocked": [i["name"] for i in sec["unlocked"]],
@@ -1902,6 +1925,11 @@ class SentientAPI(llm.API):
                          "Unknown or unavailable readings do not establish current state. Mention uncertainty when it "
                          "changes the answer. A timestamp is evidence age, not proof a quiet event-driven sensor is stale. "
                          "Never call an attempted action completed unless the device reported the requested result.")
+        if opts.get("security_coverage"):
+            lines.append("For what happened during a security incident, which way someone went, or whether a camera "
+                         "missed part of the incident, use sentient_incidents or sentient_security_event for a selected "
+                         "Frigate event. Say which observations are linked and where evidence is missing. Keep the "
+                         "route unconfirmed and separate the cameras' present reports from historical evidence.")
         weather_id = opts.get(CONF_BRIEFING_WEATHER)
         weather = self.hass.states.get(weather_id) if weather_id else next(
             (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)

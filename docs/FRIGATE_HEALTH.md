@@ -1,0 +1,5 @@
+# Frigate pipeline health
+
+Enable **Show Frigate pipeline health** in the Camera security settings. The Security page shows broker-reported Frigate availability, per-camera processing rates, the latest event receipt in this Sentient session, and the Home Assistant camera report. If live stats stop arriving for three minutes, the view shows missing fresh stats and treats an earlier online report as unconfirmed. A quiet camera can have zero detections and remain healthy. The rates and receipts cannot verify recording. Telemetry lives in memory and is cleared when the feature is switched off or Sentient is restarted.
+
+To test a live installation, make an ordinary visit through the gate and past the shed, then repeat through the garden. Repeat after dark and compare the contact time, Frigate event time, first Sentient alert, and selected clip. Record observations and missed detections against the current FPS before tuning it. If AI description is enabled, it arrives on the incident timeline after the first alert. It does not create a second initial alert.

@@ -131,6 +131,7 @@ class Memory:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
     created: str = field(default_factory=lambda: dt_util.now().isoformat())
     source: str | None = None
+    origin: str | None = None  # explicit wording or a subsequent edit
     hits: int = 0
     pinned: bool = False  # always given to the voice, never tidied away
     used: str | None = None  # last time it was recalled or matched what was asked
@@ -172,7 +173,7 @@ class MemoryStore:
     def items(self) -> list[Memory]:
         return list(self._items)
 
-    def add(self, text: str, category: str = "fact", source: str | None = None) -> Memory:
+    def add(self, text: str, category: str = "fact", source: str | None = None, *, origin: str | None = None) -> Memory:
         """Add a memory; reuse only a wording-equivalent item, preserving meaningful differences."""
         text = " ".join(text.split()).strip()
         if not text:
@@ -183,8 +184,9 @@ class MemoryStore:
         for existing in self._items:
             if existing.category == category and identity and self.live(existing) and _identity(existing.text) == identity:
                 # A repeated inference must not rewrite an explicit fact, or make old facts look new.
-                if source and source != "reflection" and existing.source in (None, "reflection"):
+                if origin == "explicit" or (source and source != "reflection" and existing.source in (None, "reflection")):
                     existing.source = source
+                    existing.origin = origin
                     self._save()
                 return existing
         if len(self._items) >= MEMORY_MAX_ITEMS:
@@ -193,7 +195,7 @@ class MemoryStore:
                 raise ValueError("Memory is full of pinned items; unpin or forget one before adding another")
             drop = min(candidates, key=lambda m: (m.category != "note", m.hits, m.created))
             self._items.remove(drop)
-        memory = Memory(text=text, category=category, source=source, expires=expiry_for(text), links=self.links_for(text))
+        memory = Memory(text=text, category=category, source=source, origin=origin, expires=expiry_for(text), links=self.links_for(text))
         # newer replaces older: same wording apart from numbers, on/off or a negation
         subject = _subject(text)
         if len(subject) >= 3:
@@ -310,6 +312,8 @@ class MemoryStore:
         text = " ".join(text.split()).strip()
         if memory is None or not text:
             return None
+        if memory.text != text:
+            memory.origin = "edited"
         memory.text = text
         memory.expires = expiry_for(text)
         memory.links = self.links_for(text)
@@ -318,12 +322,19 @@ class MemoryStore:
         self._save()
         return memory
 
+    def forget_candidates(self, query: str) -> list[Memory]:
+        """Prefer an exact ID or exact wording. A fuzzy tie needs clarification."""
+        if target := self.get(query):
+            return [target]
+        if not _words(query):
+            return []
+        wording = _normalise(query).strip().rstrip(".?!")
+        exact = [m for m in self._items if _normalise(m.text).rstrip(".?!") == wording]
+        return exact or self.search(query, count_hits=False)
+
     def forget(self, memory_id_or_text: str) -> Memory | None:
-        """Remove by id, or by the best text match."""
-        target = next((m for m in self._items if m.id == memory_id_or_text), None)
-        if target is None and _words(memory_id_or_text):
-            found = self.search(memory_id_or_text, limit=1, count_hits=False)
-            target = found[0] if found else None
+        candidates = self.forget_candidates(memory_id_or_text)
+        target = candidates[0] if len(candidates) == 1 else None
         if target is not None:
             self._items.remove(target)
             self.changed = [row for row in self.changed if target.text not in (row.get("old"), row.get("new"))]
@@ -415,4 +426,4 @@ class MemoryStore:
         return chosen
 
     def recent(self, limit: int) -> list[Memory]:
-        return sorted(self._items, key=lambda m: (m.hits, m.created), reverse=True)[:limit]
+        return sorted((m for m in self._items if self.live(m)), key=lambda m: (m.hits, m.created), reverse=True)[:limit]

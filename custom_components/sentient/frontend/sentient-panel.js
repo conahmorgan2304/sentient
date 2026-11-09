@@ -139,7 +139,7 @@
           <div class="lanes ov3">
             <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
             <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
-            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="camc" class="card"></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="camc" class="card"></div><div id="frigatehealth" class="card" hidden></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
@@ -178,7 +178,7 @@
     }
 
     _show(view, push) {
-      if (this._view === "security" && view !== "security") this._clearLive();
+      if (this._view === "security" && view !== "security") { this._clearLive(); this._frigateHealthAt = 0; }
       this._view = view;
       this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
@@ -388,7 +388,10 @@
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
       R("minc").hidden = !incidentRows;
       R("minc").innerHTML = incidentRows ? this._h("EVENT DETAILS", "") + incidentRows : "";
-      if (this._view === "security") { this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind); }
+      if (this._view === "security") {
+        this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind);
+        if (Date.now() - (this._frigateHealthAt || 0) > 15000) this._loadFrigateHealth();
+      }
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
       if (this._view === "mind") this._loadInner();
@@ -1215,16 +1218,31 @@
     }
 
     _securityNow() {
-      const OPEN = ["door", "window", "garage_door", "opening"], open = [], unlocked = [], alarms = [];
+      const open = [], unlocked = [], alarms = [], unknown = [];
+      let openings = 0, locks = 0;
       for (const st of Object.values(this._hass.states)) {
         const [d] = st.entity_id.split(".");
         const dc = st.attributes.device_class, name = st.attributes.friendly_name || st.entity_id;
-        if (d === "binary_sensor" && st.state === "on" && OPEN.includes(dc)) open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
-        else if (d === "cover" && ["open", "opening"].includes(st.state) && ["garage", "gate", "door"].includes(dc)) open.push({ name, icon: "mdi:garage-open" });
-        else if (d === "lock" && ["unlocked", "open", "opening", "jammed"].includes(st.state)) unlocked.push({ name });
-        else if (d === "alarm_control_panel") alarms.push({ name, state: st.state });
+        const state = st.attributes.restored ? "unknown" : st.state;
+        if (d === "binary_sensor" && ["door", "window", "garage_door", "opening"].includes(dc)) {
+          openings++;
+          if (state === "on") open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
+          else if (state !== "off") unknown.push(name);
+        } else if (d === "cover" && ["garage", "gate", "door"].includes(dc)) {
+          openings++;
+          if (["open", "opening"].includes(state)) open.push({ name, icon: "mdi:garage-open" });
+          else if (state !== "closed") unknown.push(name);
+        } else if (d === "lock") {
+          locks++;
+          if (["unlocked", "open", "opening", "jammed"].includes(state)) unlocked.push({ name, state });
+          else if (state !== "locked") unknown.push(name);
+        } else if (d === "alarm_control_panel") {
+          alarms.push({ name, state });
+          if (!["disarmed", "triggered", "pending", "armed_home", "armed_away", "armed_night", "armed_vacation", "armed_custom_bypass"].includes(state)) unknown.push(name);
+        }
       }
-      return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
+      const key = JSON.stringify([open, unlocked, alarms, unknown, openings, locks]);
+      return { open, unlocked, alarms, unknown, openings, locks, key };
     }
 
     // ---------- overview: today and coming up ----------
@@ -1641,6 +1659,38 @@
       }
     }
 
+    async _loadFrigateHealth() {
+      const request = (this._frigateHealthRequest || 0) + 1;
+      this._frigateHealthRequest = request;
+      this._frigateHealthAt = Date.now();
+      let health;
+      try {
+        health = await this._hass.callWS({ type: "sentient/security/frigate_health" });
+      } catch {
+        health = { enabled: false };
+      }
+      if (request === this._frigateHealthRequest && this._view === "security") this._drawFrigateHealth(health);
+    }
+
+    _drawFrigateHealth(health) {
+      const el = this._$("frigatehealth");
+      if (!el) return;
+      el.hidden = !health.enabled;
+      if (el.hidden) { el.replaceChildren(); return; }
+      const rows = health.cameras.map(camera => {
+        const label = camera.processing === "zero_rate" ? "ZERO PROCESSING RATE" : camera.processing === "reporting"
+          ? `${camera.process_fps.toFixed(1)} FPS PROCESSING` : "PROCESSING UNKNOWN";
+        const last = camera.last_event_received ? hm(camera.last_event_received) : "none received this session";
+        return `<div class="r${camera.processing === "reporting" ? "" : " warn"}"><ha-icon icon="mdi:cctv"></ha-icon><b>${esc(camera.name)}</b><u>${esc(label)}</u><small>HA ${esc(camera.ha_report)} · Last MQTT event ${esc(last)}</small></div>`;
+      });
+      const open = el.querySelector("details")?.open;
+      const availability = (health.availability || "UNKNOWN").toUpperCase();
+      const last = health.availability === "unknown" && health.last_reported_availability === "online" ? " (LAST REPORT ONLINE)" : "";
+      el.innerHTML = `<details class="frigatehealth"${open ? " open" : ""}><summary>FRIGATE PIPELINE · ${esc(availability + last)} · ${health.stats_fresh ? "FRESH STATS" : "NO FRESH STATS"}</summary>
+        ${rows.join("") || '<div class="e">NO CONFIGURED CAMERA TELEMETRY</div>'}
+        <small>Processing and event receipts do not verify recordings. Quiet cameras may have no recent events.</small></details>`;
+    }
+
     _drawSecTimeline(mind) {
       const el = this._$("sectl");
       if (!el) return;
@@ -1715,15 +1765,21 @@
 
     _drawSecurityInto(el) {
       if (!el) return;
-      const { open, unlocked, alarms } = this._security();
+      const { open, unlocked, alarms, unknown, openings, locks } = this._security();
       const bad = open.length + unlocked.length;
-      const alarm = alarms[0];
-      const armed = alarm && alarm.state.startsWith("armed");
-      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "ALL SHUT")
+      const alarmActive = alarms.some((alarm) => ["triggered", "pending"].includes(alarm.state));
+      const perimeter = openings + locks;
+      const uncertain = unknown.length || !perimeter;
+      el.innerHTML = this._h("SECURITY", alarmActive ? "ALARM ACTIVE" : bad ? `${bad} TO CHECK` : uncertain ? "UNCONFIRMED" : openings ? "ALL SHUT" : "LOCKS REPORT LOCKED")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${esc(o.icon)}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
-        + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
-        + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
-        + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${esc(armed ? "mdi:shield-lock" : "mdi:shield-off-outline")}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
+        + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>${esc(u.state.toUpperCase())}</u></div>`).join("")
+        + unknown.map((name) => `<div class="r warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(name)}</b><u>STATUS UNKNOWN</u></div>`).join("")
+        + (!perimeter ? '<div class="e">NO DOOR, WINDOW OR LOCK READINGS</div>' : "")
+        + (bad || uncertain || alarmActive ? "" : `<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>${openings ? "Monitored openings report closed" : "Monitored locks report locked"}</b></div>`)
+        + alarms.map((alarm) => {
+          const armed = alarm.state.startsWith("armed");
+          return `<div class="r${["triggered", "pending"].includes(alarm.state) ? " bad" : armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ").toUpperCase())}</u></div>`;
+        }).join("");
     }
 
     _drawMlCard() {
@@ -1735,7 +1791,7 @@
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
           return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${esc(lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline")}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
-            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : r.respect_quiet && ml.quiet ? "QUIET" : "READY"}</u>
+            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : (r.quiet_now ?? (r.respect_quiet && ml.quiet)) ? "QUIET" : "READY"}</u>
             <label class="tg"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label></div>`;
         }).join("") + (on ? `<div class="hint">${on} ON BY MOTION NOW</div>` : "");
     }
@@ -1765,7 +1821,7 @@
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
         const chips = [
-          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORES QUIET HOURS",
+          !r.respect_quiet ? "IGNORES QUIET HOURS" : r.quiet_start && r.quiet_end ? `QUIET ${esc(r.quiet_start)}–${esc(r.quiet_end)}` : "OFF IN HOUSE QUIET HOURS",
           r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "ANY TIME",
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
@@ -1779,7 +1835,7 @@
           ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
       }).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOTION LIGHTS</div>
-          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
+          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light can use the house quiet hours or set its own window. Late-night dimming has a separate schedule. A light someone switched on by hand is left alone.</div></div>
           <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "DAYLIGHT")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
@@ -1796,6 +1852,9 @@
       if (!wrap) return;
       wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "EDIT" : "NEW"} MOTION LIGHT</span><i></i></div>
         <div id="mlformwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        <div class="add night"><label>Quiet from <input id="mlquietstart" type="time" value="${esc(this._mlDraft.quiet_start || "")}"></label>
+          <label>Quiet until <input id="mlquietend" type="time" value="${esc(this._mlDraft.quiet_end || "")}"></label></div>
+        <div class="hint">Optional, for this light only. Clear both fields to use the house hours. At the custom start time, Sentient switches off the light if motion turned it on.</div>
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
@@ -1806,7 +1865,7 @@
       };
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
-        respect_quiet: "Off: this light still comes on in quiet hours (handy for landings and stairs).",
+        respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
@@ -1916,7 +1975,7 @@
         const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
         const focus = i.time === (this._tlFocus || this._tlFocusDone);
         html += `<div class="tli k-${esc(i.kind)}${focus ? " focus" : ""}"${focus ? ' id="tlfocus"' : ""}><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
-          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}${i.phoned ? `<i>Sent to phones: ${esc(i.phoned)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.analysis ? `<i>AI review: ${esc(i.analysis)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}${i.phoned ? `<i>Sent to phones: ${esc(i.phoned)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
       }
       this._$("tllist").innerHTML = html || (want === "phones" ? '<div class="e">NOTHING SENT TO PHONES IN THE LAST 3 DAYS</div>' : '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>');
       const spot = this._$("tlfocus");
@@ -2256,6 +2315,8 @@
         const rule = {};
         keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
         if (!rule.lux_sensor) rule.lux_sensor = null;
+        rule.quiet_start = this._$("mlquietstart")?.value || null;
+        rule.quiet_end = this._$("mlquietend")?.value || null;
         this._motionDo("sentient/motion_lights/save", { rule }, "mlmsg").then((ok) => {
           if (ok) { this._mlEdit = null; this._form = null; this._drawSide(); this._drawMotion(); }
         });
@@ -2752,6 +2813,9 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
   .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
   .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
+.frigatehealth summary{cursor:pointer;font-size:11px;color:#9be4e9}
+.frigatehealth small{display:block;flex-basis:100%;font-size:10px;color:#a8bccb;overflow-wrap:anywhere}
+.frigatehealth .r:first-of-type{margin-top:8px}
 /* Tablet and up: Overview, House, Mind and Security fit the screen. The cards share the height with no gaps,
    and a long list scrolls inside its own card (no visible scroll bar). Small or short screens keep the flowing page. */
 @media (min-width: 900px) and (min-height: 520px){

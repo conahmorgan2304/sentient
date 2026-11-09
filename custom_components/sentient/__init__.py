@@ -117,8 +117,10 @@ class SentientRuntime:
     updates: Any
     voice_checks: Any
     control: Any
+    household_tasks: Any
     incidents: Any
     security_events: Any
+    frigate_health: Any
     clip_analysis: Any
     memory: MemoryStore
     speech: SpeechRouter
@@ -562,7 +564,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .security_events import SecurityEvents
     from .clip_analysis import ClipAnalysis
 
+    from .frigate_health import FrigateHealth
+
     security_events = SecurityEvents(hass, entry.entry_id, options, get_rt)
+    frigate_health = FrigateHealth(hass, options)
     clip_analysis = ClipAnalysis(get_rt)
     def _house_did() -> dict[str, set[int]]:  # away lights, and everything else the house switched itself
         out = {k: set(v) for k, v in own.times().items()}
@@ -656,8 +661,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .house_context import HouseContext
 
     house_context = HouseContext(hass, lambda: entry.runtime_data)
+    from .household_tasks import HouseholdTasks
+
+    control = Control(hass, options, timeline)
     entry.runtime_data = SentientRuntime(
-        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents, security_events=security_events, clip_analysis=clip_analysis,
+        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, frigate_health=frigate_health, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -675,6 +683,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(clip_analysis.clear)
     entry.runtime_data.control.on_result = house_context.track
     entry.async_on_unload(house_context.stop)
+    frigate_health.configure(options)
+    entry.async_on_unload(frigate_health.async_stop)
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)
     for engine in (upkeep, critical, left_open, welcome):
@@ -722,6 +732,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     entry.runtime_data.watches.clear_camera_cache()
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
+    entry.runtime_data.household_tasks.clear()
     entry.runtime_data.ai.voice_timings.clear()
     await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -770,6 +781,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
                  and old.get('ai_task_entity') == options.get('ai_task_entity'))
     clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
     entry.runtime_data.control.clear_recovery()
+    entry.runtime_data.household_tasks.clear()
     entry.runtime_data.ai.voice_timings.clear()
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.followthrough.clear()
@@ -784,6 +796,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
     entry.runtime_data.security_events.configure(options)
+    entry.runtime_data.incidents.configure(options)
     entry.runtime_data.house_context.configure()
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
@@ -809,7 +822,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
+    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:
@@ -821,6 +834,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
             await engine.async_start()
             entry.async_on_unload(engine.async_stop)
             entry.runtime_data.dormant.discard(name)
+    entry.runtime_data.frigate_health.configure(options)
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()

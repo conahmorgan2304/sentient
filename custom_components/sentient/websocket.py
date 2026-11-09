@@ -29,6 +29,10 @@ from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .config_flow import _briefing_schema, _speech_schema
 from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .const import CONF_RECOVERY
+from .household_tasks import CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS
+from .incidents import CONF_COVERAGE
+from .frigate_health import CONF_FRIGATE_HEALTH
+from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
 from .clip_analysis import CONF_SHARED_CLIPS
@@ -299,12 +303,13 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
         CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
+        CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS,
     ]),
     ("never", "Never touch", "mdi:hand-back-left-off-outline", "Devices Sentient must never switch, dim or change by itself — not in rules, routines, offers, auto-off, away or motion lights, light shows, the heating or by voice. It can still read them and talk about them.", [
         CONF_NEVER_ENTITIES,
@@ -322,7 +327,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
-        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK,
+        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, comfort temperature, time limit and warm-by times, and the heating schedule, are on the House tab.", [
         CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH,
@@ -986,6 +991,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_energy)
     websocket_api.async_register_command(hass, ws_security)
+    websocket_api.async_register_command(hass, ws_frigate_health)
     websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_reading_try)
     websocket_api.async_register_command(hass, ws_doctor)
@@ -1048,6 +1054,9 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
 # settings that only mean something while another one is switched on: the page hides them until it is
 # (their values are kept, so switching back on brings them back as they were)
 DEPENDS: dict[str, str] = {
+    CONF_ROOM_HANDOFF: CONF_SESSIONS,
+    CONF_BEDTIME_LIGHTS: CONF_BEDTIME,
+    CONF_BEDTIME_CONTACTS: CONF_BEDTIME,
     **{k: "sleep_detection" for k in ("sleep_minutes", "sleep_ignore_sensors", "bedtime_routines", "sleep_actions", "wake_actions")},
     "zone_door_sensors": "zone_visits",
     **{k: "faces" for k in ("face_people", "face_cameras", "face_forget_hours")},
@@ -1350,6 +1359,8 @@ def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
             vol.Required("motion"): vol.All(cv.ensure_list, [cv.entity_id]),
             vol.Optional("enabled"): bool,
             vol.Optional("respect_quiet"): bool,
+            vol.Optional("quiet_start"): vol.Any(None, str),
+            vol.Optional("quiet_end"): vol.Any(None, str),
             vol.Optional("only_dark"): bool,
             vol.Optional("off_after"): vol.Coerce(float),
             vol.Optional("brightness"): vol.Coerce(int),
@@ -1636,9 +1647,25 @@ async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 @page_access
 @callback
 def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from homeassistant.auth.permissions.const import POLICY_READ
+
     from .security import check
 
-    connection.send_result(msg["id"], check(hass))
+    connection.send_result(msg["id"], check(
+        hass, visible=lambda eid: connection.user.permissions.check_entity(eid, POLICY_READ)
+    ))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/security/frigate_health"})
+@page_access
+@callback
+def ws_frigate_health(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    if (entry := _entry(hass)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    result = {"enabled": False} if rt.speech.guest_mode else rt.frigate_health.report(connection.user)
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/critical/test"})

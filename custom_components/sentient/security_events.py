@@ -162,14 +162,9 @@ class SecurityEvents:
         self.configure(self.options)
 
     def cameras(self):
-        from .camsecurity import camera_for
-        cams = set(self.options.get("clip_cameras") or [])
-        if self.options.get("door_camera"):
-            cams.add(self.options["door_camera"])
-        for sensor in self.options.get("camera_security_sensors") or []:
-            if camera := camera_for(self.hass, sensor):
-                cams.add(camera)
-        return {c.removeprefix("camera.") for c in cams if isinstance(c, str)}
+        from .incidents import configured_cameras
+
+        return {camera.removeprefix("camera.") for camera in configured_cameras(self.hass, self.options)}
 
     def _prune(self):
         before = len(self.items)
@@ -288,10 +283,14 @@ class SecurityEvents:
                 for event in data if isinstance(data, list) else []:
                     if isinstance(event, dict) and event.get("camera") == camera:
                         self.ingest(event)
-            except Exception:  # noqa: BLE001
-                return None
+            except Exception:  # noqa: BLE001 - an MQTT candidate may still arrive
+                pass
             found = candidates()
-        return deepcopy(found[0]) if len(found) == 1 and stamp == self.stamp() else None
+        if not found and self._unsub is not None and stamp == self.stamp():
+            # Occupancy may arrive before its tracked object. Keep the original camera and time window.
+            await asyncio.sleep(1.5)
+            found = candidates()
+        return deepcopy(found[0]) if len(found) == 1 and stamp == self.stamp() and self.on(CONF_EVENT_EVIDENCE) else None
 
     def alert(self, event_id, sensor, reason, text, incident_id):
         if not self.on(CONF_EVENT_EVIDENCE) or (row := self.items.get(event_id)) is None:

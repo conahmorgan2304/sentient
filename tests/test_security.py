@@ -38,3 +38,33 @@ async def test_scene_tool(hass: HomeAssistant) -> None:
     assert getattr(res, "data", res)["scenes"] == [{"name": "Movie night", "contains": ["Lamp"]}]
     res = await api.async_call_tool(llm.ToolInput(tool_name="sentient_scene", tool_args={"name": "movie"}))
     assert getattr(res, "data", res)["scene_on"] == "Movie night" and on[0].data["entity_id"] == "scene.movie_night"
+
+
+async def test_security_only_reports_current_lock_and_contact_states(hass):
+    hass.states.async_set("binary_sensor.gate", "off", {"device_class": "door"})
+    report = check(hass)
+    assert report["secure"] is True
+    assert report["summary"] == "The monitored openings report closed."
+
+    hass.states.async_set("lock.front", "locked", {"restored": True})
+    report = check(hass)
+    assert report["secure"] is None
+    assert report["unknown"][0]["state"] == "unknown"
+    assert "report locked" not in report["summary"]
+
+
+async def test_voice_security_omits_entities_outside_request_access(hass, hass_admin_user):
+    from unittest.mock import patch
+
+    from homeassistant.core import Context
+
+    from custom_components.sentient.security import check_for_voice
+
+    hass.states.async_set("binary_sensor.gate", "off", {"device_class": "door"})
+    hass.states.async_set("binary_sensor.private", "on", {"device_class": "door", "friendly_name": "Private door"})
+    with patch("homeassistant.components.homeassistant.exposed_entities.async_should_expose",
+               side_effect=lambda _, __, eid: eid == "binary_sensor.gate"):
+        report = await check_for_voice(hass, Context(user_id=hass_admin_user.id))
+    assert report["secure"] is None and not report["open"]
+    assert "outside this request's access" in report["summary"]
+    assert "Private door" not in str(report) and "binary_sensor.private" not in str(report)

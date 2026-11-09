@@ -11,8 +11,26 @@ from homeassistant.util import dt as dt_util
 
 from .sessions import CONF_INCIDENTS
 
+CONF_COVERAGE = "security_coverage"
 GAP = timedelta(minutes=3)
 ALERT_LEVELS = {'night': 1, 'away': 2, 'fence': 2, 'loitering': 3}
+
+
+def configured_cameras(hass, options):
+    from .camsecurity import camera_for
+    from .const import CONF_CAMSEC_SENSORS, CONF_CLIP_CAMERAS, CONF_DOOR_CAMERA
+
+    cameras = set(options.get(CONF_CLIP_CAMERAS) or [])
+    if options.get(CONF_DOOR_CAMERA):
+        cameras.add(options[CONF_DOOR_CAMERA])
+    for sensor in options.get(CONF_CAMSEC_SENSORS) or []:
+        if camera := camera_for(hass, sensor):
+            cameras.add(camera)
+    return {f"camera.{camera.removeprefix('camera.')}" for camera in cameras if isinstance(camera, str)}
+
+
+def public_evidence(row):
+    return {k: v for k, v in row.items() if k not in ("camera_gaps", "read_source")}
 
 
 class Incidents:
@@ -31,6 +49,7 @@ class Incidents:
         data = await self._store.async_load() or {}
         self.items = data.get('items', [])
         self._prune()
+        self.configure(self.options)
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed)
 
     @callback
@@ -66,9 +85,10 @@ class Incidents:
                      evidence='unknown' if new.state in ('unknown', 'unavailable') else 'observed')
         elif eid in sensors and new.state == 'on' and old.state not in ('unknown', 'unavailable'):
             from .camsecurity import camera_for
-            self.add(camera_for(self.hass, eid) or eid, f'Person reported at {new.name}', 'detection')
+            self.add(camera_for(self.hass, eid) or eid, f'Person reported at {new.name}', 'detection',
+                     read_source=eid)
 
-    def add(self, source, text, kind, *, evidence='observed', when=None, event_id=None):
+    def add(self, source, text, kind, *, evidence='observed', when=None, event_id=None, read_source=None):
         if not self.enabled:
             return None
         now = when or dt_util.utcnow()
@@ -100,15 +120,29 @@ class Incidents:
         item['end'] = max(item['end'], now.isoformat())
         if source not in item['sources']:
             item['sources'].append(source)
-        item['evidence'].append({'time': now.isoformat(), 'source': source, 'kind': kind,
-                                 'status': evidence, 'text': text[:600], 'event_id': event_id})
+        row = {'time': now.isoformat(), 'source': source, 'kind': kind,
+               'status': evidence, 'text': text[:600], 'event_id': event_id}
+        if read_source:
+            row['read_source'] = read_source
+        if self.options.get(CONF_COVERAGE) and when is None and kind in ('contact', 'detection'):
+            # Only take snapshots as live evidence arrives. A clip fetched later says nothing about a past outage.
+            gaps = {}
+            for camera in configured_cameras(self.hass, self.options):
+                state = self.hass.states.get(camera)
+                if not state or state.attributes.get('restored'):
+                    gaps[camera] = 'unknown'
+                elif state.state in ('unknown', 'unavailable'):
+                    gaps[camera] = state.state
+            if gaps:
+                row['camera_gaps'] = gaps
+        item['evidence'].append(row)
         item['evidence'] = item['evidence'][-50:]
         self._save()
         return item
 
     def alert(self, sensor, text, reason):
         from .camsecurity import camera_for
-        item = self.add(camera_for(self.hass, sensor) or sensor, text, 'alert', evidence='inferred')
+        item = self.add(camera_for(self.hass, sensor) or sensor, text, 'alert', evidence='inferred', read_source=sensor)
         if item is None:
             return True, None
         level = ALERT_LEVELS.get(reason, 1)
@@ -133,5 +167,16 @@ class Incidents:
             return []
         self._prune()
         query = query.lower().strip()
-        return [dict(i, evidence=list(i['evidence'])) for i in self.items
+        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']]) for i in self.items
                 if not query or query in (' '.join(i['sources']) + ' ' + ' '.join(e['text'] for e in i['evidence'])).lower()][:8]
+
+    def configure(self, options):
+        self.options = options
+        if not options.get(CONF_COVERAGE):
+            had_gaps = False
+            for item in self.items:
+                for row in item['evidence']:
+                    if row.pop("camera_gaps", None):
+                        had_gaps = True
+            if had_gaps:
+                self._save()

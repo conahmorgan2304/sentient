@@ -307,40 +307,20 @@ class CameraSecurity:
             if not self._valid(stamp, sensor):
                 return
             local = dt_util.as_local(dt_util.utcnow())
-            detail = None
             camera = camera_for(self.hass, sensor)
-            events = getattr(rt, "security_events", None)
-            from .security_events import CONF_EVENT_EVIDENCE
-
-            event_mode = events is not None and events.on(CONF_EVENT_EVIDENCE)
-            event = await events.async_match(camera, when or dt_util.utcnow()) if camera and event_mode else None
-            if not self._valid(stamp, sensor):
-                return
-            if self.options.get(CONF_CAMSEC_DESCRIBE) and camera and rt.watches.spend("security"):
-                if event is not None:
-                    seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor), event)
-                else:
-                    seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor))
-                if seen is False:
-                    detail = ("No person was visible in the matched event snapshot; the sensor detection is unverified."
-                              if event and event.get("_snapshot_used") else
-                              "No person was visible in the later snapshot; the earlier sensor detection is unverified.")
-            if not self._valid(stamp, sensor):
-                return
-            if camera and getattr(rt, "clips", None) is not None and rt.clips.enabled:
-                if event:
-                    self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text, rt.clips._stamp(), event["id"]), "sentient_clip")
-                elif not event_mode:
-                    self.hass.async_create_background_task(rt.clips.async_after_alert(camera, text, rt.clips._stamp()), "sentient_clip")
-            rt.timeline.add("security", f"{text} ({local:%H:%M})." + (f" {detail}" if detail else ""), "camera security", alert=True, incident_id=incident_id, evidence="inferred",
-                            **({"event_id": event["id"], "camera": camera, "event_link": "camera/time candidate"} if event else {}))
+            item = rt.timeline.add("security", f"{text} ({local:%H:%M}).", "camera security",
+                                   alert=True, incident_id=incident_id, evidence="inferred", camera=camera)
             accepted = True
-            if event:
-                events.alert(event["id"], sensor, reason, text, incident_id)
+            speech = None
             if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
                 speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
-                await rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}." + (f" {detail}" if detail else ""),
-                                          "urgent", speakers, source="camera security")
+                speech = rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}.",
+                                            "urgent", speakers, source="camera security")
+            review = self._enrich_alert(rt, item, sensor, camera, text, reason, incident_id, stamp, when)
+            if speech is not None:
+                await asyncio.gather(speech, review)
+            else:
+                await review
         finally:
             if incident_id is not None and incidents is not None:
                 incidents.finish_alert(incident_id, ALERT_LEVELS.get(reason, 1), accepted and self._valid(stamp, sensor))
@@ -350,6 +330,39 @@ class CameraSecurity:
                     self._pending_alert_keys.pop(key, None)
                 if accepted and self._valid(stamp, sensor):
                     self._last_alert[key] = dt_util.utcnow()
+
+    async def _enrich_alert(self, rt, item, sensor, camera, text, reason, incident_id, stamp, when):
+        from .security_events import CONF_EVENT_EVIDENCE
+
+        if not camera or not self._valid(stamp, sensor):
+            return
+        events = getattr(rt, "security_events", None)
+        event_mode = events is not None and events.on(CONF_EVENT_EVIDENCE)
+        event = await events.async_match(camera, when or dt_util.utcnow()) if event_mode else None
+        if not self._valid(stamp, sensor):
+            return
+        if event is not None:
+            events.alert(event["id"], sensor, reason, text, incident_id)
+            rt.timeline.mark(item, event_id=event["id"], event_link="camera/time candidate")
+        clips = getattr(rt, "clips", None)
+        if clips is not None and clips.enabled and (event or not event_mode):
+            self.hass.async_create_background_task(
+                clips.async_after_alert(camera, text, clips._stamp(), event["id"]) if event
+                else clips.async_after_alert(camera, text, clips._stamp()), "sentient_clip"
+            )
+        if self.options.get(CONF_CAMSEC_DESCRIBE) and rt.watches.spend("security"):
+            if event is not None:
+                seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor), event)
+            else:
+                seen, detail = await self._describe(camera, lambda: self._valid(stamp, sensor))
+            if seen is False:
+                detail = ("No person was visible in the matched event snapshot; the sensor detection is unverified."
+                          if event and event.get("_snapshot_used") else
+                          "No person was visible in the later snapshot; the earlier sensor detection is unverified.")
+            if detail and self._valid(stamp, sensor):
+                rt.timeline.mark(item, analysis=detail)
+                if event and event.get("_snapshot_used") and seen is True:
+                    events.analysis(event["id"], camera, {"summary": detail})
 
     async def _describe(self, camera: str, current: Callable[[], bool] | None = None,
                         event: dict | None = None) -> tuple[bool | None, str | None]:

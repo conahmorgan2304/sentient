@@ -149,6 +149,8 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     gone["memories"] = len(recent)
 
     rt.speech._privacy_generation += 1
+    if (tasks := getattr(rt, "household_tasks", None)) is not None:
+        tasks.clear()
     for attr in ("_recent", "_remarks", "_delivered_recent"):
         cache = getattr(rt.speech, attr, {})
         setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if stamp < since})

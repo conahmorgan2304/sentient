@@ -15,6 +15,10 @@ from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
 from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .const import CONF_RECOVERY
+from .household_tasks import CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS
+from .incidents import CONF_COVERAGE
+from .frigate_health import CONF_FRIGATE_HEALTH
+from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK
 from .clip_analysis import CONF_SHARED_CLIPS
@@ -451,6 +455,14 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_SPEECH_DELIVERY_HISTORY, **d(CONF_SPEECH_DELIVERY_HISTORY, True)): selector.BooleanSelector(),
             vol.Required("speech_failure_notification", **d("speech_failure_notification", False)): selector.BooleanSelector(),
             vol.Required(CONF_SESSIONS, **d(CONF_SESSIONS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_ROOM_HANDOFF, **d(CONF_ROOM_HANDOFF, False)): selector.BooleanSelector(),
+            vol.Required(CONF_BEDTIME, **d(CONF_BEDTIME, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_BEDTIME_LIGHTS, **d(CONF_BEDTIME_LIGHTS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)
+            ),
+            vol.Optional(CONF_BEDTIME_CONTACTS, **d(CONF_BEDTIME_CONTACTS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", device_class=["door", "window", "garage_door", "opening"], multiple=True)
+            ),
             vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
             vol.Required("recent_followup_context", **d("recent_followup_context", False)): selector.BooleanSelector(),
             vol.Required("behaviour_explanations", **d("behaviour_explanations", False)): selector.BooleanSelector(),
@@ -464,6 +476,8 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_INCIDENTS, **d(CONF_INCIDENTS, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_EVIDENCE, **d(CONF_EVENT_EVIDENCE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_COVERAGE, **d(CONF_COVERAGE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_FRIGATE_HEALTH, **d(CONF_FRIGATE_HEALTH, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_CONTEXT, **d(CONF_EVENT_CONTEXT, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_FEEDBACK, **d(CONF_EVENT_FEEDBACK, False)): selector.BooleanSelector(),
             vol.Required(CONF_SHARED_CLIPS, **d(CONF_SHARED_CLIPS, False)): selector.BooleanSelector(),

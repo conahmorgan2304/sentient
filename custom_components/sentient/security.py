@@ -7,6 +7,7 @@ armed or disarmed.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -14,33 +15,29 @@ from homeassistant.core import HomeAssistant
 OPEN_CLASSES = {"door", "window", "garage_door", "opening"}
 
 
-def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]:
+def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
+          visible: Callable[[str], bool] | None = None) -> dict[str, Any]:
     ignore = ignore or set()
-    open_now = [
+    perimeter_classes = {"binary_sensor": OPEN_CLASSES, "cover": {"garage", "gate", "door"}}
+    configured = [st for st in hass.states.async_all(("binary_sensor", "cover", "lock", "alarm_control_panel"))
+                  if st.entity_id not in ignore and (st.domain in ("lock", "alarm_control_panel")
+                      or st.attributes.get("device_class") in perimeter_classes.get(st.domain, ()))]
+    relevant = configured if visible is None else [st for st in configured if visible(st.entity_id)]
+    limited = len(relevant) != len(configured)
+    current = [st for st in relevant if not st.attributes.get("restored")]
+    open_items = [
         {"entity_id": st.entity_id, "name": st.name, "kind": st.attributes.get("device_class")}
-        for st in hass.states.async_all("binary_sensor")
-        if st.state == "on" and st.attributes.get("device_class") in OPEN_CLASSES and st.entity_id not in ignore
-    ]
-    covers = [
-        {"entity_id": st.entity_id, "name": st.name, "kind": st.attributes.get("device_class")}
-        for st in hass.states.async_all("cover")
-        if st.state in ("open", "opening") and st.attributes.get("device_class") in ("garage", "gate", "door")
-        and st.entity_id not in ignore
+        for st in current if (st.domain == "binary_sensor" and st.state == "on")
+        or (st.domain == "cover" and st.state in ("open", "opening"))
     ]
     unlocked = [
         {"entity_id": st.entity_id, "name": st.name, "state": st.state}
-        for st in hass.states.async_all("lock")
-        if st.state in ("unlocked", "open", "opening", "jammed") and st.entity_id not in ignore
+        for st in current if st.domain == "lock" and st.state in ("unlocked", "open", "opening", "jammed")
     ]
     alarms = [
-        {"entity_id": st.entity_id, "name": st.name, "state": st.state}
-        for st in hass.states.async_all("alarm_control_panel")
-        if st.entity_id not in ignore
+        {"entity_id": st.entity_id, "name": st.name, "state": "unknown" if st.attributes.get("restored") else st.state}
+        for st in relevant if st.domain == "alarm_control_panel"
     ]
-    relevant = [st for st in hass.states.async_all() if st.entity_id not in ignore and
-                (st.domain in ("lock", "alarm_control_panel") or st.domain == "binary_sensor" and
-                 st.attributes.get("device_class") in OPEN_CLASSES or st.domain == "cover" and
-                 st.attributes.get("device_class") in ("garage", "gate", "door"))]
     from .evidence import describe_state
     evidence = [describe_state(hass, st.entity_id) for st in relevant]
     stable = {
@@ -51,35 +48,64 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None) -> dict[str, Any]
                                 "armed_night", "armed_vacation", "armed_custom_bypass"},
     }
     for st, row in zip(relevant, evidence):
-        if st.state not in stable[st.domain]:
+        if st.attributes.get("restored"):
+            row.update(state="unknown", status="unknown", reason="Waiting for a current device report")
+        elif st.state not in stable[st.domain]:
             row["status"] = "unknown"
             row["reason"] = "No settled security state is reported"
     unknown = [e for e in evidence if e["status"] == "unknown"]
     perimeter = [st for st in relevant if st.domain != "alarm_control_panel"]
     alarm_alert = any(a["state"] in ("triggered", "pending") for a in alarms)
-    problems = len(open_now) + len(covers) + len(unlocked) + int(alarm_alert)
-    text = summary(open_now + covers, unlocked, alarms)
-    if unknown or not perimeter:
-        if open_now or covers or unlocked:
-            # Keep known hazards visible instead of replacing them with a generic warning.
-            text = summary(open_now + covers, unlocked, alarms)
-        else:
-            text = "I can't confirm everything is shut and locked." + alarm_summary(alarms)
-        if unknown:
-            text += " No settled reading from " + ", ".join(e.get("name", e["entity_id"]) for e in unknown) + "."
-        if not perimeter:
-            text += " No door, window, cover or lock readings are available."
+    problems = bool(open_items or unlocked or alarm_alert)
+    uncertain = bool(unknown or not perimeter or limited)
+    if open_items or unlocked:
+        text = summary(open_items, unlocked, alarms)
+    elif uncertain:
+        text = "I can't confirm the whole perimeter." + alarm_summary(alarms)
+    else:
+        closed = any(st.domain in perimeter_classes for st in perimeter)
+        locked = any(st.domain == "lock" for st in perimeter)
+        reports = []
+        if closed:
+            reports.append("the monitored openings report closed")
+        if locked:
+            reports.append("the monitored locks report locked")
+        text = _join(reports).capitalize() + "." + alarm_summary(alarms)
+    if unknown:
+        text += " No settled reading from " + ", ".join(e.get("name", e["entity_id"]) for e in unknown) + "."
+    if not perimeter:
+        text += " No door, window, cover or lock readings are available."
     if not relevant:
         text = "No security sensors are available to confirm the house is secure."
+    if limited:
+        text += " Some security readings are outside this request's access."
     return {
-        "secure": False if problems else None if unknown or not perimeter else True,
+        "secure": False if problems else None if uncertain else True,
         "unknown": unknown,
         "evidence": evidence,
-        "open": open_now + covers,
+        "open": open_items,
         "unlocked": unlocked,
         "alarms": alarms,
         "summary": text,
     }
+
+
+async def check_for_voice(hass, context):
+    from homeassistant.auth.permissions.const import POLICY_READ
+    from homeassistant.components.homeassistant.exposed_entities import async_should_expose
+
+    user_id = context.user_id if context else None
+    user = await hass.auth.async_get_user(user_id) if user_id else None
+
+    def visible(eid):
+        if user_id and (not user or not user.is_active or not user.permissions.check_entity(eid, POLICY_READ)):
+            return False
+        try:
+            return async_should_expose(hass, "conversation", eid)
+        except KeyError:  # Assist exposure data is unavailable during startup
+            return False
+
+    return check(hass, visible=visible)
 
 
 def _join(names: list[str]) -> str:
@@ -95,10 +121,7 @@ def summary(open_items: list[dict], unlocked: list[dict], alarms: list[dict]) ->
         names = [i["name"] for i in unlocked if i.get("state", "unlocked") == state]
         if names:
             parts.append(f"{_join(names)} {'is' if len(names) == 1 else 'are'} {state}")
-    if not parts:
-        text = "Everything's shut" + (" and locked" if not unlocked and alarms is not None else "") + "."
-    else:
-        text = "; ".join(p[0].upper() + p[1:] for p in parts) + "."
+    text = "; ".join(p[0].upper() + p[1:] for p in parts) + "." if parts else ""
     return text + alarm_summary(alarms)
 
 

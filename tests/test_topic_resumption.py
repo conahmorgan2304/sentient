@@ -86,6 +86,7 @@ async def test_revoked_exposure_not_used_for_current_readings(hass):
         result = await obj.async_process(request('Back to the gate issue', cid='new'))
     session = rt.sessions.get(request('next', cid=result.conversation_id))
     assert not session.entities and not session.resume_context['current_readings']
+    assert not session.resume_context['previous_reply'] and not session.resume_context['previous_question']
 
 
 async def test_guest_mode_hides_resume_and_skips_diagnostics(hass):
@@ -157,3 +158,86 @@ async def test_diagnostic_attributes_hidden_for_guests_and_excluded_from_recorde
     entry.runtime_data.sessions.memory.traces.append({'time': '2099-01-01T00:00:00+00:00', 'request': 'private'})
     entry.runtime_data.speech.guest_mode = True
     assert sensor.extra_state_attributes['conversation_diagnostics'] == []
+
+
+async def test_explicit_room_handoff_refreshes_state_and_restarts_agent_history(hass, hass_admin_user):
+    obj, rt = agent(hass, {'conversation_sessions': True, 'room_conversation_handoff': True})
+    user = hass_admin_user.id
+    hass.states.async_set('climate.heating', 'heat')
+
+    async def model(user_input):
+        current_session.get().entities = ['climate.heating']
+        return response('An earlier private reply. Which target did you want?')
+
+    with patch.object(obj, '_async_process_legacy', side_effect=model):
+        await obj.async_process(request('How is the heating?', device='livingroom', user=user))
+    source = rt.sessions.get(request('next', device='livingroom', user=user))
+    source.pending = {'summary': 'raise the heat', 'expires': None}
+    hass.states.async_set('climate.heating', 'off')
+    with patch.object(obj, '_async_process_legacy', AsyncMock()) as process, \
+            patch('homeassistant.components.homeassistant.exposed_entities.async_should_expose', return_value=True):
+        result = await obj.async_process(request('Carry on with the heating.', device='kitchen', user=user))
+        session = rt.sessions.get(request('next', cid=result.conversation_id, device='kitchen', user=user))
+        assert result.conversation_id != source.id
+        assert result.continue_conversation and 'private reply' not in str(result.response.speech)
+        assert session.resume_context['current_readings'][0]['state'] == 'off'
+        assert not session.resume_context['previous_reply'] and not session.resume_context['previous_question']
+        assert not session.pending and not session.undo
+        reply = await obj.async_process(request('yes', cid=result.conversation_id, device='kitchen', user=user))
+        assert 'expired' in str(reply.response.speech)
+        process.assert_not_awaited()
+
+
+@pytest.mark.parametrize('denial', ['anonymous', 'different_user', 'system_account', 'hidden_entity', 'guest'])
+async def test_explicit_room_handoff_fails_closed(hass, hass_admin_user, hass_read_only_user, denial):
+    obj, rt = agent(hass, {'conversation_sessions': True, 'room_conversation_handoff': True})
+    user = hass_admin_user.id
+
+    async def model(user_input):
+        current_session.get().entities = ['climate.heating']
+        return response('Private reply')
+
+    with patch.object(obj, '_async_process_legacy', side_effect=model):
+        await obj.async_process(request('How is the heating?', device='livingroom', user=user))
+    rt.speech = SimpleNamespace(guest_mode=denial == 'guest')
+    if denial == 'system_account':
+        hass_admin_user.system_generated = True
+    other = {'anonymous': None, 'different_user': hass_read_only_user.id}.get(denial, user)
+    with patch.object(obj, '_async_process_legacy', AsyncMock()) as process, \
+            patch('homeassistant.components.homeassistant.exposed_entities.async_should_expose', return_value=denial != 'hidden_entity'):
+        result = await obj.async_process(request('Carry on with the heating', user=other))
+        assert not result.continue_conversation
+        assert 'Private reply' not in str(result.response.speech)
+        assert len(rt.sessions.memory.topics) == 1
+        process.assert_not_awaited()
+
+
+async def test_same_device_resume_aborts_if_privacy_changes_during_user_lookup(hass, hass_admin_user):
+    import asyncio
+
+    obj, rt = agent(hass, {'conversation_sessions': True})
+    user = hass_admin_user.id
+    rt.speech = SimpleNamespace(guest_mode=False, _privacy_generation=0, _guest_generation=0)
+
+    async def model(user_input):
+        current_session.get().entities = ['climate.heating']
+        return response('Which private detail did you mean?')
+
+    with patch.object(obj, '_async_process_legacy', side_effect=model):
+        await obj.async_process(request('How is the heating?', user=user))
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def get_user(_user_id):
+        entered.set()
+        await release.wait()
+        return hass_admin_user
+
+    with patch.object(hass.auth, 'async_get_user', side_effect=get_user):
+        turn = asyncio.create_task(obj.async_process(request('Back to the heating', cid='new', user=user)))
+        await entered.wait()
+        rt.speech._privacy_generation += 1
+        rt.sessions.memory.clear()
+        release.set()
+        result = await turn
+    assert not result.continue_conversation
+    assert 'private detail' not in str(result.response.speech)

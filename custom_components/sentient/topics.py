@@ -9,10 +9,19 @@ import uuid
 
 from homeassistant.util import dt as dt_util
 
+CONF_ROOM_HANDOFF = "room_conversation_handoff"
+HANDOFF = re.compile(
+    r"^carry on with\s+(?!(?:(?:my|the|our)\s+)?(?:book|audiobook|story|reading)\b)(.+?)[.!?]*$", re.I
+)
+
 RESUME = re.compile(
     r"^(?:back to|let'?s get back to|go back to)\s+(.+?)[.!?]*$|"
     r"^(?:resume|continue) (?:our|the|that) (?:conversation|discussion)(?: about (.+?))?[.!?]*$", re.I)
 STOP_WORDS = set("the a an our that this issue problem discussion conversation about back to why did what is was".split())
+
+
+def handoff_match(options, text):
+    return HANDOFF.fullmatch(text) if options.get(CONF_ROOM_HANDOFF) else None
 
 
 def words(text):
@@ -77,6 +86,27 @@ class TopicMemory:
         if tokens:
             candidates = [t for t in candidates if tokens <= words(t['subject'] + ' ' + t['goal'])]
         return deepcopy(candidates)
+
+    def handoff_candidates(self, owner, query):
+        self.prune()
+        device, satellite, user = owner
+        tokens = words(query)
+        if not (user and (device or satellite) and tokens):
+            return []
+        return deepcopy([
+            t for t in self.topics
+            if t['owner'][2] == user and any(t['owner'][:2])
+            and not ((device and t['owner'][0] == device) or (satellite and t['owner'][1] == satellite))
+            and tokens <= words(t['subject'] + ' ' + t['goal'])
+        ])
+
+    def take(self, bookmark):
+        """Consume a transferred bookmark so it cannot be picked up twice."""
+        for index, topic in enumerate(self.topics):
+            if topic == bookmark:
+                self.topics.pop(index)
+                return True
+        return False
 
     def discard(self, session):
         self.topics = [t for t in self.topics if not (

@@ -5,7 +5,7 @@ import voluptuous as vol
 from homeassistant.helpers import llm
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 
-from .llm_api import SentientAPI, _runtime, _Tool
+from .llm_api import SentientAPI, _runtime, _Tool, _read_only
 from .sessions import current_session, CONF_SESSIONS, GUARDED_API
 from .control import ACTIONS
 from .evidence import describe_state
@@ -137,14 +137,51 @@ class DevicesTool(_Tool):
 
 
 class IncidentsTool(_Tool):
+    annotations = _read_only()
     name = 'sentient_incidents'
-    description = ('Read grouped security evidence: contact changes, person detections, alerts and clips. '
-                   'Nearby timestamps are a possible link, not proof of the same person. Never invent missing links.')
+    description = ('Read grouped security evidence and coverage for a question about a route or incident. '
+                   'Use observed timestamps and explain gaps. Report present availability separately. '
+                   'Nearby timestamps are a possible link; keep the route and identity unconfirmed.')
+
     parameters = vol.Schema({vol.Optional('query', default=''): str})
 
     async def async_call(self, hass, tool_input, llm_context):
+        from homeassistant.util import dt as dt_util
+
+        from .incidents import public_evidence
+        from .security_coverage import describe_coverage, readable_evidence
+
         rt = _runtime(hass)
-        return {'incidents': rt.incidents.recent(tool_input.tool_args.get('query', ''))} if rt else {'error': 'Not loaded'}
+        if not rt:
+            return {'error': 'Not loaded'}
+        incidents = rt.incidents
+        if not incidents.enabled or getattr(rt.speech, 'guest_mode', False):
+            return {'incidents': []}
+        options = rt.options
+        stamp = rt.security_events.stamp()
+        incidents._prune()
+        query = tool_input.tool_args.get('query', '').lower().strip()
+        reports = []
+        for item in list(incidents.items):
+            evidence = await readable_evidence(hass, llm_context, item['evidence'])
+            if not evidence or (query and not any(query in f"{row['source']} {row['text']}".lower() for row in evidence)):
+                continue
+            start = dt_util.parse_datetime(evidence[0]['time'])
+            sequence = [dict(public_evidence(row),
+                             seconds_from_first_observation=round((dt_util.parse_datetime(row['time']) - start).total_seconds(), 1))
+                        for row in evidence]
+            report = {'id': item['id'], 'start': evidence[0]['time'], 'end': evidence[-1]['time'],
+                      'sources': list(dict.fromkeys(row['source'] for row in evidence)),
+                      'evidence': sequence, 'link': item['link']}
+            coverage = await describe_coverage(hass, options, llm_context, evidence)
+            if coverage:
+                report['coverage'] = coverage
+            reports.append(report)
+            if len(reports) == 8:
+                break
+        if stamp != rt.security_events.stamp() or not incidents.enabled:
+            return {'error': 'Security context changed; ask again'}
+        return {'incidents': reports}
 
 
 class GuardedAPI(SentientAPI):

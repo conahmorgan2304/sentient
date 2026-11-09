@@ -92,3 +92,40 @@ test('motion cannot select an excluded camera and leaving Security removes the s
   assert.equal(panel._liveCamKey, null);
   assert.equal(panel._liveCard, null);
 });
+
+test('an offline gate is unconfirmed, and open doors and triggered alarms remain visible', () => {
+  const panel = new Panel();
+  const el = {};
+  panel._hass = { states: {
+    'binary_sensor.gate': { entity_id: 'binary_sensor.gate', state: 'unavailable', attributes: { device_class: 'door', friendly_name: 'Gate' } },
+    'binary_sensor.back': { entity_id: 'binary_sensor.back', state: 'on', attributes: { device_class: 'door', friendly_name: 'Back' } },
+    'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'triggered', attributes: {} },
+  } };
+  panel._drawSecurityInto(el);
+  assert.match(el.innerHTML, /Gate.*STATUS UNKNOWN/);
+  assert.match(el.innerHTML, /Back.*OPEN/);
+  assert.match(el.innerHTML, /ALARM ACTIVE/);
+  assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
+  panel._hass = { states: {
+    'binary_sensor.gate': { entity_id: 'binary_sensor.gate', state: 'off', attributes: { device_class: 'door', friendly_name: 'Gate', restored: true } },
+    'lock.front': { entity_id: 'lock.front', state: 'locked', attributes: {} },
+  } };
+  panel._drawSecurityInto(el);
+  assert.match(el.innerHTML, /Gate.*STATUS UNKNOWN/);
+  assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
+});
+
+test('camera pipeline health remains visible on the Security page', () => {
+  const panel = new Panel(), el = { querySelector: () => null };
+  panel._$ = (id) => id === "frigatehealth" ? el : null;
+  panel._drawFrigateHealth({ enabled: true, availability: "online", stats_fresh: true, cameras: [
+    { name: "Shed", processing: "reporting", process_fps: 5, ha_report: "idle" },
+    { name: "Garden", processing: "zero_rate", ha_report: "idle" },
+  ] });
+  assert.equal(el.hidden, false);
+  assert.match(el.innerHTML, /Shed.*5.0 FPS PROCESSING/);
+  assert.match(el.innerHTML, /Garden.*ZERO PROCESSING RATE/);
+  assert.match(el.innerHTML, /none received this session/);
+  panel._drawFrigateHealth({ enabled: true, availability: "unknown", last_reported_availability: "online", stats_fresh: false, cameras: [] });
+  assert.match(el.innerHTML, /UNKNOWN \(LAST REPORT ONLINE\).*NO FRESH STATS/);
+});
