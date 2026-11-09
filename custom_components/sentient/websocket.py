@@ -928,8 +928,28 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             "helpers": helpers,
             "selector": selector_texts,
             "categories": MEMORY_CATEGORIES,
+            "depends": DEPENDS,
         },
     )
+
+
+# settings that only mean something while another one is switched on: the page hides them until it is
+# (their values are kept, so switching back on brings them back as they were)
+DEPENDS: dict[str, str] = {
+    **{k: "sleep_detection" for k in ("sleep_minutes", "sleep_ignore_sensors", "bedtime_routines", "sleep_actions", "wake_actions")},
+    "zone_door_sensors": "zone_visits",
+    **{k: "faces" for k in ("face_people", "face_cameras", "face_forget_hours")},
+    **{k: "clip_watch" for k in ("clip_cameras", "clip_scope", "clip_when", "clip_notify", "clip_source", "clip_whose", "clip_looks", "clip_days", "clip_keep", "budget_clips")},
+    **{k: "energy_insight" for k in ("energy_price", "energy_currency")},
+    "foresight_time": "foresight", "reflection_time": "reflection",
+    **{k: "welcome_home" for k in ("welcome_people", "welcome_min_away", "welcome_until")},
+    "morning_briefing_areas": "morning_briefing",
+    **{k: "night_watch" for k in ("night_watch_entities", "night_watch_announce", "night_watch_speakers")},
+    "hutch_spot": "hutch_check", **{k: "cat_watch" for k in ("cat_sensors", "cat_loud")},
+    **{k: "screen" for k in ("screen_actions", "screen_clear_actions")},
+    **{k: "alexa_skill" for k in ("alexa_wait", "alexa_late_answers")},
+    "self_adjust": "self_check",
+}
 
 
 def _voice_picker(hass: HomeAssistant, entry, groups: list[dict[str, Any]]) -> None:

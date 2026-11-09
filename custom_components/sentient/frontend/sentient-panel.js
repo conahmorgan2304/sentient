@@ -564,13 +564,18 @@
         const S = this._settings;
         const form = document.createElement("ha-form");
         form.hass = this._hass;
-        form.schema = g.schema;
+        // a setting that only matters while another is on stays hidden until it is (its value is kept)
+        const dep = S.depends || {};
+        const shown = (d) => g.schema.filter((f) => !dep[f.name] || !g.schema.some((x) => x.name === dep[f.name]) || d[dep[f.name]]);
+        form.schema = shown(this._draft);
         form.data = this._draft;
         form.computeLabel = (s) => S.labels[s.name] || s.name;
         form.computeHelper = (s) => S.helpers[s.name] || "";
         form.localizeValue = (key) => S.selector[key] || key.split(".").pop();
         form.addEventListener("value-changed", (ev) => {
-          this._draft = { ...ev.detail.value };
+          this._draft = { ...this._draft, ...ev.detail.value };
+          const next = shown(this._draft);
+          if (next.length !== form.schema.length) form.schema = next;
           form.data = this._draft;
           this._dirty = true;
           this._status("UNSAVED CHANGES", "warn");

@@ -23,3 +23,10 @@ async def test_cameras_command_lists_only_real_cameras(hass: HomeAssistant, hass
     assert set(rows) == {"camera.gate", "camera.garden"}
     assert rows["camera.gate"]["today"] == 1 and rows["camera.garden"]["today"] == 0
     assert out["hidden"] == 2
+
+
+def test_settings_dependencies_point_at_real_settings_in_the_same_group():
+    from custom_components.sentient.websocket import DEPENDS, GROUPS
+
+    for child, parent in DEPENDS.items():
+        assert any(child in [str(k) for k in g[4]] and parent in [str(k) for k in g[4]] for g in GROUPS), (child, parent)
