@@ -34,6 +34,7 @@ from .const import (
     CONF_FALLBACK_SPEAKERS,
     CONF_HEALTH_IGNORE,
     CONF_INSIDE_SENSORS,
+    CONF_LEARN_ENTITIES,
     CONF_NIGHT_WATCH_SPEAKERS,
     CONF_NOTIFY_TARGETS,
     CONF_PHONE_APPS,
@@ -56,7 +57,7 @@ LABELS: dict[str, str] = {
     CONF_NIGHT_WATCH_SPEAKERS: "night-watch speakers", CONF_NOTIFY_TARGETS: "phone notifications",
     CONF_PHONE_APPS: "phone app", CONF_AI_TASK_ENTITY: "AI task", CONF_VOICE_AGENT: "voice agent",
     CONF_CHAT_AGENT: "chat agent", CONF_TTS_ENTITY: "voice (TTS)", CONF_BINS_CALENDAR: "bins calendar",
-    CONF_INSIDE_SENSORS: "inside sensors", CONF_BUSY_ENTITIES: "busy signal",
+    CONF_INSIDE_SENSORS: "inside sensors", CONF_BUSY_ENTITIES: "busy signal", CONF_LEARN_ENTITIES: "habit learning",
 }
 
 
@@ -82,7 +83,9 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
                 if domain == "notify" and hass.services.has_service("notify", object_id):
                     continue  # an old-style notify action, not an entity
                 out.append({"kind": "wiring", "name": eid, "entity_id": eid, "setting": label, "gone": True})
-            elif st.state == STATE_UNAVAILABLE and now - st.last_changed > DEAD_FOR:
+            elif st.state == STATE_UNAVAILABLE and (st.attributes.get("restored") or now - st.last_changed > DEAD_FOR):
+                # "restored" means the integration no longer provides it at all (and every restart resets
+                # last_changed, so a long-dead entity would otherwise never look old enough)
                 out.append({"kind": "wiring", "name": st.name or eid, "entity_id": eid, "setting": label,
                             "gone": False, "since": st.last_changed.isoformat()})
     return out

@@ -34,3 +34,13 @@ async def test_health_says_it_in_words(hass: HomeAssistant) -> None:
     health.issues = [{"kind": "wiring", "name": "binary_sensor.deleted_bell", "entity_id": "binary_sensor.deleted_bell",
                       "setting": "doorbell", "gone": True}]
     assert health.describe() == ["binary_sensor.deleted_bell is chosen in Sentient's settings (doorbell) but no longer exists"]
+
+
+async def test_restored_entities_are_dead_even_straight_after_a_restart(hass: HomeAssistant) -> None:
+    """A restored (no longer provided) entity is reported although its last_changed is only seconds old."""
+    hass.states.async_set("binary_sensor.old_car", "unavailable", {"restored": True})
+    hass.states.async_set("binary_sensor.blip", "unavailable")  # just went offline: not news yet
+    found = broken(hass, {"drive_triggers": ["binary_sensor.old_car", "binary_sensor.blip"],
+                          "learn_entities": ["binary_sensor.old_car"]})
+    assert {(f["entity_id"], f["setting"]) for f in found} == {
+        ("binary_sensor.old_car", "drive sensors"), ("binary_sensor.old_car", "habit learning")}
