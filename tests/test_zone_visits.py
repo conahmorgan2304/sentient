@@ -98,3 +98,14 @@ async def test_switched_off_the_zone_does_nothing(hass: HomeAssistant) -> None:
     with patch("custom_components.sentient.visitors.asyncio.sleep"):
         await _flip(hass, ZONE, "on")
     assert ai == []
+
+
+async def test_a_visit_joins_the_security_timeline(hass: HomeAssistant) -> None:
+    entry = await _house(hass)
+    _ai(hass)
+    async_mock_service(hass, "assist_satellite", "announce")
+    seen = []
+    entry.runtime_data.visitors.on_visit = lambda camera, text: seen.append((camera, text))
+    with patch("custom_components.sentient.visitors.asyncio.sleep"):
+        await _flip(hass, ZONE, "on")
+    assert seen == [("camera.doorbell", "Someone reached the front door: A man in a red coat")]

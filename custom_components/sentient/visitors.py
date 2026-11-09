@@ -88,6 +88,7 @@ class Visitors:
         self._door_opened: datetime | None = None
         self.parcel_waiting = False  # a parcel was there at the last look
         self.expecting: Callable[[], bool] = lambda: False  # set by the runtime: a parcel's out for delivery today
+        self.on_visit: Callable[[str, str], Any] | None = None  # set by the runtime: (camera, text) for the security timeline
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -324,6 +325,9 @@ class Visitors:
         }
         self.log.appendleft(visit)
         self._save()
+        if self.on_visit is not None and self.camera:
+            how = "Someone reached the front door" if via_zone else "Doorbell pressed"
+            self.on_visit(self.camera, f"{how}: {visit['description']}")
         if self.options.get(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS) and kind != "nobody":
             line = (f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
                     if result.get("description") else "Someone's at the door.")

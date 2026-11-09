@@ -282,6 +282,9 @@ class HouseHealth:
             out += [i for i in dog.issues() if i.get("entity_id") not in ignore]
         if (test := getattr(rt, "selftest", None)) is not None:
             out += test.issues()
+        from .wiring import broken
+
+        out += broken(self.hass, self.options)
         from .presence import inside_sensors
 
         sensors = [st for e in inside_sensors(self.hass, self.options)
@@ -307,6 +310,9 @@ class HouseHealth:
                 out.append("Today's AI calls are used up — plain words until midnight")
             elif i["kind"] == "speaker":
                 out.append(f"Couldn't speak on {i['name']}")
+            elif i["kind"] == "wiring":
+                out.append(f"{i['name']} is chosen in Sentient's settings ({i['setting']}) but "
+                           + ("no longer exists" if i.get("gone") else "has been unavailable for a while"))
             elif i["kind"] == "stuck":
                 since = dt_util.parse_datetime(i.get("since") or "") or now
                 if i.get("on"):

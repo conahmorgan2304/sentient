@@ -185,3 +185,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.20 — Old nightly self-test questions are cleared from conversation history, so "asked 10 times" findings and recent conversations only count real people.
 - [x] 0.98.21 — A tablet's or vacuum's own camera (a voice satellite's front camera, a vacuum map) no longer counts as a house camera, so a house with five cameras says five.
 - [x] 0.98.22 — The door camera's zone can start a visit when nobody rings (off by default). The bell and the zone are one visit: whichever comes first wins and the other is ignored for five minutes; a zone is ignored if the front door opened first.
+- [x] 0.98.23 — House health now names settings that point at entities that no longer exist or have been dead for an hour (doorbell, drive sensors, speakers, phone, AI…). Doorbell and zone visits join the security timeline as evidence beside the camera events.
