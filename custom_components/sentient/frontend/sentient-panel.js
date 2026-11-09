@@ -124,7 +124,7 @@
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes mp2">
-            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div></section>
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="minner" class="card" hidden></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden>
@@ -381,6 +381,7 @@
       R("minc").innerHTML = incidentRows ? this._h("SECURITY INCIDENTS", "") + incidentRows : "";
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
+      this._loadInner();
       this._drawBrain(mind, ai);
       this._drawAppliances(mind.appliances || []);
 
@@ -1211,6 +1212,30 @@
       return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
     }
 
+    // ---------- what it's thinking (Mind tab) ----------
+    _loadInner() {
+      if (this._innerAt && Date.now() - this._innerAt < 60000) return;
+      this._innerAt = Date.now();
+      this._hass.callWS({ type: "sentient/inner" }).then((r) => { this._inner = r; this._drawInner(); }, () => { this._inner = null; this._drawInner(); });
+    }
+
+    _drawInner() {
+      const el = this._$("minner");
+      if (!el) return;
+      const i = this._inner;
+      const off = !i || !(i.learn || i.day || i.thoughts_on);
+      el.hidden = off;
+      if (off) { el.innerHTML = ""; return; }
+      const icon = { lesson: "mdi:school-outline", day: "mdi:weather-sunset-up", guess: "mdi:crystal-ball" };
+      const admin = this._hass.user && this._hass.user.is_admin;
+      const th = i.thoughts || [];
+      const bits = [i.corrections != null ? `${i.corrections} CORRECTIONS · 2 WEEKS` : "", i.prediction && i.prediction.tried ? `NEXT ROOM ${Math.round((i.prediction.rate || 0) * 100)}% RIGHT` : ""].filter(Boolean).join(" · ");
+      el.innerHTML = this._h("WHAT I'M THINKING", th.length ? `${th.length}` : "")
+        + (th.map((t) => `<div class="r"><ha-icon icon="${esc(icon[t.kind] || "mdi:thought-bubble-outline")}"></ha-icon><b class="wrap">${esc(t.text)}<small>${esc(t.why || "")}</small></b>${admin && t.kind !== "guess" ? `<button class="btn sm ghost" data-act="innerno" data-id="${esc(t.key)}" title="Dismiss">✕</button>` : ""}</div>`).join("")
+          || '<div class="e">NOTHING TO REPORT · IT SAYS SO WHEN IT LEARNS SOMETHING</div>')
+        + (bits ? `<div class="hint">${esc(bits)}</div>` : "");
+    }
+
     // ---------- heating (House tab) ----------
     _loadHeat() {
       this._heatAt = Date.now();
@@ -1652,6 +1677,7 @@
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
       else if (act === "openmind") this._show("mind", true);
+      else if (act === "innerno") this._hass.callWS({ type: "sentient/inner/dismiss", key: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "heatzones") this._openHeatZones(false);
       else if (act === "heatzsave") this._saveHeatZones();
       else if (act === "heatdel") { if (window.confirm("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }

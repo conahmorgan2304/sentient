@@ -176,6 +176,7 @@ class SentientRuntime:
     screen: Screen
     threads: Any = None  # things to ask about later
     selfaware: Any = None  # what it can do now, and how its behaviour is going down
+    inner: Any = None  # corrections it learns from, an unusual day, next-room guesses and its thoughts
     proposals: Any = None  # settings changes it would make, waiting for a yes
     holiday: Any = None  # holiday mode
     trust: Any = None  # do, say-then-do or ask first, by kind of device
@@ -599,6 +600,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .selfaware import SelfAware
 
     selfaware = SelfAware(hass, options, get_rt)
+    from .innerlife import InnerLife
+
+    inner = InnerLife(hass, entry.entry_id, options, get_rt)
     from .usage import Usage
 
     usage = Usage(hass, entry.entry_id, options, get_rt)
@@ -656,7 +660,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
     house_context.configure()
     await security_events.async_start()
@@ -673,7 +677,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
                "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
-               "selfaware": selfaware, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
+               "selfaware": selfaware, "inner": inner, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
                "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
     timings: dict[str, float] = {}
     for name, engine in engines.items():
@@ -798,7 +802,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
+    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:

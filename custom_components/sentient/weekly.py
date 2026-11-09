@@ -75,6 +75,14 @@ def build(rt: Any, days: int = 7) -> dict[str, Any]:
     test = getattr(getattr(rt, "selftest", None), "last", None) or {}
     if _since(test.get("time"), cutoff) and (bad := [r for r in test.get("results", []) if not r.get("right")]):
         wrong.append(f"the self-test got {len(bad)} answer{'s' if len(bad) != 1 else ''} wrong")
+    inner = getattr(rt, "inner", None)
+    if inner is not None and inner.learn_on:
+        undone = sum(1 for c in inner.corrections if c["t"] >= cutoff.timestamp())
+        if undone:
+            wrong.append(f"{undone} thing{'s' if undone != 1 else ''} the house did {'was' if undone == 1 else 'were'} changed straight back")
+        stopped = [t["text"] for t in inner.thoughts if t["kind"] == "lesson" and t["t"] >= cutoff.timestamp() and "stopped doing" in t["text"]]
+        if stopped:
+            wrong.append(f"handed back {len(stopped)} routine{'s' if len(stopped) != 1 else ''} that kept being undone")
     if wrong:
         out["got_wrong"] = wrong
     if (proposals := getattr(rt, "proposals", None)) is not None and (waiting := proposals.listing()):

@@ -76,6 +76,12 @@ _SUPPORTED = {
     "input_boolean": ("on", "off"),
     "cover": ("open", "closed"),
 }
+# A light or switch that a movement sensor flicks on and off all day is not a routine: people walking past
+# at whatever time they happen to. Such an entity is ignored (never learned from, never linked).
+FLAP_PER_DAY = 5.0  # average changes to one state per active day at or above this = movement-driven
+FLAP_SHORT_PER_DAY = 3.0  # ...or this many with most of them undone within FLAP_SHORT_MIN
+FLAP_SHORT_MIN = 10
+FLAP_SHORT_SHARE = 0.7
 LINK_LAG = 120  # seconds: the follow-up has to come this soon after
 LINK_SAME_ACTION = 3  # seconds: closer than this, both were one action (a group, "all lights off")
 LINK_MIN_SEEN = 4
@@ -191,6 +197,33 @@ def _changes_to(states: list[State], target: str, automated: set[int] | None = N
     return out
 
 
+def is_flappy(states: list[State], target: str, since: datetime | None = None) -> bool:
+    """True when the entity keeps switching to *target* through the day, the pattern a motion sensor makes
+    (so the times say where people walked, not what they chose to do). Pure statistics over its history."""
+    times = [e for e in _changes_to(states, target) if since is None or e >= since]
+    if len(times) < MIN_DAYS:
+        return False
+    per_day: dict[Any, int] = {}
+    for t in times:
+        per_day[t.date()] = per_day.get(t.date(), 0) + 1
+    average = len(times) / len(per_day)
+    if average >= FLAP_PER_DAY:
+        return True
+    if average < FLAP_SHORT_PER_DAY:
+        return False
+    # switched back soon after: a short cycle (any change away from the target within a few minutes)
+    short = 0
+    for t in times:
+        for st in states:
+            if st.last_changed <= t:
+                continue
+            if st.state != target and st.state not in ("unavailable", "unknown"):
+                if (dt_util.as_local(st.last_changed) - t).total_seconds() <= FLAP_SHORT_MIN * 60:
+                    short += 1
+                break
+    return short / len(times) >= FLAP_SHORT_SHARE
+
+
 def _fit(values: dict[Any, list[int]], days: list) -> tuple[float, int, int, float, list] | None:
     """The best cluster of one value per day: (support, days seen, median, spread, those days), or None."""
     best = None
@@ -229,6 +262,8 @@ def find_routines(
     window = [today - timedelta(days=i) for i in range(1, WINDOW_DAYS + 1)]
     found: list[Routine] = []
     for target in _SUPPORTED[domain]:
+        if is_flappy(states, target, dt_util.start_of_local_day(window[-1])):
+            continue  # a movement sensor's doing: people walking past, not a habit
         events = [e for e in _changes_to(states, target, automated) if e.date() in window]
         by_day: dict[Any, list[int]] = {}
         for e in events:
@@ -368,6 +403,8 @@ def find_links(
         if edomain not in _SUPPORTED:
             continue
         for es in _SUPPORTED[edomain]:
+            if is_flappy(estates, es, start):
+                continue  # switched on and off all day by movement: not something people do after a cause
             done = [t for t in _changes_to(estates, es, automated.get(effect)) if start <= t <= now]
             if len(done) < LINK_MIN_SEEN:
                 continue
