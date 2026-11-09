@@ -45,3 +45,11 @@ Custom questions, different providers, identity-assisted analyses and different 
 - Already-dispatched provider requests or phone notifications cannot be recalled. The code does not claim independent physical verification from a device report or AI summary.
 
 Validation: **1,531 Python tests** and **9 JavaScript tests** pass, including **64 new Python regression cases** and **3 new frontend cases**. Compilation, frontend syntax, whitespace and English translation parity checks pass. Hardware testing with real Frigate MQTT, cameras, speakers and the configured AI provider remains necessary after installation.
+
+## Camera coverage in incident reports
+
+Enable **Explain camera coverage gaps** under **Settings → Camera security**. Enable **Group security incidents** under **Settings → Safety & security** to group contact changes and detections. Enable **Link security alerts to Frigate events** to add retained Frigate detections. The report considers configured clip cameras, the door camera, and cameras mapped from selected security sensors. Voice reports show evidence and cameras the caller can read through Assist.
+
+Ask “What happened after the gate opened?” or “Which cameras saw the incident?” Sentient can report the order and elapsed time between observed events. When it recorded an unavailable or unknown camera state alongside a live contact change or detection, it can say which camera was affected and when. Availability at the time of the question is reported separately. An old incident without a recorded outage has unknown historical availability. Missing detections leave the route unconfirmed.
+
+Coverage reads Home Assistant states and retained evidence. It does not fetch footage or add background AI calls. Disabling coverage removes the saved availability observations.

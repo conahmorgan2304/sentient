@@ -1902,6 +1902,11 @@ class SentientAPI(llm.API):
                          "Unknown or unavailable readings do not establish current state. Mention uncertainty when it "
                          "changes the answer. A timestamp is evidence age, not proof a quiet event-driven sensor is stale. "
                          "Never call an attempted action completed unless the device reported the requested result.")
+        if opts.get("security_coverage"):
+            lines.append("For what happened during a security incident, which way someone went, or whether a camera "
+                         "missed part of the incident, use sentient_incidents or sentient_security_event for a selected "
+                         "Frigate event. Say which observations are linked and where evidence is missing. Keep the "
+                         "route unconfirmed and separate the cameras' present reports from historical evidence.")
         weather_id = opts.get(CONF_BRIEFING_WEATHER)
         weather = self.hass.states.get(weather_id) if weather_id else next(
             (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)

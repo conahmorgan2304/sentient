@@ -134,6 +134,7 @@ class SecurityEventTool(_Tool):
                    "Current occupancy reports cannot establish the same person's continued presence. "
                    "Use feedback_summary for reviewed event counts and camera-specific review suggestions. "
                    "For an explicit question about the latest alert just now, use latest_alert; nearby competing alerts need clarification. "
+                   "Use coverage to explain the limits of the evidence and distinguish present availability from the incident. "
                    "Never claim a possible camera/time link proves identity or an intrusion.")
     parameters = vol.Schema({vol.Optional("action", default="detail"): vol.In(["list", "detail", "current", "feedback_summary", "latest_alert"]),
                              vol.Optional("event_id"): str, vol.Optional("camera"): str})
@@ -167,7 +168,23 @@ class SecurityEventTool(_Tool):
         if stamp != events.stamp() or not events.tracking:
             return {"error": "Security event context changed; ask again"}
         if args["action"] in ("detail", "latest_alert"):
-            return {"event": described, "evidence": "detector reports, AI inferences and household corrections are labelled separately"}
+            from .incidents import CONF_COVERAGE
+            from .security_coverage import describe_coverage, readable_evidence
+
+            result = {"event": described, "evidence": "detector reports, AI inferences and household corrections are labelled separately"}
+            if rt.options.get(CONF_COVERAGE):
+                evidence = [{"source": f"camera.{row['camera']}", "kind": "event"}]
+                if incidents := getattr(rt, "incidents", None):
+                    incidents._prune()
+                    # A precise event ID, rather than mere time proximity, identifies the retained group.
+                    for item in incidents.items if incidents.enabled else []:
+                        if any(r.get("event_id") == row["id"] and r["source"] == evidence[0]["source"] for r in item["evidence"]):
+                            evidence.extend(await readable_evidence(hass, llm_context, item["evidence"]))
+                            break
+                result["coverage"] = await describe_coverage(hass, rt.options, llm_context, evidence)
+                if stamp != events.stamp() or not events.tracking:
+                    return {"error": "Security event context changed; ask again"}
+            return result
         from .camsecurity import camera_for
 
         readings = []

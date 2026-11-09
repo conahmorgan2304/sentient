@@ -162,14 +162,9 @@ class SecurityEvents:
         self.configure(self.options)
 
     def cameras(self):
-        from .camsecurity import camera_for
-        cams = set(self.options.get("clip_cameras") or [])
-        if self.options.get("door_camera"):
-            cams.add(self.options["door_camera"])
-        for sensor in self.options.get("camera_security_sensors") or []:
-            if camera := camera_for(self.hass, sensor):
-                cams.add(camera)
-        return {c.removeprefix("camera.") for c in cams if isinstance(c, str)}
+        from .incidents import configured_cameras
+
+        return {camera.removeprefix("camera.") for camera in configured_cameras(self.hass, self.options)}
 
     def _prune(self):
         before = len(self.items)

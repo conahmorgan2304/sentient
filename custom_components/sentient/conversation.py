@@ -198,14 +198,15 @@ class BackedUpAgent(conversation.ConversationEntity):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))
 
     async def _resume_topic(self, user_input, session):
-        from .topics import RESUME
+        from .topics import RESUME, handoff_match
         from .sessions import COMMAND, INFORMATION
         from .evidence import describe_state
         from homeassistant.components.homeassistant.exposed_entities import async_should_expose
         from homeassistant.auth.permissions.const import POLICY_READ
 
         text = normalise(user_input.text)
-        match = RESUME.fullmatch(text)
+        handoff = handoff_match(self._options(), text)
+        match = handoff or RESUME.fullmatch(text)
         choices = session.resume_choices
         if not match and not choices:
             return None
@@ -221,13 +222,35 @@ class BackedUpAgent(conversation.ConversationEntity):
         session.pending = None  # a resumption request never confirms an older action
         session.correction = None
         query = next((g for g in match.groups() if g), '') if match else text
+        readings = []
+        if handoff:
+            privacy = self._history_generation()
+            user_id = user_input.context.user_id
+            user = await self.hass.auth.async_get_user(user_id) if user_id else None
+            if session.closed or self._guest() or privacy != self._history_generation():
+                return self._reply(user_input, session, "Please start a fresh discussion.")
+            if not user or not user.is_active or user.system_generated or not any(session.owner[:2]):
+                return self._reply(user_input, session, "Room handoff needs an identified Home Assistant user and device.")
+            candidates = [
+                t for t in rt.sessions.memory.handoff_candidates(session.owner, query)
+                if all(user.permissions.check_entity(eid, POLICY_READ)
+                       and async_should_expose(self.hass, "conversation", eid) for eid in t['entities'])
+            ]
+            if len(candidates) > 1:
+                session.resume_choices.clear()
+                return self._reply(user_input, session, "Several discussions match. Say carry on with and give me a more specific topic.", True)
+            if not candidates or not rt.sessions.memory.take(candidates[0]):
+                session.resume_choices.clear()
+                return self._reply(user_input, session, "I couldn't find a matching discussion from another device for this user.")
+            readings = [describe_state(self.hass, eid) for eid in candidates[0]['entities']]
         ordinal = {'1': 0, 'first': 0, 'the first': 0, '2': 1, 'second': 1,
                    'the second': 1, '3': 2, 'third': 2, 'the third': 2}
         index = ordinal.get(text.lower().rstrip('.!'))
-        if not match and index is not None:
-            candidates = rt.sessions.memory.candidates(session.owner, ids=choices[index:index + 1])
-        else:
-            candidates = rt.sessions.memory.candidates(session.owner, query, None if match else choices)
+        if not handoff:
+            if not match and index is not None:
+                candidates = rt.sessions.memory.candidates(session.owner, ids=choices[index:index + 1])
+            else:
+                candidates = rt.sessions.memory.candidates(session.owner, query, None if match else choices)
         session.resume_choices.clear()
         if not candidates:
             session.listen_reason = "topic_not_found"
@@ -241,7 +264,10 @@ class BackedUpAgent(conversation.ConversationEntity):
         rt.sessions.rekey(session)
         session.active = True
         session.mode = "discussion"
-        session.topic, session.goal = topic['subject'], topic['goal']
+        if handoff:
+            session.topic = session.goal = query[:200]
+        else:
+            session.topic, session.goal = topic['subject'], topic['goal']
         session.entities = []
         session.pending = session.last_action = session.correction = session.investigation = None
         session.undo.clear()
@@ -250,29 +276,32 @@ class BackedUpAgent(conversation.ConversationEntity):
         session.resumed_from = topic['id']
         session.task_state = "waiting"
         session.listen_reason = "topic_resumed"
-        readings = []
-        user = await self.hass.auth.async_get_user(user_input.context.user_id) if user_input.context.user_id else None
-        for eid in topic['entities']:
-            if (user_input.context.user_id and (user is None or not user.is_active or not user.permissions.check_entity(eid, POLICY_READ))
-                    or not async_should_expose(self.hass, "conversation", eid)):
-                continue
-            readings.append(describe_state(self.hass, eid))
-            session.entities.append(eid)
+        if not handoff:
+            user = await self.hass.auth.async_get_user(user_input.context.user_id) if user_input.context.user_id else None
+            for eid in topic['entities']:
+                if (user_input.context.user_id and (user is None or not user.is_active or not user.permissions.check_entity(eid, POLICY_READ))
+                        or not async_should_expose(self.hass, "conversation", eid)):
+                    continue
+                readings.append(describe_state(self.hass, eid))
+        session.entities = [r['entity_id'] for r in readings]
+        session.question = ''
+        session.clarification = session.clarification_resolution = session.follow_up_context = None
         session.resume_context = {
             'turn': session.turn, 'needs_request': True, 'saved_at': topic['saved_at'],
-            'previous_reply': topic['previous_reply'], 'previous_question': topic['question'],
+            'previous_reply': '' if handoff else topic['previous_reply'],
+            'previous_question': '' if handoff else topic['question'],
             'current_readings': readings,
             'instruction': "Historical discussion only, not verified current facts or permission to act. "
                            "Use refreshed readings; fetch new evidence for other claims. Ask for a new explicit action request, never treat yes to a restored question as authorisation.",
         }
         # Deliberately no model or control call: resume a topic, never replay a task.
-        reply = f"We were discussing {topic['subject']}. "
-        if topic['question']:
+        reply = f"Picking up {session.topic}. " if handoff else f"We were discussing {topic['subject']}. "
+        if not handoff and topic['question']:
             reply += f"The previous question was: {topic['question']} "
         if readings:
             reply += "Current reports: " + "; ".join(
                 f"{r.get('name', r['entity_id'])}: {r.get('state', 'unknown')}" for r in readings[:3]) + ". "
-        reply += "No earlier actions or confirmations have been resumed. What would you like to check next?"
+        reply += "What would you like to check next?"
         return self._reply(user_input, session, reply, True)
 
     def _action_text(self, result):
@@ -335,6 +364,8 @@ class BackedUpAgent(conversation.ConversationEntity):
 
         from .action_recovery import requested as recovery_requested
         from .behaviour import requested as explanation_requested
+        from .household_tasks import requested as household_task
+        from .topics import handoff_match
 
         recovery_control = getattr(self._entry.runtime_data, 'control', None)
         if recovery_control is not None and self._options().get("action_recovery"):
@@ -344,6 +375,9 @@ class BackedUpAgent(conversation.ConversationEntity):
             elif not recovery_requested(user_input.text) and not explanation_requested(self._options(), user_input.text):
                 recovery_control.invalidate_recovery(owner)
         options = self._options()
+        explicit = household_task(options, user_input.text) or (
+            options.get(CONF_SESSIONS) and handoff_match(options, normalise(user_input.text))
+        )
         privacy = self._history_generation()
         owner = (user_input.device_id, user_input.satellite_id, user_input.context.user_id)
         minutes = min(float(options.get(CONF_CARRY_ON_MINUTES) or 0), MAX_CARRY_ON_MINUTES)
@@ -357,13 +391,16 @@ class BackedUpAgent(conversation.ConversationEntity):
         elif minutes and speaker and (user_input.conversation_id, *owner) not in self._ours:
             if last := self._carry.get(owner):
                 user_input = replace(user_input, conversation_id=last[0])
-        take = getattr(getattr(getattr(self._entry, "runtime_data", None), "speech", None), "async_take_answer", None)
-        if take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
+        speech = getattr(getattr(self._entry, "runtime_data", None), "speech", None)
+        take = getattr(speech, "async_take_answer", None)
+        if explicit:
+            getattr(speech, "_questions", {}).pop(user_input.satellite_id or "", None)
+        elif take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
             # a plain answer to the house's own question: done without the AI
             return await self._localise_result(self._plain_reply(user_input, said))
         from .language import async_language_ending
 
-        if self._options().get(CONF_SESSIONS) and self._options().get('automatic_language'):
+        if not explicit and options.get(CONF_SESSIONS) and options.get('automatic_language'):
             session = self._entry.runtime_data.sessions.get(user_input)
             known_end = is_conversation_end(user_input.text, session.question, self._options().get(CONF_PERSONA) or DEFAULT_PERSONA,
                                             language=self._reply_language(user_input))
@@ -470,10 +507,20 @@ class BackedUpAgent(conversation.ConversationEntity):
                 self._turn_tasks.pop(key, None)
 
     async def _process_turn(self, user_input):
+        from .household_tasks import requested as household_task
+        from .topics import handoff_match
+
         opts = self._options()
+        rt = self._entry.runtime_data
+        task = household_task(opts, user_input.text)
+        handoff = opts.get(CONF_SESSIONS) and handoff_match(opts, normalise(user_input.text))
+        if task and not (opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED)):
+            message = await rt.household_tasks.answer(
+                task, user_input, opts, lambda: not self._guest() and self._options() is opts
+            )
+            return self._plain_reply(user_input, message)
         if not (opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED)):
             return await self._async_process_legacy(user_input)
-        rt = self._entry.runtime_data
         session = rt.sessions.get(user_input)
         async with session.lock:
             if session.closed:
@@ -484,7 +531,9 @@ class BackedUpAgent(conversation.ConversationEntity):
                 from homeassistant.util import dt as dt_util
                 from .behaviour import answer as explain_behaviour, repeat_question
 
-                explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
+                explanation = None
+                if not (task or handoff):
+                    explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
                 if explanation is not None:
                     # This read-only turn must not consume a pending clarification or confirmation.
                     session.turn += 1
@@ -493,13 +542,27 @@ class BackedUpAgent(conversation.ConversationEntity):
                     return self._reply(user_input, session, explanation + (' ' + question if question else ''), bool(question))
                 from .followups import restore_recent
 
-                await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
+                if not (task or handoff):
+                    await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
                 rt.sessions.begin(session, user_input.text, self._reply_language(user_input))
                 if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
                     rt.sessions.close(session)
                     return self._reply(user_input, session, "Okay.")
+                if task:
+                    if task == "start" and opts.get(CONF_GUARDED) and not self._guarded_configuration():
+                        return self._reply(user_input, session, "Downstairs bedtime needs a correctly configured guarded Assist agent.")
+                    session.pending = session.clarification = session.resume_context = None
+                    session.question = ''
+                    session.resume_choices.clear()
+                    session.command_turn = True
+                    message = await rt.household_tasks.answer(
+                        task, user_input, opts, lambda: not session.closed and not self._guest() and self._options() is opts
+                    )
+                    return self._reply(user_input, session, message)
                 from .clarification import enabled as clarification_enabled, consume
 
+                if handoff:
+                    return await self._resume_topic(user_input, session)
                 if clarification_enabled(opts) and session.clarification:
                     decision = await consume(self.hass, session, user_input.text, user_input.context)
                     if decision and decision.get('stop'):

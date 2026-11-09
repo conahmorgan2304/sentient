@@ -117,6 +117,7 @@ class SentientRuntime:
     updates: Any
     voice_checks: Any
     control: Any
+    household_tasks: Any
     incidents: Any
     security_events: Any
     clip_analysis: Any
@@ -656,8 +657,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .house_context import HouseContext
 
     house_context = HouseContext(hass, lambda: entry.runtime_data)
+    from .household_tasks import HouseholdTasks
+
+    control = Control(hass, options, timeline)
     entry.runtime_data = SentientRuntime(
-        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=Control(hass, options, timeline), incidents=incidents, security_events=security_events, clip_analysis=clip_analysis,
+        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -722,6 +726,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     entry.runtime_data.watches.clear_camera_cache()
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
+    entry.runtime_data.household_tasks.clear()
     entry.runtime_data.ai.voice_timings.clear()
     await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -770,6 +775,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
                  and old.get('ai_task_entity') == options.get('ai_task_entity'))
     clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
     entry.runtime_data.control.clear_recovery()
+    entry.runtime_data.household_tasks.clear()
     entry.runtime_data.ai.voice_timings.clear()
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.followthrough.clear()
@@ -784,6 +790,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
     entry.runtime_data.security_events.configure(options)
+    entry.runtime_data.incidents.configure(options)
     entry.runtime_data.house_context.configure()
     entry.runtime_data.updates.configure(options)
     entry.runtime_data.voice_checks.options = options
@@ -809,7 +816,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "incidents", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
+    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:

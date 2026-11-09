@@ -107,3 +107,17 @@ Enforced voice confirmation can lock doors and close covers as before. **Unlocki
 ## Who can open the Sentient page (0.98.14)
 
 "Only administrators can open this page" (Settings, This page) hides the sidebar page from other users and makes the page's read-only commands refuse non-administrators. It is off by default so the household keeps access; it deletes nothing.
+
+## Room-to-room conversation handoff
+
+Enable **Room-to-room conversation handoff** under **Settings → Voice**, alongside **Conversation sessions**. After discussing heating on one device, ask another device using the **Sentient with backup** Assist agent “carry on with the heating”. Each request needs a device or satellite identifier and the same active Home Assistant user account. Internal system accounts cannot transfer discussions. A shared wake word cannot identify a person. If a voice pipeline supplies a device without a user ID, same-device resume remains available and handoff is unavailable.
+
+A matching bookmark supplies the topic and entity references. Sentient checks each entity's current Assist exposure and read permission, speaks fresh Home Assistant reports, and starts a fresh conversation. It leaves the old transcript and action permissions behind. If several topics match, include more detail in the handoff phrase. Guest mode blocks handoff.
+
+## Verified downstairs bedtime
+
+Enable **Verified downstairs bedtime** under **Settings → Quiet & rooms**. Select individual lights and door, window or other opening contacts exposed to Assist. Use **Sentient with backup**, with or without Conversation sessions. Sentient only attempts to switch off lights, checks the Never touch list and applies the caller's Home Assistant permissions. Contacts are read only.
+
+Say “run downstairs bedtime”. Sentient checks the reported result and names outstanding checks, such as an open door, an unavailable contact or a light that has yet to report off. Ask “downstairs bedtime status” to recheck the same configured steps. Status checks do not send commands. “Cancel downstairs bedtime” clears the check without undoing any earlier light changes. A fresh explicit start can retry outstanding lights.
+
+Checks stay in memory for up to two hours, scoped to the initiating Home Assistant user or, for a request without a user ID, the initiating Assist device/satellite. Turning off the feature, changing settings, entering Guest mode, forgetting recent data, or restarting clears the checks. The task uses local Home Assistant reports and does not need a model to plan, run or verify the task. Existing spoken translation settings still apply.

@@ -310,6 +310,8 @@ def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
     speech = entry.runtime_data.speech
     if on:
         speech._guest_generation = getattr(speech, '_guest_generation', 0) + 1
+        if (tasks := getattr(entry.runtime_data, "household_tasks", None)) is not None:
+            tasks.clear()
     speech.guest_mode = on
     if on and (house_context := getattr(entry.runtime_data, "house_context", None)):
         house_context.clear()
