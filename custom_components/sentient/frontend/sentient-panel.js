@@ -67,7 +67,7 @@
     set route(r) {
       this._route = r;
       const path = String((r && r.path) || "");
-      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : "overview";
+      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : path.startsWith("/security") ? "security" : "overview";
       // a phone notification was tapped: show that moment on the timeline
       try {
         const item = new URLSearchParams(window.location.search).get("item");
@@ -109,6 +109,7 @@
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
             <button data-view="mind"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><span>MIND</span></button>
+            <button data-view="security"><ha-icon icon="mdi:shield-home-outline"></ha-icon><span>SECURITY</span></button>
             <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>TIMELINE</span></button>
             <button data-view="settings"><ha-icon icon="mdi:cog-outline"></ha-icon><span>SETTINGS</span></button></nav>
           <form class="ask" id="askf"><ha-icon icon="mdi:creation-outline"></ha-icon><input id="ask" placeholder="Ask anything…" autocomplete="off"></form>
@@ -117,13 +118,18 @@
         <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
-            <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div><div id="visit" class="card"></div><div id="clipc" class="card" hidden></div></section>
+            <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div></section>
             <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="ins" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="rout" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes mp2">
-            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div><div id="minc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
+          </div></div>
+        <div class="page" id="scp" hidden>
+          <div class="lanes mp2">
+            <section class="lane" aria-label="Security now"><div class="lt">SECURITY NOW</div><div id="sec2" class="card"></div><div id="visit" class="card"></div></section>
+            <section class="lane" aria-label="What the cameras saw"><div class="lt">WHAT THE CAMERAS SAW</div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
@@ -169,6 +175,7 @@
       this._$("set").hidden = view !== "settings";
       this._$("tl").hidden = view !== "timeline";
       this._$("mp").hidden = view !== "mind";
+      this._$("scp").hidden = view !== "security";
       if (push && this._route) {
         const base = this._route.prefix || "/sentient";
         history.replaceState(history.state, "", view === "overview" ? base : `${base}/${view}`);
@@ -1188,7 +1195,10 @@
     }
 
     _drawSecurity() {
-      const el = this._$("sec");
+      for (const id of ["sec", "sec2"]) this._drawSecurityInto(this._$(id));
+    }
+
+    _drawSecurityInto(el) {
       if (!el) return;
       const { open, unlocked, alarms } = this._security();
       const bad = open.length + unlocked.length;
@@ -1965,9 +1975,10 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .flow>*{break-inside:avoid;margin:0 0 14px;width:100%}
 .flow>.stack{break-inside:avoid;display:flex;gap:14px}
 .flow>[hidden],.flow>.stack:empty{display:none}
-:host([view="overview"]),:host([view="mind"]){scrollbar-width:none}
-:host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar{display:none}
+:host([view="overview"]),:host([view="mind"]),:host([view="security"]){scrollbar-width:none}
+:host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar,:host([view="security"])::-webkit-scrollbar{display:none}
 #mp .flow{columns:2}
+#scp .lanes{align-items:start}
 .r b small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);white-space:normal}
 .r b details{display:block;margin-top:3px} .r b summary{cursor:pointer;font-size:11px;color:#7fefff;list-style:none}
 .r b summary::-webkit-details-marker{display:none} .r b summary::before{content:"▸ "} .r b details[open] summary::before{content:"▾ "}

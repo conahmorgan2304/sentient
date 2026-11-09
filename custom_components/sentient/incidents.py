@@ -12,7 +12,7 @@ from homeassistant.util import dt as dt_util
 from .sessions import CONF_INCIDENTS
 
 GAP = timedelta(minutes=3)
-ALERT_LEVELS = {'night': 1, 'fence': 2, 'loitering': 3}
+ALERT_LEVELS = {'night': 1, 'away': 2, 'fence': 2, 'loitering': 3}
 
 
 class Incidents:

@@ -129,3 +129,30 @@ async def test_empty_later_snapshot_preserves_sensor_alert(hass: HomeAssistant, 
         assert "No person was visible in the later snapshot" in said[-1].data["message"]
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
     assert said and "A man is at the shed door." in said[-1].data["message"]
+
+
+async def test_in_the_garden_while_everyone_is_out_is_an_alert_by_day(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 14, 0)))
+    entry = await _setup(hass)
+    away = entry.runtime_data.away
+    away.everyone_away = lambda: True
+    away.away_since = dt_util.utcnow() - timedelta(minutes=30)
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door"})
+    hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})  # a way in was used: not "over the fence"
+    freezer.tick(timedelta(minutes=1))
+    await _see(hass, "garden_person")
+    alerts = [i for i in entry.runtime_data.timeline.items if i.get("alert")]
+    assert alerts and alerts[0]["text"].startswith("A person was reported in the garden while everyone is out")
+
+
+async def test_someone_who_has_just_left_is_not_an_away_alert(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 14, 0)))
+    entry = await _setup(hass)
+    away = entry.runtime_data.away
+    away.everyone_away = lambda: True
+    away.away_since = dt_util.utcnow() - timedelta(minutes=1)
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door"})
+    hass.states.async_set("binary_sensor.back_gate", "off", {"device_class": "door"})
+    freezer.tick(timedelta(minutes=1))
+    await _see(hass, "garden_person")
+    assert not [i for i in entry.runtime_data.timeline.items if i.get("alert")]
