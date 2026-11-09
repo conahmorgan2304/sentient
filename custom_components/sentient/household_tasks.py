@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+import logging
 import re
 
 from homeassistant.auth.permissions.const import POLICY_READ
@@ -26,6 +27,7 @@ COMMANDS = {
 }
 CONTACT_CLASSES = {"door", "window", "garage_door", "opening"}
 RETENTION = timedelta(hours=2)
+_LOGGER = logging.getLogger(__name__)
 
 
 def requested(options, text):
@@ -84,9 +86,12 @@ class HouseholdTasks:
                     self.runs.pop(next(iter(self.runs)))
 
             def can_read(eid):
-                return (not user or user.permissions.check_entity(eid, POLICY_READ)) and async_should_expose(
-                    self.hass, "conversation", eid
-                )
+                if user and not user.permissions.check_entity(eid, POLICY_READ):
+                    return False
+                try:
+                    return async_should_expose(self.hass, "conversation", eid)
+                except KeyError:  # Assist exposure data may still be loading
+                    return False
 
             failed = set()
             if request == "start":
@@ -133,8 +138,14 @@ class HouseholdTasks:
             return
         try:
             await self.control.validate([{"entity_id": eid, "action": "turn_off"}], context)
-            if switchable():
-                async with asyncio.timeout(3):
-                    await self.hass.services.async_call("light", "turn_off", {"entity_id": eid}, blocking=True, context=context)
-        except (HomeAssistantError, TimeoutError, ValueError):
+        except (HomeAssistantError, ValueError):
             failed.add(eid)
+            return
+        if not switchable():
+            return
+        try:
+            async with asyncio.timeout(3):
+                await self.hass.services.async_call("light", "turn_off", {"entity_id": eid}, blocking=True, context=context)
+        except Exception:  # noqa: BLE001 - an integration's service failure must not abort other lights
+            failed.add(eid)
+            _LOGGER.debug("Downstairs bedtime could not switch off %s", eid, exc_info=True)

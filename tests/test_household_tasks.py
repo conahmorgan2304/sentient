@@ -78,3 +78,29 @@ async def test_bedtime_respects_guest_exposure_never_touch_and_no_groups(hass):
         rt.speech.guest_mode = True
         assert "unavailable" in spoken(await obj.async_process(request("Downstairs bedtime status")))
     call.assert_not_awaited()
+
+
+async def test_bedtime_continues_when_one_light_service_raises(hass):
+    obj, rt = agent(hass, {
+        "verified_bedtime": True,
+        "verified_bedtime_lights": ["light.hall", "light.porch"],
+        "verified_bedtime_contacts": ["binary_sensor.gate"],
+    })
+    rt.household_tasks = HouseholdTasks(hass, rt.control)
+    hass.states.async_set("light.hall", "on", {"friendly_name": "Hall"})
+    hass.states.async_set("light.porch", "on", {"friendly_name": "Porch"})
+    hass.states.async_set("binary_sensor.gate", "off", {"device_class": "door"})
+
+    @callback
+    def turn_off(call):
+        if call.data["entity_id"] == "light.hall":
+            raise RuntimeError("simulated integration failure")
+        hass.states.async_set("light.porch", "off")
+
+    hass.services.async_register("light", "turn_off", turn_off)
+    with patch("custom_components.sentient.household_tasks.async_should_expose", return_value=True), \
+            patch("custom_components.sentient.control.async_should_expose", return_value=True):
+        pending = spoken(await obj.async_process(request("Run downstairs bedtime")))
+        assert "pending" in pending
+        assert "couldn't verify Hall switched off" in pending
+        assert hass.states.get("light.porch").state == "off"
