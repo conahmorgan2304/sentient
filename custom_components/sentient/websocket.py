@@ -131,6 +131,7 @@ from .const import (
     CONF_HEATING_GRAPH,
     CONF_ROOMS_VIEW,
     CONF_KNOWLEDGE,
+    CONF_DAY_CHART,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     CONF_AI_TASK_ENTITY,
@@ -314,7 +315,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LEARN_ANCHORS, CONF_OFFER_TOGETHER, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_UNTIL,
-        CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT,
+        CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT, CONF_DAY_CHART,
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
         CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
@@ -574,6 +575,23 @@ def ws_glance(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     restless = {r["entity_id"] for r in sleep.never_rests()} if sleep is not None else set()
     rows = rooms(hass, likely, restless)
     connection.send_result(msg["id"], {"on": True, "rooms": rows, "summary": summary(rows)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/day"})
+@page_access
+@callback
+def ws_day(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The overview's THE DAY SO FAR chart: today's timeline counted by the hour."""
+    from .glance import day
+
+    entry = _entry(hass)
+    if entry is None or not entry.runtime_data.options.get(CONF_DAY_CHART, True):
+        connection.send_result(msg["id"], {"on": False})
+        return
+    now = dt_util.utcnow()
+    hours_today = dt_util.as_local(now).hour + 1
+    items = entry.runtime_data.timeline.since(hours_today, None, 1000)
+    connection.send_result(msg["id"], {"on": True, **day(items, now)})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memory/review"})
@@ -923,6 +941,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_memory_resolve)
     websocket_api.async_register_command(hass, ws_today)
     websocket_api.async_register_command(hass, ws_glance)
+    websocket_api.async_register_command(hass, ws_day)
     websocket_api.async_register_command(hass, ws_heating_programme_save)
     websocket_api.async_register_command(hass, ws_heating_programme_delete)
     websocket_api.async_register_command(hass, ws_inner_dismiss)

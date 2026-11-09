@@ -119,7 +119,7 @@
         <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="today" class="card"></div><div id="around" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div></section>
-            <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div></section>
+            <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="day" class="card" hidden></div><div id="said" class="card said"></div></section>
             <section class="lane" aria-label="Coming up"><div class="lt">COMING UP</div><div id="soon" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
@@ -254,6 +254,7 @@
 
       // the TODAY and COMING UP cards (refreshed every minute while the overview is open)
       if (this._view === "overview" && (!this._todayAt || Date.now() - this._todayAt > 60000)) this._loadToday();
+      if (this._view === "overview" && (!this._dayAt || Date.now() - this._dayAt > 120000)) this._loadDay();
       // rooms at a glance (House tab) and the around-the-house card (overview), every 30 seconds while shown
       if ((this._view === "house" || this._view === "overview") && (!this._glAt || Date.now() - this._glAt > 30000)) this._loadGlance();
       // heating zones and schedule (refreshed every 30 seconds while the House tab is open)
@@ -402,12 +403,12 @@
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback && !!(this._hass.user && this._hass.user.is_admin);  // it changes settings: admins only
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
-      const log = this._attr("last_spoken", "log", []).slice(0, 7).map((l) => l.said
+      const log = this._attr("last_spoken", "log", []).slice(0, 20).map((l) => l.said
         ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
           ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${esc(n)}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
         : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}</u></div>`).join("");
-      const noticed = this._attr("last_spoken", "noticed", []).slice(0, 3).map((d) =>
+      const noticed = this._attr("last_spoken", "noticed", []).slice(0, 6).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
@@ -1248,6 +1249,32 @@
       el2.innerHTML = this._h("COMING UP", (t.soon || []).length ? `${t.soon.length}` : "")
         + ((t.soon || []).map((x) => `<div class="r${x.kind === "routine" ? " dim" : ""}"><ha-icon icon="${esc(kic[x.kind] || "mdi:clock-outline")}"></ha-icon><b>${esc(x.what)}</b><u>${esc(when(x.when))}</u></div>`).join("")
           || '<div class="e">NOTHING DUE IN THE NEXT DAY OR SO</div>');
+    }
+
+    // ---------- the day so far (overview) ----------
+    _loadDay() {
+      this._dayAt = Date.now();
+      this._hass.callWS({ type: "sentient/day" }).then((r) => { this._day = r; this._drawDay(); }, () => { this._day = null; this._drawDay(); });
+    }
+
+    _drawDay() {
+      const el = this._$("day");
+      if (!el) return;
+      const d = this._day;
+      el.hidden = !(d && d.on);
+      if (!d || !d.on) { el.innerHTML = ""; return; }
+      const G = [["movement", "MOVEMENT"], ["spoke", "SAID"], ["outside", "OUTSIDE"], ["you", "YOU ASKED"]];
+      const top = Math.max(1, ...d.hours.map((h) => G.reduce((n, [k]) => n + h[k], 0)));
+      const cols = d.hours.map((h, i) => {
+        const tot = G.reduce((n, [k]) => n + h[k], 0), later = i > Math.floor(d.now);
+        const segs = G.filter(([k]) => h[k]).map(([k]) => `<i class="${k}" style="height:${(h[k] / top * 100).toFixed(1)}%"></i>`).join("");
+        return `<div class="dc${later ? " later" : ""}${i === Math.floor(d.now) ? " nowc" : ""}" title="${String(i).padStart(2, "0")}:00 · ${tot} event${tot === 1 ? "" : "s"}">${segs}</div>`;
+      }).join("");
+      const ticks = [0, 6, 12, 18].map((h) => `<span style="left:${(h / 24 * 100).toFixed(2)}%">${String(h).padStart(2, "0")}</span>`).join("");
+      const facts = [d.first_move ? `FIRST UP ${esc(d.first_move)}` : "", d.busiest ? `BUSIEST ${esc(d.busiest)}` : ""].filter(Boolean).join(" · ");
+      el.innerHTML = this._h("THE DAY SO FAR", facts)
+        + `<div class="dchart">${cols}</div><div class="dticks">${ticks}</div>`
+        + `<div class="dkey">${G.map(([k, l]) => `<span class="${k}"><i></i>${d.totals[k]} ${l}</span>`).join("")}</div>`;
     }
 
     // ---------- what it's thinking (Mind tab) ----------
@@ -2560,6 +2587,11 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .hgl{position:absolute;font-size:8px;font-weight:700;letter-spacing:.1em;color:rgba(150,220,235,.6);pointer-events:none} .hgl.tk{bottom:3px;transform:translateX(-50%)} .hgl.nm{left:8px;top:4px;color:#7fefff}
 .hgk{display:flex;align-items:center;gap:6px;font-size:7.5px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.55);margin:0 2px 4px} .hgk .k{display:inline-block;width:14px;height:3px;border-radius:2px;margin-left:6px} .hgk .k.now{background:#00fff7} .hgk .k.set{background:#ffa94d} .hgk .k.heat{height:8px;background:rgba(255,169,77,.3)}
 .row.vc{margin:-2px 0 8px 30px}
+.dchart{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;align-items:end;height:84px;padding:4px 2px 0;border-bottom:1px solid rgba(0,255,247,.18)}
+.dc{display:flex;flex-direction:column-reverse;height:100%;border-radius:3px 3px 0 0;background:rgba(0,255,247,.03);overflow:hidden} .dc.later{background:transparent;opacity:.35} .dc.nowc{box-shadow:0 0 0 1px rgba(0,255,247,.5)}
+.dc i{display:block;flex:none;min-height:2px} .dc i.movement,.dkey .movement i{background:#00b8d9} .dc i.spoke,.dkey .spoke i{background:#b48cff} .dc i.outside,.dkey .outside i{background:#ffa94d} .dc i.you,.dkey .you i{background:#3dffa8}
+.dticks{position:relative;height:12px;margin:2px 2px 0} .dticks span{position:absolute;font-size:7.5px;font-weight:700;letter-spacing:.1em;color:rgba(150,220,235,.5)}
+.dkey{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px} .dkey span{display:inline-flex;align-items:center;gap:5px;font-size:8px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.7)} .dkey i{display:inline-block;width:8px;height:8px;border-radius:2px}
 .pran{font-size:8px;font-weight:700;letter-spacing:.12em;color:rgba(61,255,168,.75);margin-top:5px} .pran.bad{color:#ff6b80}
 .e{padding:10px 12px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
 /* settings */
@@ -2719,6 +2751,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   .lanes>.lane:not(:has(>.card:not([hidden]))){display:none !important}
   .lane>.lt{flex:none;margin:0 4px -2px}
   .lane>.card{flex:none;padding:10px 12px}
+  #ov .lane>.card.said{flex:1 1 auto;min-height:160px;overflow-y:auto;scrollbar-width:none} #ov .lane>.card.said::-webkit-scrollbar{display:none}
   .card .h{margin-bottom:7px}
   .r{padding:5px 9px;margin-bottom:4px}
   .head{gap:14px;padding:10px 14px}

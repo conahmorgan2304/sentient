@@ -524,7 +524,8 @@
           "house_context_updates": "Signaler quand la température demandée est atteinte",
           "heating_graph": "Graphique de température sur la carte du chauffage",
           "rooms_view": "Pièces en un coup d’œil (onglet Maison et vue d’ensemble)",
-          "knowledge_card": "Carte CE QUE JE SAIS dans l’onglet Esprit"
+          "knowledge_card": "Carte CE QUE JE SAIS dans l’onglet Esprit",
+          "day_chart": "Graphique LA JOURNÉE JUSQU’ICI sur la vue d’ensemble"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -750,7 +751,8 @@
           "sleep_ignore_sensors": "Capteurs de mouvement qui se déclenchent pendant le sommeil, par exemple dans une chambre. Le passage en mode endormi attend que rien ne bouge pendant la durée ci-dessus ; un capteur de chambre qui se déclenche quand quelqu’un se retourne garderait la maison « éveillée » toute la nuit. Ils comptent toujours pour le reste.",
           "heating_graph": "Activé : la carte du chauffage de l’onglet Maison montre les dernières 24 heures de température de chaque thermostat face à sa consigne, avec les horaires programmés en surbrillance. Lu dans l’historique de Home Assistant ; rien de plus n’est conservé. Désactivé : le graphique est masqué.",
           "rooms_view": "Activé : l’onglet Maison montre une tuile par pièce — température, humidité, lumières allumées, portes et fenêtres ouvertes, dernier mouvement et ce qui joue — et la vue d’ensemble reçoit une courte carte « autour de la maison ». Construit à partir de vos pièces ; rien n’est conservé. Désactivé : les deux sont masqués.",
-          "knowledge_card": "Activé : l’onglet Esprit résume ce qu’il a appris de la maison — heure habituelle du coucher et du lever, capteurs mis de côté, vitesse de chauffe, prédictions de pièce, routines et souvenirs. Il ne montre que ce qui est déjà connu ; rien de plus n’est conservé. Désactivé : la carte est masquée."
+          "knowledge_card": "Activé : l’onglet Esprit résume ce qu’il a appris de la maison — heure habituelle du coucher et du lever, capteurs mis de côté, vitesse de chauffe, prédictions de pièce, routines et souvenirs. Il ne montre que ce qui est déjà connu ; rien de plus n’est conservé. Désactivé : la carte est masquée.",
+          "day_chart": "Activé : la vue d’ensemble montre la journée heure par heure — mouvements, ce qu’il a dit, ce qui s’est passé dehors et ce que vous lui avez demandé — avec le premier lever et l’heure la plus chargée. Compté à partir de la chronologie ; rien de plus n’est conservé. Désactivé : le graphique est masqué."
         }
       },
       "memories": {

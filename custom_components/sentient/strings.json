@@ -591,7 +591,8 @@
           "share_clip_analysis": "Reuse matching clip analyses",
           "heating_graph": "Temperature graph on the heating card",
           "rooms_view": "Rooms at a glance (House tab and overview)",
-          "knowledge_card": "WHAT I KNOW card on the Mind tab"
+          "knowledge_card": "WHAT I KNOW card on the Mind tab",
+          "day_chart": "THE DAY SO FAR chart on the overview"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -840,7 +841,8 @@
           "sleep_ignore_sensors": "Motion sensors that fire while people are asleep, such as one in a bedroom. Going to sleep waits for nothing to move for the time above; a bedroom sensor that triggers as someone turns over would keep the house \"awake\" all night, so list it here. They still count for everything else.",
           "heating_graph": "On: the heating card on the House tab shows the last 24 hours of each thermostat's temperature against what it was set to, with the scheduled times shaded. Read from Home Assistant's history; nothing extra is stored. Off: the graph is hidden.",
           "rooms_view": "On: the House tab shows a tile for each room — temperature, humidity, lights on, doors and windows open, when someone last moved there and what's playing — and the overview gets a short around-the-house card. Built from your areas; nothing is stored. Off: both are hidden.",
-          "knowledge_card": "On: the Mind tab sums up what it has learned about the house — usual bedtime and getting-up time, sensors it is setting aside, how quickly the heating warms, next-room guesses, routines and memories. It only shows what is already known; nothing extra is stored. Off: the card is hidden."
+          "knowledge_card": "On: the Mind tab sums up what it has learned about the house — usual bedtime and getting-up time, sensors it is setting aside, how quickly the heating warms, next-room guesses, routines and memories. It only shows what is already known; nothing extra is stored. Off: the card is hidden.",
+          "day_chart": "On: the overview shows today hour by hour — movement, what it said, what happened outside and what you asked it — with when someone was first up and the busiest hour. Counted from the timeline; nothing extra is stored. Off: the chart is hidden."
         }
       },
       "memories": {
