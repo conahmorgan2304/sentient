@@ -150,3 +150,18 @@ async def test_stop_watching_and_memory_check_up_over_the_websocket(hass: HomeAs
     assert pairs and pairs[0]["kind"] == "conflict"
     await ws.send_json({"id": 3, "type": "sentient/memory/resolve", "pair": pairs[0]["pair"], "keep": a.id})
     assert (await ws.receive_json())["result"]["ok"] and [m.text for m in mem.items] == ["Keep the hall light on at night"]
+
+
+async def test_heating_programme_backup_round_trip(hass):
+    from custom_components.sentient.backup import export_all, import_all
+
+    entry = await _setup(hass)
+    items = entry.runtime_data.heat_prog.items
+    saved = items.upsert(clean_programme(OPTS, DAY))
+    backup = export_all(hass, entry)
+    assert backup["heating_programmes"] == [saved]
+    items.remove(saved["id"])
+    assert import_all(hass, entry, backup)["heating_programmes"] == 1
+    assert clean_programme(OPTS, items.listing()[0]) == clean_programme(OPTS, DAY)
+    assert import_all(hass, entry, backup).get("heating_programmes", 0) == 0
+    assert len(items.listing()) == 1

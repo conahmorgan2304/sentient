@@ -181,7 +181,7 @@ class MemoryStore:
             category = "fact"
         identity = _identity(text)
         for existing in self._items:
-            if existing.category == category and identity and _identity(existing.text) == identity:
+            if existing.category == category and identity and self.live(existing) and _identity(existing.text) == identity:
                 # A repeated inference must not rewrite an explicit fact, or make old facts look new.
                 if source and source != "reflection" and existing.source in (None, "reflection"):
                     existing.source = source
@@ -326,8 +326,23 @@ class MemoryStore:
             target = found[0] if found else None
         if target is not None:
             self._items.remove(target)
+            self.changed = [row for row in self.changed if target.text not in (row.get("old"), row.get("new"))]
+            self.reviewed = [pair for pair in self.reviewed if target.id not in pair.split("|")]
             self._save()
         return target
+
+    def forget_changes_since(self, since: datetime) -> int:
+        """Clear the recent copies of memory text used by reflection."""
+        before = len(self.changed)
+        self.changed = [
+            row for row in self.changed
+            if (when := dt_util.parse_datetime(row.get("time") or "")) is not None
+            and dt_util.as_utc(when) < since
+        ]
+        removed = before - len(self.changed)
+        if removed:
+            self._save()
+        return removed
 
     def search(self, query: str, limit: int = 8, count_hits: bool = True) -> list[Memory]:
         """Keyword-ranked recall. Good enough for hundreds of short facts."""

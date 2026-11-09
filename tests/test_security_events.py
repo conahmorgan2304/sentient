@@ -607,14 +607,22 @@ async def test_empty_event_list_does_not_request_impossible_clarification(hass):
     assert row is None and result["events"] == [] and "choose_event" not in result
 
 
-async def test_a_parked_bike_is_noted_but_not_an_incident(hass):
+async def test_stationary_vehicle_tracks_do_not_hide_a_different_moving_vehicle(hass):
     events, _cache, rt = setup(hass)
     added = []
     rt.incidents = SimpleNamespace(add=lambda *a, **k: added.append(k.get("event_id")))
-    now = dt_util.utcnow().timestamp()
-    first = events.ingest(event(id="1.bike", label="bicycle", start_time=now - 900, end_time=now - 890))
-    again = events.ingest(event(id="2.bike", label="bicycle", start_time=now - 300, end_time=now - 290))  # found again
-    still = events.ingest(event(id="3.car", label="car", start_time=now - 100, end_time=None, stationary=True))
-    person = events.ingest(event(id="4.person", label="person", start_time=now - 50, end_time=now - 40))
-    assert not first.get("parked") and again["parked"] and still["parked"] and not person.get("parked")
-    assert added == ["1.bike", "4.person"]
+    parked = event(id="parked.car", label="car", end_time=None)
+    events.ingest(parked)
+    assert not added
+    still = events.ingest({**parked, "stationary": True, "position_changes": 0})
+    ended = events.ingest({**parked, "end_time": dt_util.utcnow().timestamp()})
+    assert still["parked"] and ended["parked"] and not added
+
+    moving = event(id="moving.car", label="car", end_time=None, stationary=False, position_changes=3)
+    assert not events.ingest(moving).get("parked")
+    assert added == ["moving.car"]
+    assert not events.ingest({**moving, "stationary": True}).get("parked")
+    other = events.ingest(event(id="second.car", label="car", stationary=False, position_changes=4))
+    person = events.ingest(event(id="person.event"))
+    assert not other.get("parked") and not person.get("parked")
+    assert added[-2:] == ["second.car", "person.event"]

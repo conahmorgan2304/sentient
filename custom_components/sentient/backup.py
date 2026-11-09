@@ -41,6 +41,7 @@ def export_all(hass: HomeAssistant, entry) -> dict[str, Any]:
         "shushed": [m for m in rt.mutes.items],
         "deleted_routines": dict(rt.learner.dismissed),
         "lists": {kind: items.listing() for kind, items in rt.lists.items()},
+        "heating_programmes": rt.heat_prog.programmes(),
         "learned_choices": [
             {"id": r.id, "adopted": r.adopted, "declined": r.declined, "plan": _plan(rt.learner, r)}
             for r in rt.learner.all() if r.adopted or r.declined
@@ -56,7 +57,7 @@ def _plan(learner, routine):
 def _preflight(data, settings):
     if not isinstance(data, dict) or type(data.get('sentient_backup')) is not int or data['sentient_backup'] != FORMAT:
         raise ValueError('unknown format')
-    for key in ('memories', 'spots', 'routines', 'shushed', 'learned_choices'):
+    for key in ('memories', 'spots', 'routines', 'shushed', 'learned_choices', 'heating_programmes'):
         if key in data and (not isinstance(data[key], list) or any(not isinstance(row, dict) for row in data[key])):
             raise ValueError(f'{key} must be a list of objects')
     for key in ('motion_lights', 'lists', 'deleted_routines', 'settings'):
@@ -233,6 +234,27 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
             target.upsert({k: v for k, v in row.items() if k != 'id'})
             names.add(name.strip().casefold())
             counts[kind] = counts.get(kind, 0) + 1
+    from .heating_schedule import clean_programme
+
+    programmes = rt.heat_prog.items
+    existing_programmes = programmes.listing()
+    programme_ids = {p["id"] for p in existing_programmes}
+    options = {**rt.options, **restored_settings}
+    for row in data.get("heating_programmes", []):
+        if isinstance(row.get("id"), str) and row["id"] in programme_ids:
+            continue
+        try:
+            programme = clean_programme(options, row)
+        except ValueError:
+            skip()
+            continue
+        if any(all(existing.get(k) == v for k, v in programme.items()) for existing in existing_programmes):
+            continue
+        existing_programmes.append(programmes.upsert(programme))
+        if isinstance(row.get("id"), str):
+            programme_ids.add(row["id"])
+        counts["heating_programmes"] = counts.get("heating_programmes", 0) + 1
+
     # Restoring old deletion records must not delete a routine that currently exists.
     for key, value in data.get('deleted_routines', {}).items():
         if isinstance(key, str) and isinstance(value, str) and rt.learner.get(key) is None:

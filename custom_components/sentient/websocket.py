@@ -717,7 +717,7 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
     now = dt_util.now()
     for z in zones:
-        p = wanted_on(progs, z["entity_id"], now)
+        p = wanted_on(progs, z["entity_id"], now) if enabled(rt.options) else None
         z["scheduled"] = {"on": True, "until": p["off"], "temp": p["temp"]} if p else {"on": False}
     from .heating_schedule import suggest
 

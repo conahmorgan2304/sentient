@@ -83,3 +83,13 @@ async def test_check_up_finds_conflicts_and_duplicates_and_resolves_them(hass: H
     con = next(p for p in pairs if p["kind"] == "conflict")
     assert store.resolve(con["pair"], None)  # both fine: not asked again
     assert store.review() == []
+
+
+async def test_repeated_dated_memory_gets_a_fresh_expiry(hass, freezer):
+    store = MemoryStore(hass, "dated")
+    freezer.move_to("2026-11-09T12:00:00Z")
+    old = store.add("Parcel arriving tomorrow")
+    freezer.move_to("2026-11-12T12:00:00Z")
+    new = store.add("Parcel arriving tomorrow")
+    assert new.id != old.id and new.expires == "2026-11-14"
+    assert store.search("parcel", count_hits=False) == [new]

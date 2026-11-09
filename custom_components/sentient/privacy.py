@@ -143,6 +143,7 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
 
     mem = rt.memory
     recent = [m for m in mem.items if _after(m.created, since) and not m.pinned]
+    gone['memory_changes'] = mem.forget_changes_since(since)
     for m in recent:
         mem.forget(m.id)
     gone["memories"] = len(recent)
