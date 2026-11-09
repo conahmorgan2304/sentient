@@ -1791,7 +1791,7 @@
         + ml.rules.map((r) => {
           const st = this._hass.states[r.light], lit = st && st.state === "on";
           return `<div class="r${r.enabled ? "" : " dim"}"><ha-icon icon="${esc(lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline")}"${lit ? ' class="lit"' : ""}></ha-icon><b>${esc(this._name(r.light))}</b>
-            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : r.respect_quiet && ml.quiet ? "QUIET" : "READY"}</u>
+            <u>${!r.enabled ? "OFF" : r.managing ? (r.timer ? "COUNTING DOWN" : "ON BY MOTION") : (r.quiet_now ?? (r.respect_quiet && ml.quiet)) ? "QUIET" : "READY"}</u>
             <label class="tg"><input type="checkbox" data-mltoggle="${esc(r.id)}"${r.enabled ? " checked" : ""}><i></i></label></div>`;
         }).join("") + (on ? `<div class="hint">${on} ON BY MOTION NOW</div>` : "");
     }
@@ -1821,7 +1821,7 @@
         const st = this._hass.states[r.light];
         const lit = st && st.state === "on";
         const chips = [
-          r.respect_quiet ? "OFF IN QUIET HOURS" : "IGNORES QUIET HOURS",
+          !r.respect_quiet ? "IGNORES QUIET HOURS" : r.quiet_start && r.quiet_end ? `QUIET ${esc(r.quiet_start)}–${esc(r.quiet_end)}` : "OFF IN HOUSE QUIET HOURS",
           r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "ANY TIME",
           `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
@@ -1835,7 +1835,7 @@
           ${r.last ? `<div class="hint">LAST: ${esc(r.last).toUpperCase()} · ${hm(r.last_time)}</div>` : ""}</div>`;
       }).join("");
       this._$("body").innerHTML = `<div class="bh"><ha-icon icon="mdi:motion-sensor"></ha-icon><div><div class="bt">MOTION LIGHTS</div>
-          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light chooses whether quiet hours keep it off, and how dim it is late at night. A light someone switched on by hand is left alone.</div></div>
+          <div class="bs">Lights that come on with movement between sunset and sunrise and go off when it stops. Each light can use the house quiet hours or set its own window. Late-night dimming has a separate schedule. A light someone switched on by hand is left alone.</div></div>
           <div class="chips">${pill(ml.dark, ml.dark ? "DARK" : "DAYLIGHT")}${pill(ml.quiet, "QUIET HOURS", "warn")}${pill(ml.late_night, "LATE NIGHT", "warn")}</div></div>
         <form class="add night" data-form="mlnight"><ha-icon icon="mdi:weather-night"></ha-icon><span>Late night (dimmed) from</span>
           <input type="time" name="start" value="${esc(ml.night_start || "23:00")}"><span>until</span><input type="time" name="end" value="${esc(ml.night_end || "06:00")}">
@@ -1852,6 +1852,9 @@
       if (!wrap) return;
       wrap.innerHTML = `<div class="card mlform"><div class="h"><span class="t">${rule.id ? "EDIT" : "NEW"} MOTION LIGHT</span><i></i></div>
         <div id="mlformwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        <div class="add night"><label>Quiet from <input id="mlquietstart" type="time" value="${esc(this._mlDraft.quiet_start || "")}"></label>
+          <label>Quiet until <input id="mlquietend" type="time" value="${esc(this._mlDraft.quiet_end || "")}"></label></div>
+        <div class="hint">Optional, for this light only. Clear both fields to use the house hours. At the custom start time, Sentient switches off the light if motion turned it on.</div>
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
@@ -1862,7 +1865,7 @@
       };
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
-        respect_quiet: "Off: this light still comes on in quiet hours (handy for landings and stairs).",
+        respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
@@ -2312,6 +2315,8 @@
         const rule = {};
         keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
         if (!rule.lux_sensor) rule.lux_sensor = null;
+        rule.quiet_start = this._$("mlquietstart")?.value || null;
+        rule.quiet_end = this._$("mlquietend")?.value || null;
         this._motionDo("sentient/motion_lights/save", { rule }, "mlmsg").then((ok) => {
           if (ok) { this._mlEdit = null; this._form = null; this._drawSide(); this._drawMotion(); }
         });

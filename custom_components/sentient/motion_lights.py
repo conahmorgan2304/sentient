@@ -3,7 +3,7 @@
 Each light has its own rule (stored, edited from the sidebar page):
 - the motion sensors that wake it, and how long after the last movement it goes off;
 - whether it only works between sunset and sunrise;
-- whether it stays off during quiet hours (some lights, like a landing, may not want to);
+- whether it stays off during quiet hours, with an optional window for this light;
 - its brightness, and a dimmer brightness for late at night.
 
 No AI. A light someone switched on by hand is left alone, and if someone changes a light the
@@ -20,7 +20,7 @@ import uuid
 
 from homeassistant.const import STATE_ON
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, callback
-from homeassistant.helpers.event import async_call_later, async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.sun import is_up
 from homeassistant.util import dt as dt_util
@@ -55,6 +55,20 @@ class MotionRule:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     last: str | None = None  # what happened last, for the page
     last_time: str | None = None
+    quiet_start: str | None = None
+    quiet_end: str | None = None
+
+    def quiet_window(self) -> tuple[time, time] | None:
+        if not (self.quiet_start or self.quiet_end):
+            return None
+        try:
+            start = time.fromisoformat(self.quiet_start or "")
+            end = time.fromisoformat(self.quiet_end or "")
+        except (TypeError, ValueError):
+            raise ValueError("Set both quiet times, or clear both to use the house hours") from None
+        if any(t.tzinfo or t.second or t.microsecond for t in (start, end)) or start == end:
+            raise ValueError("Quiet times must be different local times in hours and minutes")
+        return start, end
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MotionRule:
@@ -84,7 +98,7 @@ class MotionLights:
         self._ours: dict[str, set[str]] = {}  # light -> context ids of our own changes
         self._sent: dict[str, datetime] = {}  # light -> when we last switched it
         self._timers: dict[str, CALLBACK_TYPE] = {}
-        self._unsub: CALLBACK_TYPE | None = None
+        self._listeners: list[CALLBACK_TYPE] = []
         self.paused: set[str] = set()  # lights something else is running for now (disco mode)
 
     # ----- storage ---------------------------------------------------------------
@@ -96,6 +110,10 @@ class MotionLights:
                 rule = MotionRule.from_dict(raw)
             except TypeError:
                 continue
+            try:
+                rule.quiet_window()
+            except ValueError:
+                rule.quiet_start = rule.quiet_end = None
             self.rules[rule.id] = rule
         self.night_start = data.get("night_start", DEFAULT_NIGHT_START)
         self.night_end = data.get("night_end", DEFAULT_NIGHT_END)
@@ -123,12 +141,22 @@ class MotionLights:
             if any(r.light == merged["light"] for r in self.rules.values()):
                 raise ValueError("That light already has a motion rule")
         rule = MotionRule.from_dict(merged)
+        window = rule.quiet_window()
+        if window:
+            start, end = window
+            rule.quiet_start = start.isoformat(timespec="minutes")
+            rule.quiet_end = end.isoformat(timespec="minutes")
+        else:
+            rule.quiet_start = rule.quiet_end = None
         rule.off_after = max(0.5, min(240.0, float(rule.off_after)))
         rule.brightness = max(1, min(100, int(rule.brightness)))
         rule.night_brightness = max(0, min(100, int(rule.night_brightness)))
         self.rules[rule.id] = rule
+        if old and (old.light != rule.light or not rule.enabled):
+            self._release(old.light)
         self._save()
         self._resubscribe()
+        self._off_during_quiet(rule)
         return rule
 
     def remove(self, rule_id: str) -> bool:
@@ -184,6 +212,8 @@ class MotionLights:
                 "light": st.name if st else rule.light,
                 "on": rule.enabled,
                 "stays_off_in_quiet_hours": rule.respect_quiet,
+                "quiet_start": rule.quiet_start if rule.respect_quiet else None,
+                "quiet_end": rule.quiet_end if rule.respect_quiet else None,
                 "only_after_dark": rule.only_dark,
                 "off_after_minutes": rule.off_after,
                 "late_night_brightness": rule.night_brightness or None,
@@ -202,24 +232,56 @@ class MotionLights:
 
     @callback
     def async_stop(self) -> None:
-        if self._unsub:
-            self._unsub()
-            self._unsub = None
+        self._clear_listeners()
         for unsub in self._timers.values():
             unsub()
         self._timers.clear()
 
+    def _clear_listeners(self) -> None:
+        for unsubscribe in self._listeners:
+            unsubscribe()
+        self._listeners.clear()
+
     @callback
     def _resubscribe(self) -> None:
-        if self._unsub:
-            self._unsub()
-            self._unsub = None
+        self._clear_listeners()
         watched = set()
+        starts = set()
         for rule in self.rules.values():
             watched.update(rule.motion)
             watched.add(rule.light)
+            if rule.respect_quiet and (window := rule.quiet_window()):
+                starts.add(window[0])
         if watched:
-            self._unsub = async_track_state_change_event(self.hass, sorted(watched), self._changed)
+            self._listeners.append(async_track_state_change_event(self.hass, sorted(watched), self._changed))
+        for start in sorted(starts):
+            self._listeners.append(async_track_time_change(
+                self.hass, self._quiet_started, hour=start.hour, minute=start.minute, second=0,
+            ))
+
+    @callback
+    def _quiet_started(self, _now: datetime) -> None:
+        for rule in self.rules.values():
+            self._off_during_quiet(rule)
+
+    def _custom_quiet(self, rule: MotionRule) -> bool:
+        window = rule.quiet_window() if rule.respect_quiet else None
+        return bool(window and in_quiet_hours(dt_util.now(), *window))
+
+    @callback
+    def _off_during_quiet(self, rule: MotionRule) -> None:
+        if not rule.enabled or rule.light not in self._ours or rule.light in self.paused or not self._custom_quiet(rule):
+            return
+        state = self.hass.states.get(rule.light)
+        if state is None or state.state != STATE_ON:
+            return
+        if state.context.user_id is not None and state.context.id not in self._ours[rule.light]:
+            self._release(rule.light)
+            self._note(rule, "taken over by hand")
+            return
+        if self._turn(rule, False):
+            self._note(rule, "off: this light's quiet hours")
+        self._release(rule.light)
 
     def late_night(self, now: datetime | None = None) -> bool:
         return in_quiet_hours(
@@ -279,6 +341,11 @@ class MotionLights:
             self._release(rule.light)
             return
         if event.context.id in self._ours[rule.light]:
+            self._off_during_quiet(rule)
+            return
+        if event.context.user_id is not None:
+            self._release(rule.light)
+            self._note(rule, "taken over by hand")
             return
         old = event.data["old_state"]
         if old is None or old.state in ("unavailable", "unknown"):
@@ -312,6 +379,12 @@ class MotionLights:
         light = self.hass.states.get(rule.light)
         if light is None:
             return
+        if self._custom_quiet(rule):
+            if light.state == STATE_ON:
+                self._off_during_quiet(rule)
+            else:
+                self._note(rule, "stayed off: this light's quiet hours")
+            return
         if rule.light in self._ours:
             if light.state == STATE_ON:
                 return  # already ours and on: just keep it on
@@ -320,7 +393,7 @@ class MotionLights:
             return  # someone else's light
         if rule.only_dark and not self._dark(rule):
             return
-        if rule.respect_quiet and self.speech.quiet_hours_now():
+        if rule.respect_quiet and rule.quiet_start is None and self.speech.quiet_hours_now():
             self._note(rule, "stayed off: quiet hours")
             return
         late = self.late_night() and rule.night_brightness > 0
@@ -343,11 +416,11 @@ class MotionLights:
         self._timers[rule.light] = async_call_later(self.hass, rule.off_after * 60, _off)
 
     @callback
-    def _turn(self, rule: MotionRule, on: bool, brightness: int | None = None) -> None:
+    def _turn(self, rule: MotionRule, on: bool, brightness: int | None = None) -> bool:
         from .never import blocked
 
         if blocked(self.hass, rule.light):
-            return  # on the "never touch" list
+            return False  # on the "never touch" list
         from .own import own_context
 
         context = own_context(self.hass, "motion lights")
@@ -364,6 +437,7 @@ class MotionLights:
             ),
             eager_start=True,
         )
+        return True
 
     # ----- for the page ------------------------------------------------------------------
     def listing(self) -> dict[str, Any]:
@@ -372,6 +446,9 @@ class MotionLights:
             item = asdict(rule)
             item["managing"] = rule.light in self._ours
             item["timer"] = rule.light in self._timers
+            item["quiet_now"] = rule.respect_quiet and (
+                self._custom_quiet(rule) if rule.quiet_start is not None else self.speech.quiet_hours_now()
+            )
             rules.append(item)
         return {
             "rules": rules,
