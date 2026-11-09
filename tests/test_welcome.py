@@ -72,3 +72,31 @@ async def test_welcome_from_a_phone_when_the_person_is_always_home(hass: HomeAss
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert said and said[-1].data["message"].startswith("Welcome back")
+
+
+async def test_minimum_time_away_is_a_setting(hass: HomeAssistant) -> None:
+    from custom_components.sentient.welcome import Welcome
+
+    assert Welcome(hass, {}, lambda: None).min_away == timedelta(minutes=20)
+    assert Welcome(hass, {"welcome_min_away": 60}, lambda: None).min_away == timedelta(minutes=60)
+    assert Welcome(hass, {"welcome_min_away": "junk"}, lambda: None).min_away == timedelta(minutes=20)
+    assert Welcome(hass, {"welcome_min_away": 1}, lambda: None).min_away == timedelta(minutes=5)
+
+
+async def test_evening_allowance_and_held_back_note(hass: HomeAssistant, freezer) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock
+
+    from custom_components.sentient.welcome import Welcome
+
+    await hass.config.async_set_time_zone("UTC")
+    freezer.move_to("2026-11-09 21:30:00+00:00")
+    speech = SimpleNamespace(guest_mode=False, quiet_now=lambda: True, async_say=AsyncMock())
+    rt = SimpleNamespace(speech=speech, timeline=MagicMock())
+    held = Welcome(hass, {}, lambda: rt)
+    assert await held.async_welcome(dt_util.utcnow() - timedelta(hours=2)) == {"spoken": False, "reason": "quiet"}
+    assert "quiet hours" in rt.timeline.add.call_args.args[1]
+    assert not Welcome(hass, {"welcome_until": "21:00:00"}, lambda: rt)._evening_allowed()  # too late
+    assert Welcome(hass, {"welcome_until": "23:00:00"}, lambda: rt)._evening_allowed()
+    freezer.move_to("2026-11-09 02:00:00+00:00")
+    assert not Welcome(hass, {"welcome_until": "23:00:00"}, lambda: rt)._evening_allowed()  # small hours stay quiet

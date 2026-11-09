@@ -4,7 +4,7 @@ Triggered by a person entity — or a phone's tracker, for a house whose people 
 coming home after being away a while. It waits a moment
 for them to get inside, then speaks in the busiest room: "Welcome back" — plus, if
 anything notable happened (visitors, watches, problems), one or two sentences from the
-timeline written by the AI. No names, nothing in quiet hours, hush or guest mode.
+timeline written by the AI. No names, nothing in quiet hours (unless "welcome until" allows the evening), hush or guest mode.
 """
 
 from __future__ import annotations
@@ -20,11 +20,13 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .ai import async_generate
-from .const import personality_line, CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_PEOPLE
+from .const import (
+    CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_PEOPLE, CONF_WELCOME_UNTIL, DEFAULT_WELCOME_MIN_AWAY,
+    personality_line,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_AWAY = timedelta(minutes=20)
 SETTLE_SECONDS = 75
 ONCE_PER = timedelta(minutes=10)
 NOTABLE = ["visitor", "watch", "health"]
@@ -59,13 +61,27 @@ class Welcome:
             self._unsub()
             self._unsub = None
 
+    @property
+    def min_away(self) -> timedelta:
+        try:
+            minutes = float(self.options.get(CONF_WELCOME_MIN_AWAY) or DEFAULT_WELCOME_MIN_AWAY)
+        except (TypeError, ValueError):
+            minutes = DEFAULT_WELCOME_MIN_AWAY
+        return timedelta(minutes=max(5.0, minutes))
+
+    def _evening_allowed(self) -> bool:
+        """True in the evening before the 'welcome until' time, when quiet hours would otherwise hold it back."""
+        until = dt_util.parse_time(str(self.options.get(CONF_WELCOME_UNTIL) or ""))
+        now = dt_util.now().time()
+        return bool(until and now.hour >= 12 and now < until)
+
     @callback
     def _changed(self, event: Event[EventStateChangedData]) -> None:
         old, new = event.data["old_state"], event.data["new_state"]
         if old is None or new is None or new.state != "home" or old.state in ("home", "unknown", "unavailable"):
             return
         away_since = old.last_changed
-        if dt_util.utcnow() - away_since < MIN_AWAY:
+        if dt_util.utcnow() - away_since < self.min_away:
             return
         if self._last and dt_util.utcnow() - self._last < ONCE_PER:
             return  # someone else just got the welcome — arriving together
@@ -80,7 +96,9 @@ class Welcome:
     async def async_welcome(self, since: datetime) -> dict[str, Any]:
         rt = self._rt()
         speech = rt.speech
-        if speech.guest_mode or speech.quiet_now():
+        if speech.guest_mode or (speech.quiet_now() and not self._evening_allowed()):
+            why = "guest mode" if speech.guest_mode else "quiet hours"
+            rt.timeline.add("system", f"Didn't welcome anyone home: {why}", "welcome home")
             return {"spoken": False, "reason": "quiet"}
         hours = max(0.25, (dt_util.utcnow() - since).total_seconds() / 3600)
         items = list(reversed(rt.timeline.since(hours, NOTABLE, 30)))
