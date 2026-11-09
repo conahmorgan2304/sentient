@@ -355,7 +355,9 @@ class SelfAware:
             add("AI budgets", "limited", "used up today: " + ", ".join(over))
         # looking
         ignored = set(opts.get("health_ignore") or [])
-        cams = [st for st in self.hass.states.async_all("camera") if st.entity_id not in ignored]
+        from .cameras import cameras as real_cameras
+
+        cams = [st for st in real_cameras(self.hass, opts) if st.entity_id not in ignored]
         dark = [st.name for st in cams if _down(st)]
         if not cams:
             add("Cameras", "off", "no cameras")

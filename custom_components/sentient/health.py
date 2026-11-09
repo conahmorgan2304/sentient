@@ -71,6 +71,9 @@ class HouseHealth:
     @callback
     def async_check(self) -> list[dict[str, Any]]:
         ignore = set(self.options.get(CONF_HEALTH_IGNORE) or [])
+        from .cameras import hidden as hidden_cameras
+
+        ignore |= set(hidden_cameras(self.hass, self.options))  # extra views of a camera aren't problems
         threshold = float(self.options.get(CONF_BATTERY_THRESHOLD, DEFAULT_BATTERY_THRESHOLD))
         now = dt_util.utcnow()
         ent_reg = er.async_get(self.hass)
@@ -137,7 +140,7 @@ class HouseHealth:
         by_entry: dict[str, list[dict[str, Any]]] = {}
         for item in offline:
             device = dev_reg.async_get(item["device_id"])
-            entry_id = (getattr(device, "primary_config_entry", None) or next(iter(device.config_entries), None)) if device else None
+            entry_id = (getattr(device, "config_entry_id", None) or next(iter(device.config_entries), None)) if device else None
             if entry_id:
                 by_entry.setdefault(entry_id, []).append(item)
         for entry_id, items in by_entry.items():

@@ -188,6 +188,21 @@ class Conversations:
             self._save()
 
     @callback
+    def drop(self, conversation_id: str) -> None:
+        """Forget a conversation that wasn't a person talking, and ignore the rest of it.
+
+        Home Assistant swaps an unknown conversation id for one of its own, so the self-test can't
+        name its conversation beforehand; it calls this with the id it was given back.
+        """
+        self.skip.add(conversation_id)
+        self._open.pop(conversation_id, None)
+        self._ours.pop(conversation_id, None)
+        short = conversation_id[-10:]
+        if any(e.get("id") == short for e in self.episodes):
+            self.episodes = [e for e in self.episodes if e.get("id") != short]
+            self._save()
+
+    @callback
     def _finish(self, conversation_id: str) -> None:
         ep = self._open.pop(conversation_id, None)
         ours = self._ours.pop(conversation_id, None)

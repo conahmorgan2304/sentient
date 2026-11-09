@@ -231,6 +231,8 @@ from .const import (
     CONF_DOORSTEP_SENSORS,
     CONF_FALLBACK_SPEAKERS,
     CONF_HEALTH_IGNORE,
+    CONF_HIDE_SUBSTREAMS,
+    CONF_IGNORE_CAMERAS,
     CONF_HOUSE_RULES,
     CONF_LEARN_ENTITIES,
     CONF_LEARN_ANCHORS,
@@ -370,7 +372,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
-        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE,
+        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS,
     ]),
     ("autobackup", "Weekly backup", "mdi:calendar-sync-outline", "Every Sunday night, the same backup as the download button, saved in Home Assistant's config folder (so Home Assistant's own backups have it too). The newest few are kept; restore one from Backup.", [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,

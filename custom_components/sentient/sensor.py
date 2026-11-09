@@ -320,7 +320,11 @@ class MindSensor(_Base):
 
     _attr_icon = "mdi:head-lightbulb-outline"
     _attr_native_unit_of_measurement = "conversations"
-    _unrecorded_attributes = frozenset({"voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings"})
+    # live detail for the page and the voice; none of it is history, and together it passes the recorder's 16 KB limit
+    _unrecorded_attributes = frozenset({
+        "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
+        "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai",
+    })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
         super().__init__(entry, "mind")
