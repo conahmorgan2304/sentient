@@ -257,8 +257,6 @@ from .const import (
     CONF_HEALTH_IGNORE,
     CONF_HIDE_SUBSTREAMS,
     CONF_IGNORE_CAMERAS,
-    CONF_HIDE_SUBSTREAMS,
-    CONF_IGNORE_CAMERAS,
     CONF_HOUSE_RULES,
     CONF_LEARN_ENTITIES,
     CONF_LEARN_ANCHORS,
@@ -995,6 +993,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_frigate_health)
     websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_reading_try)
+    websocket_api.async_register_command(hass, ws_reading_stop)
     websocket_api.async_register_command(hass, ws_doctor)
     websocket_api.async_register_command(hass, ws_doctor_speakers)
     websocket_api.async_register_command(hass, ws_import)
@@ -1156,6 +1155,19 @@ async def ws_reading_try(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     st = hass.states.get(speaker)
     out["speaker_name"] = st.name if st else speaker
     connection.send_result(msg["id"], out)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/reading/stop"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Stop every story being read and silence the speakers: the way out when the voice can't be used."""
+    entry = _entry(hass)
+    books = getattr(entry.runtime_data, "books", None) if entry is not None else None
+    if books is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    connection.send_result(msg["id"], await books.async_silence())
 
 
 @websocket_api.websocket_command(

@@ -201,3 +201,43 @@ async def test_why_devices_are_offline(hass: HomeAssistant, freezer) -> None:
     freezer.tick(timedelta(minutes=11))
     health.async_check()
     assert "Coffee is offline — its integration, Tuya Local, keeps retrying to connect" in health.describe()
+
+
+async def _purifier(hass: HomeAssistant, fan_state: str, extra_state: str = "available"):
+    other = MockConfigEntry(domain="dreo"); other.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    dev = devs.async_get_or_create(config_entry_id=other.entry_id, identifiers={("dreo", "air")}, name="Boys Air")
+    for domain, obj in (("fan", "boys_air"), ("sensor", "boys_air_quality"), ("sensor", "boys_air_mode")):
+        ents.async_get_or_create(domain, "dreo", obj, suggested_object_id=obj, device_id=dev.id)
+    ents.async_get_or_create(
+        "binary_sensor", "dreo", "link", suggested_object_id="boys_air_connectivity", device_id=dev.id,
+        entity_category=er.EntityCategory.DIAGNOSTIC,
+    )
+    hass.states.async_set("fan.boys_air", fan_state)
+    hass.states.async_set("sensor.boys_air_quality", fan_state)
+    hass.states.async_set("sensor.boys_air_mode", "cloud")  # a cloud mode sensor that keeps a value
+    hass.states.async_set("binary_sensor.boys_air_connectivity", "on", {"device_class": "connectivity"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    health._never.clear()
+    for e in ("fan.boys_air", "sensor.boys_air_quality", "sensor.boys_air_mode"):
+        health._checked[e] = dt_util.utcnow()  # history already looked at
+    return health
+
+
+async def test_device_is_offline_when_its_main_entity_is_gone_even_if_a_cloud_sensor_keeps_a_value(
+    hass: HomeAssistant, freezer
+) -> None:
+    health = await _purifier(hass, "unavailable")
+    freezer.tick(timedelta(minutes=11))
+    assert [i["name"] for i in health.async_check()] == ["Boys Air"]
+
+
+async def test_working_main_entity_keeps_device_online(hass: HomeAssistant, freezer) -> None:
+    health = await _purifier(hass, "on")
+    hass.states.async_set("sensor.boys_air_quality", "unavailable")  # one flaky reading is not an outage
+    freezer.tick(timedelta(minutes=11))
+    assert health.async_check() == []

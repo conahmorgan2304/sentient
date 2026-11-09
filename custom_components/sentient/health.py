@@ -35,6 +35,8 @@ STUCK_ON = timedelta(hours=6)  # a motion sensor "on" this long is stuck
 STUCK_QUIET = timedelta(days=3)  # ...or one that's seen nothing this long while others have
 
 
+# a device is judged by these when it has any: they are what it does, not what it reports about itself
+PRIMARY_DOMAINS = frozenset({"fan", "light", "switch", "climate", "cover", "lock", "media_player", "vacuum", "humidifier", "water_heater"})
 _PERSONAL = re.compile(r"\b(phone|iphone|smartphone|mobile|pixel|galaxy|ipad|watch)\b", re.I)
 
 
@@ -115,12 +117,20 @@ class HouseHealth:
             if not states:
                 continue
             link = [s for s in self._connectivity(links.get(device_id, [])) if s.state == "off"]
+            # what the device is for (its fan, light, lock...) counts for more than a cloud sensor that keeps a value
+            main = [e for e in entity_ids if e.split(".", 1)[0] in PRIMARY_DOMAINS]
+            main_states = [s for s in states if s.entity_id in main]
+            if main_states:
+                judged = main_states
+                entity_ids = [s.entity_id for s in main_states]
+            else:
+                judged = states
             if link:  # the device says it has lost its connection
                 since = max(s.last_changed for s in link)
-            elif any(s.state != STATE_UNAVAILABLE for s in states):
+            elif any(s.state != STATE_UNAVAILABLE for s in judged):
                 continue
             else:
-                since = max(s.last_changed for s in states)
+                since = max(s.last_changed for s in judged)
                 # after a restart everything "changed" at start-up: history knows when it really went
                 if known := [self._went_off[e] for e in entity_ids if e in self._went_off]:
                     since = min(since, max(known))

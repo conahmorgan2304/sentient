@@ -1449,6 +1449,16 @@
           "description": "Vérification à exécuter."
         }
       }
+    },
+    "stop_reading": {
+      "name": "Arrêter la lecture",
+      "description": "Arrête l'histoire ou le livre audio en cours de lecture et coupe le haut-parleur, en gardant la page. Fonctionne sans la voix.",
+      "fields": {
+        "speaker": {
+          "name": "Haut-parleur",
+          "description": "Le haut-parleur à couper. Laisser vide pour arrêter toutes les lectures."
+        }
+      }
     }
   },
   "issues": {

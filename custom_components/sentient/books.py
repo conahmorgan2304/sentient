@@ -194,6 +194,11 @@ def speech_pieces(passage: str, size: int = SPEECH_PIECE) -> list[str]:
 
 
 # ----- the reader ----------------------------------------------------------------------------
+CUT_SHORT_LIMIT = 3  # pieces in a row cut short before the story pauses itself
+CUT_SHORT_RATIO = 0.35  # a piece over in under this share of its time was cut short
+CUT_SHORT_MIN_SECONDS = 6.0  # shorter pieces are too quick to tell
+
+
 class Books:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any], rt_getter) -> None:
         self.hass = hass
@@ -325,6 +330,8 @@ class Books:
         chapters = await self._chapters_of(book)
         rt = self._rt()
         until = dt_util.utcnow().timestamp() + minutes * 60 if minutes else None
+        loop = asyncio.get_running_loop()
+        cuts, first = 0, (ch, ps)
         if ch < len(chapters) and ps < len(chapters[ch]["passages"]):
             rt.speech.prepare_reading(speech_pieces(chapters[ch]["passages"][ps])[0], speaker)  # ready by the time it's needed
         await asyncio.sleep(4)  # let the voice finish its "picking up in…"
@@ -341,8 +348,23 @@ class Books:
                     for i, piece in enumerate(pieces):
                         if i + 1 < len(upcoming):
                             rt.speech.prepare_reading(upcoming[i + 1], speaker)  # made while this one is read
+                        began = loop.time()
                         if not await rt.speech.async_read_aloud(piece, speaker, story=True):
                             return  # couldn't speak: keep the place on this passage
+                        if self._cut_short(piece, loop.time() - began):
+                            if not cuts:
+                                first = (ch, ps)
+                            cuts += 1
+                            if cuts >= CUT_SHORT_LIMIT:
+                                # a tap on the screen ends the sound but not the story: stop rather than skip on,
+                                # and keep the place where the first cut-off piece began
+                                self._mark(book["name"], speaker, *first, chapters)
+                                await rt.speech.async_read_aloud(
+                                    "I've paused the story because it keeps being interrupted. Say carry on when you want it back.",
+                                    speaker, story=True)
+                                return
+                        else:
+                            cuts = 0
                     ps += 1
                     self._mark(book["name"], speaker, ch, ps, chapters)  # only once it has been read
                 ch, ps = ch + 1, 0
@@ -355,6 +377,39 @@ class Books:
                 if info.get("unsub"):
                     info["unsub"]()
                 self.reading.pop(speaker, None)
+
+    @staticmethod
+    def _cut_short(piece: str, took: float) -> bool:
+        """A piece that was over far sooner than it takes to say was stopped (a tap on the screen), not read."""
+        from .speech import reading_seconds
+
+        expected = reading_seconds(piece)
+        return expected >= CUT_SHORT_MIN_SECONDS and took < expected * CUT_SHORT_RATIO
+
+    async def async_silence(self, speaker: str | None = None) -> dict[str, Any]:
+        """Stop whatever is being read, and the sound itself, without needing to be heard or understood.
+
+        The way out when the voice can't be used: the wake word can't be heard over the story, and a tablet
+        has no wake word to pause it with."""
+
+        if speaker:
+            speakers = [speaker]
+        else:  # every reading, and any speaker it read on lately that is still making sound (a story that lost track)
+            speakers = list(self.reading) + [
+                sp for sp in self.last if sp not in self.reading
+                and ((st := self.hass.states.get(sp)) is not None and st.state in ("playing", "responding"))
+            ]
+        stopped: list[str] = []
+        for sp in speakers:
+            info = self.reading.get(sp)
+            if info and "player" in info:
+                self._save_audio(sp)
+            if (book := self._stop(sp, save=False)) is not None:
+                stopped.append(book)
+            player = sp if sp.startswith("media_player.") else self.player_for(sp)
+            if player:
+                await self.hass.services.async_call("media_player", "media_stop", {"entity_id": player}, blocking=False)
+        return {"stopped": stopped}
 
     def _watch_wake(self, speaker: str):
         """Stop reading when someone says the wake word on that speaker (the passage is kept)."""

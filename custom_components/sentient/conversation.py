@@ -369,7 +369,6 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     async def _process_streaming_aware(self, user_input):
         """Answer; when the reply is being spoken as it's written, also say whatever Sentient changed afterwards."""
-        from contextlib import nullcontext
 
         log = None
         if self._options().get("stream_voice_replies") and self.supports_streaming:

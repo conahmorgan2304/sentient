@@ -1185,6 +1185,16 @@ def _register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema({vol.Required("minutes"): vol.All(vol.Coerce(float), vol.Range(min=0, max=720))}),
         supports_response=SupportsResponse.OPTIONAL,
     )
+    async def stop_reading(call: ServiceCall) -> ServiceResponse:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if not entries or getattr(entries[0].runtime_data, "books", None) is None:
+            raise ServiceValidationError("Sentient is not set up")
+        return await entries[0].runtime_data.books.async_silence(call.data.get("speaker"))
+
+    hass.services.async_register(
+        DOMAIN, "stop_reading", stop_reading, schema=vol.Schema({vol.Optional("speaker"): cv.entity_id}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     hass.services.async_register(
         DOMAIN, SERVICE_FORGET, forget, schema=FORGET_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,

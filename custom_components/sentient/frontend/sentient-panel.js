@@ -408,13 +408,24 @@
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback && !!(this._hass.user && this._hass.user.is_admin);  // it changes settings: admins only
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
-      const log = this._attr("last_spoken", "log", []).slice(0, 20).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
+      // the same line said or held again and again (the kettle, the gate) is one row with a count, newest time first
+      const fold = (items, key) => {
+        const seen = new Map(), out = [];
+        for (const it of items) {
+          const k = key(it);
+          if (seen.has(k)) seen.get(k).n += 1;
+          else { const g = { ...it, n: 1 }; seen.set(k, g); out.push(g); }
+        }
+        return out;
+      };
+      const times = (l) => hm(l.time) + (l.n > 1 ? ` · ×${l.n}` : "");
+      const log = fold(this._attr("last_spoken", "log", []), (l) => (l.said ? "s|" + String(l.said).toLowerCase() : "h|" + String(l.held).toLowerCase() + "|" + l.reason)).slice(0, 20).map((l) => l.said
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${times(l)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
           ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${esc(n)}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
-        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}</u></div>`).join("");
-      const noticed = this._attr("last_spoken", "noticed", []).slice(0, 6).map((d) =>
-        `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
+        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}${l.n > 1 ? ` · ×${l.n}` : ""}</u></div>`).join("");
+      const noticed = fold(this._attr("last_spoken", "noticed", []), (d) => (d.changes || []).join("; ").replace(/^\d\d:\d\d /, "") + "|" + d.result).slice(0, 6).map((d) =>
+        `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}${d.n > 1 ? ` · ×${d.n}` : ""}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
@@ -558,7 +569,7 @@
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
+        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
       this._dirty = false;
       this._status("");
@@ -2266,6 +2277,12 @@
       }
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
+      else if (act === "stopread") {
+        this._status("STOPPING…", "warn");
+        this._hass.callWS({ type: "sentient/reading/stop" }).then(
+          (r) => this._status((r.stopped || []).length ? "STOPPED ✓" : "NOTHING WAS BEING READ", "ok"),
+          (e) => this._status(e.message || String(e), "bad"));
+      }
       else if (act === "trytts") {
         const d = this._draft || {};
         this._status("PLAYING…", "warn");

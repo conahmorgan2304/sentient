@@ -726,7 +726,6 @@ class WhatHappenedTool(_Tool):
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
     ) -> JsonObjectType:
-        from .watches import resolve_entity
 
         rt = _runtime(hass)
         if rt is None:

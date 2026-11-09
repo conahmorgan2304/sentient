@@ -1610,6 +1610,16 @@
           "description": "Which check to run."
         }
       }
+    },
+    "stop_reading": {
+      "name": "Stop reading",
+      "description": "Stop any story or audiobook being read aloud and silence the speaker, keeping the place. Works without the voice, for when a tablet can't hear you over the story.",
+      "fields": {
+        "speaker": {
+          "name": "Speaker",
+          "description": "The speaker to silence. Leave empty to stop every story being read."
+        }
+      }
     }
   },
   "issues": {

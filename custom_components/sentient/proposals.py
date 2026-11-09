@@ -147,7 +147,7 @@ class Proposals:
                 self.open = []
                 self._save()
             return []
-        opts, now = self.options, dt_util.utcnow()
+        now = dt_util.utcnow()
         self.open = [p for p in self.open if self._valid(p) and self._effective(p['option']) == p['was']]
         added = []
         for p in self.candidates(findings):
