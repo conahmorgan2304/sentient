@@ -62,11 +62,16 @@ class StreamWatch:
     def streamed_text(self) -> str:
         return "".join(c.content or "" for c in self.log.content[self.start:] if getattr(c, "role", "") == "assistant")
 
-    def finish(self, final: str) -> str:
-        """Add what the model didn't say to the chat log, so a streaming pipeline speaks it. Returns what was added."""
+    async def finish(self, final: str) -> str:
+        """Say what the model didn't: it goes through the chat log's own delta stream, which is what a streaming
+        pipeline listens to (adding finished content to the log directly would not be spoken). Returns what was added."""
         if not self.started or not (extra := unspoken(self.streamed_text(), final)):
             return ""
-        from homeassistant.components.conversation import AssistantContent
 
-        self.log.async_add_assistant_content_without_tools(AssistantContent(agent_id=self.agent_id, content=extra))
+        async def delta():
+            yield {"role": "assistant"}
+            yield {"content": " " + extra}
+
+        async for _ in self.log.async_add_delta_content_stream(self.agent_id, delta()):
+            pass
         return extra

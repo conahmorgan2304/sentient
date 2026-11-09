@@ -22,10 +22,14 @@ class FakeLog:
         self.delta_listener = None
         self.heard = []
 
-    def async_add_assistant_content_without_tools(self, content):
-        self.content.append(content)
-        if self.delta_listener:
-            self.delta_listener(self, {"role": "assistant", "content": content.content})
+    async def async_add_delta_content_stream(self, agent_id, stream):
+        text = ""
+        async for delta in stream:
+            if self.delta_listener:
+                self.delta_listener(self, delta)
+            text += delta.get("content") or ""
+        self.content.append(AssistantContent(agent_id=agent_id, content=text))
+        yield self.content[-1]
 
 
 def _stream(log, *texts):
@@ -38,35 +42,35 @@ def _stream(log, *texts):
     log.content.append(AssistantContent(agent_id="x", content="".join(texts)))
 
 
-def test_a_changed_reply_is_added_once_speaking_has_begun():
+async def test_a_changed_reply_is_added_once_speaking_has_begun():
     log = FakeLog()
     log.delta_listener = lambda chat_log, delta: log.heard.append(delta.get("content"))
     with StreamWatch(log, "conversation.sentient") as watch:
         _stream(log, "I'll unlock the front door for you, just a moment while I do ", "that now.")
         assert watch.started
-        added = watch.finish("Shall I unlock the front door?")
+        added = await watch.finish("Shall I unlock the front door?")
     assert added == "Shall I unlock the front door?"
-    assert log.heard[-1] == "Shall I unlock the front door?"
+    assert log.heard[-1].strip() == "Shall I unlock the front door?"
     assert log.delta_listener is not None  # the pipeline's own listener is back
 
 
-def test_a_short_reply_isnt_touched():
+async def test_a_short_reply_isnt_touched():
     log = FakeLog()
     log.delta_listener = lambda chat_log, delta: log.heard.append(delta.get("content"))
     with StreamWatch(log, "conversation.sentient") as watch:
         _stream(log, "Done.")
         assert not watch.started
-        assert watch.finish("Shall I do that?") == ""
+        assert await watch.finish("Shall I do that?") == ""
     assert log.heard == ["Done."]
 
 
-def test_an_unchanged_streamed_reply_adds_nothing():
+async def test_an_unchanged_streamed_reply_adds_nothing():
     log = FakeLog()
     log.delta_listener = lambda chat_log, delta: None
     text = "The house is settled and the heating is at twenty-one degrees, with every window shut."
     with StreamWatch(log, "conversation.sentient") as watch:
         _stream(log, text)
-        assert watch.finish(text) == ""
+        assert await watch.finish(text) == ""
 
 
 async def test_sessions_stop_streaming_unless_switched_on(hass):
@@ -114,4 +118,4 @@ async def test_through_the_agent_a_confirmation_is_still_spoken(hass):
     finally:
         current_chat_log.reset(token)
     assert result.response.speech["plain"]["speech"] == "Shall I unlock the front door?"
-    assert log.heard[-1] == "Shall I unlock the front door?"
+    assert log.heard[-1].strip() == "Shall I unlock the front door?"

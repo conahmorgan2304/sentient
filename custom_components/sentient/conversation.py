@@ -382,7 +382,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
         with StreamWatch(log, self.entity_id) as watch:
             result = await self._async_process_impl(user_input)
-            watch.finish(spoken_text(result.response))
+            await watch.finish(spoken_text(result.response))
         return result
 
     async def _async_process_impl(self, user_input):
