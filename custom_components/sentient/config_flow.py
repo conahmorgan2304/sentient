@@ -286,7 +286,10 @@ from .const import (
     CURRENCIES,
     CONF_CRITICAL_IGNORE,
     CONF_CRITICAL_EXTRA,
+    CONF_WELCOME_MIN_AWAY,
     CONF_WELCOME_PEOPLE,
+    CONF_WELCOME_UNTIL,
+    DEFAULT_WELCOME_MIN_AWAY,
     DEFAULT_CHIME,
     CONF_NOTIFY_WHEN,
     NOTIFY_KINDS,
@@ -643,6 +646,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_WELCOME_PEOPLE, **d(CONF_WELCOME_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)
             ),
+            vol.Required(CONF_WELCOME_MIN_AWAY, **d(CONF_WELCOME_MIN_AWAY, DEFAULT_WELCOME_MIN_AWAY)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=480, step=5, unit_of_measurement="minutes", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_WELCOME_UNTIL, **d(CONF_WELCOME_UNTIL)): selector.TimeSelector(),
             vol.Optional(CONF_LINK_TRIGGERS, **d(CONF_LINK_TRIGGERS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["binary_sensor", "media_player", "input_boolean", "switch", "light"], multiple=True)
             ),
