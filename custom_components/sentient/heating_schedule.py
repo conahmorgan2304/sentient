@@ -129,50 +129,115 @@ def clean_programme(options: dict[str, Any], data: dict[str, Any]) -> dict[str, 
     return {"name": name, "heaters": heaters, "days": days, "periods": periods, "enabled": bool(data.get("enabled", True))}
 
 
-def wanted_on(programmes: list[dict[str, Any]], heater: str, when: datetime) -> dict[str, Any] | None:
-    """The period that wants this heater on at this moment (None if none)."""
-    minute = when.hour * 60 + when.minute
-    today, yesterday = DAYS[when.weekday()], DAYS[(when.weekday() - 1) % 7]
-    for prog in programmes:
-        if not prog.get("enabled", True) or heater not in prog.get("heaters", []):
+DAY_MINUTES = 1440
+WEEK_MINUTES = 7 * DAY_MINUTES
+
+
+def _weekly_periods(programme):
+    """Start and exclusive end in minutes from Monday, including overnight endings."""
+    for day in programme["days"]:
+        base = DAYS.index(day) * DAY_MINUTES
+        for period in programme["periods"]:
+            on, off = _minute(period["on"]), _minute(period["off"])
+            yield base + on, base + off + (DAY_MINUTES if off < on else 0), period
+
+
+def _overlap(first, second) -> bool:
+    start, end, period = first
+    other_start, other_end, other = second
+    if float(period["temp"]) == float(other["temp"]):
+        return False
+    # Check either side of the Sunday/Monday boundary as well as the same week.
+    return any(start < other_end + shift and other_start + shift < end
+               for shift in (0, -WEEK_MINUTES, WEEK_MINUTES))
+
+
+def programme_conflict(programme, others) -> str | None:
+    """Why this programme cannot be enabled alongside the others."""
+    if not programme.get("enabled", True):
+        return None
+    windows = list(_weekly_periods(programme))
+    for index, window in enumerate(windows):
+        if any(_overlap(window, other) for other in windows[index + 1:]):
+            return "This programme has overlapping periods with different temperatures"
+    for other in others:
+        if not other.get("enabled", True):
             continue
-        for p in prog.get("periods", []):
-            on, off = _minute(p["on"]), _minute(p["off"])
-            if on < off and today in prog["days"] and on <= minute < off:
-                return p
-            if on > off and ((today in prog["days"] and minute >= on) or (yesterday in prog["days"] and minute < off)):
-                return p
+        if programme.get("id") and programme["id"] == other.get("id"):
+            continue
+        shared = set(programme["heaters"]) & set(other["heaters"])
+        if shared and any(_overlap(a, b) for b in _weekly_periods(other) for a in windows):
+            return f"Conflicts with {other['name']} on {', '.join(sorted(shared))}: overlapping times have different temperatures"
     return None
 
 
-def due(programmes: list[dict[str, Any]], when: datetime, *, by_id: bool = False) -> list[tuple[str, str, float | None, str]]:
-    """What happens this minute: (heater, 'on'|'off', temperature, programme name)."""
-    minute = when.hour * 60 + when.minute
-    today, yesterday = DAYS[when.weekday()], DAYS[(when.weekday() - 1) % 7]
-    out: list[tuple[str, str, float | None, str]] = []
-    for prog in programmes:
-        if not prog.get("enabled", True):
+def _week_minute(when: datetime) -> int:
+    return when.weekday() * DAY_MINUTES + when.hour * 60 + when.minute
+
+
+def _active_period(programmes, heater, when):
+    """Most recently started period wins for existing overlaps. Saved order breaks ties."""
+    now = _week_minute(when)
+    best = None
+    for programme in programmes:
+        if not programme.get("enabled", True) or heater not in programme["heaters"]:
             continue
-        key = prog.get("id", prog["name"]) if by_id else prog["name"]
-        for p in prog.get("periods", []):
-            on, off = _minute(p["on"]), _minute(p["off"])
-            if minute == on and today in prog["days"]:
-                out += [(h, "on", float(p["temp"]), key) for h in prog["heaters"]]
-            off_day = yesterday if off < on else today
-            if minute == off and off_day in prog["days"]:
-                out += [(h, "off", None, key) for h in prog["heaters"]]
-    # an 'on' wins over an 'off' for the same heater in the same minute (one period ends as another starts)
-    ons = {h for h, what, _t, _n in out if what == "on"}
-    return [x for x in out if x[1] == "on" or x[0] not in ons]
+        for start, end, period in _weekly_periods(programme):
+            elapsed = (now - start) % WEEK_MINUTES
+            if elapsed < end - start and (best is None or elapsed < best[2]):
+                best = programme, period, elapsed
+    return best
+
+
+def wanted_on(programmes: list[dict[str, Any]], heater: str, when: datetime) -> dict[str, Any] | None:
+    """The same winning period used to plan thermostat commands."""
+    active = _active_period(programmes, heater, when)
+    return active[1] if active else None
+
+
+def due(programmes: list[dict[str, Any]], when: datetime, *, by_id: bool = False) -> list[tuple[str, str, float | None, str]]:
+    """Return at most one command per thermostat at a programme boundary."""
+    minute = _week_minute(when)
+    heaters: dict[str, None] = {}
+    for programme in programmes:
+        if programme.get("enabled", True) and any(
+            minute in (start, end % WEEK_MINUTES) for start, end, _ in _weekly_periods(programme)
+        ):
+            heaters.update(dict.fromkeys(programme["heaters"]))
+    out = []
+    for heater in heaters:
+        before = _active_period(programmes, heater, when - timedelta(minutes=1))
+        after = _active_period(programmes, heater, when)
+        if after:
+            programme, period, elapsed = after
+            temp = float(period["temp"])
+            if before and elapsed and float(before[1]["temp"]) == temp:
+                continue
+            what = "on"
+        elif before:
+            programme, _, _ = before
+            what, temp = "off", None
+        else:
+            continue
+        key = programme.get("id", programme["name"]) if by_id else programme["name"]
+        out.append((heater, what, temp, key))
+    return out
 
 
 def next_change(programmes: list[dict[str, Any]], now: datetime) -> dict[str, Any] | None:
-    """The next on or off within a week, for the page."""
+    """Check the actual programme boundaries in the next week."""
     base = now.replace(second=0, microsecond=0)
-    for step in range(1, 7 * 1440 + 1):
-        when = base + timedelta(minutes=step)
+    minute = _week_minute(base)
+    offsets = {
+        (boundary - minute) % WEEK_MINUTES or WEEK_MINUTES
+        for programme in programmes if programme.get("enabled", True)
+        for start, end, _ in _weekly_periods(programme)
+        for boundary in (start, end)
+    }
+    for offset in sorted(offsets):
+        when = base + timedelta(minutes=offset)
         if events := due(programmes, when):
-            heater, what, temp, name = events[0]
+            _, what, temp, name = events[0]
             return {"time": when.isoformat(), "what": what, "temp": temp, "name": name, "count": len(events)}
     return None
 
@@ -261,12 +326,13 @@ class HeatingProgrammes:
         mode = action["data"].get("hvac_mode", state.state)
         if mode not in ON_MODES or (state.state != "off" and heater not in self._owned):
             return
-        period = next((p for p in programme["periods"] if _minute(p["on"]) == local.hour * 60 + local.minute), None)
-        if period is None:
+        active = _active_period([programme], heater, local)
+        if active is None:
             return
-        end = local.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(
-            minutes=_minute(period["off"]) + (1440 if period["off"] < period["on"] else 0)
-        )
+        _, period, elapsed = active
+        on, off = _minute(period["on"]), _minute(period["off"])
+        remaining = (off - on) % DAY_MINUTES - elapsed
+        end = local.replace(second=0, microsecond=0) + timedelta(minutes=remaining)
         self._pending[heater] = {
             "mode": mode, "temperature": action["data"]["temperature"], "key": key,
             "context": context.id, "confirm_by": dt_util.utcnow() + timedelta(minutes=2),

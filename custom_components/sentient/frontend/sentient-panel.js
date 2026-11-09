@@ -1456,7 +1456,8 @@
         if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
           + (h.admin ? `<button class="btn sm ghost" data-act="progonoff" data-id="${esc(p.id)}">${p.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="progedit" data-id="${esc(p.id)}">EDIT</button><button class="btn sm ghost" data-act="progdel" data-id="${esc(p.id)}" title="Delete">✕</button>` : "")
-          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div>${this._progRan((h.ran || {})[p.id])}</div>`).join("")
+          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div>${this._progRan((h.ran || {})[p.id])}
+          ${h.conflicts?.[p.id] ? `<div class="pran bad">${esc(h.conflicts[p.id])}. The latest start time takes priority. Equal start times use the first saved period.</div>` : ""}</div>`).join("")
           || ((h.suggested || []).length ? "" : '<div class="e">NO HEATING SCHEDULE YET</div>');
         if (!(h.programmes || []).length && (h.suggested || []).length) {
           html += `<div class="hint">A STARTING POINT FROM WHAT I'VE LEARNED (WHEN YOU'RE USUALLY UP AND HOW FAST THE HOUSE WARMS) — NOTHING IS SAVED UNTIL YOU SAY SO</div>`
@@ -2059,7 +2060,7 @@
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
       else if (act === "prognew") this._editProg(null);
-      else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "progsugedit") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._editProg({ ...p, name: p.name.replace(" (suggested)", ""), id: undefined }); }
       else if (act === "progedit") this._editProg(((this._heat || {}).programmes || []).find((p) => p.id === id));
       else if (act === "progcancel") { this._heatEdit = false; this._drawHeat(); }
@@ -2068,7 +2069,7 @@
       else if (act === "progrmper") { this._progDraft.periods.splice(+id, 1); this._progRedraw(); }
       else if (act === "progdays") { const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]; this._progDraft.days = id === "wk" ? D.slice(0, 5) : id === "we" ? ["sat", "sun"] : D; this._progRedraw(); }
       else if (act === "progdel") { if (window.confirm("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
-      else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "heatzones") this._openHeatZones(false);
       else if (act === "roomlights") this._hass.callService("light", "turn_off", {}, { area_id: id }).then(() => { this._glAt = 0; setTimeout(() => this._loadGlance(), 800); }, (e) => window.alert(e.message || e));
       else if (act === "heatzsave") this._saveHeatZones();

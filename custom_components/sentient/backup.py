@@ -234,7 +234,7 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
             target.upsert({k: v for k, v in row.items() if k != 'id'})
             names.add(name.strip().casefold())
             counts[kind] = counts.get(kind, 0) + 1
-    from .heating_schedule import clean_programme
+    from .heating_schedule import clean_programme, programme_conflict
 
     programmes = rt.heat_prog.items
     existing_programmes = programmes.listing()
@@ -249,6 +249,9 @@ def import_all(hass: HomeAssistant, entry, data: dict[str, Any], settings: bool 
             skip()
             continue
         if any(all(existing.get(k) == v for k, v in programme.items()) for existing in existing_programmes):
+            continue
+        if programme_conflict(programme, existing_programmes):
+            skip()
             continue
         existing_programmes.append(programmes.upsert(programme))
         if isinstance(row.get("id"), str):

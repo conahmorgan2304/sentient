@@ -165,3 +165,64 @@ async def test_heating_programme_backup_round_trip(hass):
     assert clean_programme(OPTS, items.listing()[0]) == clean_programme(OPTS, DAY)
     assert import_all(hass, entry, backup).get("heating_programmes", 0) == 0
     assert len(items.listing()) == 1
+
+
+def test_existing_overlap_has_one_effective_target_and_restores_it_when_override_ends():
+    base = clean_programme(OPTS, {**DAY, "name": "Base", "periods": [{"on": "06:00", "off": "09:00", "temp": 20}]})
+    same_start = {**base, "name": "Same start", "periods": [{"on": "06:00", "off": "06:30", "temp": 23}]}
+    override = {**base, "name": "Override", "periods": [{"on": "07:00", "off": "08:00", "temp": 22}]}
+    programmes = [base, same_start, override]
+    assert due(programmes, at(0, 6, 0)) == [(LOUNGE, "on", 20.0, "Base")]
+    assert due(programmes, at(0, 6, 30)) == []
+    assert next_change(programmes, at(0, 6, 15))["time"].startswith("2026-11-16T07:00")
+    assert due(programmes, at(0, 7, 0)) == [(LOUNGE, "on", 22.0, "Override")]
+    assert wanted_on(programmes, LOUNGE, at(0, 7, 30))["temp"] == 22
+    assert due(programmes, at(0, 8, 0)) == [(LOUNGE, "on", 20.0, "Base")]
+    assert due(programmes, at(0, 9, 0)) == [(LOUNGE, "off", None, "Base")]
+
+
+async def test_conflicting_programme_cannot_be_saved_or_enabled(hass, hass_ws_client, hass_admin_user):
+    entry = await _setup(hass)
+    ws = await hass_ws_client(hass)
+    overnight = {**DAY, "name": "Sunday", "days": ["sun"], "periods": [{"on": "23:00", "off": "01:30", "temp": 20}]}
+    monday = {**DAY, "name": "Monday", "days": ["mon"], "periods": [{"on": "01:00", "off": "02:00", "temp": 22}]}
+
+    async def save(id, programme, **extra):
+        await ws.send_json({"id": id, "type": "sentient/heating/programme/save", "programme": programme, **extra})
+        return await ws.receive_json()
+
+    assert (await save(1, overnight))["success"]
+    error = await save(2, monday)
+    assert not error["success"] and "Sunday" in error["error"]["message"]
+    saved = (await save(3, {**monday, "enabled": False}))["result"]
+    assert (await save(4, monday, programme_id=saved["id"]))["error"]["code"] == "conflict"
+    assert not entry.runtime_data.heat_prog.items.items[saved["id"]]["enabled"]
+    # Adjacent periods on the same zone and overlapping periods at the same target are fine.
+    adjacent = {**monday, "periods": [{"on": "01:30", "off": "02:00", "temp": 22}]}
+    assert (await save(5, adjacent, programme_id=saved["id"]))["success"]
+    same_temperature = {**monday, "periods": [{"on": "01:00", "off": "01:30", "temp": 20}]}
+    assert (await save(6, same_temperature))["success"]
+
+
+def test_conflicts_within_programme_and_separate_zones():
+    from custom_components.sentient.heating_schedule import programme_conflict
+
+    programme = clean_programme(OPTS, {**DAY, "periods": [
+        {"on": "06:00", "off": "09:00", "temp": 20}, {"on": "07:00", "off": "08:00", "temp": 22},
+    ]})
+    assert programme_conflict(programme, [])
+    bedroom = clean_programme(OPTS, {**DAY, "name": "Bedroom", "heaters": [BED]})
+    assert programme_conflict(bedroom, [programme]) is None
+
+
+async def test_conflicting_backup_programme_is_skipped(hass):
+    from custom_components.sentient.backup import export_all, import_all
+
+    entry = await _setup(hass)
+    items = entry.runtime_data.heat_prog.items
+    saved = items.upsert(clean_programme(OPTS, DAY))
+    backup = export_all(hass, entry)
+    backup["heating_programmes"] = [{**saved, "id": "other", "name": "Conflict",
+                                    "periods": [{"on": "07:00", "off": "08:00", "temp": 22}]}]
+    assert import_all(hass, entry, backup)["skipped"] == 1
+    assert items.listing() == [saved]
