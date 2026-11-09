@@ -192,6 +192,14 @@ class SelfAware:
                     "evidence": {"tries": n, "failed": bad},
                 })
 
+        for eid, n in getattr(rt.speech, "silent_runs", {}).items():
+            if n >= 3 and (st := self.hass.states.get(eid)) is not None and st.state != "unavailable":
+                findings.append({
+                    "kind": "speaker", "about": st.name,
+                    "text": f"{st.name} took the last {n} announcements but showed no sign of playing them — worth a test by voice",
+                    "evidence": {"silent_runs": n},
+                })
+
         # 3. things held back a lot (quiet hours, hush…), and why
         held_why = Counter(str(i.get("reason") or "").split(":")[0] for i in held)
         if held and len(held) >= max(5, len(said)):

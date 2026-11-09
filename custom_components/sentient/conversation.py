@@ -130,8 +130,11 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     @property
     def supports_streaming(self) -> bool:
-        if self._options().get(CONF_GUARDED) or self._options().get(CONF_SESSIONS) or (self._options().get("automatic_language") and self._options().get("speak_house_language")):
-            return False  # deterministic confirmation/session replies must be decided before speech
+        opts = self._options()
+        if opts.get(CONF_GUARDED) or (opts.get("automatic_language") and opts.get("speak_house_language")):
+            return False  # confirmations and translated replies must be decided before speech
+        if opts.get(CONF_SESSIONS) and not opts.get("stream_voice_replies"):
+            return False  # session replies can change what the model said: streaming is opt-in (the difference is spoken after)
         agent = conversation.async_get_agent(self.hass, self.main_agent) if self.main_agent else None
         return bool(getattr(agent, "supports_streaming", False))
 
@@ -351,7 +354,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             manager = nullcontext(None)
         with manager as trace:
             try:
-                result = await self._async_process_impl(user_input)
+                result = await self._process_streaming_aware(user_input)
             finally:
                 if self._guest():
                     rt.control.clear_recovery()
@@ -363,6 +366,24 @@ class BackedUpAgent(conversation.ConversationEntity):
             if not self._guest() and checks is not None and checks.generation == check_generation:
                 checks.observe(user_input, result)
             return result
+
+    async def _process_streaming_aware(self, user_input):
+        """Answer; when the reply is being spoken as it's written, also say whatever Sentient changed afterwards."""
+        from contextlib import nullcontext
+
+        log = None
+        if self._options().get("stream_voice_replies") and self.supports_streaming:
+            from homeassistant.components.conversation.chat_log import current_chat_log
+
+            log = current_chat_log.get()
+        if log is None or log.delta_listener is None:
+            return await self._async_process_impl(user_input)
+        from .voice_stream import StreamWatch
+
+        with StreamWatch(log, self.entity_id) as watch:
+            result = await self._async_process_impl(user_input)
+            await watch.finish(spoken_text(result.response))
+        return result
 
     async def _async_process_impl(self, user_input):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""

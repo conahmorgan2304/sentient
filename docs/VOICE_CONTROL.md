@@ -121,3 +121,9 @@ Enable **Verified downstairs bedtime** under **Settings → Quiet & rooms**. Sel
 Say “run downstairs bedtime”. Sentient checks the reported result and names outstanding checks, such as an open door, an unavailable contact or a light that has yet to report off. Ask “downstairs bedtime status” to recheck the same configured steps. Status checks do not send commands. “Cancel downstairs bedtime” clears the check without undoing any earlier light changes. A fresh explicit start can retry outstanding lights.
 
 Checks stay in memory for up to two hours, scoped to the initiating Home Assistant user or, for a request without a user ID, the initiating Assist device/satellite. Turning off the feature, changing settings, entering Guest mode, forgetting recent data, or restarting clears the checks. The task uses local Home Assistant reports and does not need a model to plan, run or verify the task. Existing spoken translation settings still apply.
+
+## Speaking replies as they're written (1.3.1, trial)
+
+Home Assistant can start speaking a long reply while the AI is still writing it. Sentient turns that off whenever conversation sessions are on, because sessions can change what the model said (a confirmation question, the outcome of an action, a correction notice). Switch on **Speak voice replies as they're written (trial)** in Settings → Voice to allow it. Guarded control and translated speech still wait for the whole reply.
+
+When a reply has already started being spoken and Sentient then changes it, the words already spoken can't be taken back: the replacement (or the extra tail) is added to the chat log and spoken straight after. Short replies are not streamed by Home Assistant (about 60 characters or fewer) and are spoken whole as before. Nothing is stored; switching it off returns to waiting for the whole reply.

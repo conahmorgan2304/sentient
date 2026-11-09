@@ -154,6 +154,7 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     for attr in ("_recent", "_remarks", "_delivered_recent"):
         cache = getattr(rt.speech, attr, {})
         setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if stamp < since})
+    rt.speech.save_remarks()
     said = rt.speech._said
     keep_s = [(t, text) for t, text in said if t < since]
     said.clear()

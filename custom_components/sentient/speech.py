@@ -26,10 +26,11 @@ from typing import Any
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import area_registry as ar, entity_registry as er
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_ALEXA_TTS_ONLY, CONF_READ_AHEAD, CONF_READING_TTS, CONF_READING_VOICE
-from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS
+from .const import CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS, DOMAIN
 from .const import CONF_SPEECH_DELIVERY_HISTORY, CONF_PERSONA, DEFAULT_PERSONA
 from .const import (
     CONF_FALLBACK_SPEAKERS,
@@ -206,6 +207,9 @@ class SpeechRouter:
         self.options = options
         self.tracker = tracker
         self._recent: dict[str, datetime] = {}
+        self._remarks: dict[str, datetime] = {}  # remark -> when last said; kept across restarts
+        self.silent_runs: dict[str, int] = {}  # Echo -> announcements in a row it showed no sign of playing
+        self._remark_store: Store[dict[str, str]] | None = None
         self.failures: dict[str, tuple[datetime, str]] = {}  # destination -> (when it last failed, why)
         self._privacy_generation = 0
         self._said: deque[tuple[datetime, str]] = deque(maxlen=20)
@@ -225,6 +229,24 @@ class SpeechRouter:
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
         self.nobody_about = False  # the last pick found nobody in any speaker's room
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
+
+    # ----- remembering what was said, across restarts -----------------------------------
+    async def async_load_remarks(self, entry_id: str) -> None:
+        """Restore what was said in the last day, so a restart or update doesn't let the kettle remark come round again."""
+        self._remark_store = Store(self.hass, 1, f"{DOMAIN}.{entry_id}.remarks")
+        try:
+            saved = await self._remark_store.async_load() or {}
+        except Exception:  # noqa: BLE001 - a damaged file just means starting fresh
+            saved = {}
+        now = dt_util.utcnow()
+        for key, stamp in saved.items():
+            when = dt_util.parse_datetime(stamp) if isinstance(stamp, str) else None
+            if when is not None and now - when < timedelta(hours=24) and key not in self._remarks:
+                self._remarks[key] = when
+
+    def save_remarks(self) -> None:
+        if self._remark_store is not None:
+            self._remark_store.async_delay_save(lambda: {k: v.isoformat() for k, v in self._remarks.items()}, 5)
 
     # ----- configuration helpers -------------------------------------------------
     @property
@@ -458,7 +480,7 @@ class SpeechRouter:
                 if any(dt_util.utcnow() - t < timedelta(seconds=60) for t in self._recent.values()):
                     return self._held("busy", text, source)
         if source == "notice" and (hours := float(self.options.get(CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS) or 0)):
-            last = getattr(self, "_remarks", {}).get(_remark_key(text))
+            last = self._remarks.get(_remark_key(text))
             if last is not None and dt_util.utcnow() - last < timedelta(hours=hours):
                 return self._held("said_recently", text, source)  # "The kettle has finished boiling." once is enough
         if check_duplicate and source != "critical" and (last := self._recent.get(text.lower())) is not None and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
@@ -468,8 +490,9 @@ class SpeechRouter:
     def _remember_said(self, text: str, spoken: str | None = None) -> None:
         now = dt_util.utcnow()
         key = _remark_key(text)
-        self._remarks = {k: v for k, v in getattr(self, "_remarks", {}).items() if now - v < timedelta(hours=24)}
+        self._remarks = {k: v for k, v in self._remarks.items() if now - v < timedelta(hours=24)}
         self._remarks[key] = now
+        self.save_remarks()
         self._recent = {k: v for k, v in self._recent.items() if now - v < _DUPLICATE_WINDOW}
         self._recent[text.lower()] = now
         self._said.appendleft((now, spoken if spoken is not None else text))
@@ -659,6 +682,8 @@ class SpeechRouter:
         chime = self.chime if chime is None else chime
         rows = {eid: {'entity_id': eid, 'status': 'cancelled',
                       'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
+        seen_before = {eid: st.last_updated for eid in rows if eid.startswith('media_player.') and (st := self.hass.states.get(eid))}
+
         async def send(eid):
             row = rows[eid]
             started = monotonic()
@@ -726,6 +751,12 @@ class SpeechRouter:
             raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
         if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
             await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
+            for row in receipts:  # a sign (not proof) that the Echo did something: its state moved while it was told to speak
+                if row['status'] == 'accepted' and row['entity_id'].startswith('media_player.'):
+                    st = self.hass.states.get(row['entity_id'])
+                    moved = st is not None and (st.state == 'playing' or st.last_updated > seen_before.get(row['entity_id'], st.last_updated))
+                    row['playback'] = 'state_changed' if moved else 'no_change'
+                    self.silent_runs[row['entity_id']] = 0 if moved else self.silent_runs.get(row['entity_id'], 0) + 1
         return receipts
 
     def _record_deliveries(self, text, receipts):
