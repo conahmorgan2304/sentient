@@ -111,3 +111,12 @@ async def test_today_for_the_overview_and_screen(hass: HomeAssistant, hass_ws_cl
     assert out["weather"]["temp"] == 9
     assert out["people"] == [{"name": "Sam", "home": False, "where": "not_home"}]  # the phone, not the always-home person
     assert {z["name"] for z in out["heating"]["zones"]} == {"Lounge", "Bedroom"}
+
+
+async def test_schedule_takes_over_from_a_hand_boost(hass: HomeAssistant, freezer):
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    async_mock_service(hass, "climate", "set_temperature")
+    rt.heating._boosted[LOUNGE] = {"origin": "limit", "status": "active", "until": "2099-01-01T00:00:00+00:00"}
+    done = await rt.heat_prog.async_run([(LOUNGE, "on", 21.0, "Weekdays")], at(0, 6, 0))
+    assert done and LOUNGE not in rt.heating._boosted  # its "put it back later" would undo the schedule

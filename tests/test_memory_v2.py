@@ -63,3 +63,4 @@ async def test_links_and_synonyms_help_recall(hass: HomeAssistant):
     store.add("The rabbits live by the shed")
     assert store.search("living room light", count_hits=False)[0].id == lamp.id  # synonym: light ~ lamp
     assert store.for_prompt("what does Kayleigh like?", 2)[0].id == m.id
+

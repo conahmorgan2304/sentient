@@ -285,7 +285,10 @@ class Heating:
             self._learning = False
 
     async def _async_learn(self, current) -> dict[str, Any]:
-        inside = inside_sensors(self.hass, self.options)
+        # bedroom sensors that fire while people sleep (Settings → Home → Sensors to ignore for bedtime) would make
+        # the house look up at 5am: leave them out of when people get up too
+        ignore = set(self.options.get("sleep_ignore_sensors") or [])
+        inside = [e for e in inside_sensors(self.hass, self.options) if e not in ignore]
         try:
             switched = await self._async_switched_on()
         except Exception:  # noqa: BLE001

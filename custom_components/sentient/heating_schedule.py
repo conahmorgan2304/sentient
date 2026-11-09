@@ -218,6 +218,10 @@ class HeatingProgrammes:
                     if rt is not None:
                         rt.timeline.add("health", f"Heating schedule couldn't change {heater}", str(err)[:120])
                     continue
+            # the schedule has taken over this heater: a hand boost's "put it back later" no longer applies
+            heating = getattr(rt, "heating", None)
+            if heating is not None and (boost := getattr(heating, "_boosted", {}).get(heater)) is not None:
+                heating._drop(heater, boost)
             st = self.hass.states.get(heater)
             label = st.name if st else heater
             done.append(f"{label} {'on to ' + format(temp, 'g') + '°' if what == 'on' else 'off'}")
