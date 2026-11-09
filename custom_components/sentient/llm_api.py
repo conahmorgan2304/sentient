@@ -422,7 +422,9 @@ class AnnounceTool(_Tool):
     name = "sentient_announce"
     description = (
         "Say something out loud through the house's speakers, e.g. 'tell the kitchen "
-        "dinner is ready'. 'speaker' can be one room, several ('kitchen and upstairs') or "
+        "dinner is ready'. Use this for every speaker, including the Alexa Echo speakers ('kitchen echo', "
+        "'girls echo'); never test or reach a speaker with media play/resume controls. "
+        "'speaker' can be one room, a speaker's name, several ('kitchen and upstairs') or "
         "'everywhere' for every speaker in the house. Leave it empty to use the room where someone "
         "was last seen. Respects quiet hours unless priority is urgent."
     )
@@ -460,6 +462,17 @@ class AnnounceTool(_Tool):
         attempt = speech_attempt.get()
         if attempt is not None:
             attempt['started'] = True
+        # A speaker in the middle of this very conversation stays busy until the reply has been spoken, which
+        # only happens after this tool returns: waiting for it here could never finish. Say it straight after.
+        busy = [t for t in (targets or []) if (st := hass.states.get(t)) is not None and st.state in ("listening", "processing", "responding")]
+        if busy:
+            hass.async_create_background_task(rt.speech.async_say(
+                args["message"], args.get("priority", "normal"), targets, source="conversation"), "sentient_announce_after_reply")
+            outcome = {"spoken": "queued", "speakers": targets,
+                       "note": "It will be said on " + ", ".join(busy) + " as soon as your reply has finished. Tell them that."}
+            if attempt is not None:
+                attempt['result'] = outcome
+            return outcome
         try:
             async with asyncio.timeout(ANNOUNCE_TIMEOUT):
                 result = await rt.speech.async_say(
