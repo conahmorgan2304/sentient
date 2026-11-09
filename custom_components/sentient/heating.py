@@ -167,6 +167,18 @@ def usual_wake(
     return out
 
 
+def on_share(states: list[State], end: datetime) -> float:
+    """How much of the time a sensor was on across its history (0 to 1)."""
+    on = total = 0.0
+    for st, nxt in zip(states, [*states[1:], None]):
+        until = nxt.last_changed if nxt is not None else end
+        span = max(0.0, (until - st.last_changed).total_seconds())
+        total += span
+        if st.state == "on":
+            on += span
+    return on / total if total else 0.0
+
+
 def clock(minute: int | None) -> str | None:
     if minute is None:
         return None
@@ -311,7 +323,9 @@ class Heating:
                 "episodes": episodes or old.get("episodes", 0),
                 "comfort": comfort_target(states) or old.get("comfort"),
             }
-        wake = usual_wake({e: hist.get(e, []) for e in inside}, switched)
+        # a sensor that is on most of the time (one that never rests) can't say when anyone got up
+        now = dt_util.utcnow()
+        wake = usual_wake({e: hist.get(e, []) for e in inside if on_share(hist.get(e, []), now) < 0.8}, switched)
         self.wake = {k: v if v is not None else self.wake.get(k) for k, v in wake.items()}
         self.last_run = dt_util.utcnow().isoformat()
         self._save()

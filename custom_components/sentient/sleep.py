@@ -12,6 +12,7 @@ on when someone's up). Plain rules, no AI.
 
 from __future__ import annotations
 
+from collections import deque
 from datetime import datetime, time, timedelta
 import logging
 from typing import Any, Callable
@@ -39,6 +40,11 @@ _LOGGER = logging.getLogger(__name__)
 EVENT_SLEEP = f"{DOMAIN}_sleep"
 EARLIEST_UP = time(5, 0)
 UP_WINDOW = timedelta(minutes=10)
+# a sensor that is on for most of the day (a radar that sees a curtain, a PIR pointed at a heater)
+# says nothing about whether anyone is up: judged on a day of once-a-minute samples
+NEVER_RESTS = 0.8
+SAMPLES = 1440
+MIN_SAMPLES = 360
 
 
 class Sleep:
@@ -50,6 +56,10 @@ class Sleep:
         self.asleep = False
         self.since: str | None = None
         self._moves: list[tuple[datetime, str]] = []
+        self._samples: dict[str, deque[bool]] = {}
+        self.history: list[dict[str, str]] = []
+        self._restless_seen: frozenset[str] = frozenset()
+        self.listeners: list[Callable[[], None]] = []  # told when the never-resting list changes
         self._unsubs: list = []
 
     async def async_start(self) -> None:
@@ -101,7 +111,25 @@ class Sleep:
     def describe(self) -> dict[str, Any]:
         since = dt_util.parse_datetime(self.since or "")
         return {"asleep": self.asleep, "since": dt_util.as_local(since).strftime("%H:%M") if since else None,
-                "since_at": self.since, **{f"usual_{k}": v for k, v in self.usual().items()}}
+                "since_at": self.since, **{f"usual_{k}": v for k, v in self.usual().items()},
+                "ignoring": self.never_rests()}
+
+    # ----- sensors that never rest ---------------------------------------------------------
+    def _sample(self, sensors: list[Any]) -> None:
+        for s in sensors:
+            self._samples.setdefault(s.entity_id, deque(maxlen=SAMPLES)).append(s.state == "on")
+
+    def never_rests(self) -> list[dict[str, Any]]:
+        """Sensors on for most of the last day: they can't say whether the house is asleep or up."""
+        out = []
+        for eid, d in self._samples.items():
+            if len(d) >= MIN_SAMPLES and (share := sum(d) / len(d)) >= NEVER_RESTS:
+                st = self.hass.states.get(eid)
+                out.append({"entity_id": eid, "name": st.name if st else eid, "on_share": round(share, 2)})
+        return out
+
+    def _restless(self) -> set[str]:
+        return {r["entity_id"] for r in self.never_rests()}
 
     # ----- going to sleep ----------------------------------------------------------------
     def is_bedtime_routine(self, name: str) -> bool:
@@ -119,13 +147,22 @@ class Sleep:
     @callback
     def _tick(self, now: datetime) -> None:
         rt = self._rt()
-        if not self.enabled or self.asleep or rt is None or not rt.speech.quiet_hours_now():
+        if not self.enabled or rt is None:
             return
         # a bedroom PIR that fires as people turn over says nothing about bedtime, and a sensor that is
         # offline says nothing at all
         ignore = set(self.options.get(CONF_SLEEP_IGNORE) or [])
         sensors = [s for e in inside_sensors(self.hass, self.options) if e not in ignore
                    and (s := self.hass.states.get(e)) and s.state not in ("unavailable", "unknown")]
+        self._sample(sensors)
+        if (now_restless := frozenset(self._restless())) != self._restless_seen:
+            self._restless_seen = now_restless
+            for cb in list(self.listeners):
+                cb()
+        if self.asleep or not rt.speech.quiet_hours_now():
+            return
+        restless = self._restless()
+        sensors = [s for s in sensors if s.entity_id not in restless]
         if not sensors or any(s.state == "on" for s in sensors):
             return
         quiet_for = now - max(s.last_changed for s in sensors)
@@ -145,7 +182,8 @@ class Sleep:
             return
         by_hand = new.domain == "light" and new.state == "on" and not new.context.parent_id
         if not by_hand and (new.state != "on" or new.entity_id not in inside_sensors(self.hass, self.options)
-                            or new.entity_id in set(self.options.get(CONF_SLEEP_IGNORE) or [])):
+                            or new.entity_id in set(self.options.get(CONF_SLEEP_IGNORE) or [])
+                            or new.entity_id in self._restless()):
             return  # a bedroom sensor stirring isn't anyone up: it takes movement in two other rooms (or a light)
         area = area_of(self.hass, new.entity_id) or new.entity_id
         cutoff = now - UP_WINDOW

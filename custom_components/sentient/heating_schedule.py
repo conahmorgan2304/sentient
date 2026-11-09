@@ -9,12 +9,15 @@ sensible range. Switched off in Settings, the entries stay saved and simply don'
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_HEATING_ENTITIES, CONF_HEATING_SCHEDULE
+
+_LOGGER = logging.getLogger(__name__)
 
 MIN_TEMP = 5.0
 MAX_TEMP = 28.0
@@ -167,6 +170,8 @@ class HeatingProgrammes:
         self.items = items
         self._rt = rt_getter
         self._unsub = None
+        self.last_tick: str | None = None  # proof the minute check is running
+        self.ran: dict[str, dict[str, Any]] = {}  # programme name -> what happened last time it acted
 
     async def async_start(self) -> None:
         from homeassistant.helpers.event import async_track_time_change
@@ -187,37 +192,54 @@ class HeatingProgrammes:
         rt = self._rt()
         if rt is None or not enabled(rt.options):
             return
+        self.last_tick = now.isoformat()
         local = dt_util.as_local(now)
         events = due(self.programmes(), local)
         if events:
             self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
 
     async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
+        import asyncio
+
         from .own import own_context
 
         rt = self._rt()
+        for _h, what, temp, name in events:
+            self.ran[name] = {"time": dt_util.as_utc(local).isoformat(), "what": what, "temp": temp, "ok": None, "why": "running"}
         zones = set(rt.options.get(CONF_HEATING_ENTITIES) or []) if rt else set()
         done: list[str] = []
         for heater, what, temp, name in events:
             if heater not in zones or not heater.startswith("climate."):
                 continue
             if what == "off" and wanted_on(self.programmes(), heater, local + timedelta(minutes=1)):
+                self.ran[name].update(ok=True, why="left on: another period wants it")
                 continue  # another period still wants it on
             if what == "on":
                 actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": temp})
             else:
                 actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": None})
             if why:
+                self.ran[name].update(ok=False, why=why)
+                if rt is not None:
+                    rt.timeline.add("health", f"Heating schedule didn't change {heater}", why)
                 continue
+            failed = False
             for action in actions:
                 domain, service = action["action"].split(".", 1)
                 try:
-                    await self.hass.services.async_call(domain, service, {**action.get("data", {}), **action["target"]},
-                                                        blocking=True, context=own_context(self.hass, f"heating schedule: {name}"))
+                    async with asyncio.timeout(30):  # a thermostat that never answers mustn't leave this hanging silently
+                        await self.hass.services.async_call(domain, service, {**action.get("data", {}), **action["target"]},
+                                                            blocking=True, context=own_context(self.hass, f"heating schedule: {name}"))
                 except Exception as err:  # noqa: BLE001 - one heater failing shouldn't stop the others
+                    failed = True
+                    msg = "the thermostat didn't answer within 30 seconds" if isinstance(err, TimeoutError) else str(err)[:120]
+                    self.ran[name].update(ok=False, why=msg)
+                    _LOGGER.warning("Sentient heating schedule %s couldn't change %s: %s", name, heater, msg)
                     if rt is not None:
-                        rt.timeline.add("health", f"Heating schedule couldn't change {heater}", str(err)[:120])
+                        rt.timeline.add("health", f"Heating schedule couldn't change {heater}", msg)
                     continue
+            if failed:
+                continue
             # the schedule has taken over this heater: a hand boost's "put it back later" no longer applies
             heating = getattr(rt, "heating", None)
             if heating is not None and (boost := getattr(heating, "_boosted", {}).get(heater)) is not None:
@@ -225,6 +247,7 @@ class HeatingProgrammes:
             st = self.hass.states.get(heater)
             label = st.name if st else heater
             done.append(f"{label} {'on to ' + format(temp, 'g') + '°' if what == 'on' else 'off'}")
+            self.ran[name].update(ok=True, why=done[-1])
         if done and rt is not None:
             rt.timeline.add("mode", "Heating schedule: " + ", ".join(done), name)
         return done

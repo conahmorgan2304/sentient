@@ -118,17 +118,17 @@
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
-            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="today" class="card"></div><div id="health" class="card"></div><div id="sec" class="card"></div></section>
+            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="today" class="card"></div><div id="around" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div></section>
             <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div></section>
             <section class="lane" aria-label="Coming up"><div class="lt">COMING UP</div><div id="soon" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div></section>
-            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
+            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
-        <div class="page" id="hp" hidden>
+        <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Heating"><div class="lt">HEATING</div><div id="heat" class="card"></div></section>
             <section class="lane" aria-label="Energy, appliances and routines"><div class="lt">ROUTINES &amp; APPLIANCES</div><div id="rout" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
@@ -254,6 +254,8 @@
 
       // the TODAY and COMING UP cards (refreshed every minute while the overview is open)
       if (this._view === "overview" && (!this._todayAt || Date.now() - this._todayAt > 60000)) this._loadToday();
+      // rooms at a glance (House tab) and the around-the-house card (overview), every 30 seconds while shown
+      if ((this._view === "house" || this._view === "overview") && (!this._glAt || Date.now() - this._glAt > 30000)) this._loadGlance();
       // heating zones and schedule (refreshed every 30 seconds while the House tab is open)
       if (this._view === "house" && (!this._heatAt || Date.now() - this._heatAt > 30000) && !this._heatEdit) this._loadHeat();
       // the real cameras (refreshed every minute)
@@ -1275,6 +1277,7 @@
       const el = this._$("minner");
       if (!el) return;
       const i = this._inner;
+      this._drawKnow();
       const off = !i || !(i.learn || i.day || i.thoughts_on);
       el.hidden = off;
       if (off) { el.innerHTML = ""; return; }
@@ -1287,6 +1290,108 @@
           || '<div class="e">NOTHING TO REPORT · IT SAYS SO WHEN IT LEARNS SOMETHING</div>')
         + (i.noisy || []).map((n) => `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b class="wrap">I keep deciding the ${esc(n.name.toLowerCase())} isn't worth mentioning (${n.times} times this week)<small>each look costs an AI call</small></b>${admin ? `<button class="btn sm ghost" data-act="unwatch" data-id="${esc(n.entity_id)}">STOP WATCHING</button>` : ""}</div>`).join("")
         + (bits ? `<div class="hint">${esc(bits)}</div>` : "");
+    }
+
+    // ---------- rooms at a glance (House tab) and around the house (overview) ----------
+    _loadGlance() {
+      this._glAt = Date.now();
+      this._hass.callWS({ type: "sentient/glance" }).then((r) => { this._gl = r; this._drawRooms(); this._drawAround(); }, () => { this._gl = null; this._drawRooms(); this._drawAround(); });
+    }
+
+    _ago(m) {
+      return m == null ? "" : m < 1 ? "JUST NOW" : m < 60 ? `${m}M AGO` : m < 1440 ? `${Math.floor(m / 60)}H AGO` : `${Math.floor(m / 1440)}D AGO`;
+    }
+
+    _drawRooms() {
+      const el = this._$("rooms");
+      if (!el) return;
+      const rows = this._gl && this._gl.on ? this._gl.rooms || [] : [];
+      el.hidden = !rows.length;
+      if (!rows.length) { el.innerHTML = ""; return; }
+      const lit = rows.reduce((n, r) => n + r.lights_on.length, 0), open = rows.reduce((n, r) => n + r.open.length, 0);
+      const tile = (r) => {
+        const on = r.lights_on.length;
+        const chips = [
+          r.lights ? `<button class="rc${on ? " on" : ""}"${on ? ` data-act="roomlights" data-id="${esc(r.area_id)}" title="Turn off: ${esc(r.lights_on.join(", "))}"` : " disabled"}><ha-icon icon="${on ? "mdi:lightbulb-on" : "mdi:lightbulb-outline"}"></ha-icon>${on ? `${on} ON` : "OFF"}</button>` : "",
+          r.open.length ? `<span class="rc warn" title="${esc(r.open.join(", "))}"><ha-icon icon="mdi:window-open-variant"></ha-icon>${r.open.length} OPEN</span>` : "",
+          r.moving || r.moved_mins != null ? `<span class="rc${r.moving ? " live" : ""}"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.moving ? "MOVING" : this._ago(r.moved_mins)}</span>` : "",
+          r.playing.length ? `<span class="rc live" title="${esc(r.playing.join(", "))}"><ha-icon icon="mdi:music"></ha-icon>${esc(r.playing[0].toUpperCase())}</span>` : "",
+        ].join("");
+        return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : ""}</div>`
+          + `<div class="rv"><span class="rtemp">${r.temp != null ? esc(r.temp) + "°" : "–"}</span>${r.humidity != null ? `<span class="rh">${esc(r.humidity)}%</span>` : ""}${r.heating ? `<ha-icon class="fl" icon="mdi:fire" title="${esc(r.heating)} heating"></ha-icon>` : ""}</div>`
+          + `<div class="rs">${chips}</div></div>`;
+      };
+      el.innerHTML = this._h("ROOMS", `${rows.length} ROOMS${lit ? ` · ${lit} LIGHT${lit > 1 ? "S" : ""} ON` : ""}${open ? ` · ${open} OPEN` : ""}`) + `<div class="rgrid">${rows.map(tile).join("")}</div>`;
+    }
+
+    _drawAround() {
+      const el = this._$("around");
+      if (!el) return;
+      const s = this._gl && this._gl.on ? this._gl.summary : null;
+      el.hidden = !s;
+      if (!s) { el.innerHTML = ""; return; }
+      const rows = [];
+      if (s.lights_on.length) rows.push(`<div class="r"><ha-icon icon="mdi:lightbulb-on"></ha-icon><b class="wrap">Lights on<small>${s.lights_on.map((l) => `<a class="lnk" data-act="roomlights" data-id="${esc(l.area_id)}" title="Turn them off">${esc(l.room)}${l.count > 1 ? " ×" + l.count : ""}</a>`).join(" · ")}</small></b><u>TAP A ROOM · OFF</u></div>`);
+      else rows.push(`<div class="r dim"><ha-icon icon="mdi:lightbulb-outline"></ha-icon><b>All the lights are off</b></div>`);
+      if (s.open.length) rows.push(`<div class="r warn"><ha-icon icon="mdi:window-open-variant"></ha-icon><b class="wrap">${s.open.length} open<small>${esc(s.open.map((o) => o.what).join(" · "))}</small></b></div>`);
+      if (s.moving.length) rows.push(`<div class="r"><ha-icon icon="mdi:motion-sensor"></ha-icon><b class="wrap">Movement now<small>${esc(s.moving.join(" · "))}</small></b></div>`);
+      if (s.playing.length) rows.push(`<div class="r"><ha-icon icon="mdi:music"></ha-icon><b class="wrap">Playing<small>${esc(s.playing.join(" · "))}</small></b></div>`);
+      if (s.warmest) rows.push(`<div class="r"><ha-icon icon="mdi:thermometer-lines"></ha-icon><b class="wrap">Warmest ${esc(s.warmest.room)} ${esc(s.warmest.temp)}°<small>coolest ${esc(s.coolest.room)} ${esc(s.coolest.temp)}°</small></b></div>`);
+      el.innerHTML = this._h("AROUND THE HOUSE", s.open.length ? `${s.open.length} OPEN` : "ALL SHUT") + rows.join("");
+    }
+
+    _drawKnow() {
+      const el = this._$("mknow");
+      if (!el) return;
+      const k = this._inner && this._inner.knows;
+      el.hidden = !k;
+      if (!k) { el.innerHTML = ""; return; }
+      el.innerHTML = this._h("WHAT I KNOW", `${k.length}`)
+        + (k.map((x) => `<div class="r${x.warn ? " warn" : ""}"><ha-icon icon="${esc(x.icon)}"></ha-icon><b class="wrap">${esc(x.text)}${x.why ? `<small>${esc(x.why)}</small>` : ""}</b></div>`).join("")
+          || '<div class="e">NOTHING LEARNED YET · GIVE IT A FEW DAYS</div>');
+    }
+
+    // the heating's last day: temperature against the setting, with the times it was heating shaded
+    _loadHeatGraph() {
+      const h = this._heat;
+      if (!h || !h.zones.length) return;
+      this._hgAt = Date.now();
+      const ids = h.zones.slice(0, 3).map((z) => z.entity_id);
+      this._hass.callWS({ type: "history/history_during_period", start_time: new Date(Date.now() - 864e5).toISOString(), entity_ids: ids, minimal_response: false, no_attributes: false, significant_changes_only: false })
+        .then((r) => { this._hg = r; const g = this._$("hgraph"); if (g) g.innerHTML = this._heatGraph(); }, () => { this._hg = {}; });
+    }
+
+    _heatGraph() {
+      const h = this._heat, hist = this._hg;
+      if (!hist) return '<div class="hg"><div class="hgl" style="left:10px;top:8px">LOADING…</div></div>';
+      const end = Date.now(), start = end - 864e5, W = 1440, H = 100;
+      const out = [];
+      for (const z of h.zones.slice(0, 3)) {
+        const rows = hist[z.entity_id] || [];
+        if (!rows.length) continue;
+        const pts = [], set = [], heat = [];
+        let last = null;
+        rows.forEach((row, i) => {
+          const t = Math.max(start, (row.lu || row.lc || 0) * 1000), a = row.a || last || {};
+          last = a;
+          const nextT = i + 1 < rows.length ? Math.max(start, (rows[i + 1].lu || rows[i + 1].lc || 0) * 1000) : end;
+          if (a.current_temperature != null) pts.push([t, +a.current_temperature]);
+          set.push([t, row.s === "off" ? null : a.temperature != null ? +a.temperature : null, nextT]);
+          if (a.hvac_action === "heating") heat.push([t, nextT]);
+        });
+        if (pts.length < 2) continue;
+        pts.push([end, pts[pts.length - 1][1]]);
+        const vals = [...pts.map((p) => p[1]), ...set.filter((x) => x[1] != null).map((x) => x[1])];
+        const lo = Math.floor(Math.min(...vals) - 0.5), hi = Math.ceil(Math.max(...vals) + 0.5);
+        const X = (t) => ((t - start) / 864e5 * W).toFixed(1), Y = (v) => (H - 6 - (v - lo) / Math.max(1, hi - lo) * (H - 18)).toFixed(1);
+        const line = pts.map((p, i) => `${i ? "L" : "M"}${X(p[0])} ${Y(p[1])}`).join("");
+        const steps = set.filter((x) => x[1] != null).map((x) => `M${X(x[0])} ${Y(x[1])}H${X(x[2])}`).join("");
+        const shade = heat.map(([a, b]) => `<rect x="${X(a)}" y="0" width="${Math.max(1, X(b) - X(a))}" height="${H}"></rect>`).join("");
+        const ticks = [6, 12, 18].map((hh) => { const d = new Date(end); d.setHours(hh, 0, 0, 0); if (d.getTime() > end) d.setDate(d.getDate() - 1); return `<div class="hgl tk" style="left:${((d.getTime() - start) / 864e5 * 100).toFixed(1)}%">${String(hh).padStart(2, "0")}:00</div>`; }).join("");
+        out.push(`<div class="hg">${h.zones.length > 1 ? `<div class="hgl nm">${esc(z.name.toUpperCase())}</div>` : ""}<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><g class="heat">${shade}</g><path class="set" d="${steps}"></path><path class="now" d="${line}"></path></svg>`
+          + `<div class="hgl" style="right:6px;top:4px">${hi}°</div><div class="hgl" style="right:6px;bottom:4px">${lo}°</div>${ticks}</div>`);
+      }
+      return out.join("") ? out.join("") + `<div class="hgk"><span class="k now"></span>TEMPERATURE <span class="k set"></span>SET TO <span class="k heat"></span>HEATING</div>` : '<div class="hint">NO HISTORY FOR THE LAST DAY YET</div>';
     }
 
     // ---------- heating (House tab) ----------
@@ -1312,12 +1417,17 @@
       };
       let html = this._h("HEATING", h.zones.length ? `${h.zones.length} HEATER${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + h.warming_now.join(", ").toUpperCase() : ""}` : "NO THERMOSTATS CHOSEN")
         + (h.zones.map(zone).join("") || '<div class="e">CHOOSE YOUR THERMOSTATS UNDER ZONE SETTINGS</div>');
+      if (h.graph && h.zones.length) {
+        html += `<div class="sub">LAST 24 HOURS</div><div id="hgraph">${this._heatGraph()}</div>`;
+        if (!this._hgAt || Date.now() - this._hgAt > 600000) this._loadHeatGraph();
+      }
       if (h.schedule_on) {
         const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "OFF"}` : "";
         html += `<div class="sub">SCHEDULE${nx ? " · " + esc(nx) : ""}</div>`;
+        if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
           + (h.admin ? `<button class="btn sm ghost" data-act="progonoff" data-id="${esc(p.id)}">${p.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="progedit" data-id="${esc(p.id)}">EDIT</button><button class="btn sm ghost" data-act="progdel" data-id="${esc(p.id)}" title="Delete">✕</button>` : "")
-          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div></div>`).join("")
+          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div>${this._progRan((h.ran || {})[p.name])}</div>`).join("")
           || ((h.suggested || []).length ? "" : '<div class="e">NO HEATING SCHEDULE YET</div>');
         if (!(h.programmes || []).length && (h.suggested || []).length) {
           html += `<div class="hint">A STARTING POINT FROM WHAT I'VE LEARNED (WHEN YOU'RE USUALLY UP AND HOW FAST THE HOUSE WARMS) — NOTHING IS SAVED UNTIL YOU SAY SO</div>`
@@ -1333,6 +1443,14 @@
       if (h.admin) html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button></div><div id="heatzones"></div>`;
       el.innerHTML = html;
       if (this._heatZonesOpen) this._openHeatZones(true);
+    }
+
+    // what a programme did the last time it acted
+    _progRan(r) {
+      if (!r) return '<div class="pran">HASN\'T SWITCHED ANYTHING SINCE HOME ASSISTANT STARTED</div>';
+      const t = new Date(r.time), today = t.toDateString() === new Date().toDateString();
+      const when = (today ? "" : t.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " ") + t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return `<div class="pran${r.ok === false ? " bad" : ""}">LAST: ${esc(when)} · ${r.ok === false ? "✕ " : r.ok ? "✓ " : ""}${esc(String(r.why || "").toUpperCase())}</div>`;
     }
 
     // a 24-hour bar with the on periods filled in
@@ -1806,7 +1924,7 @@
 
     _voiceCheckRow(sensorValue) {
       const voiceCheck = this._voiceCheckState(sensorValue);
-      return this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start">DISCUSSION</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_single">SINGLE REPLY</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_question">QUESTION</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_cancel">CANCEL</button>${voiceCheck ? `<button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${["passed_agent_checks", "failed_agent_checks"].includes(voiceCheck?.status) && voiceCheck.heard_replies === null ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}${this._voiceCheckSaving ? '<div class="r" role="status">Saving voice check…</div>' : ""}${this._voiceCheckError ? `<div class="r bad" role="alert">${esc(this._voiceCheckError)}</div>` : ""}${voiceCheck?.heard_replies != null ? `<div class="r" role="status"><b>${voiceCheck.heard_replies ? "SAVED · You confirmed you heard the replies." : "SAVED · You reported that replies were not heard."}</b><small>This records playback feedback; the LISTEN / STOP results remain above.</small></div>` : ""}` : "";
+      return this._hass.user?.is_admin ? `<div class="r"><ha-icon icon="mdi:microphone-message"></ha-icon><b class="wrap">LIVE VOICE CHECK<small>${voiceCheck ? esc(voiceCheck.status.replaceAll("_", " ")) : "Start, then ask your voice device: How is the system? Say No thankyou afterwards."}</small>${voiceCheck ? `<small>${esc(voiceCheck.instructions)}</small><small>Replies heard: ${voiceCheck.heard_replies === null ? "not confirmed" : voiceCheck.heard_replies ? "confirmed by you" : "not heard"}</small><details><summary>Observed turns</summary>${voiceCheck.steps.map((s) => `<small>${esc(s.input_text)} → ${esc(s.reply)} · ${s.continue_listening ? "LISTEN" : "STOP"} · ${s.passed ? "EXPECTED" : "UNEXPECTED"}<br>Agent: ${esc(s.agent || "not supplied")} · Device: ${esc(s.satellite_id || s.device_id || "not supplied")}</small>`).join("")}<small>${esc(voiceCheck.limits)}</small></details>` : ""}</b></div><div class="row vc"><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start">DISCUSSION</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_single">SINGLE REPLY</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_question">QUESTION</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="start_cancel">CANCEL</button>${voiceCheck ? `<button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="clear">CLEAR</button>` : ""}</div>${["passed_agent_checks", "failed_agent_checks"].includes(voiceCheck?.status) && voiceCheck.heard_replies === null ? `<div class="r"><b>Did you hear the replies?</b><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="heard" data-run="${esc(voiceCheck.id)}">YES</button><button class="btn sm ghost" ${this._voiceCheckSaving ? "disabled" : ""} data-act="voicecheck" data-id="not_heard" data-run="${esc(voiceCheck.id)}">NO</button></div>` : ""}${this._voiceCheckSaving ? '<div class="r" role="status">Saving voice check…</div>' : ""}${this._voiceCheckError ? `<div class="r bad" role="alert">${esc(this._voiceCheckError)}</div>` : ""}${voiceCheck?.heard_replies != null ? `<div class="r" role="status"><b>${voiceCheck.heard_replies ? "SAVED · You confirmed you heard the replies." : "SAVED · You reported that replies were not heard."}</b><small>This records playback feedback; the LISTEN / STOP results remain above.</small></div>` : ""}` : "";
     }
 
     _voiceCheckState(sensorValue) {
@@ -1911,6 +2029,7 @@
       else if (act === "progdel") { if (window.confirm("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "heatzones") this._openHeatZones(false);
+      else if (act === "roomlights") this._hass.callService("light", "turn_off", {}, { area_id: id }).then(() => { this._glAt = 0; setTimeout(() => this._loadGlance(), 800); }, (e) => window.alert(e.message || e));
       else if (act === "heatzsave") this._saveHeatZones();
       else if (act === "heatdel") { if (window.confirm("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "heatonoff") {
@@ -2428,6 +2547,20 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt.off s{color:rgba(255,120,140,.85);border-color:rgba(255,120,140,.6)}
 .rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:7px}
+.rt{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 9px;border-radius:12px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.035)}
+.rt.here{border-color:rgba(0,255,247,.6);box-shadow:inset 0 0 14px rgba(0,255,247,.14)} .rt.lit{background:linear-gradient(160deg,rgba(255,200,90,.09),rgba(0,255,247,.03))}
+.rn{display:flex;align-items:center;gap:6px;min-width:0} .rn ha-icon{--mdc-icon-size:15px;color:#00fff7;flex:none} .rn b{font-size:10px;font-weight:700;letter-spacing:.12em;color:#e6f5fa;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .rn s{margin-left:auto;text-decoration:none;font-size:7.5px;font-weight:700;letter-spacing:.14em;color:#00fff7}
+.rv{display:flex;align-items:baseline;gap:8px} .rtemp{font-size:19px;font-weight:300;color:#fff;line-height:1.1} .rh{font-size:10px;letter-spacing:.06em;color:rgba(150,220,235,.7)} .rv .fl{--mdc-icon-size:15px;color:#ffa94d;align-self:center}
+.rs{display:flex;flex-wrap:wrap;gap:3px} .rc{display:inline-flex;align-items:center;gap:3px;font:inherit;font-size:7.5px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:9px;border:1px solid rgba(150,220,235,.16);color:rgba(150,220,235,.55);background:none;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis} .rc ha-icon{--mdc-icon-size:12px;flex:none}
+.rc.on{color:#ffd27f;border-color:rgba(255,200,90,.45);background:rgba(255,200,90,.08);cursor:pointer} .rc.on:hover{background:rgba(255,200,90,.18)} .rc.live{color:#7fefff;border-color:rgba(0,255,247,.4)} .rc.warn{color:#ffbe55;border-color:rgba(255,190,85,.5)}
+.r.warn{border-color:rgba(255,190,85,.4)} .r.warn ha-icon{color:#ffbe55}
+#hgraph{margin:2px 0 4px} .hg{position:relative;height:86px;margin-bottom:6px;border-radius:10px;background:rgba(0,0,0,.2);border:1px solid rgba(0,255,247,.1);overflow:hidden}
+.hg svg{position:absolute;inset:0;width:100%;height:100%} .hg .heat rect{fill:rgba(255,169,77,.16)} .hg .set{fill:none;stroke:#ffa94d;stroke-width:1.5;stroke-dasharray:5 4;vector-effect:non-scaling-stroke} .hg .now{fill:none;stroke:#00fff7;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 3px rgba(0,255,247,.6))}
+.hgl{position:absolute;font-size:8px;font-weight:700;letter-spacing:.1em;color:rgba(150,220,235,.6);pointer-events:none} .hgl.tk{bottom:3px;transform:translateX(-50%)} .hgl.nm{left:8px;top:4px;color:#7fefff}
+.hgk{display:flex;align-items:center;gap:6px;font-size:7.5px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.55);margin:0 2px 4px} .hgk .k{display:inline-block;width:14px;height:3px;border-radius:2px;margin-left:6px} .hgk .k.now{background:#00fff7} .hgk .k.set{background:#ffa94d} .hgk .k.heat{height:8px;background:rgba(255,169,77,.3)}
+.row.vc{margin:-2px 0 8px 30px}
+.pran{font-size:8px;font-weight:700;letter-spacing:.12em;color:rgba(61,255,168,.75);margin-top:5px} .pran.bad{color:#ff6b80}
 .e{padding:10px 12px;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(150,200,215,.45)}
 /* settings */
 .set{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
@@ -2578,7 +2711,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   :host([view="overview"]),:host([view="house"]),:host([view="mind"]),:host([view="security"]){overflow-y:hidden}
   #ov,#hp,#mp,#scp{height:calc(100vh - 56px);height:calc(100dvh - 56px);display:flex;flex-direction:column;gap:10px;padding:10px 12px}
   #ov>*,#mp>*{margin-top:0}
-  #ov>.card.head,#ov>.warnbar,#mp>.warnbar,#mp>.brain{flex:none;margin:0}
+  #ov>.card.head,#ov>.warnbar,#mp>.warnbar,#mp>.brain,#hp>.card.rooms{flex:none;margin:0}
   .lanes{flex:1 1 auto;min-height:0;margin-top:0;gap:10px;align-items:stretch !important}
   .lanes{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
   .ov3>.lane:nth-child(3){display:flex !important;grid-column:auto !important}

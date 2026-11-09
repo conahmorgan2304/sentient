@@ -7,6 +7,7 @@ schemas in config_flow.py.
 
 from __future__ import annotations
 
+import logging
 import re
 import functools
 import inspect
@@ -127,6 +128,9 @@ from .const import (
     CONF_NIGHT_WATCH_ENTITIES,
     CONF_NIGHT_WATCH_SPEAKERS,
     CONF_HEATING_SCHEDULE,
+    CONF_HEATING_GRAPH,
+    CONF_ROOMS_VIEW,
+    CONF_KNOWLEDGE,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     CONF_AI_TASK_ENTITY,
@@ -286,6 +290,8 @@ from .const import (
     MEMORY_CATEGORIES,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # (id, title, icon, blurb, keys) — the order the Settings tab shows them in
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
@@ -296,7 +302,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
-        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
+        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
     ]),
     ("never", "Never touch", "mdi:hand-back-left-off-outline", "Devices Sentient must never switch, dim or change by itself — not in rules, routines, offers, auto-off, away or motion lights, light shows, the heating or by voice. It can still read them and talk about them.", [
@@ -318,7 +324,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, comfort temperature, time limit and warm-by times, and the heating schedule, are on the House tab.", [
-        CONF_PREHEAT, CONF_HEATING_SCHEDULE,
+        CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH,
     ]),
     ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
         CONF_HEATING_ENTITIES, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
@@ -344,7 +350,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_KNOWLEDGE, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -548,6 +554,28 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], out)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/glance"})
+@page_access
+@callback
+def ws_glance(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Rooms at a glance for the House tab, and the overview's around-the-house numbers."""
+    from .glance import rooms, summary
+
+    entry = _entry(hass)
+    if entry is None or not entry.runtime_data.options.get(CONF_ROOMS_VIEW, True):
+        connection.send_result(msg["id"], {"on": False, "rooms": [], "summary": None})
+        return
+    rt = entry.runtime_data
+    try:
+        likely = rt.tracker.best_area()
+    except Exception:  # noqa: BLE001 - the tiles still show without the best guess
+        likely = None
+    sleep = getattr(rt, "sleep", None)
+    restless = {r["entity_id"] for r in sleep.never_rests()} if sleep is not None else set()
+    rows = rooms(hass, likely, restless)
+    connection.send_result(msg["id"], {"on": True, "rooms": rows, "summary": summary(rows)})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memory/review"})
 @page_access
 @callback
@@ -591,7 +619,16 @@ def ws_inner(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """What it's thinking: lessons from corrections, an unusual day, and how well it guesses the next room."""
     entry = _entry(hass)
     inner = getattr(entry.runtime_data, "inner", None) if entry is not None else None
-    connection.send_result(msg["id"], inner.summary() if inner is not None else {"learn": False, "day": False, "thoughts_on": False})
+    out = dict(inner.summary()) if inner is not None else {"learn": False, "day": False, "thoughts_on": False}
+    if entry is not None and entry.runtime_data.options.get(CONF_KNOWLEDGE, True):
+        from .glance import knows
+
+        try:
+            out["knows"] = knows(entry.runtime_data)
+        except Exception:  # noqa: BLE001 - the rest of the Mind tab still loads
+            _LOGGER.debug("Sentient couldn't sum up what it knows", exc_info=True)
+            out["knows"] = []
+    connection.send_result(msg["id"], out)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/inner/dismiss", vol.Required("key"): str})
@@ -672,6 +709,9 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "programmes": sorted(progs, key=lambda p: p["name"].lower()), "next": next_change(progs, now) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
+        "graph": bool(rt.options.get(CONF_HEATING_GRAPH, True)),
+        "ran": dict(getattr(rt.heat_prog, "ran", {}) or {}) if getattr(rt, "heat_prog", None) is not None else {},
+        "ticking": getattr(rt.heat_prog, "last_tick", None) if getattr(rt, "heat_prog", None) is not None else None,
         "admin": connection.user.is_admin,
     })
 
@@ -882,6 +922,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_memory_review)
     websocket_api.async_register_command(hass, ws_memory_resolve)
     websocket_api.async_register_command(hass, ws_today)
+    websocket_api.async_register_command(hass, ws_glance)
     websocket_api.async_register_command(hass, ws_heating_programme_save)
     websocket_api.async_register_command(hass, ws_heating_programme_delete)
     websocket_api.async_register_command(hass, ws_inner_dismiss)
