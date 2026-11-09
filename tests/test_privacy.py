@@ -60,3 +60,17 @@ async def test_forget_the_last_48_hours(hass: HomeAssistant, freezer) -> None:
     assert "A new remark." not in texts and "An old remark." in texts
     ids = {m.id for m in rt.memory.items}
     assert old.id in ids and kept.id in ids and new.id not in ids
+
+
+async def test_forget_recent_clears_replaced_memory_text(hass):
+    from custom_components.sentient.privacy import forget_recent
+    from tests.test_heating_programmes import _setup
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.memory.add("The heating is comfortable at 20 degrees")
+    rt.memory.add("The heating is comfortable at 21 degrees")
+    assert rt.memory.changed
+    removed = forget_recent(rt)
+    assert removed["memories"] == removed["memory_changes"] == 1
+    assert not rt.memory.items and not rt.memory.changed

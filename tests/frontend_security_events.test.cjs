@@ -59,3 +59,36 @@ test('feedback controls disappear when disabled or non-admin and no request is s
   await panel._securityFeedback('event-one', 'cat');
   assert.equal(calls, 0);
 });
+
+test('motion cannot select an excluded camera and leaving Security removes the stream', () => {
+  const panel = new Panel();
+  panel._hass = { states: {
+    'camera.garden': { attributes: { entity_picture: '/api/camera_proxy/garden' } },
+    'camera.ignored': { attributes: { entity_picture: '/api/camera_proxy/ignored' } },
+  } };
+  panel._cams = { cameras: [{ entity_id: 'camera.garden' }] };
+  panel._liveCam = 'camera.ignored';
+  panel.shadowRoot = {};
+  const holder = { innerHTML: '' };
+  let aborted = false;
+  const live = {
+    innerHTML: '',
+    querySelector(selector) {
+      if (selector === '.lvc') return holder;
+      if (selector === '.lvc img' && holder.innerHTML) return {
+        removeAttribute: (attr) => { aborted = attr === 'src'; },
+      };
+      return null;
+    },
+    replaceChildren() { this.innerHTML = ''; holder.innerHTML = ''; },
+  };
+  panel._$ = () => live;
+  panel._drawLive({ security_events: [{ camera: 'ignored', label: 'person', end: null }] });
+  assert.equal(panel._liveCam, 'camera.garden');
+  assert.match(holder.innerHTML, /camera_proxy_stream\/garden/);
+  panel._clearLive();
+  assert.equal(holder.innerHTML, '');
+  assert.equal(aborted, true);
+  assert.equal(panel._liveCamKey, null);
+  assert.equal(panel._liveCard, null);
+});

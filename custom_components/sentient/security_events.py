@@ -61,7 +61,6 @@ def normal_event(data):
 
 
 PARKABLE = {"car", "bicycle", "motorcycle", "boat", "truck", "bus", "van"}
-PARKED_WITHIN = 30 * 60  # seconds: the same kind of vehicle found again this soon on the same camera is the same one
 
 
 class SecurityEvents:
@@ -70,7 +69,6 @@ class SecurityEvents:
         self._store = Store(hass, 1, f"sentient.{entry_id}.security_events")
         self.items = {}
         self._focus = {}
-        self._parked_seen = {}  # (camera, label) -> when a vehicle was last seen there (a parked bike keeps being re-found)
         self._generation = 0
         self._stopped = False
         self._unsub = None
@@ -105,6 +103,10 @@ class SecurityEvents:
                                   "end_time": row.get("end"), "label": row.get("label"), "zones": row.get("zones"),
                                   "has_snapshot": row.get("has_snapshot"), "has_clip": row.get("has_clip")})
             if event:
+                if row.get("vehicle_moved") is True:
+                    event["vehicle_moved"] = True
+                if row.get("parked_confirmed") is True:
+                    event.update(parked=True, parked_confirmed=True)
                 alerts = row.get("alerts")
                 if isinstance(alerts, list):
                     event["alerts"] = [deepcopy(a) for a in alerts[-10:] if isinstance(a, dict)
@@ -214,27 +216,28 @@ class SecurityEvents:
             for key in ("has_snapshot", "has_clip"):
                 if key not in data:
                     event[key] = previous[key]
+        if event["label"] in PARKABLE:
+            changes = data.get("position_changes")
+            moving = type(changes) in (int, float) and changes > 0
+            motionless = data.get("motionless_count")
+            still = data.get("stationary") is True or (
+                changes == 0 and type(motionless) in (int, float) and motionless > 0
+            )
+            # Keep evidence of travel for this track even if it later parks.
+            if moving or (previous or {}).get("vehicle_moved"):
+                event["vehicle_moved"] = True
+            elif still or ((previous or {}).get("parked") and data.get("stationary") is not False):
+                event.update(parked=True, parked_confirmed=True)
+
         self.items[event["id"]] = event
         self._save()
         rt = self.runtime()
-        if self._parked(event, data):
-            event["parked"] = True
-            self.items[event["id"]] = event
-        elif self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
+        # A parked vehicle can appear as a new object before Frigate has enough samples.
+        ready = event["label"] not in PARKABLE or event.get("vehicle_moved") or event["end"] is not None
+        if ready and not event.get("parked") and self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
             rt.incidents.add(f"camera.{event['camera']}", f"Frigate reported {event['label']}", "event",
                              when=dt_util.utc_from_timestamp(event["start"]), event_id=event["id"])
         return deepcopy(event)
-
-    def _parked(self, event, data) -> bool:
-        """A vehicle that hasn't moved — a bike or car parked in view — keeps being 'found' all day. Those are
-        noted but kept out of incidents, the linked-events timeline and alerts. People always count."""
-        if event["label"] not in PARKABLE:
-            return False
-        key, now = (event["camera"], event["label"]), event["start"]
-        last = self._parked_seen.get(key)
-        self._parked_seen[key] = max(now, last or 0)
-        still = isinstance(data, dict) and (data.get("stationary") is True or data.get("position_changes") == 0 and (data.get("motionless_count") or 0) > 0)
-        return bool(still or (last is not None and 0 <= now - last <= PARKED_WITHIN))
 
     async def async_event(self, camera, event_id):
         """Fetch this exact event, never the latest event in place of it."""

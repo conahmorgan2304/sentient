@@ -83,6 +83,7 @@
     connectedCallback() { this._tick = setInterval(() => this._render(), 30000); }
     disconnectedCallback() {
       clearInterval(this._tick);
+      this._clearLive();
       if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
     }
 
@@ -177,6 +178,7 @@
     }
 
     _show(view, push) {
+      if (this._view === "security" && view !== "security") this._clearLive();
       this._view = view;
       this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
@@ -1364,7 +1366,7 @@
       if (s.moving.length) rows.push(`<div class="r"><ha-icon icon="mdi:motion-sensor"></ha-icon><b class="wrap">Movement now<small>${esc(s.moving.join(" · "))}</small></b></div>`);
       if (s.playing.length) rows.push(`<div class="r"><ha-icon icon="mdi:music"></ha-icon><b class="wrap">Playing<small>${esc(s.playing.join(" · "))}</small></b></div>`);
       if (s.warmest) rows.push(`<div class="r"><ha-icon icon="mdi:thermometer-lines"></ha-icon><b class="wrap">Warmest ${esc(s.warmest.room)} ${esc(s.warmest.temp)}°<small>coolest ${esc(s.coolest.room)} ${esc(s.coolest.temp)}°</small></b></div>`);
-      el.innerHTML = this._h("AROUND THE HOUSE", s.open.length ? `${s.open.length} OPEN` : "ALL SHUT") + rows.join("");
+      el.innerHTML = this._h("AROUND THE HOUSE", s.open.length ? `${s.open.length} OPEN` : "NONE REPORTED OPEN") + rows.join("");
     }
 
     _drawKnow() {
@@ -1442,7 +1444,7 @@
         const nums = [z.now != null ? `${z.now}° NOW` : "", z.target != null && mode !== "off" ? `TARGET ${z.target}°` : "", sch].filter(Boolean).join(" · ");
         return `<div class="r${tag === "HEATING" ? " on" : tag === "OFFLINE" ? " bad" : tag === "OFF" ? " dim" : ""}"><ha-icon icon="${esc(tag === "HEATING" ? "mdi:radiator" : tag === "OFF" ? "mdi:radiator-off" : "mdi:radiator-disabled")}"></ha-icon><b>${esc(z.name)}</b><u>${esc(nums)}${nums ? " · " : ""}${tag}</u></div>`;
       };
-      let html = this._h("HEATING", h.zones.length ? `${h.zones.length} HEATER${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + h.warming_now.join(", ").toUpperCase() : ""}` : "NO THERMOSTATS CHOSEN")
+      let html = this._h("HEATING", h.zones.length ? `${h.zones.length} HEATER${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + esc(h.warming_now.join(", ").toUpperCase()) : ""}` : "NO THERMOSTATS CHOSEN")
         + (h.zones.map(zone).join("") || '<div class="e">CHOOSE YOUR THERMOSTATS UNDER ZONE SETTINGS</div>');
       if (h.graph && h.zones.length) {
         html += `<div class="sub">LAST 24 HOURS</div><div id="hgraph">${this._heatGraph()}</div>`;
@@ -1454,7 +1456,8 @@
         if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
           + (h.admin ? `<button class="btn sm ghost" data-act="progonoff" data-id="${esc(p.id)}">${p.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="progedit" data-id="${esc(p.id)}">EDIT</button><button class="btn sm ghost" data-act="progdel" data-id="${esc(p.id)}" title="Delete">✕</button>` : "")
-          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div>${this._progRan((h.ran || {})[p.name])}</div>`).join("")
+          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div>${this._progRan((h.ran || {})[p.id])}
+          ${h.conflicts?.[p.id] ? `<div class="pran bad">${esc(h.conflicts[p.id])}. The latest start time takes priority. Equal start times use the first saved period.</div>` : ""}</div>`).join("")
           || ((h.suggested || []).length ? "" : '<div class="e">NO HEATING SCHEDULE YET</div>');
         if (!(h.programmes || []).length && (h.suggested || []).length) {
           html += `<div class="hint">A STARTING POINT FROM WHAT I'VE LEARNED (WHEN YOU'RE USUALLY UP AND HOW FAST THE HOUSE WARMS) — NOTHING IS SAVED UNTIL YOU SAY SO</div>`
@@ -1575,17 +1578,28 @@
       return id.startsWith("camera.") && this._hass.states[id] ? id : null;
     }
 
+    _clearLive() {
+      const live = this.shadowRoot && this._$("live");
+      if (live) {
+        live.querySelector(".lvc img")?.removeAttribute("src");
+        live.replaceChildren();
+      }
+      this._liveCamKey = null;
+      this._liveKey = null;
+      this._liveCard = null;
+    }
+
     _drawLive(mind) {
       const el = this._$("live");
       if (!el) return;
       const cams = ((this._cams || {}).cameras || []).map((c) => c.entity_id);
-      const events = (mind.security_events || []).filter((e) => !e.parked);
+      const events = (mind.security_events || []).filter((e) => !e.parked && cams.includes(this._camOf(e)));
       const latest = events.find((e) => this._camOf(e));
       const active = events.filter((e) => e.end == null && this._camOf(e));
       if (this._liveFollow !== false && latest) this._liveCam = this._camOf(latest);
-      if (!this._liveCam) this._liveCam = cams[0];
+      if (!cams.includes(this._liveCam)) this._liveCam = cams[0];
       const cam = this._liveCam, st = cam && this._hass.states[cam];
-      if (!st) { el.innerHTML = this._h("LIVE", "") + '<div class="e">NO CAMERAS FOUND</div>'; return; }
+      if (!st) { this._clearLive(); el.innerHTML = this._h("LIVE", "") + '<div class="e">NO CAMERAS FOUND</div>'; return; }
       const here = active.filter((e) => this._camOf(e) === cam).map((e) => e.label.toUpperCase());
       const pic = String(st.attributes.entity_picture || "");
       const stream = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
@@ -1600,6 +1614,7 @@
       const canSmooth = ((st.attributes.supported_features || 0) & 2) === 2;
       const mode = cam + "|" + (smooth && canSmooth ? "smooth" : "picture");
       if (this._liveCamKey !== mode || !el.querySelector(".lv")) {
+        this._clearLive();
         this._liveCamKey = mode;
         this._liveKey = key;
         this._liveCard = null;
@@ -1608,13 +1623,13 @@
         const picture = () => { holder.innerHTML = `<img alt="" src="${esc(stream)}">`; };
         if (smooth && canSmooth && window.loadCardHelpers) {
           window.loadCardHelpers().then((helpers) => {
-            if (this._liveCamKey !== mode) return;
+            if (this._liveCamKey !== mode || !holder.isConnected) return;
             const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
             card.hass = this._hass;
             this._liveCard = card;
             holder.innerHTML = "";
             holder.appendChild(card);
-          }, picture);
+          }, () => { if (holder.isConnected) picture(); });
         } else picture();
       } else {
         if (this._liveCard) this._liveCard.hass = this._hass;
@@ -2045,7 +2060,7 @@
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
       else if (act === "prognew") this._editProg(null);
-      else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "progsugedit") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._editProg({ ...p, name: p.name.replace(" (suggested)", ""), id: undefined }); }
       else if (act === "progedit") this._editProg(((this._heat || {}).programmes || []).find((p) => p.id === id));
       else if (act === "progcancel") { this._heatEdit = false; this._drawHeat(); }
@@ -2054,7 +2069,7 @@
       else if (act === "progrmper") { this._progDraft.periods.splice(+id, 1); this._progRedraw(); }
       else if (act === "progdays") { const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]; this._progDraft.days = id === "wk" ? D.slice(0, 5) : id === "we" ? ["sat", "sun"] : D; this._progRedraw(); }
       else if (act === "progdel") { if (window.confirm("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
-      else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "heatzones") this._openHeatZones(false);
       else if (act === "roomlights") this._hass.callService("light", "turn_off", {}, { area_id: id }).then(() => { this._glAt = 0; setTimeout(() => this._loadGlance(), 800); }, (e) => window.alert(e.message || e));
       else if (act === "heatzsave") this._saveHeatZones();
@@ -2518,7 +2533,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tchip[data-act]{cursor:pointer}
 .tlw{display:flex;gap:8px;margin-top:10px} .tlnames{position:relative;flex:none;width:92px} .tlnames div{position:absolute;left:0;right:0;font-size:8.5px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tlplot{flex:1;min-width:0} .tlsvg{width:100%;height:100%;overflow:visible}
-.tll{stroke:rgba(0,255,247,.12);stroke-width:1} .tlg{stroke:rgba(0,255,247,.08);stroke-dasharray:3 4} 
+.tll{stroke:rgba(0,255,247,.12);stroke-width:1} .tlg{stroke:rgba(0,255,247,.08);stroke-dasharray:3 4}
 .tlk{stroke:rgba(0,255,247,.55);stroke-width:1.5;fill:none} .tlplot{position:relative} .tlsvg{position:absolute;inset:0}
 .tld{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:1.5px solid #041014;cursor:pointer;box-shadow:0 0 6px rgba(0,255,247,.4)} .tld:hover{border-color:#fff}
 .tlticks{position:absolute;left:0;right:0;bottom:0;height:14px} .tlticks span{position:absolute;transform:translateX(-50%);font-size:8.5px;color:rgba(150,220,235,.5)}

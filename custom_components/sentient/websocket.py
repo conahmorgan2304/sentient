@@ -471,7 +471,7 @@ def page_access(func):
 @callback
 def ws_heating_programme_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Add or change a heating programme: heaters, days and on/off periods."""
-    from .heating_schedule import clean_programme
+    from .heating_schedule import clean_programme, programme_conflict
 
     entry = _entry(hass)
     if entry is None:
@@ -488,6 +488,9 @@ def ws_heating_programme_save(hass: HomeAssistant, connection, msg: dict[str, An
             connection.send_error(msg["id"], "not_found", "That heating programme no longer exists")
             return
         data["id"] = pid
+    if why := programme_conflict(data, rt.heat_prog.programmes()):
+        connection.send_error(msg["id"], "conflict", why)
+        return
     connection.send_result(msg["id"], rt.heat_prog.items.upsert(data))
 
 
@@ -712,19 +715,21 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                           "enabled": item.get("enabled", True), "entity_id": item["heating"].get("entity_id"),
                           "temperature": item["heating"].get("temperature"), "what": describe(hass, item["heating"]), "next": nxt})
     schedules.sort(key=lambda x: x["time"])
-    from .heating_schedule import next_change, wanted_on
+    from .heating_schedule import next_change, programme_conflict, wanted_on
 
     progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
     now = dt_util.now()
     for z in zones:
-        p = wanted_on(progs, z["entity_id"], now)
+        p = wanted_on(progs, z["entity_id"], now) if enabled(rt.options) else None
         z["scheduled"] = {"on": True, "until": p["off"], "temp": p["temp"]} if p else {"on": False}
     from .heating_schedule import suggest
 
     suggested = [] if progs else suggest(list(rt.heating.entities), dict(rt.heating.wake or {}), dict(rt.heating.zones or {}))
     connection.send_result(msg["id"], {
         "suggested": suggested,
-        "programmes": sorted(progs, key=lambda p: p["name"].lower()), "next": next_change(progs, now) if enabled(rt.options) else None,
+        "programmes": sorted(progs, key=lambda p: p["name"].lower()),
+        "conflicts": {p["id"]: why for p in progs if (why := programme_conflict(p, progs))},
+        "next": next_change(progs, now) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
         "graph": bool(rt.options.get(CONF_HEATING_GRAPH, True)),

@@ -1,21 +1,26 @@
 """Heating schedules: set a thermostat to a temperature (or off) at a time, on chosen days.
 
-Kept in the alarms store as silent entries tagged with a `heating` spec, so the same clock that runs
-alarms runs these. The actions are rebuilt from the spec every time, never trusted from storage:
-only the thermostats chosen under Heating zones can be scheduled, and the temperature is held to a
-sensible range. Switched off in Settings, the entries stay saved and simply don't run.
+The programme scheduler runs from a minute timer. Older single heating times still use the
+alarms store. Both rebuild climate commands from validated settings and check Never touch.
+When a thermostat confirms that the programme switched it on, the scheduler records the
+requested controls so it can safely catch a missed switch-off after a restart.
 """
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
+import re
 from typing import Any
 
+from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_HEATING_ENTITIES, CONF_HEATING_SCHEDULE
+from .const import CONF_HEATING_ENTITIES, CONF_HEATING_SCHEDULE, CONF_NEVER_ENTITIES, DOMAIN
+from .never import blocked
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +42,8 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], "That thermostat isn't one of the heating zones chosen in Sentient"
     if not entity_id.startswith("climate."):
         return [], "Only thermostats can be scheduled"
+    if blocked(hass, entity_id) or entity_id in (options.get(CONF_NEVER_ENTITIES) or []):
+        return [], "That thermostat is on the never-touch list"
     target = {"entity_id": entity_id}
     temperature = spec.get("temperature")
     if temperature in (None, "", "off"):
@@ -72,7 +79,6 @@ def describe(hass: HomeAssistant, spec: dict[str, Any]) -> str:
 # ("on 22:00 off 01:00") ends on the next morning.
 
 DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-import re  # noqa: E402
 
 TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -85,16 +91,25 @@ def _minute(text: str) -> int:
 def clean_programme(options: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
     """A programme from the page, checked; raises ValueError with words a person can read."""
     zones = list(options.get(CONF_HEATING_ENTITIES) or [])
-    heaters = [h for h in data.get("heaters") or [] if isinstance(h, str)]
+    raw_heaters, raw_days, raw_periods = (data.get(key) for key in ("heaters", "days", "periods"))
+    if not isinstance(raw_heaters, list) or any(not isinstance(h, str) for h in raw_heaters):
+        raise ValueError("Choose the heaters from the list")
+    if not isinstance(raw_days, list):
+        raise ValueError("Choose the days from the list")
+    if not isinstance(raw_periods, list) or any(not isinstance(period, dict) for period in raw_periods):
+        raise ValueError("Each period needs an on and an off time")
+    if type(data.get("enabled", True)) is not bool:
+        raise ValueError("Enabled must be true or false")
+    heaters = list(dict.fromkeys(raw_heaters))
     if not heaters:
         raise ValueError("Choose at least one heater")
-    if bad := [h for h in heaters if h not in zones]:
+    if bad := [h for h in heaters if h not in zones or not h.startswith("climate.")]:
         raise ValueError(f"{bad[0]} isn't one of the heating zones chosen in Sentient")
-    days = [d for d in DAYS if d in (data.get("days") or [])]
+    days = [d for d in DAYS if d in raw_days]
     if not days:
         raise ValueError("Choose at least one day")
     periods = []
-    for p in data.get("periods") or []:
+    for p in raw_periods:
         on, off = str(p.get("on") or "")[:5], str(p.get("off") or "")[:5]
         if not TIME.match(on) or not TIME.match(off):
             raise ValueError("Each period needs an on and an off time")
@@ -114,49 +129,115 @@ def clean_programme(options: dict[str, Any], data: dict[str, Any]) -> dict[str, 
     return {"name": name, "heaters": heaters, "days": days, "periods": periods, "enabled": bool(data.get("enabled", True))}
 
 
-def wanted_on(programmes: list[dict[str, Any]], heater: str, when: datetime) -> dict[str, Any] | None:
-    """The period that wants this heater on at this moment (None if none)."""
-    minute = when.hour * 60 + when.minute
-    today, yesterday = DAYS[when.weekday()], DAYS[(when.weekday() - 1) % 7]
-    for prog in programmes:
-        if not prog.get("enabled", True) or heater not in prog.get("heaters", []):
+DAY_MINUTES = 1440
+WEEK_MINUTES = 7 * DAY_MINUTES
+
+
+def _weekly_periods(programme):
+    """Start and exclusive end in minutes from Monday, including overnight endings."""
+    for day in programme["days"]:
+        base = DAYS.index(day) * DAY_MINUTES
+        for period in programme["periods"]:
+            on, off = _minute(period["on"]), _minute(period["off"])
+            yield base + on, base + off + (DAY_MINUTES if off < on else 0), period
+
+
+def _overlap(first, second) -> bool:
+    start, end, period = first
+    other_start, other_end, other = second
+    if float(period["temp"]) == float(other["temp"]):
+        return False
+    # Check either side of the Sunday/Monday boundary as well as the same week.
+    return any(start < other_end + shift and other_start + shift < end
+               for shift in (0, -WEEK_MINUTES, WEEK_MINUTES))
+
+
+def programme_conflict(programme, others) -> str | None:
+    """Why this programme cannot be enabled alongside the others."""
+    if not programme.get("enabled", True):
+        return None
+    windows = list(_weekly_periods(programme))
+    for index, window in enumerate(windows):
+        if any(_overlap(window, other) for other in windows[index + 1:]):
+            return "This programme has overlapping periods with different temperatures"
+    for other in others:
+        if not other.get("enabled", True):
             continue
-        for p in prog.get("periods", []):
-            on, off = _minute(p["on"]), _minute(p["off"])
-            if on < off and today in prog["days"] and on <= minute < off:
-                return p
-            if on > off and ((today in prog["days"] and minute >= on) or (yesterday in prog["days"] and minute < off)):
-                return p
+        if programme.get("id") and programme["id"] == other.get("id"):
+            continue
+        shared = set(programme["heaters"]) & set(other["heaters"])
+        if shared and any(_overlap(a, b) for b in _weekly_periods(other) for a in windows):
+            return f"Conflicts with {other['name']} on {', '.join(sorted(shared))}: overlapping times have different temperatures"
     return None
 
 
-def due(programmes: list[dict[str, Any]], when: datetime) -> list[tuple[str, str, float | None, str]]:
-    """What happens this minute: (heater, 'on'|'off', temperature, programme name)."""
-    minute = when.hour * 60 + when.minute
-    today, yesterday = DAYS[when.weekday()], DAYS[(when.weekday() - 1) % 7]
-    out: list[tuple[str, str, float | None, str]] = []
-    for prog in programmes:
-        if not prog.get("enabled", True):
+def _week_minute(when: datetime) -> int:
+    return when.weekday() * DAY_MINUTES + when.hour * 60 + when.minute
+
+
+def _active_period(programmes, heater, when):
+    """Most recently started period wins for existing overlaps. Saved order breaks ties."""
+    now = _week_minute(when)
+    best = None
+    for programme in programmes:
+        if not programme.get("enabled", True) or heater not in programme["heaters"]:
             continue
-        for p in prog.get("periods", []):
-            on, off = _minute(p["on"]), _minute(p["off"])
-            if minute == on and today in prog["days"]:
-                out += [(h, "on", float(p["temp"]), prog["name"]) for h in prog["heaters"]]
-            off_day = yesterday if off < on else today
-            if minute == off and off_day in prog["days"]:
-                out += [(h, "off", None, prog["name"]) for h in prog["heaters"]]
-    # an 'on' wins over an 'off' for the same heater in the same minute (one period ends as another starts)
-    ons = {h for h, what, _t, _n in out if what == "on"}
-    return [x for x in out if x[1] == "on" or x[0] not in ons]
+        for start, end, period in _weekly_periods(programme):
+            elapsed = (now - start) % WEEK_MINUTES
+            if elapsed < end - start and (best is None or elapsed < best[2]):
+                best = programme, period, elapsed
+    return best
+
+
+def wanted_on(programmes: list[dict[str, Any]], heater: str, when: datetime) -> dict[str, Any] | None:
+    """The same winning period used to plan thermostat commands."""
+    active = _active_period(programmes, heater, when)
+    return active[1] if active else None
+
+
+def due(programmes: list[dict[str, Any]], when: datetime, *, by_id: bool = False) -> list[tuple[str, str, float | None, str]]:
+    """Return at most one command per thermostat at a programme boundary."""
+    minute = _week_minute(when)
+    heaters: dict[str, None] = {}
+    for programme in programmes:
+        if programme.get("enabled", True) and any(
+            minute in (start, end % WEEK_MINUTES) for start, end, _ in _weekly_periods(programme)
+        ):
+            heaters.update(dict.fromkeys(programme["heaters"]))
+    out = []
+    for heater in heaters:
+        before = _active_period(programmes, heater, when - timedelta(minutes=1))
+        after = _active_period(programmes, heater, when)
+        if after:
+            programme, period, elapsed = after
+            temp = float(period["temp"])
+            if before and elapsed and float(before[1]["temp"]) == temp:
+                continue
+            what = "on"
+        elif before:
+            programme, _, _ = before
+            what, temp = "off", None
+        else:
+            continue
+        key = programme.get("id", programme["name"]) if by_id else programme["name"]
+        out.append((heater, what, temp, key))
+    return out
 
 
 def next_change(programmes: list[dict[str, Any]], now: datetime) -> dict[str, Any] | None:
-    """The next on or off within a week, for the page."""
+    """Check the actual programme boundaries in the next week."""
     base = now.replace(second=0, microsecond=0)
-    for step in range(1, 7 * 1440 + 1):
-        when = base + timedelta(minutes=step)
+    minute = _week_minute(base)
+    offsets = {
+        (boundary - minute) % WEEK_MINUTES or WEEK_MINUTES
+        for programme in programmes if programme.get("enabled", True)
+        for start, end, _ in _weekly_periods(programme)
+        for boundary in (start, end)
+    }
+    for offset in sorted(offsets):
+        when = base + timedelta(minutes=offset)
         if events := due(programmes, when):
-            heater, what, temp, name = events[0]
+            _, what, temp, name = events[0]
             return {"time": when.isoformat(), "what": what, "temp": temp, "name": name, "count": len(events)}
     return None
 
@@ -165,91 +246,214 @@ class HeatingProgrammes:
     """Runs the programmes each minute. Switched off in Settings (Heating → heating schedule), they stay
     saved and nothing runs."""
 
-    def __init__(self, hass: HomeAssistant, items: Any, rt_getter: Any) -> None:
+    def __init__(self, hass: HomeAssistant, items: Any, rt_getter: Any, entry_id: str) -> None:
         self.hass = hass
         self.items = items
         self._rt = rt_getter
-        self._unsub = None
-        self.last_tick: str | None = None  # proof the minute check is running
-        self.ran: dict[str, dict[str, Any]] = {}  # programme name -> what happened last time it acted
+        self._unsubs: list = []
+        self._stopped = False
+        self._lock = asyncio.Lock()
+        self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.heating_programme_ownership")
+        self._owned: dict[str, dict[str, Any]] = {}
+        self._pending: dict[str, dict[str, Any]] = {}
+        self.last_tick: str | None = None
+        self.ran: dict[str, dict[str, Any]] = {}
 
     async def async_start(self) -> None:
         from homeassistant.helpers.event import async_track_time_change
 
-        self._unsub = async_track_time_change(self.hass, self._tick, second=0)
+        stored = await self._store.async_load() or {}
+        self._owned = dict(stored.get("owned") or {})
+        self._stopped = False
+        self._unsubs = [
+            async_track_time_change(self.hass, self._tick, second=0),
+            self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._state_changed),
+        ]
 
     @callback
     def async_stop(self) -> None:
-        if self._unsub:
-            self._unsub()
-            self._unsub = None
+        self._stopped = True
+        self._pending.clear()
+        while self._unsubs:
+            self._unsubs.pop()()
 
     def programmes(self) -> list[dict[str, Any]]:
         return self.items.listing()
 
+    def _save(self) -> None:
+        self._store.async_delay_save(lambda: {"owned": self._owned}, 1)
+
+    def _drop(self, heater: str) -> None:
+        if self._owned.pop(heater, None) is not None:
+            self._save()
+
+    @staticmethod
+    def _controls(state) -> tuple:
+        return state.state, state.attributes.get("temperature"), state.attributes.get("preset_mode")
+
+    def _observe(self, heater: str, state) -> None:
+        if state is None or state.state in ("unknown", "unavailable"):
+            return
+        controls = self._controls(state)
+        if pending := self._pending.get(heater):
+            if dt_util.utcnow() > pending["confirm_by"]:
+                self._pending.pop(heater)
+            elif pending["context"] in (state.context.id, state.context.parent_id):
+                if controls[:2] == (pending["mode"], pending["temperature"]):
+                    self._owned[heater] = {"key": pending["key"], "end": pending["end"], "controls": list(controls)}
+                    self._pending.pop(heater)
+                    self._save()
+                    return
+        if (owned := self._owned.get(heater)) and list(controls) != owned["controls"]:
+            self._drop(heater)
+
+    @callback
+    def _state_changed(self, event) -> None:
+        heater = event.data["entity_id"]
+        if heater not in self._owned and heater not in self._pending:
+            return
+        old, new = event.data.get("old_state"), event.data.get("new_state")
+        if old is not None and new is not None and self._controls(old) != self._controls(new):
+            if heater in self._pending and new.context.user_id is not None:
+                self._pending.pop(heater)
+            self._observe(heater, new)
+
+    def _prepare_ownership(self, heater, key, local, action, context) -> None:
+        programme = self.items.items.get(key)
+        state = self.hass.states.get(heater)
+        if programme is None or state is None or state.state in ("unknown", "unavailable"):
+            return
+        mode = action["data"].get("hvac_mode", state.state)
+        if mode not in ON_MODES or (state.state != "off" and heater not in self._owned):
+            return
+        active = _active_period([programme], heater, local)
+        if active is None:
+            return
+        _, period, elapsed = active
+        on, off = _minute(period["on"]), _minute(period["off"])
+        remaining = (off - on) % DAY_MINUTES - elapsed
+        end = local.replace(second=0, microsecond=0) + timedelta(minutes=remaining)
+        self._pending[heater] = {
+            "mode": mode, "temperature": action["data"]["temperature"], "key": key,
+            "context": context.id, "confirm_by": dt_util.utcnow() + timedelta(minutes=2),
+            "end": dt_util.as_utc(end).isoformat(),
+        }
+
     @callback
     def _tick(self, now: datetime) -> None:
         rt = self._rt()
-        if rt is None or not enabled(rt.options):
+        if self._stopped or rt is None or not enabled(rt.options):
             return
         self.last_tick = now.isoformat()
+        self._pending = {heater: row for heater, row in self._pending.items() if now <= row["confirm_by"]}
         local = dt_util.as_local(now)
-        events = due(self.programmes(), local)
+        programmes = self.programmes()
+        events = due(programmes, local, by_id=True)
+        scheduled = {heater for heater, *_ in events}
+        for heater, record in list(self._owned.items()):
+            programme = self.items.items.get(record["key"])
+            if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
+                self._drop(heater)
+                continue
+            if heater in scheduled or wanted_on(programmes, heater, local):
+                continue
+            end = dt_util.parse_datetime(record["end"])
+            if end is not None and dt_util.as_utc(local) >= end:
+                state = self.hass.states.get(heater)
+                self._observe(heater, state)
+                if heater in self._owned and state is not None and state.state not in ("unknown", "unavailable"):
+                    events.append((heater, "recover_off", None, record["key"]))
         if events:
             self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
 
     async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
-        import asyncio
+        async with self._lock:
+            return await self._async_run(events, local)
 
+    async def _async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
         from .own import own_context
 
         rt = self._rt()
-        for _h, what, temp, name in events:
-            self.ran[name] = {"time": dt_util.as_utc(local).isoformat(), "what": what, "temp": temp, "ok": None, "why": "running"}
-        zones = set(rt.options.get(CONF_HEATING_ENTITIES) or []) if rt else set()
         done: list[str] = []
-        for heater, what, temp, name in events:
-            if heater not in zones or not heater.startswith("climate."):
+        rows: dict[str, dict[str, Any]] = {}
+        for heater, what, temp, key in events:
+            if self._stopped or rt is None or not enabled(rt.options):
+                break
+            programme = self.items.items.get(key)
+            name = programme["name"] if programme else key
+            if programme is not None and not programme.get("enabled", True) and what != "recover_off":
                 continue
-            if what == "off" and wanted_on(self.programmes(), heater, local + timedelta(minutes=1)):
-                self.ran[name].update(ok=True, why="left on: another period wants it")
-                continue  # another period still wants it on
-            if what == "on":
-                actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": temp})
-            else:
-                actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": None})
-            if why:
-                self.ran[name].update(ok=False, why=why)
-                if rt is not None:
-                    rt.timeline.add("health", f"Heating schedule didn't change {heater}", why)
+            state = self.hass.states.get(heater)
+            label = state.name if state else heater
+            row = rows.setdefault(key, {"time": dt_util.as_utc(local).isoformat(), "zones": {}})
+            zone = row["zones"].setdefault(heater, {"name": label, "ok": None, "why": "running"})
+            self.ran[key] = row
+            if what != "on" and wanted_on(self.programmes(), heater, local):
+                zone.update(ok=True, why="left on: another period wants it")
                 continue
-            failed = False
-            for action in actions:
-                domain, service = action["action"].split(".", 1)
-                try:
-                    async with asyncio.timeout(30):  # a thermostat that never answers mustn't leave this hanging silently
-                        await self.hass.services.async_call(domain, service, {**action.get("data", {}), **action["target"]},
-                                                            blocking=True, context=own_context(self.hass, f"heating schedule: {name}"))
-                except Exception as err:  # noqa: BLE001 - one heater failing shouldn't stop the others
-                    failed = True
-                    msg = "the thermostat didn't answer within 30 seconds" if isinstance(err, TimeoutError) else str(err)[:120]
-                    self.ran[name].update(ok=False, why=msg)
-                    _LOGGER.warning("Sentient heating schedule %s couldn't change %s: %s", name, heater, msg)
-                    if rt is not None:
-                        rt.timeline.add("health", f"Heating schedule couldn't change {heater}", msg)
+            if what == "recover_off":
+                if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
+                    self._drop(heater)
                     continue
-            if failed:
+                record = self._owned.get(heater)
+                if state is None or state.state in ("unknown", "unavailable"):
+                    zone.update(ok=None, why="waiting for thermostat state")
+                    continue
+                if not record or list(self._controls(state)) != record["controls"]:
+                    self._drop(heater)
+                    zone.update(ok=None, why="left alone: thermostat settings changed")
+                    continue
+            actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": temp})
+            if why:
+                zone.update(ok=False, why=why)
+                if what == "recover_off":
+                    self._drop(heater)
+                rt.timeline.add("health", f"Heating schedule didn't change {heater}", why)
                 continue
-            # the schedule has taken over this heater: a hand boost's "put it back later" no longer applies
+            action = actions[0]
+            domain, service = action["action"].split(".", 1)
+            context = own_context(self.hass, f"heating schedule: {name}")
+            if what == "on":
+                self._prepare_ownership(heater, key, local, action, context)
+            try:
+                async with asyncio.timeout(30):
+                    await self.hass.services.async_call(
+                        domain, service, {**action.get("data", {}), **action["target"]},
+                        blocking=True, context=context,
+                    )
+            except Exception as err:  # noqa: BLE001 - one heater failing shouldn't stop the others
+                self._pending.pop(heater, None)
+                msg = "the thermostat didn't answer within 30 seconds" if isinstance(err, TimeoutError) else str(err)[:120]
+                zone.update(ok=False, why=msg)
+                _LOGGER.warning("Sentient heating schedule %s couldn't change %s: %s", name, heater, msg)
+                rt.timeline.add("health", f"Heating schedule couldn't change {heater}", msg)
+                if what == "recover_off" or (what == "off" and isinstance(err, TimeoutError)):
+                    self._drop(heater)  # do not repeatedly dispatch an uncertain request
+                continue
+            if what != "on":
+                self._pending.pop(heater, None)
+                self._drop(heater)
             heating = getattr(rt, "heating", None)
             if heating is not None and (boost := getattr(heating, "_boosted", {}).get(heater)) is not None:
                 heating._drop(heater, boost)
-            st = self.hass.states.get(heater)
-            label = st.name if st else heater
-            done.append(f"{label} {'on to ' + format(temp, 'g') + '°' if what == 'on' else 'off'}")
-            self.ran[name].update(ok=True, why=done[-1])
-        if done and rt is not None:
-            rt.timeline.add("mode", "Heating schedule: " + ", ".join(done), name)
+            requested = f"on to {temp:g}°" if what == "on" else "off"
+            result = f"{label}: requested {requested}"
+            if what == "recover_off":
+                result += " after a missed switch-off"
+            done.append(result)
+            zone.update(ok=True, why=result)
+        for key, row in rows.items():
+            results = list(row["zones"].values())
+            if any(zone["ok"] is False for zone in results):
+                row["ok"] = False
+            elif all(zone["ok"] is True for zone in results):
+                row["ok"] = True
+            else:
+                row["ok"] = None
+            row["why"] = " · ".join(zone["why"] for zone in results)
+            accepted = [zone["why"] for zone in results if zone["ok"] is True]
+            if accepted:
+                rt.timeline.add("mode", "Heating schedule: " + ", ".join(accepted), (self.items.items.get(key) or {}).get("name", key))
         return done
 
 
