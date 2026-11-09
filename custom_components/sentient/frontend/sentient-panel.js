@@ -125,7 +125,7 @@
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div></section>
-            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
+            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden>
@@ -1253,6 +1253,22 @@
       if (this._innerAt && Date.now() - this._innerAt < 60000) return;
       this._innerAt = Date.now();
       this._hass.callWS({ type: "sentient/inner" }).then((r) => { this._inner = r; this._drawInner(); }, () => { this._inner = null; this._drawInner(); });
+      this._hass.callWS({ type: "sentient/memory/review" }).then((r) => { this._mcheck = r.pairs || []; this._drawCheck(); }, () => {});
+    }
+
+    _drawCheck() {
+      const el = this._$("mcheck");
+      if (!el) return;
+      const pairs = this._mcheck || [];
+      el.hidden = !pairs.length;
+      if (!pairs.length) { el.innerHTML = ""; return; }
+      const admin = this._hass.user && this._hass.user.is_admin;
+      el.innerHTML = this._h("MEMORY CHECK-UP", `${pairs.length} TO LOOK AT`)
+        + pairs.map((p) => `<div class="mc"><div class="mck">${p.kind === "conflict" ? "THESE SAY DIFFERENT THINGS" : "THE SAME THING TWICE"}</div>`
+          + `<div class="mct"><b>${esc(p.newer.text)}</b><small>NEWER · ${esc(p.newer.category.toUpperCase())}${p.newer.pinned ? " · PINNED" : ""}</small></div>`
+          + `<div class="mct"><b>${esc(p.older.text)}</b><small>OLDER · ${esc(p.older.category.toUpperCase())}${p.older.pinned ? " · PINNED" : ""}</small></div>`
+          + (admin ? `<div class="row"><button class="btn sm" data-act="mckeep" data-id="${esc(p.pair)}" data-keep="${esc(p.newer.id)}">KEEP NEWER</button><button class="btn sm ghost" data-act="mckeep" data-id="${esc(p.pair)}" data-keep="${esc(p.older.id)}">KEEP OLDER</button><button class="btn sm ghost" data-act="mckeep" data-id="${esc(p.pair)}" data-keep="">BOTH ARE RIGHT</button></div>` : "")
+          + `</div>`).join("");
     }
 
     _drawInner() {
@@ -1269,6 +1285,7 @@
       el.innerHTML = this._h("WHAT I'M THINKING", th.length ? `${th.length}` : "")
         + (th.map((t) => `<div class="r"><ha-icon icon="${esc(icon[t.kind] || "mdi:thought-bubble-outline")}"></ha-icon><b class="wrap">${esc(t.text)}<small>${esc(t.why || "")}</small></b>${admin && !["guess", "memory"].includes(t.kind) ? `<button class="btn sm ghost" data-act="innerno" data-id="${esc(t.key)}" title="Dismiss">✕</button>` : ""}</div>`).join("")
           || '<div class="e">NOTHING TO REPORT · IT SAYS SO WHEN IT LEARNS SOMETHING</div>')
+        + (i.noisy || []).map((n) => `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b class="wrap">I keep deciding the ${esc(n.name.toLowerCase())} isn't worth mentioning (${n.times} times this week)<small>each look costs an AI call</small></b>${admin ? `<button class="btn sm ghost" data-act="unwatch" data-id="${esc(n.entity_id)}">STOP WATCHING</button>` : ""}</div>`).join("")
         + (bits ? `<div class="hint">${esc(bits)}</div>` : "");
     }
 
@@ -1301,7 +1318,11 @@
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
           + (h.admin ? `<button class="btn sm ghost" data-act="progonoff" data-id="${esc(p.id)}">${p.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="progedit" data-id="${esc(p.id)}">EDIT</button><button class="btn sm ghost" data-act="progdel" data-id="${esc(p.id)}" title="Delete">✕</button>` : "")
           + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div></div>`).join("")
-          || '<div class="e">NO HEATING SCHEDULE YET</div>';
+          || ((h.suggested || []).length ? "" : '<div class="e">NO HEATING SCHEDULE YET</div>');
+        if (!(h.programmes || []).length && (h.suggested || []).length) {
+          html += `<div class="hint">A STARTING POINT FROM WHAT I'VE LEARNED (WHEN YOU'RE USUALLY UP AND HOW FAST THE HOUSE WARMS) — NOTHING IS SAVED UNTIL YOU SAY SO</div>`
+            + h.suggested.map((p, i) => `<div class="prog sug"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))}</u>${h.admin ? `<button class="btn sm" data-act="progsug" data-id="${i}">USE THIS</button><button class="btn sm ghost" data-act="progsugedit" data-id="${i}">CHANGE IT</button>` : ""}</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div></div>`).join("");
+        }
         if ((h.schedules || []).length) html += `<div class="hint">${h.schedules.length} OLDER SINGLE HEATING TIME${h.schedules.length > 1 ? "S" : ""} STILL RUN · ` + h.schedules.map((x) => `${esc(x.time)} ${esc(x.what)} <a class="lnk" data-act="heatdel" data-id="${esc(x.id)}">REMOVE</a>`).join(" · ") + "</div>";
         if (h.admin && h.zones.length) html += `<div class="row"><button class="btn sm" data-act="prognew">+ NEW SCHEDULE</button></div>`;
       } else {
@@ -1336,7 +1357,7 @@
       const row = (x, i) => `<div class="pper"><input type="time" data-pi="${i}" data-pk="on" value="${esc(x.on)}"><span>TO</span><input type="time" data-pi="${i}" data-pk="off" value="${esc(x.off)}"><input type="number" data-pi="${i}" data-pk="temp" min="${h.min}" max="${h.max}" step="0.5" value="${esc(x.temp)}"><span>°</span><button class="btn sm ghost" data-act="progrmper" data-id="${i}" title="Remove">✕</button></div>`;
       const draw = () => {
         const d = this._progDraft;
-        el.innerHTML = this._h(p ? "EDIT SCHEDULE" : "NEW SCHEDULE", "")
+        el.innerHTML = this._h(p && p.id ? "EDIT SCHEDULE" : "NEW SCHEDULE", "")
           + `<form class="hform" id="progform" onsubmit="return false"><input type="text" id="pname" placeholder="Name, e.g. Weekdays" value="${esc(d.name)}" style="flex:1 1 100%">`
           + `<div class="sub" style="flex-basis:100%">HEATERS</div><div class="dchips">${h.zones.map((z) => `<label><input type="checkbox" data-heater="${esc(z.entity_id)}"${d.heaters.includes(z.entity_id) ? " checked" : ""}><span>${esc(z.name.toUpperCase())}</span></label>`).join("")}</div>`
           + `<div class="sub" style="flex-basis:100%">DAYS · <a class="lnk" data-act="progdays" data-id="wk">WEEKDAYS</a> · <a class="lnk" data-act="progdays" data-id="we">WEEKENDS</a> · <a class="lnk" data-act="progdays" data-id="all">EVERY DAY</a></div><div class="dchips">${D.map((x) => `<label><input type="checkbox" data-day="${x}"${d.days.includes(x) ? " checked" : ""}><span>${x.toUpperCase()}</span></label>`).join("")}</div>`
@@ -1413,7 +1434,7 @@
       const el = this._$("live");
       if (!el) return;
       const cams = ((this._cams || {}).cameras || []).map((c) => c.entity_id);
-      const events = mind.security_events || [];
+      const events = (mind.security_events || []).filter((e) => !e.parked);
       const latest = events.find((e) => this._camOf(e));
       const active = events.filter((e) => e.end == null && this._camOf(e));
       if (this._liveFollow !== false && latest) this._liveCam = this._camOf(latest);
@@ -1427,10 +1448,28 @@
       const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
       const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a></div>`;
       const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
-      if (this._liveKey !== key || !el.querySelector(".lv img")) {
+      if (this._liveCamKey !== cam || !el.querySelector(".lv")) {
+        // Home Assistant's own camera card streams live (WebRTC where the camera offers it, which Frigate's go2rtc
+        // does) with no lag; the plain picture stream is the fallback if the card can't be made
+        this._liveCamKey = cam;
         this._liveKey = key;
-        el.innerHTML = head + `<div class="lv"><img alt="" src="${esc(stream)}"><div class="lvo">${badge}</div></div>` + chips;
+        el.innerHTML = head + `<div class="lv"><div class="lvc"></div><div class="lvo">${badge}</div></div>` + chips;
+        const holder = el.querySelector(".lvc");
+        const fallback = () => { holder.innerHTML = `<img alt="" src="${esc(stream)}">`; };
+        if (window.loadCardHelpers) {
+          window.loadCardHelpers().then((helpers) => {
+            if (this._liveCamKey !== cam) return;
+            const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
+            card.hass = this._hass;
+            this._liveCard = card;
+            holder.innerHTML = "";
+            holder.appendChild(card);
+          }, fallback);
+        } else fallback();
       } else {
+        if (this._liveCard) this._liveCard.hass = this._hass;
+        const img = el.querySelector(".lvc img");
+        if (img && this._liveKey !== key) { this._liveKey = key; img.src = stream; }
         el.querySelector(".h").outerHTML = head;
         el.querySelector(".lvo").innerHTML = badge;
         el.querySelector(".tchips").outerHTML = chips;
@@ -1482,7 +1521,7 @@
     _drawSnaps(mind) {
       const el = this._$("snaps");
       if (!el) return;
-      const evs = (mind.security_events || []).filter((e) => e.has_snapshot).slice(0, 8);
+      const evs = (mind.security_events || []).filter((e) => e.has_snapshot && !e.parked).slice(0, 8);
       el.hidden = !evs.length;
       if (!evs.length) return;
       el.innerHTML = this._h("LATEST SNAPSHOTS", `${evs.length}`) + `<div class="sgrid">${evs.map((e) => `<a class="sg" data-act="secsnap" data-id="${esc(e.id)}"><img loading="lazy" alt="" src="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg"><span>${esc(e.camera.replace(/_/g, " ").toUpperCase())} · ${esc(e.label.toUpperCase())} · ${esc(new Date(e.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span></a>`).join("")}</div>`;
@@ -1841,12 +1880,16 @@
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
       else if (act === "openmind") this._show("mind", true);
+      else if (act === "mckeep") { const keep = el.dataset.keep || null; if (keep || window.confirm("Keep both as they are?")) this._hass.callWS({ type: "sentient/memory/resolve", pair: id, keep }).then(() => { this._innerAt = 0; this._loadInner(); }); }
+      else if (act === "unwatch") this._hass.callWS({ type: "sentient/notice/unwatch", entity_id: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "innerno") this._hass.callWS({ type: "sentient/inner/dismiss", key: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "livecam") { this._liveCam = id; this._liveFollow = false; this._render(); }
       else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
       else if (act === "prognew") this._editProg(null);
+      else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progsugedit") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._editProg({ ...p, name: p.name.replace(" (suggested)", ""), id: undefined }); }
       else if (act === "progedit") this._editProg(((this._heat || {}).programmes || []).find((p) => p.id === id));
       else if (act === "progcancel") { this._heatEdit = false; this._drawHeat(); }
       else if (act === "progsave") this._saveProg(id);
@@ -2311,7 +2354,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 #mp .flow{columns:2}
 #scp .lanes,#hp .lanes{align-items:start}
 .lv{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;border:1px solid rgba(0,255,247,.25)}
-.lv img{display:block;width:100%;height:100%;object-fit:contain}
+.lv img{display:block;width:100%;height:100%;object-fit:contain} .lvc{width:100%;height:100%} .lvc>*{display:block;width:100%;height:100%;--ha-card-border-radius:0;--ha-card-border-width:0}
 .lvo{position:absolute;left:8px;top:8px;right:8px;display:flex;gap:6px}
 .lbadge{font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:4px 8px;border-radius:8px;color:#041014;background:#00fff7;box-shadow:0 0 10px rgba(0,255,247,.6)} .lbadge.dim{color:#cfeff5;background:rgba(0,0,0,.55);box-shadow:none}
 .tchip[data-act]{cursor:pointer}
@@ -2331,6 +2374,8 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .tt{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,255,247,.18);background:rgba(0,255,247,.05)} .tt ha-icon{--mdc-icon-size:20px;color:#00fff7} .tt b{font-size:20px;font-weight:300;color:#fff} .tt span{font-size:8.5px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.7)}
 .tt.warm{border-color:rgba(255,170,80,.5)} .tt.warm ha-icon{color:#ffbe55}
 .ppl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .pp{font-size:9px;font-weight:700;letter-spacing:.12em;padding:4px 9px;border-radius:10px;color:rgba(150,220,235,.55);border:1px solid rgba(150,220,235,.18)} .pp.home{color:#7fefff;border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.08)}
+.mc{padding:8px 10px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(255,190,85,.3);background:rgba(255,190,85,.04)} .mck{font-size:9px;font-weight:700;letter-spacing:.16em;color:#ffbe55;margin-bottom:6px}
+.mct{padding:4px 0} .mct b{display:block;font-weight:400;font-size:12.5px} .mct small{font-size:8.5px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.6)}
 .sub{font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(150,220,235,.7);margin:12px 2px 4px}
 .hform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .hform select,.hform input[type=time],.hform input[type=number]{background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;color:#cfeff5;color-scheme:dark;font:inherit;font-size:12px}
@@ -2338,7 +2383,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .dchips{display:flex;gap:4px;flex-wrap:wrap;flex-basis:100%}.dchips label{cursor:pointer}.dchips input{position:absolute;opacity:0;pointer-events:none}
 .dchips span{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;padding:4px 7px;border-radius:8px;border:1px solid rgba(0,255,247,.25);color:rgba(150,220,235,.6)}
 .dchips input:checked+span{color:#041014;background:#7fefff;border-color:#7fefff}
-.prog{padding:8px 10px;margin-bottom:6px;border-radius:10px;border:1px solid rgba(0,255,247,.12);background:rgba(0,255,247,.035)} .prog.dim{opacity:.55}
+.prog{padding:8px 10px;margin-bottom:6px;border-radius:10px;border:1px solid rgba(0,255,247,.12);background:rgba(0,255,247,.035)} .prog.dim{opacity:.55} .prog.sug{border-style:dashed;border-color:rgba(255,190,85,.4)}
 .prog .ph{display:flex;align-items:center;gap:8px} .prog .ph b{font-weight:500;font-size:12.5px} .prog .ph u{flex:1;text-decoration:none;font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.7)}
 .pbar{position:relative;height:14px;margin:8px 0 4px;border-radius:4px;background:rgba(0,255,247,.06);overflow:hidden}
 .pbar i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#ff9e57,#ffbe55);box-shadow:0 0 6px rgba(255,170,80,.6)}

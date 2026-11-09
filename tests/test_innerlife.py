@@ -187,3 +187,43 @@ async def test_shares_one_learning_an_evening(hass):
     assert inner.to_share(evening) is None  # once an evening
     inner.shared_day = None
     assert inner.to_share(evening) is None  # and never the same thing twice
+
+
+async def test_bedroom_sensors_stirring_dont_wake_the_house(hass, freezer):
+    from types import SimpleNamespace as NS
+    from unittest.mock import AsyncMock, patch as p
+
+    from homeassistant.core import State as S
+
+    from custom_components.sentient.sleep import Sleep
+
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=5, minute=40, second=0, microsecond=0)))
+    rt = NS(speech=NS(quiet_hours_now=lambda: True), timeline=FakeTimeline())
+    sleep = Sleep(hass, "t", {"sleep_ignore_sensors": ["binary_sensor.bed1", "binary_sensor.bed2"]}, lambda: rt)
+    sleep.asleep = True
+    sleep.async_set = AsyncMock()
+    areas = {"binary_sensor.bed1": "bedroom", "binary_sensor.bed2": "girls", "binary_sensor.landing": "landing", "binary_sensor.kitchen": "kitchen"}
+
+    def ev(eid):
+        return NS(data={"old_state": S(eid, "off"), "new_state": S(eid, "on")})
+    with p("custom_components.sentient.sleep.inside_sensors", return_value=list(areas)), \
+         p("custom_components.sentient.sleep.area_of", side_effect=lambda h, e: areas[e]):
+        sleep._changed(ev("binary_sensor.bed1"))
+        sleep._changed(ev("binary_sensor.bed2"))  # two bedrooms stirring at 05:40: still asleep
+        await hass.async_block_till_done()
+        sleep.async_set.assert_not_called()
+        sleep._changed(ev("binary_sensor.landing"))
+        sleep._changed(ev("binary_sensor.kitchen"))  # someone really up
+        await hass.async_block_till_done()
+        sleep.async_set.assert_called_once()
+
+
+async def test_spots_what_it_keeps_deciding_isnt_worth_saying(hass):
+    from types import SimpleNamespace as NS
+
+    hass.states.async_set("sensor.kettle", "standby", {"friendly_name": "Kettle status"})
+    items = [{"kind": "noticed", "detail": "noticed, decided it wasn't worth saying", "entities": ["sensor.kettle"]}] * 14
+    items += [{"kind": "noticed", "detail": "noticed, decided it wasn't worth saying", "entities": ["sensor.window"]}] * 3
+    rt = NS(timeline=NS(since=lambda h, kinds, limit: items))
+    inner = _inner(hass, rt, notice_entities=["sensor.kettle", "sensor.window"])
+    assert inner.noisy() == [{"entity_id": "sensor.kettle", "name": "Kettle status", "times": 14}]

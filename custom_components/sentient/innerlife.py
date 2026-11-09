@@ -346,6 +346,26 @@ class InnerLife:
         return True
 
     # ----- reporting ---------------------------------------------------------------------
+    def noisy(self, days: int = 7, at_least: int = 12) -> list[dict[str, Any]]:
+        """Things it's watching that it keeps deciding aren't worth mentioning (each look is an AI call)."""
+        rt = self._rt()
+        timeline = getattr(rt, "timeline", None) if rt is not None else None
+        if timeline is None:
+            return []
+        watched = set(self.options.get("notice_entities") or [])
+        counts: dict[str, int] = {}
+        for item in timeline.since(days * 24, ["noticed"], 1000):
+            if "wasn't worth saying" in str(item.get("detail") or ""):
+                for eid in item.get("entities") or []:
+                    if eid in watched:
+                        counts[eid] = counts.get(eid, 0) + 1
+        out = []
+        for eid, n in sorted(counts.items(), key=lambda kv: -kv[1]):
+            if n >= at_least:
+                st = self.hass.states.get(eid)
+                out.append({"entity_id": eid, "name": st.name if st else eid, "times": n})
+        return out[:4]
+
     def prediction(self) -> dict[str, Any]:
         tried = len(self.scores)
         right = sum(self.scores)
@@ -377,6 +397,7 @@ class InnerLife:
                     live.append({"key": "mem:" + c["time"], "kind": "memory", "t": dt_util.parse_datetime(c["time"]).timestamp(),
                                  "text": f"I've updated what I know: \"{c['new']}\"", "why": f"it replaces \"{c['old']}\""})
         since14 = dt_util.utcnow().timestamp() - LOOKBACK_DAYS * 86400
-        return {**out, "thoughts": sorted(shown, key=lambda t: t["t"], reverse=True)[:10] + live,
+        return {**out, "noisy": self.noisy() if self.thoughts_on else [],
+                "thoughts": sorted(shown, key=lambda t: t["t"], reverse=True)[:10] + live,
                 "corrections": sum(1 for c in self.corrections if c["t"] >= since14) if self.learn_on else None,
                 "prediction": self.prediction() if self.thoughts_on else None}

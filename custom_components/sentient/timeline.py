@@ -148,7 +148,7 @@ class Timeline:
         d = event.data
         if d.get("result") != "stayed quiet":
             return  # remarks it made show up as "said"; skips are routine
-        self.add("noticed", "; ".join(d.get("changes") or []), "noticed, decided it wasn't worth saying")
+        self.add("noticed", "; ".join(d.get("changes") or []), "noticed, decided it wasn't worth saying", entities=d.get("entities"))
 
     @callback
     def _visitor(self, _event: Event) -> None:

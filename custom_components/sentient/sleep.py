@@ -144,8 +144,9 @@ class Sleep:
         if now.time() < EARLIEST_UP or now.time() > time(12, 0):
             return
         by_hand = new.domain == "light" and new.state == "on" and not new.context.parent_id
-        if not by_hand and (new.state != "on" or new.entity_id not in inside_sensors(self.hass, self.options)):
-            return
+        if not by_hand and (new.state != "on" or new.entity_id not in inside_sensors(self.hass, self.options)
+                            or new.entity_id in set(self.options.get(CONF_SLEEP_IGNORE) or [])):
+            return  # a bedroom sensor stirring isn't anyone up: it takes movement in two other rooms (or a light)
         area = area_of(self.hass, new.entity_id) or new.entity_id
         cutoff = now - UP_WINDOW
         self._moves = [(t, a) for t, a in self._moves if t > cutoff] + [(now, area)]

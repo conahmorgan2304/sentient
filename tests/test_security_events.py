@@ -605,3 +605,16 @@ async def test_empty_event_list_does_not_request_impossible_clarification(hass):
     _, _, rt = setup(hass)
     row, result = await select(hass, rt, context())
     assert row is None and result["events"] == [] and "choose_event" not in result
+
+
+async def test_a_parked_bike_is_noted_but_not_an_incident(hass):
+    events, _cache, rt = setup(hass)
+    added = []
+    rt.incidents = SimpleNamespace(add=lambda *a, **k: added.append(k.get("event_id")))
+    now = dt_util.utcnow().timestamp()
+    first = events.ingest(event(id="1.bike", label="bicycle", start_time=now - 900, end_time=now - 890))
+    again = events.ingest(event(id="2.bike", label="bicycle", start_time=now - 300, end_time=now - 290))  # found again
+    still = events.ingest(event(id="3.car", label="car", start_time=now - 100, end_time=None, stationary=True))
+    person = events.ingest(event(id="4.person", label="person", start_time=now - 50, end_time=now - 40))
+    assert not first.get("parked") and again["parked"] and still["parked"] and not person.get("parked")
+    assert added == ["1.bike", "4.person"]

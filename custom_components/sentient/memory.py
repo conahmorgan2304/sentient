@@ -101,7 +101,7 @@ def expiry_for(text: str, today: date | None = None) -> str | None:
     return (when + timedelta(days=1)).isoformat() if when else None
 
 
-_CHANGEABLE = re.compile(r"^(\d+(?:\.\d+)?|on|off|not|no|never|longer|anymore|now|yes|open|closed|up|down)$")
+_CHANGEABLE = re.compile(r"^(\d+(?:\.\d+)?|on|off|not|no|never|longer|anymore|now|yes|open|closed|up|down|\w+n't|cannot)$")
 
 
 def old_is_said(m: "Memory") -> bool:
@@ -151,6 +151,7 @@ class MemoryStore:
         )
         self._items: list[Memory] = []
         self.changed: list[dict[str, str]] = []  # recent replacements and expiries, newest last (for the Mind page)
+        self.reviewed: list[str] = []  # memory pairs someone said are both fine
         self._index: tuple[float, list[tuple[str, str]]] | None = None
 
     async def async_load(self) -> None:
@@ -158,11 +159,12 @@ class MemoryStore:
         known = set(Memory.__dataclass_fields__)
         self._items = [Memory(**{k: v for k, v in item.items() if k in known}) for item in data.get("items", [])]
         self.changed = list(data.get("changed") or [])[-30:]
+        self.reviewed = list(data.get("reviewed") or [])[-300:]
 
     @callback
     def _save(self) -> None:
         self._store.async_delay_save(
-            lambda: {"items": [m.as_dict() for m in self._items], "changed": self.changed[-30:]}, 5
+            lambda: {"items": [m.as_dict() for m in self._items], "changed": self.changed[-30:], "reviewed": self.reviewed[-300:]}, 5
         )
         self.hass.bus.async_fire(EVENT_MEMORY_CHANGED, {"count": len(self._items)})
 
@@ -207,6 +209,51 @@ class MemoryStore:
     def _note(self, kind: str, old: str, new: str = "") -> None:
         self.changed.append({"kind": kind, "old": old, "new": new, "time": dt_util.now().isoformat()})
         self.changed = self.changed[-30:]
+
+    # ----- check-up: pairs a person should look at -------------------------------------
+    @staticmethod
+    def _pair(a: Memory, b: Memory) -> str:
+        return "|".join(sorted((a.id, b.id)))
+
+    def review(self, limit: int = 8) -> list[dict[str, Any]]:
+        """Memories that say opposite things, or the same thing twice (often filed under two categories by the voice).
+        Plain rules, no AI; pairs someone said are both fine aren't shown again."""
+        out: list[dict[str, Any]] = []
+        items = [m for m in self._items if self.live(m)]
+        for i, a in enumerate(items):
+            wa, sa = _words(a.text), _subject(a.text)
+            for b in items[i + 1:]:
+                if self._pair(a, b) in self.reviewed:
+                    continue
+                wb = _words(b.text)
+                if len(sa) >= 3 and sa == _subject(b.text) and _identity(a.text) != _identity(b.text):
+                    kind = "conflict"
+                elif _identity(a.text) == _identity(b.text) or (wa and wb and len(wa & wb) / len(wa | wb) >= 0.75):
+                    kind = "duplicate"
+                else:
+                    continue
+                newer, older = (a, b) if a.created >= b.created else (b, a)
+                out.append({"kind": kind, "pair": self._pair(a, b), "newer": newer.as_dict(), "older": older.as_dict()})
+                if len(out) >= limit:
+                    return out
+        return out
+
+    def resolve(self, pair: str, keep: str | None) -> bool:
+        """Keep one of a pair (the other is forgotten), or with keep=None say both are fine."""
+        ids = pair.split("|")
+        if len(ids) != 2 or any(self.get(i) is None for i in ids):
+            return False
+        if keep is None:
+            self.reviewed.append(pair)
+            self._save()
+            return True
+        if keep not in ids:
+            return False
+        drop = self.get(ids[0] if ids[1] == keep else ids[1])
+        self._items.remove(drop)
+        self._note("replaced", drop.text, self.get(keep).text)
+        self._save()
+        return True
 
     # ----- linking to the house ---------------------------------------------------------
     def _names(self) -> list[tuple[str, str]]:
