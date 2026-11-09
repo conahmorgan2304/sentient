@@ -28,7 +28,7 @@ from homeassistant.helpers.event import async_track_time_change, async_track_tim
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, DOMAIN
+from .const import CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_SHARE_LEARNING, CONF_THOUGHTS, DOMAIN
 from .own import own_actions
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,6 +75,8 @@ class InnerLife:
         self._unsubs: list[Callable[[], None]] = []
         self._inside: set[str] = set()
         self._inside_at = 0.0
+        self.shared: list[str] = []  # learnings already said aloud
+        self.shared_day: str | None = None
 
     # ----- switches ----------------------------------------------------------------------
     @property
@@ -97,6 +99,8 @@ class InnerLife:
         self.scores = [int(x) for x in data.get("scores") or []][-SCORES_KEPT:]
         self.thoughts = list(data.get("thoughts") or [])
         self.dismissed = list(data.get("dismissed") or [])
+        self.shared = list(data.get("shared") or [])
+        self.shared_day = data.get("shared_day")
         self._unsubs = [
             self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state),
             async_track_time_change(self.hass, self._nightly, hour=4, minute=50, second=0),
@@ -113,7 +117,8 @@ class InnerLife:
 
     def _data(self) -> dict[str, Any]:
         return {"corrections": self.corrections[-300:], "transitions": self.transitions, "scores": self.scores[-SCORES_KEPT:],
-                "thoughts": self.thoughts[-THOUGHTS_KEPT:], "dismissed": self.dismissed[-200:]}
+                "thoughts": self.thoughts[-THOUGHTS_KEPT:], "dismissed": self.dismissed[-200:],
+                "shared": self.shared[-200:], "shared_day": self.shared_day}
 
     # ----- watching ----------------------------------------------------------------------
     @callback
@@ -199,7 +204,25 @@ class InnerLife:
         self.corrections = [c for c in self.corrections if c["t"] >= cutoff]
         if self.learn_on:
             self.evaluate_lessons()
+        self.tidy_memory()
         self._save()
+
+    def tidy_memory(self) -> list[str]:
+        """Let go of memories whose day has passed, and link older ones to the devices and rooms they name."""
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        if memory is None:
+            return []
+        gone = memory.prune_expired()
+        for m in memory.items:
+            if not m.links and (links := memory.links_for(m.text)):
+                m.links = links
+        if gone:
+            names = "; ".join(m.text.rstrip(".") for m in gone[:3])
+            self._think(f"expired:{dt_util.now().date().isoformat()}", f"I've let go of {len(gone)} thing{'s' if len(gone) != 1 else ''} whose day has passed: {names}.",
+                        "dated memories are kept until the day after", "lesson")
+            rt.timeline.add("mind", f"Forgot {len(gone)} out-of-date memor{'ies' if len(gone) != 1 else 'y'}", names[:200])
+        return [m.text for m in gone]
 
     def evaluate_lessons(self) -> list[str]:
         """Look at the last fortnight's corrections; hand back a routine that keeps being undone."""
@@ -236,6 +259,49 @@ class InnerLife:
     def _every_ten_minutes(self, now) -> None:
         if self.day_on:
             self.check_day(dt_util.as_local(now))
+        if self.options.get(CONF_SHARE_LEARNING, True):
+            local = dt_util.as_local(now)
+            if (pick := self.to_share(local)) is not None:
+                self.hass.async_create_background_task(self.async_share(pick, local), "sentient_share_learning")
+
+    def to_share(self, local: datetime) -> dict[str, Any] | None:
+        """Once an evening: the freshest thing learned in the last two days that hasn't been said yet."""
+        if not (17 * 60 <= local.hour * 60 + local.minute <= 20 * 60 + 30) or self.shared_day == local.date().isoformat():
+            return None
+        since = dt_util.utcnow().timestamp() - 2 * 86400
+        fresh = [t for t in self.thoughts if t["t"] >= since and t["key"] not in self.shared and t["kind"] in ("lesson", "day")]
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        for c in (getattr(memory, "changed", None) or []):
+            when = dt_util.parse_datetime(c.get("time") or "")
+            if c.get("kind") == "replaced" and when and when.timestamp() >= since and f"mem:{c['time']}" not in self.shared:
+                fresh.append({"key": f"mem:{c['time']}", "t": when.timestamp(), "text": f"I've updated what I know: {c['new'].rstrip('.')}."})
+        learner = getattr(rt, "learner", None) if rt is not None else None
+        for r in (learner.all() if learner is not None else []):
+            when = dt_util.parse_datetime(getattr(r, "learned", "") or "")
+            if when and when.timestamp() >= since and f"habit:{r.id}" not in self.shared and not getattr(r, "declined", False):
+                fresh.append({"key": f"habit:{r.id}", "t": when.timestamp(), "text": f"I've spotted a habit: {r.describe().rstrip('.')}."})
+        p = self.prediction()
+        if p["trusted"] and "guess:trusted" not in self.shared:
+            fresh.append({"key": "guess:trusted", "t": dt_util.utcnow().timestamp(),
+                          "text": f"I can now usually tell which room someone's heading to next — right {round(p['rate'] * 100)}% of the time."})
+        return max(fresh, key=lambda t: t["t"]) if fresh else None
+
+    async def async_share(self, pick: dict[str, Any], local: datetime) -> bool:
+        rt = self._rt()
+        if rt is None:
+            return False
+        try:
+            result = await rt.speech.async_say(f"Something I've learned: {pick['text']}", "normal", source="learning")
+        except Exception as err:  # noqa: BLE001 - no speaker answered: try again later this evening
+            _LOGGER.debug("Couldn't say what it learned: %s", err)
+            return False
+        if not getattr(result, "spoken", False):
+            return False  # quiet time, nobody about or hushed: try again later this evening
+        self.shared_day = local.date().isoformat()
+        self.shared = (self.shared + [pick["key"]])[-200:]
+        self._save()
+        return True
 
     def check_day(self, local: datetime) -> bool:
         """Nobody up yet when someone usually is by now: noted once a day, nothing said or switched."""
@@ -303,6 +369,13 @@ class InnerLife:
                              "text": (f"I guessed which room someone goes to next and was right {pct}% of the time ({p['right']} of {p['tried']})"
                                       + (". That's good enough to rely on." if p["trusted"] else ". Still learning, so I'm not acting on it yet.")),
                              "why": "checked after every journey between rooms"})
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        if self.thoughts_on and memory is not None:
+            for c in reversed(getattr(memory, "changed", [])[-3:]):
+                if c.get("kind") == "replaced":
+                    live.append({"key": "mem:" + c["time"], "kind": "memory", "t": dt_util.parse_datetime(c["time"]).timestamp(),
+                                 "text": f"I've updated what I know: \"{c['new']}\"", "why": f"it replaces \"{c['old']}\""})
         since14 = dt_util.utcnow().timestamp() - LOOKBACK_DAYS * 86400
         return {**out, "thoughts": sorted(shown, key=lambda t: t["t"], reverse=True)[:10] + live,
                 "corrections": sum(1 for c in self.corrections if c["t"] >= since14) if self.learn_on else None,

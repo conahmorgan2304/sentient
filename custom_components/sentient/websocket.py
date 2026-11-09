@@ -80,6 +80,7 @@ from .const import (
     CONF_LEARN_CORRECTIONS,
     CONF_NORMAL_DAY,
     CONF_THOUGHTS,
+    CONF_SHARE_LEARNING,
     CONF_SELF_ADJUST,
     CONF_PROPOSALS,
     CONF_PRIVACY_LOG,
@@ -343,7 +344,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
         CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
-        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
+        CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
@@ -455,6 +456,98 @@ def page_access(func):
     return wrapper
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/heating/programme/save", vol.Optional("programme_id"): str,
+    vol.Required("programme"): dict,
+})
+@websocket_api.require_admin
+@callback
+def ws_heating_programme_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Add or change a heating programme: heaters, days and on/off periods."""
+    from .heating_schedule import clean_programme
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    try:
+        data = clean_programme(rt.options, msg["programme"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    if pid := msg.get("programme_id"):
+        if pid not in rt.heat_prog.items.items:
+            connection.send_error(msg["id"], "not_found", "That heating programme no longer exists")
+            return
+        data["id"] = pid
+    connection.send_result(msg["id"], rt.heat_prog.items.upsert(data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/heating/programme/delete", vol.Required("programme_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_heating_programme_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    ok = bool(entry and entry.runtime_data.heat_prog.items.remove(msg["programme_id"]))
+    connection.send_result(msg["id"], {"removed": ok})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/today"})
+@page_access
+@callback
+def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The overview's TODAY card: weather, who's home, what's next (alarms, reminders, bins), heating."""
+    from .heating_schedule import enabled as sched_on, next_change
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_result(msg["id"], {})
+        return
+    rt = entry.runtime_data
+    opts = rt.options
+    out: dict[str, Any] = {}
+    if (w := hass.states.get(str(opts.get("briefing_weather") or ""))) is not None and w.state not in ("unavailable", "unknown"):
+        out["weather"] = {"condition": w.state, "temp": w.attributes.get("temperature"), "unit": w.attributes.get("temperature_unit"),
+                          "humidity": w.attributes.get("humidity"), "wind": w.attributes.get("wind_speed")}
+    people = []
+    trackers = list(opts.get("welcome_people") or [])  # a phone chosen for welcome home is better evidence than a person who never leaves
+    for st in hass.states.async_all("person"):
+        mine = [t for t in st.attributes.get("device_trackers") or [] if t in trackers]
+        where = hass.states.get(mine[0]).state if mine and hass.states.get(mine[0]) is not None else st.state
+        people.append({"name": st.name, "home": where == "home", "where": where})
+    if not people:
+        for eid in opts.get("welcome_people") or []:
+            if (st := hass.states.get(eid)) is not None:
+                people.append({"name": st.name, "home": st.state == "home", "where": st.state})
+    out["people"] = people
+    now = dt_util.utcnow()
+    soon = []
+    for a in rt.alarms.listing():
+        if a["on"] and a["next"] and (dt_util.parse_datetime(a["next"]) - now).total_seconds() < 36 * 3600:
+            soon.append({"when": a["next"], "what": a["name"], "kind": "routine" if a["silent"] else "alarm"})
+    if (cal := hass.states.get(str(opts.get("bins_calendar") or ""))) is not None and cal.attributes.get("start_time"):
+        start = dt_util.parse_datetime(str(cal.attributes["start_time"])) or None
+        if start is not None:
+            start = dt_util.as_utc(start if start.tzinfo else start.replace(tzinfo=dt_util.get_default_time_zone()))
+            if (start - now).total_seconds() < 3 * 86400:
+                soon.append({"when": start.isoformat(), "what": str(cal.attributes.get("message") or "Bins"), "kind": "bins"})
+    for w in list(getattr(rt.watches, "_watches", {}).values()):
+        try:
+            soon.append({"when": w.until_dt.isoformat(), "what": w.what, "kind": "watch"})
+        except Exception:  # noqa: BLE001 - a malformed watch shouldn't hide the rest
+            continue
+    out["soon"] = sorted(soon, key=lambda x: x["when"])[:8]
+    zones = []
+    for eid in rt.heating.entities:
+        if (st := hass.states.get(eid)) is not None:
+            zones.append({"name": st.name, "now": st.attributes.get("current_temperature"), "target": st.attributes.get("temperature"),
+                          "state": st.state, "action": st.attributes.get("hvac_action")})
+    progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
+    out["heating"] = {"zones": zones, "next": next_change(progs, dt_util.now()) if sched_on(opts) else None}
+    connection.send_result(msg["id"], out)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/inner"})
 @page_access
 @callback
@@ -528,7 +621,15 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                           "enabled": item.get("enabled", True), "entity_id": item["heating"].get("entity_id"),
                           "temperature": item["heating"].get("temperature"), "what": describe(hass, item["heating"]), "next": nxt})
     schedules.sort(key=lambda x: x["time"])
+    from .heating_schedule import next_change, wanted_on
+
+    progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
+    now = dt_util.now()
+    for z in zones:
+        p = wanted_on(progs, z["entity_id"], now)
+        z["scheduled"] = {"on": True, "until": p["off"], "temp": p["temp"]} if p else {"on": False}
     connection.send_result(msg["id"], {
+        "programmes": sorted(progs, key=lambda p: p["name"].lower()), "next": next_change(progs, now) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
         "admin": connection.user.is_admin,
@@ -737,6 +838,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
+    websocket_api.async_register_command(hass, ws_today)
+    websocket_api.async_register_command(hass, ws_heating_programme_save)
+    websocket_api.async_register_command(hass, ws_heating_programme_delete)
     websocket_api.async_register_command(hass, ws_inner_dismiss)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)
@@ -828,8 +932,28 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
             "helpers": helpers,
             "selector": selector_texts,
             "categories": MEMORY_CATEGORIES,
+            "depends": DEPENDS,
         },
     )
+
+
+# settings that only mean something while another one is switched on: the page hides them until it is
+# (their values are kept, so switching back on brings them back as they were)
+DEPENDS: dict[str, str] = {
+    **{k: "sleep_detection" for k in ("sleep_minutes", "sleep_ignore_sensors", "bedtime_routines", "sleep_actions", "wake_actions")},
+    "zone_door_sensors": "zone_visits",
+    **{k: "faces" for k in ("face_people", "face_cameras", "face_forget_hours")},
+    **{k: "clip_watch" for k in ("clip_cameras", "clip_scope", "clip_when", "clip_notify", "clip_source", "clip_whose", "clip_looks", "clip_days", "clip_keep", "budget_clips")},
+    **{k: "energy_insight" for k in ("energy_price", "energy_currency")},
+    "foresight_time": "foresight", "reflection_time": "reflection",
+    **{k: "welcome_home" for k in ("welcome_people", "welcome_min_away", "welcome_until")},
+    "morning_briefing_areas": "morning_briefing",
+    **{k: "night_watch" for k in ("night_watch_entities", "night_watch_announce", "night_watch_speakers")},
+    "hutch_spot": "hutch_check", **{k: "cat_watch" for k in ("cat_sensors", "cat_loud")},
+    **{k: "screen" for k in ("screen_actions", "screen_clear_actions")},
+    **{k: "alexa_skill" for k in ("alexa_wait", "alexa_late_answers")},
+    "self_adjust": "self_check",
+}
 
 
 def _voice_picker(hass: HomeAssistant, entry, groups: list[dict[str, Any]]) -> None:

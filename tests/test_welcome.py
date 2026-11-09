@@ -100,3 +100,45 @@ async def test_evening_allowance_and_held_back_note(hass: HomeAssistant, freezer
     assert Welcome(hass, {"welcome_until": "23:00:00"}, lambda: rt)._evening_allowed()
     freezer.move_to("2026-11-09 02:00:00+00:00")
     assert not Welcome(hass, {"welcome_until": "23:00:00"}, lambda: rt)._evening_allowed()  # small hours stay quiet
+
+
+async def test_a_restart_while_out_does_not_cancel_the_welcome(hass: HomeAssistant, freezer) -> None:
+    """Out all evening, Home Assistant updated meanwhile: the tracker's state looks only minutes old, but the
+    welcome still knows when they really left."""
+    from types import SimpleNamespace
+
+    from custom_components.sentient.welcome import Welcome
+
+    welcome = Welcome(hass, {"welcome_home": True, "welcome_people": ["device_tracker.phone"]}, lambda: SimpleNamespace(), "e1")
+    await welcome.async_load()
+    welcome.async_start()
+    hass.states.async_set("device_tracker.phone", "home")
+    hass.states.async_set("device_tracker.phone", "not_home")  # leaves
+    await hass.async_block_till_done()
+    assert "device_tracker.phone" in welcome.left
+    freezer.tick(timedelta(hours=4))
+    # a restart: the state comes back with a fresh last_changed (simulated by removing and setting it again)
+    hass.states.async_remove("device_tracker.phone")
+    hass.states.async_set("device_tracker.phone", "not_home")
+    freezer.tick(timedelta(minutes=10))
+    hass.states.async_set("device_tracker.phone", "home")
+    await hass.async_block_till_done()
+    assert welcome._last is not None  # a welcome is on its way (it would have been skipped as "10 minutes away")
+    assert "device_tracker.phone" not in welcome.left
+    welcome.async_stop()
+
+
+async def test_a_short_trip_is_still_not_a_welcome(hass: HomeAssistant, freezer) -> None:
+    from types import SimpleNamespace
+
+    from custom_components.sentient.welcome import Welcome
+
+    welcome = Welcome(hass, {"welcome_home": True, "welcome_people": ["device_tracker.phone"]}, lambda: SimpleNamespace())
+    welcome.async_start()
+    hass.states.async_set("device_tracker.phone", "home")
+    hass.states.async_set("device_tracker.phone", "not_home")
+    freezer.tick(timedelta(minutes=3))  # GPS wobble at the edge of the home zone
+    hass.states.async_set("device_tracker.phone", "home")
+    await hass.async_block_till_done()
+    assert welcome._last is None
+    welcome.async_stop()

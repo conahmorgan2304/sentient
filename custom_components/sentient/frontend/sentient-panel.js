@@ -118,25 +118,27 @@
         <div class="reply" id="reply" hidden></div>
         <div class="page" id="ov"><div id="head" class="card head"></div><div id="aiwarn" class="warnbar" role="status" hidden></div>
           <div class="lanes ov3">
-            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
+            <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="today" class="card"></div><div id="health" class="card"></div><div id="sec" class="card"></div></section>
             <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div></section>
-            <section class="lane" aria-label="Routines"><div class="lt">ROUTINES</div><div id="rout" class="card"></div></section>
+            <section class="lane" aria-label="Coming up"><div class="lt">COMING UP</div><div id="soon" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
-          <div class="lanes mp2">
-            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="minner" class="card" hidden></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div></section>
+          <div class="lanes ov3">
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div></section>
+            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden>
           <div class="lanes ov3">
             <section class="lane" aria-label="Heating"><div class="lt">HEATING</div><div id="heat" class="card"></div></section>
-            <section class="lane" aria-label="Energy and appliances"><div class="lt">ENERGY &amp; APPLIANCES</div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
+            <section class="lane" aria-label="Energy, appliances and routines"><div class="lt">ROUTINES &amp; APPLIANCES</div><div id="rout" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
             <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
-          <div class="lanes mp2">
-            <section class="lane" aria-label="Security now"><div class="lt">SECURITY NOW</div><div id="sec2" class="card"></div><div id="camc" class="card"></div><div id="visit" class="card"></div></section>
-            <section class="lane" aria-label="What the cameras saw"><div class="lt">WHAT THE CAMERAS SAW</div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
+          <div class="lanes ov3">
+            <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
+            <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
+            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="camc" class="card"></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
@@ -250,6 +252,8 @@
       R("sug").innerHTML = sug.length ? this._h("SUGGESTIONS", `${sug.length}`) + sug.map((s) => `<div class="r"><ha-icon icon="mdi:lightbulb-auto-outline"></ha-icon><b class="wrap">${esc(s.text)}</b>
           ${s.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">HOW</a>` : `<button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button>`}<a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
 
+      // the TODAY and COMING UP cards (refreshed every minute while the overview is open)
+      if (this._view === "overview" && (!this._todayAt || Date.now() - this._todayAt > 60000)) this._loadToday();
       // heating zones and schedule (refreshed every 30 seconds while the House tab is open)
       if (this._view === "house" && (!this._heatAt || Date.now() - this._heatAt > 30000) && !this._heatEdit) this._loadHeat();
       // the real cameras (refreshed every minute)
@@ -378,7 +382,8 @@
       R("mdeliv").innerHTML = this._h("SPEAKER DELIVERIES", (mind.speech_deliveries || []).length ? `${mind.speech_deliveries.length} RECENT` : "")
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
       R("minc").hidden = !incidentRows;
-      R("minc").innerHTML = incidentRows ? this._h("SECURITY INCIDENTS", "") + incidentRows : "";
+      R("minc").innerHTML = incidentRows ? this._h("EVENT DETAILS", "") + incidentRows : "";
+      if (this._view === "security") { this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind); }
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
       if (this._view === "mind") this._loadInner();
@@ -559,13 +564,18 @@
         const S = this._settings;
         const form = document.createElement("ha-form");
         form.hass = this._hass;
-        form.schema = g.schema;
+        // a setting that only matters while another is on stays hidden until it is (its value is kept)
+        const dep = S.depends || {};
+        const shown = (d) => g.schema.filter((f) => !dep[f.name] || !g.schema.some((x) => x.name === dep[f.name]) || d[dep[f.name]]);
+        form.schema = shown(this._draft);
         form.data = this._draft;
         form.computeLabel = (s) => S.labels[s.name] || s.name;
         form.computeHelper = (s) => S.helpers[s.name] || "";
         form.localizeValue = (key) => S.selector[key] || key.split(".").pop();
         form.addEventListener("value-changed", (ev) => {
-          this._draft = { ...ev.detail.value };
+          this._draft = { ...this._draft, ...ev.detail.value };
+          const next = shown(this._draft);
+          if (next.length !== form.schema.length) form.schema = next;
           form.data = this._draft;
           this._dirty = true;
           this._status("UNSAVED CHANGES", "warn");
@@ -722,7 +732,7 @@
         ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon>
             <input name="text" value="${esc(m.text)}" autocomplete="off"><select name="category">${opts(m.category)}</select>
             <button class="btn sm" type="submit">SAVE</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
-        : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}</b>
+        : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}${(m.links || []).length || m.expires ? `<small>${m.expires && !m.pinned ? "UNTIL " + esc(new Date(m.expires).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }).toUpperCase()) : ""}${m.expires && !m.pinned && (m.links || []).length ? " · " : ""}${(m.links || []).length ? "ABOUT " + esc(m.links.map((l) => l.startsWith("area:") ? l.slice(5).replace(/_/g, " ") : String((this._hass.states[l] || {}).attributes?.friendly_name || l)).join(", ").toUpperCase()) : ""}</small>` : ""}</b>
             <s>${esc(m.category).toUpperCase()}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
             <a class="x${m.pinned ? " pin" : ""}" data-act="pin" data-id="${esc(m.id)}" title="${m.pinned ? "Pinned: always given to the voice — tap to unpin" : "Pin: always give this to the voice"}"><ha-icon icon="${m.pinned ? "mdi:pin" : "mdi:pin-outline"}"></ha-icon></a><a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">MEMORIES</div>
@@ -1212,6 +1222,32 @@
       return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
     }
 
+    // ---------- overview: today and coming up ----------
+    _loadToday() {
+      this._todayAt = Date.now();
+      this._hass.callWS({ type: "sentient/today" }).then((r) => { this._today = r; this._drawToday(); }, () => {});
+    }
+
+    _drawToday() {
+      const t = this._today, el = this._$("today"), el2 = this._$("soon");
+      if (!t || !el || !el2) return;
+      const ic = { "clear-night": "mdi:weather-night", cloudy: "mdi:weather-cloudy", fog: "mdi:weather-fog", hail: "mdi:weather-hail", lightning: "mdi:weather-lightning", "lightning-rainy": "mdi:weather-lightning-rainy", partlycloudy: "mdi:weather-partly-cloudy", pouring: "mdi:weather-pouring", rainy: "mdi:weather-rainy", snowy: "mdi:weather-snowy", "snowy-rainy": "mdi:weather-snowy-rainy", sunny: "mdi:weather-sunny", windy: "mdi:weather-windy", exceptional: "mdi:alert-circle-outline" };
+      const w = t.weather, hz = (t.heating || {}).zones || [], nx = (t.heating || {}).next;
+      const tiles = [];
+      if (w) tiles.push(`<div class="tt"><ha-icon icon="${esc(ic[w.condition] || "mdi:weather-partly-cloudy")}"></ha-icon><b>${esc(w.temp)}${esc(w.unit || "°")}</b><span>${esc(String(w.condition).replace(/-/g, " ").toUpperCase())}${w.wind != null ? " · WIND " + esc(w.wind) : ""}</span></div>`);
+      for (const z of hz.slice(0, 2)) tiles.push(`<div class="tt${z.action === "heating" ? " warm" : ""}"><ha-icon icon="mdi:thermometer"></ha-icon><b>${esc(z.now ?? "–")}°</b><span>${esc(z.name.toUpperCase())}${z.state === "off" ? " · HEATING OFF" : z.target != null ? " · SET " + esc(z.target) + "°" : ""}</span></div>`);
+      const ppl = (t.people || []).map((p) => `<span class="pp${p.home ? " home" : ""}">${esc(p.name.toUpperCase())} · ${p.home ? "HOME" : esc(String(p.where).replace(/_/g, " ").toUpperCase())}</span>`).join("");
+      el.innerHTML = this._h("TODAY", new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }).toUpperCase())
+        + `<div class="ttiles">${tiles.join("") || '<div class="e">CHOOSE A WEATHER ENTITY IN SETTINGS → BRIEFINGS</div>'}</div>`
+        + (ppl ? `<div class="ppl">${ppl}</div>` : "")
+        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "OFF"} · ${esc(nx.name.toUpperCase())}</div>` : "");
+      const kic = { alarm: "mdi:alarm", routine: "mdi:calendar-sync", bins: "mdi:trash-can-outline", watch: "mdi:eye-outline" };
+      const when = (iso) => { const d = new Date(iso), today = new Date(); const tm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === today.toDateString() ? tm : d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " " + tm; };
+      el2.innerHTML = this._h("COMING UP", (t.soon || []).length ? `${t.soon.length}` : "")
+        + ((t.soon || []).map((x) => `<div class="r${x.kind === "routine" ? " dim" : ""}"><ha-icon icon="${esc(kic[x.kind] || "mdi:clock-outline")}"></ha-icon><b>${esc(x.what)}</b><u>${esc(when(x.when))}</u></div>`).join("")
+          || '<div class="e">NOTHING DUE IN THE NEXT DAY OR SO</div>');
+    }
+
     // ---------- what it's thinking (Mind tab) ----------
     _loadInner() {
       if (this._innerAt && Date.now() - this._innerAt < 60000) return;
@@ -1226,12 +1262,12 @@
       const off = !i || !(i.learn || i.day || i.thoughts_on);
       el.hidden = off;
       if (off) { el.innerHTML = ""; return; }
-      const icon = { lesson: "mdi:school-outline", day: "mdi:weather-sunset-up", guess: "mdi:crystal-ball" };
+      const icon = { lesson: "mdi:school-outline", day: "mdi:weather-sunset-up", guess: "mdi:crystal-ball", memory: "mdi:brain" };
       const admin = this._hass.user && this._hass.user.is_admin;
       const th = i.thoughts || [];
       const bits = [i.corrections != null ? `${i.corrections} CORRECTIONS · 2 WEEKS` : "", i.prediction && i.prediction.tried ? `NEXT ROOM ${Math.round((i.prediction.rate || 0) * 100)}% RIGHT` : ""].filter(Boolean).join(" · ");
       el.innerHTML = this._h("WHAT I'M THINKING", th.length ? `${th.length}` : "")
-        + (th.map((t) => `<div class="r"><ha-icon icon="${esc(icon[t.kind] || "mdi:thought-bubble-outline")}"></ha-icon><b class="wrap">${esc(t.text)}<small>${esc(t.why || "")}</small></b>${admin && t.kind !== "guess" ? `<button class="btn sm ghost" data-act="innerno" data-id="${esc(t.key)}" title="Dismiss">✕</button>` : ""}</div>`).join("")
+        + (th.map((t) => `<div class="r"><ha-icon icon="${esc(icon[t.kind] || "mdi:thought-bubble-outline")}"></ha-icon><b class="wrap">${esc(t.text)}<small>${esc(t.why || "")}</small></b>${admin && !["guess", "memory"].includes(t.kind) ? `<button class="btn sm ghost" data-act="innerno" data-id="${esc(t.key)}" title="Dismiss">✕</button>` : ""}</div>`).join("")
           || '<div class="e">NOTHING TO REPORT · IT SAYS SO WHEN IT LEARNS SOMETHING</div>')
         + (bits ? `<div class="hint">${esc(bits)}</div>` : "");
     }
@@ -1247,46 +1283,89 @@
       if (!el || this._heatEdit) return;
       const h = this._heat;
       if (!h) { el.innerHTML = this._h("HEATING", "") + '<div class="e">LOADING THE HEATING…</div>'; return; }
-      const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"], DN = { mon: "MON", tue: "TUE", wed: "WED", thu: "THU", fri: "FRI", sat: "SAT", sun: "SUN" };
-      const daysTxt = (d) => (!d.length ? "ONCE" : d.length === 7 ? "EVERY DAY" : d.join() === D.slice(0, 5).join() ? "WEEKDAYS" : d.join() === "sat,sun" ? "WEEKENDS" : d.map((x) => DN[x]).join(" "));
+      const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+      const daysTxt = (d) => (d.length === 7 ? "EVERY DAY" : d.join() === D.slice(0, 5).join() ? "WEEKDAYS" : d.join() === "sat,sun" ? "WEEKENDS" : d.map((x) => x.toUpperCase()).join(" "));
+      const zname = (id) => ((h.zones.find((z) => z.entity_id === id) || {}).name || id);
       const zone = (z) => {
         const live = this._hass.states[z.entity_id], mode = live ? live.state : z.state;
         const tag = ["unavailable", "unknown"].includes(mode) ? "OFFLINE" : mode === "off" ? "OFF" : z.action === "heating" ? "HEATING" : "IDLE";
-        const nums = [z.now != null ? `${z.now}° NOW` : "", z.target != null && mode !== "off" ? `TARGET ${z.target}°` : "", z.warms_per_hour ? `WARMS ${z.warms_per_hour}°/H` : ""].filter(Boolean).join(" · ");
+        const sch = z.scheduled && z.scheduled.on ? `SCHEDULED ${z.scheduled.temp}° TILL ${z.scheduled.until}` : "";
+        const nums = [z.now != null ? `${z.now}° NOW` : "", z.target != null && mode !== "off" ? `TARGET ${z.target}°` : "", sch].filter(Boolean).join(" · ");
         return `<div class="r${tag === "HEATING" ? " on" : tag === "OFFLINE" ? " bad" : tag === "OFF" ? " dim" : ""}"><ha-icon icon="${esc(tag === "HEATING" ? "mdi:radiator" : tag === "OFF" ? "mdi:radiator-off" : "mdi:radiator-disabled")}"></ha-icon><b>${esc(z.name)}</b><u>${esc(nums)}${nums ? " · " : ""}${tag}</u></div>`;
       };
-      let html = this._h("HEATING", h.zones.length ? `${h.zones.length} ZONE${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + h.warming_now.join(", ").toUpperCase() : ""}` : "NO THERMOSTATS CHOSEN")
+      let html = this._h("HEATING", h.zones.length ? `${h.zones.length} HEATER${h.zones.length > 1 ? "S" : ""}${h.warming_now.length ? " · WARMING " + h.warming_now.join(", ").toUpperCase() : ""}` : "NO THERMOSTATS CHOSEN")
         + (h.zones.map(zone).join("") || '<div class="e">CHOOSE YOUR THERMOSTATS UNDER ZONE SETTINGS</div>');
-      const up = [h.usually_up && h.usually_up.weekdays && `UP ${h.usually_up.weekdays} WEEKDAYS`, h.warm_by && h.warm_by.weekdays && `WARM BY ${h.warm_by.weekdays}`].filter(Boolean).join(" · ");
-      if (up) html += `<div class="hint">${esc(up)}</div>`;
       if (h.schedule_on) {
-        html += `<div class="sub">SCHEDULE</div>` + (h.schedules.map((x) => `<div class="r${x.enabled ? "" : " dim"}"><ha-icon icon="mdi:calendar-clock"></ha-icon><b>${esc(x.time)} · ${esc(x.what)}</b><u>${esc(daysTxt(x.days))}</u>`
-          + (h.admin ? `<button class="btn sm ghost" data-act="heatonoff" data-id="${esc(x.id)}">${x.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="heatdel" data-id="${esc(x.id)}" title="Delete">✕</button>` : "")
-          + `</div>`).join("") || '<div class="e">NOTHING SCHEDULED YET</div>');
-        if (h.admin && h.zones.length) {
-          html += `<form class="hform" id="heatform"><select name="entity_id">${h.zones.map((z) => `<option value="${esc(z.entity_id)}">${esc(z.name)}</option>`).join("")}</select>`
-            + `<input type="time" name="time" value="06:30" required>`
-            + `<input type="number" name="temperature" min="${h.min}" max="${h.max}" step="0.5" value="21" aria-label="Temperature"><label class="offl"><input type="checkbox" name="off"> OFF</label>`
-            + `<div class="dchips">${D.map((d) => `<label><input type="checkbox" name="d_${d}"${["mon", "tue", "wed", "thu", "fri"].includes(d) ? " checked" : ""}><span>${DN[d]}</span></label>`).join("")}</div>`
-            + `<button class="btn sm" type="submit" data-act="heatadd">ADD</button><span id="heatmsg" class="hint"></span></form>`;
-        }
+        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "OFF"}` : "";
+        html += `<div class="sub">SCHEDULE${nx ? " · " + esc(nx) : ""}</div>`;
+        html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
+          + (h.admin ? `<button class="btn sm ghost" data-act="progonoff" data-id="${esc(p.id)}">${p.enabled ? "ON" : "OFF"}</button><button class="btn sm ghost" data-act="progedit" data-id="${esc(p.id)}">EDIT</button><button class="btn sm ghost" data-act="progdel" data-id="${esc(p.id)}" title="Delete">✕</button>` : "")
+          + `</div><div class="pbar">${this._progBar(p.periods)}</div><div class="pchips">${p.periods.map((x) => `<span>${esc(x.on)}–${esc(x.off)} · ${esc(x.temp)}°</span>`).join("")}</div></div>`).join("")
+          || '<div class="e">NO HEATING SCHEDULE YET</div>';
+        if ((h.schedules || []).length) html += `<div class="hint">${h.schedules.length} OLDER SINGLE HEATING TIME${h.schedules.length > 1 ? "S" : ""} STILL RUN · ` + h.schedules.map((x) => `${esc(x.time)} ${esc(x.what)} <a class="lnk" data-act="heatdel" data-id="${esc(x.id)}">REMOVE</a>`).join(" · ") + "</div>";
+        if (h.admin && h.zones.length) html += `<div class="row"><button class="btn sm" data-act="prognew">+ NEW SCHEDULE</button></div>`;
       } else {
         html += `<div class="hint">HEATING SCHEDULE IS OFF · <a class="lnk" data-act="goto" data-id="heating">TURN IT ON IN SETTINGS</a></div>`;
       }
+      const up = [h.usually_up && h.usually_up.weekdays && `UP ${h.usually_up.weekdays} WEEKDAYS`, h.warm_by && h.warm_by.weekdays && `WARM BY ${h.warm_by.weekdays}`].filter(Boolean).join(" · ");
+      if (up) html += `<div class="hint">${esc(up)}</div>`;
       if (h.admin) html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button></div><div id="heatzones"></div>`;
       el.innerHTML = html;
-      const form = this._$("heatform");
-      if (form && !form._wired) { form._wired = true; form.addEventListener("submit", (e) => { e.preventDefault(); this._heatAdd(form); }); }
       if (this._heatZonesOpen) this._openHeatZones(true);
     }
 
-    async _heatAdd(form) {
-      const f = new FormData(form), off = f.get("off") === "on";
-      const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].filter((d) => f.get("d_" + d) === "on");
-      const msg = this._$("heatmsg");
+    // a 24-hour bar with the on periods filled in
+    _progBar(periods) {
+      const m = (t) => { const [a, b] = t.split(":"); return +a * 60 + +b; };
+      const segs = [];
+      for (const p of periods) {
+        const on = m(p.on), off = m(p.off);
+        if (on < off) segs.push([on, off]); else { segs.push([on, 1440]); segs.push([0, off]); }
+      }
+      return segs.map(([a, b]) => `<i style="left:${(a / 14.4).toFixed(2)}%;width:${((b - a) / 14.4).toFixed(2)}%"></i>`).join("")
+        + [6, 12, 18].map((hh) => `<s style="left:${(hh / 24 * 100).toFixed(2)}%">${hh}</s>`).join("");
+    }
+
+    _editProg(p) {
+      const el = this._$("heat"), h = this._heat;
+      if (!el || !h) return;
+      this._heatEdit = true;
+      const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+      const cur = p || { name: "", heaters: h.zones.map((z) => z.entity_id), days: D.slice(0, 5), periods: [{ on: "06:00", off: "09:00", temp: 21 }], enabled: true };
+      this._progDraft = JSON.parse(JSON.stringify(cur));
+      const row = (x, i) => `<div class="pper"><input type="time" data-pi="${i}" data-pk="on" value="${esc(x.on)}"><span>TO</span><input type="time" data-pi="${i}" data-pk="off" value="${esc(x.off)}"><input type="number" data-pi="${i}" data-pk="temp" min="${h.min}" max="${h.max}" step="0.5" value="${esc(x.temp)}"><span>°</span><button class="btn sm ghost" data-act="progrmper" data-id="${i}" title="Remove">✕</button></div>`;
+      const draw = () => {
+        const d = this._progDraft;
+        el.innerHTML = this._h(p ? "EDIT SCHEDULE" : "NEW SCHEDULE", "")
+          + `<form class="hform" id="progform" onsubmit="return false"><input type="text" id="pname" placeholder="Name, e.g. Weekdays" value="${esc(d.name)}" style="flex:1 1 100%">`
+          + `<div class="sub" style="flex-basis:100%">HEATERS</div><div class="dchips">${h.zones.map((z) => `<label><input type="checkbox" data-heater="${esc(z.entity_id)}"${d.heaters.includes(z.entity_id) ? " checked" : ""}><span>${esc(z.name.toUpperCase())}</span></label>`).join("")}</div>`
+          + `<div class="sub" style="flex-basis:100%">DAYS · <a class="lnk" data-act="progdays" data-id="wk">WEEKDAYS</a> · <a class="lnk" data-act="progdays" data-id="we">WEEKENDS</a> · <a class="lnk" data-act="progdays" data-id="all">EVERY DAY</a></div><div class="dchips">${D.map((x) => `<label><input type="checkbox" data-day="${x}"${d.days.includes(x) ? " checked" : ""}><span>${x.toUpperCase()}</span></label>`).join("")}</div>`
+          + `<div class="sub" style="flex-basis:100%">ON / OFF TIMES</div>${d.periods.map(row).join("")}`
+          + `<div class="pbar" style="flex-basis:100%">${this._progBar(d.periods.filter((x) => x.on && x.off && x.on !== x.off))}</div>`
+          + `<div class="row" style="flex-basis:100%"><button class="btn sm ghost" data-act="progaddper">+ ADD ON/OFF TIME</button><span style="flex:1"></span><span id="progmsg" class="hint"></span><button class="btn sm ghost" data-act="progcancel">CANCEL</button><button class="btn sm" data-act="progsave" data-id="${esc(p ? p.id : "")}">SAVE</button></div></form>`;
+        const form = this._$("progform");
+        form.addEventListener("input", (e) => {
+          const t = e.target, dd = this._progDraft;
+          if (t.id === "pname") dd.name = t.value;
+          else if (t.dataset.pi != null) { dd.periods[+t.dataset.pi][t.dataset.pk] = t.dataset.pk === "temp" ? Number(t.value) : t.value; const bar = form.querySelector(".pbar"); if (bar) bar.innerHTML = this._progBar(dd.periods.filter((x) => x.on && x.off && x.on !== x.off)); }
+        });
+        form.addEventListener("change", (e) => {
+          const t = e.target, dd = this._progDraft;
+          if (t.dataset.heater) dd.heaters = t.checked ? [...new Set([...dd.heaters, t.dataset.heater])] : dd.heaters.filter((x) => x !== t.dataset.heater);
+          if (t.dataset.day) dd.days = D.filter((x) => (x === t.dataset.day ? t.checked : dd.days.includes(x)));
+        });
+      };
+      this._progRedraw = draw;
+      draw();
+    }
+
+    async _saveProg(id) {
+      const msg = this._$("progmsg");
       try {
-        await this._hass.callWS({ type: "sentient/heating/save", entity_id: f.get("entity_id"), time: f.get("time"), days, temperature: off ? null : Number(f.get("temperature")) });
-        this._heatAt = 0; await this._loadHeat();
+        const body = { type: "sentient/heating/programme/save", programme: this._progDraft };
+        if (id) body.programme_id = id;
+        await this._hass.callWS(body);
+        this._heatEdit = false; this._heatAt = 0; await this._loadHeat();
       } catch (e) { if (msg) msg.textContent = (e.message || String(e)).toUpperCase(); }
     }
 
@@ -1324,6 +1403,91 @@
       } catch (e) { if (msg) msg.textContent = (e.message || String(e)).toUpperCase(); }
     }
 
+    // ---------- security: live view that follows motion, linked events, snapshots ----------
+    _camOf(e) {  // a Frigate event's camera ("gate") or an evidence source ("camera.gate") → a camera entity
+      const id = String(e.camera ? "camera." + e.camera : e.source || "");
+      return id.startsWith("camera.") && this._hass.states[id] ? id : null;
+    }
+
+    _drawLive(mind) {
+      const el = this._$("live");
+      if (!el) return;
+      const cams = ((this._cams || {}).cameras || []).map((c) => c.entity_id);
+      const events = mind.security_events || [];
+      const latest = events.find((e) => this._camOf(e));
+      const active = events.filter((e) => e.end == null && this._camOf(e));
+      if (this._liveFollow !== false && latest) this._liveCam = this._camOf(latest);
+      if (!this._liveCam) this._liveCam = cams[0];
+      const cam = this._liveCam, st = cam && this._hass.states[cam];
+      if (!st) { el.innerHTML = this._h("LIVE", "") + '<div class="e">NO CAMERAS FOUND</div>'; return; }
+      const here = active.filter((e) => this._camOf(e) === cam).map((e) => e.label.toUpperCase());
+      const pic = String(st.attributes.entity_picture || "");
+      const stream = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
+      const key = cam + "|" + stream;
+      const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
+      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a></div>`;
+      const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
+      if (this._liveKey !== key || !el.querySelector(".lv img")) {
+        this._liveKey = key;
+        el.innerHTML = head + `<div class="lv"><img alt="" src="${esc(stream)}"><div class="lvo">${badge}</div></div>` + chips;
+      } else {
+        el.querySelector(".h").outerHTML = head;
+        el.querySelector(".lvo").innerHTML = badge;
+        el.querySelector(".tchips").outerHTML = chips;
+      }
+    }
+
+    _drawSecTimeline(mind) {
+      const el = this._$("sectl");
+      if (!el) return;
+      const hours = this._tlHours || 3, now = Date.now(), from = now - hours * 3600e3;
+      const incidents = (mind.security_incidents || []).filter((i) => new Date(i.end || i.start).getTime() >= from);
+      const lanes = new Map(), dots = [], links = [];
+      const name = (src) => { const st = this._hass.states[src]; return String(st ? st.attributes.friendly_name || src : src).replace(/ (person )?occupancy$/i, "").toUpperCase(); };
+      for (const inc of incidents) {
+        let prev = null;
+        const ev = [...inc.evidence].sort((a, b) => a.time.localeCompare(b.time));
+        for (const e of ev) {
+          const t = new Date(e.time).getTime();
+          if (t < from) continue;
+          if (!lanes.has(e.source)) lanes.set(e.source, lanes.size);
+          const label = (e.text.match(/reported (\w+)/i) || [])[1] || "motion";
+          const d = { t, lane: lanes.get(e.source), label: label.toLowerCase(), id: e.event_id, inc: inc.id };
+          dots.push(d);
+          if (prev && prev.lane !== d.lane) links.push([prev, d]);
+          prev = d;
+        }
+      }
+      const rowH = 26, H = Math.max(1, lanes.size) * rowH + 22;
+      const x = (t) => (((t - from) / (now - from)) * 98 + 1);  // percent across
+      const y = (lane) => lane * rowH + 14;
+      const col = { person: "#00fff7", car: "#ffbe55", bicycle: "#b48cff", motorcycle: "#ff8fa3", cat: "#8cff9e", dog: "#8cff9e", motion: "#7fa9b8" };
+      let svg = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" class="tlsvg">`;
+      for (const [, i] of lanes) svg += `<line x1="0" x2="100" y1="${y(i)}" y2="${y(i)}" class="tll" vector-effect="non-scaling-stroke"/>`;
+      let ticks = "";
+      for (let k = 1; k < hours; k++) { const tx = x(from + k * 3600e3); svg += `<line x1="${tx}" x2="${tx}" y1="0" y2="${H - 16}" class="tlg" vector-effect="non-scaling-stroke"/>`; ticks += `<span style="left:${tx}%">${new Date(from + k * 3600e3).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>`; }
+      for (const [a, b] of links) svg += `<line x1="${x(a.t)}" y1="${y(a.lane)}" x2="${x(b.t)}" y2="${y(b.lane)}" class="tlk" vector-effect="non-scaling-stroke"/>`;
+      svg += "</svg>";
+      const dotsHtml = dots.map((d) => `<a class="tld" style="left:${x(d.t)}%;top:${y(d.lane)}px;background:${col[d.label] || col.motion}"${d.id ? ` data-act="secsnap" data-id="${esc(d.id)}"` : ""} title="${esc(d.label)} · ${esc(new Date(d.t).toLocaleTimeString())}"></a>`).join("");
+      svg += dotsHtml + `<div class="tlticks">${ticks}</div>`;
+      const labels = [...lanes.keys()].map((src) => `<div style="top:${y(lanes.get(src)) - 7}px">${esc(name(src))}</div>`).join("");
+      const legend = Object.entries({ person: "PERSON", car: "CAR", bicycle: "BIKE", motorcycle: "MOTORBIKE", cat: "ANIMAL" }).map(([k, v]) => `<span><i style="background:${col[k]}"></i>${v}</span>`).join("");
+      el.innerHTML = this._h("LINKED EVENTS", `${incidents.length} INCIDENT${incidents.length === 1 ? "" : "S"} · ${dots.length} SIGHTINGS`)
+        + `<div class="tchips">${[1, 3, 6, 12].map((hh) => `<a class="tchip${hh === hours ? " on" : ""}" data-act="sectlh" data-id="${hh}">${hh}H</a>`).join("")}</div>`
+        + (dots.length ? `<div class="tlw"><div class="tlnames">${labels}</div><div class="tlplot" style="height:${H}px">${svg}</div></div><div class="tlleg">${legend}<span><b>—</b> SAME INCIDENT, ANOTHER CAMERA</span></div>`
+          : '<div class="e">NOTHING SEEN IN THIS TIME</div>')
+        + (this._secSnap ? `<div class="snapbig"><img alt="" src="/api/frigate/notifications/${encodeURIComponent(this._secSnap)}/thumbnail.jpg"><a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(this._secSnap)}/clip.mp4" target="_blank" rel="noopener">PLAY CLIP</a><a class="x" data-act="secsnap" data-id="">✕</a></div>` : "");
+    }
+
+    _drawSnaps(mind) {
+      const el = this._$("snaps");
+      if (!el) return;
+      const evs = (mind.security_events || []).filter((e) => e.has_snapshot).slice(0, 8);
+      el.hidden = !evs.length;
+      if (!evs.length) return;
+      el.innerHTML = this._h("LATEST SNAPSHOTS", `${evs.length}`) + `<div class="sgrid">${evs.map((e) => `<a class="sg" data-act="secsnap" data-id="${esc(e.id)}"><img loading="lazy" alt="" src="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg"><span>${esc(e.camera.replace(/_/g, " ").toUpperCase())} · ${esc(e.label.toUpperCase())} · ${esc(new Date(e.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span></a>`).join("")}</div>`;
+    }
+
     _drawCameras() {
       const el = this._$("camc");
       if (!el) return;
@@ -1335,7 +1499,7 @@
         + c.cameras.map((x) => {
           const live = this._hass.states[x.entity_id] || { state: x.state };
           const ok = !["unavailable", "unknown"].includes(live.state);
-          return `<div class="r${ok ? "" : " bad"}"><ha-icon icon="${esc(ok ? "mdi:cctv" : "mdi:video-off-outline")}"></ha-icon><b>${esc(x.name)}</b>`
+          return `<div class="r rtr${ok ? "" : " bad"}${this._liveCam === x.entity_id ? " on" : ""}" data-act="livecam" data-id="${esc(x.entity_id)}"><ha-icon icon="${esc(ok ? "mdi:cctv" : "mdi:video-off-outline")}"></ha-icon><b>${esc(x.name)}</b>`
             + `<u>${esc(ok ? String(live.state).toUpperCase() : "OFFLINE")}${x.today ? " · " + x.today + " TODAY" : ""}</u></div>`;
         }).join("")
         + (c.hidden ? `<div class="hint">${c.hidden} EXTRA VIEWS HIDDEN (SUB-STREAMS, SCREENSHOTS, MAPS)</div>` : "");
@@ -1678,6 +1842,19 @@
       else if (act === "lasthour") this._lastHour();
       else if (act === "openmind") this._show("mind", true);
       else if (act === "innerno") this._hass.callWS({ type: "sentient/inner/dismiss", key: id }).then(() => { this._innerAt = 0; this._loadInner(); });
+      else if (act === "livecam") { this._liveCam = id; this._liveFollow = false; this._render(); }
+      else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
+      else if (act === "sectlh") { this._tlHours = +id; this._render(); }
+      else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
+      else if (act === "prognew") this._editProg(null);
+      else if (act === "progedit") this._editProg(((this._heat || {}).programmes || []).find((p) => p.id === id));
+      else if (act === "progcancel") { this._heatEdit = false; this._drawHeat(); }
+      else if (act === "progsave") this._saveProg(id);
+      else if (act === "progaddper") { const ps = this._progDraft.periods, last = ps[ps.length - 1]; ps.push({ on: last ? last.off : "06:00", off: last ? (String((+last.off.slice(0, 2) + 2) % 24).padStart(2, "0") + last.off.slice(2)) : "09:00", temp: last ? last.temp : 21 }); this._progRedraw(); }
+      else if (act === "progrmper") { this._progDraft.periods.splice(+id, 1); this._progRedraw(); }
+      else if (act === "progdays") { const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]; this._progDraft.days = id === "wk" ? D.slice(0, 5) : id === "we" ? ["sat", "sun"] : D; this._progRedraw(); }
+      else if (act === "progdel") { if (window.confirm("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "heatzones") this._openHeatZones(false);
       else if (act === "heatzsave") this._saveHeatZones();
       else if (act === "heatdel") { if (window.confirm("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
@@ -2091,7 +2268,6 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .lane>.card{flex:none;display:flex;flex-direction:column}
 .lane>.card>.hint.meter{margin-top:auto}
 .lane>.card>.e:last-child{margin:auto 0}
-.lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto}
 .lt{display:flex;align-items:center;gap:10px;margin:2px 4px -4px;font-size:9.5px;font-weight:700;letter-spacing:.3em;color:rgba(127,239,255,.55)}
 .lt::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(0,255,247,.22),transparent)}
 .caps{margin-top:6px} .caps>summary{cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.16em;color:#7fefff;padding:6px 2px;list-style:none}
@@ -2134,6 +2310,27 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 :host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar,:host([view="security"])::-webkit-scrollbar,:host([view="house"])::-webkit-scrollbar{display:none}
 #mp .flow{columns:2}
 #scp .lanes,#hp .lanes{align-items:start}
+.lv{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;border:1px solid rgba(0,255,247,.25)}
+.lv img{display:block;width:100%;height:100%;object-fit:contain}
+.lvo{position:absolute;left:8px;top:8px;right:8px;display:flex;gap:6px}
+.lbadge{font-size:9.5px;font-weight:700;letter-spacing:.14em;padding:4px 8px;border-radius:8px;color:#041014;background:#00fff7;box-shadow:0 0 10px rgba(0,255,247,.6)} .lbadge.dim{color:#cfeff5;background:rgba(0,0,0,.55);box-shadow:none}
+.tchip[data-act]{cursor:pointer}
+.tlw{display:flex;gap:8px;margin-top:10px} .tlnames{position:relative;flex:none;width:92px} .tlnames div{position:absolute;left:0;right:0;font-size:8.5px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlplot{flex:1;min-width:0} .tlsvg{width:100%;height:100%;overflow:visible}
+.tll{stroke:rgba(0,255,247,.12);stroke-width:1} .tlg{stroke:rgba(0,255,247,.08);stroke-dasharray:3 4} 
+.tlk{stroke:rgba(0,255,247,.55);stroke-width:1.5;fill:none} .tlplot{position:relative} .tlsvg{position:absolute;inset:0}
+.tld{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:1.5px solid #041014;cursor:pointer;box-shadow:0 0 6px rgba(0,255,247,.4)} .tld:hover{border-color:#fff}
+.tlticks{position:absolute;left:0;right:0;bottom:0;height:14px} .tlticks span{position:absolute;transform:translateX(-50%);font-size:8.5px;color:rgba(150,220,235,.5)}
+.tlleg{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:rgba(150,220,235,.6)} .tlleg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.snapbig{position:relative;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,255,247,.3)} .snapbig img{display:block;width:100%} .snapbig .btn{position:absolute;left:8px;bottom:8px} .snapbig .x{position:absolute;right:8px;top:6px}
+.sgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sg{display:block;position:relative;border-radius:10px;overflow:hidden;border:1px solid rgba(0,255,247,.2);cursor:pointer;background:#000;aspect-ratio:16/10}
+.sg img{display:block;width:100%;height:100%;object-fit:cover} .sg span{position:absolute;left:0;right:0;bottom:0;padding:3px 6px;font-size:8.5px;font-weight:700;letter-spacing:.08em;color:#dff6fa;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.r b .btn{margin:6px 6px 0 0;display:inline-flex} .r b>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px} .r b>div .btn{margin:0}
+.ttiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.tt{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,255,247,.18);background:rgba(0,255,247,.05)} .tt ha-icon{--mdc-icon-size:20px;color:#00fff7} .tt b{font-size:20px;font-weight:300;color:#fff} .tt span{font-size:8.5px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.7)}
+.tt.warm{border-color:rgba(255,170,80,.5)} .tt.warm ha-icon{color:#ffbe55}
+.ppl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} .pp{font-size:9px;font-weight:700;letter-spacing:.12em;padding:4px 9px;border-radius:10px;color:rgba(150,220,235,.55);border:1px solid rgba(150,220,235,.18)} .pp.home{color:#7fefff;border-color:rgba(0,255,247,.45);background:rgba(0,255,247,.08)}
 .sub{font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(150,220,235,.7);margin:12px 2px 4px}
 .hform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
 .hform select,.hform input[type=time],.hform input[type=number]{background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;color:#cfeff5;color-scheme:dark;font:inherit;font-size:12px}
@@ -2141,6 +2338,14 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .dchips{display:flex;gap:4px;flex-wrap:wrap;flex-basis:100%}.dchips label{cursor:pointer}.dchips input{position:absolute;opacity:0;pointer-events:none}
 .dchips span{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;padding:4px 7px;border-radius:8px;border:1px solid rgba(0,255,247,.25);color:rgba(150,220,235,.6)}
 .dchips input:checked+span{color:#041014;background:#7fefff;border-color:#7fefff}
+.prog{padding:8px 10px;margin-bottom:6px;border-radius:10px;border:1px solid rgba(0,255,247,.12);background:rgba(0,255,247,.035)} .prog.dim{opacity:.55}
+.prog .ph{display:flex;align-items:center;gap:8px} .prog .ph b{font-weight:500;font-size:12.5px} .prog .ph u{flex:1;text-decoration:none;font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.7)}
+.pbar{position:relative;height:14px;margin:8px 0 4px;border-radius:4px;background:rgba(0,255,247,.06);overflow:hidden}
+.pbar i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#ff9e57,#ffbe55);box-shadow:0 0 6px rgba(255,170,80,.6)}
+.pbar s{position:absolute;z-index:1;top:1px;transform:translateX(-50%);text-decoration:none;font-size:8px;color:rgba(200,235,245,.55)}
+.pchips{display:flex;flex-wrap:wrap;gap:4px} .pchips span{font-size:9px;font-weight:700;letter-spacing:.06em;padding:3px 7px;border-radius:8px;color:#ffd9a8;border:1px solid rgba(255,190,85,.35)}
+.pper{display:flex;align-items:center;gap:6px;flex-basis:100%} .pper span{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(150,220,235,.7)}
+.hform input[type=text]{background:rgba(0,0,0,.25);border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:6px 8px;color:#cfeff5;font:inherit;font-size:12px}
 .r b small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);white-space:normal}
 .r b details{display:block;margin-top:3px} .r b summary{cursor:pointer;font-size:11px;color:#7fefff;list-style:none}
 .r b summary::-webkit-details-marker{display:none} .r b summary::before{content:"▸ "} .r b details[open] summary::before{content:"▾ "}
@@ -2320,11 +2525,10 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   .lanes{flex:1 1 auto;min-height:0;margin-top:0;gap:10px;align-items:stretch !important}
   .lanes{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
   .ov3>.lane:nth-child(3){display:flex !important;grid-column:auto !important}
-  .lane{gap:10px;min-height:0;overflow:hidden}
+  .lane{gap:10px;min-height:0;overflow-y:auto;scrollbar-width:none} .lane::-webkit-scrollbar{display:none}
   .lanes>.lane:not(:has(>.card:not([hidden]))){display:none !important}
   .lane>.lt{flex:none;margin:0 4px -2px}
-  .lane>.card,.lane>.card:not([hidden]):not(:has(~ .card:not([hidden]))){flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding:10px 12px}
-  .lane>.card::-webkit-scrollbar{display:none}
+  .lane>.card{flex:none;padding:10px 12px}
   .card .h{margin-bottom:7px}
   .r{padding:5px 9px;margin-bottom:4px}
   .head{gap:14px;padding:10px 14px}

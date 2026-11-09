@@ -128,3 +128,21 @@ async def test_failure_notification_is_optional_and_contains_no_speech(hass, ena
     assert row['stage'] == 'routing'
     assert row['dispatched'] is False
     assert row['status'] == 'unroutable'
+
+
+async def test_announcing_to_the_speaker_that_is_talking_waits_until_after_the_reply(hass):
+    """Asking the kitchen speaker to announce on the kitchen speaker: it is busy answering until the tool returns,
+    so the announcement is queued for straight after rather than timing out."""
+    import asyncio
+
+    hass.states.async_set('assist_satellite.kitchen', 'responding')
+    said = []
+
+    async def say(message, priority, targets, source=None):
+        said.append((message, targets))
+    rt = SimpleNamespace(speech=SimpleNamespace(async_say=say, find_speaker=lambda part: 'assist_satellite.kitchen'))
+    with patch('custom_components.sentient.llm_api._runtime', return_value=rt):
+        result = await AnnounceTool().async_call(hass, SimpleNamespace(tool_args={'message': 'Speaker test', 'speaker': 'kitchen'}), None)
+    assert result['spoken'] == 'queued' and 'assist_satellite.kitchen' in result['note']
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert said == [('Speaker test', ['assist_satellite.kitchen'])]

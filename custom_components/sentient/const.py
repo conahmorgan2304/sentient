@@ -82,6 +82,7 @@ CONF_PUT_RIGHT = "put_right"  # "no, the other one": switch back what the voice 
 CONF_NEVER_ENTITIES = "never_entities"  # devices Sentient must never change by itself
 CONF_LEARN_CORRECTIONS = "learn_corrections"  # notice when people undo what the house did, and learn from it
 CONF_NORMAL_DAY = "normal_day"  # notice when a day is unusual (nobody up yet when someone usually is)
+CONF_SHARE_LEARNING = "share_learning"  # once an evening, say one thing it has learned
 CONF_THOUGHTS = "thoughts"  # first-person "what I'm thinking" notes and next-room guesses on the Mind page
 CONF_SELF_CHECK = "self_check"  # nightly self-check from its own records (no AI)
 CONF_SELF_ADJUST = "self_adjust"  # quieten remark kinds the house keeps hushing

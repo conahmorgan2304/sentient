@@ -98,10 +98,43 @@ class Reflection:
         return list(self.last["thoughts"])
 
     def _material(self, rt) -> tuple[list[str], list[str]]:
-        log = []
-        for i in reversed(rt.timeline.since(24, KINDS, 160)):
+        """The day's log with the noise folded up (a motion light's fifty on/offs are one line), plus what it learned."""
+        log: list[str] = []
+        repeats: dict[str, list] = {}
+        order: list[str] = []
+        for i in reversed(rt.timeline.since(24, KINDS, 400)):
+            if i["kind"] == "noticed" and "wasn't worth saying" in str(i.get("detail") or ""):
+                continue
             when = dt_util.as_local(dt_util.parse_datetime(i["time"])).strftime("%a %H:%M")
-            log.append(f"{when} [{i['kind']}] {i['text']}" + (f" ({i['detail']})" if i.get("detail") else ""))
+            text = f"[{i['kind']}] {i['text']}"
+            if i["kind"] in ("light", "noticed", "security"):
+                if text not in repeats:
+                    repeats[text] = [when, when, 0]
+                    order.append(text)
+                repeats[text][1] = when
+                repeats[text][2] += 1
+                continue
+            log.append(f"{when} {text}" + (f" ({i['detail']})" if i.get("detail") else ""))
+        for text in order:
+            first, last, n = repeats[text]
+            log.append(f"{first} {text}" + (f" — {n} times, last {last}" if n > 1 else ""))
+        log = sorted(log)[-160:]
+        # what it learned or changed its mind about today
+        learned: list[str] = []
+        inner = getattr(rt, "inner", None)
+        since = dt_util.utcnow().timestamp() - 86400
+        for t in (getattr(inner, "thoughts", None) or []):
+            if t.get("t", 0) >= since:
+                learned.append(f"[learning] {t['text']}")
+        for c in (getattr(getattr(rt, "memory", None), "changed", None) or [])[-10:]:
+            when = dt_util.parse_datetime(c.get("time") or "")
+            if when and when.timestamp() >= since:
+                learned.append(f"[memory {c['kind']}] {c['old']}" + (f" → {c['new']}" if c.get("new") else ""))
+        if inner is not None and getattr(inner, "thoughts_on", False):
+            p = inner.prediction()
+            if p.get("tried"):
+                learned.append(f"[learning] next-room guesses right {round((p['rate'] or 0) * 100)}% of {p['tried']}")
+        log += learned
         talk = []
         for ep in reversed(rt.conversations.recent(hours=24, limit=60)):
             when = dt_util.as_local(dt_util.parse_datetime(ep["start"])).strftime("%a %H:%M")
@@ -153,9 +186,10 @@ class Reflection:
             "known, anything that will be stale within a day, guesses, and anything private (health, money, "
             "passwords, account or card numbers). Usually there are none.\n"
             f"2. thoughts: up to {MAX_THOUGHTS} short, natural sentences worth saying to the family this morning — "
-            "something useful they'd want to know or a pattern worth pointing out (say 'yesterday' or 'last night' for "
-            "things before this morning). Only if genuinely worth it; "
-            "an empty list is normal. No greetings, no names, no forms of address.\n"
+            "something useful they'd want to know, a pattern worth pointing out, or something you learned or changed "
+            "your mind about (the [learning] and [memory] lines) — say 'yesterday' or 'last night' for things before "
+            "this morning. Most days there is one worth saying; leave it empty only when nothing is worth it. "
+            "Never repeat routine noise (a light going on and off with movement). No greetings, no names, no forms of address.\n"
             "3. question: at most one specific thing you're genuinely curious about that a person in the house could "
             "answer in a few words and that would help you look after the house — about one pattern, time or "
             "device you saw (e.g. 'what's the garage light for at 7pm?', 'is the fan meant to run all night?'). Never a general or security worry, never about who people are, who visited or where people went "
@@ -175,7 +209,7 @@ class Reflection:
             "structure": {
                 "memories": {"description": "Durable facts worth keeping (often none)", "required": False,
                              "selector": {"text": {"multiple": True}}},
-                "thoughts": {"description": "Morning thoughts (often none)", "required": False,
+                "thoughts": {"description": "Morning thoughts (usually one or two)", "required": False,
                              "selector": {"text": {"multiple": True}}},
                 "question": {"description": "One curious question, or empty", "required": False,
                              "selector": {"text": {}}},

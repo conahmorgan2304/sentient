@@ -17,11 +17,12 @@ from homeassistant.core import Event, EventStateChangedData, HomeAssistant, call
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .ai import async_generate
 from .const import (
-    CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_PEOPLE, CONF_WELCOME_UNTIL, DEFAULT_WELCOME_MIN_AWAY,
+    DOMAIN, CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_PEOPLE, CONF_WELCOME_UNTIL, DEFAULT_WELCOME_MIN_AWAY,
     personality_line,
 )
 
@@ -33,13 +34,27 @@ NOTABLE = ["visitor", "watch", "health"]
 
 
 class Welcome:
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
+    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any], entry_id: str | None = None) -> None:
         self.hass = hass
         self.options = options
         self._rt = rt_getter
         self._unsub = None
         self._last: datetime | None = None
         self._pending = None
+        # when each person actually left: a restart resets a tracker's last_changed, so "away since" can't be
+        # read from the state alone (someone out all evening looked away for ten minutes after an update)
+        self.left: dict[str, str] = {}
+        self._store: Store[dict[str, Any]] | None = Store(hass, 1, f"{DOMAIN}.{entry_id}.welcome") if entry_id else None
+        self._loaded = False
+
+    async def async_load(self) -> None:
+        if self._store is not None and not self._loaded:
+            self.left = {**dict((await self._store.async_load() or {}).get("left") or {}), **self.left}
+        self._loaded = True
+
+    def _save(self) -> None:
+        if self._store is not None:
+            self._store.async_delay_save(lambda: {"left": self.left}, 5)
 
     @callback
     def async_start(self) -> None:
@@ -78,9 +93,19 @@ class Welcome:
     @callback
     def _changed(self, event: Event[EventStateChangedData]) -> None:
         old, new = event.data["old_state"], event.data["new_state"]
-        if old is None or new is None or new.state != "home" or old.state in ("home", "unknown", "unavailable"):
+        if old is None or new is None:
+            return
+        entity_id = new.entity_id
+        if old.state == "home" and new.state not in ("home", "unknown", "unavailable"):
+            self.left[entity_id] = new.last_changed.isoformat()  # gone out: remember when, across restarts
+            self._save()
+            return
+        if new.state != "home" or old.state in ("home", "unknown", "unavailable"):
             return
         away_since = old.last_changed
+        if (left := dt_util.parse_datetime(self.left.pop(entity_id, "") or "")) is not None:
+            away_since = min(away_since, left)
+            self._save()
         if dt_util.utcnow() - away_since < self.min_away:
             return
         if self._last and dt_util.utcnow() - self._last < ONCE_PER:
