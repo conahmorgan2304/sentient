@@ -336,31 +336,71 @@ class SpeechRouter:
             areas = [a] if (a := self.tracker.best_area(set(by_area))) else []
         return [by_area[a] for a in areas]
 
+    FILLER = frozenset({"the", "a", "in", "on", "speaker", "speakers", "echo", "alexa", "room", "downstairs", "please", "dot", "show"})
+
+    @classmethod
+    def _squash(cls, text: str) -> str:
+        """Lower-case and drop spaces, underscores and punctuation ('Living Room' == 'livingroom')."""
+        return re.sub(r"[^a-z0-9]", "", text.lower())
+
+    @classmethod
+    def _core(cls, text: str) -> str:
+        words = [w for w in re.split(r"[^a-z0-9]+", text.lower()) if w and w not in cls.FILLER]
+        return "".join(words)
+
     def find_speaker(self, name: str) -> str | None:
-        """Match an entity id, area name or speaker name to a configured speaker."""
+        """Match an entity id, area name or speaker name to a configured speaker.
+
+        Spoken names are forgiving: 'living room', 'livingroom' and 'the living room speaker' all
+        match the same speaker, and an exact name or area beats a partial match.
+        """
         needle = name.strip().lower()
         every = self.speakers + [s for s in self.usable(self.options.get(CONF_FALLBACK_SPEAKERS)) if s not in self.speakers]
         if name in every:
             return name
+        if not needle:
+            return None
         areas = ar.async_get(self.hass)
-        for speaker in every:
+        wanted = {self._squash(needle), self._core(needle)} - {""}
+        best: tuple[int, int] | None = None
+        found: str | None = None
+        for order, speaker in enumerate(every):
             area_id = self._area_of(speaker)
             area = areas.async_get_area(area_id) if area_id else None
             state = self.hass.states.get(speaker)
             friendly = (state.attributes.get("friendly_name") or "") if state else ""
-            haystack = " ".join([speaker, friendly, area.name if area else ""]).lower()
-            if needle and needle in haystack:
-                return speaker
-        return None
+            object_id = speaker.split(".", 1)[-1]
+            names = [n for n in (friendly, area.name if area else "", object_id) if n]
+            literal = {self._squash(n) for n in names}
+            exact = literal | {self._core(n) for n in names}
+            exact.discard("")
+            haystack = self._squash(" ".join([speaker, friendly, area.name if area else ""]))
+            if self._squash(needle) in literal:
+                score = 3
+            elif wanted & exact:
+                score = 2
+            elif any(w in haystack for w in wanted):
+                score = 1
+            else:
+                continue
+            # Prefer a speaker that is actually reachable, then the earlier one in the list.
+            alive = 0 if state is None or state.state == "unavailable" else 1
+            key = (score, alive)
+            if best is None or key > best:
+                best, found = key, speaker
+        return found
 
     def describe_rooms(self) -> str:
         """Human-readable speaker/area map, for the AI's context."""
         areas = ar.async_get(self.hass)
         parts = []
-        for speaker in self.speakers:
+        every = self.speakers + [s for s in self.usable(self.options.get(CONF_FALLBACK_SPEAKERS)) if s not in self.speakers]
+        for speaker in every:
             area_id = self._area_of(speaker)
             area = areas.async_get_area(area_id) if area_id else None
-            parts.append(f"{speaker} ({area.name if area else 'no area'})")
+            state = self.hass.states.get(speaker)
+            friendly = state.attributes.get("friendly_name") if state else None
+            parts.append(f"{speaker} ({friendly or 'unnamed'}, {area.name if area else 'no area'})")
         return ", ".join(parts)
 
     # ----- suppression ----------------------------------------------------------
@@ -444,7 +484,8 @@ class SpeechRouter:
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
             return held
-        vital = important(source)
+        # "Echos: alarms and reminders only" is for the house's own chatter; a speaker someone named is theirs to get
+        vital = important(source) or (source == "conversation" and bool(targets))
         if source != "critical":  # safety alerts always use every speaker
             targets = self.usable(targets, vital) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker(vital)
