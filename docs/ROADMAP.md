@@ -181,3 +181,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.16 — Stay quiet while busy: choose a meeting calendar, a Focus switch or a phone in Do Not Disturb, and speech that can wait is held back like a hush while it is on. Urgent alerts and replies still come through.
 - [x] 0.98.17 — Book reading no longer fails on a damaged epub and refuses books over 30 MB; tests for small helpers (numbers, what's new).
 - [x] 0.98.18 — Announcing to a speaker by name is forgiving: "living room", "livingroom" and "the kitchen speaker" all find the right Echo or voice speaker, exact names win, and a miss lists every speaker with its name and room.
+- [x] 0.98.19 — A speaker someone names ("announce in the kitchen") is used even when Echos are set to alarms and reminders only; before, the Echo was silently swapped for a voice speaker elsewhere.

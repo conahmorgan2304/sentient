@@ -484,7 +484,8 @@ class SpeechRouter:
         text = clean_message(message, self.banned)
         if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
             return held
-        vital = important(source)
+        # "Echos: alarms and reminders only" is for the house's own chatter; a speaker someone named is theirs to get
+        vital = important(source) or (source == "conversation" and bool(targets))
         if source != "critical":  # safety alerts always use every speaker
             targets = self.usable(targets, vital) or None  # Echos switched off: their messages go where people are
         speakers = targets or self.pick_speaker(vital)

@@ -49,3 +49,20 @@ async def test_unknown_room_is_not_found(hass: HomeAssistant) -> None:
     assert router.find_speaker("garage") is None
     assert router.find_speaker("") is None
     assert router.find_speaker(KITCHEN_ECHO) == KITCHEN_ECHO
+
+
+async def test_named_echo_is_used_even_when_echos_are_important_only(hass: HomeAssistant) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from pytest_homeassistant_custom_component.common import async_mock_service
+
+    router = SpeechRouter(hass, {"speakers": [KITCHEN_SAT, KITCHEN_ECHO], "media_important_only": True,
+                                 "quiet_start": "00:00:00", "quiet_end": "00:00:00"})
+    hass.states.async_set(KITCHEN_ECHO, "idle", {"friendly_name": "kitchen"})
+    hass.states.async_set(KITCHEN_SAT, "idle", {"friendly_name": "Kitchen speaker"})
+    calls = async_mock_service(hass, "notify", "alexa_media")
+    with patch("custom_components.sentient.speech._platform", return_value="alexa_media"), patch(
+        "custom_components.sentient.speech.asyncio.sleep", new_callable=AsyncMock
+    ):
+        await router.async_say("Dinner is ready", "normal", [KITCHEN_ECHO], source="conversation")
+    assert [c.data["target"] for c in calls] == [KITCHEN_ECHO]
