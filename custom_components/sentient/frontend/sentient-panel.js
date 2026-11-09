@@ -67,7 +67,7 @@
     set route(r) {
       this._route = r;
       const path = String((r && r.path) || "");
-      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : path.startsWith("/security") ? "security" : "overview";
+      const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : path.startsWith("/security") ? "security" : path.startsWith("/house") ? "house" : "overview";
       // a phone notification was tapped: show that moment on the timeline
       try {
         const item = new URLSearchParams(window.location.search).get("item");
@@ -108,6 +108,7 @@
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <div class="top"><span id="menu"></span><span class="ttl" id="ttl">SENTIENT</span>
           <nav class="tabs"><button data-view="overview" class="on"><ha-icon icon="mdi:view-dashboard-outline"></ha-icon><span>OVERVIEW</span></button>
+            <button data-view="house"><ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon><span>HOUSE</span></button>
             <button data-view="mind"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><span>MIND</span></button>
             <button data-view="security"><ha-icon icon="mdi:shield-home-outline"></ha-icon><span>SECURITY</span></button>
             <button data-view="timeline"><ha-icon icon="mdi:timeline-clock-outline"></ha-icon><span>TIMELINE</span></button>
@@ -119,16 +120,21 @@
           <div class="lanes ov3">
             <section class="lane" aria-label="Right now"><div class="lt">RIGHT NOW</div><div id="whatsnew" class="card" hidden></div><div id="sug" class="card" hidden></div><div id="health" class="card"></div><div id="sec" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
             <section class="lane" aria-label="What's been happening"><div class="lt">WHAT'S BEEN HAPPENING</div><div id="said" class="card"></div></section>
-            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="ins" class="card" hidden></div><div id="apl" class="card" hidden></div><div id="energy" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="rout" class="card"></div></section>
+            <section class="lane" aria-label="Routines"><div class="lt">ROUTINES</div><div id="rout" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes mp2">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mgoals" class="card" hidden></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
+        <div class="page" id="hp" hidden>
+          <div class="lanes mp2">
+            <section class="lane" aria-label="Energy and appliances"><div class="lt">ENERGY &amp; APPLIANCES</div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
+            <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
+          </div></div>
         <div class="page" id="scp" hidden>
           <div class="lanes mp2">
-            <section class="lane" aria-label="Security now"><div class="lt">SECURITY NOW</div><div id="sec2" class="card"></div><div id="visit" class="card"></div></section>
+            <section class="lane" aria-label="Security now"><div class="lt">SECURITY NOW</div><div id="sec2" class="card"></div><div id="camc" class="card"></div><div id="visit" class="card"></div></section>
             <section class="lane" aria-label="What the cameras saw"><div class="lt">WHAT THE CAMERAS SAW</div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
@@ -176,6 +182,7 @@
       this._$("tl").hidden = view !== "timeline";
       this._$("mp").hidden = view !== "mind";
       this._$("scp").hidden = view !== "security";
+      this._$("hp").hidden = view !== "house";
       if (push && this._route) {
         const base = this._route.prefix || "/sentient";
         history.replaceState(history.state, "", view === "overview" ? base : `${base}/${view}`);
@@ -241,6 +248,13 @@
       R("sug").hidden = !sug.length;
       R("sug").innerHTML = sug.length ? this._h("SUGGESTIONS", `${sug.length}`) + sug.map((s) => `<div class="r"><ha-icon icon="mdi:lightbulb-auto-outline"></ha-icon><b class="wrap">${esc(s.text)}</b>
           ${s.url ? `<a class="btn sm" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">HOW</a>` : `<button class="btn sm" data-act="sugyes" data-id="${esc(s.id)}">USE IT</button>`}<a class="x" data-act="sugno" data-id="${esc(s.id)}" title="Don't suggest again">✕</a></div>`).join("") : "";
+
+      // the real cameras (refreshed every minute)
+      if (!this._camAt || Date.now() - this._camAt > 60000) {
+        this._camAt = Date.now();
+        this._hass.callWS({ type: "sentient/cameras" }).then((r) => { this._cams = r; this._drawCameras(); }, () => { this._cams = null; });
+      }
+      this._drawCameras();
 
       // clips watched as they happened (refreshed every two minutes; hidden when off and empty)
       if (!this._clipAt || Date.now() - this._clipAt > 120000) {
@@ -1194,6 +1208,23 @@
       return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
     }
 
+    _drawCameras() {
+      const el = this._$("camc");
+      if (!el) return;
+      const c = this._cams;
+      if (!c || !(c.cameras || []).length) { el.hidden = true; return; }
+      el.hidden = false;
+      const busy = c.cameras.reduce((n, x) => n + (x.today || 0), 0);
+      el.innerHTML = this._h("CAMERAS", `${c.cameras.length} · ${busy} DETECTIONS TODAY`)
+        + c.cameras.map((x) => {
+          const live = this._hass.states[x.entity_id] || { state: x.state };
+          const ok = !["unavailable", "unknown"].includes(live.state);
+          return `<div class="r${ok ? "" : " bad"}"><ha-icon icon="${esc(ok ? "mdi:cctv" : "mdi:video-off-outline")}"></ha-icon><b>${esc(x.name)}</b>`
+            + `<u>${esc(ok ? String(live.state).toUpperCase() : "OFFLINE")}${x.today ? " · " + x.today + " TODAY" : ""}</u></div>`;
+        }).join("")
+        + (c.hidden ? `<div class="hint">${c.hidden} EXTRA VIEWS HIDDEN (SUB-STREAMS, SCREENSHOTS, MAPS)</div>` : "");
+    }
+
     _drawSecurity() {
       for (const id of ["sec", "sec2"]) this._drawSecurityInto(this._$(id));
     }
@@ -1975,10 +2006,10 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .flow>*{break-inside:avoid;margin:0 0 14px;width:100%}
 .flow>.stack{break-inside:avoid;display:flex;gap:14px}
 .flow>[hidden],.flow>.stack:empty{display:none}
-:host([view="overview"]),:host([view="mind"]),:host([view="security"]){scrollbar-width:none}
-:host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar,:host([view="security"])::-webkit-scrollbar{display:none}
+:host([view="overview"]),:host([view="mind"]),:host([view="security"]),:host([view="house"]){scrollbar-width:none}
+:host([view="overview"])::-webkit-scrollbar,:host([view="mind"])::-webkit-scrollbar,:host([view="security"])::-webkit-scrollbar,:host([view="house"])::-webkit-scrollbar{display:none}
 #mp .flow{columns:2}
-#scp .lanes{align-items:start}
+#scp .lanes,#hp .lanes{align-items:start}
 .r b small{display:block;margin-top:3px;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);white-space:normal}
 .r b details{display:block;margin-top:3px} .r b summary{cursor:pointer;font-size:11px;color:#7fefff;list-style:none}
 .r b summary::-webkit-details-marker{display:none} .r b summary::before{content:"▸ "} .r b details[open] summary::before{content:"▾ "}

@@ -14,6 +14,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
+from homeassistant.util import dt as dt_util
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
@@ -445,6 +446,31 @@ def page_access(func):
     return wrapper
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/cameras"})
+@page_access
+@callback
+def ws_cameras(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The real cameras (not sub-streams, screenshots or a tablet's own camera), with today's detections."""
+    from .cameras import cameras as house_cameras, hidden as hidden_cameras
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_result(msg["id"], {"cameras": [], "hidden": 0})
+        return
+    options = entry.runtime_data.options
+    incidents = getattr(entry.runtime_data, "incidents", None)
+    start = dt_util.start_of_local_day()
+    seen: dict[str, int] = {}
+    for item in getattr(incidents, "items", []) if incidents is not None else []:
+        for ev in item.get("evidence", []):
+            when = dt_util.parse_datetime(ev.get("time") or "")
+            if ev.get("kind") == "event" and when is not None and when >= start:
+                seen[ev["source"]] = seen.get(ev["source"], 0) + 1
+    rows = [{"entity_id": st.entity_id, "name": st.name, "state": st.state, "today": seen.get(st.entity_id, 0)}
+            for st in house_cameras(hass, options)]
+    connection.send_result(msg["id"], {"cameras": rows, "hidden": len(hidden_cameras(hass, options))})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/clips"})
 @page_access
 @callback
@@ -600,6 +626,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_update_check)
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
+    websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)
     websocket_api.async_register_command(hass, ws_backups)
