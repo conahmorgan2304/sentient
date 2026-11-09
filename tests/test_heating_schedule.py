@@ -87,3 +87,12 @@ async def test_switched_off_and_deleted_from_the_page(hass: HomeAssistant, hass_
     assert (await ws.receive_json())["success"]
     await ws.send_json({"id": 6, "type": "sentient/heating"})
     assert (await ws.receive_json())["result"]["schedules"] == []
+def test_a_thermostat_that_is_off_is_switched_back_on(hass: HomeAssistant) -> None:
+    from custom_components.sentient.heating_schedule import heating_actions
+
+    hass.states.async_set(ZONE, "off", {"hvac_modes": ["off", "auto", "heat_cool"]})
+    actions, why = heating_actions(hass, {"heating_entities": [ZONE]}, {"entity_id": ZONE, "temperature": 21})
+    assert why is None and actions[0]["data"] == {"temperature": 21.0, "hvac_mode": "heat_cool"}
+    hass.states.async_set(ZONE, "heat", {"hvac_modes": ["off", "heat"]})
+    actions, _ = heating_actions(hass, {"heating_entities": [ZONE]}, {"entity_id": ZONE, "temperature": 21})
+    assert actions[0]["data"] == {"temperature": 21.0}  # already on: left in its mode
