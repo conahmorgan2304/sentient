@@ -180,3 +180,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.15 — Welcome home: set how long someone must be out (default 20 minutes), optionally welcome in the evening until a chosen time even in quiet hours, and a timeline note when a welcome is held back.
 - [x] 0.98.16 — Stay quiet while busy: choose a meeting calendar, a Focus switch or a phone in Do Not Disturb, and speech that can wait is held back like a hush while it is on. Urgent alerts and replies still come through.
 - [x] 0.98.17 — Book reading no longer fails on a damaged epub and refuses books over 30 MB; tests for small helpers (numbers, what's new).
+- [x] 0.98.18 — Announcing to a speaker by name is forgiving: "living room", "livingroom" and "the kitchen speaker" all find the right Echo or voice speaker, exact names win, and a miss lists every speaker with its name and room.
