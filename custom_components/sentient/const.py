@@ -308,6 +308,9 @@ CONF_WARM_BY_WEEKDAYS = "warm_by_weekdays"
 CONF_WARM_BY_WEEKENDS = "warm_by_weekends"
 CONF_HEATING_LIMIT = "heating_limit"
 CONF_HEATING_SCHEDULE = "heating_schedule"  # optional: heating schedules made on the House tab run
+CONF_HEATING_GRAPH = "heating_graph"  # optional: a graph of the last day's temperatures on the heating card
+CONF_ROOMS_VIEW = "rooms_view"  # optional: the room tiles on the House tab and the around-the-house card
+CONF_KNOWLEDGE = "knowledge_card"  # optional: the WHAT I KNOW card on the Mind tab
 DEFAULT_HEATING_LIMIT = 0  # off unless set; only ever on the thermostats chosen in Sentient
 
 # night watch

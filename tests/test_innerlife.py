@@ -227,3 +227,57 @@ async def test_spots_what_it_keeps_deciding_isnt_worth_saying(hass):
     rt = NS(timeline=NS(since=lambda h, kinds, limit: items))
     inner = _inner(hass, rt, notice_entities=["sensor.kettle", "sensor.window"])
     assert inner.noisy() == [{"entity_id": "sensor.kettle", "name": "Kettle status", "times": 14}]
+
+
+async def test_a_sensor_that_never_rests_does_not_keep_the_house_awake(hass, freezer):
+    """A motion sensor on for most of the day is set aside, at bedtime and in the morning."""
+    from types import SimpleNamespace as NS
+    from unittest.mock import AsyncMock, patch as p
+
+    from custom_components.sentient.sleep import MIN_SAMPLES, Sleep
+
+    t0 = dt_util.utcnow()
+    freezer.move_to(t0)
+    hass.states.async_set("binary_sensor.hall", "off")
+    hass.states.async_set("binary_sensor.lounge", "on")
+    quiet = [False]
+    rt = NS(speech=NS(quiet_hours_now=lambda: quiet[0]), timeline=FakeTimeline())
+    sleep = Sleep(hass, "t", {}, lambda: rt)
+    sleep.async_set = AsyncMock()
+    told = []
+    sleep.listeners.append(lambda: told.append(1))
+    names = ["binary_sensor.hall", "binary_sensor.lounge"]
+    with p("custom_components.sentient.sleep.inside_sensors", return_value=names):
+        for _ in range(MIN_SAMPLES - 1):  # daytime: just watching
+            sleep._tick(dt_util.utcnow())
+        assert sleep.never_rests() == [] and not told
+        freezer.move_to(t0 + timedelta(minutes=40))
+        quiet[0] = True
+        sleep._tick(dt_util.utcnow())  # a day's worth seen: the lounge sensor never rests
+        await hass.async_block_till_done()
+        assert [r["entity_id"] for r in sleep.never_rests()] == ["binary_sensor.lounge"]
+        assert told == [1]
+        sleep.async_set.assert_called_once()  # the hall has been still for 40 minutes
+        assert sleep.describe()["ignoring"][0]["on_share"] == 1.0
+
+
+async def test_a_sensor_on_for_an_evening_still_counts(hass, freezer):
+    """Someone on the sofa for an hour isn't a sensor that never rests."""
+    from types import SimpleNamespace as NS
+    from unittest.mock import AsyncMock, patch as p
+
+    from custom_components.sentient.sleep import MIN_SAMPLES, Sleep
+
+    hass.states.async_set("binary_sensor.lounge", "off")
+    rt = NS(speech=NS(quiet_hours_now=lambda: True), timeline=FakeTimeline())
+    sleep = Sleep(hass, "t", {}, lambda: rt)
+    sleep.async_set = AsyncMock()
+    with p("custom_components.sentient.sleep.inside_sensors", return_value=["binary_sensor.lounge"]):
+        for _ in range(MIN_SAMPLES):
+            sleep._tick(dt_util.utcnow())
+        hass.states.async_set("binary_sensor.lounge", "on")
+        for _ in range(60):
+            sleep._tick(dt_util.utcnow())
+        await hass.async_block_till_done()
+    assert sleep.never_rests() == []
+    sleep.async_set.assert_not_called()

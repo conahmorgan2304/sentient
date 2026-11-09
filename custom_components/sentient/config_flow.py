@@ -110,6 +110,9 @@ from .const import (
     CONF_NIGHT_WATCH_ENTITIES,
     CONF_NIGHT_WATCH_SPEAKERS,
     CONF_HEATING_SCHEDULE,
+    CONF_HEATING_GRAPH,
+    CONF_ROOMS_VIEW,
+    CONF_KNOWLEDGE,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     DEFAULT_NIGHT_WATCH,
@@ -470,6 +473,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_FOLLOW_UPS, **d(CONF_FOLLOW_UPS, True)): selector.BooleanSelector(),
             vol.Required(CONF_CURIOSITY, **d(CONF_CURIOSITY, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION, **d(CONF_REFLECTION, True)): selector.BooleanSelector(),
+            vol.Required(CONF_KNOWLEDGE, **d(CONF_KNOWLEDGE, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION_TIME, **d(CONF_REFLECTION_TIME, DEFAULT_REFLECTION_TIME)): selector.TimeSelector(),
             vol.Required(CONF_SLEEP, **d(CONF_SLEEP, True)): selector.BooleanSelector(),
             vol.Required(CONF_SLEEP_MINUTES, **d(CONF_SLEEP_MINUTES, DEFAULT_SLEEP_MINUTES)): selector.NumberSelector(
@@ -520,6 +524,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_PREHEAT, **d(CONF_PREHEAT, False)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_SCHEDULE, **d(CONF_HEATING_SCHEDULE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_HEATING_GRAPH, **d(CONF_HEATING_GRAPH, True)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_LIMIT, **d(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=24, step=0.5, unit_of_measurement="h", mode=selector.NumberSelectorMode.BOX)
             ),
@@ -608,6 +613,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_MOTION_WINDOW, **d(CONF_MOTION_WINDOW, DEFAULT_MOTION_WINDOW)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Required(CONF_ROOMS_VIEW, **d(CONF_ROOMS_VIEW, True)): selector.BooleanSelector(),
             vol.Optional(CONF_PASS_THROUGH_AREAS, **d(CONF_PASS_THROUGH_AREAS, [])): selector.AreaSelector(
                 selector.AreaSelectorConfig(multiple=True)
             ),

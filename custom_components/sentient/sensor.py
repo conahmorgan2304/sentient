@@ -404,6 +404,9 @@ class HouseSensor(_Base):
         from .sleep import EVENT_SLEEP
 
         self.async_on_remove(self.hass.bus.async_listen(EVENT_SLEEP, self._changed))
+        listeners = self._entry.runtime_data.sleep.listeners
+        listeners.append(self.async_write_ha_state)
+        self.async_on_remove(lambda: listeners.remove(self.async_write_ha_state) if self.async_write_ha_state in listeners else None)
 
     @callback
     def _changed(self, _event: Event) -> None:
@@ -421,7 +424,8 @@ class HouseSensor(_Base):
     def extra_state_attributes(self) -> dict[str, Any]:
         sleep = self._entry.runtime_data.sleep
         usual = sleep.usual()
-        return {"since": sleep.since, "usual_bedtime": usual["bedtime"], "usual_up": usual["up"]}
+        return {"since": sleep.since, "usual_bedtime": usual["bedtime"], "usual_up": usual["up"],
+                "ignoring": [r["name"] for r in sleep.never_rests()]}
 
 
 class ScreenSensor(_Base):
