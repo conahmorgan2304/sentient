@@ -35,6 +35,8 @@ from .const import (
     CONF_DOOR_CAMERA,
     CONF_DOOR_TRIGGERS,
     CONF_DOORSTEP_SENSORS,
+    CONF_ZONE_DOOR_SENSORS,
+    CONF_ZONE_VISITS,
     CONF_FACE_SENSOR,
     CONF_FACES,
     CONF_PARCEL_ALERTS,
@@ -57,6 +59,8 @@ PARCEL_RECHECK = 180  # seconds after a delivery
 KEEP = 30
 DOORSTEP_SETTLE = 10  # seconds after a doorstep visit ends, so the visitor has stepped away
 DOORSTEP_COOLDOWN = timedelta(minutes=2)
+ZONE_DOOR_WINDOW = timedelta(seconds=90)  # the front door opened this recently: the zone is someone coming or going
+ZONE_SETTLE = 4  # seconds after someone enters the zone, so the picture has them at the door, not the gate
 RANG_RECENTLY = timedelta(minutes=5)  # a doorbell visit already does its own parcel check
 FACE_FRESH = timedelta(minutes=2)
 _NO_NAME = {"", "none", "unknown", "unavailable", "no face", "no_face", "nobody", "null"}
@@ -80,8 +84,11 @@ class Visitors:
         self._unsubs: list = []
         self._doorstep_last: datetime | None = None
         self._doorstep_pending = False
+        self._zone_last: datetime | None = None
+        self._door_opened: datetime | None = None
         self.parcel_waiting = False  # a parcel was there at the last look
         self.expecting: Callable[[], bool] = lambda: False  # set by the runtime: a parcel's out for delivery today
+        self.on_visit: Callable[[str, str], Any] | None = None  # set by the runtime: (camera, text) for the security timeline
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -110,6 +117,10 @@ class Visitors:
     @property
     def doorstep(self) -> set[str]:
         return set(self.options.get(CONF_DOORSTEP_SENSORS) or [])
+
+    @property
+    def zone_doors(self) -> set[str]:
+        return set(self.options.get(CONF_ZONE_DOOR_SENSORS) or [])
 
     def today(self) -> list[dict[str, Any]]:
         start = dt_util.start_of_local_day()
@@ -147,8 +158,15 @@ class Visitors:
         old = event.data["old_state"]
         if new.state in (STATE_UNAVAILABLE, STATE_UNKNOWN) or old is None or old.state == STATE_UNAVAILABLE:
             return
+        if new.entity_id in self.zone_doors:
+            if new.state == STATE_ON and old.state != STATE_ON:
+                self._door_opened = dt_util.utcnow()
+            if new.entity_id not in self.doorstep and new.entity_id not in self.triggers:
+                return
         if new.entity_id in self.doorstep:
-            if old.state == STATE_ON and new.state != STATE_ON:
+            if new.state == STATE_ON and old.state != STATE_ON:
+                self._zone_entered(new.entity_id)
+            elif old.state == STATE_ON and new.state != STATE_ON:
                 self._doorstep_visit_ended()
             return
         if new.entity_id not in self.triggers:
@@ -162,8 +180,31 @@ class Visitors:
         now = dt_util.utcnow()
         if self._busy or (self._last and now - self._last < COOLDOWN):
             return
+        if self.options.get(CONF_ZONE_VISITS, False) and self._zone_last and now - self._zone_last < RANG_RECENTLY:
+            return  # the zone got there first: the bell is the same visit
         self._last = now
         self.hass.async_create_task(self.async_visit(new.entity_id))
+
+    # ----- someone in the door camera's zone, without the bell ----------------------
+    def door_opened_first(self, now: datetime) -> bool:
+        """The front door is open, or was opened a moment ago: whoever the camera sees is coming or going."""
+        if any((st := self.hass.states.get(e)) and st.state == STATE_ON for e in self.zone_doors):
+            return True
+        return self._door_opened is not None and now - self._door_opened < ZONE_DOOR_WINDOW
+
+    @callback
+    def _zone_entered(self, entity_id: str) -> None:
+        """Whichever comes first, the bell or the zone, is the visit; the other is ignored."""
+        if not self.options.get(CONF_ZONE_VISITS, False):
+            return
+        now = dt_util.utcnow()
+        if self._busy or (self._last and now - self._last < RANG_RECENTLY):
+            return  # the bell (or an earlier zone look) got there first: this is the same visit
+        if self.door_opened_first(now):
+            _LOGGER.debug("Zone %s ignored: the front door opened first", entity_id)
+            return
+        self._last = self._zone_last = now
+        self.hass.async_create_task(self.async_visit(entity_id, via_zone=True))
 
     # ----- doorstep visits without the bell -------------------------------------
     @callback
@@ -244,16 +285,16 @@ class Visitors:
         result = (response or {}).get("data")
         return result if isinstance(result, dict) else {}
 
-    async def async_visit(self, trigger: str | None = None) -> dict[str, Any] | None:
+    async def async_visit(self, trigger: str | None = None, via_zone: bool = False) -> dict[str, Any] | None:
         if self._busy:
             return None
         look = self.watches.spend("doorbell")  # today's limit used up: still logged and said, in plain words
         self._busy = True
         try:
-            await asyncio.sleep(1)
+            await asyncio.sleep(ZONE_SETTLE if via_zone else 1)
             result = {} if not look else await self._look(
                 "Sentient: who's at the door",
-                "This is a doorbell camera picture taken as the bell rang. Describe who is at the door "
+                ("This is a doorbell camera picture taken as someone reached the front door. " if via_zone else "This is a doorbell camera picture taken as the bell rang. ") + "Describe who is at the door "
                 "in a few plain words (e.g. 'a delivery driver holding a small parcel', 'a man in a "
                 "red coat', 'two children'). Don't guess names. Set kind to the best match, and parcel "
                 "to true if they are carrying or have put down a parcel or package.",
@@ -284,6 +325,9 @@ class Visitors:
         }
         self.log.appendleft(visit)
         self._save()
+        if self.on_visit is not None and self.camera:
+            how = "Someone reached the front door" if via_zone else "Doorbell pressed"
+            self.on_visit(self.camera, f"{how}: {visit['description']}")
         if self.options.get(CONF_ANNOUNCE_VISITORS, DEFAULT_ANNOUNCE_VISITORS) and kind != "nobody":
             line = (f"{name}'s at the door." if name else f"Someone's at the door: {visit['description']}."
                     if result.get("description") else "Someone's at the door.")

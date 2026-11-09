@@ -49,3 +49,21 @@ async def test_self_test_conversation_is_dropped(hass):
     conv.episodes.append({"id": cid[-10:], "start": "2026-11-09T00:00:00+00:00", "turns": []})
     conv.drop(cid)
     assert not conv.episodes and cid not in conv._open and cid in conv.skip
+
+
+async def test_a_tablets_own_camera_is_not_a_house_camera(hass):
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(domain="esphome")
+    entry.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(config_entry_id=entry.entry_id, identifiers={("esphome", "tab")})
+    reg = er.async_get(hass)
+    reg.async_get_or_create("camera", "esphome", "tab_cam", suggested_object_id="hall_cam", device_id=dev.id, config_entry=entry)
+    reg.async_get_or_create("assist_satellite", "esphome", "tab_sat", suggested_object_id="hall_sat", device_id=dev.id, config_entry=entry)
+    door = dr.async_get(hass).async_get_or_create(config_entry_id=entry.entry_id, identifiers={("esphome", "door")})
+    reg.async_get_or_create("camera", "esphome", "door_cam", suggested_object_id="door_cam", device_id=door.id, config_entry=entry)
+    reg.async_get_or_create("media_player", "esphome", "door_spk", suggested_object_id="door_spk", device_id=door.id, config_entry=entry)
+    for eid in ("camera.hall_cam", "camera.door_cam"):
+        hass.states.async_set(eid, "idle")
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.door_cam"]

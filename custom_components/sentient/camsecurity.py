@@ -6,7 +6,8 @@ you ask for a description:
 * journeys: detections close in time form a possible route, not proof of one person's journey;
 * boundary: a person is reported inside after a known quiet period, with no recent entry opening recorded;
 * at night: a person reported in quiet hours with no recent indoor activity detected;
-* loitering: someone staying on a camera for minutes on end in quiet hours.
+* loitering: someone staying on a camera for minutes on end in quiet hours;
+* away: a person reported inside the boundary while everyone is out, at any hour.
 
 Those three are alerts: on the timeline, to phones, and — in quiet hours, if night watch says
 alerts out loud — on the night-watch speakers. Optionally one AI look describes who it is.
@@ -45,6 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 JOURNEY_GAP = timedelta(minutes=3)  # detections closer than this are one journey
 EMPTY_BEFORE = timedelta(minutes=10)  # the garden must have been empty this long…
 ENTRY_WINDOW = timedelta(minutes=5)  # …and no way in used in this long, for "over the fence"
+AWAY_SETTLE = timedelta(minutes=5)  # everyone has been out this long: not someone just leaving
 LOITER = timedelta(minutes=4)
 REPEAT = timedelta(minutes=10)
 
@@ -212,6 +214,12 @@ class CameraSecurity:
                 message = f"A person was reported in the {place(self.hass, sensor).lower()}, with no recent entry opening recorded"
                 self._alert(sensor, message, "fence")
                 return
+        # inside the boundary while everyone is out, at any hour
+        away = getattr(rt, "away", None)
+        if sensor in inside and away is not None and away.everyone_away() and away.away_since is not None \
+                and when - away.away_since >= AWAY_SETTLE:
+            self._alert(sensor, f"A person was reported in the {place(self.hass, sensor).lower()} while everyone is out", "away")
+            return
         # anyone at night with the house asleep
         if rt.speech.quiet_hours_now() and rt.night_watch.someone_inside(when) is None:
             self._alert(sensor, f"A person was reported by the {place(self.hass, sensor).lower()}, with no recent indoor activity detected", "night")

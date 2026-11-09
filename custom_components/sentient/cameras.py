@@ -24,8 +24,23 @@ DUPLICATE_VIEW = re.compile(
 )
 
 
+# a camera on one of these devices is the gadget's own (a voice tablet's front camera, a vacuum's map)
+GADGET_DOMAINS = ("assist_satellite", "vacuum")  # not media_player: many real cameras have a speaker
+
+
+def on_gadget(hass: HomeAssistant, entity_id: str) -> bool:
+    """True when the camera belongs to a device that is really something else (a tablet, a vacuum)."""
+    reg = er.async_get(hass)
+    entry = reg.async_get(entity_id)
+    if entry is None or not entry.device_id:
+        return False
+    return any(e.domain in GADGET_DOMAINS and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
+
+
 def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None = None) -> bool:
-    """True for sub-streams, screenshots and maps (matched on the id, name and original name)."""
+    """True for sub-streams, screenshots, maps and a gadget's own camera (matched on the id, name and device)."""
+    if on_gadget(hass, entity_id):
+        return True
     entry = er.async_get(hass).async_get(entity_id)
     st = state or hass.states.get(entity_id)
     text = " ".join(filter(None, (entity_id.split(".", 1)[-1], st.name if st else None, entry.original_name if entry else None)))
