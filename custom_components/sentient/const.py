@@ -303,6 +303,7 @@ CONF_INSIDE_SENSORS = "inside_sensors"
 CONF_WARM_BY_WEEKDAYS = "warm_by_weekdays"
 CONF_WARM_BY_WEEKENDS = "warm_by_weekends"
 CONF_HEATING_LIMIT = "heating_limit"
+CONF_HEATING_SCHEDULE = "heating_schedule"  # optional: heating schedules made on the House tab run
 DEFAULT_HEATING_LIMIT = 0  # off unless set; only ever on the thermostats chosen in Sentient
 
 # night watch

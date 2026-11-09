@@ -165,7 +165,35 @@ class Alarms:
             return [x for x in actions if x.get("action") == "sentient.run_routine"]
         return actions
 
+    async def _ring_heating(self, alarm: dict[str, Any]) -> dict[str, Any]:
+        """A heating schedule: its actions are rebuilt from the spec and only run while the feature is on."""
+        from .heating_schedule import describe, enabled, heating_actions
+
+        rt = self._rt()
+        if not enabled(rt.options):
+            return {"skipped": "heating schedules are switched off in Settings"}
+        now = dt_util.utcnow()
+        changes: dict[str, Any] = {"last_rang": now.isoformat()}
+        if not alarm.get("days"):
+            changes["enabled"] = False
+        self.items.update(alarm["id"], **changes)
+        actions, why = heating_actions(self.hass, rt.options, alarm.get("heating"))
+        if why:
+            _LOGGER.warning("Heating schedule %s: not run — %s", alarm["name"], why)
+            rt.timeline.add("health", f"Didn't run: {alarm['name']}", why)
+            return {"skipped": why}
+        try:
+            await async_run_actions(self.hass, actions, f"heating: {alarm['name']}")
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Heating schedule %s failed: %s", alarm["name"], err)
+            rt.timeline.add("health", f"Heating schedule didn't run: {alarm['name']}", str(err)[:200])
+            return {"skipped": "failed"}
+        rt.timeline.add("heating", f"Schedule: {describe(self.hass, alarm['heating'])}", alarm["name"])
+        return {"ran": alarm["name"]}
+
     async def async_ring(self, alarm: dict[str, Any]) -> dict[str, Any]:
+        if alarm.get("heating"):
+            return await self._ring_heating(alarm)
         rt = self._rt()
         now = dt_util.utcnow()
         changes: dict[str, Any] = {"last_rang": now.isoformat()}

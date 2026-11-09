@@ -109,6 +109,7 @@ from .const import (
     CONF_NIGHT_WATCH_ANNOUNCE,
     CONF_NIGHT_WATCH_ENTITIES,
     CONF_NIGHT_WATCH_SPEAKERS,
+    CONF_HEATING_SCHEDULE,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     DEFAULT_NIGHT_WATCH,
@@ -510,6 +511,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="climate", multiple=True)
             ),
             vol.Required(CONF_PREHEAT, **d(CONF_PREHEAT, False)): selector.BooleanSelector(),
+            vol.Required(CONF_HEATING_SCHEDULE, **d(CONF_HEATING_SCHEDULE, False)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_LIMIT, **d(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0, max=24, step=0.5, unit_of_measurement="h", mode=selector.NumberSelectorMode.BOX)
             ),
