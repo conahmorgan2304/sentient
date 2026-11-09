@@ -89,7 +89,7 @@ async def test_event_entity_trigger_cooldown_and_announce_option(hass: HomeAssis
 
 
 async def test_recognised_name_is_used_when_fresh(hass: HomeAssistant) -> None:
-    await _setup(hass, announce_visitors=True, parcel_alerts=False, face_sensor="sensor.doorbell_face")
+    await _setup(hass, announce_visitors=True, parcel_alerts=False, face_sensor="sensor.doorbell_face", faces=True)
     said = async_mock_service(hass, "assist_satellite", "announce")
     _ai(hass, [{"kind": "visitor", "description": "A man in a red coat"}])
     hass.states.async_set("sensor.doorbell_face", "alex")

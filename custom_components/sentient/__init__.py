@@ -54,6 +54,7 @@ from .const import (
     STATIC_URL,
     FRONTEND_URL,
     PANEL_URL_PATH,
+    CONF_PAGE_ADMIN_ONLY,
     CONF_SIDEBAR,
     DEFAULT_SIDEBAR,
     CONF_PERSONA,
@@ -732,7 +733,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
         module_url=f"{FRONTEND_URL}/sentient-panel.js?v={(await hass.async_add_executor_job(_card_tags, ('sentient-panel',))).get('sentient-panel', version)}",
         sidebar_title=options.get(CONF_PERSONA) or entry.title,
         sidebar_icon="mdi:brain",
-        require_admin=False,
+        require_admin=bool(options.get(CONF_PAGE_ADMIN_ONLY)),
         config={},
     )
     entry.async_on_unload(lambda: frontend.async_remove_panel(hass, PANEL_URL_PATH))

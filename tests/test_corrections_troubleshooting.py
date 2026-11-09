@@ -30,7 +30,7 @@ async def test_correction_preserves_original_goal_and_targets(correction):
 
 
 async def test_guarded_correction_acknowledges_prior_action_and_waits(hass):
-    obj, rt = agent(hass, {'conversation_sessions': True, 'guarded_control': True,
+    obj, rt = agent(hass, {'conversation_sessions': True, 'voice_unlock': True, 'guarded_control': True,
                            'voice_undo': True, 'voice_agent': 'conversation.ai'})
     for eid in ['light.kitchen', 'light.landing']:
         hass.states.async_set(eid, 'on')
@@ -55,7 +55,7 @@ async def test_guarded_correction_acknowledges_prior_action_and_waits(hass):
 
 
 async def test_correcting_pending_lock_never_executes_old_target(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_agent': 'conversation.ai'})
     for eid in ['lock.front', 'lock.back']:
         hass.states.async_set(eid, 'locked')
     calls = async_mock_service(hass, 'lock', 'unlock')
@@ -75,7 +75,7 @@ async def test_correcting_pending_lock_never_executes_old_target(hass):
 
 
 async def test_undo_offer_cancels_replacement_and_preserves_manual_changes(hass):
-    obj, rt = agent(hass, {'guarded_control': True, 'voice_undo': True, 'voice_agent': 'conversation.ai'})
+    obj, rt = agent(hass, {'voice_unlock': True, 'guarded_control': True, 'voice_undo': True, 'voice_agent': 'conversation.ai'})
     hass.states.async_set('light.kitchen', 'on')
     hass.states.async_set('light.landing', 'on')
     async def off(call):

@@ -83,7 +83,7 @@ async def test_batch_revalidates_next_device_after_first_service(hass):
 
 async def test_confirmed_batch_stops_if_later_target_changes(hass):
     sessions, session = active()
-    control = Control(hass, {}, Mock())
+    control = Control(hass, {'voice_unlock': True}, Mock())
     for eid in ['lock.first', 'lock.second']:
         hass.states.async_set(eid, 'locked')
     calls = []

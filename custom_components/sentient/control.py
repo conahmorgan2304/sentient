@@ -12,6 +12,7 @@ from homeassistant.core import Context
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
+from .const import CONF_VOICE_UNLOCK
 from .sessions import CONF_UNDO
 
 # No service strings, scripts, scenes, templates, area targets or arbitrary service data.
@@ -94,6 +95,8 @@ class Control:
             domain = eid.split('.')[0]
             if op not in ACTIONS.get(domain, set()):
                 raise ValueError('That device action is not supported by guarded control')
+            if op == 'unlock' and not self.options.get(CONF_VOICE_UNLOCK):
+                raise ValueError('Unlocking by voice is switched off in Sentient settings')
             state = self.hass.states.get(eid)
             if state is None or state.state in ('unknown', 'unavailable'):
                 raise ValueError(f'{eid} has no reliable current state')

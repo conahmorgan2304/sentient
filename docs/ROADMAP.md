@@ -176,3 +176,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 
 - [x] 0.98.12 — Optional Frigate event-bound evidence and clip reviews, owner-scoped security conversation references, shared compatible clip analyses and reversible event feedback with camera review suggestions. All four features have Settings switches. See SECURITY_EVENTS_09812.md.
 - [x] 0.98.13 — Cameras: extra views (HD/SD streams, screenshots, maps) are no longer counted as cameras, with a switch and a "Cameras to ignore" list. The nightly self-test no longer counts as people asking; the Mind sensor stays under the recorder's size limit; one deprecated Home Assistant call removed.
+- [x] 0.98.14 — Privacy and access: diagnostics hide phones, people and calendars; face names stay out unless Faces is on; unlocking by voice is its own opt-in; an optional "only administrators can open this page" setting; timeline request limits.

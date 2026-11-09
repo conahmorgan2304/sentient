@@ -7,6 +7,8 @@ schemas in config_flow.py.
 
 from __future__ import annotations
 
+import functools
+import inspect
 from typing import Any
 
 import voluptuous as vol
@@ -233,6 +235,8 @@ from .const import (
     CONF_HEALTH_IGNORE,
     CONF_HIDE_SUBSTREAMS,
     CONF_IGNORE_CAMERAS,
+    CONF_HIDE_SUBSTREAMS,
+    CONF_IGNORE_CAMERAS,
     CONF_HOUSE_RULES,
     CONF_LEARN_ENTITIES,
     CONF_LEARN_ANCHORS,
@@ -256,7 +260,9 @@ from .const import (
     CONF_ROUTINE_EVIDENCE,
     CONF_QUIET_END,
     CONF_QUIET_START,
+    CONF_PAGE_ADMIN_ONLY,
     CONF_SIDEBAR,
+    CONF_VOICE_UNLOCK,
     CONF_SPEAKERS,
     CONF_SUGGEST_ROUTINES,
     CONF_LINK_TRIGGERS,
@@ -273,7 +279,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -372,13 +378,13 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
-        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS,
+        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS,
     ]),
     ("autobackup", "Weekly backup", "mdi:calendar-sync-outline", "Every Sunday night, the same backup as the download button, saved in Home Assistant's config folder (so Home Assistant's own backups have it too). The newest few are kept; restore one from Backup.", [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -412,7 +418,30 @@ def _serialize(schema: vol.Schema) -> list[dict[str, Any]]:
     return out
 
 
+def page_access(func):
+    """Read-only page commands: refuse non-administrators when the page is set to administrators only."""
+    def _refused(hass, connection, msg) -> bool:
+        entry = _entry(hass)
+        if entry is not None and _current(entry).get(CONF_PAGE_ADMIN_ONLY) and not connection.user.is_admin:
+            connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "Only administrators can use the Sentient page")
+            return True
+        return False
+
+    if inspect.iscoroutinefunction(func):
+        @functools.wraps(func)
+        async def wrapper(hass, connection, msg):
+            if not _refused(hass, connection, msg):
+                await func(hass, connection, msg)
+    else:
+        @functools.wraps(func)
+        def wrapper(hass, connection, msg):
+            if not _refused(hass, connection, msg):
+                func(hass, connection, msg)
+    return wrapper
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/clips"})
+@page_access
 @callback
 def ws_clips(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """The clips watched as they happened (newest first) — for the Sentient page."""
@@ -505,6 +534,7 @@ def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, A
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new"})
+@page_access
 @callback
 def ws_whats_new(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -803,6 +833,7 @@ def ws_update_memory(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memories"})
+@page_access
 @callback
 def ws_list_memories(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Everything remembered, newest first (the sensor only carries the latest 50)."""
@@ -828,6 +859,7 @@ def _spots_payload(entry) -> dict[str, Any]:
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/spots"})
+@page_access
 @callback
 def ws_list_spots(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -927,6 +959,7 @@ def _motion(hass: HomeAssistant, connection, msg: dict[str, Any]):
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/motion_lights"})
+@page_access
 @callback
 def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     if (ml := _motion(hass, connection, msg)) is not None:
@@ -987,9 +1020,10 @@ def ws_motion_night(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "sentient/timeline", vol.Optional("hours", default=48): vol.Coerce(float),
-     vol.Optional("kinds"): [str], vol.Optional("limit", default=300): int}
+    {vol.Required("type"): "sentient/timeline", vol.Optional("hours", default=48): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=720)),
+     vol.Optional("kinds"): [str], vol.Optional("limit", default=300): vol.All(int, vol.Range(min=1, max=1000))}
 )
+@page_access
 @callback
 def ws_timeline(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -1001,6 +1035,7 @@ def ws_timeline(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/digest", vol.Optional("hours", default=24): vol.Coerce(float)})
+@page_access
 @websocket_api.async_response
 async def ws_digest(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -1019,6 +1054,7 @@ async def ws_digest(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     vol.Required("type"): "sentient/mutes", vol.Optional("remove"): str, vol.Optional("clear"): bool,
     vol.Optional("unlearn"): str, vol.Optional("unlearn_all"): bool,
 })
+@page_access
 @callback
 def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -1045,6 +1081,7 @@ def ws_mutes(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     vol.Required("type"): "sentient/feedback/thumb", vol.Required("text"): str, vol.Optional("source"): vol.Any(str, None),
     vol.Required("up"): bool,
 })
+@page_access
 @callback
 def ws_thumb(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """A thumbs up or down on something it said."""
@@ -1089,6 +1126,7 @@ def ws_style(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 # ----- named routines -------------------------------------------------------------
 @websocket_api.websocket_command({vol.Required("type"): "sentient/shortcuts"})
+@page_access
 @callback
 def ws_shortcuts(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
@@ -1208,6 +1246,7 @@ def ws_import(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/energy"})
+@page_access
 @websocket_api.async_response
 async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .energy import async_report
@@ -1219,6 +1258,7 @@ async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security"})
+@page_access
 @callback
 def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .security import check
@@ -1239,6 +1279,7 @@ async def ws_critical_test(hass: HomeAssistant, connection, msg: dict[str, Any])
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/insights"})
+@page_access
 @callback
 def ws_insights(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """What the house has learned about heating and its doors at night."""
@@ -1252,6 +1293,7 @@ def ws_insights(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/weekly"})
+@page_access
 @callback
 def ws_weekly(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Make the weekly 'what I learned' report now (also kept on the timeline)."""
@@ -1291,6 +1333,7 @@ _KIND = vol.In(list(_ALL_KINDS))  # every list kind, so a new one never needs ad
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/items", vol.Required("kind"): _KIND})
+@page_access
 @callback
 def ws_items(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
