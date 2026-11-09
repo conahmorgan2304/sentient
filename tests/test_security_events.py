@@ -626,3 +626,32 @@ async def test_stationary_vehicle_tracks_do_not_hide_a_different_moving_vehicle(
     person = events.ingest(event(id="person.event"))
     assert not other.get("parked") and not person.get("parked")
     assert added[-2:] == ["second.car", "person.event"]
+
+
+async def test_camera_alert_can_attach_a_frigate_event_that_arrives_after_the_alert(hass):
+    from tests.test_camera_security_reliability import security
+
+    obj, rt = security(hass, security_event_evidence=True, clip_cameras=["camera.garden"], camera_security_describe=False)
+    rt.options = obj.options
+    rt.security_events = SecurityEvents(hass, "test", obj.options, lambda: rt)
+    rt.security_events._unsub = Mock()
+    waiting = asyncio.Event()
+    release = asyncio.Event()
+
+    async def wait_for_mqtt(_delay):
+        waiting.set()
+        await release.wait()
+
+    with patch("custom_components.sentient.camsecurity.camera_for", return_value="camera.garden"), \
+            patch("custom_components.sentient.security_events.frigate_url", return_value=None), \
+            patch("custom_components.sentient.security_events.asyncio", SimpleNamespace(sleep=wait_for_mqtt)):
+        task = asyncio.create_task(obj._async_alert("binary_sensor.garden_person", "Person reported", reason="night"))
+        await waiting.wait()
+        rt.timeline.add.assert_called_once()
+        rt.timeline.mark.assert_not_called()
+        rt.security_events.ingest(event())
+        release.set()
+        await task
+
+    rt.timeline.add.assert_called_once()
+    assert rt.timeline.mark.call_args.kwargs["event_id"] == "123.event"

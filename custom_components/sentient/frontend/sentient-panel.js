@@ -1219,21 +1219,21 @@
 
     _securityNow() {
       const open = [], unlocked = [], alarms = [], unknown = [];
-      let perimeter = 0;
+      let openings = 0, locks = 0;
       for (const st of Object.values(this._hass.states)) {
         const [d] = st.entity_id.split(".");
         const dc = st.attributes.device_class, name = st.attributes.friendly_name || st.entity_id;
-        const state = st.state;
+        const state = st.attributes.restored ? "unknown" : st.state;
         if (d === "binary_sensor" && ["door", "window", "garage_door", "opening"].includes(dc)) {
-          perimeter++;
+          openings++;
           if (state === "on") open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
           else if (state !== "off") unknown.push(name);
         } else if (d === "cover" && ["garage", "gate", "door"].includes(dc)) {
-          perimeter++;
+          openings++;
           if (["open", "opening"].includes(state)) open.push({ name, icon: "mdi:garage-open" });
           else if (state !== "closed") unknown.push(name);
         } else if (d === "lock") {
-          perimeter++;
+          locks++;
           if (["unlocked", "open", "opening", "jammed"].includes(state)) unlocked.push({ name, state });
           else if (state !== "locked") unknown.push(name);
         } else if (d === "alarm_control_panel") {
@@ -1241,8 +1241,8 @@
           if (!["disarmed", "triggered", "pending", "armed_home", "armed_away", "armed_night", "armed_vacation", "armed_custom_bypass"].includes(state)) unknown.push(name);
         }
       }
-      const key = JSON.stringify([open, unlocked, alarms, unknown, perimeter]);
-      return { open, unlocked, alarms, unknown, perimeter, key };
+      const key = JSON.stringify([open, unlocked, alarms, unknown, openings, locks]);
+      return { open, unlocked, alarms, unknown, openings, locks, key };
     }
 
     // ---------- overview: today and coming up ----------
@@ -1685,7 +1685,8 @@
       });
       const open = el.querySelector("details")?.open;
       const availability = (health.availability || "UNKNOWN").toUpperCase();
-      el.innerHTML = `<details class="frigatehealth"${open ? " open" : ""}><summary>FRIGATE PIPELINE · ${esc(availability)} · ${health.stats_fresh ? "FRESH STATS" : "NO FRESH STATS"}</summary>
+      const last = health.availability === "unknown" && health.last_reported_availability === "online" ? " (LAST REPORT ONLINE)" : "";
+      el.innerHTML = `<details class="frigatehealth"${open ? " open" : ""}><summary>FRIGATE PIPELINE · ${esc(availability + last)} · ${health.stats_fresh ? "FRESH STATS" : "NO FRESH STATS"}</summary>
         ${rows.join("") || '<div class="e">NO CONFIGURED CAMERA TELEMETRY</div>'}
         <small>Processing and event receipts do not verify recordings. Quiet cameras may have no recent events.</small></details>`;
     }
@@ -1764,16 +1765,17 @@
 
     _drawSecurityInto(el) {
       if (!el) return;
-      const { open, unlocked, alarms, unknown, perimeter } = this._security();
+      const { open, unlocked, alarms, unknown, openings, locks } = this._security();
       const bad = open.length + unlocked.length;
       const alarmActive = alarms.some((alarm) => ["triggered", "pending"].includes(alarm.state));
+      const perimeter = openings + locks;
       const uncertain = unknown.length || !perimeter;
-      el.innerHTML = this._h("SECURITY", alarmActive ? "ALARM ACTIVE" : bad ? `${bad} TO CHECK` : uncertain ? "UNCONFIRMED" : "ALL SHUT")
+      el.innerHTML = this._h("SECURITY", alarmActive ? "ALARM ACTIVE" : bad ? `${bad} TO CHECK` : uncertain ? "UNCONFIRMED" : openings ? "ALL SHUT" : "LOCKS REPORT LOCKED")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${esc(o.icon)}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
         + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>${esc(u.state.toUpperCase())}</u></div>`).join("")
         + unknown.map((name) => `<div class="r warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(name)}</b><u>STATUS UNKNOWN</u></div>`).join("")
         + (!perimeter ? '<div class="e">NO DOOR, WINDOW OR LOCK READINGS</div>' : "")
-        + (bad || uncertain || alarmActive ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows report shut</b></div>')
+        + (bad || uncertain || alarmActive ? "" : `<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>${openings ? "Monitored openings report closed" : "Monitored locks report locked"}</b></div>`)
         + alarms.map((alarm) => {
           const armed = alarm.state.startsWith("armed");
           return `<div class="r${["triggered", "pending"].includes(alarm.state) ? " bad" : armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ").toUpperCase())}</u></div>`;

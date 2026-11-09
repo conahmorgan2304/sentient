@@ -106,6 +106,13 @@ test('an offline gate is unconfirmed, and open doors and triggered alarms remain
   assert.match(el.innerHTML, /Back.*OPEN/);
   assert.match(el.innerHTML, /ALARM ACTIVE/);
   assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
+  panel._hass = { states: {
+    'binary_sensor.gate': { entity_id: 'binary_sensor.gate', state: 'off', attributes: { device_class: 'door', friendly_name: 'Gate', restored: true } },
+    'lock.front': { entity_id: 'lock.front', state: 'locked', attributes: {} },
+  } };
+  panel._drawSecurityInto(el);
+  assert.match(el.innerHTML, /Gate.*STATUS UNKNOWN/);
+  assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
 });
 
 test('camera pipeline health remains visible on the Security page', () => {
@@ -119,4 +126,6 @@ test('camera pipeline health remains visible on the Security page', () => {
   assert.match(el.innerHTML, /Shed.*5.0 FPS PROCESSING/);
   assert.match(el.innerHTML, /Garden.*ZERO PROCESSING RATE/);
   assert.match(el.innerHTML, /none received this session/);
+  panel._drawFrigateHealth({ enabled: true, availability: "unknown", last_reported_availability: "online", stats_fresh: false, cameras: [] });
+  assert.match(el.innerHTML, /UNKNOWN \(LAST REPORT ONLINE\).*NO FRESH STATS/);
 });

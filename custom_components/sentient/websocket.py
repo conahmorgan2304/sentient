@@ -1645,9 +1645,13 @@ async def ws_energy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
 @page_access
 @callback
 def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from homeassistant.auth.permissions.const import POLICY_READ
+
     from .security import check
 
-    connection.send_result(msg["id"], check(hass))
+    connection.send_result(msg["id"], check(
+        hass, visible=lambda eid: connection.user.permissions.check_entity(eid, POLICY_READ)
+    ))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/frigate_health"})

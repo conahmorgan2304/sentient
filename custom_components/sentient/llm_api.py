@@ -1617,9 +1617,9 @@ class SecurityTool(_Tool):
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
     ) -> JsonObjectType:
-        from .security import check
+        from .security import check_for_voice
 
-        return check(hass)
+        return await check_for_voice(hass, llm_context.context)
 
 
 class ScenesTool(_Tool):
@@ -1797,9 +1797,9 @@ class HouseCheckTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        from .security import check
+        from .security import check_for_voice
 
-        sec = check(hass)
+        sec = await check_for_voice(hass, llm_context.context)
         out: dict[str, Any] = {
             "security": {"summary": sec["summary"], "open": [i["name"] for i in sec["open"]],
                          "unlocked": [i["name"] for i in sec["unlocked"]],

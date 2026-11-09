@@ -86,6 +86,7 @@ async def test_revoked_exposure_not_used_for_current_readings(hass):
         result = await obj.async_process(request('Back to the gate issue', cid='new'))
     session = rt.sessions.get(request('next', cid=result.conversation_id))
     assert not session.entities and not session.resume_context['current_readings']
+    assert not session.resume_context['previous_reply'] and not session.resume_context['previous_question']
 
 
 async def test_guest_mode_hides_resume_and_skips_diagnostics(hass):
@@ -209,3 +210,34 @@ async def test_explicit_room_handoff_fails_closed(hass, hass_admin_user, hass_re
         assert 'Private reply' not in str(result.response.speech)
         assert len(rt.sessions.memory.topics) == 1
         process.assert_not_awaited()
+
+
+async def test_same_device_resume_aborts_if_privacy_changes_during_user_lookup(hass, hass_admin_user):
+    import asyncio
+
+    obj, rt = agent(hass, {'conversation_sessions': True})
+    user = hass_admin_user.id
+    rt.speech = SimpleNamespace(guest_mode=False, _privacy_generation=0, _guest_generation=0)
+
+    async def model(user_input):
+        current_session.get().entities = ['climate.heating']
+        return response('Which private detail did you mean?')
+
+    with patch.object(obj, '_async_process_legacy', side_effect=model):
+        await obj.async_process(request('How is the heating?', user=user))
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def get_user(_user_id):
+        entered.set()
+        await release.wait()
+        return hass_admin_user
+
+    with patch.object(hass.auth, 'async_get_user', side_effect=get_user):
+        turn = asyncio.create_task(obj.async_process(request('Back to the heating', cid='new', user=user)))
+        await entered.wait()
+        rt.speech._privacy_generation += 1
+        rt.sessions.memory.clear()
+        release.set()
+        result = await turn
+    assert not result.continue_conversation
+    assert 'private detail' not in str(result.response.speech)

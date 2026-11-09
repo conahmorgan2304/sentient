@@ -29,12 +29,20 @@ async def _api(hass):
 
 
 async def test_house_check_gathers_everything(hass: HomeAssistant) -> None:
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    async_expose_entity(hass, "conversation", "binary_sensor.back_door", True)
+    async_expose_entity(hass, "conversation", "binary_sensor.private_door", False)
     hass.states.async_set("binary_sensor.back_door", "on", {"device_class": "door", "friendly_name": "Back door"})
+    hass.states.async_set("binary_sensor.private_door", "on", {"device_class": "door", "friendly_name": "Private door"})
     hass.states.async_set("light.kitchen", "on", {"friendly_name": "Kitchen light"})
     hass.states.async_set("climate.hall", "heat", {"temperature": 20, "current_temperature": 18, "friendly_name": "Heating"})
     await _setup(hass)
     out = await (await _api(hass)).async_call_tool(llm.ToolInput(tool_name="sentient_house_check", tool_args={}))
     assert out["security"]["open"] == ["Back door"]
+    assert "Private door" not in out["security"]["summary"]
     assert out["lights_and_fans_on"] == ["Kitchen light"]
     assert out["thermostats"] == ["Heating: heat, set to 20°, now 18°"]
     assert out["house"] == "awake"

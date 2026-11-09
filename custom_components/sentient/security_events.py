@@ -283,10 +283,14 @@ class SecurityEvents:
                 for event in data if isinstance(data, list) else []:
                     if isinstance(event, dict) and event.get("camera") == camera:
                         self.ingest(event)
-            except Exception:  # noqa: BLE001
-                return None
+            except Exception:  # noqa: BLE001 - an MQTT candidate may still arrive
+                pass
             found = candidates()
-        return deepcopy(found[0]) if len(found) == 1 and stamp == self.stamp() else None
+        if not found and self._unsub is not None and stamp == self.stamp():
+            # Occupancy may arrive before its tracked object. Keep the original camera and time window.
+            await asyncio.sleep(1.5)
+            found = candidates()
+        return deepcopy(found[0]) if len(found) == 1 and stamp == self.stamp() and self.on(CONF_EVENT_EVIDENCE) else None
 
     def alert(self, event_id, sensor, reason, text, incident_id):
         if not self.on(CONF_EVENT_EVIDENCE) or (row := self.items.get(event_id)) is None:

@@ -261,6 +261,19 @@ class BackedUpAgent(conversation.ConversationEntity):
             labels = "; ".join(f"{i + 1}: {t['subject']}" for i, t in enumerate(candidates[:3]))
             return self._reply(user_input, session, f"I found several discussions: {labels}. Which one do you mean?", True)
         topic = candidates[0]
+        if not handoff:
+            privacy = self._history_generation()
+            user = await self.hass.auth.async_get_user(user_input.context.user_id) if user_input.context.user_id else None
+            if session.closed or self._guest() or privacy != self._history_generation():
+                return self._reply(user_input, session, "Please start a fresh discussion.")
+            if user_input.context.user_id and (user is None or not user.is_active):
+                return self._reply(user_input, session, "This discussion needs an active Home Assistant user.")
+            for eid in topic['entities']:
+                if ((user and not user.permissions.check_entity(eid, POLICY_READ))
+                        or not async_should_expose(self.hass, "conversation", eid)):
+                    continue
+                readings.append(describe_state(self.hass, eid))
+        share_history = not handoff and len(readings) == len(topic['entities'])
         rt.sessions.rekey(session)
         session.active = True
         session.mode = "discussion"
@@ -276,27 +289,20 @@ class BackedUpAgent(conversation.ConversationEntity):
         session.resumed_from = topic['id']
         session.task_state = "waiting"
         session.listen_reason = "topic_resumed"
-        if not handoff:
-            user = await self.hass.auth.async_get_user(user_input.context.user_id) if user_input.context.user_id else None
-            for eid in topic['entities']:
-                if (user_input.context.user_id and (user is None or not user.is_active or not user.permissions.check_entity(eid, POLICY_READ))
-                        or not async_should_expose(self.hass, "conversation", eid)):
-                    continue
-                readings.append(describe_state(self.hass, eid))
         session.entities = [r['entity_id'] for r in readings]
         session.question = ''
         session.clarification = session.clarification_resolution = session.follow_up_context = None
         session.resume_context = {
             'turn': session.turn, 'needs_request': True, 'saved_at': topic['saved_at'],
-            'previous_reply': '' if handoff else topic['previous_reply'],
-            'previous_question': '' if handoff else topic['question'],
+            'previous_reply': topic['previous_reply'] if share_history else '',
+            'previous_question': topic['question'] if share_history else '',
             'current_readings': readings,
             'instruction': "Historical discussion only, not verified current facts or permission to act. "
                            "Use refreshed readings; fetch new evidence for other claims. Ask for a new explicit action request, never treat yes to a restored question as authorisation.",
         }
         # Deliberately no model or control call: resume a topic, never replay a task.
         reply = f"Picking up {session.topic}. " if handoff else f"We were discussing {topic['subject']}. "
-        if not handoff and topic['question']:
+        if share_history and topic['question']:
             reply += f"The previous question was: {topic['question']} "
         if readings:
             reply += "Current reports: " + "; ".join(

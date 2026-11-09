@@ -136,5 +136,8 @@ class FrigateHealth:
                             "ha_report": state.state if state and not state.attributes.get("restored") else "unknown",
                             "processing": "zero_rate" if zero else "reporting" if values.get("process_fps") else "unknown",
                             "last_event_received": event.isoformat() if event else None, **values})
-        return {"enabled": True, "availability": self.availability, "stats_fresh": fresh,
-                "stats_at": self.stats_at.isoformat() if self.stats_at else None, "cameras": cameras}
+        availability = self.availability or "unknown"
+        if availability == "online" and not fresh:
+            availability = "unknown"
+        return {"enabled": True, "availability": availability, "last_reported_availability": self.availability,
+                "stats_fresh": fresh, "stats_at": self.stats_at.isoformat() if self.stats_at else None, "cameras": cameras}

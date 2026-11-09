@@ -22,6 +22,8 @@ async def test_frigate_health_ignores_retained_stats_and_quiet_camera_is_not_fai
     monitor._received(SimpleNamespace(payload=json.dumps({"type": "new", "after": event(camera="shed")}), retain=False), "events")
     assert monitor.report(hass_admin_user)["cameras"][1]["last_event_received"]
     freezer.tick(timedelta(minutes=4))
+    assert monitor.report(hass_admin_user)["availability"] == "unknown"
+    assert monitor.report(hass_admin_user)["last_reported_availability"] == "online"
     assert not monitor.report(hass_admin_user)["stats_fresh"]
     monitor.configure({})
     assert monitor.report(hass_admin_user) == {"enabled": False}
