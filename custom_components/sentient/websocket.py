@@ -455,6 +455,95 @@ def page_access(func):
     return wrapper
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/heating/programme/save", vol.Optional("programme_id"): str,
+    vol.Required("programme"): dict,
+})
+@websocket_api.require_admin
+@callback
+def ws_heating_programme_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Add or change a heating programme: heaters, days and on/off periods."""
+    from .heating_schedule import clean_programme
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    try:
+        data = clean_programme(rt.options, msg["programme"])
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    if pid := msg.get("programme_id"):
+        if pid not in rt.heat_prog.items.items:
+            connection.send_error(msg["id"], "not_found", "That heating programme no longer exists")
+            return
+        data["id"] = pid
+    connection.send_result(msg["id"], rt.heat_prog.items.upsert(data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/heating/programme/delete", vol.Required("programme_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_heating_programme_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    ok = bool(entry and entry.runtime_data.heat_prog.items.remove(msg["programme_id"]))
+    connection.send_result(msg["id"], {"removed": ok})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/today"})
+@page_access
+@callback
+def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The overview's TODAY card: weather, who's home, what's next (alarms, reminders, bins), heating."""
+    from .heating_schedule import enabled as sched_on, next_change
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_result(msg["id"], {})
+        return
+    rt = entry.runtime_data
+    opts = rt.options
+    out: dict[str, Any] = {}
+    if (w := hass.states.get(str(opts.get("briefing_weather") or ""))) is not None and w.state not in ("unavailable", "unknown"):
+        out["weather"] = {"condition": w.state, "temp": w.attributes.get("temperature"), "unit": w.attributes.get("temperature_unit"),
+                          "humidity": w.attributes.get("humidity"), "wind": w.attributes.get("wind_speed")}
+    people = []
+    for st in hass.states.async_all("person"):
+        people.append({"name": st.name, "home": st.state == "home", "where": st.state})
+    if not people:
+        for eid in opts.get("welcome_people") or []:
+            if (st := hass.states.get(eid)) is not None:
+                people.append({"name": st.name, "home": st.state == "home", "where": st.state})
+    out["people"] = people
+    now = dt_util.utcnow()
+    soon = []
+    for a in rt.alarms.listing():
+        if a["on"] and a["next"] and (dt_util.parse_datetime(a["next"]) - now).total_seconds() < 36 * 3600:
+            soon.append({"when": a["next"], "what": a["name"], "kind": "routine" if a["silent"] else "alarm"})
+    if (cal := hass.states.get(str(opts.get("bins_calendar") or ""))) is not None and cal.attributes.get("start_time"):
+        start = dt_util.parse_datetime(str(cal.attributes["start_time"])) or None
+        if start is not None:
+            start = dt_util.as_utc(start if start.tzinfo else start.replace(tzinfo=dt_util.get_default_time_zone()))
+            if (start - now).total_seconds() < 3 * 86400:
+                soon.append({"when": start.isoformat(), "what": str(cal.attributes.get("message") or "Bins"), "kind": "bins"})
+    for w in list(getattr(rt.watches, "_watches", {}).values()):
+        try:
+            soon.append({"when": w.until_dt.isoformat(), "what": w.what, "kind": "watch"})
+        except Exception:  # noqa: BLE001 - a malformed watch shouldn't hide the rest
+            continue
+    out["soon"] = sorted(soon, key=lambda x: x["when"])[:8]
+    zones = []
+    for eid in rt.heating.entities:
+        if (st := hass.states.get(eid)) is not None:
+            zones.append({"name": st.name, "now": st.attributes.get("current_temperature"), "target": st.attributes.get("temperature"),
+                          "state": st.state, "action": st.attributes.get("hvac_action")})
+    progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
+    out["heating"] = {"zones": zones, "next": next_change(progs, dt_util.now()) if sched_on(opts) else None}
+    connection.send_result(msg["id"], out)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/inner"})
 @page_access
 @callback
@@ -528,7 +617,15 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
                           "enabled": item.get("enabled", True), "entity_id": item["heating"].get("entity_id"),
                           "temperature": item["heating"].get("temperature"), "what": describe(hass, item["heating"]), "next": nxt})
     schedules.sort(key=lambda x: x["time"])
+    from .heating_schedule import next_change, wanted_on
+
+    progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
+    now = dt_util.now()
+    for z in zones:
+        p = wanted_on(progs, z["entity_id"], now)
+        z["scheduled"] = {"on": True, "until": p["off"], "temp": p["temp"]} if p else {"on": False}
     connection.send_result(msg["id"], {
+        "programmes": sorted(progs, key=lambda p: p["name"].lower()), "next": next_change(progs, now) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
         "admin": connection.user.is_admin,
@@ -737,6 +834,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
+    websocket_api.async_register_command(hass, ws_today)
+    websocket_api.async_register_command(hass, ws_heating_programme_save)
+    websocket_api.async_register_command(hass, ws_heating_programme_delete)
     websocket_api.async_register_command(hass, ws_inner_dismiss)
     websocket_api.async_register_command(hass, ws_thumb)
     websocket_api.async_register_command(hass, ws_style)

@@ -199,7 +199,25 @@ class InnerLife:
         self.corrections = [c for c in self.corrections if c["t"] >= cutoff]
         if self.learn_on:
             self.evaluate_lessons()
+        self.tidy_memory()
         self._save()
+
+    def tidy_memory(self) -> list[str]:
+        """Let go of memories whose day has passed, and link older ones to the devices and rooms they name."""
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        if memory is None:
+            return []
+        gone = memory.prune_expired()
+        for m in memory.items:
+            if not m.links and (links := memory.links_for(m.text)):
+                m.links = links
+        if gone:
+            names = "; ".join(m.text.rstrip(".") for m in gone[:3])
+            self._think(f"expired:{dt_util.now().date().isoformat()}", f"I've let go of {len(gone)} thing{'s' if len(gone) != 1 else ''} whose day has passed: {names}.",
+                        "dated memories are kept until the day after", "lesson")
+            rt.timeline.add("mind", f"Forgot {len(gone)} out-of-date memor{'ies' if len(gone) != 1 else 'y'}", names[:200])
+        return [m.text for m in gone]
 
     def evaluate_lessons(self) -> list[str]:
         """Look at the last fortnight's corrections; hand back a routine that keeps being undone."""
@@ -303,6 +321,13 @@ class InnerLife:
                              "text": (f"I guessed which room someone goes to next and was right {pct}% of the time ({p['right']} of {p['tried']})"
                                       + (". That's good enough to rely on." if p["trusted"] else ". Still learning, so I'm not acting on it yet.")),
                              "why": "checked after every journey between rooms"})
+        rt = self._rt()
+        memory = getattr(rt, "memory", None) if rt is not None else None
+        if self.thoughts_on and memory is not None:
+            for c in reversed(getattr(memory, "changed", [])[-3:]):
+                if c.get("kind") == "replaced":
+                    live.append({"key": "mem:" + c["time"], "kind": "memory", "t": dt_util.parse_datetime(c["time"]).timestamp(),
+                                 "text": f"I've updated what I know: \"{c['new']}\"", "why": f"it replaces \"{c['old']}\""})
         since14 = dt_util.utcnow().timestamp() - LOOKBACK_DAYS * 86400
         return {**out, "thoughts": sorted(shown, key=lambda t: t["t"], reverse=True)[:10] + live,
                 "corrections": sum(1 for c in self.corrections if c["t"] >= since14) if self.learn_on else None,

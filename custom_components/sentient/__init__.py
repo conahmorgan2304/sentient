@@ -176,6 +176,7 @@ class SentientRuntime:
     screen: Screen
     threads: Any = None  # things to ask about later
     selfaware: Any = None  # what it can do now, and how its behaviour is going down
+    heat_prog: Any = None  # the heating schedule: programmes of on/off periods for chosen heaters
     inner: Any = None  # corrections it learns from, an unusual day, next-room guesses and its thoughts
     proposals: Any = None  # settings changes it would make, waiting for a yes
     holiday: Any = None  # holiday mode
@@ -509,6 +510,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     offers = Offers(hass, lists["offers"], get_rt)
     announcements = Announcements(hass, lists["announce"], get_rt)
     alarms = Alarms(hass, lists["alarms"], get_rt)
+    from .heating_schedule import HeatingProgrammes
+
+    prog_items = Items(hass, entry.entry_id, "heating_programmes", {"enabled": True, "heaters": [], "days": [], "periods": []})
+    await prog_items.async_load()
+    heat_prog = HeatingProgrammes(hass, prog_items, get_rt)
     checks = CameraChecks(hass, lists["checks"], get_rt)
     autooff = AutoOff(hass, lists["autooff"], get_rt)
     from .rules import Rules
@@ -661,7 +667,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, heat_prog=heat_prog, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
     )
     house_context.configure()
     await security_events.async_start()
@@ -678,7 +684,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
                "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
-               "selfaware": selfaware, "inner": inner, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
+               "selfaware": selfaware, "inner": inner, "heat_prog": heat_prog, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
                "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
     timings: dict[str, float] = {}
     for name, engine in engines.items():
