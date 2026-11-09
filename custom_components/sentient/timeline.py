@@ -100,7 +100,7 @@ class Timeline:
 
     # ----- recording -----------------------------------------------------------------
     @callback
-    def add(self, kind: str, text: str, detail: str | None = None, **extra: Any) -> None:
+    def add(self, kind: str, text: str, detail: str | None = None, **extra: Any) -> dict | None:
         if not text:
             return
         item = {"time": dt_util.utcnow().isoformat(), "kind": kind, "text": text}
@@ -109,13 +109,14 @@ class Timeline:
         item.update({k: v for k, v in extra.items() if v is not None})
         self.items.appendleft(item)
         self._save()
-        self.hass.bus.async_fire(EVENT_TIMELINE, item)
+        self.hass.bus.async_fire(EVENT_TIMELINE, dict(item))
+        return item
 
     @callback
-    def mark(self, time: str | None, **fields: Any) -> None:
+    def mark(self, time: str | dict | None, **fields: Any) -> None:
         """Add details to an item already on the timeline (e.g. that it went to the phones)."""
         for item in self.items:
-            if item.get("time") == time:
+            if item is time or item.get("time") == time:
                 item.update(fields)
                 self._save()
                 return

@@ -92,3 +92,38 @@ test('motion cannot select an excluded camera and leaving Security removes the s
   assert.equal(panel._liveCamKey, null);
   assert.equal(panel._liveCard, null);
 });
+
+test('an offline gate is unconfirmed, and open doors and triggered alarms remain visible', () => {
+  const panel = new Panel();
+  const el = {};
+  panel._hass = { states: {
+    'binary_sensor.gate': { entity_id: 'binary_sensor.gate', state: 'unavailable', attributes: { device_class: 'door', friendly_name: 'Gate' } },
+    'binary_sensor.back': { entity_id: 'binary_sensor.back', state: 'on', attributes: { device_class: 'door', friendly_name: 'Back' } },
+    'alarm_control_panel.home': { entity_id: 'alarm_control_panel.home', state: 'triggered', attributes: {} },
+  } };
+  panel._drawSecurityInto(el);
+  assert.match(el.innerHTML, /Gate.*STATUS UNKNOWN/);
+  assert.match(el.innerHTML, /Back.*OPEN/);
+  assert.match(el.innerHTML, /ALARM ACTIVE/);
+  assert.doesNotMatch(el.innerHTML, /ALL SHUT/);
+});
+
+test('replay shows exact elapsed time, a recorded coverage gap and the selected clip', () => {
+  const panel = new Panel(), el = { querySelector: () => null };
+  panel._$ = (id) => id === "replay" ? el : null;
+  panel._replayOpen = true;
+  panel._replayData = { enabled: true, points: {'camera.shed': [65, 20]}, image: '/local/floorplan.png', incidents: [],
+    selected: { id: 'abc', start: '2026-11-09T21:14:00Z', label: 'Gate and Shed', steps: [
+      { offset: 0, source: 'binary_sensor.gate', kind: 'contact', name: 'Gate', text: 'Opened' },
+      { offset: 12, source: 'camera.shed', kind: 'event', name: 'Shed', text: 'Person reported',
+        gaps: [{entity: 'camera.garden', name: 'Garden', state: 'unavailable'}],
+        clip: '/api/frigate/notifications/123.event/clip.mp4' },
+    ] } };
+  panel._replayStep = 1;
+  panel._drawReplay();
+  assert.match(el.innerHTML, /left:65%;top:20%/);
+  assert.match(el.innerHTML, /Garden · unavailable/);
+  assert.match(el.innerHTML, /\+12s/);
+  assert.match(el.innerHTML, /123\.event\/clip\.mp4/);
+  assert.match(el.innerHTML, /route unconfirmed/);
+});

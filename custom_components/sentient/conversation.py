@@ -366,6 +366,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .behaviour import requested as explanation_requested
         from .household_tasks import requested as household_task
         from .topics import handoff_match
+        from .incident_replay import replay_match
 
         recovery_control = getattr(self._entry.runtime_data, 'control', None)
         if recovery_control is not None and self._options().get("action_recovery"):
@@ -375,7 +376,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             elif not recovery_requested(user_input.text) and not explanation_requested(self._options(), user_input.text):
                 recovery_control.invalidate_recovery(owner)
         options = self._options()
-        explicit = household_task(options, user_input.text) or (
+        explicit = replay_match(options, user_input.text) or household_task(options, user_input.text) or (
             options.get(CONF_SESSIONS) and handoff_match(options, normalise(user_input.text))
         )
         privacy = self._history_generation()
@@ -509,9 +510,16 @@ class BackedUpAgent(conversation.ConversationEntity):
     async def _process_turn(self, user_input):
         from .household_tasks import requested as household_task
         from .topics import handoff_match
+        from .incident_replay import replay_match, show_on_tablet
 
         opts = self._options()
         rt = self._entry.runtime_data
+        if replay := replay_match(opts, user_input.text):
+            if opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED):
+                self._cancel_session(user_input)
+                user_input = replace(user_input, conversation_id=None)
+            message = await show_on_tablet(self.hass, rt, user_input.context, replay.group(1) or "")
+            return self._plain_reply(user_input, message)
         task = household_task(opts, user_input.text)
         handoff = opts.get(CONF_SESSIONS) and handoff_match(opts, normalise(user_input.text))
         if task and not (opts.get(CONF_SESSIONS) or opts.get(CONF_GUARDED)):

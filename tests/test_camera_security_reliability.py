@@ -76,6 +76,9 @@ async def test_late_security_result_cannot_publish_after_context_changes(hass, c
     with patch("custom_components.sentient.camsecurity.camera_for", return_value="camera.garden"), patch.object(obj, "_describe", describe):
         task = asyncio.create_task(obj._async_alert("binary_sensor.garden_person", "Person reported"))
         await entered.wait()
+        rt.timeline.add.assert_called_once()
+        rt.speech.async_say.assert_awaited_once()
+        assert "Person reported" in rt.timeline.add.call_args.args[1]
         if change == "disable": obj.options["camera_security"] = False
         elif change == "remove": obj.options["camera_security_sensors"] = []
         elif change == "privacy": rt.speech._privacy_generation += 1
@@ -85,8 +88,9 @@ async def test_late_security_result_cannot_publish_after_context_changes(hass, c
         else: obj.clear()
         release.set()
         await task
-    rt.timeline.add.assert_not_called()
-    rt.speech.async_say.assert_not_awaited()
+    rt.timeline.add.assert_called_once()
+    rt.timeline.mark.assert_not_called()
+    rt.speech.async_say.assert_awaited_once()
     assert not obj._pending_alert_keys
 
 
@@ -105,7 +109,8 @@ async def test_clear_cancels_retained_security_tasks(hass):
         obj.clear()
         await asyncio.gather(*tasks, return_exceptions=True)
     assert tasks and all(t.cancelled() for t in tasks)
-    rt.timeline.add.assert_not_called()
+    rt.timeline.add.assert_called_once()
+    rt.timeline.mark.assert_not_called()
 
 
 async def test_cancel_before_first_task_turn_releases_incident_reservation(hass):
@@ -133,11 +138,12 @@ async def test_context_change_releases_own_pending_key_for_the_next_alert(hass):
         obj._alert("binary_sensor.garden_person", "Person reported", "night")
         await hass.async_block_till_done()
     assert not obj._pending_alert_keys
-    rt.timeline.add.assert_not_called()
+    rt.timeline.add.assert_called_once()
+    rt.timeline.mark.assert_not_called()
     obj.options["camera_security_describe"] = False
     obj._alert("binary_sensor.garden_person", "New detection", "night")
     await hass.async_block_till_done()
-    assert rt.timeline.add.call_count == 1
+    assert rt.timeline.add.call_count == 2
 
 
 async def test_empty_later_image_keeps_sensor_alert_and_cooldown(hass):
@@ -149,7 +155,7 @@ async def test_empty_later_image_keeps_sensor_alert_and_cooldown(hass):
         obj._alert("binary_sensor.garden_person", "Person reported", "night")
         await hass.async_block_till_done()
     assert rt.timeline.add.call_count == 1
-    assert "earlier sensor detection is unverified" in rt.timeline.add.call_args.args[1]
+    assert "earlier sensor detection is unverified" in rt.timeline.mark.call_args.kwargs["analysis"]
     assert rt.speech.async_say.await_count == 1
 
 

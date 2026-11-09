@@ -120,6 +120,7 @@ class SentientRuntime:
     household_tasks: Any
     incidents: Any
     security_events: Any
+    frigate_health: Any
     clip_analysis: Any
     memory: MemoryStore
     speech: SpeechRouter
@@ -563,7 +564,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .security_events import SecurityEvents
     from .clip_analysis import ClipAnalysis
 
+    from .frigate_health import FrigateHealth
+
     security_events = SecurityEvents(hass, entry.entry_id, options, get_rt)
+    frigate_health = FrigateHealth(hass, options)
     clip_analysis = ClipAnalysis(get_rt)
     def _house_did() -> dict[str, set[int]]:  # away lights, and everything else the house switched itself
         out = {k: set(v) for k, v in own.times().items()}
@@ -661,7 +665,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     control = Control(hass, options, timeline)
     entry.runtime_data = SentientRuntime(
-        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, clip_analysis=clip_analysis,
+        house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, frigate_health=frigate_health, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
         noticer=noticer, learner=learner, upkeep=upkeep, visitors=visitors, spots=spots, health=health,
         motion_lights=motion_lights, timeline=timeline, notifier=notifier, welcome=welcome, mutes=mutes, critical=critical, shortcuts=shortcuts, left_open=left_open,
@@ -679,6 +683,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(clip_analysis.clear)
     entry.runtime_data.control.on_result = house_context.track
     entry.async_on_unload(house_context.stop)
+    frigate_health.configure(options)
+    entry.async_on_unload(frigate_health.async_stop)
     # things that listen for events and use the runtime start only once it exists (an event during set-up
     # would otherwise find no runtime_data)
     for engine in (upkeep, critical, left_open, welcome):
@@ -828,6 +834,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
             await engine.async_start()
             entry.async_on_unload(engine.async_stop)
             entry.runtime_data.dormant.discard(name)
+    entry.runtime_data.frigate_health.configure(options)
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()

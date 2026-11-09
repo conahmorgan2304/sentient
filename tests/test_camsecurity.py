@@ -126,9 +126,13 @@ async def test_empty_later_snapshot_preserves_sensor_alert(hass: HomeAssistant, 
             patch("custom_components.sentient.camsecurity.camera_for", lambda *_: "camera.shed"):
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
         assert said and any(i.get("alert") for i in entry.runtime_data.timeline.items)
-        assert "No person was visible in the later snapshot" in said[-1].data["message"]
+        assert "No person was visible in the later snapshot" in next(
+            i["analysis"] for i in entry.runtime_data.timeline.items if i.get("analysis")
+        )
+        assert "No person was visible" not in said[-1].data["message"]
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
-    assert said and "A man is at the shed door." in said[-1].data["message"]
+    assert len(said) == 1
+    assert any(i.get("analysis") == "A man is at the shed door." for i in entry.runtime_data.timeline.items)
 
 
 async def test_in_the_garden_while_everyone_is_out_is_an_alert_by_day(hass: HomeAssistant, freezer) -> None:

@@ -378,3 +378,40 @@ def test_reflection_folds_up_motion_light_noise(hass):
     log, _ = Reflection(hass, 'fold', {}, lambda: rt)._material(rt)
     assert sum('Hallway light' in line for line in log) == 1 and '59 times' in next(l for l in log if 'Hallway' in l)
     assert not any('Kettle' in line for line in log) and any('door' in line for line in log)
+
+
+def test_generic_recall_omits_expired_and_ambiguous_forget_is_safe(memory):
+    expired = memory.add('The gate work was booked')
+    expired.expires = '2020-01-01'
+    expired.hits = 20
+    kitchen = memory.add('The kitchen lamp is called Little Light')
+    lounge = memory.add('The lounge lamp is called Big Light')
+    assert expired not in memory.search('what', count_hits=False)
+    assert memory.forget('lamp') is None
+    assert memory.get(kitchen.id) is kitchen
+    assert memory.get(lounge.id) is lounge
+    assert memory.forget('The kitchen lamp is called Little Light.') is kitchen
+
+
+async def test_memory_recall_distinguishes_explicit_wording_inference_and_edits(hass, memory):
+    from homeassistant.helpers import llm
+    from custom_components.sentient.focus import current_request
+    from custom_components.sentient.llm_api import RecallTool, RememberTool
+
+    rt = SimpleNamespace(memory=memory)
+    ctx = llm.LLMContext(platform="voice", context=None, language="en", assistant=None, device_id=None)
+    memory.add("Garden lights are usually off", source="reflection")
+    with patch("custom_components.sentient.llm_api._runtime", return_value=rt):
+        token = current_request.set("Remember that the porch light is called Lantern.")
+        try:
+            added = await RememberTool().async_call(hass, llm.ToolInput(
+                tool_name="sentient_remember", tool_args={"text": "The porch light is called Lantern"}), ctx)
+        finally:
+            current_request.reset(token)
+        query = llm.ToolInput(tool_name="sentient_recall", tool_args={"query": "lights"})
+        rows = (await RecallTool().async_call(hass, query, ctx))["memories"]
+        assert {r["basis"] for r in rows} == {"explicitly asked to remember this wording", "inferred in reflection"}
+        assert all(r["first_saved_at"] for r in rows)
+        memory.update(added["id"], "The porch light is called Wall Lamp")
+        rows = (await RecallTool().async_call(hass, query, ctx))["memories"]
+        assert any(r["basis"] == "memory was edited after it was first saved" for r in rows)

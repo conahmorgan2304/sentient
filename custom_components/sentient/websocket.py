@@ -31,6 +31,8 @@ from .followups import CONF_CONTEXTUAL_FOLLOWUPS
 from .const import CONF_RECOVERY
 from .household_tasks import CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS
 from .incidents import CONF_COVERAGE
+from .frigate_health import CONF_FRIGATE_HEALTH
+from .incident_replay import CONF_REPLAY, CONF_REPLAY_IMAGE, CONF_REPLAY_POINTS, CONF_REPLAY_TABLET
 from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
 from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
@@ -326,7 +328,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
-        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE,
+        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
+        CONF_REPLAY, CONF_REPLAY_IMAGE, CONF_REPLAY_POINTS, CONF_REPLAY_TABLET,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, comfort temperature, time limit and warm-by times, and the heating schedule, are on the House tab.", [
         CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH,
@@ -990,6 +993,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_export)
     websocket_api.async_register_command(hass, ws_energy)
     websocket_api.async_register_command(hass, ws_security)
+    websocket_api.async_register_command(hass, ws_security_replay)
     websocket_api.async_register_command(hass, ws_critical_test)
     websocket_api.async_register_command(hass, ws_reading_try)
     websocket_api.async_register_command(hass, ws_doctor)
@@ -1053,6 +1057,9 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
 # (their values are kept, so switching back on brings them back as they were)
 DEPENDS: dict[str, str] = {
     CONF_ROOM_HANDOFF: CONF_SESSIONS,
+    CONF_REPLAY_IMAGE: CONF_REPLAY,
+    CONF_REPLAY_POINTS: CONF_REPLAY,
+    CONF_REPLAY_TABLET: CONF_REPLAY,
     CONF_BEDTIME_LIGHTS: CONF_BEDTIME,
     CONF_BEDTIME_CONTACTS: CONF_BEDTIME,
     **{k: "sleep_detection" for k in ("sleep_minutes", "sleep_ignore_sensors", "bedtime_routines", "sleep_actions", "wake_actions")},
@@ -1646,6 +1653,25 @@ def ws_security(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .security import check
 
     connection.send_result(msg["id"], check(hass))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/security/replay",
+    vol.Optional("incident_id"): vol.All(str, vol.Length(max=40)),
+    vol.Optional("query"): vol.All(str, vol.Length(max=120)),
+})
+@page_access
+@callback
+def ws_security_replay(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .incident_replay import replay_data
+
+    if (entry := _entry(hass)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    result = replay_data(hass, rt, connection.user, msg.get("incident_id"), msg.get("query", ""))
+    result["health"] = {"enabled": False} if rt.speech.guest_mode else rt.frigate_health.report(connection.user)
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/critical/test"})

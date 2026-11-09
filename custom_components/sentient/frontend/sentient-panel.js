@@ -70,7 +70,17 @@
       const want = path.startsWith("/settings") ? "settings" : path.startsWith("/timeline") ? "timeline" : path.startsWith("/mind") ? "mind" : path.startsWith("/security") ? "security" : path.startsWith("/house") ? "house" : "overview";
       // a phone notification was tapped: show that moment on the timeline
       try {
-        const item = new URLSearchParams(window.location.search).get("item");
+        const params = new URLSearchParams(window.location.search);
+        const item = params.get("item");
+        const incident = params.get("incident");
+        if (want === "security" && incident && incident !== this._replayDeepLink && /^[a-f0-9]{12}$/.test(incident)) {
+          this._replayDeepLink = incident;
+          this._replayOpen = true;
+          this._replayId = incident;
+          this._replayStep = 0;
+          this._replayAt = 0;
+          if (this.shadowRoot && this._view === "security") { this._clearLive(); this._loadReplay(); }
+        }
         if (want === "timeline" && item && item !== this._tlFocusDone) {
           this._tlFocus = item; this._tlKind = "all";
           if (this.shadowRoot && this._view === "timeline") this._openTimeline();  // already open: fetch it fresh
@@ -84,6 +94,7 @@
     disconnectedCallback() {
       clearInterval(this._tick);
       this._clearLive();
+      this._stopReplay();
       if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
     }
 
@@ -136,7 +147,8 @@
             <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
-          <div class="lanes ov3">
+          <div id="replay" class="card" hidden></div>
+          <div class="lanes ov3" id="seclanes">
             <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
             <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
             <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="camc" class="card"></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
@@ -178,7 +190,7 @@
     }
 
     _show(view, push) {
-      if (this._view === "security" && view !== "security") this._clearLive();
+      if (this._view === "security" && view !== "security") { this._clearLive(); this._stopReplay(); this._replayAt = 0; }
       this._view = view;
       this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
@@ -388,7 +400,11 @@
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
       R("minc").hidden = !incidentRows;
       R("minc").innerHTML = incidentRows ? this._h("EVENT DETAILS", "") + incidentRows : "";
-      if (this._view === "security") { this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind); }
+      if (this._view === "security") {
+        if (!this._replayOpen) this._drawLive(mind);
+        this._drawSecTimeline(mind); this._drawSnaps(mind);
+        if (Date.now() - (this._replayAt || 0) > 15000) this._loadReplay();
+      }
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
       if (this._view === "mind") this._loadInner();
@@ -1215,16 +1231,31 @@
     }
 
     _securityNow() {
-      const OPEN = ["door", "window", "garage_door", "opening"], open = [], unlocked = [], alarms = [];
+      const open = [], unlocked = [], alarms = [], unknown = [];
+      let perimeter = 0;
       for (const st of Object.values(this._hass.states)) {
         const [d] = st.entity_id.split(".");
         const dc = st.attributes.device_class, name = st.attributes.friendly_name || st.entity_id;
-        if (d === "binary_sensor" && st.state === "on" && OPEN.includes(dc)) open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
-        else if (d === "cover" && ["open", "opening"].includes(st.state) && ["garage", "gate", "door"].includes(dc)) open.push({ name, icon: "mdi:garage-open" });
-        else if (d === "lock" && ["unlocked", "open", "opening", "jammed"].includes(st.state)) unlocked.push({ name });
-        else if (d === "alarm_control_panel") alarms.push({ name, state: st.state });
+        const state = st.state;
+        if (d === "binary_sensor" && ["door", "window", "garage_door", "opening"].includes(dc)) {
+          perimeter++;
+          if (state === "on") open.push({ name, icon: dc === "window" ? "mdi:window-open-variant" : "mdi:door-open" });
+          else if (state !== "off") unknown.push(name);
+        } else if (d === "cover" && ["garage", "gate", "door"].includes(dc)) {
+          perimeter++;
+          if (["open", "opening"].includes(state)) open.push({ name, icon: "mdi:garage-open" });
+          else if (state !== "closed") unknown.push(name);
+        } else if (d === "lock") {
+          perimeter++;
+          if (["unlocked", "open", "opening", "jammed"].includes(state)) unlocked.push({ name, state });
+          else if (state !== "locked") unknown.push(name);
+        } else if (d === "alarm_control_panel") {
+          alarms.push({ name, state });
+          if (!["disarmed", "triggered", "pending", "armed_home", "armed_away", "armed_night", "armed_vacation", "armed_custom_bypass"].includes(state)) unknown.push(name);
+        }
       }
-      return { open, unlocked, alarms, key: open.map((o) => o.name).join(",") + "|" + unlocked.map((u) => u.name).join(",") + "|" + alarms.map((a) => a.state).join(",") };
+      const key = JSON.stringify([open, unlocked, alarms, unknown, perimeter]);
+      return { open, unlocked, alarms, unknown, perimeter, key };
     }
 
     // ---------- overview: today and coming up ----------
@@ -1641,6 +1672,118 @@
       }
     }
 
+    async _loadReplay(query) {
+      if (!this._hass || this._view !== "security") return;
+      const request = (this._replayRequest || 0) + 1;
+      this._replayRequest = request;
+      this._replayAt = Date.now();
+      const msg = { type: "sentient/security/replay" };
+      if (query) msg.query = query.slice(0, 120);
+      else if (this._replayId) msg.incident_id = this._replayId;
+      try {
+        const data = await this._hass.callWS(msg);
+        if (request !== this._replayRequest || this._view !== "security") return;
+        if (this._replayTimer && JSON.stringify(this._replayData?.selected?.steps) !== JSON.stringify(data.selected?.steps)) this._stopReplay();
+        this._replayData = data;
+        if (query && data.selected) this._replayId = data.selected.id;
+      } catch (error) {
+        if (request !== this._replayRequest) return;
+        this._stopReplay();
+        this._replayData = null;
+      }
+      this._drawReplay();
+    }
+
+    _stopReplay() {
+      clearTimeout(this._replayTimer);
+      this._replayTimer = null;
+    }
+
+    _playReplay() {
+      if (this._replayTimer) { this._stopReplay(); this._drawReplay(); return; }
+      const steps = this._replayData?.selected?.steps;
+      if (!steps?.length || steps.length === 1) return;
+      this._replayId = this._replayData.selected.id;
+      if ((this._replayStep || 0) >= steps.length - 1) this._replayStep = 0;
+      const tick = () => {
+        const index = this._replayStep || 0;
+        if (this._view !== "security" || index >= steps.length - 1) { this._stopReplay(); this._drawReplay(); return; }
+        const elapsed = steps[index + 1].offset - steps[index].offset;
+        this._replayTimer = setTimeout(() => { this._replayStep = index + 1; tick(); }, Math.min(2500, Math.max(550, elapsed * 110)));
+        this._drawReplay();
+      };
+      tick();
+    }
+
+    _drawReplay() {
+      const el = this._$("replay"), data = this._replayData;
+      if (!el) return;
+      el.hidden = !data?.enabled && !data?.health?.enabled;
+      const wide = !!(data?.enabled && this._replayOpen);
+      const lanes = this._$("seclanes");
+      if (lanes) lanes.hidden = wide;
+      el.classList?.toggle("rpwide", wide);
+      if (el.hidden) { this._stopReplay(); el.replaceChildren(); return; }
+      const health = data.health;
+      const pulse = (camera) => {
+        const label = camera.processing === "zero_rate" ? "ZERO PROCESSING RATE" : camera.processing === "reporting"
+          ? `${camera.process_fps.toFixed(1)} FPS PROCESSING` : "PROCESSING UNKNOWN";
+        const last = camera.last_event_received ? hm(camera.last_event_received) : "none received this session";
+        return `<div class="r${camera.processing === "reporting" ? "" : " warn"}"><ha-icon icon="mdi:cctv"></ha-icon><b>${esc(camera.name)}</b><u>${esc(label)}</u><small>HA ${esc(camera.ha_report)} · Last MQTT event ${esc(last)}</small></div>`;
+      };
+      const healthOpen = el.querySelector(".rphealth")?.open;
+      const healthHtml = health?.enabled ? `<details class="rphealth"${healthOpen ? " open" : ""}><summary>FRIGATE PIPELINE · ${esc((health.availability || "UNKNOWN").toUpperCase())} · ${health.stats_fresh ? "FRESH STATS" : "NO FRESH STATS"}</summary>
+        ${health.cameras.map(pulse).join("") || '<div class="e">NO CONFIGURED CAMERA TELEMETRY</div>'}
+        <small>Processing and event receipts do not verify recordings. Quiet cameras may have no recent events.</small></details>` : "";
+      if (!wide) {
+        el.innerHTML = (data.enabled ? '<button class="btn sm ghost" data-act="replayopen">OPEN INCIDENT REPLAY ›</button>' : "") + healthHtml;
+        return;
+      }
+      const selected = data.selected;
+      const choices = [...data.incidents];
+      if (selected && !choices.some((i) => i.id === selected.id)) choices.push(selected);
+      const choiceHtml = choices.map(i => `<button class="btn sm ghost${selected?.id === i.id ? " on" : ""}" data-act="replayincident" data-id="${esc(i.id)}" aria-pressed="${selected?.id === i.id}">${esc(hm(i.start))} · ${esc(i.label)}</button>`).join("");
+      const head = this._h("INCIDENT REPLAY", selected ? esc(hm(selected.start)) : "RECORDED EVIDENCE")
+        + '<button class="btn sm ghost" data-act="replayclose">‹ BACK TO SECURITY</button>';
+      if (!selected?.steps?.length) {
+        el.innerHTML = head + `<div class="rpchoices">${choiceHtml}</div><div class="e">NO MATCHING RETAINED INCIDENT</div>` + healthHtml;
+        return;
+      }
+      const steps = selected.steps;
+      const index = Math.min(this._replayStep || 0, steps.length - 1);
+      const active = steps[index];
+      const observed = new Set(steps.slice(0, index + 1).map(s => s.source));
+      const sources = new Map(steps.map(s => [s.source, s.name]));
+      const gaps = new Set((active.gaps || []).map(g => g.entity));
+      (active.gaps || []).forEach(g => sources.set(g.entity, g.name));
+      const markers = [...sources].map(([id, name]) => {
+        const point = data.points[id];
+        const cls = id === active.source ? " now" : gaps.has(id) ? " gap" : observed.has(id) ? " seen" : "";
+        return { point, html: `<span class="rpmarker${cls}"${data.image && point ? ` style="left:${point[0]}%;top:${point[1]}%"` : ""}><i></i>${esc(name)}${gaps.has(id) ? " · GAP" : ""}</span>` };
+      });
+      const map = data.image
+        ? `<div class="rpmap"><img alt="Security floorplan" src="${esc(data.image)}">${markers.filter(m => m.point).map(m => m.html).join("")}</div>
+           <div class="rpunmapped">${markers.filter(m => !m.point).map(m => m.html).join("")}</div>`
+        : `<div class="rpschematic" aria-label="Camera and contact schematic">${markers.map(m => m.html).join("")}</div>`;
+      const offset = (s) => `+${Math.round(s.offset * 10) / 10}s`;
+      const rows = steps.map((s, i) => `<button class="r rprow${i === index ? " on" : ""}" data-act="replaystep" data-id="${i}" aria-pressed="${i === index}">
+        <u>${offset(s)}</u><b>${esc(s.name)}</b><small>${esc(s.kind === "contact" ? "CONTACT" : s.status === "inferred" ? "INFERRED" : s.kind.toUpperCase())} · ${esc(s.text)}</small></button>`).join("");
+      const media = (active.snapshot ? `<img class="rpsnap" alt="Recorded event snapshot" src="${esc(active.snapshot)}">` : "")
+        + (active.analysis ? `<p class="rpnote">AI inference · ${esc(active.analysis)}</p>` : "")
+        + (active.clip ? `<a class="btn sm ghost" href="${esc(active.clip)}" target="_blank" rel="noopener">OPEN MATCHING CLIP ↗</a>` : "");
+      const gapText = active.gaps?.length ? `<div class="rpwarning">${active.gaps.map(g => `${esc(g.name)} · ${esc(g.state)}`).join(" / ")} at this observation</div>` : "";
+      el.innerHTML = head + `<div class="rpchoices">${choiceHtml}</div><div class="rpbody"><div>${map}
+        <div class="rplegend"><span><i></i> Selected observation</span><span class="gap"><i></i> Recorded coverage gap</span></div>
+        <div class="rpcontrols"><button class="btn sm ghost" data-act="replayplay" ${steps.length < 2 ? "disabled" : ""}>${this._replayTimer ? "PAUSE" : "PLAY"}</button>
+        <input type="range" aria-label="Incident replay position" min="0" max="${steps.length - 1}" value="${index}" id="replaypos"><u>${offset(active)}</u></div>
+        ${gapText}<div class="rpnote">Playback is sped up. Offsets show real elapsed time. Grouped observations leave the route unconfirmed.</div></div>
+        <div><div class="rplist">${rows}</div>${media}</div></div>` + healthHtml;
+      el.querySelector("#replaypos")?.addEventListener("change", (ev) => {
+        this._stopReplay(); this._replayStep = +ev.target.value; this._drawReplay();
+        el.querySelector("#replaypos")?.focus();
+      });
+    }
+
     _drawSecTimeline(mind) {
       const el = this._$("sectl");
       if (!el) return;
@@ -1715,15 +1858,20 @@
 
     _drawSecurityInto(el) {
       if (!el) return;
-      const { open, unlocked, alarms } = this._security();
+      const { open, unlocked, alarms, unknown, perimeter } = this._security();
       const bad = open.length + unlocked.length;
-      const alarm = alarms[0];
-      const armed = alarm && alarm.state.startsWith("armed");
-      el.innerHTML = this._h("SECURITY", bad ? `${bad} OPEN` : "ALL SHUT")
+      const alarmActive = alarms.some((alarm) => ["triggered", "pending"].includes(alarm.state));
+      const uncertain = unknown.length || !perimeter;
+      el.innerHTML = this._h("SECURITY", alarmActive ? "ALARM ACTIVE" : bad ? `${bad} TO CHECK` : uncertain ? "UNCONFIRMED" : "ALL SHUT")
         + open.map((o) => `<div class="r warn"><ha-icon icon="${esc(o.icon)}"></ha-icon><b>${esc(o.name)}</b><u>OPEN</u></div>`).join("")
-        + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>UNLOCKED</u></div>`).join("")
-        + (bad ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows shut</b></div>')
-        + (alarm ? `<div class="r${armed ? "" : " dim"}"><ha-icon icon="${esc(armed ? "mdi:shield-lock" : "mdi:shield-off-outline")}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ")).toUpperCase()}</u></div>` : "");
+        + unlocked.map((u) => `<div class="r bad"><ha-icon icon="mdi:lock-open-variant-outline"></ha-icon><b>${esc(u.name)}</b><u>${esc(u.state.toUpperCase())}</u></div>`).join("")
+        + unknown.map((name) => `<div class="r warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(name)}</b><u>STATUS UNKNOWN</u></div>`).join("")
+        + (!perimeter ? '<div class="e">NO DOOR, WINDOW OR LOCK READINGS</div>' : "")
+        + (bad || uncertain || alarmActive ? "" : '<div class="r"><ha-icon icon="mdi:shield-check-outline"></ha-icon><b>Doors and windows report shut</b></div>')
+        + alarms.map((alarm) => {
+          const armed = alarm.state.startsWith("armed");
+          return `<div class="r${["triggered", "pending"].includes(alarm.state) ? " bad" : armed ? "" : " dim"}"><ha-icon icon="${armed ? "mdi:shield-lock" : "mdi:shield-outline"}"></ha-icon><b>${esc(alarm.name)}</b><u>${esc(alarm.state.replace("armed_", "SET · ").replace("_", " ").toUpperCase())}</u></div>`;
+        }).join("");
     }
 
     _drawMlCard() {
@@ -1916,7 +2064,7 @@
         const [icon, label] = KIND[i.kind] || ["mdi:circle-small", i.kind.toUpperCase()];
         const focus = i.time === (this._tlFocus || this._tlFocusDone);
         html += `<div class="tli k-${esc(i.kind)}${focus ? " focus" : ""}"${focus ? ' id="tlfocus"' : ""}><span class="tm">${hm(i.time)}</span><span class="dot"><ha-icon icon="${esc(icon)}"></ha-icon></span>
-          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}${i.phoned ? `<i>Sent to phones: ${esc(i.phoned)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
+          <div class="tx"><b>${esc(i.text)}</b>${i.detail ? `<i>${esc(i.detail)}</i>` : ""}${i.analysis ? `<i>AI review: ${esc(i.analysis)}</i>` : ""}${i.why ? `<i>Why: ${esc(i.why)}</i>` : ""}${i.phoned ? `<i>Sent to phones: ${esc(i.phoned)}</i>` : ""}</div><s>${esc(label)}</s></div>`;
       }
       this._$("tllist").innerHTML = html || (want === "phones" ? '<div class="e">NOTHING SENT TO PHONES IN THE LAST 3 DAYS</div>' : '<div class="e">NOTHING YET · THE TIMELINE FILLS AS THE HOUSE SPEAKS, NOTICES AND ACTS</div>');
       const spot = this._$("tlfocus");
@@ -2057,6 +2205,13 @@
         this._render();
       }
       else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
+      else if (act === "replayopen") { this._replayOpen = true; this._clearLive(); this._drawReplay(); }
+      else if (act === "replayclose") { this._replayOpen = false; this._stopReplay(); this._drawReplay(); this._render(); }
+      else if (act === "replayincident") {
+        this._stopReplay(); this._replayId = id; this._replayStep = 0; this._loadReplay();
+      }
+      else if (act === "replaystep") { this._stopReplay(); this._replayStep = +id; this._drawReplay(); }
+      else if (act === "replayplay") this._playReplay();
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
       else if (act === "prognew") this._editProg(null);
@@ -2344,6 +2499,23 @@
       input.value = ""; reply.hidden = false;
       reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a thinking">THINKING…</span>`;
       try {
+        const replay = /^show me (?:the (?:latest )?(?:security )?incident|what happened)(?: (?:at|in|by|near) (.+?))?[.!?]*$/i.exec(text);
+        if (replay) {
+          const response = await this._hass.callWS({ type: "sentient/security/replay", query: (replay[1] || "").slice(0, 120) });
+          if (response.enabled) {
+            this._stopReplay();
+            this._replayData = response;
+            this._replayOpen = true;
+            this._clearLive();
+            this._replayId = response.selected?.id || null;
+            this._replayStep = 0;
+            this._replayAt = Date.now();
+            this._show("security", true);
+            this._drawReplay();
+            reply.hidden = true;
+            return;
+          }
+        }
         const msg = { type: "conversation/process", text, language: this._hass.language };
         const agent = await this._agent();
         if (agent) msg.agent_id = agent;
@@ -2752,6 +2924,25 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   .tli{align-items:start} .tli .tm{padding-top:6px} .card{padding:12px} .body{padding:14px 12px} .en{grid-template-columns:90px minmax(0,1fr) 46px} .reply{margin:8px 10px 0} .reply .q{display:none}
   .r{flex-wrap:wrap} .r b{white-space:normal} .formwrap ha-form{max-width:100%} .spotgrid{gap:12px} .digest{flex-wrap:wrap;align-items:flex-start} .digest .dt{flex:1 1 calc(100% - 40px)} .digest .dt b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;cursor:pointer} .digest.open .dt b{-webkit-line-clamp:unset;display:block} .digest .btn{flex:1 1 100%;text-align:center;justify-content:center} .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px} .filters button{flex:none} .modes{justify-content:center} .tli{grid-template-columns:40px 28px minmax(0,1fr)} .tli s{display:none} .add .when{width:84px}  .cols{grid-template-columns:1fr} .head{flex-direction:column;text-align:center} .head img{width:120px;height:120px} .ti{font-size:22px} .st{justify-content:center;flex-wrap:wrap} .st .s{flex:1 1 calc(33.3% - 8px)}
   .set{grid-template-columns:1fr} .side{position:static;padding:8px 0} .sh{display:none} .nav i{display:none} .nav{padding:8px 10px} .tabs span{display:none} }
+/* Recorded security replay */
+#replay.rpwide{min-height:0;overflow:auto;flex:1 1 auto}
+.rpchoices,.rpunmapped,.rplegend,.rpcontrols{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}
+.rpchoices .on,.rprow.on{border-color:#00fff7;background:rgba(0,255,247,.1)}
+.rpbody{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px}
+.rpmap,.rpschematic{position:relative;border:1px solid rgba(0,255,247,.24);border-radius:10px;background:#071523;overflow:hidden}
+.rpmap img{display:block;width:100%;height:auto}
+.rpschematic{min-height:112px;display:flex;align-content:center;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:10px;background-image:linear-gradient(rgba(0,255,247,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,247,.07) 1px,transparent 1px);background-size:18px 18px}
+.rpmarker{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 7px;border-radius:8px;color:#a8b7c4;background:#071523;border:1px solid #3d5362;font-size:11px;overflow-wrap:anywhere}
+.rpmap .rpmarker{position:absolute;transform:translate(-50%,-50%);max-width:45%;z-index:1}
+.rpmarker i,.rplegend i{display:inline-block;width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:currentColor}
+.rpmarker.now,.rplegend span:first-child{color:#00fff7}.rpmarker.now{border-color:#00fff7;box-shadow:0 0 12px rgba(0,255,247,.6);z-index:2}
+.rpmarker.gap,.rpwarning,.rplegend .gap{color:#ffbf66}.rpmarker.gap{border-color:#ffbf66}
+.rpmarker.seen{color:#d4f4fa}.rplegend,.rpnote,.rphealth small{font-size:10px;color:#a8bccb}
+.rpcontrols input{min-width:50px;flex:1;accent-color:#00dcd8}.rpcontrols u,.rprow u{font-variant-numeric:tabular-nums;text-decoration:none}
+.rplist{max-height:225px;overflow:auto}.rprow{width:100%;text-align:left;flex-wrap:wrap;padding:5px;background:transparent;color:inherit;border:1px solid transparent;border-radius:6px}
+.rprow small,.rphealth small{display:block;flex-basis:100%;overflow-wrap:anywhere}.rpsnap{display:block;width:100%;max-height:160px;object-fit:contain;margin:7px 0;background:#050c15;border-radius:8px}
+.rpwarning{font-size:11px;margin:5px 0}.rphealth{margin-top:9px}.rphealth summary{cursor:pointer;font-size:11px;color:#9be4e9}
+@media(max-width:680px){.rpbody{grid-template-columns:minmax(0,1fr)}.rplist{max-height:155px}}
 /* Tablet and up: Overview, House, Mind and Security fit the screen. The cards share the height with no gaps,
    and a long list scrolls inside its own card (no visible scroll bar). Small or short screens keep the flowing page. */
 @media (min-width: 900px) and (min-height: 520px){

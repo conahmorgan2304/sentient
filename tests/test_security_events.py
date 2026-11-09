@@ -369,7 +369,7 @@ async def test_security_alert_binds_the_chosen_event_and_reviews_that_id(hass):
     with patch("custom_components.sentient.camsecurity.camera_for", return_value="camera.garden"):
         await obj._async_alert("binary_sensor.garden_person", "Person reported", reason="night")
         await asyncio.sleep(0)
-    assert rt.timeline.add.call_args.kwargs["event_id"] == "123.event"
+    assert rt.timeline.mark.call_args.kwargs["event_id"] == "123.event"
     assert rt.clips.async_after_alert.call_args.args[-1] == "123.event"
     assert rt.security_events.items["123.event"]["alerts"][0]["reason"] == "night"
 
@@ -384,7 +384,7 @@ async def test_ambiguous_event_keeps_plain_alert_without_wrong_clip_review(hass)
     rt.clips = SimpleNamespace(enabled=True, _stamp=lambda: (), async_after_alert=AsyncMock())
     with patch("custom_components.sentient.camsecurity.camera_for", return_value="camera.garden"):
         await obj._async_alert("binary_sensor.garden_person", "Person reported", reason="night")
-    assert rt.timeline.add.call_args.kwargs.get("event_id") is None
+    rt.timeline.mark.assert_not_called()
     rt.clips.async_after_alert.assert_not_awaited()
 
 
