@@ -113,6 +113,7 @@ from .const import (
     CONF_HEATING_GRAPH,
     CONF_ROOMS_VIEW,
     CONF_KNOWLEDGE,
+    CONF_DAY_CHART,
     CONF_PREHEAT,
     CONF_WEEKLY_REPORT,
     DEFAULT_NIGHT_WATCH,
@@ -474,6 +475,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_CURIOSITY, **d(CONF_CURIOSITY, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION, **d(CONF_REFLECTION, True)): selector.BooleanSelector(),
             vol.Required(CONF_KNOWLEDGE, **d(CONF_KNOWLEDGE, True)): selector.BooleanSelector(),
+            vol.Required(CONF_DAY_CHART, **d(CONF_DAY_CHART, True)): selector.BooleanSelector(),
             vol.Required(CONF_REFLECTION_TIME, **d(CONF_REFLECTION_TIME, DEFAULT_REFLECTION_TIME)): selector.TimeSelector(),
             vol.Required(CONF_SLEEP, **d(CONF_SLEEP, True)): selector.BooleanSelector(),
             vol.Required(CONF_SLEEP_MINUTES, **d(CONF_SLEEP_MINUTES, DEFAULT_SLEEP_MINUTES)): selector.NumberSelector(

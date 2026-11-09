@@ -116,3 +116,43 @@ async def test_a_tablet_screen_isnt_a_light_left_on(hass: HomeAssistant):
     _put(hass, "light.hall", "on", {"friendly_name": "Hall light"}, hall)
     row = next(r for r in rooms(hass) if r["area_id"] == hall)
     assert row["lights"] == 1 and row["lights_on"] == ["Hall light"]
+
+
+async def test_a_speaker_or_tablet_light_and_a_zero_humidity_are_left_out(hass: HomeAssistant):
+    from homeassistant.helpers import device_registry as dr
+    from pytest_homeassistant_custom_component.common import MockConfigEntry as MCE
+
+    areas = ar.async_get(hass)
+    hall = areas.async_create("Landing").id
+    cfg = MCE(domain="esphome")
+    cfg.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(config_entry_id=cfg.entry_id, identifiers={("esphome", "tab")})
+    reg = er.async_get(hass)
+    for eid in ("light.tablet_screen", "assist_satellite.tablet"):
+        domain, obj = eid.split(".")
+        reg.async_get_or_create(domain, "esphome", obj, suggested_object_id=obj, device_id=dev.id)
+        reg.async_update_entity(eid, area_id=hall)
+    hass.states.async_set("light.tablet_screen", "on")
+    hass.states.async_set("assist_satellite.tablet", "idle")
+    _put(hass, "sensor.landing_hum", "0", {"device_class": "humidity"}, hall)
+    _put(hass, "light.landing", "off", {"friendly_name": "Landing light"}, hall)
+    row = next(r for r in rooms(hass) if r["area_id"] == hall)
+    assert row["lights"] == 1 and row["lights_on"] == [] and row["humidity"] is None
+
+
+def test_the_day_so_far():
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.glance import day
+
+    now = dt_util.now().replace(hour=17, minute=30, second=0, microsecond=0)
+    at = lambda h, m=0: dt_util.as_utc(now.replace(hour=h, minute=m)).isoformat()  # noqa: E731
+    items = [{"time": at(6, 38), "kind": "light", "text": "Hallway light: on"}, {"time": at(3, 51), "kind": "light", "text": "x"},
+             {"time": at(16, 4), "kind": "said", "text": "gate"}, {"time": at(16, 7), "kind": "noticed", "text": "Possible route: Gate → Garden"},
+             {"time": at(16, 10), "kind": "visitor", "text": "x"}, {"time": at(14, 47), "kind": "voice", "text": "x"},
+             {"time": dt_util.as_utc(now - timedelta(days=1)).isoformat(), "kind": "light", "text": "yesterday"}]
+    d = day(items, dt_util.as_utc(now))
+    assert d["totals"] == {"movement": 2, "spoke": 1, "outside": 2, "you": 1}
+    assert d["first_move"] == "06:38" and d["busiest"] == "16:00" and d["hours"][16]["outside"] == 2

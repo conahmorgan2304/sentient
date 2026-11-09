@@ -18,6 +18,8 @@ PRESENCE = ("motion", "occupancy", "presence")
 DEAD = ("unavailable", "unknown")
 # integrations whose "lights" are a tablet's screen, not a lamp someone left on
 SCREEN_PLATFORMS = ("browser_mod", "fully_kiosk")
+# a light on a device that also speaks, plays or films is its screen or LED ring
+GADGET_DOMAINS = ("assist_satellite", "media_player", "camera")
 
 
 def _num(st: State) -> float | None:
@@ -31,11 +33,12 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
     """One record per area that has anything worth showing."""
     areas, devices, ents, floors = ar.async_get(hass), dr.async_get(hass), er.async_get(hass), fr.async_get(hass)
     restless = restless or set()
+    gadgets = {e.device_id for e in ents.entities.values() if e.device_id and e.domain in GADGET_DOMAINS}
     by_area: dict[str, list[State]] = {}
     for entry in ents.entities.values():
         if entry.disabled_by or entry.hidden_by or entry.entity_category is not None:
             continue
-        if entry.domain == "light" and entry.platform in SCREEN_PLATFORMS:
+        if entry.domain == "light" and (entry.platform in SCREEN_PLATFORMS or entry.device_id in gadgets):
             continue
         area_id = entry.area_id or (dev.area_id if entry.device_id and (dev := devices.async_get(entry.device_id)) else None)
         if not area_id or (st := hass.states.get(entry.entity_id)) is None:
@@ -55,7 +58,7 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
                 continue
             if domain == "sensor" and dc == "temperature" and (v := _num(st)) is not None:
                 temps.append(v)
-            elif domain == "sensor" and dc == "humidity" and (v := _num(st)) is not None:
+            elif domain == "sensor" and dc == "humidity" and (v := _num(st)) is not None and v > 0:  # 0% is a missing reading
                 hums.append(v)
             elif domain == "light":
                 lights += 1
@@ -162,3 +165,34 @@ def knows(rt: Any) -> list[dict[str, Any]]:
         elif a.get("runs_seen"):
             add("mdi:washing-machine", f"Learning how long the {a['name']} takes ({a['runs_seen']} run{'s' if a['runs_seen'] != 1 else ''} so far).", "it needs a few runs")
     return out
+
+
+# what each timeline kind counts as on the overview's day chart
+DAY_GROUPS = {"light": "movement", "mode": "movement", "said": "spoke", "held": "spoke", "visitor": "outside",
+              "security": "outside", "voice": "you", "learned": "you"}
+
+
+def day(items: list[dict[str, Any]], now: Any) -> dict[str, Any]:
+    """Today, hour by hour, from the timeline: movement, what it said, what happened outside, what you asked."""
+    local_now = dt_util.as_local(now)
+    midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    hours = [{"movement": 0, "spoke": 0, "outside": 0, "you": 0} for _ in range(24)]
+    totals = {"movement": 0, "spoke": 0, "outside": 0, "you": 0}
+    first_move = None
+    for it in items:
+        group = DAY_GROUPS.get(it.get("kind"))
+        if it.get("kind") == "noticed" and "route" in str(it.get("text", "")).lower():
+            group = "outside"
+        if group is None or (t := dt_util.parse_datetime(str(it.get("time") or ""))) is None:
+            continue
+        lt = dt_util.as_local(t)
+        if lt < midnight or lt > local_now:
+            continue
+        hours[lt.hour][group] += 1
+        totals[group] += 1
+        if group == "movement" and lt.hour >= 5 and (first_move is None or lt < first_move):
+            first_move = lt
+    busiest = max(range(local_now.hour + 1), key=lambda h: sum(hours[h].values())) if any(sum(h.values()) for h in hours) else None
+    return {"hours": hours, "now": local_now.hour + local_now.minute / 60, "totals": totals,
+            "busiest": f"{busiest:02d}:00" if busiest is not None else None,
+            "first_move": first_move.strftime("%H:%M") if first_move else None}
