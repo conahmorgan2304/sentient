@@ -26,6 +26,7 @@ from .const import (
     CONF_BEDTIME_ROUTINES,
     CONF_SLEEP,
     CONF_SLEEP_ACTIONS,
+    CONF_SLEEP_IGNORE,
     CONF_SLEEP_MINUTES,
     CONF_WAKE_ACTIONS,
     DEFAULT_SLEEP_MINUTES,
@@ -120,7 +121,11 @@ class Sleep:
         rt = self._rt()
         if not self.enabled or self.asleep or rt is None or not rt.speech.quiet_hours_now():
             return
-        sensors = [s for e in inside_sensors(self.hass, self.options) if (s := self.hass.states.get(e))]
+        # a bedroom PIR that fires as people turn over says nothing about bedtime, and a sensor that is
+        # offline says nothing at all
+        ignore = set(self.options.get(CONF_SLEEP_IGNORE) or [])
+        sensors = [s for e in inside_sensors(self.hass, self.options) if e not in ignore
+                   and (s := self.hass.states.get(e)) and s.state not in ("unavailable", "unknown")]
         if not sensors or any(s.state == "on" for s in sensors):
             return
         quiet_for = now - max(s.last_changed for s in sensors)

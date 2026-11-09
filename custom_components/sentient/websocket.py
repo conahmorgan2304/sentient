@@ -153,6 +153,7 @@ from .const import (
     CONF_MEDIA_IMPORTANT_ONLY,
     CONF_SLEEP,
     CONF_SLEEP_MINUTES,
+    CONF_SLEEP_IGNORE,
     CONF_BEDTIME_ROUTINES,
     CONF_SLEEP_ACTIONS,
     CONF_WAKE_ACTIONS,
@@ -293,7 +294,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
-        CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
+        CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
         CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
     ]),

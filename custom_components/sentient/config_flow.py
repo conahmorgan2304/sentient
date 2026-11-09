@@ -248,6 +248,7 @@ from .const import (
     CONF_MEDIA_IMPORTANT_ONLY,
     CONF_SLEEP,
     CONF_SLEEP_MINUTES,
+    CONF_SLEEP_IGNORE,
     DEFAULT_SLEEP_MINUTES,
     CONF_BEDTIME_ROUTINES,
     CONF_SLEEP_ACTIONS,
@@ -472,6 +473,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_SLEEP, **d(CONF_SLEEP, True)): selector.BooleanSelector(),
             vol.Required(CONF_SLEEP_MINUTES, **d(CONF_SLEEP_MINUTES, DEFAULT_SLEEP_MINUTES)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=5, max=120, step=5, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional(CONF_SLEEP_IGNORE, **d(CONF_SLEEP_IGNORE, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor", multiple=True)
             ),
             vol.Optional(CONF_BEDTIME_ROUTINES, **d(CONF_BEDTIME_ROUTINES, "")): selector.TextSelector(),
             vol.Optional(CONF_SLEEP_ACTIONS, **d(CONF_SLEEP_ACTIONS, [])): selector.ActionSelector(),

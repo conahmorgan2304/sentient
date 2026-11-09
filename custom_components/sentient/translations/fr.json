@@ -468,6 +468,7 @@
           "foresight_time": "Préparer l’aperçu à",
           "sleep_detection": "Détecter lorsque la maison dort",
           "sleep_minutes": "Considérer la maison endormie après une absence de mouvement de",
+          "sleep_ignore_sensors": "Capteurs ignorés pour le coucher",
           "bedtime_routines": "Routines du coucher",
           "sleep_actions": "Lorsque la maison s’endort, exécuter",
           "wake_actions": "Lorsqu’une personne se réveille, exécuter",
@@ -738,7 +739,8 @@
           "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire.",
           "current_house_context": "Fournir aux conversations un aperçu pertinent des états exposés, des changements récents et de la tâche en cours. Désactivé par défaut et en mode invité, sans appel IA en arrière-plan. Les changements expirent après 30 minutes. Désactiver ou oublier efface ce contexte en mémoire.",
           "house_context_entities": "Appareils à inclure dans les résumés généraux, avec le chauffage et les capteurs d’ouverture ou de présence. Seuls les appareils exposés et accessibles sont partagés, avec huit relevés pertinents au maximum.",
-          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente."
+          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente.",
+          "sleep_ignore_sensors": "Capteurs de mouvement qui se déclenchent pendant le sommeil, par exemple dans une chambre. Le passage en mode endormi attend que rien ne bouge pendant la durée ci-dessus ; un capteur de chambre qui se déclenche quand quelqu’un se retourne garderait la maison « éveillée » toute la nuit. Ils comptent toujours pour le reste."
         }
       },
       "memories": {

@@ -134,3 +134,34 @@ async def test_a_flickering_sensor_is_not_a_journey(hass):
 async def test_switched_off_thoughts_hide_everything(hass):
     inner = _inner(hass, None, learn_corrections=False, normal_day=False, thoughts=False)
     assert inner.summary() == {"learn": False, "day": False, "thoughts_on": False}
+
+
+async def test_bedroom_sensor_does_not_keep_the_house_awake(hass, freezer):
+    """The sleep tick ignores chosen sensors (a bedroom PIR) and offline ones."""
+    from types import SimpleNamespace as NS
+    from unittest.mock import AsyncMock, patch as p
+
+    from custom_components.sentient.sleep import Sleep
+
+    t0 = dt_util.utcnow()
+    freezer.move_to(t0)
+    hass.states.async_set("binary_sensor.lounge", "off")
+    freezer.move_to(t0 + timedelta(minutes=38))
+    hass.states.async_set("binary_sensor.bedroom", "on")
+    hass.states.async_set("binary_sensor.bedroom", "off")  # someone turned over
+    freezer.move_to(t0 + timedelta(minutes=39))
+    hass.states.async_set("binary_sensor.dead", "unavailable")
+    freezer.move_to(t0 + timedelta(minutes=40))
+    rt = NS(speech=NS(quiet_hours_now=lambda: True), timeline=FakeTimeline())
+    sleep = Sleep(hass, "t", {"sleep_ignore_sensors": ["binary_sensor.bedroom"]}, lambda: rt)
+    sleep.async_set = AsyncMock()
+    names = ["binary_sensor.lounge", "binary_sensor.bedroom", "binary_sensor.dead"]
+    with p("custom_components.sentient.sleep.inside_sensors", return_value=names):
+        sleep._tick(dt_util.utcnow())
+        await hass.async_block_till_done()
+        sleep.async_set.assert_called_once()
+        sleep.async_set.reset_mock()
+        sleep.options = {}  # without the setting the bedroom sensor keeps the house awake
+        sleep._tick(dt_util.utcnow())
+        await hass.async_block_till_done()
+        sleep.async_set.assert_not_called()

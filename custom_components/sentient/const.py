@@ -413,6 +413,7 @@ CONF_FORESIGHT_TIME = "foresight_time"
 DEFAULT_FORESIGHT_TIME = "19:30:00"
 CONF_SLEEP = "sleep_detection"
 CONF_SLEEP_MINUTES = "sleep_minutes"
+CONF_SLEEP_IGNORE = "sleep_ignore_sensors"  # sensors that move while people sleep (a bedroom PIR) and so say nothing about bedtime
 DEFAULT_SLEEP_MINUTES = 20
 CONF_BEDTIME_ROUTINES = "bedtime_routines"
 CONF_SLEEP_ACTIONS = "sleep_actions"
