@@ -183,3 +183,4 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 0.98.18 — Announcing to a speaker by name is forgiving: "living room", "livingroom" and "the kitchen speaker" all find the right Echo or voice speaker, exact names win, and a miss lists every speaker with its name and room.
 - [x] 0.98.19 — A speaker someone names ("announce in the kitchen") is used even when Echos are set to alarms and reminders only; before, the Echo was silently swapped for a voice speaker elsewhere.
 - [x] 0.98.20 — Old nightly self-test questions are cleared from conversation history, so "asked 10 times" findings and recent conversations only count real people.
+- [x] 0.98.21 — A tablet's or vacuum's own camera (a voice satellite's front camera, a vacuum map) no longer counts as a house camera, so a house with five cameras says five.
