@@ -18,3 +18,8 @@ test('the template form is read without looping over form.elements, which Home A
   assert.ok(body.includes('querySelectorAll("input[name]'));
   assert.ok(!/of form\.elements/.test(src), 'no form in the panel may loop over form.elements');
 });
+
+test('drop-down lists have a dark background with light text, not white on white', () => {
+  assert.ok(/select option[^{]*\{[^}]*background:#0d1626;color:#e6f5fa/.test(src));
+  assert.ok(src.includes('select{color-scheme:dark}'));
+});

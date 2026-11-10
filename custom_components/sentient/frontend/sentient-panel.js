@@ -2706,6 +2706,8 @@ input,select{font:inherit;font-size:13px;color:#e6f5fa}
 .ask input,.add input,.find input{flex:1;min-width:0;width:0;background:none;border:none;outline:none}
 .cols>*,.set>*{min-width:0}
 input::placeholder{color:rgba(150,220,235,.45)}
+select{color-scheme:dark}
+select option,select optgroup{background:#0d1626;color:#e6f5fa}
 select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;padding:5px 8px;outline:none}
 .reply{display:flex;align-items:flex-start;gap:12px;max-width:1564px;margin:12px auto 0;padding:12px 16px;border-radius:16px;border:1px solid rgba(0,255,247,.3);background:rgba(0,255,247,.06);box-shadow:0 0 14px rgba(0,255,247,.12)}
 .reply .q{flex:none;max-width:35%;font-size:11px;font-weight:700;letter-spacing:.08em;color:rgba(150,220,235,.7)}
