@@ -10,7 +10,8 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from custom_components.sentient.speech import SpeechRouter
 
 
-async def test_a_remark_isnt_repeated_after_a_restart(hass, hass_storage):
+async def test_a_remark_isnt_repeated_after_a_restart(hass, hass_storage, freezer):
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=12, minute=0, second=0, microsecond=0)))  # not in quiet hours
     first = SpeechRouter(hass, {"speakers": []})
     await first.async_load_remarks("abc")
     first._remember_said("The kettle has finished boiling.")

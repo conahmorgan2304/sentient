@@ -118,6 +118,10 @@ from .const import (
     CONF_WARM_BY_WEEKENDS,
     CONF_HEATING_ENTITIES,
     CONF_HEATING_LIMIT,
+    CONF_HEATING_NIGHT_TEMP,
+    CONF_HEATING_REVERT,
+    CONF_HEATING_REVERT_DAY,
+    CONF_HEATING_REVERT_NIGHT,
     CONF_PARTY_EXCLUDE,
     CONF_PARTY_LIGHTS,
     CONF_PARTY_MINUTES,
@@ -328,11 +332,11 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
         CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
     ]),
-    ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, comfort temperature, time limit and warm-by times, and the heating schedule, are on the House tab.", [
-        CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH,
+    ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
+        CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT,
     ]),
     ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
-        CONF_HEATING_ENTITIES, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
+        CONF_HEATING_ENTITIES, CONF_HEATING_NIGHT_TEMP, CONF_HEATING_REVERT_DAY, CONF_HEATING_REVERT_NIGHT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_FACE_CAMERAS, CONF_FACE_FORGET_HOURS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS, CONF_ZONE_VISITS, CONF_ZONE_DOOR_SENSORS,
@@ -512,7 +516,7 @@ def ws_heating_programme_delete(hass: HomeAssistant, connection, msg: dict[str, 
 @callback
 def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """The overview's TODAY card: weather, who's home, what's next (alarms, reminders, bins), heating."""
-    from .heating_schedule import enabled as sched_on, next_change
+    from .heating_schedule import enabled as sched_on, next_change, night_temp
 
     entry = _entry(hass)
     if entry is None:
@@ -558,7 +562,8 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             zones.append({"name": st.name, "now": st.attributes.get("current_temperature"), "target": st.attributes.get("temperature"),
                           "state": st.state, "action": st.attributes.get("hvac_action")})
     progs = rt.heat_prog.programmes() if getattr(rt, "heat_prog", None) is not None else []
-    out["heating"] = {"zones": zones, "next": next_change(progs, dt_util.now()) if sched_on(opts) else None}
+    nxt = next_change(progs, dt_util.now()) if sched_on(opts) else None
+    out["heating"] = {"zones": zones, "next": {**nxt, "night": night_temp(opts)} if nxt else None}
     connection.send_result(msg["id"], out)
 
 
@@ -695,7 +700,7 @@ def ws_cameras(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 @callback
 def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """The heating zones now, what has been learned about them, and the heating schedule — for the House tab."""
-    from .heating_schedule import MAX_TEMP, MIN_TEMP, describe, enabled
+    from .heating_schedule import MAX_TEMP, MIN_TEMP, describe, enabled, night_temp
 
     entry = _entry(hass)
     if entry is None:
@@ -733,9 +738,10 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "suggested": suggested,
         "programmes": sorted(progs, key=lambda p: p["name"].lower()),
         "conflicts": {p["id"]: why for p in progs if (why := programme_conflict(p, progs))},
-        "next": next_change(progs, now) if enabled(rt.options) else None,
+        "next": ({**nxt, "night": night_temp(rt.options)} if (nxt := next_change(progs, now)) else None) if enabled(rt.options) else None,
         "zones": zones, "warming_now": report["warming_now"], "usually_up": report["usually_up"], "warm_by": report["warm_by"],
         "schedule_on": enabled(rt.options), "schedules": schedules, "min": MIN_TEMP, "max": MAX_TEMP,
+        "night": night_temp(rt.options),
         "graph": bool(rt.options.get(CONF_HEATING_GRAPH, True)),
         "ran": dict(getattr(rt.heat_prog, "ran", {}) or {}) if getattr(rt, "heat_prog", None) is not None else {},
         "ticking": getattr(rt.heat_prog, "last_tick", None) if getattr(rt, "heat_prog", None) is not None else None,

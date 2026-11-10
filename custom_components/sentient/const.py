@@ -307,11 +307,18 @@ CONF_INSIDE_SENSORS = "inside_sensors"
 CONF_WARM_BY_WEEKDAYS = "warm_by_weekdays"
 CONF_WARM_BY_WEEKENDS = "warm_by_weekends"
 CONF_HEATING_LIMIT = "heating_limit"
+CONF_HEATING_NIGHT_TEMP = "heating_night_temp"  # where the schedule drops to when a period ends: it never switches off
+CONF_HEATING_REVERT = "heating_revert"  # optional: a change made by hand goes back to the schedule after a while
+CONF_HEATING_REVERT_DAY = "heating_revert_day_hours"
+CONF_HEATING_REVERT_NIGHT = "heating_revert_night_hours"
 CONF_HEATING_SCHEDULE = "heating_schedule"  # optional: heating schedules made on the House tab run
 CONF_HEATING_GRAPH = "heating_graph"  # optional: a graph of the last day's temperatures on the heating card
 CONF_ROOMS_VIEW = "rooms_view"  # optional: the room tiles on the House tab and the around-the-house card
 CONF_DAY_CHART = "day_chart"  # optional: THE DAY SO FAR chart on the overview
 CONF_KNOWLEDGE = "knowledge_card"  # optional: the WHAT I KNOW card on the Mind tab
+DEFAULT_HEATING_NIGHT_TEMP = 15.0
+DEFAULT_HEATING_REVERT_DAY = 3.0  # hours, when changed while a heating period is running
+DEFAULT_HEATING_REVERT_NIGHT = 1.0  # hours, when changed outside the periods
 DEFAULT_HEATING_LIMIT = 0  # off unless set; only ever on the thermostats chosen in Sentient
 
 # night watch

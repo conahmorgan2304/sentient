@@ -1274,7 +1274,7 @@
       el.innerHTML = this._h("TODAY", new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }).toUpperCase())
         + `<div class="ttiles">${tiles.join("") || '<div class="e">CHOOSE A WEATHER ENTITY IN SETTINGS → BRIEFINGS</div>'}</div>`
         + (ppl ? `<div class="ppl">${ppl}</div>` : "")
-        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "OFF"} · ${esc(nx.name.toUpperCase())}</div>` : "");
+        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "NIGHT TEMPERATURE" + (nx.night != null ? " " + esc(nx.night) + "°" : "")} · ${esc(nx.name.toUpperCase())}</div>` : "");
       const kic = { alarm: "mdi:alarm", routine: "mdi:calendar-sync", bins: "mdi:trash-can-outline", watch: "mdi:eye-outline" };
       const when = (iso) => { const d = new Date(iso), today = new Date(); const tm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === today.toDateString() ? tm : d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " " + tm; };
       el2.innerHTML = this._h("COMING UP", (t.soon || []).length ? `${t.soon.length}` : "")
@@ -1480,7 +1480,7 @@
         if (!this._hgAt || Date.now() - this._hgAt > 600000) this._loadHeatGraph();
       }
       if (h.schedule_on) {
-        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "OFF"}` : "";
+        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "NIGHT " + (h.next.night != null ? h.next.night + "°" : "TEMPERATURE")}` : "";
         html += `<div class="sub">SCHEDULE${nx ? " · " + esc(nx) : ""}</div>`;
         if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
@@ -1538,7 +1538,7 @@
           + `<form class="hform" id="progform" onsubmit="return false"><input type="text" id="pname" placeholder="Name, e.g. Weekdays" value="${esc(d.name)}" style="flex:1 1 100%">`
           + `<div class="sub" style="flex-basis:100%">HEATERS</div><div class="dchips">${h.zones.map((z) => `<label><input type="checkbox" data-heater="${esc(z.entity_id)}"${d.heaters.includes(z.entity_id) ? " checked" : ""}><span>${esc(z.name.toUpperCase())}</span></label>`).join("")}</div>`
           + `<div class="sub" style="flex-basis:100%">DAYS · <a class="lnk" data-act="progdays" data-id="wk">WEEKDAYS</a> · <a class="lnk" data-act="progdays" data-id="we">WEEKENDS</a> · <a class="lnk" data-act="progdays" data-id="all">EVERY DAY</a></div><div class="dchips">${D.map((x) => `<label><input type="checkbox" data-day="${x}"${d.days.includes(x) ? " checked" : ""}><span>${x.toUpperCase()}</span></label>`).join("")}</div>`
-          + `<div class="sub" style="flex-basis:100%">ON / OFF TIMES</div>${d.periods.map(row).join("")}`
+          + `<div class="sub" style="flex-basis:100%">HEATING PERIODS · BETWEEN THEM IT HOLDS THE NIGHT TEMPERATURE</div>${d.periods.map(row).join("")}`
           + `<div class="pbar" style="flex-basis:100%">${this._progBar(d.periods.filter((x) => x.on && x.off && x.on !== x.off))}</div>`
           + `<div class="row" style="flex-basis:100%"><button class="btn sm ghost" data-act="progaddper">+ ADD ON/OFF TIME</button><span style="flex:1"></span><span id="progmsg" class="hint"></span><button class="btn sm ghost" data-act="progcancel">CANCEL</button><button class="btn sm" data-act="progsave" data-id="${esc(p ? p.id : "")}">SAVE</button></div></form>`;
         const form = this._$("progform");

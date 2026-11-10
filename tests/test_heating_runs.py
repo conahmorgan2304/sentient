@@ -80,11 +80,14 @@ async def test_missed_off_only_recovers_confirmed_unchanged_heat(hass, freezer, 
     hp = rt.heat_prog
     saved = hp.items.upsert(clean_programme(rt.options, DAY))
 
+    night: list = []  # a missed switch-off is put right by dropping to the night temperature, never by switching off
+
     async def change(call):
-        hass.states.async_set(LOUNGE, "heat", {"temperature": 21}, context=call.context)
+        if call.data["temperature"] == 15.0:
+            night.append(call)
+        hass.states.async_set(LOUNGE, "heat", {"temperature": call.data["temperature"]}, context=call.context)
 
     hass.services.async_register("climate", "set_temperature", change)
-    off = async_mock_service(hass, "climate", "turn_off")
     await hp.async_run([(LOUNGE, "on", 21, saved["id"])], at(0, 6, 0))
     await hass.async_block_till_done(wait_background_tasks=True)
     assert hp._owned[LOUNGE]["controls"] == ["heat", 21, None]
@@ -101,7 +104,7 @@ async def test_missed_off_only_recovers_confirmed_unchanged_heat(hass, freezer, 
         assert LOUNGE in restarted._owned  # loaded the saved confirmation, not the original object
         restarted._tick(dt_util.utcnow())
         await hass.async_block_till_done(wait_background_tasks=True)
-        assert len(off) == (0 if manual_override else 1)
+        assert len(night) == (0 if manual_override else 1)
         assert LOUNGE not in restarted._owned
     finally:
         restarted.async_stop()
