@@ -188,3 +188,77 @@ async def test_the_game_service_starts_and_stops_a_game(hass: HomeAssistant) -> 
     assert out == {"playing": "Escape the flat"} and entry.runtime_data.games.active is not None
     out = await hass.services.async_call(DOMAIN, "game", {"action": "stop"}, blocking=True, return_response=True)
     assert out == {"stopped": "Escape the flat"} and entry.runtime_data.games.active is None
+
+
+# ----- ready-made templates: any house fills in its own names and rooms ----------------------------------
+from homeassistant.helpers import area_registry as ar  # noqa: E402
+
+from custom_components.sentient import game_templates  # noqa: E402
+
+
+async def test_a_template_makes_an_ordinary_game_from_the_houses_own_names(hass: HomeAssistant) -> None:
+    entry = await _setup(hass, games=True)
+    for name in ("Study", "Living room", "Cellar"):
+        ar.async_get(hass).async_create(name)
+    games = entry.runtime_data.games
+    defaults = games.template_defaults()
+    assert defaults["master"] == "Nova" and defaults["rooms"] == "Cellar, Living room, Study" and defaults["start_room"] == "Living room"
+    game = games.create_from_template("escape-the-house", {"title": "Escape the cellar", "players": "Ann, Bo and Cy", "helpers": "Dee (blunt hints)"})
+    assert game["name"] == "Escape the cellar"
+    assert "Nova is the game master" in game["rules"]
+    assert "Cellar, Living room and Study" in game["setting"] and "Ann, Bo and Cy" in game["setting"] and "Dee (blunt hints)" in game["setting"]
+    state = {e["key"]: e["value"] for e in game["entries"]}
+    assert state["where"] == "Living room" and state["cores restored"] == "0 of 3" and state["front door"] == "locked"
+    assert state["core: Study"] == "locked"
+    games.save_game("Escape the cellar", "Edited", game["rules"], game["id"])  # an ordinary game afterwards
+    assert games.games[game["id"]]["setting"] == "Edited"
+
+
+def test_no_house_specific_name_is_built_in() -> None:
+    built = game_templates.build("escape-the-house", {"rooms": "Hall, Attic"}, {})
+    text = " ".join([built["name"], built["setting"], built["rules"]])
+    for name in ("Kendra", "Riley", "Nia", "Sydra", "Vybes", "Pops", "Kyra"):
+        assert name not in text
+
+
+def test_the_text_always_fits_the_game_limits_and_grown_up_mode_drops_the_kid_lines() -> None:
+    longest = {k: "x" * 500 for k in ("title", "master", "house_ai", "players", "helpers", "start_room")}
+    built = game_templates.build("escape-the-house", {**longest, "rooms": ", ".join(f"Room number {i}" for i in range(40))}, {})
+    assert len(built["setting"]) <= 1200 and len(built["rules"]) <= 1200
+    assert len([e for e in built["entries"] if e[1].startswith("core: ")]) == game_templates.MAX_ROOMS
+    adult = game_templates.build("escape-the-house", {"rooms": "Hall", "kids": "no"}, {})
+    assert "kid-friendly" not in adult["rules"]
+    with pytest.raises(ValueError):
+        game_templates.build("escape-the-house", {}, {})
+    with pytest.raises(ValueError):
+        game_templates.build("nope", {"rooms": "Hall"}, {})
+
+
+async def test_the_page_and_the_voice_can_start_from_a_template(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass, games=True)
+    ar.async_get(hass).async_create("Kitchen")
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "sentient/games"})
+    listing = (await client.receive_json())["result"]
+    tpl = listing["templates"][0]
+    assert tpl["id"] == "escape-the-house" and {f["key"]: f["default"] for f in tpl["fields"]}["rooms"] == "Kitchen"
+    await client.send_json({"id": 2, "type": "sentient/games/edit", "op": "from_template", "template": "escape-the-house",
+                            "values": {"title": "Flat escape", "rooms": "Kitchen, Hall"}})
+    result = await client.receive_json()
+    assert result["success"] and [g["name"] for g in result["result"]["games"]] == ["Flat escape"]
+    await client.send_json({"id": 3, "type": "sentient/games/edit", "op": "from_template", "template": "escape-the-house", "values": {"rooms": ""}})
+    assert (await client.receive_json())["success"] is True  # falls back to the house's own areas
+    api = await _api(hass)
+    made = await _call(api, "sentient_game", action="template", game="Voice escape", rooms="Loft, Garage", players="Sam")
+    assert made.get("created_and_started") == "Voice escape"
+    api = await _api(hass)
+    assert "Loft and Garage" in api.api_prompt and "core: Loft: locked" in api.api_prompt
+
+
+async def test_templates_are_hidden_when_story_games_are_off(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "sentient/games"})
+    assert "templates" not in (await client.receive_json())["result"]
+    await client.send_json({"id": 2, "type": "sentient/games/edit", "op": "from_template", "template": "escape-the-house", "values": {"rooms": "Hall"}})
+    assert (await client.receive_json())["success"] is False

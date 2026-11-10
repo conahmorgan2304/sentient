@@ -940,11 +940,15 @@ class GameTool(_Tool):
         "Story games the family plays out loud, each with a saved memory of its own. 'Let's play escape the flat', "
         "'carry on with the game', 'stop the game', 'what games are there?', 'start the game again', or 'make a game "
         "about ...'. action: list, start (game), stop, restart (clears that game's progress; only when they clearly ask "
-        "to start over), new (game name, setting, rules: sets up a new game). Starting a game makes you its game master."
+        "to start over), new (game name, setting, rules: sets up a new game), template (an escape-the-house game from a "
+        "ready-made template: game = its name; game_master, players, rooms, helpers are optional and default to this "
+        "house's own assistant name and rooms, so only pass what they said). Starting a game makes you its game master."
     )
     parameters = vol.Schema({
-        vol.Required("action"): vol.In(["list", "start", "stop", "restart", "new"]),
+        vol.Required("action"): vol.In(["list", "start", "stop", "restart", "new", "template"]),
         vol.Optional("game"): cv.string, vol.Optional("setting"): cv.string, vol.Optional("rules"): cv.string,
+        vol.Optional("game_master"): cv.string, vol.Optional("players"): cv.string, vol.Optional("rooms"): cv.string,
+        vol.Optional("helpers"): cv.string,
     })
 
     async def async_call(
@@ -960,6 +964,15 @@ class GameTool(_Tool):
         if a["action"] == "stop":
             stopped = games.stop()
             return {"stopped": stopped["name"] if stopped else None, "saved": True}
+        if a["action"] == "template":
+            try:
+                game = games.create_from_template("escape-the-house", {
+                    "title": a.get("game"), "master": a.get("game_master"), "players": a.get("players"),
+                    "rooms": a.get("rooms"), "helpers": a.get("helpers")})
+            except ValueError as err:
+                return {"error": str(err)}
+            games.start(game["id"])
+            return {"created_and_started": game["name"], "memory": "set up with the rooms and cores; read it and begin in the starting room"}
         if a["action"] == "new":
             try:
                 game = games.save_game(a.get("game") or "", a.get("setting") or "", a.get("rules") or "")
