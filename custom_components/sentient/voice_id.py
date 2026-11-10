@@ -43,6 +43,7 @@ REASONS = {
 
 # the speaker for the turn being answered: None = no result (typed, or not routed through the add-on)
 current_speaker: ContextVar[Any] = ContextVar("sentient_current_speaker", default=None)
+UNKNOWN_SPEAKER = object()
 
 
 def installed(hass: HomeAssistant) -> bool:
@@ -56,12 +57,16 @@ def enabled(hass: HomeAssistant, options: dict[str, Any]) -> bool:
 
 def lookup(hass: HomeAssistant, options: dict[str, Any], request: Any) -> Any:
     """The add-on's result for this exact request, or None; never raises."""
-    if not enabled(hass, options) or (find := hass.data.get(SPEAKER_FOR_TURN)) is None:
+    if not options.get(CONF_VOICE_ID):
         return None
-    try:
-        speaker = find(request)
-    except Exception:  # an add-on fault must never stop an answer
-        return None
+    speaker = None
+    if enabled(hass, options) and (find := hass.data.get(SPEAKER_FOR_TURN)) is not None:
+        try:
+            speaker = find(request)
+        except Exception:  # a recognition fault must not stop an answer
+            pass
+    if speaker is None and options.get(CONF_VOICE_ID_UNKNOWN) and getattr(request, "satellite_id", None):
+        return UNKNOWN_SPEAKER
     if speaker is not None:
         hass.data[LAST_KEY] = {"name": getattr(speaker, "display_name", None) or None, "at": dt_util.now().isoformat()}
     return speaker
@@ -79,6 +84,14 @@ def cautious(options: dict[str, Any], speaker: Any) -> bool:
 def cautious_turn(options: dict[str, Any]) -> bool:
     """Return whether the current unmatched voice needs privacy protections."""
     return cautious(options, current_speaker.get())
+
+
+def private_history(rt: Any, device_id: str | None) -> bool:
+    """Keep household history out of guest and private-room responses."""
+    profiles = getattr(rt, "profiles", None)
+    profile = profiles.for_device(device_id) if profiles is not None else None
+    return (bool((profile or {}).get("private")) or cautious_turn(getattr(rt, "options", {}))
+            or bool(getattr(getattr(rt, "speech", None), "guest_mode", False)))
 
 
 def standing_lines(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:

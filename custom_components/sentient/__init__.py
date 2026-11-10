@@ -990,8 +990,8 @@ def _register_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(DOMAIN, "weekly_report", weekly_report, supports_response=SupportsResponse.OPTIONAL)
-    hass.services.async_register(
-        DOMAIN, "party", party, schema=PARTY_SCHEMA, supports_response=SupportsResponse.OPTIONAL
+    async_register_admin_service(
+        hass, DOMAIN, "party", party, schema=PARTY_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
     async_register_admin_service(hass, DOMAIN, SERVICE_LEARN, learn, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
@@ -1007,8 +1007,8 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_SAY, say, schema=SAY_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
-    hass.services.async_register(
-        DOMAIN, SERVICE_REMEMBER, remember, schema=REMEMBER_SCHEMA,
+    async_register_admin_service(
+        hass, DOMAIN, SERVICE_REMEMBER, remember, schema=REMEMBER_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
     async def reflect(call: ServiceCall) -> ServiceResponse:
@@ -1222,7 +1222,7 @@ def _register_services(hass: HomeAssistant) -> None:
         DOMAIN, "stop_reading", stop_reading, schema=vol.Schema({vol.Optional("speaker"): cv.entity_id}),
         supports_response=SupportsResponse.OPTIONAL,
     )
-    hass.services.async_register(
-        DOMAIN, SERVICE_FORGET, forget, schema=FORGET_SCHEMA,
+    async_register_admin_service(
+        hass, DOMAIN, SERVICE_FORGET, forget, schema=FORGET_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )

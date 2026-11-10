@@ -304,3 +304,26 @@ async def test_announce_to_several_rooms_or_everywhere(hass: HomeAssistant) -> N
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_announce", tool_args={
         "message": "Film's starting.", "speaker": "everywhere"}))
     assert out["spoken"] and len({e for c in said[-3:] for e in c.data["entity_id"]}) == 3
+
+
+async def test_camera_timeouts_and_exclusion_do_not_leave_a_stale_freeze(hass):
+    from unittest.mock import AsyncMock
+    from homeassistant.components.camera import CameraEntityFeature, Image
+
+    entry = await _setup(hass)
+    dog = entry.runtime_data.watchdog
+    camera = "camera.gate"
+    hass.states.async_set(camera, "streaming", {"supported_features": CameraEntityFeature.STREAM})
+    with patch("homeassistant.components.camera.async_get_image", new=AsyncMock(return_value=Image("image/jpeg", b"frame"))):
+        await dog.async_check_cameras()
+    dog.cams[camera]["since"] = (dt_util.utcnow() - timedelta(hours=4)).isoformat()
+    assert any(issue["kind"] == "frozen" for issue in dog.issues())
+    with patch("homeassistant.components.camera.async_get_image", new=AsyncMock(side_effect=TimeoutError)):
+        await dog.async_check_cameras()
+        assert not dog.issues()
+        await dog.async_check_cameras()
+    assert [issue["kind"] for issue in dog.issues()] == ["snapshot_failed"]
+    with patch("custom_components.sentient.cameras.cameras", return_value=[]):
+        assert not dog.issues()
+        await dog.async_check_cameras()
+        assert not dog.cams

@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -28,6 +29,7 @@ from .const import (
     CONF_RECIPES,
     CONF_SPEAKERS,
     CONF_TTS_ENTITY,
+    CONF_VOICE_ID,
     DOMAIN,
 )
 from .speaker_identity import VOICE_RECOGNITION_DOMAIN
@@ -67,6 +69,63 @@ def folders(rt: Any) -> dict[str, str | None]:
     }
 
 
+def _pipeline_row(hass: HomeAssistant, pipeline: Any, agent: str | None, name: str,
+                  require_voice_id: bool) -> dict[str, str]:
+    reg = er.async_get(hass)
+    engine = pipeline.conversation_engine
+    wrapper = reg.async_get(engine) if engine else None
+    uses_voice_id = bool(wrapper and wrapper.platform == VOICE_RECOGNITION_DOMAIN)
+    cfg = hass.config_entries.async_get_entry(wrapper.config_entry_id) if uses_voice_id and wrapper.config_entry_id else None
+    passes_to = cfg.options.get("conversation_agent") if cfg else None
+    downstream = passes_to if uses_voice_id else engine
+    answers = reg.async_get(downstream) if downstream else None
+    used = _name(hass, engine) if engine else "no conversation agent"
+    if passes_to:
+        used += f", which passes requests to {_name(hass, passes_to)}"
+
+    problem = fix = ""
+    if uses_voice_id and (cfg is None or cfg.state is not ConfigEntryState.LOADED):
+        problem = "Voice Recognition is unavailable."
+        fix = "Settings → Devices & services → Sentient Voice Recognition."
+    elif uses_voice_id or require_voice_id:
+        stt_id = getattr(pipeline, "stt_engine", None)
+        stt = reg.async_get(stt_id) if stt_id else None
+        if not uses_voice_id or not stt or stt.platform != VOICE_RECOGNITION_DOMAIN or stt.config_entry_id != cfg.entry_id:
+            problem = "Voice Recognition needs both its speech-to-text and conversation adapters on this pipeline."
+            fix = "Settings → Voice assistants → set Speech-to-text and Conversation agent to Sentient Voice Recognition."
+        elif not cfg.options.get("local_speaker"):
+            problem = "Voice Recognition's local speaker handoff is off."
+            fix = "Settings → Devices & services → Sentient Voice Recognition → Let Sentient identify speakers locally."
+    if not problem and not (downstream and ((answers and answers.platform == DOMAIN) or downstream == agent)):
+        problem = "The pipeline does not route to a Sentient agent."
+        fix = ("Settings → Devices & services → Sentient Voice Recognition → Conversation agent: '… with backup'."
+               if uses_voice_id else "Settings → Voice assistants → Conversation agent: '… with backup'.")
+    if not problem and uses_voice_id and getattr(pipeline, "prefer_local_intents", False):
+        problem = "Local commands can skip the Voice Recognition conversation adapter."
+        fix = "Settings → Voice assistants → turn off Prefer handling commands locally to check every voice request."
+    return _row("Voice", name, "warn" if problem else "ok", f"Uses {used}. {problem}".rstrip(), fix)
+
+
+def _satellite_pipeline(hass: HomeAssistant, speaker: str, preferred: Any) -> Any | None:
+    """Resolve the satellite's configured selector the same way Assist does."""
+    from homeassistant.components.assist_pipeline import async_get_pipelines
+    from homeassistant.components.assist_pipeline.const import OPTION_PREFERRED
+    from homeassistant.components.assist_satellite import DATA_COMPONENT
+
+    component = hass.data.get(DATA_COMPONENT)
+    satellite = component.get_entity(speaker) if component is not None else None
+    if satellite is None:
+        return None
+    if not (select := satellite.pipeline_entity_id):
+        return preferred
+    state = hass.states.get(select)
+    if state is None or state.state in DOWN:
+        return None
+    if state.state == OPTION_PREFERRED:
+        return preferred
+    return next((p for p in async_get_pipelines(hass) if p.name == state.state), None)
+
+
 def check(hass: HomeAssistant, rt: Any, found: dict[str, bool] | None = None) -> list[dict[str, str]]:
     from .conversation import find_ai_agent
 
@@ -104,25 +163,25 @@ def check(hass: HomeAssistant, rt: Any, found: dict[str, bool] | None = None) ->
     try:
         from homeassistant.components.assist_pipeline import async_get_pipeline
 
-        engine = async_get_pipeline(hass).conversation_engine
-    except Exception:  # noqa: BLE001 - no pipelines
-        engine = None
-    if engine:
-        reg = er.async_get(hass)
-        entry = reg.async_get(engine)
-        passes_to = None
-        if entry and entry.platform == VOICE_RECOGNITION_DOMAIN and entry.config_entry_id:
-            # Sentient Voice Recognition hands every request on to another agent, and that one really answers
-            via = hass.config_entries.async_get_entry(entry.config_entry_id)
-            passes_to = (via.options.get("conversation_agent") if via else None) or None
-        answers = reg.async_get(passes_to or engine)
-        used = _name(hass, engine) + (f", which passes requests to {_name(hass, passes_to)}" if passes_to else "")
-        if (answers and answers.platform == DOMAIN) or (passes_to or engine) == agent:
-            out.append(_row("Voice", "Voice pipeline", "ok", f"Your preferred pipeline uses {used}."))
+        preferred = async_get_pipeline(hass)
+    except Exception:  # noqa: BLE001 - Assist may not be configured
+        preferred = None
+    require_voice_id = bool(opts.get(CONF_VOICE_ID))
+    if preferred is not None:
+        out.append(_pipeline_row(hass, preferred, agent, "Voice pipeline", require_voice_id))
+    for speaker in opts.get(CONF_SPEAKERS) or []:
+        if not speaker.startswith("assist_satellite."):
+            continue
+        name = f"{_name(hass, speaker)} voice pipeline"
+        try:
+            pipeline = _satellite_pipeline(hass, speaker, preferred)
+        except (ImportError, KeyError, RuntimeError):
+            pipeline = None
+        if pipeline is None:
+            out.append(_row("Voice", name, "warn", "The speaker's assigned pipeline could not be verified.",
+                            "Check the speaker's Assist pipeline in Settings → Devices & services."))
         else:
-            fix = ("Settings → Devices & services → Sentient Voice Recognition → Configure → Conversation agent: '… with backup'."
-                   if passes_to else "Settings → Voice assistants → your assistant → Conversation agent: '… with backup'.")
-            out.append(_row("Voice", "Voice pipeline", "warn", f"Your preferred pipeline uses {used}, not Sentient's agents.", fix))
+            out.append(_pipeline_row(hass, pipeline, agent, name, require_voice_id))
 
     # --- speakers ------------------------------------------------------------------------------
     speakers = list(opts.get(CONF_SPEAKERS) or [])

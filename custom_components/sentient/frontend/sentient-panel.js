@@ -335,7 +335,7 @@
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
-        : ["wear", "fight", "frozen"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : i.kind === "frozen" ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
+        : ["wear", "fight", "frozen", "snapshot_failed"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : ["frozen", "snapshot_failed"].includes(i.kind) ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
