@@ -580,7 +580,9 @@
       }
       const vid = g.id === "voiceid" && g.voice_id ? g.voice_id : null;
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
-        ${vid ? `<div class="vidcard ok"><div class="vidt">SENTIENT VOICE RECOGNITION IS RUNNING</div><div class="vids">${vid.heard ? "Last heard: " + esc(vid.heard.name || "an unrecognised voice") + " · " + esc(new Date(vid.heard.at).toLocaleString()) + "<br>" + esc(vid.heard.why) + (vid.heard.similarity != null ? " · similarity " + esc(String(vid.heard.similarity)) : "") + (vid.heard.gap != null ? " · lead over the next voice " + esc(String(vid.heard.gap)) : "") : vid.last ? "Last heard: " + esc(vid.last.name || "an unrecognised voice") + " · " + esc(new Date(vid.last.at).toLocaleString()) : "No voice heard yet since Sentient started."}</div></div>` : ""}
+        ${vid ? `<div class="vidcard ok"><div class="vidt">SENTIENT VOICE RECOGNITION IS RUNNING</div><div class="vids">${vid.heard ? "Last heard: " + esc(vid.heard.name || "an unrecognised voice") + " · " + esc(new Date(vid.heard.at).toLocaleString()) + "<br>" + esc(vid.heard.why) + (vid.heard.similarity != null ? " · similarity " + esc(String(vid.heard.similarity)) : "") + (vid.heard.gap != null ? " · lead over the next voice " + esc(String(vid.heard.gap)) : "") : vid.last ? "Last heard: " + esc(vid.last.name || "an unrecognised voice") + " · " + esc(new Date(vid.last.at).toLocaleString()) : "No voice heard yet since Sentient started."}</div>${vid.enabled ? `<div class="vids">${(vid.recent || []).length ? "<b>Recent voices</b><br>" + vid.recent.map((h) => esc(new Date(h.at).toLocaleTimeString()) + " · " + esc(h.name || "not matched") + " · " + esc(h.why) + (h.similarity != null ? " · " + esc(String(h.similarity)) : "")).join("<br>") : ""}</div>
+          <div class="row"><input id="vidname" style="flex:1;min-width:140px" placeholder="Name to record" maxlength="40"><button class="btn" data-act="videnrol">RECORD FROM A SPEAKER</button><button class="btn ghost" data-act="videnrolx">CANCEL</button></div>
+          <div class="vids" id="vidsay" role="status"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
         ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
@@ -2357,6 +2359,18 @@
       else if (act === "gedit") {
         const e = ((this._games.games.find((x) => x.id === this._gid) || {}).entries || []).find((x) => x.id === id);
         if (e) { this._gedit = e.id; this._gkind = e.kind; this._gkey = e.key; this._gval = e.value; this._drawGames(); }
+      }
+      else if (act === "videnrol") {
+        const name = (this._$("vidname") || {}).value || "";
+        const say = this._$("vidsay");
+        if (!name.trim()) { if (say) say.textContent = "Type the name first."; return; }
+        if (say) say.textContent = "Opening…";
+        this._hass.callWS({ type: "sentient/voice_id/enrol", name: name.trim() }).then(
+          (r) => { if (say) say.innerHTML = "Recording is open for " + r.minutes + " minutes. Say the wake word at the speaker you want to record from, then read: <b>" + esc(r.sentence) + "</b> The speaker will give you the next two."; },
+          (e) => { if (say) say.textContent = e.message || String(e); });
+      }
+      else if (act === "videnrolx") {
+        this._hass.callWS({ type: "sentient/voice_id/enrol_cancel" }).then(() => { const say = this._$("vidsay"); if (say) say.textContent = "Cancelled."; }, () => {});
       }
       else if (act === "vidrefresh") {
         this._hass.callWS({ type: "sentient/settings", language: this._hass.language }).then(

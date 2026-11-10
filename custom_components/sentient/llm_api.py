@@ -194,6 +194,9 @@ class RememberTool(_Tool):
         from .memory import _normalise
 
         text = tool_input.tool_args["text"]
+        from . import voice_id
+
+        text = voice_id.attribute(getattr(rt, "options", {}), voice_id.current_speaker.get(), current_request.get() or "", text)
         request = _normalise(" ".join((current_request.get() or "").split())).rstrip(".?!")
         stated = re.fullmatch(r"(?:please )?remember(?: that)? (.+)", request)
         origin = "explicit" if stated and stated[1] == _normalise(" ".join(text.split())).rstrip(".?!") else None
