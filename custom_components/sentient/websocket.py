@@ -1021,6 +1021,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_voice_id)
     websocket_api.async_register_command(hass, ws_voice_enrol)
     websocket_api.async_register_command(hass, ws_voice_enrol_cancel)
+    websocket_api.async_register_command(hass, ws_voice_details)
+    websocket_api.async_register_command(hass, ws_voice_threshold)
 
 
 async def _labels(hass: HomeAssistant, lang: str) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
@@ -1164,6 +1166,37 @@ async def ws_voice_enrol_cancel(hass: HomeAssistant, connection, msg: dict[str, 
     from .voice_id import cancel_enrolment
 
     await cancel_enrolment(hass)
+    connection.send_result(msg["id"], {})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/details"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_voice_details(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Saved voices, engine state and any match-level advice. Empty unless the add-on runs and the setting is on."""
+    from .voice_id import HEARD_KEY, RECENT_KEY, advice, details, enabled
+
+    entry = _entry(hass)
+    if entry is None or not enabled(hass, _current(entry)):
+        connection.send_result(msg["id"], {"available": False})
+        return
+    detail = await details(hass)
+    recent = list(hass.data.get(RECENT_KEY) or [])
+    connection.send_result(msg["id"], {"available": True, "detail": detail, "advice": advice(detail, recent)})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/threshold",
+                                  vol.Required("value"): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=0.9))})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_voice_threshold(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .voice_id import ENROL_DOMAIN, enabled
+
+    entry = _entry(hass)
+    if entry is None or not enabled(hass, _current(entry)):
+        connection.send_error(msg["id"], "not_available", "Voice recognition isn't running or isn't switched on.")
+        return
+    await hass.services.async_call(ENROL_DOMAIN, "set_match_threshold", {"value": msg["value"]}, blocking=True)
     connection.send_result(msg["id"], {})
 
 
