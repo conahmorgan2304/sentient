@@ -76,6 +76,27 @@ async def test_a_thermostat_that_will_not_start_is_reported_not_called_fine(hass
     assert any("didn't start" in i["text"] for i in entry.runtime_data.timeline.items if i["kind"] == "health")
 
 
+async def test_a_slow_thermostat_is_given_time_and_not_set_again_when_it_is_already_right(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
+    saved = await _saved(hass, entry)
+    temps = async_mock_service(hass, "climate", "set_temperature")
+    async_mock_service(hass, "climate", "set_hvac_mode")
+    hp = entry.runtime_data.heat_prog
+    real_sleep, naps = asyncio.sleep, []
+
+    async def nap(seconds):
+        naps.append(seconds)
+        if len(naps) == 7:  # it reports the change about 20 seconds after being told
+            hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 15})
+        await real_sleep(0)
+
+    with patch("custom_components.sentient.heating_schedule.asyncio.sleep", nap):
+        assert await hp.async_verify(LOUNGE, 15.0, None, saved["id"], "Lounge", "Weekdays")
+    assert len(naps) == 7 and not temps  # patient, and it is on at 15 already, so it is left alone (setting it again would drop it out of auto)
+    assert not any("didn't start" in i["text"] for i in entry.runtime_data.timeline.items)
+
+
 def _tick_at(hass, freezer, when):
     freezer.move_to(dt_util.as_utc(when))
 
@@ -96,6 +117,8 @@ async def test_a_hand_made_change_goes_back_to_the_schedule_after_the_hours(hass
 
 async def test_at_night_it_goes_back_after_one_hour_even_if_turned_off_by_hand(hass: HomeAssistant, freezer) -> None:
     entry = await _setup(hass)
+    rt0 = entry.runtime_data
+    rt0.options = {**rt0.options, "quiet_start": "21:00:00", "quiet_end": "08:00:00"}  # night is the quiet hours
     hp = entry.runtime_data.heat_prog
     saved = await _saved(hass, entry)
     hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
@@ -109,6 +132,8 @@ async def test_at_night_it_goes_back_after_one_hour_even_if_turned_off_by_hand(h
 
 async def test_matching_the_schedule_clears_the_wait_and_it_can_be_switched_off(hass: HomeAssistant, freezer) -> None:
     entry = await _setup(hass)
+    rt0 = entry.runtime_data
+    rt0.options = {**rt0.options, "quiet_start": "21:00:00", "quiet_end": "08:00:00"}  # night is the quiet hours
     hp = entry.runtime_data.heat_prog
     await _saved(hass, entry)
     hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
@@ -127,12 +152,26 @@ async def test_matching_the_schedule_clears_the_wait_and_it_can_be_switched_off(
     assert hp.reconcile(at(1, 5, 0)) == []  # switched off in Settings: left as it is
 
 
-def test_manual_heat_mode_goes_back_to_the_schedule_mode(hass: HomeAssistant) -> None:
+def test_an_off_thermostat_wakes_into_a_hold_and_one_that_is_on_gets_only_the_temperature(hass: HomeAssistant) -> None:
     from custom_components.sentient.heating_schedule import heating_actions
 
-    hass.states.async_set(LOUNGE, "heat", {"hvac_modes": ["off", "auto", "heat_cool"], "temperature": 21})
-    actions, _ = heating_actions(hass, {"heating_entities": [LOUNGE]}, {"entity_id": LOUNGE, "temperature": 15})
-    assert actions[0]["data"] == {"temperature": 15.0, "hvac_mode": "auto"}  # heat is the manual mode
-    hass.states.async_set(LOUNGE, "off", {"hvac_modes": ["off", "auto", "heat_cool"]})
-    actions, _ = heating_actions(hass, {"heating_entities": [LOUNGE]}, {"entity_id": LOUNGE, "temperature": 15})
-    assert actions[0]["data"]["hvac_mode"] == "auto"  # off is never the answer
+    modes = {"hvac_modes": ["off", "auto", "heat_cool"], "temperature": 21}
+    options = {"heating_entities": [LOUNGE]}
+    hass.states.async_set(LOUNGE, "off", modes)
+    actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
+    assert actions[0]["data"] == {"temperature": 15.0, "hvac_mode": "heat_cool"}  # off is never the answer; auto is its own app schedule
+    for state in ("heat_cool", "auto", "heat"):  # a mode sent along would flip it in and out of its own schedule
+        hass.states.async_set(LOUNGE, state, modes)
+        actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
+        assert actions[0]["data"] == {"temperature": 15.0}
+
+
+def test_night_is_the_quiet_hours_not_the_gaps_between_periods() -> None:
+    from datetime import datetime
+
+    from custom_components.sentient.heating_schedule import HeatingProgrammes
+
+    options = {"quiet_start": "21:00:00", "quiet_end": "08:00:00"}
+    assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 11, 0)) is False  # mid-morning, between periods
+    assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 22, 30)) is True
+    assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 5, 0)) is True
