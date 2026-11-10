@@ -21,6 +21,19 @@ REPO_URL = "https://github.com/conahmorgan2304/sentient-voice-recognition"
 HACS_URL = ("https://my.home-assistant.io/redirect/hacs_repository/"
             "?owner=conahmorgan2304&repository=sentient-voice-recognition&category=integration")
 LAST_KEY = "sentient_voice_id_last"
+HEARD_KEY = "sentient_voice_id_heard"  # what the add-on reported for the latest turn (for the page, never the audio)
+EVENT_TURN = f"{VOICE_RECOGNITION_DOMAIN}_turn"
+REASONS = {
+    "matched": "matched a profile",
+    "below_threshold": "too different from every saved voice (below the match level)",
+    "ambiguous": "too close to two saved voices to be sure",
+    "no_profiles": "no voice profiles are saved yet",
+    "insufficient_speech": "too little speech to judge (try a longer sentence)",
+    "recognition_busy": "the engine was busy",
+    "engine_unavailable": "the voice engine didn't answer",
+    "unsupported_audio": "this microphone's audio format can't be checked",
+    "profile_removed": "that profile has since been removed",
+}
 
 # the speaker for the turn being answered: None = no result (typed, or not routed through the add-on)
 current_speaker: ContextVar[Any] = ContextVar("sentient_current_speaker", default=None)
@@ -72,6 +85,18 @@ def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
     return lines
 
 
+def record_turn(hass: HomeAssistant, event: Any) -> None:
+    """Remember why the add-on matched or didn't match the latest voice (its own report; no audio)."""
+    data = event.data or {}
+    reason = str(data.get("reason") or "")
+    hass.data[HEARD_KEY] = {
+        "at": dt_util.now().isoformat(), "name": data.get("speaker_name") or None, "reason": reason,
+        "why": REASONS.get(reason, reason.replace("_", " ")), "similarity": data.get("similarity"),
+        "gap": data.get("runner_up_gap"),
+    }
+
+
 def status(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
     return {"installed": installed(hass), "enabled": enabled(hass, options), "last": hass.data.get(LAST_KEY),
+            "heard": hass.data.get(HEARD_KEY),
             "repo": REPO_URL, "hacs": HACS_URL}
