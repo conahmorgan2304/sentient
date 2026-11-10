@@ -21,7 +21,7 @@ def _install(hass: HomeAssistant, state=ConfigEntryState.LOADED) -> None:
 
 
 def test_lines_name_the_speaker_or_say_it_is_unknown_or_cautious() -> None:
-    alex = SimpleNamespace(speaker_id="a", display_name="Alex")
+    alex = SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True)
     nobody = SimpleNamespace(speaker_id=None, display_name=None)
     assert voice_id.prompt_lines({}, None) == []
     assert "Alex" in voice_id.prompt_lines({}, alex)[0] and "not proof" in voice_id.prompt_lines({}, alex)[0]
@@ -34,7 +34,7 @@ def test_lines_name_the_speaker_or_say_it_is_unknown_or_cautious() -> None:
 
 
 async def test_lookup_needs_the_setting_and_a_running_integration(hass: HomeAssistant) -> None:
-    find = Mock(return_value=SimpleNamespace(speaker_id="a", display_name="Alex"))
+    find = Mock(return_value=SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True))
     hass.data[SPEAKER_FOR_TURN] = find
     assert voice_id.lookup(hass, {"voice_id": True}, "req") is None  # not installed
     _install(hass, ConfigEntryState.NOT_LOADED)
@@ -51,7 +51,7 @@ async def test_lookup_needs_the_setting_and_a_running_integration(hass: HomeAssi
 async def test_conversation_binds_the_speaker_for_the_turn_only(hass: HomeAssistant) -> None:
     _install(hass)
     obj, _ = agent(hass, {"voice_id": True})
-    hass.data[SPEAKER_FOR_TURN] = Mock(return_value=SimpleNamespace(speaker_id="a", display_name="Alex"))
+    hass.data[SPEAKER_FOR_TURN] = Mock(return_value=SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True))
     seen = []
 
     async def turn(_request):
@@ -69,7 +69,7 @@ async def test_prompt_carries_the_speaker_and_unknown_voices_can_be_guests(hass:
     from custom_components.sentient.llm_api import SentientAPI
 
     ctx = llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None)
-    token = voice_id.current_speaker.set(SimpleNamespace(speaker_id="a", display_name="Alex"))
+    token = voice_id.current_speaker.set(SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True))
     try:
         prompt = SentientAPI(hass)._prompt(ctx)
     finally:
@@ -127,7 +127,7 @@ async def test_recent_turns_are_only_kept_while_the_setting_is_on_and_the_add_on
 
 
 def test_a_first_person_memory_is_filed_under_the_matched_speaker_only() -> None:
-    alex = SimpleNamespace(speaker_id="a", display_name="Alex")
+    alex = SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True)
     nobody = SimpleNamespace(speaker_id=None, display_name=None)
     on = {"voice_id": True}
     assert voice_id.attribute(on, alex, "remember that I like tea", "likes tea") == "Alex: likes tea"
@@ -144,7 +144,7 @@ async def test_enrol_commands_refuse_when_the_add_on_is_missing(hass: HomeAssist
     hass.services.async_register(VOICE_RECOGNITION_DOMAIN, "cancel_speaker_enrolment", call)
     if True:
         try:
-            await voice_id.start_enrolment(hass, "Alex")
+            await voice_id.start_enrolment(hass, "Alex", "assist_satellite.kitchen")
         except ValueError:
             pass
         else:
@@ -153,7 +153,7 @@ async def test_enrol_commands_refuse_when_the_add_on_is_missing(hass: HomeAssist
         await voice_id.cancel_enrolment(hass)
         call.assert_not_called()
         _install(hass)
-        await voice_id.start_enrolment(hass, "Alex")
+        await voice_id.start_enrolment(hass, "Alex", "assist_satellite.kitchen")
         assert call.await_count == 1 and call.call_args.args[0].data["name"] == "Alex"
 
 
@@ -198,3 +198,74 @@ async def test_house_check_has_no_voice_rows_unless_the_add_on_is_running_and_sw
     rt.options = {**rt.options, "voice_id": False}
     rows = (await async_check(hass, rt))["rows"]
     assert not any(r["name"] == "Voice profiles" for r in rows)  # switched off
+
+
+async def test_matched_speaker_survives_remapping_and_unknown_voice_starts_fresh(hass):
+    from custom_components.sentient.const import CONF_CARRY_ON_MINUTES
+
+    _install(hass)
+    obj, _ = agent(hass, {"voice_id": True, "voice_id_unknown": True, CONF_CARRY_ON_MINUTES: 2})
+    current = None
+    matched = SimpleNamespace(speaker_id="a", display_name="Alex")
+    unknown = SimpleNamespace(speaker_id=None, display_name=None)
+    seen = []
+
+    def lookup(turn):
+        if turn.conversation_id == current.conversation_id and turn.context is current.context:
+            return unknown if turn.text == "guest question" else matched
+
+    async def answer(turn):
+        seen.append((turn.conversation_id, voice_id.current_speaker.get()))
+        result = response()
+        result.conversation_id = turn.conversation_id
+        return result
+
+    hass.data[SPEAKER_FOR_TURN] = lookup
+    with patch.object(obj, "_recoverable_turn", side_effect=answer):
+        for text, cid in (("first question", "first"), ("second question", "second"), ("guest question", "first")):
+            current = request(text, cid=cid)
+            await obj.async_process(current)
+    assert seen == [("first", matched), ("first", matched), (None, unknown)]
+
+
+async def test_unknown_voice_cannot_retrieve_household_history_or_memories(hass, tmp_path):
+    from custom_components.sentient.llm_api import ConversationsTool, RecallTool
+
+    entry, _ = await _setup(hass, tmp_path, voice_id=True, voice_id_unknown=True)
+    entry.runtime_data.memory.add("Alex likes tea")
+    ctx = llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None)
+    token = voice_id.current_speaker.set(SimpleNamespace(speaker_id=None, display_name=None))
+    try:
+        history = await ConversationsTool().async_call(hass, llm.ToolInput(tool_name="sentient_conversations", tool_args={}), ctx)
+        recall = await RecallTool().async_call(hass, llm.ToolInput(tool_name="sentient_recall", tool_args={"query": "tea"}), ctx)
+    finally:
+        voice_id.current_speaker.reset(token)
+    assert "private" in history["error"]
+    assert recall == {"memories": []}
+
+
+async def test_local_only_speaker_stays_out_of_ai_prompt_and_memory_attribution(hass, tmp_path):
+    from custom_components.sentient.focus import current_request
+    from custom_components.sentient.llm_api import RememberTool, SentientAPI
+
+    entry, _ = await _setup(hass, tmp_path, voice_id=True)
+    ctx = llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None)
+    request_token = current_request.set("remember that I like tea")
+    token = voice_id.current_speaker.set(SimpleNamespace(speaker_id="a", display_name="Alex", share_name=False))
+    tool = llm.ToolInput(tool_name="sentient_remember", tool_args={"text": "I like tea"})
+    try:
+        assert "probably Alex" not in SentientAPI(hass)._prompt(ctx)
+        local = await RememberTool().async_call(hass, tool, ctx)
+        assert local["saved"] == "I like tea"
+        shared_token = voice_id.current_speaker.set(SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True))
+        try:
+            assert "probably Alex" in SentientAPI(hass)._prompt(ctx)
+            shared = await RememberTool().async_call(hass, tool, ctx)
+        finally:
+            voice_id.current_speaker.reset(shared_token)
+        assert shared["saved"] == "Alex: I like tea"
+        memory = next(item for item in entry.runtime_data.memory.items if item.id == shared["id"])
+        assert memory.origin == "explicit"
+    finally:
+        current_request.reset(request_token)
+        voice_id.current_speaker.reset(token)
