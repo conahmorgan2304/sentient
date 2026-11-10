@@ -115,3 +115,26 @@ def test_thanks_helpers_tell_gratitude_from_a_decline_or_a_cancel():
     assert thanks('Thanks!') == 'thanks' and thanks('thank you very much') == 'thanks'
     assert thanks('No thanks') == 'decline' and thanks("that's all") == '' and thanks('turn it off thanks') == ''
     assert explicit_cancel('Cancel that') and explicit_cancel('never mind') and not explicit_cancel('thanks')
+
+
+async def test_plain_thanks_does_not_cancel_a_running_request_but_no_thanks_still_does(hass):
+    import asyncio
+
+    for text, cancelled in (('Thank you', False), ('No thankyou', True)):
+        obj, _ = agent(hass, {'conversation_sessions': True, 'conversation_recovery': True})
+        gate = asyncio.Event()
+
+        async def slow(*args, **kwargs):
+            await gate.wait()
+            return response('Done.')
+
+        with patch.object(obj, '_async_process_legacy', slow):
+            first = hass.async_create_task(obj.async_process(request('Check system health')))
+            await asyncio.sleep(0)
+            await asyncio.sleep(0)
+            said = _said(await obj.async_process(request(text)))
+            gate.set()
+            await asyncio.gather(first, return_exceptions=True)
+        assert ('Stopped waiting' in said) is cancelled
+        if not cancelled:
+            assert 'still handling' in said

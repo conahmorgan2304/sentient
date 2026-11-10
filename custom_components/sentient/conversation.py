@@ -543,7 +543,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .voice_locale import explicit_cancel, thanks
 
         busy = running is not None and not running.done()
-        if cancel(user_input.text, self._reply_language(user_input)) and not (busy and thanks(user_input.text)):
+        if cancel(user_input.text, self._reply_language(user_input)) and not (busy and thanks(user_input.text) == "thanks"):
             if busy:
                 self._cancel_session(user_input)
                 running.cancel()
