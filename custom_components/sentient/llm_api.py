@@ -904,6 +904,111 @@ def _speaker_here(hass: HomeAssistant, rt: Any, llm_context: llm.LLMContext, nam
     return next((e for e in found if e.startswith("assist_satellite.")), None) or (found[0] if found else None)
 
 
+def _games(hass: HomeAssistant) -> Any:
+    rt = _runtime(hass)
+    games = getattr(rt, "games", None) if rt is not None else None
+    return games if games is not None and games.enabled else None
+
+
+class GameTool(_Tool):
+    acts = True
+    name = "sentient_game"
+    description = (
+        "Story games the family plays out loud, each with a saved memory of its own. 'Let's play escape the flat', "
+        "'carry on with the game', 'stop the game', 'what games are there?', 'start the game again', or 'make a game "
+        "about ...'. action: list, start (game), stop, restart (clears that game's progress; only when they clearly ask "
+        "to start over), new (game name, setting, rules: sets up a new game). Starting a game makes you its game master."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["list", "start", "stop", "restart", "new"]),
+        vol.Optional("game"): cv.string, vol.Optional("setting"): cv.string, vol.Optional("rules"): cv.string,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        games = _games(hass)
+        if games is None:
+            return {"error": "story games are switched off"}
+        a = tool_input.tool_args
+        if a["action"] == "list":
+            return {"games": [{"name": g["name"], "setting": g["setting"], "playing": g["active"], "moves_made": len(g["log"])}
+                              for g in games.listing()]}
+        if a["action"] == "stop":
+            stopped = games.stop()
+            return {"stopped": stopped["name"] if stopped else None, "saved": True}
+        if a["action"] == "new":
+            try:
+                game = games.save_game(a.get("game") or "", a.get("setting") or "", a.get("rules") or "")
+            except ValueError as err:
+                return {"error": str(err)}
+            games.start(game["id"])
+            return {"created_and_started": game["name"], "memory": "empty, so set the scene and record where they are"}
+        game = games.find(a.get("game")) if a.get("game") else (games.active or None)
+        if game is None:
+            return {"error": "which game?", "games": [g["name"] for g in games.listing()]}
+        if a["action"] == "restart":
+            games.restart(game["id"])
+        games.start(game["id"])
+        return {"started": game["name"], "restarted": a["action"] == "restart",
+                "memory": games.state(game) or "empty: a fresh start",
+                "story_so_far": [row["text"] for row in game["log"][-5:]]}
+
+
+class GameSetTool(_Tool):
+    acts = True
+    name = "sentient_game_set"
+    description = (
+        "Record a fact in the story game's own memory while it is being played: where the players are, what they carry or "
+        "have used, who they met, a clue, whether the door is open. Use it the moment it happens. kind: place, item, flag, "
+        "person, clue or note. key is a short name ('brass key', 'where', 'kitchen door'); value is its state ('in the "
+        "drawer', 'unlocked'). remove=true takes it away (used up, no longer true). This is not the house's memory."
+    )
+    parameters = vol.Schema({
+        vol.Required("kind"): vol.In(["place", "item", "flag", "person", "clue", "note"]),
+        vol.Required("key"): cv.string, vol.Optional("value"): cv.string, vol.Optional("remove"): cv.boolean,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        games = _games(hass)
+        game = games.active if games is not None else None
+        if game is None:
+            return {"error": "no story game is being played"}
+        a = tool_input.tool_args
+        if a.get("remove"):
+            return {"removed": games.remove_entry(game["id"], a["key"], a["kind"])}
+        try:
+            entry = games.set_entry(game["id"], a["kind"], a["key"], a.get("value") or "")
+        except ValueError as err:
+            return {"error": str(err)}
+        return {"saved": f"{entry['key']}: {entry['value']}" if entry["value"] else entry["key"]}
+
+
+class GameLogTool(_Tool):
+    acts = True
+    name = "sentient_game_log"
+    description = (
+        "Add one short line to the story game's record of what the players did or chose, so the story carries on next "
+        "time ('they took the brass key and went upstairs'). One line for each choice or turning point."
+    )
+    parameters = vol.Schema({vol.Required("text"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        games = _games(hass)
+        game = games.active if games is not None else None
+        if game is None:
+            return {"error": "no story game is being played"}
+        try:
+            games.log(game["id"], tool_input.tool_args["text"])
+        except ValueError as err:
+            return {"error": str(err)}
+        return {"logged": True}
+
+
 class BookTool(_Tool):
     reads_outside = True
     name = "sentient_book"
@@ -1866,6 +1971,8 @@ class SentientAPI(llm.API):
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
                  *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else []),
                  *([BookTool()] if rt0 is not None and rt0.options.get("books") else []),
+                 *([GameTool()] if _games(self.hass) is not None else []),
+                 *([GameSetTool(), GameLogTool()] if _games(self.hass) is not None and _games(self.hass).active is not None else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else [])]
         if rt0 is not None and getattr(rt0, "security_events", None) is not None and rt0.security_events.tracking:
             tools.append(SecurityEventTool())
@@ -1955,6 +2062,8 @@ class SentientAPI(llm.API):
         if getattr(rt, "books", None) is not None and rt.books.enabled:
             lines.append("Books and stories are read by the house itself: for 'read' or 'play' a book or story, call "
                          "sentient_book — never recite, retell or invent its text in your reply.")
+        if (games := _games(self.hass)) is not None:
+            lines.extend(games.prompt_lines())
         if getattr(rt, "goals", None) is not None and rt.goals.enabled and (goal_line := rt.goals.prompt_line()):
             lines.append(goal_line)
         if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:

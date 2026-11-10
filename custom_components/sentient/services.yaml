@@ -203,6 +203,18 @@ hush:
           min: 0
           max: 720
           unit_of_measurement: min
+game:
+  fields:
+    action:
+      required: true
+      selector:
+        select:
+          options: [start, stop]
+    game:
+      required: false
+      example: "escape the flat"
+      selector:
+        text:
 stop_reading:
   fields:
     speaker:

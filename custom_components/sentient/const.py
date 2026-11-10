@@ -99,6 +99,7 @@ DEFAULT_MANUALS_FOLDER = "manuals"
 CONF_GOALS = "goals"  # goals over days or weeks
 CONF_BOOKS = "books"  # audiobooks and ebooks read aloud, with bookmarks
 CONF_BOOKS_FOLDER = "books_folder"
+CONF_GAMES = "games"  # story games with a memory of their own
 DEFAULT_BOOKS_FOLDER = "books"
 CONF_READING_TTS = "reading_tts"  # a different text-to-speech service for books (blank: the usual voice)
 CONF_READING_VOICE = "reading_voice"  # that service's voice

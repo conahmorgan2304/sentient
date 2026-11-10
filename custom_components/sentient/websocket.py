@@ -23,6 +23,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
 
+from .games import KINDS
 from .const import CONF_UPDATE_CHECKER
 from .const import CONF_ALEXA_TTS_ONLY
 from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
@@ -94,6 +95,7 @@ from .const import (
     CONF_GOALS,
     CONF_BOOKS,
     CONF_BOOKS_FOLDER,
+    CONF_GAMES,
     CONF_READING_TTS,
     CONF_READING_VOICE,
     CONF_READ_AHEAD,
@@ -401,6 +403,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question.", [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
+    ]),
+    ("games", "Story games", "mdi:dice-multiple-outline", "Voice-led story games the whole house can play, such as an escape-the-flat adventure with the assistants as game master. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. The game master can also read the house's ordinary memory, never change it. Switching this off hides this page and the game tools; your saved games are kept, not cleared, and are there again when you switch it back on.", [
+        CONF_GAMES,
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
         CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
@@ -936,6 +941,8 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 @callback
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security_event_feedback)
+    websocket_api.async_register_command(hass, ws_games)
+    websocket_api.async_register_command(hass, ws_games_edit)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)
     websocket_api.async_register_command(hass, ws_export_readable)
@@ -1161,6 +1168,61 @@ async def ws_reading_try(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     st = hass.states.get(speaker)
     out["speaker_name"] = st.name if st else speaker
     connection.send_result(msg["id"], out)
+
+
+def _games(hass: HomeAssistant):
+    entry = _entry(hass)
+    games = getattr(entry.runtime_data, "games", None) if entry is not None else None
+    return games if games is not None and games.enabled else None
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/games"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_games(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    games = _games(hass)
+    if games is None:
+        connection.send_result(msg["id"], {"enabled": False, "games": []})
+        return
+    connection.send_result(msg["id"], {"enabled": True, "games": games.listing(), "kinds": list(KINDS)})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/games/edit",
+    vol.Required("op"): vol.In(["save", "delete", "set", "remove", "restart", "start", "stop"]),
+    vol.Optional("game"): str, vol.Optional("name"): str, vol.Optional("setting"): str, vol.Optional("rules"): str,
+    vol.Optional("kind"): str, vol.Optional("key"): str, vol.Optional("value"): str, vol.Optional("entry"): str,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_games_edit(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Everything the Games page does to a game and its saved memory."""
+    games = _games(hass)
+    if games is None:
+        connection.send_error(msg["id"], "off", "Story games are switched off in Settings")
+        return
+    op, gid = msg["op"], msg.get("game") or ""
+    try:
+        if op == "save":
+            games.save_game(msg.get("name", ""), msg.get("setting", ""), msg.get("rules", ""), gid or None)
+        elif op == "stop":
+            games.stop()
+        elif gid not in games.games:
+            raise ValueError("No such game")
+        elif op == "delete":
+            games.delete_game(gid)
+        elif op == "set":
+            games.set_entry(gid, msg.get("kind", "note"), msg.get("key", ""), msg.get("value", ""), msg.get("entry"))
+        elif op == "remove":
+            games.remove_entry(gid, msg.get("entry") or msg.get("key", ""))
+        elif op == "restart":
+            games.restart(gid)
+        else:
+            games.start(gid)
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"games": games.listing()})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/reading/stop"})

@@ -31,6 +31,7 @@ FEATURES: dict[str, tuple[str, str | None, str, tuple[str, ...], tuple[str, ...]
     "watches": ("Watches and reminders", None, "mind", ("sentient_watch", "sentient_remind"), ("watch", "reminder")),
     "cameras": ("Looking through cameras", None, "spots", ("sentient_look", "sentient_spot", "sentient_what_happened"), ()),
     "books": ("Books and stories", "books", "reading", ("sentient_book",), ()),
+    "games": ("Story games", "games", "games", ("sentient_game", "sentient_game_set", "sentient_game_log"), ()),
     "recipes": ("Recipes", "recipes", "reading", ("sentient_recipe",), ()),
     "manuals": ("Manuals", "manuals", "reading", ("sentient_manual",), ()),
     "goals": ("Goals", "goals", "mind", ("sentient_goal",), ()),
