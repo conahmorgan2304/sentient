@@ -1,6 +1,6 @@
 # Sentient
 
-[English documentation](README.md) · Résumé français de la contribution ; consultez la documentation anglaise pour les fonctions les plus récentes.
+[English documentation](README.md) · Résumé français ; consultez la documentation anglaise pour toutes les fonctions.
 
 <p align="center"><img src="https://raw.githubusercontent.com/conahmorgan2304/sentient/main/docs/images/sentient.jpg" alt="Sentient" width="420"></p>
 
@@ -10,7 +10,7 @@ Sentient donne à votre maison un cerveau partagé. Chaque assistant vocal et ch
 
 Il fonctionne avec l’IA que vous avez déjà dans Home Assistant (Google Gemini, OpenAI, Ollama, ou tout agent de conversation). Il n’a pas besoin de sa propre clé API.
 
-> **Statut : bêta.** Utilisé quotidiennement dans une maison ; retours et issues bienvenus. Nécessite Home Assistant 2025.10 ou plus récent, un agent de conversation et, pour les fonctions caméra et arrière-plan, une entité AI Task.
+> **Statut : stable.** Utilisé quotidiennement ; retours et issues bienvenus. Nécessite Home Assistant 2025.10 ou plus récent, un agent de conversation et, pour les fonctions caméra et arrière-plan, une entité AI Task.
 
 ## Ce qu’il fait aujourd’hui
 
