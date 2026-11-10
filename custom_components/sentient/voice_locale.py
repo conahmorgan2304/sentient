@@ -48,6 +48,25 @@ def cancel(text, language=None):
                            'actually leave it', 'actually cancel that', 'never mind', 'nevermind'} or ending(text, language)
 
 
+EXPLICIT_CANCEL = {'cancel', 'cancel that', 'cancel it', 'leave it', 'leave that', 'actually leave it',
+                   'actually cancel that', 'never mind', 'nevermind'}
+THANKS = re.compile(r"(?:(?:okay|ok|no|nope|nah|well|oh) )?(?:thanks|thank you|cheers)"
+                    r"(?: (?:very much|a lot|so much|again|please|mate))?")
+
+
+def explicit_cancel(text):
+    """The person said to cancel (not just a sign-off such as "thanks" or "that's all")."""
+    return re.sub(r'\bthankyou\b', 'thank you', clean(text)) in EXPLICIT_CANCEL
+
+
+def thanks(text):
+    """"" if this isn't only thanks; "thanks" for a plain thank-you; "decline" for "no thanks"."""
+    said = re.sub(r'\bthankyou\b', 'thank you', clean(text))
+    if not THANKS.fullmatch(said):
+        return ""
+    return "decline" if said.split()[0] in {'no', 'nope', 'nah'} else "thanks"
+
+
 # A colon keeps arbitrary room/device names intact without guessing their grammar.
 ALERTS = {
     'fi': {'Smoke detected': 'Savua havaittu', 'Carbon monoxide detected': 'Häkää havaittu',
