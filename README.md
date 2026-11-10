@@ -173,6 +173,8 @@ Every new feature has its own switch in Settings.
 
 The [setup guide](docs/SETUP.md) walks through the rest: an AI Task entity for camera and background jobs, rooms and motion sensors, the dashboard cards, camera spots, and the ESPHome loudness sensor for light shows and speaking up in a noisy room.
 
+For a local reply to **“Who’s speaking?”**, set up the separate [Sentient Voice Recognition integration](https://github.com/conahmorgan2304/sentient-voice-recognition#ask-sentient-who-is-speaking) and enable **Let Sentient identify speakers locally** in its settings.
+
 ## Services
 
 | Service | What it does |
