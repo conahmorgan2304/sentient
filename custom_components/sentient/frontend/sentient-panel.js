@@ -792,13 +792,28 @@
       this._drawGames();
     }
 
+    // what the Games page just did, shown on the page itself (a pop-up can be hidden by phone apps)
+    _gameSay(text, cls) {
+      this._gmsg = text ? { text, cls } : null;
+      const el = this._$("gmsg");
+      if (el) { el.textContent = text || ""; el.className = "gmsg " + (cls || ""); el.hidden = !text; }
+    }
+
     async _gameDo(msg) {
+      this._gameSay(msg.op === "from_template" || (msg.op === "save" && !msg.game) ? "CREATING THE GAME…" : "SAVING…", "warn");
       try {
-        const r = await this._hass.callWS({ type: "sentient/games/edit", ...msg });
+        const r = await Promise.race([
+          this._hass.callWS({ type: "sentient/games/edit", ...msg }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("No answer from Home Assistant. Check the connection and try again.")), 20000)),
+        ]);
         this._games = { ...(this._games || {}), enabled: true, games: r.games };
+        this._gmsg = { text: msg.op === "from_template" || (msg.op === "save" && !msg.game) ? "GAME CREATED ✓" : "SAVED ✓", cls: "ok" };
         this._drawGames();
         return true;
-      } catch (e) { window.alert(e.message || String(e)); return false; }
+      } catch (e) {
+        this._gameSay(String((e && e.message) || e || "Something went wrong").toUpperCase(), "bad");
+        return false;
+      }
     }
 
     _drawGames() {
@@ -815,7 +830,9 @@
       const kinds = G.kinds || ["place", "item", "flag", "person", "clue", "note"];
       const entries = cur ? [...cur.entries].sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind)) : [];
       const on = list.find((x) => x.active);
+      const gm = this._gmsg;
       wrap.innerHTML = `<div class="h"><span class="t">YOUR GAMES</span><i></i><em>${list.length}</em></div>
+        <div id="gmsg" class="gmsg ${gm ? esc(gm.cls) : ""}" role="status"${gm ? "" : " hidden"}>${gm ? esc(gm.text) : ""}</div>
         ${on ? `<div class="row"><span class="hint">PLAYING NOW: ${esc(on.name).toUpperCase()}</span><button class="btn sm ghost" data-act="gstop">PUT AWAY</button></div>` : ""}
         <div class="row">${list.map((x) => `<button class="btn sm${x.id === this._gid ? "" : " ghost"}" data-act="gopen" data-id="${esc(x.id)}">${esc(x.name).toUpperCase()}${x.active ? " ▶" : ""}</button>`).join("")}
           <button class="btn sm ghost" data-act="gnew">+ NEW GAME</button></div>
@@ -2399,7 +2416,7 @@
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "gopen") { this._gid = id; this._gnew = false; this._gedit = null; this._drawGames(); }
-      else if (act === "gnew") { this._gnew = true; this._gtpl = null; this._drawGames(); }
+      else if (act === "gnew") { this._gnew = true; this._gtpl = null; this._gmsg = null; this._drawGames(); }
       else if (act === "gtpl") { this._gtpl = id || null; this._drawGames(); }
       else if (act === "gcancel") { this._gnew = false; this._gtpl = null; this._drawGames(); }
       else if (act === "gstart") this._gameDo({ op: "start", game: id });
@@ -2845,6 +2862,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt.on{border-color:rgba(61,255,168,.55)} .rt.on s{color:#3dffa8;border-color:#3dffa8}
 .rt.off s{color:rgba(255,120,140,.85);border-color:rgba(255,120,140,.6)}
 .rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
+.gmsg{margin:8px 2px;padding:8px 10px;border-radius:8px;font-size:12px;letter-spacing:.08em;border:1px solid rgba(0,255,247,.25);color:#7fffe9} .gmsg.warn{color:#ffd166;border-color:rgba(255,209,102,.4)} .gmsg.bad{color:#ff6b7a;border-color:rgba(255,107,122,.5)} .gmsg[hidden]{display:none}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
 .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:7px}
 .rt{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 9px;border-radius:12px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.035)}
