@@ -125,3 +125,14 @@ async def test_matching_the_schedule_clears_the_wait_and_it_can_be_switched_off(
     hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
     hp.reconcile(at(1, 1, 0))
     assert hp.reconcile(at(1, 5, 0)) == []  # switched off in Settings: left as it is
+
+
+def test_manual_heat_mode_goes_back_to_the_schedule_mode(hass: HomeAssistant) -> None:
+    from custom_components.sentient.heating_schedule import heating_actions
+
+    hass.states.async_set(LOUNGE, "heat", {"hvac_modes": ["off", "auto", "heat_cool"], "temperature": 21})
+    actions, _ = heating_actions(hass, {"heating_entities": [LOUNGE]}, {"entity_id": LOUNGE, "temperature": 15})
+    assert actions[0]["data"] == {"temperature": 15.0, "hvac_mode": "auto"}  # heat is the manual mode
+    hass.states.async_set(LOUNGE, "off", {"hvac_modes": ["off", "auto", "heat_cool"]})
+    actions, _ = heating_actions(hass, {"heating_entities": [LOUNGE]}, {"entity_id": LOUNGE, "temperature": 15})
+    assert actions[0]["data"]["hvac_mode"] == "auto"  # off is never the answer

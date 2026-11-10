@@ -39,7 +39,13 @@ _LOGGER = logging.getLogger(__name__)
 MIN_TEMP = 5.0
 MAX_TEMP = 28.0
 CHECK_AFTER = 8  # seconds before looking whether a thermostat asked to heat did
-ON_MODES = ("heat", "heat_cool", "auto")  # what to switch an 'off' thermostat to, in order of preference
+ON_MODES = ("auto", "heat_cool", "heat")  # the schedule mode first: "heat" is the thermostat's manual mode
+
+
+def schedule_mode(state: Any) -> str | None:
+    """The mode a thermostat follows its own schedule in (auto), else the nearest to it; never off."""
+    modes = list(state.attributes.get("hvac_modes") or []) if state is not None else []
+    return next((m for m in ON_MODES if m in modes), None)
 
 
 def enabled(options: dict[str, Any]) -> bool:
@@ -89,11 +95,10 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], f"The temperature must be between {MIN_TEMP:g}° and {MAX_TEMP:g}°"
     data: dict[str, Any] = {"temperature": degrees}
     st = hass.states.get(entity_id)
-    if st is not None and st.state == "off":
-        # a temperature alone doesn't wake a thermostat that is off (an earlier "off" time may have done that)
-        modes = list(st.attributes.get("hvac_modes") or [])
-        if mode := next((m for m in ON_MODES if m in modes), None):
-            data["hvac_mode"] = mode
+    if st is not None and (mode := schedule_mode(st)) and st.state != mode:
+        # off, or in manual (heat) mode: back to the schedule mode, which also wakes a thermostat that is off
+        # (a temperature alone doesn't)
+        data["hvac_mode"] = mode
     return [{"action": "climate.set_temperature", "target": target, "data": data}], None
 
 
@@ -443,7 +448,9 @@ class HeatingProgrammes:
                 have = float(state.attributes.get("temperature"))
             except (TypeError, ValueError):
                 have = None
-            if state.state != "off" and (have is None or abs(have - want) <= 0.3):
+            mode = schedule_mode(state)
+            manual_mode = state.state == "off" or (mode is not None and mode != "heat" and state.state == "heat")
+            if not manual_mode and (have is None or abs(have - want) <= 0.3):
                 self._manual.pop(heater, None)
                 continue
             record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": active is not None})
