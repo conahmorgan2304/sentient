@@ -137,9 +137,9 @@
           </div></div>
         <div class="page" id="scp" hidden>
           <div class="lanes ov3">
-            <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
+            <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="camc" class="card"></div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
             <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
-            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="camc" class="card"></div><div id="frigatehealth" class="card" hidden></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="frigatehealth" class="card" hidden></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
