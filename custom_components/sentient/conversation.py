@@ -540,14 +540,20 @@ class BackedUpAgent(conversation.ConversationEntity):
         key = (user_input.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
         identified = any(key[1:])
         running = self._turn_tasks.get(key) if identified else None
-        if cancel(user_input.text, self._reply_language(user_input)):
-            if running is not None and not running.done():
+        from .voice_locale import explicit_cancel, thanks
+
+        busy = running is not None and not running.done()
+        if cancel(user_input.text, self._reply_language(user_input)) and not (busy and thanks(user_input.text) == "thanks"):
+            if busy:
                 self._cancel_session(user_input)
                 running.cancel()
                 await asyncio.gather(running, return_exceptions=True)
                 return self._plain_reply(user_input, "Stopped waiting for that request. An action may already have happened; please check the device. I haven't retried or undone it.")
-            self._cancel_session(user_input)
-            return self._plain_reply(user_input, "Okay, I've cancelled the pending request. I haven't undone any earlier actions.")
+            self._cancel_session(user_input)  # a sign-off still closes anything waiting for an answer
+            if explicit_cancel(user_input.text):
+                return self._plain_reply(user_input, "Okay, I've cancelled the pending request. I haven't undone any earlier actions.")
+            # "thanks", "that's all", "no thanks" aren't cancellations, so don't say something was cancelled
+            return self._plain_reply(user_input, "You're welcome." if thanks(user_input.text) == "thanks" else "Okay.")
         if running is not None and not running.done():
             return self._plain_reply(user_input, "I'm still handling the previous request. Say cancel that to stop waiting.")
         if not identified:

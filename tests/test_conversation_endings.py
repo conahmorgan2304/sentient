@@ -80,3 +80,61 @@ async def test_declines_work_with_provider_worded_followups(hass, question):
         await obj.async_process(request('Check system health'))
         result = await obj.async_process(request('No.'))
     assert model.await_count == 1 and not result.continue_conversation
+
+
+def _said(result):
+    return result.response.speech['plain']['speech']
+
+
+async def test_thanks_is_not_reported_as_a_cancellation(hass):
+    obj, rt = agent(hass, {'conversation_sessions': True, 'conversation_recovery': True})
+    session = rt.sessions.get(request('start'))
+    session.pending = {'summary': 'unlock gate', 'actions': []}
+    with patch.object(obj, '_converse', AsyncMock()):
+        thanks = await obj.async_process(request('Thank you.'))
+    assert 'cancelled' not in _said(thanks) and _said(thanks) == "You're welcome."
+    assert session.pending is None  # a sign-off still discards anything waiting for a yes
+
+
+async def test_no_thanks_and_thats_all_just_say_okay(hass):
+    obj, _ = agent(hass, {'conversation_sessions': True, 'conversation_recovery': True})
+    with patch.object(obj, '_converse', AsyncMock()):
+        for text in ('No thanks', "That's all"):
+            assert _said(await obj.async_process(request(text))) == 'Okay.'
+
+
+async def test_an_explicit_cancel_still_says_so(hass):
+    obj, _ = agent(hass, {'conversation_sessions': True, 'conversation_recovery': True})
+    with patch.object(obj, '_converse', AsyncMock()):
+        said = _said(await obj.async_process(request('Cancel that')))
+    assert 'cancelled the pending request' in said and "haven't undone" in said
+
+
+def test_thanks_helpers_tell_gratitude_from_a_decline_or_a_cancel():
+    from custom_components.sentient.voice_locale import explicit_cancel, thanks
+    assert thanks('Thanks!') == 'thanks' and thanks('thank you very much') == 'thanks'
+    assert thanks('No thanks') == 'decline' and thanks("that's all") == '' and thanks('turn it off thanks') == ''
+    assert explicit_cancel('Cancel that') and explicit_cancel('never mind') and not explicit_cancel('thanks')
+
+
+async def test_plain_thanks_does_not_cancel_a_running_request_but_no_thanks_still_does(hass):
+    import asyncio
+
+    for text, cancelled in (('Thank you', False), ('No thankyou', True)):
+        obj, _ = agent(hass, {'conversation_sessions': True, 'conversation_recovery': True})
+        gate = asyncio.Event()
+
+        async def slow(*args, **kwargs):
+            await gate.wait()
+            return response('Done.')
+
+        with patch.object(obj, '_async_process_legacy', slow):
+            first = hass.async_create_task(obj.async_process(request('Check system health')))
+            await asyncio.sleep(0)
+            await asyncio.sleep(0)
+            said = _said(await obj.async_process(request(text)))
+            gate.set()
+            await asyncio.gather(first, return_exceptions=True)
+        assert ('Stopped waiting' in said) is cancelled
+        if not cancelled:
+            assert 'still handling' in said
