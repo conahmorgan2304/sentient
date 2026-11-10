@@ -25,6 +25,7 @@ def test_lines_name_the_speaker_or_say_it_is_unknown_or_cautious() -> None:
     nobody = SimpleNamespace(speaker_id=None, display_name=None)
     assert voice_id.prompt_lines({}, None) == []
     assert "Alex" in voice_id.prompt_lines({}, alex)[0] and "not proof" in voice_id.prompt_lines({}, alex)[0]
+    assert "house rules say not to address people by name" in voice_id.prompt_lines({}, alex)[0]
     assert not voice_id.cautious({"voice_id_unknown": True}, alex)
     assert not voice_id.cautious({}, nobody)
     assert voice_id.cautious({"voice_id_unknown": True}, nobody)

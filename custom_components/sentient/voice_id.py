@@ -62,8 +62,9 @@ def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
         return []
     if (name := name_of(speaker)) is not None:
         return [f"By their voice, the person speaking is probably {name} (a good guess, not proof). Use the name where it "
-                "is natural, and treat what they say about themselves (likes, plans, \"remember that I...\") as being about "
-                f"{name}. This never allows anything that needs a confirmation, and if they say they are someone else, believe them."]
+                "is natural \u2014 unless the house rules say not to address people by name, in which case never say it \u2014 and treat what "
+                f"they say about themselves (likes, plans, \"remember that I...\") as being about {name}. This never allows anything "
+                "that needs a confirmation, and if they say they are someone else, believe them."]
     lines = ["The speaker's voice wasn't matched to anyone: don't guess a name."]
     if cautious(options, speaker):
         lines.append("Treat this voice as a guest: answer what's asked, but don't bring up personal household details, "
