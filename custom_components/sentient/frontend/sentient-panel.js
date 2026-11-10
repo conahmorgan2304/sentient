@@ -567,7 +567,20 @@
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
       if (!g) { this._group = "memories"; this._drawMemories(); return; }
       const body = this._$("body");
+      if (g.id === "voiceid" && g.voice_id && !g.voice_id.installed) {
+        // the add-on isn't running: no options, just where to get it
+        this._form = null;
+        body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
+          <div class="vidcard"><div class="vidt">SENTIENT VOICE RECOGNITION ISN'T INSTALLED</div>
+          <div class="vids">It is a separate add-on and integration. Install it, enrol each person's voice, then come back here: the options appear as soon as it is running.</div>
+          <div class="row"><a class="btn" href="${esc(g.voice_id.hacs)}" target="_blank" rel="noopener">GET IT IN HACS</a>
+          <a class="btn ghost" href="${esc(g.voice_id.repo)}" target="_blank" rel="noopener">INSTALL STEPS ON GITHUB</a>
+          <button class="btn ghost" data-act="vidrefresh">I'VE INSTALLED IT · CHECK AGAIN</button></div></div>`;
+        return;
+      }
+      const vid = g.id === "voiceid" && g.voice_id ? g.voice_id : null;
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
+        ${vid ? `<div class="vidcard ok"><div class="vidt">SENTIENT VOICE RECOGNITION IS RUNNING</div><div class="vids">${vid.last ? "Last heard: " + esc(vid.last.name || "an unrecognised voice") + " · " + esc(new Date(vid.last.at).toLocaleString()) : "No voice heard yet since Sentient started."}</div></div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
         ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
@@ -2345,6 +2358,11 @@
         const e = ((this._games.games.find((x) => x.id === this._gid) || {}).entries || []).find((x) => x.id === id);
         if (e) { this._gedit = e.id; this._gkind = e.kind; this._gkey = e.key; this._gval = e.value; this._drawGames(); }
       }
+      else if (act === "vidrefresh") {
+        this._hass.callWS({ type: "sentient/settings", language: this._hass.language }).then(
+          (r) => { this._settings = r; this._drawBody(); },
+          () => {});
+      }
       else if (act === "stopread") {
         this._status("STOPPING…", "warn");
         this._hass.callWS({ type: "sentient/reading/stop" }).then(
@@ -2849,6 +2867,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   --ha-dialog-surface-background:#0c1424;--mdc-dialog-content-ink-color:#e6f5fa;--list-item-hover-background-color:rgba(0,255,247,.08);
   color:#e6f5fa}
 .formwrap ha-form{display:block;max-width:880px}
+.vidcard{margin:14px 0;max-width:720px;padding:14px 16px;border:1px solid rgba(255,170,0,.4);border-radius:10px;background:rgba(255,170,0,.06)} .vidcard.ok{border-color:rgba(0,255,247,.35);background:rgba(0,255,247,.05)} .vidt{font-weight:700;letter-spacing:.08em;font-size:12px;margin-bottom:6px} .vids{opacity:.85;margin-bottom:10px} .vidcard .row{display:flex;gap:10px;flex-wrap:wrap} .vidcard a.btn{text-decoration:none}
 .gamewrap{margin-top:18px;max-width:880px} .gamewrap .row{flex-wrap:wrap;margin:6px 0} .gamewrap .add select{background:rgba(0,255,247,.06);color:#e6f5fa;border:1px solid rgba(0,255,247,.25);border-radius:8px;padding:6px}
 .spotgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
 .restyle{flex-wrap:wrap;gap:6px} .restyle form{display:flex;gap:6px;flex:1;min-width:180px} .restyle input{flex:1;min-width:0;background:transparent;border:1px solid rgba(0,255,247,.3);border-radius:8px;color:inherit;padding:6px 8px}

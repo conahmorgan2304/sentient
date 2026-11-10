@@ -466,12 +466,16 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .focus import current_request, turn_flags
 
         flags: dict = {}
+        from . import voice_id
+
         token, ftoken = current_request.set(user_input.text), turn_flags.set(flags)
+        stoken = voice_id.current_speaker.set(None if self._guest() else voice_id.lookup(self.hass, self._options(), user_input))
         try:
             result = await self._recoverable_turn(user_input)
         finally:
             current_request.reset(token)
             turn_flags.reset(ftoken)
+            voice_id.current_speaker.reset(stoken)
         if flags.get("hand_off"):
             # a story (or anything long) is now playing on this speaker: say the one line and stop listening, so
             # the satellite isn't waiting for an answer over the top of it and no "anything else?" is added

@@ -2077,7 +2077,11 @@ class SentientAPI(llm.API):
         if room:
             lines.append(f"The person talking to you is in the {room}.")
         profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) is not None else None
-        private = bool(profile and profile.get("private"))
+        from . import voice_id
+
+        speaker = voice_id.current_speaker.get()
+        private = bool(profile and profile.get("private")) or voice_id.cautious(opts, speaker)
+        lines.extend(voice_id.prompt_lines(opts, speaker))
         if private:
             lines.append(
                 "This room is private: don't bring up personal details about anyone in the household, what other "

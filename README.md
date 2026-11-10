@@ -175,6 +175,8 @@ The [setup guide](docs/SETUP.md) walks through the rest: an AI Task entity for c
 
 For a local reply to **“Who’s speaking?”**, set up the separate [Sentient Voice Recognition integration](https://github.com/conahmorgan2304/sentient-voice-recognition#ask-sentient-who-is-speaking) and enable **Let Sentient identify speakers locally** in its settings.
 
+Once it is running, Settings → **Voice recognition** in Sentient lets the assistants use the speaker's name (and, if you choose, treat voices it can't match like a guest). Until it is installed, that tab only shows where to get it.
+
 ## Services
 
 | Service | What it does |
