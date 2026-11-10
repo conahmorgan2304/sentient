@@ -45,6 +45,12 @@ ON_MODES = ("heat_cool", "heat", "auto")  # what to wake an 'off' thermostat int
 # and a temperature sent to it drops it out of auto into a hold anyway.
 
 
+def on_own_schedule(state: Any) -> bool:
+    """In 'auto' on a thermostat that also offers a hold: the app's own schedule is in charge there, and that cannot be
+    switched off in the app, so Sentient puts it back in a hold (after the same wait as any other change by hand)."""
+    return state is not None and state.state == "auto" and wake_mode(state) not in (None, "auto")
+
+
 def wake_mode(state: Any) -> str | None:
     """The mode to wake a thermostat that is off into; None when it offers none (then it is left as it is)."""
     modes = list(state.attributes.get("hvac_modes") or []) if state is not None else []
@@ -98,7 +104,7 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], f"The temperature must be between {MIN_TEMP:g}° and {MAX_TEMP:g}°"
     data: dict[str, Any] = {"temperature": degrees}
     st = hass.states.get(entity_id)
-    if st is not None and st.state == "off" and (mode := wake_mode(st)):
+    if st is not None and (st.state == "off" or on_own_schedule(st)) and (mode := wake_mode(st)):
         # a temperature alone doesn't wake a thermostat that is off. One that is already on is sent the temperature
         # only: a mode sent with it would flip a thermostat in a hold in and out of its own schedule
         data["hvac_mode"] = mode
@@ -451,7 +457,7 @@ class HeatingProgrammes:
                 have = float(state.attributes.get("temperature"))
             except (TypeError, ValueError):
                 have = None
-            if state.state != "off" and (have is None or abs(have - want) <= 0.3):
+            if state.state != "off" and not on_own_schedule(state) and (have is None or abs(have - want) <= 0.3):
                 self._manual.pop(heater, None)
                 continue
             record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": not self._night(rt.options, local)})

@@ -138,7 +138,7 @@ async def test_matching_the_schedule_clears_the_wait_and_it_can_be_switched_off(
     await _saved(hass, entry)
     hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
     hp.reconcile(at(0, 22, 0))
-    hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 15})  # back on the night temperature
+    hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 15})  # back on the night temperature
     assert hp.reconcile(at(0, 22, 30)) == []
     hass.states.async_set(LOUNGE, "off", {**MODES, "temperature": 15})
     assert hp.reconcile(at(0, 22, 40)) == []  # a new wait starts from here
@@ -160,10 +160,16 @@ def test_an_off_thermostat_wakes_into_a_hold_and_one_that_is_on_gets_only_the_te
     hass.states.async_set(LOUNGE, "off", modes)
     actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
     assert actions[0]["data"] == {"temperature": 15.0, "hvac_mode": "heat_cool"}  # off is never the answer; auto is its own app schedule
-    for state in ("heat_cool", "auto", "heat"):  # a mode sent along would flip it in and out of its own schedule
+    for state in ("heat_cool", "heat"):  # a mode sent along would flip it in and out of a hold
         hass.states.async_set(LOUNGE, state, modes)
         actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
         assert actions[0]["data"] == {"temperature": 15.0}
+    hass.states.async_set(LOUNGE, "auto", modes)  # the app's own schedule can't be switched off, so it is put back in a hold
+    actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
+    assert actions[0]["data"] == {"temperature": 15.0, "hvac_mode": "heat_cool"}
+    hass.states.async_set(LOUNGE, "auto", {"hvac_modes": ["off", "auto"], "temperature": 21})  # nothing but auto: leave it
+    actions, _ = heating_actions(hass, options, {"entity_id": LOUNGE, "temperature": 15})
+    assert actions[0]["data"] == {"temperature": 15.0}
 
 
 def test_night_is_the_quiet_hours_not_the_gaps_between_periods() -> None:
@@ -175,3 +181,13 @@ def test_night_is_the_quiet_hours_not_the_gaps_between_periods() -> None:
     assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 11, 0)) is False  # mid-morning, between periods
     assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 22, 30)) is True
     assert HeatingProgrammes._night(options, datetime(2026, 11, 10, 5, 0)) is True
+
+
+async def test_a_thermostat_left_on_its_own_app_schedule_is_put_back_in_a_hold(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass)
+    hp = entry.runtime_data.heat_prog
+    saved = await _saved(hass, entry)
+    hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 20})  # the right temperature, but in the app's schedule
+    assert hp.reconcile(at(0, 6, 30)) == []
+    assert hp.reconcile(at(0, 9, 29)) == []
+    assert hp.reconcile(at(0, 9, 31)) == [(LOUNGE, "off", None, saved["id"])]  # 3 hours by day
