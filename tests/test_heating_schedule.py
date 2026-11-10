@@ -92,7 +92,7 @@ def test_a_thermostat_that_is_off_is_switched_back_on(hass: HomeAssistant) -> No
 
     hass.states.async_set(ZONE, "off", {"hvac_modes": ["off", "auto", "heat_cool"]})
     actions, why = heating_actions(hass, {"heating_entities": [ZONE]}, {"entity_id": ZONE, "temperature": 21})
-    assert why is None and actions[0]["data"] == {"temperature": 21.0, "hvac_mode": "heat_cool"}
+    assert why is None and actions[0]["data"] == {"temperature": 21.0, "hvac_mode": "auto"}
     hass.states.async_set(ZONE, "heat", {"hvac_modes": ["off", "heat"]})
     actions, _ = heating_actions(hass, {"heating_entities": [ZONE]}, {"entity_id": ZONE, "temperature": 21})
     assert actions[0]["data"] == {"temperature": 21.0}  # already on: left in its mode

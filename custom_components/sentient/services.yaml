@@ -203,6 +203,13 @@ hush:
           min: 0
           max: 720
           unit_of_measurement: min
+stop_reading:
+  fields:
+    speaker:
+      required: false
+      selector:
+        entity:
+          domain: [assist_satellite, media_player]
 run_routine:
   fields:
     name:

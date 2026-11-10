@@ -90,13 +90,13 @@ async def test_runs_on_and_off_through_the_page(hass: HomeAssistant, freezer, ha
     freezer.move_to(dt_util.as_utc(at(0, 9, 0)))
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
     await hass.async_block_till_done(wait_background_tasks=True)
-    assert offs[-1].data == {"entity_id": LOUNGE}
+    assert not offs and temps[-1].data["temperature"] == 15.0  # the end of a period is the night temperature, never off
     # switched off in Settings: kept, nothing runs
     entry.runtime_data.options = {**entry.runtime_data.options, "heating_schedule": False}
     freezer.move_to(dt_util.as_utc(at(0, 15, 0)))
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
     await hass.async_block_till_done(wait_background_tasks=True)
-    assert len(temps) == 1
+    assert len(temps) == 2
     assert entry.runtime_data.heat_prog.items.remove(saved["id"])
 
 

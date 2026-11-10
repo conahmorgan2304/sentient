@@ -202,6 +202,7 @@ class Heating:
         self._unsubs: list = []
         self.learner = None  # set by the runtime: tells it which changes automations made
         self.trust = None  # set by the runtime: ask or say before warming up
+        self.scheduled = lambda _entity_id: False  # set by the runtime: is this thermostat run by the heating schedule?
         self.own_contexts: set[str] = set()
         self._stopped = False
         self._preheating: set[str] = set()
@@ -580,6 +581,8 @@ class Heating:
         self.own_contexts.add(context.id)
         try:
             if boost.get('was_off'):
+                if self.scheduled(entity_id):
+                    return  # the heating schedule takes it from here: a scheduled thermostat is never put back to off
                 service, data, restore_to = 'turn_off', {'entity_id': entity_id}, 'off'
             elif boost.get('preset') in (st.attributes.get('preset_modes') or []) and boost.get('preset'):
                 service, data, restore_to = 'set_preset_mode', {'entity_id': entity_id, 'preset_mode': boost['preset']}, f"preset {boost['preset']}"

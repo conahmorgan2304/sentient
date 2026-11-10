@@ -408,13 +408,24 @@
       // said & noticed (left alone while a "say it differently" note is being typed)
       const styleOn = !!((this._st("mind") || {}).attributes || {}).style_feedback && !!(this._hass.user && this._hass.user.is_admin);  // it changes settings: admins only
       if (act && act.closest && act.closest('form[data-form="restyle"]')) return;
-      const log = this._attr("last_spoken", "log", []).slice(0, 20).map((l) => l.said
-        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${hm(l.time)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
+      // the same line said or held again and again (the kettle, the gate) is one row with a count, newest time first
+      const fold = (items, key) => {
+        const seen = new Map(), out = [];
+        for (const it of items) {
+          const k = key(it);
+          if (seen.has(k)) seen.get(k).n += 1;
+          else { const g = { ...it, n: 1 }; seen.set(k, g); out.push(g); }
+        }
+        return out;
+      };
+      const times = (l) => hm(l.time) + (l.n > 1 ? ` · ×${l.n}` : "");
+      const log = fold(this._attr("last_spoken", "log", []), (l) => (l.said ? "s|" + String(l.said).toLowerCase() : "h|" + String(l.held).toLowerCase() + "|" + l.reason)).slice(0, 20).map((l) => l.said
+        ? `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b>${esc(l.said)}</b><u>${times(l)}</u>${(this._thumbs || {})[l.said] ? `<s class="thd">${this._thumbs[l.said] === "up" ? "👍" : this._thumbs[l.said] === "styled" ? "✎ NOTED" : "👎"}</s>` : `<a class="x th" data-act="thumb" data-id="up" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Good to hear"><ha-icon icon="mdi:thumb-up-outline"></ha-icon></a><a class="x th" data-act="thumb" data-id="down" data-text="${esc(l.said)}" data-src="${esc(l.source || "")}" title="Not worth saying"><ha-icon icon="mdi:thumb-down-outline"></ha-icon></a>`}${styleOn ? `<a class="x th" data-act="restyle" data-text="${esc(l.said)}" title="Say it differently"><ha-icon icon="mdi:comment-edit-outline"></ha-icon></a>` : ""}</div>
           ${styleOn && this._restyle === l.said ? `<div class="r restyle">${["Shorter", "Plainer", "Less cheeky", "More detail"].map((n) => `<button class="btn sm ghost" data-act="restyleset" data-id="${esc(n)}" data-text="${esc(l.said)}">${n.toUpperCase()}</button>`).join("")}
             <form data-form="restyle" data-text="${esc(l.said)}"><input name="note" placeholder="Or say how…" autocomplete="off"><button class="btn sm" type="submit">SAVE</button></form><a class="x" data-act="restylex" title="Close">✕</a></div>` : ""}`
-        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}</u></div>`).join("");
-      const noticed = this._attr("last_spoken", "noticed", []).slice(0, 6).map((d) =>
-        `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}</u></div>`).join("");
+        : `<div class="r dim"><ha-icon icon="mdi:volume-off"></ha-icon><b>${esc(l.held)}</b><u>${esc(heldWhy(l.reason))}${l.n > 1 ? ` · ×${l.n}` : ""}</u></div>`).join("");
+      const noticed = fold(this._attr("last_spoken", "noticed", []), (d) => (d.changes || []).join("; ").replace(/^\d\d:\d\d /, "") + "|" + d.result).slice(0, 6).map((d) =>
+        `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}${d.n > 1 ? ` · ×${d.n}` : ""}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
     }
 
@@ -558,7 +569,7 @@
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
+        <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
       this._dirty = false;
       this._status("");
@@ -1263,7 +1274,7 @@
       el.innerHTML = this._h("TODAY", new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }).toUpperCase())
         + `<div class="ttiles">${tiles.join("") || '<div class="e">CHOOSE A WEATHER ENTITY IN SETTINGS → BRIEFINGS</div>'}</div>`
         + (ppl ? `<div class="ppl">${ppl}</div>` : "")
-        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "OFF"} · ${esc(nx.name.toUpperCase())}</div>` : "");
+        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "NIGHT TEMPERATURE" + (nx.night != null ? " " + esc(nx.night) + "°" : "")} · ${esc(nx.name.toUpperCase())}</div>` : "");
       const kic = { alarm: "mdi:alarm", routine: "mdi:calendar-sync", bins: "mdi:trash-can-outline", watch: "mdi:eye-outline" };
       const when = (iso) => { const d = new Date(iso), today = new Date(); const tm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === today.toDateString() ? tm : d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " " + tm; };
       el2.innerHTML = this._h("COMING UP", (t.soon || []).length ? `${t.soon.length}` : "")
@@ -1469,7 +1480,7 @@
         if (!this._hgAt || Date.now() - this._hgAt > 600000) this._loadHeatGraph();
       }
       if (h.schedule_on) {
-        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "OFF"}` : "";
+        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "NIGHT " + (h.next.night != null ? h.next.night + "°" : "TEMPERATURE")}` : "";
         html += `<div class="sub">SCHEDULE${nx ? " · " + esc(nx) : ""}</div>`;
         if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
@@ -1527,7 +1538,7 @@
           + `<form class="hform" id="progform" onsubmit="return false"><input type="text" id="pname" placeholder="Name, e.g. Weekdays" value="${esc(d.name)}" style="flex:1 1 100%">`
           + `<div class="sub" style="flex-basis:100%">HEATERS</div><div class="dchips">${h.zones.map((z) => `<label><input type="checkbox" data-heater="${esc(z.entity_id)}"${d.heaters.includes(z.entity_id) ? " checked" : ""}><span>${esc(z.name.toUpperCase())}</span></label>`).join("")}</div>`
           + `<div class="sub" style="flex-basis:100%">DAYS · <a class="lnk" data-act="progdays" data-id="wk">WEEKDAYS</a> · <a class="lnk" data-act="progdays" data-id="we">WEEKENDS</a> · <a class="lnk" data-act="progdays" data-id="all">EVERY DAY</a></div><div class="dchips">${D.map((x) => `<label><input type="checkbox" data-day="${x}"${d.days.includes(x) ? " checked" : ""}><span>${x.toUpperCase()}</span></label>`).join("")}</div>`
-          + `<div class="sub" style="flex-basis:100%">ON / OFF TIMES</div>${d.periods.map(row).join("")}`
+          + `<div class="sub" style="flex-basis:100%">HEATING PERIODS · BETWEEN THEM IT HOLDS THE NIGHT TEMPERATURE</div>${d.periods.map(row).join("")}`
           + `<div class="pbar" style="flex-basis:100%">${this._progBar(d.periods.filter((x) => x.on && x.off && x.on !== x.off))}</div>`
           + `<div class="row" style="flex-basis:100%"><button class="btn sm ghost" data-act="progaddper">+ ADD ON/OFF TIME</button><span style="flex:1"></span><span id="progmsg" class="hint"></span><button class="btn sm ghost" data-act="progcancel">CANCEL</button><button class="btn sm" data-act="progsave" data-id="${esc(p ? p.id : "")}">SAVE</button></div></form>`;
         const form = this._$("progform");
@@ -2266,6 +2277,12 @@
       }
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
+      else if (act === "stopread") {
+        this._status("STOPPING…", "warn");
+        this._hass.callWS({ type: "sentient/reading/stop" }).then(
+          (r) => this._status((r.stopped || []).length ? "STOPPED ✓" : "NOTHING WAS BEING READ", "ok"),
+          (e) => this._status(e.message || String(e), "bad"));
+      }
       else if (act === "trytts") {
         const d = this._draft || {};
         this._status("PLAYING…", "warn");

@@ -76,7 +76,8 @@ async def test_reading_keeps_the_place_and_picks_up(hass: HomeAssistant, tmp_pat
             raise asyncio.CancelledError
         return True
 
-    with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()):
+    with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), \
+            patch("custom_components.sentient.books.Books._cut_short", return_value=False):  # these reads are instant by design
         api = await _api(hass, device)
         out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "flump"}))
         assert out["reading"] and out["book"] == "Flump"
@@ -292,7 +293,7 @@ async def test_next_piece_made_while_this_one_is_read(hass: HomeAssistant, tmp_p
         made.append(media_id)
 
     with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), \
-            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), \
+            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()), patch("custom_components.sentient.books.Books._cut_short", return_value=0), \
             patch("custom_components.sentient.speech.tts_media_id", side_effect=lambda h, text, *a: f"tts:{text}"), \
             patch.object(rt.speech, "_make_audio", side_effect=make):
         orig = rt.speech.prepare_reading
@@ -339,3 +340,93 @@ def test_damaged_and_oversized_books_give_no_text_instead_of_crashing(tmp_path, 
     assert books.read_chapters(str(big)) == []
     monkeypatch.setattr(books, "MAX_BOOK_BYTES", 10_000)
     assert books.read_chapters(str(big))
+
+
+async def test_a_dismissed_piece_on_a_tablet_stops_the_story_and_keeps_the_place(hass: HomeAssistant, tmp_path) -> None:
+    """Tapping a tablet's screen ends the passage being played; the reader used to carry on to the next one,
+    so a child tapping skipped through the book with no way to stop it."""
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    books = entry.runtime_data.books
+    spoken: list[str] = []
+    real_sleep = asyncio.sleep
+
+    async def quick_sleep(_seconds):
+        await real_sleep(0)
+
+    async def cut_short(text, speaker, story=False):
+        spoken.append(text)  # accepted, and over in an instant, as if the screen had been tapped
+        return True
+
+    with patch.object(entry.runtime_data.speech, "async_read_aloud", cut_short), \
+            patch.object(entry.runtime_data.speech, "prepare_reading"), \
+            patch("custom_components.sentient.books.asyncio.sleep", quick_sleep):
+        await books.async_read("Flump", "assist_satellite.bedroom")
+        task = books.reading["assist_satellite.bedroom"]["task"]
+        await asyncio.wait_for(task, 5)
+    assert "assist_satellite.bedroom" not in books.reading  # it stopped by itself
+    assert len([s for s in spoken if "Sentence" in s]) == 1  # a double-tap on a satellite stops it at once
+    assert "stopped" in spoken[-1].lower()
+    mark = books.place("Flump", "assist_satellite.bedroom")
+    assert (mark["chapter"], mark["passage"]) == (0, 0)  # nothing counts as heard
+
+
+async def test_cut_pieces_on_another_speaker_pause_after_two_in_a_row(hass: HomeAssistant, tmp_path) -> None:
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    books = entry.runtime_data.books
+    spoken: list[str] = []
+    real_sleep = asyncio.sleep
+
+    async def quick_sleep(_seconds):
+        await real_sleep(0)
+
+    async def cut_short(text, speaker, story=False):
+        spoken.append(text)
+        return True
+
+    with patch.object(entry.runtime_data.speech, "async_read_aloud", cut_short), \
+            patch.object(entry.runtime_data.speech, "prepare_reading"), \
+            patch("custom_components.sentient.books.asyncio.sleep", quick_sleep):
+        await books.async_read("Flump", "media_player.bedroom")
+        await asyncio.wait_for(books.reading["media_player.bedroom"]["task"], 5)
+    assert len([s for s in spoken if "Sentence" in s]) == 2 and "paused" in spoken[-1].lower()
+    assert books.place("Flump", "media_player.bedroom")["passage"] == 0
+
+
+def test_how_cut_short_a_piece_was() -> None:
+    from custom_components.sentient.books import Books
+
+    piece = "word " * 50  # about 20 seconds
+    assert Books._cut_short(piece, 18) == 0 and Books._cut_short(piece, 6) == 1 and Books._cut_short(piece, 1) == 2
+    assert Books._cut_short("a short line", 0.1) == 0  # too quick to tell
+
+
+async def test_stop_reading_service_stops_even_without_the_voice(hass: HomeAssistant, tmp_path) -> None:
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    books = entry.runtime_data.books
+    stopped = async_mock_service(hass, "media_player", "media_stop")
+    task = hass.async_create_background_task(asyncio.sleep(60), "story")
+    books.reading["assist_satellite.bedroom"] = {"task": task, "book": "Flump", "unsub": None}
+    out = await hass.services.async_call(DOMAIN, "stop_reading", {}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    assert out["stopped"] == ["Flump"] and task.cancelled() and not books.reading
+    assert stopped and stopped[-1].data["entity_id"] == "media_player.bedroom"  # the sound is stopped too
+    # and a named speaker is silenced even when nothing was registered as reading there
+    await hass.services.async_call(DOMAIN, "stop_reading", {"speaker": "assist_satellite.bedroom"}, blocking=True, return_response=True)
+    assert len(stopped) == 2
+
+
+async def test_reading_stop_command_from_the_panel(hass: HomeAssistant, tmp_path, hass_ws_client) -> None:
+    entry, _device = await _setup(hass, tmp_path, books=True)
+    books = entry.runtime_data.books
+    task = hass.async_create_background_task(asyncio.sleep(60), "story")
+    books.reading["assist_satellite.bedroom"] = {"task": task, "book": "Flump", "unsub": None}
+    async_mock_service(hass, "media_player", "media_stop")
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "sentient/reading/stop"})
+    assert (await client.receive_json())["result"] == {"stopped": ["Flump"]}
+    await hass.async_block_till_done()
+    assert task.cancelled() and not books.reading

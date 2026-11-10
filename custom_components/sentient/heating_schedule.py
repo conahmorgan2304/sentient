@@ -19,18 +19,57 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_HEATING_ENTITIES, CONF_HEATING_SCHEDULE, CONF_NEVER_ENTITIES, DOMAIN
+from .const import (
+    CONF_HEATING_ENTITIES,
+    CONF_HEATING_NIGHT_TEMP,
+    CONF_HEATING_REVERT,
+    CONF_HEATING_REVERT_DAY,
+    CONF_HEATING_REVERT_NIGHT,
+    CONF_HEATING_SCHEDULE,
+    CONF_NEVER_ENTITIES,
+    DEFAULT_HEATING_NIGHT_TEMP,
+    DEFAULT_HEATING_REVERT_DAY,
+    DEFAULT_HEATING_REVERT_NIGHT,
+    DOMAIN,
+)
 from .never import blocked
 
 _LOGGER = logging.getLogger(__name__)
 
 MIN_TEMP = 5.0
 MAX_TEMP = 28.0
-ON_MODES = ("heat", "heat_cool", "auto")  # what to switch an 'off' thermostat to, in order of preference
+CHECK_AFTER = 8  # seconds before looking whether a thermostat asked to heat did
+ON_MODES = ("auto", "heat_cool", "heat")  # the schedule mode first: "heat" is the thermostat's manual mode
+
+
+def schedule_mode(state: Any) -> str | None:
+    """The mode a thermostat follows its own schedule in (auto), else the nearest to it; never off."""
+    modes = list(state.attributes.get("hvac_modes") or []) if state is not None else []
+    return next((m for m in ON_MODES if m in modes), None)
 
 
 def enabled(options: dict[str, Any]) -> bool:
     return bool(options.get(CONF_HEATING_SCHEDULE, False))
+
+
+def night_temp(options: dict[str, Any]) -> float:
+    """Where the heating drops to when a period ends. The schedule never switches a thermostat off."""
+    try:
+        degrees = float(options.get(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP))
+    except (TypeError, ValueError):
+        return DEFAULT_HEATING_NIGHT_TEMP
+    return min(max(degrees, MIN_TEMP), MAX_TEMP)
+
+
+def revert_hours(options: dict[str, Any], daytime: bool) -> float:
+    """How long a change made by hand stays, before the schedule takes the thermostat back (0 = never)."""
+    if not options.get(CONF_HEATING_REVERT, True):
+        return 0.0
+    key, default = (CONF_HEATING_REVERT_DAY, DEFAULT_HEATING_REVERT_DAY) if daytime else (CONF_HEATING_REVERT_NIGHT, DEFAULT_HEATING_REVERT_NIGHT)
+    try:
+        return max(float(options.get(key, default)), 0.0)
+    except (TypeError, ValueError):
+        return default
 
 
 def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> tuple[list[dict[str, Any]], str | None]:
@@ -56,11 +95,10 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], f"The temperature must be between {MIN_TEMP:g}° and {MAX_TEMP:g}°"
     data: dict[str, Any] = {"temperature": degrees}
     st = hass.states.get(entity_id)
-    if st is not None and st.state == "off":
-        # a temperature alone doesn't wake a thermostat that is off (an earlier "off" time may have done that)
-        modes = list(st.attributes.get("hvac_modes") or [])
-        if mode := next((m for m in ON_MODES if m in modes), None):
-            data["hvac_mode"] = mode
+    if st is not None and (mode := schedule_mode(st)) and st.state != mode:
+        # off, or in manual (heat) mode: back to the schedule mode, which also wakes a thermostat that is off
+        # (a temperature alone doesn't)
+        data["hvac_mode"] = mode
     return [{"action": "climate.set_temperature", "target": target, "data": data}], None
 
 
@@ -74,8 +112,8 @@ def describe(hass: HomeAssistant, spec: dict[str, Any]) -> str:
 # ----- programmes: a proper schedule ------------------------------------------------------------
 # A programme is a set of heaters, the days it runs, and any number of on/off periods a day, each with
 # its own temperature: on 06:00 off 09:00 at 21°, on 15:00 off 17:00, on 20:00 off 21:00. At each "on"
-# the heaters are set to the temperature (and switched on if they are off); at each "off" they are
-# switched off, unless another period still wants that heater on. A period that ends after midnight
+# the heaters are set to the temperature (and switched on if they are off); at each "off" they drop to the
+# night temperature, never off, unless another period still wants that heater on. A period that ends after midnight
 # ("on 22:00 off 01:00") ends on the next morning.
 
 DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
@@ -256,6 +294,8 @@ class HeatingProgrammes:
         self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.heating_programme_ownership")
         self._owned: dict[str, dict[str, Any]] = {}
         self._pending: dict[str, dict[str, Any]] = {}
+        self._manual: dict[str, dict[str, Any]] = {}  # heater -> when it was first found off the schedule
+        self._later: set = set()  # pending "did it start?" checks
         self.last_tick: str | None = None
         self.ran: dict[str, dict[str, Any]] = {}
 
@@ -273,6 +313,8 @@ class HeatingProgrammes:
     @callback
     def async_stop(self) -> None:
         self._stopped = True
+        while self._later:
+            self._later.pop()()
         self._pending.clear()
         while self._unsubs:
             self._unsubs.pop()()
@@ -363,8 +405,113 @@ class HeatingProgrammes:
                 self._observe(heater, state)
                 if heater in self._owned and state is not None and state.state not in ("unknown", "unavailable"):
                     events.append((heater, "recover_off", None, record["key"]))
+        events.extend(e for e in self.reconcile(local) if e[0] not in scheduled)
         if events:
             self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
+
+    def covers(self, heater: str) -> bool:
+        """Is this thermostat run by an enabled schedule (so it is never left off)?"""
+        rt = self._rt()
+        return bool(rt is not None and enabled(rt.options) and any(
+            p.get("enabled", True) and heater in p["heaters"] for p in self.programmes()))
+
+    def reconcile(self, local: datetime) -> list[tuple[str, str, float | None, str]]:
+        """Thermostats found away from the schedule (turned up, down or off by hand, or by the device itself) are
+        left alone for a while, 3 hours by day and 1 at night, then put back: a period's temperature, or the
+        night temperature outside the periods. "off" here runs as the night temperature."""
+        from .never import blocked
+
+        rt = self._rt()
+        if rt is None or not enabled(rt.options) or not rt.options.get(CONF_HEATING_REVERT, True):
+            self._manual.clear()
+            return []
+        programmes = self.programmes()
+        heaters = dict.fromkeys(h for p in programmes if p.get("enabled", True) for h in p["heaters"])
+        for gone in [h for h in self._manual if h not in heaters]:
+            self._manual.pop(gone)
+        night, now, out = night_temp(rt.options), dt_util.as_utc(local), []
+        for heater in heaters:
+            state = self.hass.states.get(heater)
+            if state is None or state.state in ("unknown", "unavailable") or blocked(self.hass, heater) \
+                    or heater in (rt.options.get(CONF_NEVER_ENTITIES) or []) \
+                    or getattr(getattr(rt, "heating", None), "_boosted", {}).get(heater) is not None:
+                self._manual.pop(heater, None)
+                continue
+            active = _active_period(programmes, heater, local)
+            if active:
+                programme, period, _ = active
+                want = float(period["temp"])
+            else:
+                programme = next(p for p in programmes if p.get("enabled", True) and heater in p["heaters"])
+                want = night
+            try:
+                have = float(state.attributes.get("temperature"))
+            except (TypeError, ValueError):
+                have = None
+            mode = schedule_mode(state)
+            manual_mode = state.state == "off" or (mode is not None and mode != "heat" and state.state == "heat")
+            if not manual_mode and (have is None or abs(have - want) <= 0.3):
+                self._manual.pop(heater, None)
+                continue
+            record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": active is not None})
+            since = dt_util.parse_datetime(record["since"]) or now
+            hours = revert_hours(rt.options, bool(record["day"]))
+            if hours > 0 and now - since >= timedelta(hours=hours):
+                self._manual.pop(heater, None)
+                out.append((heater, "on" if active else "off", want if active else None, programme.get("id", programme["name"])))
+        return out
+
+    def _is_on(self, heater: str) -> bool:
+        state = self.hass.states.get(heater)
+        return state is None or state.state != "off"  # unavailable is the thermostat's own problem, reported elsewhere
+
+    def _check_later(self, heater: str, temperature: float, context, key: str, label: str, name: str) -> None:
+        """A few seconds after asking a thermostat to heat, look: it has to have started."""
+        from homeassistant.helpers.event import async_call_later
+
+        async def check(_now) -> None:
+            self._later.discard(cancel)
+            if not self._stopped:
+                await self.async_verify(heater, temperature, context, key, label, name)
+
+        cancel = async_call_later(self.hass, CHECK_AFTER, check)
+        self._later.add(cancel)
+
+    async def async_verify(self, heater: str, temperature: float, context, key: str, label: str, name: str) -> bool:
+        """Some thermostats take the temperature and ignore the mode sent with it, and stay off (06:00 on
+        10 November). One that is still off is told its mode on its own, trying each way of being on, and
+        if it still won't start that is said plainly instead of logging a success."""
+        if self._is_on(heater):
+            return True
+        state = self.hass.states.get(heater)
+        for mode in [m for m in ON_MODES if m in (state.attributes.get("hvac_modes") or [])]:
+            try:
+                async with asyncio.timeout(30):
+                    await self.hass.services.async_call(
+                        "climate", "set_hvac_mode", {"entity_id": heater, "hvac_mode": mode}, blocking=True, context=context)
+            except Exception as err:  # noqa: BLE001 - try the next way of being on
+                _LOGGER.debug("Sentient could not set %s to %s: %s", heater, mode, err)
+                continue
+            for _ in range(5):
+                if self._is_on(heater):
+                    break
+                await asyncio.sleep(2)
+            if self._is_on(heater):
+                try:
+                    await self.hass.services.async_call(
+                        "climate", "set_temperature", {"entity_id": heater, "temperature": temperature}, blocking=True, context=context)
+                except Exception:  # noqa: BLE001 - it is on; the next pass checks the temperature
+                    pass
+                return True
+        msg = f"{label} stayed off after being asked to heat"
+        _LOGGER.warning("Sentient heating schedule %s: %s", name, msg)
+        rt = self._rt()
+        if rt is not None:
+            rt.timeline.add("health", f"{label} didn't start", "It was asked to heat and stayed off. Check the thermostat.")
+        if (row := self.ran.get(key)) and (zone := row["zones"].get(heater)):
+            zone.update(ok=False, why=msg)
+            row["ok"], row["why"] = False, " · ".join(z["why"] for z in row["zones"].values())
+        return False
 
     async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
         async with self._lock:
@@ -403,7 +550,9 @@ class HeatingProgrammes:
                     self._drop(heater)
                     zone.update(ok=None, why="left alone: thermostat settings changed")
                     continue
-            actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": temp})
+            night = night_temp(rt.options)
+            setback = what != "on"  # the end of a period is the night temperature: the schedule never switches off
+            actions, why = heating_actions(self.hass, rt.options, {"entity_id": heater, "temperature": night if setback else temp})
             if why:
                 zone.update(ok=False, why=why)
                 if what == "recover_off":
@@ -430,13 +579,15 @@ class HeatingProgrammes:
                 if what == "recover_off" or (what == "off" and isinstance(err, TimeoutError)):
                     self._drop(heater)  # do not repeatedly dispatch an uncertain request
                 continue
+            self._manual.pop(heater, None)
             if what != "on":
                 self._pending.pop(heater, None)
                 self._drop(heater)
+            self._check_later(heater, night if setback else temp, context, key, label, name)
             heating = getattr(rt, "heating", None)
             if heating is not None and (boost := getattr(heating, "_boosted", {}).get(heater)) is not None:
                 heating._drop(heater, boost)
-            requested = f"on to {temp:g}°" if what == "on" else "off"
+            requested = f"on to {temp:g}°" if what == "on" else f"back to the night temperature ({night:g}°)"
             result = f"{label}: requested {requested}"
             if what == "recover_off":
                 result += " after a missed switch-off"

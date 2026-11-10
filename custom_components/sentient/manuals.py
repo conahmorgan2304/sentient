@@ -20,7 +20,7 @@ from .const import CONF_MANUALS, CONF_MANUALS_FOLDER, DEFAULT_MANUALS_FOLDER
 TYPES = {".pdf": "application/pdf", ".txt": "text/plain", ".md": "text/plain", ".jpg": "image/jpeg",
          ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
 _WORD = re.compile(r"[a-z0-9]+")
-_SKIP = {"the", "and", "for", "manual", "guide", "user", "what", "how", "does", "need", "my", "our", "the", "is", "a", "of", "do", "i"}
+_SKIP = {"the", "and", "for", "manual", "guide", "user", "what", "how", "does", "need", "my", "our", "is", "a", "of", "do", "i"}
 
 
 def _words(text: str) -> set[str]:

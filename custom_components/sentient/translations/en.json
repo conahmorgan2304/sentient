@@ -500,6 +500,9 @@
           "warm_by_weekdays": "Warm by (weekdays)",
           "warm_by_weekends": "Warm by (weekends)",
           "heating_limit": "Turn heating back after",
+          "heating_night_temp": "Night temperature",
+          "heating_revert_day_hours": "Return after (during the day)",
+          "heating_revert_night_hours": "Return after (at night)",
           "personality": "Personality",
           "personality_notes": "Personality notes",
           "style_feedback": "\"Say it differently\" on things it said",
@@ -609,6 +612,7 @@
           "security_event_feedback": "Record feedback on camera events",
           "share_clip_analysis": "Reuse matching clip analyses",
           "heating_graph": "Temperature graph on the heating card",
+          "heating_revert": "Return to the schedule after a change by hand",
           "rooms_view": "Rooms at a glance (House tab and overview)",
           "knowledge_card": "WHAT I KNOW card on the Mind tab",
           "day_chart": "THE DAY SO FAR chart on the overview"
@@ -756,7 +760,10 @@
           "night_watch_speakers": "Leave empty for every speaker.",
           "warm_by_weekdays": "Optional: when it should be warm on weekdays. Leave empty to use the learned getting-up time.",
           "warm_by_weekends": "Optional: the same for Saturdays and Sundays.",
-          "heating_limit": "When someone turns up or switches on one of the heating thermostats chosen above, by voice or in the app, put it back (to its schedule, or off) after this many hours. Only those thermostats; 0 (the default) never does.",
+          "heating_limit": "When someone turns up or switches on one of the heating thermostats chosen above, by voice or in the app, put it back (to its schedule; a thermostat with no schedule goes back to how it was, even off) after this many hours. Only those thermostats; 0 (the default) never does.",
+          "heating_night_temp": "Where the heating schedule drops to when a period ends, and the night level it keeps. The schedule never switches a thermostat off. Change it here whenever you like (5–28°C).",
+          "heating_revert_day_hours": "How long a change made while a heating period is running is left alone before the schedule takes over again.",
+          "heating_revert_night_hours": "How long a change made outside the heating periods (including switching the heating off) is left alone. At night the heating goes back to the night temperature, never off.",
           "personality": "How the house sounds — in remarks, briefings, welcomes and to every voice assistant.",
           "personality_notes": "Optional, in your own words, e.g. 'Fond of the cats. Teases gently about how much tea gets made.'",
           "style_feedback": "A button next to the thumbs on anything it said: pick Shorter, Plainer, Less cheeky, More detail, or say how. The notes below are then followed everywhere it speaks. Off: no button, and the notes aren't used.",
@@ -866,6 +873,7 @@
           "share_clip_analysis": "Share compatible generic analyses of the same finished Frigate event across automatic clip watching and event-clip questions. Provider, footage coverage and identity settings must match. Custom questions are analysed separately. Keep at most 100 results in memory for six hours. Off by default. Disabling, changing settings or forgetting clears the cache.",
           "sleep_ignore_sensors": "Motion sensors that fire while people are asleep, such as one in a bedroom. Going to sleep waits for nothing to move for the time above; a bedroom sensor that triggers as someone turns over would keep the house \"awake\" all night, so list it here. They still count for everything else.",
           "heating_graph": "On: the heating card on the House tab shows the last 24 hours of each thermostat's temperature against what it was set to, with the scheduled times shaded. Read from Home Assistant's history; nothing extra is stored. Off: the graph is hidden.",
+          "heating_revert": "On: if a thermostat is turned up, down or off by hand (or changes itself) and isn't back on the schedule, Sentient leaves it for a while and then puts it back: the period's temperature in the day, the night temperature at night. Only thermostats in a heating schedule. Off: changes by hand stay until the next scheduled time. Nothing is stored either way.",
           "rooms_view": "On: the House tab shows a tile for each room — temperature, humidity, lights on, doors and windows open, when someone last moved there and what's playing — and the overview gets a short around-the-house card. Built from your areas; nothing is stored. Off: both are hidden.",
           "knowledge_card": "On: the Mind tab sums up what it has learned about the house — usual bedtime and getting-up time, sensors it is setting aside, how quickly the heating warms, next-room guesses, routines and memories. It only shows what is already known; nothing extra is stored. Off: the card is hidden.",
           "day_chart": "On: the overview shows today hour by hour — movement, what it said, what happened outside and what you asked it — with when someone was first up and the busiest hour. Counted from the timeline; nothing extra is stored. Off: the chart is hidden."
@@ -1608,6 +1616,16 @@
         "what": {
           "name": "Which",
           "description": "Which check to run."
+        }
+      }
+    },
+    "stop_reading": {
+      "name": "Stop reading",
+      "description": "Stop any story or audiobook being read aloud and silence the speaker, keeping the place. Works without the voice, for when a tablet can't hear you over the story.",
+      "fields": {
+        "speaker": {
+          "name": "Speaker",
+          "description": "The speaker to silence. Leave empty to stop every story being read."
         }
       }
     }

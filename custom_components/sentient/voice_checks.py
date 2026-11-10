@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import timedelta
-import re
 import uuid
 
 from homeassistant.util import dt as dt_util

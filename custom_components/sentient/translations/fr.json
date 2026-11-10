@@ -430,6 +430,9 @@
           "warm_by_weekdays": "Température atteinte à (en semaine)",
           "warm_by_weekends": "Température atteinte à (le week-end)",
           "heating_limit": "Rétablir le chauffage après",
+          "heating_night_temp": "Température de nuit",
+          "heating_revert_day_hours": "Retour après (en journée)",
+          "heating_revert_night_hours": "Retour après (la nuit)",
           "personality": "Personnalité",
           "personality_notes": "Notes sur la personnalité",
           "style_feedback": "« Dis-le autrement » pour reformuler ses annonces",
@@ -524,6 +527,7 @@
           "house_context_entities": "Entités supplémentaires du contexte",
           "house_context_updates": "Signaler quand la température demandée est atteinte",
           "heating_graph": "Graphique de température sur la carte du chauffage",
+          "heating_revert": "Retour au programme après un changement manuel",
           "rooms_view": "Pièces en un coup d’œil (onglet Maison et vue d’ensemble)",
           "knowledge_card": "Carte CE QUE JE SAIS dans l’onglet Esprit",
           "day_chart": "Graphique LA JOURNÉE JUSQU’ICI sur la vue d’ensemble"
@@ -658,6 +662,9 @@
           "warm_by_weekdays": "Facultatif : heure à laquelle la maison doit être chauffée en semaine. Si vide : utilise l’heure de réveil apprise.",
           "warm_by_weekends": "Facultatif : même réglage pour les samedis et dimanches.",
           "heating_limit": "Lorsqu’une personne augmente ou active l’un des thermostats choisis ci-dessus, par la voix ou l’application, restaure la programmation ou l’état éteint après ce nombre d’heures. Seulement ces thermostats ; 0 (par défaut) désactive le rétablissement.",
+          "heating_night_temp": "Température à laquelle le programme redescend à la fin d'une période. Le programme n'éteint jamais un thermostat (5–28 °C).",
+          "heating_revert_day_hours": "Durée pendant laquelle un changement fait pendant une période de chauffage est respecté.",
+          "heating_revert_night_hours": "Durée pendant laquelle un changement fait hors des périodes (y compris l'arrêt du chauffage) est respecté.",
           "personality": "Ton employé par la maison dans ses remarques, résumés, accueils et interactions avec les assistants vocaux.",
           "personality_notes": "Facultatif, avec vos propres mots, par exemple « Aime les chats. Taquine gentiment sur la quantité de thé préparée ».",
           "style_feedback": "Un bouton près des évaluations permet de choisir « Plus court », « Plus simple », « Moins taquin », « Plus détaillé » ou de préciser une préférence. Les notes ci-dessous sont ensuite appliquées à toutes les annonces. Désactivé : aucun bouton et notes ignorées.",
@@ -752,6 +759,7 @@
           "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente.",
           "sleep_ignore_sensors": "Capteurs de mouvement qui se déclenchent pendant le sommeil, par exemple dans une chambre. Le passage en mode endormi attend que rien ne bouge pendant la durée ci-dessus ; un capteur de chambre qui se déclenche quand quelqu’un se retourne garderait la maison « éveillée » toute la nuit. Ils comptent toujours pour le reste.",
           "heating_graph": "Activé : la carte du chauffage de l’onglet Maison montre les dernières 24 heures de température de chaque thermostat face à sa consigne, avec les horaires programmés en surbrillance. Lu dans l’historique de Home Assistant ; rien de plus n’est conservé. Désactivé : le graphique est masqué.",
+          "heating_revert": "Activé : un thermostat modifié à la main est laissé un moment puis remis sur le programme : la température de la période le jour, la température de nuit la nuit.",
           "rooms_view": "Activé : l’onglet Maison montre une tuile par pièce — température, humidité, lumières allumées, portes et fenêtres ouvertes, dernier mouvement et ce qui joue — et la vue d’ensemble reçoit une courte carte « autour de la maison ». Construit à partir de vos pièces ; rien n’est conservé. Désactivé : les deux sont masqués.",
           "knowledge_card": "Activé : l’onglet Esprit résume ce qu’il a appris de la maison — heure habituelle du coucher et du lever, capteurs mis de côté, vitesse de chauffe, prédictions de pièce, routines et souvenirs. Il ne montre que ce qui est déjà connu ; rien de plus n’est conservé. Désactivé : la carte est masquée.",
           "day_chart": "Activé : la vue d’ensemble montre la journée heure par heure — mouvements, ce qu’il a dit, ce qui s’est passé dehors et ce que vous lui avez demandé — avec le premier lever et l’heure la plus chargée. Compté à partir de la chronologie ; rien de plus n’est conservé. Désactivé : le graphique est masqué."
@@ -1447,6 +1455,16 @@
         "what": {
           "name": "Lequel",
           "description": "Vérification à exécuter."
+        }
+      }
+    },
+    "stop_reading": {
+      "name": "Arrêter la lecture",
+      "description": "Arrête l'histoire ou le livre audio en cours de lecture et coupe le haut-parleur, en gardant la page. Fonctionne sans la voix.",
+      "fields": {
+        "speaker": {
+          "name": "Haut-parleur",
+          "description": "Le haut-parleur à couper. Laisser vide pour arrêter toutes les lectures."
         }
       }
     }

@@ -518,6 +518,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     prog_items = Items(hass, entry.entry_id, "heating_programmes", {"enabled": True, "heaters": [], "days": [], "periods": []})
     await prog_items.async_load()
     heat_prog = HeatingProgrammes(hass, prog_items, get_rt, entry.entry_id)
+    heating.scheduled = heat_prog.covers
     checks = CameraChecks(hass, lists["checks"], get_rt)
     autooff = AutoOff(hass, lists["autooff"], get_rt)
     from .rules import Rules
@@ -1183,6 +1184,16 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, "hush", hush_service,
         schema=vol.Schema({vol.Required("minutes"): vol.All(vol.Coerce(float), vol.Range(min=0, max=720))}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    async def stop_reading(call: ServiceCall) -> ServiceResponse:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if not entries or getattr(entries[0].runtime_data, "books", None) is None:
+            raise ServiceValidationError("Sentient is not set up")
+        return await entries[0].runtime_data.books.async_silence(call.data.get("speaker"))
+
+    hass.services.async_register(
+        DOMAIN, "stop_reading", stop_reading, schema=vol.Schema({vol.Optional("speaker"): cv.entity_id}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
