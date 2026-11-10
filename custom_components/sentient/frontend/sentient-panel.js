@@ -1697,6 +1697,7 @@
     }
 
     _clearLive() {
+      clearTimeout(this._liveTimer);
       const live = this.shadowRoot && this._$("live");
       if (live) {
         live.querySelector(".lvc img")?.removeAttribute("src");
@@ -1723,12 +1724,16 @@
       const stream = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
       const key = cam + "|" + stream;
       const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
-      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
+      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam) || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
       const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
       // the plain picture stream works for every camera; Home Assistant's own player (smoother, WebRTC/HLS) is
       // opt-in per camera, because a stream it can't play (an H.265 camera, a restream it can't reach) shows black
+      // a camera whose picture feed never loaded (a WebRTC-only Nest, a bridged Wyze) is moved to the player automatically
       let smooth = false;
-      try { smooth = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam); } catch (e) { /* storage off */ }
+      try {
+        smooth = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam)
+          || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam);
+      } catch (e) { /* storage off */ }
       const canSmooth = ((st.attributes.supported_features || 0) & 2) === 2;
       const mode = cam + "|" + (smooth && canSmooth ? "smooth" : "picture");
       if (this._liveCamKey !== mode || !el.querySelector(".lv")) {
@@ -1738,7 +1743,24 @@
         this._liveCard = null;
         el.innerHTML = head + `<div class="lv"><div class="lvc"></div><div class="lvo">${badge}</div></div>` + chips;
         const holder = el.querySelector(".lvc");
-        const picture = () => { holder.innerHTML = `<img alt="" src="${esc(stream)}">`; };
+        const picture = () => {
+          holder.innerHTML = `<img alt="" src="${esc(stream)}">`;
+          if (!canSmooth || !window.loadCardHelpers) return;
+          const img = holder.querySelector("img");
+          // no first picture (error, or nothing for 8 s): try Home Assistant's player once and remember it for this camera
+          const giveUp = () => {
+            clearTimeout(this._liveTimer);
+            if (this._liveCamKey !== mode || !holder.isConnected) return;
+            try {
+              const auto = JSON.parse(localStorage.getItem("sentient-live-auto") || "[]");
+              if (!auto.includes(cam)) localStorage.setItem("sentient-live-auto", JSON.stringify([...auto, cam]));
+            } catch (e) { return; /* storage off: stays on the picture feed */ }
+            this._render();
+          };
+          img.addEventListener("load", () => clearTimeout(this._liveTimer));
+          img.addEventListener("error", giveUp);
+          this._liveTimer = setTimeout(giveUp, 8000);
+        };
         if (smooth && canSmooth && window.loadCardHelpers) {
           window.loadCardHelpers().then((helpers) => {
             if (this._liveCamKey !== mode || !holder.isConnected) return;
@@ -2211,7 +2233,10 @@
       else if (act === "livesmooth") {
         try {
           const list = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]");
-          localStorage.setItem("sentient-live-smooth", JSON.stringify(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
+          const auto = JSON.parse(localStorage.getItem("sentient-live-auto") || "[]");
+          const on = list.includes(id) || auto.includes(id);
+          localStorage.setItem("sentient-live-smooth", JSON.stringify(on ? list.filter((x) => x !== id) : [...list, id]));
+          localStorage.setItem("sentient-live-auto", JSON.stringify(auto.filter((x) => x !== id)));
         } catch (e) { /* storage off: stays on the picture stream */ }
         this._render();
       }

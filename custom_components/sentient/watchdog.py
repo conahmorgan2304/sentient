@@ -199,6 +199,17 @@ class Watchdog:
     def _cameras(self, _now: datetime) -> None:
         self.hass.async_create_background_task(self.async_check_cameras(), "sentient_camera_watchdog")
 
+    def _webrtc_only(self, entity_id: str) -> bool:
+        """True for a camera that can only stream over WebRTC (a Nest): its snapshots are cached or placeholders."""
+        try:
+            from homeassistant.components.camera import DATA_COMPONENT
+
+            entity = self.hass.data[DATA_COMPONENT].get_entity(entity_id)
+            types = {str(t) for t in entity.camera_capabilities.frontend_stream_types}
+        except Exception:  # noqa: BLE001 - an older or odd camera: check it as before
+            return False
+        return bool(types) and types <= {"web_rtc"}
+
     async def async_check_cameras(self) -> None:
         from homeassistant.components.camera import CameraEntityFeature, async_get_image
 
@@ -208,6 +219,9 @@ class Watchdog:
         for st in real_cameras(self.hass, self.options):
             if st.state in ("unavailable", "unknown") or not int(st.attributes.get("supported_features", 0)) & CameraEntityFeature.STREAM:
                 continue  # snapshot cameras (one picture per detection) never "move"
+            if self._webrtc_only(st.entity_id):
+                self.cams.pop(st.entity_id, None)
+                continue  # WebRTC-only cameras hand back the same cached picture whether they work or not
             try:
                 image = await async_get_image(self.hass, st.entity_id, timeout=10)
             except Exception:  # noqa: BLE001 - a camera that can't give a picture shows as offline elsewhere
