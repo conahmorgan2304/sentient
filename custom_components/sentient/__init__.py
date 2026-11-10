@@ -197,6 +197,7 @@ class SentientRuntime:
     startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
+    games: Any = None  # story games with their own memory
     recipes: Any = None  # recipes and cooking mode
     focus: Any = None  # focused voice tools
 
@@ -425,6 +426,7 @@ async def async_register_card_resources(hass: HomeAssistant, version: str, tags:
 # optional parts that only start when switched on (and start the moment they are, without a restart)
 DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
     "books": lambda o: bool(o.get("books")),
+    "games": lambda o: bool(o.get("games")),
     "recipes": lambda o: bool(o.get("recipes")),
     "goals": lambda o: bool(o.get("goals")),
     "clipwatch": lambda o: bool(o.get("clip_watch")),
@@ -660,6 +662,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     books = Books(hass, entry.entry_id, options, get_rt)
     recipes = Recipes(hass, entry.entry_id, options, get_rt)
+    from .games import Games
+
+    games = Games(hass, entry.entry_id, options, get_rt)
     from .house_context import HouseContext
 
     house_context = HouseContext(hass, lambda: entry.runtime_data)
@@ -677,7 +682,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         reflection=reflection, drive=drive, autooff=autooff, foresight=foresight, sleep=sleep,
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
-        threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, heat_prog=heat_prog, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, recipes=recipes,
+        threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, heat_prog=heat_prog, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, games=games, recipes=recipes,
     )
     house_context.configure()
     await security_events.async_start()
@@ -696,7 +701,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
                "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
-               "selfaware": selfaware, "inner": inner, "heat_prog": heat_prog, "goals": goals, "books": books, "recipes": recipes, "holiday": holiday, "trust": trust,
+               "selfaware": selfaware, "inner": inner, "heat_prog": heat_prog, "goals": goals, "books": books, "games": games, "recipes": recipes, "holiday": holiday, "trust": trust,
                "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
     timings: dict[str, float] = {}
     for name, engine in engines.items():
@@ -824,7 +829,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
-    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
+    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:
@@ -1184,6 +1189,24 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, "hush", hush_service,
         schema=vol.Schema({vol.Required("minutes"): vol.All(vol.Coerce(float), vol.Range(min=0, max=720))}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    async def game_service(call: ServiceCall) -> ServiceResponse:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        games = getattr(entries[0].runtime_data, "games", None) if entries else None
+        if games is None or not games.enabled:
+            raise ServiceValidationError("Story games are switched off in Sentient's settings")
+        if call.data["action"] == "stop":
+            stopped = games.stop()
+            return {"stopped": stopped["name"] if stopped else None}
+        game = games.start(call.data.get("game") or "")
+        if game is None:
+            raise ServiceValidationError("No game with that name")
+        return {"playing": game["name"]}
+
+    hass.services.async_register(
+        DOMAIN, "game", game_service,
+        schema=vol.Schema({vol.Required("action"): vol.In(["start", "stop"]), vol.Optional("game"): cv.string}),
         supports_response=SupportsResponse.OPTIONAL,
     )
     async def stop_reading(call: ServiceCall) -> ServiceResponse:

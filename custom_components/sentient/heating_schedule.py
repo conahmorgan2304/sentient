@@ -38,12 +38,21 @@ _LOGGER = logging.getLogger(__name__)
 
 MIN_TEMP = 5.0
 MAX_TEMP = 28.0
-CHECK_AFTER = 8  # seconds before looking whether a thermostat asked to heat did
-ON_MODES = ("auto", "heat_cool", "heat")  # the schedule mode first: "heat" is the thermostat's manual mode
+CHECK_AFTER = 20  # seconds before looking whether a thermostat asked to heat did (some report a change 20 s late)
+VERIFY_WAIT = 30  # seconds to give a thermostat to answer a mode change before trying another
+ON_MODES = ("heat_cool", "heat", "auto")  # what to wake an 'off' thermostat into: the modes that hold a temperature first.
+# "auto" is last because a thermostat in auto follows its own app schedule (Smart Life) and sets its own targets,
+# and a temperature sent to it drops it out of auto into a hold anyway.
 
 
-def schedule_mode(state: Any) -> str | None:
-    """The mode a thermostat follows its own schedule in (auto), else the nearest to it; never off."""
+def on_own_schedule(state: Any) -> bool:
+    """In 'auto' on a thermostat that also offers a hold: the app's own schedule is in charge there, and that cannot be
+    switched off in the app, so Sentient puts it back in a hold (after the same wait as any other change by hand)."""
+    return state is not None and state.state == "auto" and wake_mode(state) not in (None, "auto")
+
+
+def wake_mode(state: Any) -> str | None:
+    """The mode to wake a thermostat that is off into; None when it offers none (then it is left as it is)."""
     modes = list(state.attributes.get("hvac_modes") or []) if state is not None else []
     return next((m for m in ON_MODES if m in modes), None)
 
@@ -95,9 +104,9 @@ def heating_actions(hass: HomeAssistant, options: dict[str, Any], spec: Any) -> 
         return [], f"The temperature must be between {MIN_TEMP:g}° and {MAX_TEMP:g}°"
     data: dict[str, Any] = {"temperature": degrees}
     st = hass.states.get(entity_id)
-    if st is not None and (mode := schedule_mode(st)) and st.state != mode:
-        # off, or in manual (heat) mode: back to the schedule mode, which also wakes a thermostat that is off
-        # (a temperature alone doesn't)
+    if st is not None and (st.state == "off" or on_own_schedule(st)) and (mode := wake_mode(st)):
+        # a temperature alone doesn't wake a thermostat that is off. One that is already on is sent the temperature
+        # only: a mode sent with it would flip a thermostat in a hold in and out of its own schedule
         data["hvac_mode"] = mode
     return [{"action": "climate.set_temperature", "target": target, "data": data}], None
 
@@ -448,18 +457,25 @@ class HeatingProgrammes:
                 have = float(state.attributes.get("temperature"))
             except (TypeError, ValueError):
                 have = None
-            mode = schedule_mode(state)
-            manual_mode = state.state == "off" or (mode is not None and mode != "heat" and state.state == "heat")
-            if not manual_mode and (have is None or abs(have - want) <= 0.3):
+            if state.state != "off" and not on_own_schedule(state) and (have is None or abs(have - want) <= 0.3):
                 self._manual.pop(heater, None)
                 continue
-            record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": active is not None})
+            record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": not self._night(rt.options, local)})
             since = dt_util.parse_datetime(record["since"]) or now
             hours = revert_hours(rt.options, bool(record["day"]))
             if hours > 0 and now - since >= timedelta(hours=hours):
                 self._manual.pop(heater, None)
                 out.append((heater, "on" if active else "off", want if active else None, programme.get("id", programme["name"])))
         return out
+
+    @staticmethod
+    def _night(options: dict[str, Any], local: datetime) -> bool:
+        """Night is the house's quiet hours (Settings), which is when a thermostat found off or changed is put back sooner."""
+        from .const import CONF_QUIET_END, CONF_QUIET_START, DEFAULT_QUIET_END, DEFAULT_QUIET_START
+        from .speech import _parse_time, in_quiet_hours
+
+        return in_quiet_hours(local, _parse_time(options.get(CONF_QUIET_START), DEFAULT_QUIET_START),
+                              _parse_time(options.get(CONF_QUIET_END), DEFAULT_QUIET_END))
 
     def _is_on(self, heater: str) -> bool:
         state = self.hass.states.get(heater)
@@ -484,7 +500,7 @@ class HeatingProgrammes:
         if self._is_on(heater):
             return True
         state = self.hass.states.get(heater)
-        for mode in [m for m in ON_MODES if m in (state.attributes.get("hvac_modes") or [])]:
+        for mode in [m for m in ON_MODES if m in (state.attributes.get("hvac_modes") or [])]:  # the one the first request used, then the rest
             try:
                 async with asyncio.timeout(30):
                     await self.hass.services.async_call(
@@ -492,16 +508,22 @@ class HeatingProgrammes:
             except Exception as err:  # noqa: BLE001 - try the next way of being on
                 _LOGGER.debug("Sentient could not set %s to %s: %s", heater, mode, err)
                 continue
-            for _ in range(5):
+            for _ in range(VERIFY_WAIT // 3):
                 if self._is_on(heater):
                     break
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
             if self._is_on(heater):
+                state = self.hass.states.get(heater)
                 try:
-                    await self.hass.services.async_call(
-                        "climate", "set_temperature", {"entity_id": heater, "temperature": temperature}, blocking=True, context=context)
-                except Exception:  # noqa: BLE001 - it is on; the next pass checks the temperature
-                    pass
+                    have = float(state.attributes.get("temperature")) if state is not None else None
+                except (TypeError, ValueError):
+                    have = None
+                if have is None or abs(have - temperature) > 0.3:  # only if it needs it: setting it again drops a thermostat out of auto
+                    try:
+                        await self.hass.services.async_call(
+                            "climate", "set_temperature", {"entity_id": heater, "temperature": temperature}, blocking=True, context=context)
+                    except Exception:  # noqa: BLE001 - it is on; the next pass checks the temperature
+                        pass
                 return True
         msg = f"{label} stayed off after being asked to heat"
         _LOGGER.warning("Sentient heating schedule %s: %s", name, msg)

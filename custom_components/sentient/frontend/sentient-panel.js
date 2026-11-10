@@ -569,10 +569,12 @@
       const body = this._$("body");
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
       this._dirty = false;
       this._status("");
+      if (g.id === "games") this._loadGames();
       loadForm().then((ok) => {
         if (this._group !== g.id) return;
         const wrap = this._$("formwrap");
@@ -767,6 +769,60 @@
 
 
     // ---------- camera spots ----------
+    async _loadGames() {
+      try { this._games = await this._hass.callWS({ type: "sentient/games" }); } catch (e) { this._games = { enabled: false, games: [], err: e.message || String(e) }; }
+      this._drawGames();
+    }
+
+    async _gameDo(msg) {
+      try {
+        const r = await this._hass.callWS({ type: "sentient/games/edit", ...msg });
+        this._games = { ...(this._games || {}), enabled: true, games: r.games };
+        this._drawGames();
+        return true;
+      } catch (e) { window.alert(e.message || String(e)); return false; }
+    }
+
+    _drawGames() {
+      const wrap = this._$("gamewrap");
+      if (!wrap || this._group !== "games") return;
+      const G = this._games || { enabled: false, games: [] };
+      if (!G.enabled) {
+        wrap.innerHTML = `<div class="h"><span class="t">YOUR GAMES</span><i></i></div><div class="e">${G.err ? esc(G.err) : "SWITCH STORY GAMES ON ABOVE AND PRESS SAVE TO WRITE GAMES"}</div>`;
+        return;
+      }
+      const list = G.games || [];
+      if (!this._gid || !list.find((x) => x.id === this._gid)) this._gid = list[0] ? list[0].id : null;
+      const cur = list.find((x) => x.id === this._gid);
+      const kinds = G.kinds || ["place", "item", "flag", "person", "clue", "note"];
+      const entries = cur ? [...cur.entries].sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind)) : [];
+      const on = list.find((x) => x.active);
+      wrap.innerHTML = `<div class="h"><span class="t">YOUR GAMES</span><i></i><em>${list.length}</em></div>
+        ${on ? `<div class="row"><span class="hint">PLAYING NOW: ${esc(on.name).toUpperCase()}</span><button class="btn sm ghost" data-act="gstop">PUT AWAY</button></div>` : ""}
+        <div class="row">${list.map((x) => `<button class="btn sm${x.id === this._gid ? "" : " ghost"}" data-act="gopen" data-id="${esc(x.id)}">${esc(x.name).toUpperCase()}${x.active ? " ▶" : ""}</button>`).join("")}
+          <button class="btn sm ghost" data-act="gnew">+ NEW GAME</button></div>
+        ${this._gnew || cur ? `<form class="gform" data-form="game" data-id="${this._gnew ? "" : esc(cur.id)}">
+          <div class="h"><span class="t">${this._gnew ? "NEW GAME" : "THE GAME"}</span><i></i></div>
+          <div class="add"><ha-icon icon="mdi:dice-multiple-outline"></ha-icon><input name="name" placeholder="Name, e.g. Escape the flat" value="${this._gnew ? "" : esc(cur.name)}" autocomplete="off"></div>
+          <div class="add"><ha-icon icon="mdi:map-outline"></ha-icon><input name="setting" placeholder="Setting: where it is and what is going on" value="${this._gnew ? "" : esc(cur.setting)}" autocomplete="off"></div>
+          <div class="add"><ha-icon icon="mdi:script-text-outline"></ha-icon><input name="rules" placeholder="Rules for the game master: tone, hints, how strict" value="${this._gnew ? "" : esc(cur.rules)}" autocomplete="off"></div>
+          <div class="row"><button class="btn sm" type="submit">${this._gnew ? "CREATE" : "SAVE GAME"}</button>
+            ${this._gnew ? '<button class="btn sm ghost" type="button" data-act="gcancel">CANCEL</button>' : `<button class="btn sm ghost" type="button" data-act="gstart" data-id="${esc(cur.id)}">PLAY IT</button>
+            <button class="btn sm ghost" type="button" data-act="grestart" data-id="${esc(cur.id)}">START THE STORY AGAIN</button>
+            <button class="btn sm ghost" type="button" data-act="gdel" data-id="${esc(cur.id)}">DELETE GAME</button>`}</div></form>` : '<div class="e">NO GAMES YET · CREATE ONE, OR ASK THE VOICE TO MAKE ONE</div>'}
+        ${cur && !this._gnew ? `<div class="h" style="margin-top:14px"><span class="t">${esc(cur.name).toUpperCase()}'S MEMORY</span><i></i><em>${entries.length}</em></div>
+          <div class="hint">ONLY SHOWN TO A VOICE WHILE THIS GAME IS BEING PLAYED</div>
+          ${entries.map((e) => `<div class="r"><ha-icon icon="mdi:bookmark-outline"></ha-icon><b class="wrap">${esc(e.key)}${e.value ? ` · ${esc(e.value)}` : ""}<small>${esc(e.kind)}</small></b>
+              <a class="x" data-act="gedit" data-id="${esc(e.id)}" title="Change">✎</a><a class="x" data-act="gentrydel" data-id="${esc(e.id)}" title="Remove">✕</a></div>`).join("") || '<div class="e">NOTHING YET · IT FILLS IN AS THE GAME IS PLAYED</div>'}
+          <form class="add" data-form="gentry" data-id="${esc(cur.id)}" data-entry="${esc(this._gedit || "")}">
+            <select name="kind">${kinds.map((k) => `<option${(this._gkind || "item") === k ? " selected" : ""}>${esc(k)}</option>`).join("")}</select>
+            <input name="key" placeholder="Name, e.g. brass key" value="${esc(this._gkey || "")}" autocomplete="off">
+            <input name="value" placeholder="State, e.g. in the drawer" value="${esc(this._gval || "")}" autocomplete="off">
+            <button class="btn sm" type="submit">${this._gedit ? "CHANGE" : "ADD"}</button></form>
+          ${cur.log.length ? `<div class="h" style="margin-top:14px"><span class="t">THE STORY SO FAR</span><i></i><em>${cur.log.length}</em></div>
+            ${cur.log.slice(-12).reverse().map((l) => `<div class="r dim"><ha-icon icon="mdi:history"></ha-icon><b class="wrap">${esc(l.text)}</b></div>`).join("")}` : ""}` : ""}`;
+    }
+
     async _loadSpots() {
       try { this._spots = (await this._hass.callWS({ type: "sentient/spots" })).spots; } catch (e) { this._spots = []; }
       if (this._view === "settings") { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
@@ -2277,6 +2333,18 @@
       }
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
+      else if (act === "gopen") { this._gid = id; this._gnew = false; this._gedit = null; this._drawGames(); }
+      else if (act === "gnew") { this._gnew = true; this._drawGames(); }
+      else if (act === "gcancel") { this._gnew = false; this._drawGames(); }
+      else if (act === "gstart") this._gameDo({ op: "start", game: id });
+      else if (act === "gstop") this._gameDo({ op: "stop" });
+      else if (act === "grestart") { if (window.confirm("Start this story again? The saved memory and story so far are cleared; the setting and rules stay.")) this._gameDo({ op: "restart", game: id }); }
+      else if (act === "gdel") { if (window.confirm("Delete this game and everything saved for it?")) this._gameDo({ op: "delete", game: id }); }
+      else if (act === "gentrydel") this._gameDo({ op: "remove", game: this._gid, entry: id });
+      else if (act === "gedit") {
+        const e = ((this._games.games.find((x) => x.id === this._gid) || {}).entries || []).find((x) => x.id === id);
+        if (e) { this._gedit = e.id; this._gkind = e.kind; this._gkey = e.key; this._gval = e.value; this._drawGames(); }
+      }
       else if (act === "stopread") {
         this._status("STOPPING…", "warn");
         this._hass.callWS({ type: "sentient/reading/stop" }).then(
@@ -2354,6 +2422,19 @@
       if (form.dataset.form === "mlnight") {
         const ok = await this._motionDo("sentient/motion_lights/night", { start: form.elements.start.value, end: form.elements.end.value });
         if (ok) { this._drawMotion(); const st = this._$("status"); if (st) { st.textContent = "LATE-NIGHT WINDOW SAVED ✓"; st.className = "ok"; } }
+        return;
+      }
+      if (form.dataset.form === "game") {
+        const f = form.elements;
+        if (await this._gameDo({ op: "save", game: form.dataset.id || undefined, name: f.name.value, setting: f.setting.value, rules: f.rules.value })) this._gnew = false;
+        this._drawGames();
+        return;
+      }
+      if (form.dataset.form === "gentry") {
+        const f = form.elements;
+        if (!f.key.value.trim()) return;
+        const ok = await this._gameDo({ op: "set", game: form.dataset.id, kind: f.kind.value, key: f.key.value, value: f.value.value, ...(form.dataset.entry ? { entry: form.dataset.entry } : {}) });
+        if (ok) { this._gedit = null; this._gkey = this._gval = ""; this._drawGames(); }
         return;
       }
       if (form.dataset.form === "restyle") {
@@ -2768,6 +2849,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   --ha-dialog-surface-background:#0c1424;--mdc-dialog-content-ink-color:#e6f5fa;--list-item-hover-background-color:rgba(0,255,247,.08);
   color:#e6f5fa}
 .formwrap ha-form{display:block;max-width:880px}
+.gamewrap{margin-top:18px;max-width:880px} .gamewrap .row{flex-wrap:wrap;margin:6px 0} .gamewrap .add select{background:rgba(0,255,247,.06);color:#e6f5fa;border:1px solid rgba(0,255,247,.25);border-radius:8px;padding:6px}
 .spotgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
 .restyle{flex-wrap:wrap;gap:6px} .restyle form{display:flex;gap:6px;flex:1;min-width:180px} .restyle input{flex:1;min-width:0;background:transparent;border:1px solid rgba(0,255,247,.3);border-radius:8px;color:inherit;padding:6px 8px}
 .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap} .row select{flex:1;min-width:0}

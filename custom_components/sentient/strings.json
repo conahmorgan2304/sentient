@@ -107,6 +107,7 @@
           "goals": "Goals",
           "manuals": "Answer from documents",
           "manuals_folder": "Documents folder",
+          "games": "Story games",
           "books": "Books",
           "books_folder": "Books folder",
           "reading_tts": "Reading voice: service",
@@ -263,6 +264,7 @@
           "goals": "Let the voice set goals over days or weeks (\"help us use less heating this month\"). A goal can follow a sensor: it compares each day with the usual week before and mentions progress when it fits. Nothing is changed in the house.",
           "manuals": "Answer questions from the documents in the folder below (one AI call each). Off: the documents are left alone.",
           "manuals_folder": "A folder in Home Assistant’s media (e.g. manuals = media/manuals). Name each file after what it’s for, e.g. \"Air purifier.pdf\".",
+          "games": "Play voice-led story games, such as an escape-the-flat adventure with the assistants as game master. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) across sessions and assistants. It is shown to a voice only while a game is being played, and the game master can read the house’s ordinary memory but never change it. Open Settings → Story games to write games and edit their memory. Off: the game tools and page are hidden; saved games are kept, not cleared.",
           "books": "Play audiobooks and read ebooks aloud, keeping each room’s place. \"Read my book\", \"carry on with the book\", \"read for 20 minutes\", \"stop\", \"next chapter\", \"go back a bit\". No AI (except an optional recap). On an Echo: ebooks one passage per request through the Alexa skill; audiobooks need another speaker.",
           "books_folder": "A folder in Home Assistant’s media (books = media/books). DRM-free .epub or .txt ebooks; audiobooks as one .mp3/.m4b/.m4a file, or a folder of parts named after the book.",
           "reading_tts": "A different text-to-speech service just for books and stories — Gemini or ElevenLabs voices are often better storytellers. Leave it blank to read in the usual voice. Echos always use Alexa's own voice.",
@@ -442,6 +444,7 @@
           "goals": "Goals",
           "manuals": "Answer from documents",
           "manuals_folder": "Documents folder",
+          "games": "Story games",
           "books": "Books",
           "books_folder": "Books folder",
           "reading_tts": "Reading voice: service",
@@ -705,6 +708,7 @@
           "goals": "Let the voice set goals over days or weeks (\"help us use less heating this month\"). A goal can follow a sensor: it compares each day with the usual week before and mentions progress when it fits. Nothing is changed in the house.",
           "manuals": "Answer questions from the documents in the folder below (one AI call each). Off: the documents are left alone.",
           "manuals_folder": "A folder in Home Assistant’s media (e.g. manuals = media/manuals). Name each file after what it’s for, e.g. \"Air purifier.pdf\".",
+          "games": "Play voice-led story games, such as an escape-the-flat adventure with the assistants as game master. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) across sessions and assistants. It is shown to a voice only while a game is being played, and the game master can read the house’s ordinary memory but never change it. Open Settings → Story games to write games and edit their memory. Off: the game tools and page are hidden; saved games are kept, not cleared.",
           "books": "Play audiobooks and read ebooks aloud, keeping each room’s place. \"Read my book\", \"carry on with the book\", \"read for 20 minutes\", \"stop\", \"next chapter\", \"go back a bit\". No AI (except an optional recap). On an Echo: ebooks one passage per request through the Alexa skill; audiobooks need another speaker.",
           "books_folder": "A folder in Home Assistant’s media (books = media/books). DRM-free .epub or .txt ebooks; audiobooks as one .mp3/.m4b/.m4a file, or a folder of parts named after the book.",
           "reading_tts": "A different text-to-speech service just for books and stories — Gemini or ElevenLabs voices are often better storytellers. Leave it blank to read in the usual voice. Echos always use Alexa's own voice.",
@@ -1616,6 +1620,20 @@
         "what": {
           "name": "Which",
           "description": "Which check to run."
+        }
+      }
+    },
+    "game": {
+      "name": "Start or stop a story game",
+      "description": "Start a story game (it can then be played with any voice assistant) or put the current game away. The game's saved memory is kept.",
+      "fields": {
+        "action": {
+          "name": "Action",
+          "description": "Start a game or stop the one being played."
+        },
+        "game": {
+          "name": "Game",
+          "description": "The game's name, when starting one."
         }
       }
     },
