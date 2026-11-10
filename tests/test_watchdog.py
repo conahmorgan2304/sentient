@@ -154,6 +154,34 @@ async def test_frozen_camera(hass: HomeAssistant) -> None:
     assert not any(i["kind"] == "frozen" for i in dog.issues())
 
 
+async def test_webrtc_only_camera_is_not_called_frozen(hass: HomeAssistant) -> None:
+    from types import SimpleNamespace
+    from homeassistant.components.camera import DATA_COMPONENT, Image
+
+    hass.states.async_set("camera.nest", "streaming", {"supported_features": 2, "friendly_name": "Nest"})
+    hass.states.async_set("camera.gate", "streaming", {"supported_features": 2, "friendly_name": "Gate"})
+    entry = await _setup(hass)
+    dog = entry.runtime_data.watchdog
+    caps = {"camera.nest": {"web_rtc"}, "camera.gate": {"hls"}}
+    fake = SimpleNamespace(get_entity=lambda eid: SimpleNamespace(camera_capabilities=SimpleNamespace(frontend_stream_types=caps[eid])))
+    hass.data[DATA_COMPONENT] = fake
+    assert dog._webrtc_only("camera.nest") and not dog._webrtc_only("camera.gate")
+    with patch("homeassistant.components.camera.async_get_image", return_value=Image("image/jpeg", b"same")) as get:
+        await dog.async_check_cameras()
+        for seen in dog.cams.values():
+            seen["since"] = (dt_util.utcnow() - timedelta(hours=12)).isoformat()
+        await dog.async_check_cameras()
+    assert "camera.nest" not in [c.args[1] for c in get.call_args_list]
+    texts = [i["text"] for i in dog.issues() if i["kind"] == "frozen"]
+    assert texts and all("Nest" not in t for t in texts)
+
+
+async def test_camera_that_cannot_be_inspected_is_still_checked(hass: HomeAssistant) -> None:
+    hass.states.async_set("camera.gate", "streaming", {"supported_features": 2})
+    entry = await _setup(hass)
+    assert entry.runtime_data.watchdog._webrtc_only("camera.gate") is False
+
+
 async def test_guard_puts_back_what_the_voice_switched_by_mistake(hass: HomeAssistant) -> None:
     from homeassistant.helpers import area_registry as ar, entity_registry as er
     from pytest_homeassistant_custom_component.common import async_mock_service

@@ -5,6 +5,7 @@ const vm = require('node:vm');
 let Panel;
 vm.runInNewContext(fs.readFileSync('custom_components/sentient/frontend/sentient-panel.js', 'utf8'), {
   HTMLElement: class {}, customElements: { get: () => null, define: (_, cls) => { Panel = cls; } },
+  setTimeout, clearTimeout,
 });
 function setup(callWS) {
   const panel = new Panel();
