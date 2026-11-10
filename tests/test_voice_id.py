@@ -97,3 +97,16 @@ async def test_settings_tab_offers_download_until_installed(hass: HomeAssistant,
     assert {f["name"] for f in tab["schema"]} == {"voice_id", "voice_id_unknown"} and tab["voice_id"]["installed"]
     await ws.send_json({"id": 3, "type": "sentient/voice_id"})
     assert (await ws.receive_json())["result"]["installed"] is True
+
+
+async def test_latest_turn_report_says_why_and_reaches_the_page_status(hass: HomeAssistant, tmp_path) -> None:
+    await _setup(hass, tmp_path)
+    hass.bus.async_fire("sentient_voice_recognition_turn", {"speaker_name": None, "reason": "below_threshold",
+                                                            "similarity": 0.52, "runner_up_gap": None})
+    await hass.async_block_till_done()
+    heard = voice_id.status(hass, {})["heard"]
+    assert heard["name"] is None and heard["reason"] == "below_threshold" and heard["similarity"] == 0.52
+    assert "below the match level" in heard["why"]
+    hass.bus.async_fire("sentient_voice_recognition_turn", {"speaker_name": "Alex", "reason": "matched", "similarity": 0.8})
+    await hass.async_block_till_done()
+    assert voice_id.status(hass, {})["heard"]["name"] == "Alex"
