@@ -1178,7 +1178,7 @@ async def ws_voice_enrol_cancel(hass: HomeAssistant, connection, msg: dict[str, 
 @websocket_api.async_response
 async def ws_voice_details(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Saved voices, engine state and any match-level advice. Empty unless the add-on runs and the setting is on."""
-    from .voice_id import HEARD_KEY, RECENT_KEY, advice, details, enabled
+    from .voice_id import RECENT_KEY, advice, details, enabled
 
     entry = _entry(hass)
     if entry is None or not enabled(hass, _current(entry)):

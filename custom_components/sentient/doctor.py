@@ -30,6 +30,7 @@ from .const import (
     CONF_TTS_ENTITY,
     DOMAIN,
 )
+from .speaker_identity import VOICE_RECOGNITION_DOMAIN
 
 DOWN = ("unavailable", "unknown")
 
@@ -107,13 +108,21 @@ def check(hass: HomeAssistant, rt: Any, found: dict[str, bool] | None = None) ->
     except Exception:  # noqa: BLE001 - no pipelines
         engine = None
     if engine:
-        entry = er.async_get(hass).async_get(engine)
-        ours = bool(entry and entry.platform == DOMAIN)
-        if ours or engine == agent:
-            out.append(_row("Voice", "Voice pipeline", "ok", f"Your preferred pipeline uses {_name(hass, engine)}."))
+        reg = er.async_get(hass)
+        entry = reg.async_get(engine)
+        passes_to = None
+        if entry and entry.platform == VOICE_RECOGNITION_DOMAIN and entry.config_entry_id:
+            # Sentient Voice Recognition hands every request on to another agent, and that one really answers
+            via = hass.config_entries.async_get_entry(entry.config_entry_id)
+            passes_to = (via.options.get("conversation_agent") if via else None) or None
+        answers = reg.async_get(passes_to or engine)
+        used = _name(hass, engine) + (f", which passes requests to {_name(hass, passes_to)}" if passes_to else "")
+        if (answers and answers.platform == DOMAIN) or (passes_to or engine) == agent:
+            out.append(_row("Voice", "Voice pipeline", "ok", f"Your preferred pipeline uses {used}."))
         else:
-            out.append(_row("Voice", "Voice pipeline", "warn", f"Your preferred pipeline uses {_name(hass, engine)}, not Sentient's agents.",
-                            "Settings → Voice assistants → your assistant → Conversation agent: '… with backup'."))
+            fix = ("Settings → Devices & services → Sentient Voice Recognition → Configure → Conversation agent: '… with backup'."
+                   if passes_to else "Settings → Voice assistants → your assistant → Conversation agent: '… with backup'.")
+            out.append(_row("Voice", "Voice pipeline", "warn", f"Your preferred pipeline uses {used}, not Sentient's agents.", fix))
 
     # --- speakers ------------------------------------------------------------------------------
     speakers = list(opts.get(CONF_SPEAKERS) or [])

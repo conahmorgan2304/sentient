@@ -269,3 +269,47 @@ async def test_local_only_speaker_stays_out_of_ai_prompt_and_memory_attribution(
     finally:
         current_request.reset(request_token)
         voice_id.current_speaker.reset(token)
+
+
+def test_matched_line_says_the_name_came_from_the_saved_voice_profile() -> None:
+    alex = SimpleNamespace(speaker_id="a", display_name="Alex", share_name=True)
+    line = voice_id.prompt_lines({}, alex)[0]
+    assert "saved profile for Alex" in line and "if asked how you know, say that" in line
+
+
+async def test_the_assistant_is_always_told_voice_recognition_exists_while_it_runs(hass: HomeAssistant) -> None:
+    assert voice_id.standing_lines(hass, {"voice_id": True}) == []  # not installed
+    _install(hass)
+    assert voice_id.standing_lines(hass, {}) == []  # switched off
+    lines = voice_id.standing_lines(hass, {"voice_id": True})
+    assert len(lines) == 1 and "never say you don't identify or track voices" in lines[0]
+    assert "Alex" not in lines[0] and "probably" not in lines[0]  # never carries a name
+
+
+async def _pipeline_row(hass: HomeAssistant, tmp_path, forward_to: str | None):
+    from custom_components.sentient.doctor import check
+    from homeassistant.helpers import entity_registry as er
+
+    entry, _ = await _setup(hass, tmp_path)
+    reg = er.async_get(hass)
+    ours = reg.async_get_or_create("sensor", DOMAIN, "backup", suggested_object_id="with_backup")
+    other = reg.async_get_or_create("sensor", "someone_else", "plain", suggested_object_id="plain_agent")
+    via = MockConfigEntry(domain=VOICE_RECOGNITION_DOMAIN, options={"conversation_agent": {"ours": ours, "other": other}[forward_to].entity_id} if forward_to else {})
+    via.add_to_hass(hass)
+    wrapper = reg.async_get_or_create("sensor", VOICE_RECOGNITION_DOMAIN, "voice", suggested_object_id="voice_id", config_entry=via)
+    import sys
+
+    fake = SimpleNamespace(async_get_pipeline=lambda _hass: SimpleNamespace(conversation_engine=wrapper.entity_id))
+    with patch.dict(sys.modules, {"homeassistant.components.assist_pipeline": fake}):
+        rows = check(hass, entry.runtime_data)
+    return next(r for r in rows if r["name"] == "Voice pipeline")
+
+
+async def test_pipeline_check_follows_voice_recognition_to_the_agent_that_answers(hass: HomeAssistant, tmp_path) -> None:
+    row = await _pipeline_row(hass, tmp_path, "ours")
+    assert row["status"] == "ok" and "passes requests to" in row["detail"]
+
+
+async def test_pipeline_check_still_warns_when_voice_recognition_passes_to_another_agent(hass: HomeAssistant, tmp_path) -> None:
+    row = await _pipeline_row(hass, tmp_path, "other")
+    assert row["status"] == "warn" and "passes requests to" in row["detail"] and "Sentient Voice Recognition" in row["fix"]
