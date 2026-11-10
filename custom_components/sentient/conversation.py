@@ -25,6 +25,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .voice_actions import speech_attempt, BACKUP_TIMEOUT
 from .voice_locale import answer, cancel
+from .speaker_identity import VOICE_RECOGNITION_DOMAIN, speaker_identity_reply
 
 from .const import CONF_RECOVERY
 
@@ -49,7 +50,9 @@ def find_ai_agent(hass: HomeAssistant, opts: dict[str, Any], me: str | None) -> 
         if not agent or agent == me or agent in ("conversation.home_assistant", "homeassistant"):
             return False
         entry = reg.async_get(agent)
-        return not (entry and entry.platform == DOMAIN) and (chosen or hass.states.get(agent) is not None)
+        return not (entry and entry.platform in {DOMAIN, VOICE_RECOGNITION_DOMAIN}) and (
+            chosen or hass.states.get(agent) is not None
+        )
 
     for agent in (opts.get(CONF_VOICE_AGENT), opts.get(CONF_CHAT_AGENT)):
         if usable(agent, chosen=True):
@@ -116,8 +119,13 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     @property
     def backup_agent(self) -> str:
+        from homeassistant.helpers import entity_registry as er
+
         agent = self._options().get(CONF_BACKUP_AGENT) or DEFAULT_BACKUP_AGENT
-        return DEFAULT_BACKUP_AGENT if agent in (self.entity_id, self.main_agent) else agent
+        entry = er.async_get(self.hass).async_get(agent)
+        if agent in (self.entity_id, self.main_agent) or (entry and entry.platform == VOICE_RECOGNITION_DOMAIN):
+            return DEFAULT_BACKUP_AGENT
+        return agent
 
     def _main_state(self):
         return self.hass.states.get(self.main_agent) if self.main_agent else None
@@ -387,6 +395,9 @@ class BackedUpAgent(conversation.ConversationEntity):
     async def _async_process_impl(self, user_input):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
         from homeassistant.util import dt as dt_util
+
+        if reply := speaker_identity_reply(self.hass, user_input, guest=self._guest()):
+            return self._plain_reply(user_input, reply)
 
         from .action_recovery import requested as recovery_requested
         from .behaviour import requested as explanation_requested
