@@ -181,5 +181,10 @@ async def async_check(hass: HomeAssistant, rt: Any) -> dict[str, Any]:
     paths = folders(rt)
     found = await hass.async_add_executor_job(lambda: {k: bool(p and os.path.isdir(p)) for k, p in paths.items()})
     rows = check(hass, rt, found)
+    from . import voice_id
+
+    if voice_id.enabled(hass, rt.options):  # nothing about voice recognition appears unless it is installed and switched on
+        rows += [_row("Voice", t, st, msg, fix) if fix else _row("Voice", t, st, msg)
+                 for t, st, msg, fix in voice_id.health_rows(await voice_id.details(hass))]
     worst = "bad" if any(r["status"] == "bad" for r in rows) else "warn" if any(r["status"] == "warn" for r in rows) else "ok"
     return {"status": worst, "rows": rows}

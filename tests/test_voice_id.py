@@ -155,3 +155,46 @@ async def test_enrol_commands_refuse_when_the_add_on_is_missing(hass: HomeAssist
         _install(hass)
         await voice_id.start_enrolment(hass, "Alex")
         assert call.await_count == 1 and call.call_args.args[0].data["name"] == "Alex"
+
+
+def _heard(sim, reason="below_threshold"):
+    return {"reason": reason, "similarity": sim, "name": None}
+
+
+def test_match_level_advice_only_when_several_recent_voices_just_missed_it() -> None:
+    detail = {"threshold": 0.65}
+    assert voice_id.advice(None, [_heard(0.6)] * 5) is None
+    assert voice_id.advice(detail, [_heard(0.6)] * 2) is None  # too few to say anything
+    assert voice_id.advice(detail, [_heard(0.2)] * 5) is None  # nowhere near: not a near miss
+    assert voice_id.advice(detail, [_heard(0.6, "matched")] * 5) is None
+    out = voice_id.advice(detail, [_heard(0.6), _heard(0.58), _heard(0.62)])
+    assert out["value"] == 0.58 and out["turns"] == 3 and "wrong name" in out["text"]
+    assert voice_id.advice({"threshold": 0.5}, [_heard(0.49)] * 3) is None  # never below the supported floor
+
+
+def test_health_rows_say_what_is_wrong_and_stay_quiet_when_fine() -> None:
+    assert voice_id.health_rows(None)[0][1] == "warn"
+    down = voice_id.health_rows({"engine": False, "profiles": [{"name": "Alex", "nearest": None, "nearest_score": None}]})
+    assert down[0][1] == "bad" and "engine" in down[0][2]
+    assert any("No voices are saved" in r[2] for r in voice_id.health_rows({"engine": True, "profiles": []}))
+    alike = voice_id.health_rows({"engine": True, "profiles": [{"name": "Alex", "nearest": "Sam", "nearest_score": 0.85}]})
+    assert "Alex and Sam" in alike[0][2]
+    fine = voice_id.health_rows({"engine": True, "profiles": [{"name": "Alex", "nearest": None, "nearest_score": None}]})
+    assert [r[1] for r in fine] == ["ok"]
+
+
+async def test_house_check_has_no_voice_rows_unless_the_add_on_is_running_and_switched_on(hass: HomeAssistant, tmp_path) -> None:
+    from custom_components.sentient.doctor import async_check
+
+    entry, _ = await _setup(hass, tmp_path, voice_id=True)
+    rt = entry.runtime_data
+    assert not any(r["area"] == "Voice" and "oice" in r["name"] and r["name"] != "Voice pipeline"
+                   for r in (await async_check(hass, rt))["rows"])  # not installed
+    _install(hass)
+    hass.services.async_register(VOICE_RECOGNITION_DOMAIN, "status", AsyncMock(return_value={"engine": True, "profiles": []}),
+                                 supports_response=SupportsResponse.ONLY)
+    rows = (await async_check(hass, rt))["rows"]
+    assert any(r["name"] == "Voice profiles" for r in rows)
+    rt.options = {**rt.options, "voice_id": False}
+    rows = (await async_check(hass, rt))["rows"]
+    assert not any(r["name"] == "Voice profiles" for r in rows)  # switched off

@@ -582,7 +582,8 @@
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         ${vid ? `<div class="vidcard ok"><div class="vidt">SENTIENT VOICE RECOGNITION IS RUNNING</div><div class="vids">${vid.heard ? "Last heard: " + esc(vid.heard.name || "an unrecognised voice") + " · " + esc(new Date(vid.heard.at).toLocaleString()) + "<br>" + esc(vid.heard.why) + (vid.heard.similarity != null ? " · similarity " + esc(String(vid.heard.similarity)) : "") + (vid.heard.gap != null ? " · lead over the next voice " + esc(String(vid.heard.gap)) : "") : vid.last ? "Last heard: " + esc(vid.last.name || "an unrecognised voice") + " · " + esc(new Date(vid.last.at).toLocaleString()) : "No voice heard yet since Sentient started."}</div>${vid.enabled ? `<div class="vids">${(vid.recent || []).length ? "<b>Recent voices</b><br>" + vid.recent.map((h) => esc(new Date(h.at).toLocaleTimeString()) + " · " + esc(h.name || "not matched") + " · " + esc(h.why) + (h.similarity != null ? " · " + esc(String(h.similarity)) : "")).join("<br>") : ""}</div>
           <div class="row"><input id="vidname" style="flex:1;min-width:140px" placeholder="Name to record" maxlength="40"><button class="btn" data-act="videnrol">RECORD FROM A SPEAKER</button><button class="btn ghost" data-act="videnrolx">CANCEL</button></div>
-          <div class="vids" id="vidsay" role="status"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
+          <div class="vids" id="vidsay" role="status"></div>
+          <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
         ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
@@ -590,6 +591,7 @@
       this._dirty = false;
       this._status("");
       if (g.id === "games") this._loadGames();
+      if (vid && vid.enabled) this._loadVoiceDetail();
       loadForm().then((ok) => {
         if (this._group !== g.id) return;
         const wrap = this._$("formwrap");
@@ -1673,6 +1675,22 @@
     }
 
     // ---------- security: live view that follows motion, linked events, snapshots ----------
+    _loadVoiceDetail() {
+      this._hass.callWS({ type: "sentient/voice_id/details" }).then((r) => {
+        const el = this._$("viddetail");
+        if (!el || !r.available) return;
+        const d = r.detail;
+        let html = "";
+        if (!d) html = "Couldn't ask Sentient Voice Recognition for its status.";
+        else {
+          html += (d.engine ? "Voice engine: answering" : "<b>Voice engine: not answering</b>") + " · match level " + esc(String(d.threshold)) + "<br>";
+          html += d.profiles.length ? d.profiles.map((p) => esc(p.name) + (p.nearest ? " · closest other voice " + esc(p.nearest) + " (" + esc(String(p.nearest_score)) + ")" + (p.nearest_score >= 0.8 ? " — very alike, may be confused" : "") : "")).join("<br>") : "No voices saved yet.";
+        }
+        if (r.advice) html += `<br><br>${esc(r.advice.text)}<br><button class="btn sm" data-act="vidthreshold" data-id="${esc(String(r.advice.value))}">LOWER THE MATCH LEVEL TO ${esc(String(r.advice.value))}</button>`;
+        el.innerHTML = html;
+      }, () => {});
+    }
+
     _camOf(e) {  // a Frigate event's camera ("gate") or an evidence source ("camera.gate") → a camera entity
       const id = String(e.camera ? "camera." + e.camera : e.source || "");
       return id.startsWith("camera.") && this._hass.states[id] ? id : null;
@@ -2368,6 +2386,11 @@
         this._hass.callWS({ type: "sentient/voice_id/enrol", name: name.trim() }).then(
           (r) => { if (say) say.innerHTML = "Recording is open for " + r.minutes + " minutes. Say the wake word at the speaker you want to record from, then read: <b>" + esc(r.sentence) + "</b> The speaker will give you the next two."; },
           (e) => { if (say) say.textContent = e.message || String(e); });
+      }
+      else if (act === "vidthreshold") {
+        this._hass.callWS({ type: "sentient/voice_id/threshold", value: parseFloat(id) }).then(
+          () => { const el = this._$("viddetail"); if (el) el.textContent = "Match level changed to " + id + "."; },
+          (e) => { const el = this._$("viddetail"); if (el) el.textContent = e.message || String(e); });
       }
       else if (act === "videnrolx") {
         this._hass.callWS({ type: "sentient/voice_id/enrol_cancel" }).then(() => { const say = this._$("vidsay"); if (say) say.textContent = "Cancelled."; }, () => {});

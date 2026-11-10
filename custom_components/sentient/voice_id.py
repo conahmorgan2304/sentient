@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from collections import deque
+from statistics import median
 from contextvars import ContextVar
 from typing import Any
 
@@ -140,3 +141,61 @@ def status(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
     return {"installed": installed(hass), "enabled": enabled(hass, options), "last": hass.data.get(LAST_KEY),
             "heard": hass.data.get(HEARD_KEY), "recent": list(hass.data.get(RECENT_KEY) or []),
             "repo": REPO_URL, "hacs": HACS_URL}
+
+
+SIMILAR_VOICES = 0.8  # two saved voices this alike could be mistaken for each other
+NEAR_MISS = 0.15  # turns this close under the match level are worth a suggestion
+MIN_TURNS_FOR_ADVICE = 3
+
+
+async def details(hass: HomeAssistant) -> dict[str, Any] | None:
+    """The add-on's own status (engine reachable, saved voices, match level), or None if it can't be asked."""
+    if not installed(hass):
+        return None
+    try:
+        return await hass.services.async_call(ENROL_DOMAIN, "status", {}, blocking=True, return_response=True)
+    except Exception:  # noqa: BLE001 - an add-on fault must never break a page
+        return None
+
+
+def advice(detail: dict[str, Any] | None, recent: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Suggest a lower match level when several recent voices only just missed it. The person decides."""
+    if not detail:
+        return None
+    level = float(detail.get("threshold") or 0)
+    misses = [float(h["similarity"]) for h in recent if h.get("reason") == "below_threshold" and h.get("similarity") is not None]
+    if len(misses) < MIN_TURNS_FOR_ADVICE or not level:
+        return None
+    middle = median(misses)
+    if middle < level - NEAR_MISS:
+        return None
+    value = max(0.5, round(middle - 0.02, 2))
+    if value >= level:
+        return None
+    return {"value": value, "level": level, "turns": len(misses), "median": round(middle, 2),
+            "text": (f"The last {len(misses)} voices that weren't matched scored about {round(middle, 2)} against a match level of {level}. "
+                     f"If those were enrolled people, lowering it to {value} would match them. "
+                     "A lower level makes a wrong name a little more likely.")}
+
+
+def health_rows(detail: dict[str, Any] | None) -> list[tuple[str, str, str, str | None]]:
+    """(title, status, message, fix) rows for the house check; empty when all is well or nothing can be said."""
+    if detail is None:
+        return [("Voice recognition", "warn", "Sentient Voice Recognition didn't answer.",
+                 "Settings → Devices & services → Sentient Voice Recognition: check it is running.")]
+    rows: list[tuple[str, str, str, str | None]] = []
+    if not detail.get("engine"):
+        rows.append(("Voice engine", "bad", "The voice engine isn't answering, so voices can't be matched.",
+                     "Settings → Apps → Sentient Voice Engine: check it is started."))
+    profiles = detail.get("profiles") or []
+    if not profiles:
+        rows.append(("Voice profiles", "warn", "No voices are saved yet, so nobody can be matched.",
+                     "Settings → Devices & services → Sentient Voice Recognition → Configure → Voice profiles."))
+    for p in profiles:
+        if (p.get("nearest_score") or 0) >= SIMILAR_VOICES:
+            rows.append(("Voice profiles", "warn", f"{p['name']} and {p['nearest']} sound very alike to the engine, so one may be named as the other.",
+                         "Record both again, each from the speaker they normally use."))
+            break
+    if not rows:
+        rows.append(("Voice recognition", "ok", f"{len(profiles)} voice{'s' if len(profiles) != 1 else ''} saved and the engine is answering.", None))
+    return rows
