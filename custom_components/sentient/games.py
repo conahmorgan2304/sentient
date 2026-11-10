@@ -15,10 +15,12 @@ import uuid
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_GAMES, DOMAIN
+from . import game_templates
+from .const import CONF_GAMES, CONF_PERSONA, DOMAIN
 
 STORAGE_VERSION = 1
 KINDS = ("place", "item", "flag", "person", "clue", "note")
@@ -97,6 +99,24 @@ class Games:
             game = self.games[gid] = {"id": gid, "name": name, "setting": _clean(setting, 1200), "rules": _clean(rules, 1200),
                                       "entries": [], "log": [], "created": dt_util.now().isoformat(), "plays": 0}
         self._save()
+        return game
+
+    # ----- templates ------------------------------------------------------------------------------
+    def template_defaults(self) -> dict[str, str]:
+        """What a template's blanks start as: this house's own persona name and Home Assistant areas."""
+        areas = sorted((a.name for a in ar.async_get(self.hass).areas.values()), key=str.lower)[: game_templates.MAX_ROOMS]
+        start = next((a for a in areas if "living" in a.lower()), areas[0] if areas else "")
+        return {"master": _clean(self.options.get(CONF_PERSONA), 40), "rooms": ", ".join(areas), "start_room": start}
+
+    def template_listing(self) -> list[dict[str, Any]]:
+        defaults = self.template_defaults()
+        return [{**t, "fields": [{**f, "default": defaults.get(f["key"], "")} for f in t["fields"]]} for t in game_templates.templates()]
+
+    def create_from_template(self, template_id: str, values: dict[str, Any] | None = None) -> dict[str, Any]:
+        built = game_templates.build(template_id, values or {}, self.template_defaults())
+        game = self.save_game(built["name"], built["setting"], built["rules"])
+        for kind, key, value in built["entries"]:
+            self.set_entry(game["id"], kind, key, value)
         return game
 
     def delete_game(self, game_id: str) -> bool:

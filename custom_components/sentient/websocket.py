@@ -406,7 +406,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question.", [
         CONF_MANUALS, CONF_MANUALS_FOLDER,
     ]),
-    ("games", "Story games", "mdi:dice-multiple-outline", "Voice-led story games the whole house can play, such as an escape-the-flat adventure with the assistants as game master. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. The game master can also read the house's ordinary memory, never change it. Switching this off hides this page and the game tools; your saved games are kept, not cleared, and are there again when you switch it back on.", [
+    ("games", "Story games", "mdi:dice-multiple-outline", "Voice-led story games the whole house can play, such as an escape-the-house adventure with the assistants as game master; start from a ready-made template and fill in your own names and rooms, or write your own. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. The game master can also read the house's ordinary memory, never change it. Switching this off hides this page and the game tools; your saved games are kept, not cleared, and are there again when you switch it back on.", [
         CONF_GAMES,
     ]),
     ("voiceid", "Voice recognition", "mdi:account-voice", "Know who is speaking. With the Sentient Voice Recognition add-on, the assistants can tell which enrolled person spoke and greet them by name, and treat \u201cremember that I\u2026\u201d as being about them. It is a good guess from the voice, never proof, so it never allows anything that asks for confirmation. Without the add-on, this page shows where to get it.", [
@@ -1275,12 +1275,14 @@ async def ws_games(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
     if games is None:
         connection.send_result(msg["id"], {"enabled": False, "games": []})
         return
-    connection.send_result(msg["id"], {"enabled": True, "games": games.listing(), "kinds": list(KINDS)})
+    connection.send_result(msg["id"], {"enabled": True, "games": games.listing(), "kinds": list(KINDS),
+                                        "templates": games.template_listing()})
 
 
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/games/edit",
-    vol.Required("op"): vol.In(["save", "delete", "set", "remove", "restart", "start", "stop"]),
+    vol.Required("op"): vol.In(["save", "delete", "set", "remove", "restart", "start", "stop", "from_template"]),
+    vol.Optional("template"): str, vol.Optional("values"): {str: vol.Any(str, None)},
     vol.Optional("game"): str, vol.Optional("name"): str, vol.Optional("setting"): str, vol.Optional("rules"): str,
     vol.Optional("kind"): str, vol.Optional("key"): str, vol.Optional("value"): str, vol.Optional("entry"): str,
 })
@@ -1296,6 +1298,8 @@ async def ws_games_edit(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
     try:
         if op == "save":
             games.save_game(msg.get("name", ""), msg.get("setting", ""), msg.get("rules", ""), gid or None)
+        elif op == "from_template":
+            games.create_from_template(msg.get("template", ""), msg.get("values") or {})
         elif op == "stop":
             games.stop()
         elif gid not in games.games:

@@ -819,7 +819,13 @@
         ${on ? `<div class="row"><span class="hint">PLAYING NOW: ${esc(on.name).toUpperCase()}</span><button class="btn sm ghost" data-act="gstop">PUT AWAY</button></div>` : ""}
         <div class="row">${list.map((x) => `<button class="btn sm${x.id === this._gid ? "" : " ghost"}" data-act="gopen" data-id="${esc(x.id)}">${esc(x.name).toUpperCase()}${x.active ? " ▶" : ""}</button>`).join("")}
           <button class="btn sm ghost" data-act="gnew">+ NEW GAME</button></div>
-        ${this._gnew || cur ? `<form class="gform" data-form="game" data-id="${this._gnew ? "" : esc(cur.id)}">
+        ${this._gnew ? `<div class="row"><span class="hint">START FROM</span><button class="btn sm${this._gtpl ? " ghost" : ""}" data-act="gtpl" data-id="">BLANK GAME</button>
+          ${(G.templates || []).map((t) => `<button class="btn sm${this._gtpl === t.id ? "" : " ghost"}" data-act="gtpl" data-id="${esc(t.id)}" title="${esc(t.about)}">${esc(t.name).toUpperCase()}</button>`).join("")}</div>` : ""}
+        ${this._gnew && this._gtpl ? (() => { const t = (G.templates || []).find((x) => x.id === this._gtpl); return t ? `<form class="gform" data-form="gtemplate" data-id="${esc(t.id)}">
+          <div class="hint">${esc(t.about)} CHANGE ANY NAME OR ROOM; LEAVE A BLANK TO USE THE DEFAULT. YOU CAN EDIT THE GAME AFTERWARDS.</div>
+          ${t.fields.map((f) => `<div class="add"><ha-icon icon="mdi:pencil-outline"></ha-icon><input name="${esc(f.key)}" placeholder="${esc(f.label)}: ${esc(f.hint)}" value="${esc(f.default || "")}" autocomplete="off"></div>`).join("")}
+          <div class="row"><button class="btn sm" type="submit">CREATE GAME</button><button class="btn sm ghost" type="button" data-act="gcancel">CANCEL</button></div></form>` : ""; })() : ""}
+        ${(this._gnew && !this._gtpl) || (!this._gnew && cur) ? `<form class="gform" data-form="game" data-id="${this._gnew ? "" : esc(cur.id)}">
           <div class="h"><span class="t">${this._gnew ? "NEW GAME" : "THE GAME"}</span><i></i></div>
           <div class="add"><ha-icon icon="mdi:dice-multiple-outline"></ha-icon><input name="name" placeholder="Name, e.g. Escape the flat" value="${this._gnew ? "" : esc(cur.name)}" autocomplete="off"></div>
           <div class="add"><ha-icon icon="mdi:map-outline"></ha-icon><input name="setting" placeholder="Setting: where it is and what is going on" value="${this._gnew ? "" : esc(cur.setting)}" autocomplete="off"></div>
@@ -2393,8 +2399,9 @@
       else if (act === "unmute") this._loadMutes(false, { remove: id });
       else if (act === "unmuteall") this._loadMutes(false, { clear: true });
       else if (act === "gopen") { this._gid = id; this._gnew = false; this._gedit = null; this._drawGames(); }
-      else if (act === "gnew") { this._gnew = true; this._drawGames(); }
-      else if (act === "gcancel") { this._gnew = false; this._drawGames(); }
+      else if (act === "gnew") { this._gnew = true; this._gtpl = null; this._drawGames(); }
+      else if (act === "gtpl") { this._gtpl = id || null; this._drawGames(); }
+      else if (act === "gcancel") { this._gnew = false; this._gtpl = null; this._drawGames(); }
       else if (act === "gstart") this._gameDo({ op: "start", game: id });
       else if (act === "gstop") this._gameDo({ op: "stop" });
       else if (act === "grestart") { if (window.confirm("Start this story again? The saved memory and story so far are cleared; the setting and rules stay.")) this._gameDo({ op: "restart", game: id }); }
@@ -2511,6 +2518,13 @@
       if (form.dataset.form === "game") {
         const f = form.elements;
         if (await this._gameDo({ op: "save", game: form.dataset.id || undefined, name: f.name.value, setting: f.setting.value, rules: f.rules.value })) this._gnew = false;
+        this._drawGames();
+        return;
+      }
+      if (form.dataset.form === "gtemplate") {
+        const values = {};
+        for (const el of form.elements) if (el.name) values[el.name] = el.value;
+        if (await this._gameDo({ op: "from_template", template: form.dataset.id, values })) { this._gnew = false; this._gtpl = null; const l = this._games.games; this._gid = l.length ? l[l.length - 1].id : null; }
         this._drawGames();
         return;
       }
