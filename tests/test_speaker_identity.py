@@ -50,6 +50,21 @@ async def test_unbound_and_unrelated_requests_keep_normal_routing(hass):
     assert process.await_count == 3
 
 
+async def test_identity_question_invalidates_pending_confirmations(hass):
+    obj, runtime = agent(hass, {"conversation_sessions": True})
+    turn = request("Who is speaking?")
+    session = runtime.sessions.get(turn)
+    session.pending = {"summary": "turn on a device"}
+    session.question = "Shall I turn it on?"
+    runtime.alarm_confirmations = {(turn.conversation_id, turn.device_id, turn.context.user_id): object()}
+    hass.data[SPEAKER_FOR_TURN] = Mock(return_value=SimpleNamespace(speaker_id="one", display_name="Alex"))
+
+    await obj.async_process(turn)
+
+    assert session.pending is None and not session.question
+    assert not runtime.alarm_confirmations
+
+
 def test_voice_adapter_is_not_a_downstream_ai_or_backup(hass):
     adapter = er.async_get(hass).async_get_or_create("conversation", VOICE_RECOGNITION_DOMAIN, "adapter")
     obj, _ = agent(hass, {"voice_agent": adapter.entity_id, "backup_agent": adapter.entity_id})

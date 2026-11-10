@@ -396,8 +396,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
         from homeassistant.util import dt as dt_util
 
-        if reply := speaker_identity_reply(self.hass, user_input, guest=self._guest()):
-            return self._plain_reply(user_input, reply)
+        identity_reply = speaker_identity_reply(self.hass, user_input, guest=self._guest())
 
         from .action_recovery import requested as recovery_requested
         from .behaviour import requested as explanation_requested
@@ -428,6 +427,20 @@ class BackedUpAgent(conversation.ConversationEntity):
         elif minutes and speaker and (user_input.conversation_id, *owner) not in self._ours:
             if last := self._carry.get(owner):
                 user_input = replace(user_input, conversation_id=last[0])
+        if identity_reply:
+            rt = self._entry.runtime_data
+            if (sessions := getattr(rt, "sessions", None)) and (
+                session := sessions.items.get((user_input.conversation_id, *owner))
+            ):
+                async with session.lock:
+                    if session.pending is not None:
+                        session.pending = None
+                        session.question = ""
+            getattr(rt, "alarm_confirmations", {}).pop(
+                (user_input.conversation_id, user_input.device_id, user_input.context.user_id), None
+            )
+            return self._plain_reply(user_input, identity_reply)
+
         speech = getattr(getattr(self._entry, "runtime_data", None), "speech", None)
         take = getattr(speech, "async_take_answer", None)
         if explicit:
