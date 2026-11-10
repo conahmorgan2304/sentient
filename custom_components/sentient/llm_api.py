@@ -58,6 +58,14 @@ def _runtime(hass: HomeAssistant) -> SentientRuntime | None:
     return entries[0].runtime_data if entries else None
 
 
+async def _can_manage_house(hass: HomeAssistant, llm_context: llm.LLMContext) -> bool:
+    context = llm_context.context
+    if context is None or context.user_id is None:
+        return True
+    user = await hass.auth.async_get_user(context.user_id)
+    return bool(user and user.is_active and user.is_admin)
+
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -190,6 +198,8 @@ class RememberTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        if not await _can_manage_house(hass, llm_context):
+            return {"error": "Home Assistant administrator access is required."}
         from .focus import current_request
         from .memory import _normalise
 
@@ -430,6 +440,8 @@ class ForgetTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        if not await _can_manage_house(hass, llm_context):
+            return {"error": "Home Assistant administrator access is required."}
         from .voice_id import cautious_turn
 
         if cautious_turn(getattr(rt, "options", {})):
@@ -1453,6 +1465,8 @@ class PartyTool(_Tool):
         a = tool_input.tool_args
         if a["action"] == "status":
             return rt.party.describe()
+        if not await _can_manage_house(hass, llm_context):
+            return {"error": "Home Assistant administrator access is required."}
         if a["action"] == "stop":
             return await rt.party.async_end()
         style = (a.get("style") or "").strip().lower() or None
@@ -1481,6 +1495,10 @@ class BriefingTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .voice_id import private_history
+
+        if private_history(rt, llm_context.device_id):
+            return {"error": "Household history is private for this request."}
         from .upkeep import gather_briefing
 
         return await gather_briefing(hass, rt)
@@ -1585,6 +1603,10 @@ class TimelineTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .voice_id import private_history
+
+        if private_history(rt, llm_context.device_id):
+            return {"error": "Household history is private for this request."}
         hours = max(0.5, min(72.0, float(tool_input.tool_args.get("hours", 12))))
         items = rt.timeline.since(hours, ["said", "visitor", "watch", "light", "health"], 40)
         from .watches import local_when
@@ -1878,6 +1900,10 @@ class WhyTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .voice_id import private_history
+
+        if private_history(rt, llm_context.device_id):
+            return {"error": "Household history is private for this request."}
         from .explain import async_explain
 
         a = tool_input.tool_args
@@ -1972,7 +1998,9 @@ class SentientAPI(llm.API):
                 conversation_id = chat.conversation_id
         except ImportError:
             pass
-        if conversation_id and (rt := _runtime(self.hass)) is not None:
+        from .voice_id import private_history
+
+        if conversation_id and (rt := _runtime(self.hass)) is not None and not private_history(rt, llm_context.device_id):
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         from .voice_api import SessionTool, IncidentsTool, ClarifyTool
         from .security_voice import SecurityEventTool, SecurityFeedbackTool
@@ -2003,10 +2031,11 @@ class SentientAPI(llm.API):
         from .sessions import current_session
 
         context_line = ''
-        if rt is not None and (house_context := getattr(rt, 'house_context', None)) is not None:
+        private = rt is not None and private_history(rt, llm_context.device_id)
+        if rt is not None and not private and (house_context := getattr(rt, 'house_context', None)) is not None:
             context_line = context_prompt(await house_context.snapshot(
                 llm_context.context, llm_context.device_id, current_request.get() or self._asked(), current_session.get()))
-        if rt is not None:
+        if rt is not None and not private:
             from .security_voice import reference_prompt
 
             context_line += await reference_prompt(self.hass, rt, llm_context)
@@ -2093,7 +2122,7 @@ class SentientAPI(llm.API):
         from . import voice_id
 
         speaker = voice_id.current_speaker.get()
-        private = bool(profile and profile.get("private")) or voice_id.cautious(opts, speaker)
+        private = voice_id.private_history(rt, llm_context.device_id)
         lines.extend(voice_id.standing_lines(self.hass, opts))
         lines.extend(voice_id.prompt_lines(opts, speaker))
         if private:
@@ -2104,7 +2133,7 @@ class SentientAPI(llm.API):
         if profile and profile.get("gentle"):
             lines.append("In this room speak gently: short, calm, simple words, nothing alarming or sarcastic.")
         if opts.get(CONF_PROMPT_RECENT, True) and not opts.get("current_house_context"):
-            lines.extend(self._recent_lines(rt))
+            lines.extend(self._now_lines(rt) if private else self._recent_lines(rt))
         if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
             lines.append(
                 "Ask first: before you " + "; or ".join(confirm) + ", say in a few words exactly what you're about "

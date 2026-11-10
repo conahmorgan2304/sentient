@@ -91,8 +91,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         )
         self._turn_tasks: dict[tuple, asyncio.Task] = {}
         self.last_backup: str | None = None
-        self._carry: dict[tuple, tuple[str, Any, dict, tuple]] = {}  # exact owner -> id, time, options, privacy generation
-        self._ours: set[tuple] = set()  # conversation id and exact owner this agent has answered
+        self._carry: dict[tuple, tuple[str, Any, dict, tuple, str | None]] = {}  # owner -> id, time, options, privacy, speaker
+        self._ours: dict[tuple, str | None] = {}  # conversation id and owner -> matched speaker
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -199,7 +199,9 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     def _record(self, user_input, session, result):
         rt = self._entry.runtime_data
-        rt.sessions.record(session, user_input.text, result, self._guest())
+        from .voice_id import cautious_turn
+
+        rt.sessions.record(session, user_input.text, result, self._guest() or cautious_turn(self._options()))
 
     def _history_generation(self):
         speech = getattr(self._entry.runtime_data, "speech", None)
@@ -427,13 +429,32 @@ class BackedUpAgent(conversation.ConversationEntity):
         self._carry = {key: value for key, value in self._carry.items()
                        if minutes and value[2] is options and value[3] == privacy
                        and 0 <= (now - value[1]).total_seconds() < minutes * 60}
+        speaker_id = getattr(matched_speaker, "speaker_id", None)
+        previous_key = (user_input.conversation_id, *owner)
+        last = self._carry.get(owner)
+        changed_speaker = False
+        track_speaker = bool(options.get("voice_id") and (user_input.satellite_id or matched_speaker is not None))
+        if track_speaker:
+            if previous_key in self._ours:
+                changed_speaker = self._ours[previous_key] != speaker_id
+            if last and last[4] != speaker_id:
+                changed_speaker = True
         if self._guest():
             self._carry.clear()
-        elif cautious:
+        elif cautious or changed_speaker:
             self._carry.pop(owner, None)
-        elif minutes and speaker and (user_input.conversation_id, *owner) not in self._ours:
-            if last := self._carry.get(owner):
-                user_input = replace(user_input, conversation_id=last[0])
+        elif minutes and speaker and previous_key not in self._ours and last:
+            user_input = replace(user_input, conversation_id=last[0])
+
+        if cautious or changed_speaker:
+            # A new or unverified speaker cannot reuse another person's conversation or confirmation.
+            user_input = replace(user_input, conversation_id=None)
+        if (cautious or changed_speaker) and (
+            YES.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "yes"
+        ):
+            return self._plain_reply(user_input, "Please make a fresh request before confirming an action.")
+        if track_speaker and user_input.conversation_id and not self._guest():
+            self._remember_speaker((user_input.conversation_id, *owner), speaker_id)
         if identity_reply:
             rt = self._entry.runtime_data
             if (sessions := getattr(rt, "sessions", None)) and (
@@ -448,14 +469,11 @@ class BackedUpAgent(conversation.ConversationEntity):
             )
             return self._plain_reply(user_input, identity_reply)
 
-        if cautious:
-            # A guest turn must not reopen a household member's existing model chat.
-            user_input = replace(user_input, conversation_id=None)
         speech = getattr(getattr(self._entry, "runtime_data", None), "speech", None)
         take = getattr(speech, "async_take_answer", None)
         if explicit:
             getattr(speech, "_questions", {}).pop(user_input.satellite_id or "", None)
-        elif not cautious and take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
+        elif not (cautious or changed_speaker) and take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
             # a plain answer to the house's own question: done without the AI
             return await self._localise_result(self._plain_reply(user_input, said))
         from .language import async_language_ending
@@ -499,13 +517,18 @@ class BackedUpAgent(conversation.ConversationEntity):
                 self._carry.pop(owner, None)  # "that's all" ends it: the next wake word starts afresh
             else:
                 self._carry.pop(owner, None)
-                self._carry[owner] = (result.conversation_id, dt_util.utcnow(), options, privacy)
+                self._carry[owner] = (result.conversation_id, dt_util.utcnow(), options, privacy, speaker_id)
                 while len(self._carry) > 100:
                     self._carry.pop(next(iter(self._carry)))
-            if len(self._ours) > 500:
-                self._ours.clear()
-            self._ours.add((result.conversation_id, *owner))
+        if result.conversation_id and not cautious and not self._guest() and (minutes and speaker or track_speaker):
+            self._remember_speaker((result.conversation_id, *owner), speaker_id)
         return result
+
+    def _remember_speaker(self, key: tuple, speaker_id: str | None) -> None:
+        self._ours.pop(key, None)
+        self._ours[key] = speaker_id
+        if len(self._ours) > 500:
+            self._ours.pop(next(iter(self._ours)))
 
     async def _localise_result(self, result, user_input=None):
         from .language import async_in_house_language
@@ -598,10 +621,12 @@ class BackedUpAgent(conversation.ConversationEntity):
             try:
                 from homeassistant.util import dt as dt_util
                 from .behaviour import answer as explain_behaviour, repeat_question
+                from .voice_id import cautious_turn
 
                 explanation = None
                 if not (task or handoff):
-                    explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context, lambda: not self._guest())
+                    explanation = await explain_behaviour(self.hass, rt.sessions, session, user_input.text, user_input.context,
+                                                          lambda: not self._guest() and not cautious_turn(opts))
                 if explanation is not None:
                     # This read-only turn must not consume a pending clarification or confirmation.
                     session.turn += 1
@@ -609,7 +634,6 @@ class BackedUpAgent(conversation.ConversationEntity):
                     question = await repeat_question(self.hass, session, user_input.context, lambda: not self._guest() and bool(self._options().get('behaviour_explanations')))
                     return self._reply(user_input, session, explanation + (' ' + question if question else ''), bool(question))
                 from .followups import restore_recent
-                from .voice_id import cautious_turn
 
                 if not (task or handoff):
                     await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context,
@@ -660,7 +684,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 from .action_recovery import enabled as recovery_enabled, requested as recovery_requested, inspect as inspect_action
 
                 if recovery_enabled(opts) and recovery_requested(user_input.text):
-                    if self._guest():
+                    if self._guest() or cautious_turn(opts):
                         return self._reply(user_input, session, 'Action recovery is unavailable in guest mode.')
                     result = await inspect_action(rt.control, session, user_input.context)
                     session.question = result['text'] if result.get('listen') else ''

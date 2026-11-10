@@ -325,7 +325,7 @@ class HouseHealth:
         out = []
         now = dt_util.utcnow()
         for i in self.issues:
-            if i["kind"] in ("wear", "fight", "frozen", "selftest"):
+            if i["kind"] in ("wear", "fight", "frozen", "snapshot_failed", "selftest"):
                 out.append(i["text"])
             elif i["kind"] == "ai":
                 out.append("The AI hasn't answered the last few times — plain words for now")

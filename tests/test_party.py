@@ -186,3 +186,19 @@ async def test_lights_put_back_again_once_the_bulbs_catch_up(hass: HomeAssistant
     lamp = [c.data for c in on if c.data["entity_id"] == "light.lamp"]
     assert lamp and lamp[-1]["color_temp_kelvin"] == 2700 and lamp[-1]["brightness"] == 120  # put back again
     assert not any(c.data["entity_id"] == "light.ceiling" for c in off)  # the hand-switched light is left alone
+
+
+async def test_read_only_accounts_cannot_start_party_or_change_house_memory(hass, freezer, hass_read_only_user):
+    import pytest
+    from homeassistant.core import Context
+    from homeassistant.exceptions import Unauthorized
+
+    entry = await _setup(hass, freezer)
+    entry.runtime_data.memory.add("Private appointment")
+    context = Context(user_id=hass_read_only_user.id)
+    for service, data in (("party", {"on": True}), ("remember", {"text": "New memory"}),
+                          ("forget", {"what": "Private appointment"})):
+        with pytest.raises(Unauthorized):
+            await hass.services.async_call(DOMAIN, service, data, blocking=True, context=context)
+    assert not entry.runtime_data.party.active
+    assert [m.text for m in entry.runtime_data.memory.items] == ["Private appointment"]

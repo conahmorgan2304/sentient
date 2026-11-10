@@ -42,6 +42,8 @@ HEATING_SLOWER = 0.7
 FIGHT_WINDOW = timedelta(minutes=10)
 FIGHTS = 3
 FROZEN_FOR = timedelta(hours=3)
+CAMERA_INTERVAL = timedelta(minutes=30)
+MAX_CAMERA_GAP = CAMERA_INTERVAL * 2
 FIGHT_DOMAINS = {"light", "switch", "fan", "climate", "cover", "media_player", "input_boolean", "humidifier", "water_heater"}
 WEEK = timedelta(days=7)
 
@@ -98,7 +100,7 @@ class Watchdog:
             self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed),
             self.hass.bus.async_listen(EVENT_HEALTH_CHANGED, self._health),
             async_track_time_change(self.hass, self._daily, hour=10, minute=15, second=0),
-            async_track_time_interval(self.hass, self._cameras, timedelta(minutes=30)),
+            async_track_time_interval(self.hass, self._cameras, CAMERA_INTERVAL),
         ]
 
     @callback
@@ -210,26 +212,38 @@ class Watchdog:
             return False
         return bool(types) and types <= {"web_rtc"}
 
-    async def async_check_cameras(self) -> None:
-        from homeassistant.components.camera import CameraEntityFeature, async_get_image
+    def _snapshot_cameras(self) -> set[str]:
+        from homeassistant.components.camera import CameraEntityFeature
 
         from .cameras import cameras as real_cameras
 
-        now = dt_util.utcnow()
-        for st in real_cameras(self.hass, self.options):
-            if st.state in ("unavailable", "unknown") or not int(st.attributes.get("supported_features", 0)) & CameraEntityFeature.STREAM:
-                continue  # snapshot cameras (one picture per detection) never "move"
-            if self._webrtc_only(st.entity_id):
-                self.cams.pop(st.entity_id, None)
-                continue  # WebRTC-only cameras hand back the same cached picture whether they work or not
+        return {
+            st.entity_id for st in real_cameras(self.hass, self.options)
+            if st.state not in ("unavailable", "unknown")
+            and int(st.attributes.get("supported_features", 0)) & CameraEntityFeature.STREAM
+            and not self._webrtc_only(st.entity_id)
+        }
+
+    async def async_check_cameras(self) -> None:
+        from homeassistant.components.camera import async_get_image
+
+        eligible = self._snapshot_cameras()
+        for entity_id in self.cams.keys() - eligible:
+            self.cams.pop(entity_id)
+        for entity_id in sorted(eligible):
+            seen = self.cams.get(entity_id) or {}
+            checked = dt_util.parse_datetime(seen.get("checked") or "")
             try:
-                image = await async_get_image(self.hass, st.entity_id, timeout=10)
-            except Exception:  # noqa: BLE001 - a camera that can't give a picture shows as offline elsewhere
+                image = await async_get_image(self.hass, entity_id, timeout=10)
+            except Exception:  # noqa: BLE001 - a failed snapshot cannot establish that a stream is frozen
+                now = dt_util.utcnow()
+                failures = seen.get("failures", 0) if checked and now - checked <= MAX_CAMERA_GAP else 0
+                self.cams[entity_id] = {"failures": min(2, failures + 1), "checked": now.isoformat()}
                 continue
+            now = dt_util.utcnow()
             digest = hashlib.md5(image.content).hexdigest()  # noqa: S324 - not for security
-            seen = self.cams.get(st.entity_id)
-            if seen is None or seen.get("hash") != digest:
-                self.cams[st.entity_id] = {"hash": digest, "since": now.isoformat()}
+            since = seen.get("since") if seen.get("hash") == digest and checked and now - checked <= MAX_CAMERA_GAP else None
+            self.cams[entity_id] = {"hash": digest, "since": since or now.isoformat(), "checked": now.isoformat()}
         self._save()
 
     # ----- batteries: when they'll run out ------------------------------------------------------
@@ -298,10 +312,20 @@ class Watchdog:
                 a, b, entity_id = key.split("|", 2)
                 out.append({"kind": "fight", "entity_id": entity_id, "name": f"{name(entity_id)} fight",
                             "text": f"{a} and {b} keep switching {name(entity_id)} back and forth ({len(day)} times today)"})
+        eligible = self._snapshot_cameras() if self.cams else set()
         for entity_id, seen in self.cams.items():
+            if entity_id not in eligible:
+                continue
+            checked = dt_util.parse_datetime(seen.get("checked") or "")
+            if checked is None or now - checked > MAX_CAMERA_GAP:
+                continue
+            if seen.get("failures", 0) >= 2:
+                out.append({"kind": "snapshot_failed", "entity_id": entity_id,
+                            "name": f"{name(entity_id)} snapshots unavailable",
+                            "text": f"{name(entity_id)} did not return a picture on the last two checks"})
+                continue
             since = dt_util.parse_datetime(seen.get("since") or "")
-            st = self.hass.states.get(entity_id)
-            if since and st is not None and st.state not in ("unavailable", "unknown") and now - since >= FROZEN_FOR:
+            if since and now - since >= FROZEN_FOR:
                 hours = int((now - since).total_seconds() // 3600)
                 out.append({"kind": "frozen", "entity_id": entity_id, "name": f"{name(entity_id)} frozen",
                             "text": f"{name(entity_id)}'s picture hasn't changed for {hours} hours — it may be frozen",
