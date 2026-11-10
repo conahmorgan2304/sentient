@@ -2094,6 +2094,7 @@ class SentientAPI(llm.API):
 
         speaker = voice_id.current_speaker.get()
         private = bool(profile and profile.get("private")) or voice_id.cautious(opts, speaker)
+        lines.extend(voice_id.standing_lines(self.hass, opts))
         lines.extend(voice_id.prompt_lines(opts, speaker))
         if private:
             lines.append(

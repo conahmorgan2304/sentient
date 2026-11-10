@@ -81,13 +81,24 @@ def cautious_turn(options: dict[str, Any]) -> bool:
     return cautious(options, current_speaker.get())
 
 
+def standing_lines(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
+    """Said every turn while voice recognition is running, so the assistant never denies it exists."""
+    if not enabled(hass, options):
+        return []
+    return ["This house has speaker recognition (Sentient Voice Recognition): it matches a voice against saved household voice "
+            "profiles. If asked whether you can recognise voices or know who is speaking, say yes plainly \u2014 never say you don't "
+            "identify or track voices. You only know a name when one is given to you for this turn, and a match is a good guess, "
+            "not proof; when none is given, say you couldn't tell this time."]
+
+
 def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
     if speaker is None:
         return []
     if (name := name_of(speaker)) is not None:
         if not getattr(speaker, "share_name", False):
             return []
-        return [f"By their voice, the person speaking is probably {name} (a good guess, not proof). Use the name where it "
+        return [f"Sentient Voice Recognition matched their voice to the saved profile for {name}, so the person speaking is probably "
+                f"{name} (a good guess, not proof); if asked how you know, say that. Use the name where it "
                 "is natural \u2014 unless the house rules say not to address people by name, in which case never say it \u2014 and treat what "
                 f"they say about themselves (likes, plans, \"remember that I...\") as being about {name}. This never allows anything "
                 "that needs a confirmation, and if they say they are someone else, believe them."]
