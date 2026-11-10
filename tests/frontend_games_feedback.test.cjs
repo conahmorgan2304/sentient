@@ -11,3 +11,10 @@ test('the Games page reports success and errors on the page, not in a pop-up', (
   assert.ok(body.includes('No answer from Home Assistant'));
   assert.ok(src.includes('id="gmsg"'));
 });
+
+test('the template form is read without looping over form.elements, which Home Assistant refuses', () => {
+  const body = src.match(/form\.dataset\.form === "gtemplate"\) \{.*?return;/s)[0];
+  assert.ok(!/of form\.elements/.test(body));
+  assert.ok(body.includes('querySelectorAll("input[name]'));
+  assert.ok(!/of form\.elements/.test(src), 'no form in the panel may loop over form.elements');
+});

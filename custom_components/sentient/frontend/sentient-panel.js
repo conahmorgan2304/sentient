@@ -2540,7 +2540,7 @@
       }
       if (form.dataset.form === "gtemplate") {
         const values = {};
-        for (const el of form.elements) if (el.name) values[el.name] = el.value;
+        for (const el of form.querySelectorAll("input[name], select[name], textarea[name]")) values[el.name] = el.value;  // not form.elements: Home Assistant's element registry refuses to loop over it
         if (await this._gameDo({ op: "from_template", template: form.dataset.id, values })) { this._gnew = false; this._gtpl = null; const l = this._games.games; this._gid = l.length ? l[l.length - 1].id : null; }
         this._drawGames();
         return;
