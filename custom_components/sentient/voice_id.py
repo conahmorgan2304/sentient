@@ -76,10 +76,17 @@ def cautious(options: dict[str, Any], speaker: Any) -> bool:
     return bool(options.get(CONF_VOICE_ID_UNKNOWN)) and speaker is not None and name_of(speaker) is None
 
 
+def cautious_turn(options: dict[str, Any]) -> bool:
+    """Return whether the current unmatched voice needs privacy protections."""
+    return cautious(options, current_speaker.get())
+
+
 def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
     if speaker is None:
         return []
     if (name := name_of(speaker)) is not None:
+        if not getattr(speaker, "share_name", False):
+            return []
         return [f"By their voice, the person speaking is probably {name} (a good guess, not proof). Use the name where it "
                 "is natural \u2014 unless the house rules say not to address people by name, in which case never say it \u2014 and treat what "
                 f"they say about themselves (likes, plans, \"remember that I...\") as being about {name}. This never allows anything "
@@ -87,7 +94,7 @@ def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
     lines = ["The speaker's voice wasn't matched to anyone: don't guess a name."]
     if cautious(options, speaker):
         lines.append("Treat this voice as a guest: answer what's asked, but don't bring up personal household details, "
-                     "routines or memories unless they ask.")
+                     "routines or memories.")
     return lines
 
 
@@ -109,12 +116,13 @@ def record_turn(hass: HomeAssistant, event: Any, options: dict[str, Any] | None 
     recent.appendleft(heard)
 
 
-async def start_enrolment(hass: HomeAssistant, name: str) -> dict[str, Any]:
+async def start_enrolment(hass: HomeAssistant, name: str, satellite_id: str) -> dict[str, Any]:
     """Ask the add-on to open its speaker recording window for this person."""
     if not installed(hass):
         raise ValueError("Sentient Voice Recognition isn't running")
     return await hass.services.async_call(
-        ENROL_DOMAIN, "start_speaker_enrolment", {"name": name}, blocking=True, return_response=True)
+        ENROL_DOMAIN, "start_speaker_enrolment", {"name": name, "satellite_id": satellite_id, "consent": True},
+        blocking=True, return_response=True)
 
 
 async def cancel_enrolment(hass: HomeAssistant) -> None:
@@ -130,7 +138,7 @@ def attribute(options: dict[str, Any], speaker: Any, request: str, text: str) ->
 
     Only applies to something the speaker said about themselves; household facts are left alone."""
     name = name_of(speaker)
-    if not name or not options.get(CONF_VOICE_ID) or not _FIRST_PERSON.search(request or ""):
+    if not name or not getattr(speaker, "share_name", False) or not options.get(CONF_VOICE_ID) or not _FIRST_PERSON.search(request or ""):
         return text
     if name.casefold() in text.casefold():
         return text

@@ -1142,7 +1142,8 @@ def ws_voice_id(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     connection.send_result(msg["id"], status(hass, _current(entry) if entry is not None else {}))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/enrol", vol.Required("name"): vol.All(str, vol.Length(min=1, max=40))})
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/enrol", vol.Required("name"): vol.All(str, vol.Length(min=1, max=40)),
+                                  vol.Required("satellite_id"): cv.entity_id, vol.Required("consent"): bool})
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_voice_enrol(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
@@ -1153,8 +1154,11 @@ async def ws_voice_enrol(hass: HomeAssistant, connection, msg: dict[str, Any]) -
     if entry is None or not enabled(hass, _current(entry)):
         connection.send_error(msg["id"], "not_available", "Voice recognition isn't running or isn't switched on.")
         return
+    if not msg["consent"]:
+        connection.send_error(msg["id"], "consent_required", "Confirm that the person agreed to enrol their voice.")
+        return
     try:
-        connection.send_result(msg["id"], await start_enrolment(hass, msg["name"]))
+        connection.send_result(msg["id"], await start_enrolment(hass, msg["name"], msg["satellite_id"]))
     except Exception as err:  # the add-on explains why (a bad name, a full list)
         connection.send_error(msg["id"], "failed", str(err))
 

@@ -196,10 +196,10 @@ class RememberTool(_Tool):
         text = tool_input.tool_args["text"]
         from . import voice_id
 
-        text = voice_id.attribute(getattr(rt, "options", {}), voice_id.current_speaker.get(), current_request.get() or "", text)
         request = _normalise(" ".join((current_request.get() or "").split())).rstrip(".?!")
         stated = re.fullmatch(r"(?:please )?remember(?: that)? (.+)", request)
         origin = "explicit" if stated and stated[1] == _normalise(" ".join(text.split())).rstrip(".?!") else None
+        text = voice_id.attribute(getattr(rt, "options", {}), voice_id.current_speaker.get(), current_request.get() or "", text)
         memory = rt.memory.add(text, tool_input.tool_args.get("category", "fact"),
                                source=llm_context.platform, origin=origin)
         if tool_input.tool_args.get("pin"):
@@ -397,6 +397,10 @@ class RecallTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .voice_id import cautious_turn
+
+        if cautious_turn(getattr(rt, "options", {})):
+            return {"memories": []}
         found = rt.memory.search(tool_input.tool_args["query"])
         if getattr(rt, "profiles", None) is not None and (rt.profiles.for_device(llm_context.device_id) or {}).get("private"):
             found = [m for m in found if m.category == "correction"]  # a private room: only how things are named
@@ -426,6 +430,10 @@ class ForgetTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .voice_id import cautious_turn
+
+        if cautious_turn(getattr(rt, "options", {})):
+            return {"error": "Saved memories are private for this voice request."}
         candidates = rt.memory.forget_candidates(tool_input.tool_args["what"])
         if len(candidates) > 1:
             profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) else None
@@ -1839,7 +1847,9 @@ class ConversationsTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        if rt.speech.guest_mode:
+        from .voice_id import cautious_turn
+
+        if rt.speech.guest_mode or cautious_turn(getattr(rt, "options", {})):
             return {"error": "Guests are visiting: earlier conversations stay private"}
         a = tool_input.tool_args
         return {"conversations": rt.conversations.search(a.get("query"), float(a.get("days") or 2))}
@@ -2105,7 +2115,7 @@ class SentientAPI(llm.API):
                 "Guests are visiting: don't bring up personal household details, routines or memories "
                 "unless someone explicitly asks."
             )
-        if _ask_later_on(self.hass) and not rt.speech.guest_mode:
+        if _ask_later_on(self.hass) and not rt.speech.guest_mode and not private:
             lines.append(
                 "When someone mentions something coming up that a friend would ask about afterwards (a trip, a "
                 "match, an interview, the vet), save a question with sentient_ask_later — never about health, "

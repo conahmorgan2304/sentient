@@ -581,7 +581,8 @@
       const vid = g.id === "voiceid" && g.voice_id ? g.voice_id : null;
       body.innerHTML = `<div class="bh"><ha-icon icon="${esc(g.icon)}"></ha-icon><div><div class="bt">${esc(g.title).toUpperCase()}</div><div class="bs">${esc(g.blurb)}</div></div></div>
         ${vid ? `<div class="vidcard ok"><div class="vidt">SENTIENT VOICE RECOGNITION IS RUNNING</div><div class="vids">${vid.heard ? "Last heard: " + esc(vid.heard.name || "an unrecognised voice") + " · " + esc(new Date(vid.heard.at).toLocaleString()) + "<br>" + esc(vid.heard.why) + (vid.heard.similarity != null ? " · similarity " + esc(String(vid.heard.similarity)) : "") + (vid.heard.gap != null ? " · lead over the next voice " + esc(String(vid.heard.gap)) : "") : vid.last ? "Last heard: " + esc(vid.last.name || "an unrecognised voice") + " · " + esc(new Date(vid.last.at).toLocaleString()) : "No voice heard yet since Sentient started."}</div>${vid.enabled ? `<div class="vids">${(vid.recent || []).length ? "<b>Recent voices</b><br>" + vid.recent.map((h) => esc(new Date(h.at).toLocaleTimeString()) + " · " + esc(h.name || "not matched") + " · " + esc(h.why) + (h.similarity != null ? " · " + esc(String(h.similarity)) : "")).join("<br>") : ""}</div>
-          <div class="row"><input id="vidname" style="flex:1;min-width:140px" placeholder="Name to record" maxlength="40"><button class="btn" data-act="videnrol">RECORD FROM A SPEAKER</button><button class="btn ghost" data-act="videnrolx">CANCEL</button></div>
+          <div class="row"><select id="vidsatellite" aria-label="Assist speaker"><option value="">Select an Assist speaker</option>${Object.values(this._hass.states).filter((state) => state.entity_id.startsWith("assist_satellite.") && !["unavailable", "unknown"].includes(state.state)).map((state) => `<option value="${esc(state.entity_id)}">${esc(state.attributes.friendly_name || state.entity_id)}</option>`).join("")}</select><input id="vidname" style="flex:1;min-width:140px" placeholder="Name to record" maxlength="40"><button class="btn" data-act="videnrol">RECORD FROM A SPEAKER</button><button class="btn ghost" data-act="videnrolx">CANCEL</button></div>
+          <label class="vids"><input type="checkbox" id="vidconsent"> The person agreed to enrol their voice</label><div class="vids">The selected pipeline’s speech-to-text provider transcribes each sample.</div>
           <div class="vids" id="vidsay" role="status"></div>
           <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
@@ -2407,9 +2408,12 @@
         const name = (this._$("vidname") || {}).value || "";
         const say = this._$("vidsay");
         if (!name.trim()) { if (say) say.textContent = "Type the name first."; return; }
+        const satellite = (this._$("vidsatellite") || {}).value;
+        const consent = Boolean((this._$("vidconsent") || {}).checked);
+        if (!satellite || !consent) { if (say) say.textContent = "Select a speaker and confirm consent."; return; }
         if (say) say.textContent = "Opening…";
-        this._hass.callWS({ type: "sentient/voice_id/enrol", name: name.trim() }).then(
-          (r) => { if (say) say.innerHTML = "Recording is open for " + r.minutes + " minutes. Say the wake word at the speaker you want to record from, then read: <b>" + esc(r.sentence) + "</b> The speaker will give you the next two."; },
+        this._hass.callWS({ type: "sentient/voice_id/enrol", name: name.trim(), satellite_id: satellite, consent }).then(
+          (r) => { if (say) say.innerHTML = "Recording is open for " + r.minutes + " minutes. Say the wake word at the selected speaker, then read: <b>" + esc(r.sentence) + "</b> The speaker will give you the next two."; },
           (e) => { if (say) say.textContent = e.message || String(e); });
       }
       else if (act === "vidthreshold") {
