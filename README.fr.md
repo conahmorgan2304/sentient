@@ -26,6 +26,7 @@ Il fonctionne avec l’IA que vous avez déjà dans Home Assistant (Google Gemin
 - **Timeline.** Journal de ce que la maison a fait et remarqué.
 - **Notifications téléphone.** Choisissez les téléphones et ce qui leur est envoyé.
 - **Bienvenue à la maison.** Optionnel : un message quand quelqu’un rentre après une absence.
+- **Jeux d’histoire.** Optionnel : des jeux à la voix (par exemple « échapper à la maison ») où les assistants sont le maître du jeu, chacun avec sa propre mémoire. Un modèle prêt à remplir (vos noms, vos pièces), à lancer à la voix ou depuis *Réglages → Jeux d’histoire*.
 - **Livres, histoires et recettes.** Optionnel : ebooks et histoires lus en entier jusqu’à « stop » ou « pause », livres audio, une voix de lecture au choix (n’importe quel service de synthèse vocale), et un mode cuisine pas à pas depuis un dossier, Mealie ou Tandoor.
 
 ## Installation

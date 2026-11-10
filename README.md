@@ -10,7 +10,20 @@ Sentient gives your home one shared brain. Every voice assistant and automation 
 
 It works with the AI you already have in Home Assistant (Google Gemini, OpenAI, Ollama, anything with a conversation agent). It doesn't need its own API key.
 
-> **Status: beta (0.98), in the Home Assistant Marketplace (formerly HACS).** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+> **Status: beta (1.3), in the Home Assistant Marketplace (formerly HACS).** In daily use; feedback and issues very welcome. Needs Home Assistant 2025.10 or newer, a conversation agent (Google Gemini, OpenAI, Ollama…) and, for camera and background features, an AI Task entity.
+
+## New in 0.99–1.3
+
+Most of this stretch added things to look at and learn from; each optional feature has its own switch in Settings. Switching one off stops its work and hides its page or card; what was learned or saved is kept unless the setting says otherwise.
+
+- **Story games (1.3).** Voice-led games where your assistants are the game master, such as an escape-the-house adventure. Each game has a saved memory of its own (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. Start from the ready-made **Escape the house** template and fill in your own game master, players, rooms and helper characters (they default to your assistant's name and Home Assistant areas), or write your own under Settings → Story games, or just ask: "make me an escape game". It is off by default.
+- **Voice recognition (1.3, experimental).** With the separate [Sentient Voice Recognition](https://github.com/conahmorgan2304/sentient-voice-recognition) add-on running, the assistants can know which saved person is speaking. It is a good guess, not proof, is never used to allow anything that asks for confirmation, and works best with one voice per request, close to the microphone. A Voice recognition tab shows why a voice was or wasn't matched, and the house check warns about a silent engine or two similar voices.
+- **Cameras (1.1–1.3).** The Security tab has three columns: the Cameras list, a live view that follows whichever camera last saw something, and a linked-events timeline. Cameras that show a black picture (some Nest and Wyze cameras) switch to Home Assistant's own video player by themselves. Parked vehicles are kept out of incidents, and cameras that only stream over WebRTC are no longer called frozen.
+- **A heating schedule you set (1.0).** Programmes with any number of on/off periods a day, chosen heaters and days, shown on a 24-hour bar on the House tab. A suggested schedule built from what it has learned can be used or changed in one tap.
+- **A fuller House, Overview and Mind (1.0–1.2).** Room tiles for every area, THE DAY SO FAR chart, AROUND THE HOUSE, TODAY and COMING UP, WHAT I KNOW and "What I'm thinking". The Memory check-up shows memories that disagree or repeat side by side.
+- **Inner life (0.99).** It ignores lights that movement sensors flick on and off all day, notices when its own actions are undone, notes an unusual day and guesses the next room. Bedtime and wake-up learning ignore sensors you tell it to, and a sensor that is on most of the day no longer keeps the house "awake".
+- **Calmer and more honest speech (1.3).** What was said recently is remembered across restarts so it doesn't repeat itself; "thanks" and "that's all" get a polite reply instead of "I've cancelled the pending request"; stories can always be stopped (`sentient.stop_reading`).
+- **Safer (1.3).** The light show and memory management actions need Home Assistant administrator permissions, household history stays private when voice identification is unavailable, and each Assist speaker's voice pipeline is checked.
 
 ## New in 0.89–0.98
 
@@ -149,6 +162,7 @@ Every new feature has its own switch in Settings.
 - **Keeping it simple.** *Brain & system → How it's used* shows which optional features you use and which are on but never used; new installs start with a simpler settings page (SHOW EVERYTHING is one tap away). After an update, a short card says what's new. Backup can also give a readable copy of everything it knows and does.
 - **Stories without gaps.** With a reading voice, the next part of the story is made while this part is read, so a slow voice doesn't pause between parts.
 - **Why, and what it would change.** Ask "why did you say that?" or "why did you offer to put the heating on?" and it gives the reason it noted at the time (the timeline shows it too). The weekly report says what it got wrong, and the Mind page can suggest one or two small settings changes with the reason — nothing changes until you say yes (Settings → Mind → *Suggest changes to its settings*).
+- **Story games (optional, off by default).** Escape-the-house and other voice-led games with the assistants as game master and a saved memory for each game. Start from a template (your own names and rooms), write your own, or ask by voice. Settings → Story games.
 - **Books and stories (optional, off by default).** "Read Princess Scarlet", "carry on with the book", "pause", "next chapter" — DRM-free .epub or .txt ebooks and your own stories are read aloud straight through until stopped or paused, and audiobooks (.mp3, .m4b, a folder of parts) are played; each speaker keeps its own place, picking up from the paragraph it stopped in. Starting a story ends the conversation with one line, so nothing keeps listening or asks "anything else?" over it; the wake word pauses it. A sleep timer ("read for 20 minutes"), "go back a bit", "what happened last time?", and an optional **reading voice** — any text-to-speech service and voice you have (Gemini, ElevenLabs, Home Assistant Cloud…) just for stories, with a TRY THE VOICE button. Echos read one passage per request in Alexa's own voice and can't play audiobooks.
 - **Recipes and cooking mode (optional, off by default).** Recipes from a media folder (tidied once by the AI), Mealie or Tandoor: "let's make the lasagne", then "next", "repeat that", "go to step 5", "make it for 6" and "add the ingredients to the shopping list", with the speaker's own timer offered when a step needs one. Works on any speaker, Echos included.
 - **Manuals and goals (optional).** "How do I descale the coffee machine?" answered from the PDF manuals in a media folder; goals like "use less electricity this month" tracked from the house's own history, with progress any voice can give.
@@ -195,6 +209,8 @@ Once it is running, Settings → **Voice recognition** in Sentient lets the assi
 | `sentient.reflect` | Think over the last day now, as it does overnight. |
 | `sentient.wonder` | Add a question for curiosity, or ask the next one now. |
 | `sentient.check_drive` | One look at the drive now. |
+| `sentient.game` | Start a story game, or put the current one away (its memory is kept). |
+| `sentient.stop_reading` | Stop a story or book being read aloud and keep the place. |
 
 Every service is also listed, with its fields, under Developer tools → Actions.
 
