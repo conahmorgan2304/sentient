@@ -1019,6 +1019,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_motion_delete)
     websocket_api.async_register_command(hass, ws_motion_night)
     websocket_api.async_register_command(hass, ws_voice_id)
+    websocket_api.async_register_command(hass, ws_voice_enrol)
+    websocket_api.async_register_command(hass, ws_voice_enrol_cancel)
 
 
 async def _labels(hass: HomeAssistant, lang: str) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
@@ -1136,6 +1138,33 @@ def ws_voice_id(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
     entry = _entry(hass)
     connection.send_result(msg["id"], status(hass, _current(entry) if entry is not None else {}))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/enrol", vol.Required("name"): vol.All(str, vol.Length(min=1, max=40))})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_voice_enrol(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Open the add-on's "record from a speaker" window. Only works when the add-on is running and the setting is on."""
+    from .voice_id import enabled, start_enrolment
+
+    entry = _entry(hass)
+    if entry is None or not enabled(hass, _current(entry)):
+        connection.send_error(msg["id"], "not_available", "Voice recognition isn't running or isn't switched on.")
+        return
+    try:
+        connection.send_result(msg["id"], await start_enrolment(hass, msg["name"]))
+    except Exception as err:  # the add-on explains why (a bad name, a full list)
+        connection.send_error(msg["id"], "failed", str(err))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id/enrol_cancel"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_voice_enrol_cancel(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    from .voice_id import cancel_enrolment
+
+    await cancel_enrolment(hass)
+    connection.send_result(msg["id"], {})
 
 
 SPEAKER_TEST_TIMEOUT = 30

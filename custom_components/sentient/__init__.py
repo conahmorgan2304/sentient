@@ -699,7 +699,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         entry.async_on_unload(engine.async_stop)
     from . import voice_id as _voice_id
 
-    entry.async_on_unload(hass.bus.async_listen(_voice_id.EVENT_TURN, lambda event: _voice_id.record_turn(hass, event)))
+    entry.async_on_unload(hass.bus.async_listen(_voice_id.EVENT_TURN, lambda event: _voice_id.record_turn(hass, event, {**entry.data, **entry.options})))
     engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,

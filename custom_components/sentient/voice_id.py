@@ -7,6 +7,8 @@ friendly, never proof: it is not used to allow anything that needs confirmation.
 """
 from __future__ import annotations
 
+import re
+from collections import deque
 from contextvars import ContextVar
 from typing import Any
 
@@ -22,7 +24,10 @@ HACS_URL = ("https://my.home-assistant.io/redirect/hacs_repository/"
             "?owner=conahmorgan2304&repository=sentient-voice-recognition&category=integration")
 LAST_KEY = "sentient_voice_id_last"
 HEARD_KEY = "sentient_voice_id_heard"  # what the add-on reported for the latest turn (for the page, never the audio)
+RECENT_KEY = "sentient_voice_id_recent"  # the last few turns, in memory only (gone on restart, never any audio)
+RECENT_MAX = 8
 EVENT_TURN = f"{VOICE_RECOGNITION_DOMAIN}_turn"
+ENROL_DOMAIN = VOICE_RECOGNITION_DOMAIN
 REASONS = {
     "matched": "matched a profile",
     "below_threshold": "too different from every saved voice (below the match level)",
@@ -85,18 +90,53 @@ def prompt_lines(options: dict[str, Any], speaker: Any) -> list[str]:
     return lines
 
 
-def record_turn(hass: HomeAssistant, event: Any) -> None:
-    """Remember why the add-on matched or didn't match the latest voice (its own report; no audio)."""
+def record_turn(hass: HomeAssistant, event: Any, options: dict[str, Any] | None = None) -> None:
+    """Remember why the add-on matched or didn't match the latest voice (its own report; no audio).
+
+    Nothing is kept when the setting is off or the add-on isn't running."""
+    if options is not None and not enabled(hass, options):
+        return
     data = event.data or {}
     reason = str(data.get("reason") or "")
-    hass.data[HEARD_KEY] = {
+    heard = {
         "at": dt_util.now().isoformat(), "name": data.get("speaker_name") or None, "reason": reason,
         "why": REASONS.get(reason, reason.replace("_", " ")), "similarity": data.get("similarity"),
         "gap": data.get("runner_up_gap"),
     }
+    hass.data[HEARD_KEY] = heard
+    recent = hass.data.setdefault(RECENT_KEY, deque(maxlen=RECENT_MAX))
+    recent.appendleft(heard)
+
+
+async def start_enrolment(hass: HomeAssistant, name: str) -> dict[str, Any]:
+    """Ask the add-on to open its speaker recording window for this person."""
+    if not installed(hass):
+        raise ValueError("Sentient Voice Recognition isn't running")
+    return await hass.services.async_call(
+        ENROL_DOMAIN, "start_speaker_enrolment", {"name": name}, blocking=True, return_response=True)
+
+
+async def cancel_enrolment(hass: HomeAssistant) -> None:
+    if installed(hass):
+        await hass.services.async_call(ENROL_DOMAIN, "cancel_speaker_enrolment", {}, blocking=True)
+
+
+_FIRST_PERSON = re.compile(r"\b(i|i'm|i've|i'll|i'd|my|mine|me|myself)\b", re.I)
+
+
+def attribute(options: dict[str, Any], speaker: Any, request: str, text: str) -> str:
+    """Make a first-person memory say whose it is ("Alex: likes tea"), when the voice was matched.
+
+    Only applies to something the speaker said about themselves; household facts are left alone."""
+    name = name_of(speaker)
+    if not name or not options.get(CONF_VOICE_ID) or not _FIRST_PERSON.search(request or ""):
+        return text
+    if name.casefold() in text.casefold():
+        return text
+    return f"{name}: {text}"
 
 
 def status(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
     return {"installed": installed(hass), "enabled": enabled(hass, options), "last": hass.data.get(LAST_KEY),
-            "heard": hass.data.get(HEARD_KEY),
+            "heard": hass.data.get(HEARD_KEY), "recent": list(hass.data.get(RECENT_KEY) or []),
             "repo": REPO_URL, "hacs": HACS_URL}

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import llm
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -100,7 +100,8 @@ async def test_settings_tab_offers_download_until_installed(hass: HomeAssistant,
 
 
 async def test_latest_turn_report_says_why_and_reaches_the_page_status(hass: HomeAssistant, tmp_path) -> None:
-    await _setup(hass, tmp_path)
+    await _setup(hass, tmp_path, voice_id=True)
+    _install(hass)
     hass.bus.async_fire("sentient_voice_recognition_turn", {"speaker_name": None, "reason": "below_threshold",
                                                             "similarity": 0.52, "runner_up_gap": None})
     await hass.async_block_till_done()
@@ -110,3 +111,47 @@ async def test_latest_turn_report_says_why_and_reaches_the_page_status(hass: Hom
     hass.bus.async_fire("sentient_voice_recognition_turn", {"speaker_name": "Alex", "reason": "matched", "similarity": 0.8})
     await hass.async_block_till_done()
     assert voice_id.status(hass, {})["heard"]["name"] == "Alex"
+
+
+async def test_recent_turns_are_only_kept_while_the_setting_is_on_and_the_add_on_runs(hass: HomeAssistant) -> None:
+    event = SimpleNamespace(data={"speaker_name": "Alex", "reason": "matched", "similarity": 0.8, "runner_up_gap": 0.3})
+    voice_id.record_turn(hass, event, {"voice_id": True})  # add-on not installed: nothing kept
+    assert voice_id.status(hass, {"voice_id": True})["recent"] == []
+    _install(hass)
+    voice_id.record_turn(hass, event, {"voice_id": False})  # setting off: nothing kept
+    assert voice_id.status(hass, {"voice_id": True})["recent"] == []
+    for _ in range(12):
+        voice_id.record_turn(hass, event, {"voice_id": True})
+    recent = voice_id.status(hass, {"voice_id": True})["recent"]
+    assert len(recent) == voice_id.RECENT_MAX and recent[0]["name"] == "Alex"
+
+
+def test_a_first_person_memory_is_filed_under_the_matched_speaker_only() -> None:
+    alex = SimpleNamespace(speaker_id="a", display_name="Alex")
+    nobody = SimpleNamespace(speaker_id=None, display_name=None)
+    on = {"voice_id": True}
+    assert voice_id.attribute(on, alex, "remember that I like tea", "likes tea") == "Alex: likes tea"
+    assert voice_id.attribute(on, alex, "remember that my mum visits on Sunday", "mum visits on Sunday") == "Alex: mum visits on Sunday"
+    assert voice_id.attribute(on, alex, "remember the bins go out on Tuesday", "bins go out on Tuesday") == "bins go out on Tuesday"
+    assert voice_id.attribute(on, alex, "remember that I like tea", "Alex likes tea") == "Alex likes tea"
+    assert voice_id.attribute(on, nobody, "remember that I like tea", "likes tea") == "likes tea"
+    assert voice_id.attribute({}, alex, "remember that I like tea", "likes tea") == "likes tea"
+
+
+async def test_enrol_commands_refuse_when_the_add_on_is_missing(hass: HomeAssistant) -> None:
+    call = AsyncMock(return_value={"sentence": "x", "minutes": 10})
+    hass.services.async_register(VOICE_RECOGNITION_DOMAIN, "start_speaker_enrolment", call, supports_response=SupportsResponse.ONLY)
+    hass.services.async_register(VOICE_RECOGNITION_DOMAIN, "cancel_speaker_enrolment", call)
+    if True:
+        try:
+            await voice_id.start_enrolment(hass, "Alex")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("should refuse when the add-on is not running")
+        call.assert_not_called()
+        await voice_id.cancel_enrolment(hass)
+        call.assert_not_called()
+        _install(hass)
+        await voice_id.start_enrolment(hass, "Alex")
+        assert call.await_count == 1 and call.call_args.args[0].data["name"] == "Alex"
