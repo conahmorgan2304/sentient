@@ -34,3 +34,17 @@ This PR intentionally does **not** introduce autonomous actuation, an always-lis
 
 ### Scope and limitations
 The existing HA voice backup continues to provide eligible local fallback; this PR does not claim to offer an unrestricted offline LLM. Document retrieval remains an independent feature requiring future measured indexing improvements. Runtime behaviour still needs CI and Home Assistant hardware testing before merging.
+
+### Local document retrieval
+The existing manuals answer service now falls back to a bounded local keyword search when filenames do not match. The search inspects at most 40 sorted `.txt`/`.md` files and 128 KiB per file, rejects symlinks, never traverses parent paths, and refuses tied matches. PDF and image processing remain unchanged. No background indexing or extra AI calls.
+
+### Offline resilience
+The existing voice-backup mechanism already routes eligible requests to a configured local backup conversation agent when the main provider is unavailable. This PR preserves it and adds deterministic, non-network assessments that can be reused locally; it does not pretend to supply full offline open-ended conversation or install an LLM.
+
+### Rollout/testing checklist
+- Confirm CI for the latest branch HEAD, not only older intermediate commits.
+- Run manual HA tests for a normal voice command (closed), an information question (follow-up), and an explicit `no thank you` ending.
+- Check security with closed contacts, unavailable contacts, active alarms and permission-limited users.
+- Check camera timeline compatibility and alert deduplication.
+- Check household guest mode and private-room context do not expose extra entities.
+- Verify that text-file document selection stays within the configured media folder.
