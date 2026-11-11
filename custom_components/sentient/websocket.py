@@ -1057,6 +1057,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         {
             "id": gid, "title": title, "icon": icon, "blurb": blurb,
             "schema": _serialize(group_schema(gid)),
+            **({"sections": SECTIONS[gid]} if gid in SECTIONS else {}),
         }
         for gid, title, icon, blurb, _keys in GROUPS
     ]
@@ -1082,11 +1083,64 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     )
 
 
+# The longest settings pages fold into sections: (title, the settings in it, open at first). Anything a section
+# doesn't list is shown in a last "More" section, so a new setting can never go missing from the page.
+SECTIONS: dict[str, list[dict[str, Any]]] = {
+    "voice": [
+        {"title": "Speakers & volume", "open": True, "names": [
+            "persona", "speakers", "default_speaker", "fallback_speakers", "chime", "speak_volume", "night_volume",
+            "duck_media", "room_volume", "full_volume_speakers", "follow_you", "follow_minutes", "all_occupied"]},
+        {"title": "Echo speakers & voices", "open": False, "names": [
+            "media_speakers", "media_important_only", "alexa_tts_only", "tts_entity", "stream_voice_replies"]},
+        {"title": "Personality & house rules", "open": False, "names": [
+            "personality", "personality_notes", "style_feedback", "style_notes", "chattiness", "conversation_style",
+            "banned_words", "house_rules", "confirm_kinds"]},
+        {"title": "Conversations", "open": False, "names": [
+            "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
+            "contextual_followups", "recent_followup_context", "conversation_cues", "specific_clarification",
+            "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates",
+            "conversation_recovery", "focused_tools", "ask_later", "put_right", "music"]},
+        {"title": "Guarded device control", "open": False, "names": [
+            "guarded_control", "voice_unlock", "voice_undo", "evidence_awareness", "action_recovery", "recheck_unconfirmed"]},
+        {"title": "Language", "open": False, "names": [
+            "voice_language", "speak_house_language", "automatic_language", "remember_language_phrases"]},
+        {"title": "Checks & diagnostics", "open": False, "names": [
+            "live_voice_check", "speech_delivery_history", "speech_failure_notification", "voice_timing_diagnostics"]},
+    ],
+    "mind": [
+        {"title": "Thinking", "open": True, "names": [
+            "conversation_memory", "follow_ups", "curiosity", "reflection", "reflection_time", "foresight",
+            "foresight_time", "thoughts", "normal_day", "knowledge_card", "goals"]},
+        {"title": "Learning & suggestions", "open": False, "names": [
+            "learn_corrections", "share_learning", "proposals", "self_adjust", "rules"]},
+        {"title": "AI budget", "open": False, "names": [
+            "daily_ai_limit", "budget_drive", "budget_noticing", "budget_cameras", "prompt_recent"]},
+        {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "privacy_log"]},
+    ],
+    "door": [
+        {"title": "Doorbell & visitors", "open": True, "names": [
+            "door_camera", "door_triggers", "announce_visitors", "parcel_alerts", "doorstep_sensors", "zone_visits",
+            "zone_door_sensors"]},
+        {"title": "Faces", "open": False, "names": [
+            "faces", "face_sensor", "face_people", "face_teach", "face_teach_cameras", "face_cameras", "face_forget_hours"]},
+        {"title": "AI looks", "open": False, "names": [
+            "ai_task_entity", "second_opinion_ai", "smart_ai_task", "event_clips", "camera_cooldown", "look_cache_minutes",
+            "camera_prefilter"]},
+    ],
+}
+
+
 # settings that only mean something while another one is switched on: the page hides them until it is
 # (their values are kept, so switching back on brings them back as they were)
 DEPENDS: dict[str, str] = {
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
     "speaker_memories": CONF_VOICE_ID,
+    # conversation settings that do nothing without conversation sessions, and a few "how often/when" partners
+    **{k: CONF_SESSIONS for k in ("session_seconds", "contextual_followups", "conversation_recovery")},
+    "recent_followup_context": CONF_CONTEXTUAL_FOLLOWUPS,
+    **{k: "current_house_context" for k in ("house_context_entities", "house_context_updates")},
+    **{k: CONF_GUARDED for k in ("voice_unlock", "voice_undo")},
+    "follow_minutes": CONF_FOLLOW_YOU,
     "conversation_cues": CONF_SESSIONS,
     "manuals_local_text": CONF_MANUALS,
     "security_reasoning": CONF_CAMSEC,

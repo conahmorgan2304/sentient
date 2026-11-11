@@ -6,6 +6,14 @@
   if (customElements.get("sentient-panel")) return;
 
   const KEYS = ["memories", "last_spoken", "likely_room", "watches", "routines", "visitors", "health", "hush", "guest_mode", "chime", "party_mode", "mind", "media_speakers", "house", "holiday"];
+  // list pages you use day to day live on the tab they belong to; their switches stay in Settings
+  const ON_TABS = {
+    house: ["alarms", "schedules", "shortcuts", "motion", "autooff", "maintenance", "games"],
+    mind: ["memories", "mutes", "usage", "privacy"],
+    security: ["spots", "checks"],
+  };
+  const TAB_OF = Object.fromEntries(Object.entries(ON_TABS).flatMap(([tab, ids]) => ids.map((id) => [id, tab])));
+  const TAB_EL = { house: ["hmgr", "hws", "hwsb"], mind: ["mmgr", "mws", "mwsb"], security: ["smgr", "sws", "swsb"] };
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const heldWhy = (reason) => {
@@ -52,14 +60,14 @@
         hass.callWS({ type: "sentient/wizard", language: hass.language }).then((w) => { if (w.show) this._openWizard(w); }, () => {});
       }
       if (this._wizForm) this._wizForm.hass = hass;
-      if (this._form) this._form.hass = hass;
+      for (const f of (this._forms && this._forms.length ? this._forms : [this._form])) if (f) f.hass = hass;
       const ids = this._ids();
       const sig = KEYS.map((k) => { const s = ids[k] && hass.states[ids[k]]; return s ? s.last_updated : ""; }).join("|") + "#" + this._security().key;
       if (sig !== this._sig) {
         const memChanged = ids.memories && hass.states[ids.memories] && hass.states[ids.memories].last_updated !== this._memSig;
         this._sig = sig;
         this._render();
-        if (memChanged) { this._memSig = hass.states[ids.memories].last_updated; if (this._view === "settings") this._loadMemories(); }
+        if (memChanged) { this._memSig = hass.states[ids.memories].last_updated; if (this._editorOpen()) this._loadMemories(); }
       }
     }
     set narrow(n) { this._narrow = n; if (this._menu) this._menu.narrow = n; }
@@ -82,6 +90,7 @@
 
     connectedCallback() { this._tick = setInterval(() => this._render(), 30000); }
     disconnectedCallback() {
+      if (this._mgrRO) { this._mgrRO.disconnect(); this._mgrRO = null; }
       clearInterval(this._tick);
       this._clearLive();
       if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
@@ -102,7 +111,9 @@
       if (confirmText && !window.confirm(confirmText)) return Promise.resolve();
       return this._hass.callService("sentient", service, data).catch((err) => window.alert(err.message || String(err)));
     }
-    _$(id) { return this.shadowRoot.getElementById(id); }
+    _$(id) { return id === "body" && this._host ? this._host : this.shadowRoot.getElementById(id); }
+    // a list page (alarms, memories…) is open for editing: on the Settings tab, or on the tab it lives on
+    _editorOpen() { return this._view === "settings" || !!this._host; }
 
     _build() {
       this.attachShadow({ mode: "open" });
@@ -124,18 +135,21 @@
             <section class="lane" aria-label="Coming up"><div class="lt">COMING UP</div><div id="soon" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
+          <div id="mmgr" class="mgr" hidden></div><div id="mws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="mwsb" class="wsb body"></div></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
+          <div id="hmgr" class="mgr" hidden></div><div id="hws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="hwsb" class="wsb body"></div></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Heating"><div class="lt">HEATING</div><div id="heat" class="card"></div></section>
             <section class="lane" aria-label="Energy, appliances and routines"><div class="lt">ROUTINES &amp; APPLIANCES</div><div id="rout" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
             <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
+          <div id="smgr" class="mgr first" hidden></div><div id="sws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="swsb" class="wsb body"></div></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="camc" class="card"></div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
             <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
@@ -179,6 +193,10 @@
 
     _show(view, push) {
       if (this._view === "security" && view !== "security") { this._clearLive(); this._frigateHealthAt = 0; }
+      // an editor open on another tab is closed (its ids would clash with the Settings page); a page that now lives
+      // on a tab isn't left as the Settings page to show
+      for (const t of Object.keys(ON_TABS)) if (t !== view) this._closeTabPage(t, true);
+      if (view === "settings") { this._host = null; if (TAB_OF[this._group]) this._group = "doctor"; }
       this._view = view;
       this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
@@ -306,6 +324,18 @@
             <input name="when" class="when" placeholder="20m · 1h · 18:30" autocomplete="off"><button class="btn sm" type="submit">SET</button></form>`;
 
       if (this._sc === undefined) { this._sc = null; this._loadShortcuts(); }
+      if (ON_TABS[this._view] && this._hass.user && this._hass.user.is_admin && Date.now() - (this._mgrAt || 0) > 60000) {
+        this._mgrAt = Date.now();
+        const kinds = ON_TABS[this._view].filter((k) => ["alarms", "schedules", "autooff", "maintenance", "checks"].includes(k));
+        Promise.all([
+          ...kinds.map((k) => this._loadItems(k)),
+          ...(ON_TABS[this._view].includes("spots") ? [this._loadSpots()] : []),
+          ...(ON_TABS[this._view].includes("mutes") ? [this._loadMutes(true)] : []),
+          ...(ON_TABS[this._view].includes("games") ? [this._hass.callWS({ type: "sentient/games" }).then((r) => { this._games = r; }, () => {})] : []),
+          ...(!this._settings && !this._settingsErr ? [this._hass.callWS({ type: "sentient/settings", language: this._hass.language }).then((r) => { this._settings = r; }, (e) => { this._settingsErr = e.message || String(e); })] : []),
+        ]).then(() => this._drawManage());
+      }
+      if (ON_TABS[this._view]) this._drawManage();
 
       // energy (every 10 minutes)
       if (Date.now() - (this._enAt || 0) > 600000) {
@@ -451,7 +481,7 @@
 
     _phone() { return window.matchMedia("(max-width: 720px)").matches; }
 
-    _drawSide() {
+    _pages() {
       const groups = (this._settings && this._settings.groups) || [];
       const n = (k) => (this._it && this._it[k] ? this._it[k].items.length : null);
       const count = this._memories ? this._memories.length : this._st("memories") ? this._st("memories").state : "";
@@ -477,6 +507,13 @@
         doctor: ["mdi:stethoscope", "Setup doctor", this._doc ? (this._doc.status === "ok" ? "All good" : `${this._doc.rows.filter((r) => r.status !== "ok").length} to look at`) : "Check the setup and what to fix"],
       };
       groups.forEach((g) => { pages[g.id] = [g.icon, g.title, g.blurb]; });
+      if (pages.games && this._games && this._games.games) pages.games = [pages.games[0], "Story games", `${this._games.games.length} game${this._games.games.length === 1 ? "" : "s"}${this._games.games.some((g) => g.active) ? " · one being played" : ""}`];
+      return pages;
+    }
+
+    _drawSide() {
+      const groups = (this._settings && this._settings.groups) || [];
+      const pages = this._pages();
       // Essentials first; optional features under Extras, each with its on/off state. Anything not listed lands last.
       const data = (this._settings && this._settings.data) || {};
       const SWITCH = { clips: "clip_watch", camsec: "camera_security", nightwatch: "night_watch", away: "away_lights_on", bins: "bins_check",
@@ -484,15 +521,19 @@
         party: "party_whole_house", safety: "critical_alerts", heating: "preheat", appliances: "appliance_announce", briefing: "briefings",
         search: "search_hints", door: "faces", animals: "hutch_check" };
       const menus = [
-        ["essentials", "voice", "mdi:account-voice", "Voice & sound", ["voice", "quiet", "rooms", "voicebackup", "mutes", "phone"]],
-        ["essentials", "house", "mdi:shield-home", "House & safety", ["never", "health", "safety"]],
-        ["essentials", "brain", "mdi:brain", "Brain & system", ["doctor", "usage", "privacy", "memories", "mind", "noticing", "page", "updates", "backup", "autobackup"]],
-        ["extras", "speaking", "mdi:bullhorn-outline", "Speaking up", ["announce", "offers", "briefing", "alexa", "search"]],
-        ["extras", "cameras", "mdi:cctv", "Cameras & video", ["door", "spots", "checks", "camsec", "clips", "drive", "bins", "camwake"]],
-        ["extras", "home", "mdi:home-automation", "Home & routines", ["trust", "maintenance", "shortcuts", "schedules", "alarms", "rules", "autooff", "motion", "appliances", "animals", "rain", "away", "party", "heating", "energy", "nightwatch", "screen"]],
+        ["essentials", "voice", "mdi:account-voice", "Voice", ["voice", "voicebackup", "voiceid", "alexa", "search"]],
+        ["essentials", "speaking", "mdi:bullhorn-outline", "Speaking", ["quiet", "rooms", "announce", "offers", "briefing", "phone", "screen"]],
+        ["essentials", "system", "mdi:cog-outline", "System", ["doctor", "health", "page", "updates", "backup", "autobackup"]],
+        ["extras", "cameras", "mdi:cctv", "Cameras", ["camsec", "nightwatch", "door", "clips", "drive", "camwake", "safety", "never"]],
+        ["extras", "lights", "mdi:lightbulb-auto-outline", "Routines", ["rules", "trust", "away", "party"]],
+        ["extras", "heat", "mdi:radiator", "Heating", ["heating", "heating_zones", "energy", "appliances"]],
+        ["extras", "outdoors", "mdi:pine-tree", "Outdoors", ["animals", "rain", "bins"]],
+        ["extras", "media", "mdi:book-open-variant", "Books & docs", ["reading", "manuals"]],
+        ["extras", "brain", "mdi:brain", "Brain", ["mind", "noticing"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[4]));
-      Object.keys(pages).forEach((id) => { if (!placed.has(id)) menus[menus.length - 1][4].push(id); });
+      // Story games' on/off switch stays here; its games are on the House tab. Anything new lands in Brain & memory.
+      Object.keys(pages).forEach((id) => { if (!placed.has(id) && !TAB_OF[id]) menus[menus.length - 1][4].push(id); });
       const mine = menus.find((m) => m[4].includes(this._group));
       if (!this._openMenus) this._openMenus = new Set();
       if (mine && this._menuFor !== this._group) { this._menuFor = this._group; if (!this._phone()) this._openMenus.add(mine[1]); }
@@ -540,6 +581,75 @@
           : `<button class="btn ghost wizbtn" data-act="showall"><ha-icon icon="mdi:plus-circle-outline"></ha-icon>SHOW EVERYTHING</button>`;
       }
       this._$("snav").innerHTML = html + (this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : "");
+      this._drawManage();
+    }
+
+    // ---------- list pages on the House, Mind and Security tabs ----------
+    // A strip of tiles (one per page: what it is and how many) above the tab's columns; tapping one opens its editor
+    // full width beneath the strip, where it has room for the camera pictures and forms it was drawn for.
+    _drawManage() {
+      const admin = !!(this._hass && this._hass.user && this._hass.user.is_admin);
+      const pages = this._pages();
+      for (const [tab, ids] of Object.entries(ON_TABS)) {
+        const el = this._$(TAB_EL[tab][0]);
+        if (!el) continue;
+        const list = ids.filter((id) => pages[id]);
+        el.hidden = !admin || !list.length;
+        if (el.hidden) continue;
+        // as many to a row as fit, with the rows balanced (7 tiles: 7, or 4 + 3, never 5 + 2); a single row on a wide
+        // screen uses at least three columns so the tiles line up with the columns below
+        const width = el.clientWidth || this.clientWidth || 1200;
+        const fit = Math.max(1, Math.floor((width + 10) / (this._phone() ? 170 : 238)));
+        const rows = Math.ceil(list.length / fit);
+        const per = Math.ceil(list.length / rows);
+        el.style.setProperty("--n", rows === 1 && !this._phone() ? Math.max(3, per) : per);
+        if (!this._mgrRO && window.ResizeObserver) {
+          this._mgrRO = new ResizeObserver(() => { clearTimeout(this._mgrRT); this._mgrRT = setTimeout(() => this._drawManage(), 80); });
+          Object.values(TAB_EL).forEach(([m]) => this._$(m) && this._mgrRO.observe(this._$(m)));
+        }
+        const open = (this._tabPage || {})[tab];
+        el.innerHTML = list.map((id) => {
+          const [icon, title, sub] = pages[id];
+          return `<button class="mt${open === id ? " on" : ""}" data-act="${open === id ? "tabpageclose" : "tabpage"}" data-id="${esc(id)}" aria-expanded="${open === id}">
+            <ha-icon icon="${esc(icon)}"></ha-icon><span><b>${esc(title)}</b><i>${esc(sub || "")}</i></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>`;
+        }).join("");
+      }
+    }
+
+    async _openTabPage(id) {
+      const tab = TAB_OF[id];
+      if (!tab || this._view !== tab) return;
+      this._tabPage = this._tabPage || {};
+      const ws = this._$(TAB_EL[tab][1]), host = this._$(TAB_EL[tab][2]);
+      const settingsBody = this.shadowRoot.getElementById("body");
+      if (settingsBody) settingsBody.innerHTML = "";  // one copy of each editor on the page at a time
+      this._tabPage[tab] = id;
+      this._host = host;
+      this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null; this._itEdit = null; this._form = null;
+      ws.hidden = false;
+      host.innerHTML = '<div class="e">LOADING…</div>';
+      this._drawManage();
+      if (!this._settings && !this._settingsErr) {
+        try { this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language }); }
+        catch (e) { this._settingsErr = e.message || String(e); }
+      }
+      if (this._tabPage[tab] !== id || this._host !== host) return;
+      if (id === "memories") this._loadMemories();
+      else if (id === "spots") this._loadSpots();
+      else if (id === "motion") this._loadMotion();
+      this._drawBody();
+      this._drawManage();
+      if (this._phone()) ws.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    _closeTabPage(tab, quiet) {
+      if (!TAB_EL[tab]) return;
+      const ws = this._$(TAB_EL[tab][1]), host = this._$(TAB_EL[tab][2]);
+      if (this._tabPage) this._tabPage[tab] = null;
+      if (host && this._host === host) { this._host = null; this._form = null; this._editing = null; this._mlEdit = null; this._scEdit = null; this._itEdit = null; }
+      if (ws) ws.hidden = true;
+      if (host) host.innerHTML = "";
+      if (!quiet) this._drawManage();
     }
 
     async _loadMemories() {
@@ -550,10 +660,11 @@
         this._memories = this._attr("memories", "items", []);
         this._cats = ["fact", "preference", "person", "routine", "note", "correction"];
       }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "memories") this._drawMemories(); }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === "memories") this._drawMemories(); }
     }
 
     _drawBody() {
+      this._forms = [];
       if (this._group === "memories") { this._form = null; this._drawMemories(); return; }
       if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
       if (this._group === "motion") { this._form = null; this._drawMotion(); return; }
@@ -601,27 +712,55 @@
           return;
         }
         const S = this._settings;
-        const form = document.createElement("ha-form");
-        form.hass = this._hass;
         // a setting that only matters while another is on stays hidden until it is (its value is kept)
         const dep = S.depends || {};
-        const shown = (d) => g.schema.filter((f) => !dep[f.name] || !g.schema.some((x) => x.name === dep[f.name]) || d[dep[f.name]]);
-        form.schema = shown(this._draft);
-        form.data = this._draft;
-        form.computeLabel = (s) => S.labels[s.name] || s.name;
-        form.computeHelper = (s) => S.helpers[s.name] || "";
-        form.localizeValue = (key) => S.selector[key] || key.split(".").pop();
-        form.addEventListener("value-changed", (ev) => {
-          this._draft = { ...this._draft, ...ev.detail.value };
-          const next = shown(this._draft);
-          if (next.length !== form.schema.length) form.schema = next;
-          form.data = this._draft;
-          this._dirty = true;
-          this._status("UNSAVED CHANGES", "warn");
-        });
+        const shown = (d, schema) => schema.filter((f) => !dep[f.name] || !g.schema.some((x) => x.name === dep[f.name]) || d[dep[f.name]]);
+        // the longest pages fold into sections; anything a section doesn't name goes in a last "More" section
+        let parts = [{ title: "", open: true, schema: g.schema }];
+        if (Array.isArray(g.sections) && g.sections.length) {
+          const named = new Set(g.sections.flatMap((x) => x.names));
+          parts = g.sections.map((x) => ({ title: x.title, open: !!x.open, schema: x.names.map((n) => g.schema.find((f) => f.name === n)).filter(Boolean) }));
+          const rest = g.schema.filter((f) => !named.has(f.name));
+          if (rest.length) parts.push({ title: "More", open: false, schema: rest });
+          parts = parts.filter((x) => x.schema.length);
+        }
+        const forms = [];
+        const refresh = () => {
+          for (const { form, part, box } of forms) {
+            const next = shown(this._draft, part.schema);
+            if (next.length !== form.schema.length) form.schema = next;
+            form.data = this._draft;
+            if (box) box.querySelector(".secn").textContent = `${next.length}`;
+          }
+        };
         wrap.innerHTML = "";
-        wrap.appendChild(form);
-        this._form = form;
+        for (const part of parts) {
+          const form = document.createElement("ha-form");
+          form.hass = this._hass;
+          form.schema = shown(this._draft, part.schema);
+          form.data = this._draft;
+          form.computeLabel = (sc) => S.labels[sc.name] || sc.name;
+          form.computeHelper = (sc) => S.helpers[sc.name] || "";
+          form.localizeValue = (key) => S.selector[key] || key.split(".").pop();
+          form.addEventListener("value-changed", (ev) => {
+            this._draft = { ...this._draft, ...ev.detail.value };
+            refresh();
+            this._dirty = true;
+            this._status("UNSAVED CHANGES", "warn");
+          });
+          let box = null;
+          if (part.title) {
+            box = document.createElement("details");
+            box.className = "sec";
+            box.open = part.open;
+            box.innerHTML = `<summary><span>${esc(part.title)}</span><em class="secn">${form.schema.length}</em><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></summary>`;
+            box.appendChild(form);
+            wrap.appendChild(box);
+          } else wrap.appendChild(form);
+          forms.push({ form, part, box });
+        }
+        this._forms = forms.map((x) => x.form);
+        this._form = forms[0] ? forms[0].form : null;
       });
     }
 
@@ -747,7 +886,7 @@
         const res = await this._hass.callWS({ type: "sentient/settings/save", group: g.id, data });
         this._settings.data = res.data;
         this._draft = { ...res.data };
-        if (this._form) this._form.data = this._draft;
+        for (const f of (this._forms && this._forms.length ? this._forms : [this._form])) if (f) f.data = this._draft;
         this._dirty = false;
         this._status("SAVED ✓", "ok");
         this._enAt = 0; this._en = null;  // energy card follows its on/off setting
@@ -757,7 +896,7 @@
     }
 
     _drawMemories() {
-      if (this._view !== "settings" || this._group !== "memories") return;
+      if (!this._editorOpen() || this._group !== "memories") return;
       const body = this._$("body");
       const items = this._memories || [];
       const q = (this._find || "").toLowerCase().trim();
@@ -866,7 +1005,7 @@
 
     async _loadSpots() {
       try { this._spots = (await this._hass.callWS({ type: "sentient/spots" })).spots; } catch (e) { this._spots = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === "spots") this._drawSpots(); }
     }
 
     _cameras() {
@@ -882,7 +1021,7 @@
     }
 
     _drawSpots() {
-      if (this._view !== "settings" || this._group !== "spots") return;
+      if (!this._editorOpen() || this._group !== "spots") return;
       const cams = this._cameras();
       const spots = this._spots || [];
       if (!this._cam || !cams.find((c) => c.id === this._cam)) {
@@ -986,8 +1125,8 @@
 
     // ---------- named routines ----------
     async _loadShortcuts() {
-      try { this._sc = (await this._hass.callWS({ type: "sentient/shortcuts" })).items; } catch (e) { this._sc = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
+      try { this._sc = (await this._hass.callWS({ type: "sentient/shortcuts" })).items || []; } catch (e) { this._sc = []; }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === "shortcuts" && !this._scEdit) this._drawShortcuts(); }
       else this._render();  // routine buttons on the overview
     }
 
@@ -1041,7 +1180,7 @@
     async _loadItems(kind, extra) {
       this._it = this._it || {};
       try { this._it[kind] = await this._hass.callWS({ type: "sentient/items", kind, ...(extra || {}) }); } catch (e) { this._it[kind] = { items: [], meta: null, err: e.message || String(e) }; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === kind && !this._itEdit) this._drawItems(kind); }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === kind && !this._itEdit) this._drawItems(kind); }
     }
 
     _drawItems(kind) {
@@ -1207,7 +1346,7 @@
     // ---------- shushed ----------
     async _loadMutes(quiet, extra) {
       try { const r = await this._hass.callWS({ type: "sentient/mutes", ...(extra || {}) }); this._mutes = r.mutes; this._learnedQuiet = r.learned || []; } catch (e) { this._mutes = []; this._learnedQuiet = []; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === "mutes") this._drawMutes(); }
     }
 
     _drawMutes() {
@@ -1226,7 +1365,7 @@
     // ---------- motion lights ----------
     async _loadMotion() {
       try { this._ml = await this._hass.callWS({ type: "sentient/motion_lights" }); } catch (e) { this._ml = { rules: [] }; }
-      if (this._view === "settings") { this._drawSide(); if (this._group === "motion" && !this._mlEdit) this._drawMotion(); }
+      if (this._editorOpen()) { this._drawSide(); if (this._group === "motion" && !this._mlEdit) this._drawMotion(); }
       else this._drawMlCard();
     }
 
@@ -2324,7 +2463,9 @@
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
-      else if (act === "goto") { this._group = id; this._show("settings", true); }
+      else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "tabpage") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._openTabPage(id); }
+      else if (act === "tabpageclose") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._closeTabPage(this._view); }
       else if (act === "wizard") this._openWizard();
       else if (act === "wizback") this._wizGo(this._wiz.i - 1);
       else if (act === "wiznext") this._wizNext();
@@ -2342,6 +2483,10 @@
         if (!this._openMenus) this._openMenus = new Set();
         if (this._openMenus.has(id)) this._openMenus.delete(id); else this._openMenus.add(id);
         this._drawSide();
+      } else if (act === "group" && TAB_OF[id]) {
+        // a search hit for a page that lives on a tab: take them there
+        if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
+        this._dirty = false; this._show(TAB_OF[id], true); this._openTabPage(id);
       } else if (act === "group") {
         if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
         this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null;
@@ -3030,6 +3175,40 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .bar2 b{position:absolute;top:-3px;width:2px;height:13px;background:rgba(255,255,255,.7);border-radius:1px}
 .en.hot .bar2 i{background:linear-gradient(90deg,#ff9a3d,#ff5a78)} .en.hot u{color:#ff7088}
 .tli.k-energy .dot ha-icon{color:#ffbe55} .tli.k-security .dot ha-icon{color:#ff7088}
+/* list pages on the House, Mind and Security tabs: a strip of same-size tiles, then the open page beneath it */
+.mgr{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:10px;margin-top:16px}
+
+.mgr.first{margin-top:0}
+.mt{display:flex;align-items:center;gap:12px;min-width:0;padding:11px 14px;border-radius:16px;text-align:left;
+  border:1px solid rgba(0,255,247,.16);background:linear-gradient(160deg,rgba(10,15,25,.92),rgba(18,26,50,.88));box-shadow:inset 0 0 18px rgba(0,255,247,.04)}
+.mt>ha-icon:first-child{--mdc-icon-size:22px;color:#5fd8e6;flex:none}
+.mt span{display:flex;flex-direction:column;flex:1;min-width:0}
+.mt b{font-size:13px;font-weight:500;color:#e6f5fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt i{font-style:normal;font-size:10.5px;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt .chev{--mdc-icon-size:18px;color:rgba(150,220,235,.45);flex:none;transition:transform .2s}
+.mt:hover{border-color:rgba(0,255,247,.32);background:linear-gradient(160deg,rgba(12,22,34,.95),rgba(20,32,58,.9))}
+.mt:focus-visible{outline:2px solid #00fff7;outline-offset:2px}
+.mt.on{border-color:rgba(0,255,247,.5);box-shadow:0 0 14px rgba(0,255,247,.18),inset 0 0 18px rgba(0,255,247,.06)}
+.mt.on>ha-icon:first-child{color:#00fff7} .mt.on .chev{transform:rotate(180deg);color:#00fff7}
+.ws{margin-top:12px;padding:6px 8px}
+.ws .wsb.body{padding:12px 14px;min-height:0}
+.wsx{position:absolute;top:12px;right:12px;z-index:2;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;
+  color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.18);background:rgba(4,12,20,.7)}
+.wsx ha-icon{--mdc-icon-size:18px} .wsx:hover{color:#00fff7;border-color:rgba(0,255,247,.45)}
+.ws .bh{padding-right:44px}
+/* the longest settings pages fold into sections */
+.sec{margin:0 0 10px;border-radius:14px;border:1px solid rgba(0,255,247,.1);background:rgba(0,255,247,.015)}
+.sec[open]{border-color:rgba(0,255,247,.22)}
+.sec>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;border-radius:14px;
+  font-size:11.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#bfefff}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary:hover{background:rgba(0,255,247,.04)} .sec>summary:focus-visible{outline:2px solid #00fff7;outline-offset:-2px}
+.sec>summary span{flex:1}
+.sec>summary em{font-style:normal;font-size:10px;letter-spacing:0;font-weight:600;color:rgba(150,220,235,.7);border:1px solid rgba(0,255,247,.2);border-radius:9px;padding:1px 7px}
+.sec>summary .chev{--mdc-icon-size:18px;color:rgba(150,220,235,.55);transition:transform .2s} .sec[open]>summary .chev{transform:rotate(180deg)}
+.sec>ha-form{display:block;padding:2px 14px 14px}
+@media (max-width: 720px){ .mgr{gap:8px} .mt{padding:10px 11px;gap:9px} .mt .chev{display:none} .mt i{font-size:10px} .ws{padding:4px} .ws .wsb.body{padding:10px 8px} }
+@media (prefers-reduced-motion: reduce){ .mt .chev,.sec>summary .chev{transition:none} }
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:10px} .top{padding:0 8px;gap:6px} .top .ttl{letter-spacing:.2em;font-size:12px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1} .tabs{margin-left:0} .tabs button{padding:6px 9px} .brief span{display:none} .brief{padding:6px 8px}
@@ -3045,6 +3224,11 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   :host([view="overview"]),:host([view="house"]),:host([view="mind"]),:host([view="security"]){overflow-y:hidden}
   #ov,#hp,#mp,#scp{height:calc(100vh - 56px);height:calc(100dvh - 56px);display:flex;flex-direction:column;gap:10px;padding:10px 12px}
   #ov>*,#mp>*{margin-top:0}
+  /* the tile strip sits above the columns; an open page shares the height with them and scrolls inside itself */
+  #hp>.mgr,#mp>.mgr,#scp>.mgr{flex:none;margin:0}
+  #hp>.ws,#mp>.ws,#scp>.ws{flex:1 1 60%;min-height:0;margin:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.3) transparent}
+  #hp>.ws .wsx,#mp>.ws .wsx,#scp>.ws .wsx{position:sticky;float:right;top:6px;margin:6px 6px 0 0}
+  .ws:not([hidden])~.lanes{flex:1 1 40%;min-height:190px}
   #ov>.card.head,#ov>.warnbar,#mp>.warnbar,#mp>.brain,#hp>.card.rooms{flex:none;margin:0}
   .lanes{flex:1 1 auto;min-height:0;margin-top:0;gap:10px;align-items:stretch !important}
   .lanes{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
