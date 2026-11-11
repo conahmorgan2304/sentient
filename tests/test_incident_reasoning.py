@@ -26,3 +26,23 @@ def test_empty_incident_does_not_imply_security():
     result = assess_incident({})
     assert result["status"] == "unknown"
     assert not result["reasons"]
+
+
+def test_two_observed_signal_types_support_activity_not_a_person_route():
+    result = assess_incident({"evidence": [
+        {"source": "binary_sensor.gate", "kind": "contact", "status": "observed"},
+        {"source": "camera.garden", "kind": "detection", "status": "observed"},
+    ]})
+    assert result["corroboration"] == "reported_activity"
+    assert "contact_and_camera_activity" in result["reasons"]
+    assert result["identity_confirmed"] is False
+    assert result["route_confirmed"] is False
+
+
+def test_inferred_detection_is_not_corroborated_as_observed():
+    result = assess_incident({"evidence": [
+        {"source": "binary_sensor.gate", "kind": "contact", "status": "observed"},
+        {"source": "camera.garden", "kind": "detection", "status": "inferred"},
+    ]})
+    assert result["corroboration"] == "unconfirmed"
+    assert "contact_and_camera_reports_unconfirmed" in result["reasons"]
