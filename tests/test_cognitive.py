@@ -32,3 +32,25 @@ def test_reasons_are_explainable_and_no_actuation_is_performed():
     assert result.reasons == ("opening_reported", "unsettled_readings",
                               "restricted_visibility")
     assert result.as_dict()["verdict"] == "problem"
+
+
+async def test_security_check_exposes_reasoned_verdict_without_claiming_unknown_safe(hass):
+    from custom_components.sentient.security import check
+
+    hass.states.async_set("binary_sensor.gate", "off", {"device_class": "door"})
+    result = check(hass)
+    assert result["secure"] is True
+    assert result["assessment"]["verdict"] == "clear"
+
+    hass.states.async_set("binary_sensor.gate", "unavailable", {"device_class": "door"})
+    result = check(hass)
+    assert result["secure"] is None
+    assert result["assessment"]["confirmed"] is False
+    assert "unsettled_readings" in result["assessment"]["reasons"]
+
+    hass.states.async_set("binary_sensor.gate", "on", {"device_class": "door"})
+    hass.states.async_set("lock.front", "unavailable")
+    result = check(hass)
+    assert result["secure"] is False
+    assert result["assessment"]["confirmed"] is False
+    assert "opening_reported" in result["assessment"]["reasons"]
