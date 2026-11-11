@@ -55,3 +55,13 @@ def test_snapshot_is_bounded():
             {"entity_id": f"sensor.sensor_{i}", "state": "ok", "status": "reported",
              "reported_at": "2026-11-11T16:59:00+00:00"} for i in range(100)]})
     assert len(result["observations"]) == 8
+
+
+def test_future_dated_sensor_is_not_treated_as_current():
+    result = summarise_world({
+        "as_of": "2026-11-11T17:00:00+00:00",
+        "current_readings": [{"entity_id": "binary_sensor.gate", "status": "reported",
+                              "state": "off", "reported_at": "2026-11-11T19:00:00+00:00"}],
+    })
+    assert result["observations"][0]["certainty"] == "undated"
+    assert result["observations"][0]["report_age_seconds"] is None
