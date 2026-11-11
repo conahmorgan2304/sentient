@@ -1154,7 +1154,7 @@
 
     _drawShortcuts() {
       const rows = (this._sc || []).map((r) => `<div class="card ml"><div class="r"><ha-icon icon="mdi:playlist-play"></ha-icon><b>${esc(r.name)}</b>
-            <s>${r.actions.length} STEP${r.actions.length === 1 ? "" : "S"}</s>
+            <s>${(r.actions || []).length} STEP${(r.actions || []).length === 1 ? "" : "S"}</s>
             <button class="btn sm" data-act="scrun" data-id="${esc(r.id)}">RUN</button>
             <a class="x" data-act="scedit" data-id="${esc(r.id)}" title="Edit">✎</a><a class="x" data-act="scdel" data-id="${esc(r.id)}" data-text="${esc(r.name)}" title="Delete">✕</a></div>
           <div class="mlsub">${r.aliases ? `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”, ${esc(r.aliases)}` : `<ha-icon icon="mdi:microphone"></ha-icon>“${esc(r.name)}”`}</div>
@@ -2123,7 +2123,7 @@
     }
 
     _drawMotion() {
-      if (this._view !== "settings" || this._group !== "motion") return;
+      if (!this._editorOpen() || this._group !== "motion") return;
       const ml = this._ml || { rules: [] };
       const pill = (on, text, cls) => `<span class="pill ${on ? cls || "on" : ""}">${esc(text)}</span>`;
       const rows = ml.rules.map((r) => {
