@@ -311,7 +311,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -368,7 +368,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
-        CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
+        CONF_VOICE_AGENT, CONF_BACKUP_AGENT, "offline_answers",
     ]),
     ("screen", "Tablet screen", "mdi:tablet-dashboard", "What the Sentient screen card shows: alerts with the camera, notices, a morning card and the house at a glance. Actions can wake a tablet and switch it to that page.", [
         CONF_SCREEN, CONF_SCREEN_ACTIONS, CONF_SCREEN_CLEAR_ACTIONS,

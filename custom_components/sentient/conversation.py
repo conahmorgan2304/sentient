@@ -210,6 +210,12 @@ class BackedUpAgent(conversation.ConversationEntity):
         speech = getattr(self._entry.runtime_data, "speech", None)
         return (getattr(speech, "_privacy_generation", 0), getattr(speech, "_guest_generation", 0))
 
+    def _cues(self):
+        """Everyday sign-offs, corrections and changes of subject (setting "conversation_cues", on by default)."""
+        from .sessions import CONF_CUES
+
+        return bool(self._options().get(CONF_CUES, True))
+
     def _guest(self):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))
 
@@ -484,7 +490,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         if not explicit and options.get(CONF_SESSIONS) and options.get('automatic_language'):
             session = self._entry.runtime_data.sessions.get(user_input)
             known_end = is_conversation_end(user_input.text, session.question, self._options().get(CONF_PERSONA) or DEFAULT_PERSONA,
-                                            language=self._reply_language(user_input))
+                                            language=self._reply_language(user_input), cues=self._cues())
             # Known endings/cancellation must reach the existing cancellation path without waiting for preparation.
             if not known_end and not cancel(user_input.text, self._reply_language(user_input)) and await async_language_ending(self.hass, self._options(), user_input.text, session.question):
                 # Reuse the scoped cancellation path, without treating translated text as consent.
@@ -516,7 +522,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         if (minutes and speaker and result.conversation_id and not cautious and not self._guest()
                 and self._options() is options
                 and self._history_generation() == privacy):
-            if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
+            if is_conversation_end(user_input.text or "", "", self._options().get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input), cues=self._cues()):
                 self._carry.pop(owner, None)  # "that's all" ends it: the next wake word starts afresh
             else:
                 self._carry.pop(owner, None)
@@ -642,7 +648,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     await restore_recent(self.hass, rt.sessions, session, user_input.text, user_input.context,
                                          lambda: not self._guest() and not cautious_turn(opts))
                 rt.sessions.begin(session, user_input.text, self._reply_language(user_input))
-                if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input)):
+                if not user_input.text.strip() or is_conversation_end(user_input.text, session.question, opts.get(CONF_PERSONA) or DEFAULT_PERSONA, language=self._reply_language(user_input), cues=self._cues()):
                     rt.sessions.close(session)
                     return self._reply(user_input, session, "Okay.")
                 if task:
@@ -835,6 +841,23 @@ class BackedUpAgent(conversation.ConversationEntity):
         if attempt.get('action_started') or (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)
                 and (COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction'))):
             return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
+        rt_local = getattr(self._entry, "runtime_data", None)
+        from .local_answers import async_answer as local_answer
+
+        # A few everyday questions Home Assistant's own agent can't answer come straight from the house, no AI.
+        local = await local_answer(self.hass, rt_local, user_input.text, user_input.context)
+        if local:
+            if rt_local is not None:
+                rt_local.timeline.add("health", "Answered without the AI", f"the AI failed: {why[:120]}")
+            try:  # so a streaming pipeline speaks it too
+                from homeassistant.components.conversation.chat_log import current_chat_log
+
+                if (log := current_chat_log.get()) is not None:
+                    log.async_add_assistant_content_without_tools(
+                        conversation.AssistantContent(agent_id=self.entity_id, content=local))
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Couldn't add to the chat log: %s", err)
+            return self._plain_reply(user_input, local)
         _LOGGER.info("Sentient: the main voice agent failed (%s); using %s", why, self.backup_agent)
         from homeassistant.util import dt as dt_util
 

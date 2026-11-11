@@ -45,6 +45,19 @@ INFORMATION = re.compile(
     r"tell me|explain|describe|check|give me (?:a|an|the) (?:report|summary|update)|"
     r"security|system|health|status)\b", re.I)
 CORRECTION = re.compile(r"^(?:no[, ]+|i meant\b|not that\b|actually[, ]+|rather[, ]+|instead[, ]+)", re.I)
+# Conversation cues (setting "Understand sign-offs, corrections and changes of subject", on by default).
+CONF_CUES = "conversation_cues"
+SIGN_OFF = re.compile(
+    r"(?:(?:that'?s|that is|it'?s|oh|ok|okay) )?(?:great|perfect|lovely|brilliant|smashing|fab|fine|grand|cool|nice one|"
+    r"sound|ace|spot on|sorted|got it|i'?m good|all good|that'?ll do|that will do|no that'?s fine|cheers(?: mate| then)?|"
+    r"ta(?: very much)?)(?: (?:thanks|thank you|cheers|ta|mate))*", re.I)
+CUE_CORRECTION = re.compile(
+    r"^(?:sorry[, ]+(?:i meant|i said|not)\b|(?:that'?s |no[, ]+)?(?:the )?wrong (?:one|light|lamp|room|device|thing|speaker)\b|"
+    r"i said\b|not the \w+(?: \w+)?[, ]+the\b)", re.I)
+SUBJECT_CHANGE = re.compile(
+    r"^(?:(?:ok(?:ay)?|right|anyway|so|also)[, ]+)?(?:(?:on )?(?:a )?(?:different|another|new|separate) "
+    r"(?:note|subject|topic|question|thing)|changing the subject|change of subject|something else|unrelated(?: question)?|"
+    r"while i (?:have|'?ve got) you)\b[,:.!?]?\s*(.*)$", re.I)
 FOLLOW_UP = "Is there anything else you'd like to know?"
 # Said in turn so it doesn't sound like a script; every one matches GENERAL_FOLLOWUP, so a plain "no" still ends it.
 FOLLOW_UPS = (
@@ -70,8 +83,12 @@ def normalise(text):
     return text.strip().replace("’", "'")
 
 
-def is_conversation_end(text, question='', persona='', language=None):
-    """Recognise a complete spoken ending, tolerating STT punctuation and name addressing."""
+def is_conversation_end(text, question='', persona='', language=None, cues=False):
+    """Recognise a complete spoken ending, tolerating STT punctuation and name addressing.
+
+    With conversation cues on, everyday sign-offs ("cheers", "perfect, thanks", "that'll do") end it too, but only
+    when nothing specific is waiting for an answer, so "perfect" never answers "shall I turn the heating up?".
+    """
     from .voice_locale import ending, answer, generic_question
 
     if ending(text, language) or (answer(text, language) == 'no' and (not question or generic_question(question, language) or GENERAL_FOLLOWUP.search(question))):
@@ -91,6 +108,8 @@ def is_conversation_end(text, question='', persona='', language=None):
         if text.endswith(" " + name):
             text = text[:-len(name) - 1]
     if END.fullmatch(text):
+        return True
+    if cues and SIGN_OFF.fullmatch(text) and (not question or bool(GENERAL_FOLLOWUP.search(question))):
         return True
     for prefix in ("no thank you ", "no thanks ", "thank you ", "thanks "):
         if text.startswith(prefix) and END.fullmatch(text[len(prefix):]):
@@ -225,7 +244,18 @@ class Sessions:
 
         connected = self.options.get(CONF_SESSIONS) and self.options.get(CONF_CONTEXTUAL_FOLLOWUPS)
         prior_follow = session.follow_up_context or {}
+        cues = bool(self.options.get(CONF_CUES, True))
+        change = SUBJECT_CHANGE.match(text) if cues and (session.active or session.goal) else None
+        if change:
+            # "On another note, ..." starts afresh: no devices, correction or follow-up carried over from before.
+            text = change.group(1).strip() or text
+            session.entities = []
+            session.correction = None
+            session.follow_up_context = None
+            prior_follow = {}
         kind = classify(text) if connected else None
+        if connected and not kind and cues and not change and CUE_CORRECTION.search(text):
+            kind = 'correction'
         if (connected and prior_follow.get('needs_clarification') and not kind
                 and not COMMAND.search(text) and not INFORMATION.search(text)):
             kind = 'clarification'
@@ -238,7 +268,7 @@ class Sessions:
         elif connected and not kind and (COMMAND.search(text) or INFORMATION.search(text)):
             session.entities = []  # an explicit new subject must not inherit old targets
         session.correction = None
-        if (CORRECTION.search(text) or kind in ('correction', 'adjustment')) and (session.goal or session.pending or session.last_action):
+        if (CORRECTION.search(text) or (cues and not change and CUE_CORRECTION.search(text)) or kind in ('correction', 'adjustment')) and (session.goal or session.pending or session.last_action):
             session.correction = {
                 'request': text[:300], 'previous_goal': session.goal,
                 'previous_entities': list(session.entities),
@@ -261,6 +291,10 @@ class Sessions:
                     session.topic = text[:200]
                     session.goal = text[:200]
                 session.listen_reason = 'information_discussion'
+        if change:
+            session.topic = text[:200] if text != change.group(0) else ''
+            session.goal = session.topic or session.goal
+            session.listen_reason = 'new_subject'
 
     def finish(self, session, result):
         """Apply one listening policy to the actual final reply, regardless of provider flags."""

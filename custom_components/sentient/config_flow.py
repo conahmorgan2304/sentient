@@ -386,6 +386,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_BACKUP_AGENT, **d(CONF_BACKUP_AGENT, DEFAULT_BACKUP_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
+            vol.Required("offline_answers", **d("offline_answers", True)): selector.BooleanSelector(),
             vol.Required(CONF_SCREEN, **d(CONF_SCREEN, True)): selector.BooleanSelector(),
             vol.Optional(CONF_SCREEN_ACTIONS, **d(CONF_SCREEN_ACTIONS, [])): selector.ActionSelector(),
             vol.Optional(CONF_SCREEN_CLEAR_ACTIONS, **d(CONF_SCREEN_CLEAR_ACTIONS, [])): selector.ActionSelector(),
@@ -478,6 +479,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
             vol.Required("recent_followup_context", **d("recent_followup_context", False)): selector.BooleanSelector(),
+            vol.Required("conversation_cues", **d("conversation_cues", True)): selector.BooleanSelector(),
             vol.Required("behaviour_explanations", **d("behaviour_explanations", False)): selector.BooleanSelector(),
             vol.Required("current_house_context", **d("current_house_context", False)): selector.BooleanSelector(),
             vol.Optional("house_context_entities", **d("house_context_entities", [])): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),

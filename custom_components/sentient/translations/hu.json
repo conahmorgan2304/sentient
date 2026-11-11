@@ -114,6 +114,7 @@
           "chime": "Hangjelzés beszéd előtt",
           "voice_agent": "Fő AI hangügynök",
           "backup_agent": "Tartalék ügynök",
+          "offline_answers": "Gyakori kérdések megválaszolása MI nélkül",
           "animal_sensors": "Állatok hőmérséklet-érzékelői",
           "away_lights_on": "Távollét-világítás",
           "holiday_mode": "Szabadság mód",
@@ -150,6 +151,7 @@
           "conversation_recovery": "Beszélgetés megszakítása és óvatos helyreállítás",
           "speech_failure_notification": "Értesítés hangszóró-kézbesítési hibáról",
           "recent_followup_context": "Rövid visszakérdezések új ébresztőszó után",
+          "conversation_cues": "Elköszönések, javítások és témaváltások felismerése",
           "behaviour_explanations": "A figyelési és cselekvési döntések elmagyarázása"
         },
         "data_description": {
@@ -243,6 +245,7 @@
           "tandoor_token": "Opcionális: egy API-token a Tandoorból (Beállítások → API). Csak a Home Assistantban tárolódik.",
           "voice_agent": "Az AI-ügynök, amely normál esetben válaszol (pl. Google AI). Üresen az oldal csevegő ügynökét használja.",
           "backup_agent": "Akkor válaszol, ha a fő ügynök hibázik – a Home Assistant saját ügynöke AI nélkül is kezeli a lámpákat, a fűtést és az időzítőket.",
+          "offline_answers": "Ha az MI-ügynök nem válaszol, a „be van zárva a ház?”, „mikor szól a következő ébresztő?” és „járt itt valaki?” kérdésekre a ház maga válaszol, a tartalék ügynök előtt. Kikapcsolva: minden a tartalék ügynökhöz megy.",
           "animal_sensors": "Ól-, kennel-, tyúkól- vagy akvárium-hőmérők.",
           "away_lights_on": "Ha sötétedés után mindenki házon kívül van, a lámpák úgy működnek, ahogy egy héttel korábban ugyanebben az időben (a Home Assistant előzményei alapján), pár perc eltéréssel. Nem indul el (vagy leáll), ha valaki otthon van, vagy nemrég mozgás volt bent – olyanok miatt, akiknek nincs követett telefonja –, és visszaállítja, amit bekapcsolt. Van hozzá egy „Távollét-világítás” kapcsoló is.",
           "away_people": "Üresen: mindenki, akinek van személy-bejegyzése. Emberek helyett telefonokat (eszközkövetőket) is választhatsz.",
@@ -279,6 +282,7 @@
           "conversation_recovery": "Beszélgetésmenetek és a Sentient tartalékkal ügynök kell hozzá. Megszakít egy függő vagy futó kérést ugyanabból a beszélgetésből/eszközről/felhasználótól, és AI-hiba után nem ismétel meg bizonytalan eszközparancsokat. Már elküldött műveletet nem tud visszavonni, és nem tudja rávenni a hardvert, hogy foglalt állapotban beszédet fogadjon. Alapból ki van kapcsolva; kikapcsolva leáll ez a külön kezelés.",
           "speech_failure_notification": "Home Assistant-értesítés, ha a hangszórón való kézbesítés sikertelen vagy bizonytalan. Alapból ki van kapcsolva. Nem tartalmazza az elhangzott szöveget, és nem ismétli meg a beszédet. Vendég módban kikapcsol; a meglévő értesítések elvetésig megmaradnak.",
           "recent_followup_context": "Egy nemrég lezárt téma használata új ébresztőszó után ugyanazon a hangszórón és felhasználónál. Beszélgetésmenetek és kontextuális visszakérdezések kellenek hozzá. A menet időkorlátját használja; soha nem állítja vissza a megerősítést vagy a figyelést. Alapból ki van kapcsolva. Befejezés vagy elfelejtés törli a kontextust.",
+          "conversation_cues": "Beszélgetés közben: a hétköznapi elköszönések lezárják, ha semmi nem vár válaszra; a „bocsánat, úgy értettem…” javítás; a „más téma: …” új témát kezd. MI nélkül.",
           "behaviour_explanations": "Rövid kérdések a figyelésről és a rögzített eszközeredményekről közvetlen megválaszolása, AI-hívás nélkül. Beszélgetésmenetek kellenek hozzá. A meglévő menetnaplót használja, tiszteletben tartja a vendég módot és az eszközhozzáférést, és soha nem ismétel meg műveletet. Alapból ki van kapcsolva; nem tárol további előzményt."
         }
       }
@@ -491,6 +495,7 @@
           "appliance_watts": "Működik e fölött",
           "voice_agent": "Fő AI hangügynök",
           "backup_agent": "Tartalék ügynök",
+          "offline_answers": "Gyakori kérdések megválaszolása MI nélkül",
           "animal_sensors": "Állatok hőmérséklet-érzékelői",
           "away_lights_on": "Távollét-világítás",
           "holiday_mode": "Szabadság mód",
@@ -533,6 +538,7 @@
           "action_recovery": "Eszközeredmények és óvatos helyreállítás",
           "speech_failure_notification": "Értesítés hangszóró-kézbesítési hibáról",
           "recent_followup_context": "Rövid visszakérdezések új ébresztőszó után",
+          "conversation_cues": "Elköszönések, javítások és témaváltások felismerése",
           "behaviour_explanations": "A figyelési és cselekvési döntések elmagyarázása"
         },
         "data_description": {
@@ -716,6 +722,7 @@
           "appliance_watts": "Fogyasztásmérőknél: működik, amíg e fölött van, és végzett, ha öt percig alatta maradt.",
           "voice_agent": "Az AI-ügynök, amely normál esetben válaszol (pl. Google AI). Üresen az oldal csevegő ügynökét használja.",
           "backup_agent": "Akkor válaszol, ha a fő ügynök hibázik – a Home Assistant saját ügynöke AI nélkül is kezeli a lámpákat, a fűtést és az időzítőket.",
+          "offline_answers": "Ha az MI-ügynök nem válaszol, a „be van zárva a ház?”, „mikor szól a következő ébresztő?” és „járt itt valaki?” kérdésekre a ház maga válaszol, a tartalék ügynök előtt. Kikapcsolva: minden a tartalék ügynökhöz megy.",
           "animal_sensors": "Ól-, kennel-, tyúkól- vagy akvárium-hőmérők.",
           "away_lights_on": "Ha sötétedés után mindenki házon kívül van, a lámpák úgy működnek, ahogy egy héttel korábban ugyanebben az időben (a Home Assistant előzményei alapján), pár perc eltéréssel. Nem indul el (vagy leáll), ha valaki otthon van, vagy nemrég mozgás volt bent – olyanok miatt, akiknek nincs követett telefonja –, és visszaállítja, amit bekapcsolt. Van hozzá egy „Távollét-világítás” kapcsoló is.",
           "away_people": "Üresen: mindenki, akinek van személy-bejegyzése. Emberek helyett telefonokat (eszközkövetőket) is választhatsz.",
@@ -758,6 +765,7 @@
           "action_recovery": "Beszélgetésmenetek és védett vezérlés kellenek hozzá az eszközeredményekhez és újrapróbálásokhoz. Megnevezett részeredményeket ad, és megvizsgálja az utolsó védett kérést, ha azt mondod, nem sikerült. Csak a soha el nem küldött műveleteket ajánlhatja fel újra, friss megerősítéssel. A bizonytalan vagy sikeres műveleteket nem ismétli meg. Alapból ki van kapcsolva; a bejegyzések két perc után lejárnak, és beállításváltozáskor vagy elfelejtéskor törlődnek.",
           "speech_failure_notification": "Home Assistant-értesítés, ha a hangszórón való kézbesítés sikertelen vagy bizonytalan. Alapból ki van kapcsolva. Nem tartalmazza az elhangzott szöveget, és nem ismétli meg a beszédet. Vendég módban kikapcsol; a meglévő értesítések elvetésig megmaradnak.",
           "recent_followup_context": "Egy nemrég lezárt téma használata új ébresztőszó után ugyanazon a hangszórón és felhasználónál. Beszélgetésmenetek és kontextuális visszakérdezések kellenek hozzá. A menet időkorlátját használja; soha nem állítja vissza a megerősítést vagy a figyelést. Alapból ki van kapcsolva. Befejezés vagy elfelejtés törli a kontextust.",
+          "conversation_cues": "Beszélgetés közben: a hétköznapi elköszönések lezárják, ha semmi nem vár válaszra; a „bocsánat, úgy értettem…” javítás; a „más téma: …” új témát kezd. MI nélkül.",
           "behaviour_explanations": "Rövid kérdések a figyelésről és a rögzített eszközeredményekről közvetlen megválaszolása, AI-hívás nélkül. Beszélgetésmenetek kellenek hozzá. A meglévő menetnaplót használja, tiszteletben tartja a vendég módot és az eszközhozzáférést, és soha nem ismétel meg műveletet. Alapból ki van kapcsolva; nem tárol további előzményt."
         }
       },
