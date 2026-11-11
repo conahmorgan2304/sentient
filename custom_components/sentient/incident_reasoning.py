@@ -9,6 +9,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+# Frigate events (kind "event") are camera detections just as much as a person sensor is.
+CAMERA_KINDS = frozenset({"detection", "event"})
+
 
 def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
     evidence = [r for r in (incident.get("evidence") or [])[-50:] if isinstance(r, dict)]
@@ -20,8 +23,11 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
     reasons: list[str] = []
     if kinds["contact"]:
         reasons.append("entry_contact_report")
-    if kinds["detection"]:
+    camera_reports = sum(kinds[k] for k in CAMERA_KINDS)
+    if camera_reports:
         reasons.append("camera_detection_report")
+    if kinds["visit"]:
+        reasons.append("doorbell_or_doorstep_visit")
     if kinds["clip"]:
         reasons.append("clip_available")
     if kinds["alert"]:
@@ -34,11 +40,11 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
     # who was there or whether any particular route was taken.
     contact_seen = any(row.get("kind") == "contact" and row.get("status") == "observed"
                        for row in evidence)
-    camera_seen = any(row.get("kind") == "detection" and row.get("status") == "observed"
+    camera_seen = any(row.get("kind") in CAMERA_KINDS and row.get("status") == "observed"
                       for row in evidence)
     if contact_seen and camera_seen:
         reasons.append("contact_and_camera_activity")
-    elif kinds["contact"] and kinds["detection"]:
+    elif kinds["contact"] and camera_reports:
         reasons.append("contact_and_camera_reports_unconfirmed")
     return {
         "status": "observed" if observed and not (inferred or unknown) else

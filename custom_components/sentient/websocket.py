@@ -92,6 +92,7 @@ from .const import (
     CONF_PRIVACY_LOG,
     CONF_MANUALS,
     CONF_MANUALS_FOLDER,
+    CONF_MANUALS_LOCAL,
     CONF_GOALS,
     CONF_BOOKS,
     CONF_BOOKS_FOLDER,
@@ -404,7 +405,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_ALEXA_LATE,
     ]),
     ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question.", [
-        CONF_MANUALS, CONF_MANUALS_FOLDER,
+        CONF_MANUALS, CONF_MANUALS_FOLDER, CONF_MANUALS_LOCAL,
     ]),
     ("games", "Story games", "mdi:dice-multiple-outline", "Voice-led story games the whole house can play, such as an escape-the-house adventure with the assistants as game master; start from a ready-made template and fill in your own names and rooms, or write your own. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. The game master can also read the house's ordinary memory, never change it. Switching this off hides this page and the game tools; your saved games are kept, not cleared, and are there again when you switch it back on.", [
         CONF_GAMES,

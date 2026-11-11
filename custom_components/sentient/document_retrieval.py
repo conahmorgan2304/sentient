@@ -19,6 +19,35 @@ def _terms(text: str) -> set[str]:
     return set(_WORD.findall(text.casefold())) - STOP
 
 
+def best_passage(folder: str, filename: str, question: str, limit: int = 500) -> str | None:
+    """The paragraph of a local .txt/.md document that shares the most words with the question, or None.
+
+    Used only when the AI can't be reached, so a question still gets the document's own words rather than nothing.
+    The same path rules as the search apply; nothing outside the folder or behind a symlink is read.
+    """
+    query = _terms(question)
+    if (not query or not isinstance(filename, str) or filename != os.path.basename(filename) or filename.startswith(".")
+            or os.path.splitext(filename)[1].lower() not in (".md", ".txt")):
+        return None
+    path = os.path.join(folder, filename)
+    if os.path.islink(path) or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "rb") as handle:
+            text = handle.read(MAX_BYTES).decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    best, score = None, 0
+    for block in re.split(r"\n\s*\n", text):
+        block = " ".join(block.split())
+        hit = len(query & _terms(block))
+        if hit > score:
+            best, score = block, hit
+    if not best:
+        return None
+    return best if len(best) <= limit else best[: limit - 1].rsplit(" ", 1)[0] + "…"
+
+
 def search_local_text(folder: str, filenames: list[str], question: str) -> str | None:
     """Best matching local text filename, not a passage passed into an LLM.
 

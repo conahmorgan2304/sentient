@@ -10,8 +10,9 @@ from dataclasses import dataclass
 from typing import Any
 
 MAX_STEPS = 20
+# Moving a cover or touching a lock asks first; stopping a cover never waits for a yes.
 SENSITIVE = {"lock", "unlock", "open_cover", "close_cover"}
-SENSITIVE_DOMAINS = {"lock", "cover"}
+SENSITIVE_DOMAINS = {"lock"}
 
 
 @dataclass(frozen=True)

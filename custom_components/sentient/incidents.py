@@ -169,9 +169,10 @@ class Incidents:
         query = query.lower().strip()
         from .incident_reasoning import assess_incident
 
-        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']],
-                     assessment=assess_incident(i)) for i in self.items
-                if not query or query in (' '.join(i['sources']) + ' ' + ' '.join(e['text'] for e in i['evidence'])).lower()][:8]
+        # Pick the eight first, then assess only those: this runs on every update of the Mind sensor.
+        chosen = [i for i in self.items
+                  if not query or query in (' '.join(i['sources']) + ' ' + ' '.join(e['text'] for e in i['evidence'])).lower()][:8]
+        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i)) for i in chosen]
 
     def configure(self, options):
         self.options = options

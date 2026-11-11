@@ -78,3 +78,11 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - Camera contact + person detection reports can now be distinguished from independently **observed** contact + camera activity. Neither establishes identity, intrusion, or a particular route; alert decisions remain unchanged.
 - Partial guarded-control action results now include an explicit outcome assessment, advising verification before a new request rather than automatic retry.
 - New tests cover outcome evaluation and sensor signal corroboration. Review latest full CI before release.
+
+### Review fixes before merge (1.3.21)
+- **Security wording:** an alarm going off while a door or lock had no settled reading (or with no perimeter sensors at all) skipped the "I can't confirm the whole perimeter" wording and could say "the monitored openings report closed". Any coverage gap now keeps the uncertain wording, as before this PR.
+- **Stopping a cover:** plan review marked every cover action for confirmation, so "stop the garage door" waited for a yes. Only opening and closing covers, and locks, ask first; stopping is immediate again.
+- **Incident evidence:** Frigate events are recorded with kind `event`, which the assessment ignored, so a gate contact plus a Frigate person event was never counted as camera corroboration. `event` now counts as camera evidence, and doorbell/doorstep visits are named. Neither proves identity or route.
+- **Prompt size:** the world assessment repeated every reading (already in the snapshot with its age) on every voice turn. It now carries only counts and the readings that need care.
+- **Manuals offline:** the text search only chose a file and still needed the AI. When the AI can't be reached it now quotes the closest passage from a `.txt`/`.md` document (bounded, no symlinks, no parent paths). Both the inside-text search and the quote sit behind a new switch, *Look inside text documents* (on by default; off matches file names only).
+- **Mind sensor:** incident assessments are worked out only for the eight incidents returned, not every stored one.

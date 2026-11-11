@@ -27,6 +27,19 @@ def _time(value: Any) -> datetime | None:
     return dt.astimezone(timezone.utc)
 
 
+def prompt_view(view: dict[str, Any]) -> dict[str, Any]:
+    """The part worth spending prompt tokens on: counts, and only the readings that need care.
+
+    Every reading already carries its own age and status in the snapshot, so repeating each one here would
+    roughly double the context sent on every voice turn.
+    """
+    flagged = [{"entity_id": row["entity_id"], "certainty": row["certainty"]}
+               for row in view.get("observations") or [] if row.get("certainty") != "reported"]
+    return {"uncertainty": view.get("uncertainty") or {}, "needs_care": flagged,
+            "recent_change_count": len(view.get("recent_changes") or []), "coverage": view.get("coverage", "partial"),
+            "interpretation": view.get("interpretation", "")}
+
+
 def summarise_world(snapshot: dict[str, Any]) -> dict[str, Any]:
     """Derive a small explainable status from a visibility-filtered snapshot.
 

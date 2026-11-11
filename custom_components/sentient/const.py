@@ -95,6 +95,7 @@ CONF_PRIVACY_LOG = "privacy_log"  # keep a record of what leaves the house (meta
 CONF_PROPOSALS = "proposals"  # suggest small settings changes from the self-check, applied only on a yes
 CONF_MANUALS = "manuals"  # answer from documents in a media folder
 CONF_MANUALS_FOLDER = "manuals_folder"
+CONF_MANUALS_LOCAL = "manuals_local_text"  # look inside .txt/.md documents, and quote one when the AI is down
 DEFAULT_MANUALS_FOLDER = "manuals"
 CONF_GOALS = "goals"  # goals over days or weeks
 CONF_BOOKS = "books"  # audiobooks and ebooks read aloud, with bookmarks

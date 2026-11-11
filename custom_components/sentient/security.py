@@ -66,7 +66,9 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
         perimeter_present=bool(perimeter),
         access_limited=limited,
     )
-    uncertain = assessment.verdict == "unknown"
+    # Any gap in coverage keeps the "can't confirm" wording, including when the alarm alone is the problem:
+    # otherwise an alarm going off beside an unavailable door would read "the monitored openings report closed".
+    uncertain = not assessment.confirmed
     if open_items or unlocked:
         text = summary(open_items, unlocked, alarms)
     elif uncertain:

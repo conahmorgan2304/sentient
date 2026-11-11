@@ -223,14 +223,14 @@ class HouseContext:
                         for eid, row in self.followups.items()
                         if eid in {r['entity_id'] for r in readings} and row['owner'][0] == device_id
                         and row['owner'][2] == user_id and session is not None and row['owner'] == session.owner]
-        from .world_model import summarise_world
+        from .world_model import prompt_view, summarise_world
 
         snapshot = {'as_of': now.isoformat(), 'current_readings': readings, 'pending_observations': observations,
                     'recent_changes': changes[:6], 'unfinished_in_this_conversation': unfinished,
                     'limits': 'Partial snapshot. Reports are not physical verification. Recent changes do not prove causality, occupancy identity or ongoing activity. Unknown is not safe or normal. Readings can age; fetch fresh evidence before acting.'}
         # The derived view only sees readings already filtered by HA permissions,
         # Assist exposure, private rooms and guest mode above.
-        snapshot['world_assessment'] = summarise_world(snapshot)
+        snapshot['world_assessment'] = prompt_view(summarise_world(snapshot))
         return snapshot
 
 
