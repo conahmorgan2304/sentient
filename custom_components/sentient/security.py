@@ -56,8 +56,17 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
     unknown = [e for e in evidence if e["status"] == "unknown"]
     perimeter = [st for st in relevant if st.domain != "alarm_control_panel"]
     alarm_alert = any(a["state"] in ("triggered", "pending") for a in alarms)
-    problems = bool(open_items or unlocked or alarm_alert)
-    uncertain = bool(unknown or not perimeter or limited)
+    from .cognitive import assess_security
+
+    assessment = assess_security(
+        open_count=len(open_items),
+        unlocked_count=len(unlocked),
+        alarm_triggered=alarm_alert,
+        unknown_count=len(unknown),
+        perimeter_present=bool(perimeter),
+        access_limited=limited,
+    )
+    uncertain = assessment.verdict == "unknown"
     if open_items or unlocked:
         text = summary(open_items, unlocked, alarms)
     elif uncertain:
@@ -80,7 +89,7 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
     if limited:
         text += " Some security readings are outside this request's access."
     return {
-        "secure": False if problems else None if uncertain else True,
+        "secure": assessment.secure,
         "unknown": unknown,
         "evidence": evidence,
         "open": open_items,
