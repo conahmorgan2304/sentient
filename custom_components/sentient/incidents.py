@@ -167,7 +167,10 @@ class Incidents:
             return []
         self._prune()
         query = query.lower().strip()
-        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']]) for i in self.items
+        from .incident_reasoning import assess_incident
+
+        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']],
+                     assessment=assess_incident(i)) for i in self.items
                 if not query or query in (' '.join(i['sources']) + ' ' + ' '.join(e['text'] for e in i['evidence'])).lower()][:8]
 
     def configure(self, options):
