@@ -281,7 +281,8 @@ class Sessions:
             session.missing_detail = ''
         elif session.task_state != 'completed':
             session.task_state = 'waiting'
-        if session.active and not ends_in_question(text) and self.options.get("conversation_style") != "natural":
+        if (session.active and not session.command_turn and not ends_in_question(text)
+                and self.options.get("conversation_style") != "natural"):
             # brief style: keep a discussion going with a varied "anything else?"; the natural style asks its own
             # follow-up questions when they fit, so a stock one isn't added
             text += " " + self.next_follow_up(session.language)
@@ -289,7 +290,7 @@ class Sessions:
         from .conversation_policy import decide_listening
 
         listening = decide_listening(reply_is_question=ends_in_question(text),
-                                     discussion_active=session.active)
+                                     discussion_active=session.active and not session.command_turn)
         session.waiting = listening.continue_listening
         result.continue_conversation = listening.continue_listening
         session.listen_reason = listening.reason
