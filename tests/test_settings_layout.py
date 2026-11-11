@@ -36,3 +36,12 @@ def test_a_hidden_setting_and_the_switch_it_waits_for_share_a_page():
     for child, parent in DEPENDS.items():
         if child in page_of:
             assert page_of.get(parent) == page_of[child], f"{child} waits for {parent}, which is on another page"
+
+
+def test_pages_moved_to_the_tabs_never_wait_for_the_settings_tab():
+    # a list page opened on House, Mind or Security draws through _editorOpen(); a check for the Settings tab
+    # left in one of them leaves its sheet stuck on LOADING (motion lights in 1.4.2)
+    js = PANEL.read_text()
+    checks = [line.strip() for line in js.splitlines() if re.search(r'_view\s*[!=]==?\s*"settings"', line)]
+    allowed = ("_editorOpen() {", 'if (this._view === "settings") {')
+    assert all(any(a in c for a in allowed) for c in checks), checks
