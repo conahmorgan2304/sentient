@@ -170,9 +170,13 @@ class IncidentsTool(_Tool):
             sequence = [dict(public_evidence(row),
                              seconds_from_first_observation=round((dt_util.parse_datetime(row['time']) - start).total_seconds(), 1))
                         for row in evidence]
+            from .incident_reasoning import assess_incident
+
             report = {'id': item['id'], 'start': evidence[0]['time'], 'end': evidence[-1]['time'],
                       'sources': list(dict.fromkeys(row['source'] for row in evidence)),
-                      'evidence': sequence, 'link': item['link']}
+                      'evidence': sequence, 'link': item['link'],
+                      # Assess only the evidence authorised for this voice request.
+                      'assessment': assess_incident({'evidence': evidence})}
             coverage = await describe_coverage(hass, options, llm_context, evidence)
             if coverage:
                 report['coverage'] = coverage
