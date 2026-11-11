@@ -57,3 +57,9 @@ The existing voice-backup mechanism already routes eligible requests to a config
 
 ### Speaker identity scope
 Sentient already has per-turn voice recognition with opt-in name sharing and cautious unknown-speaker handling in `voice_id.py`. The existing person attribution and guest/privacy safeguards remain active; no cross-person session sharing or speaker-based unlocking has been introduced. A future speaker-based preference layer must require explicit consent and real-home testing; a voice similarity score is not proof of identity.
+
+### Follow-up reliability and privacy hardening
+- A one-shot device command made during an active information discussion no longer inherits the generic "anything else" prompt. A true question can still open the expected follow-up, preserving explicit voice-end handling.
+- Guarded `sentient_incidents` now computes its assessment **after** `readable_evidence` permission filtering, rather than using the unfiltered episode summary.
+- Future-dated sensor reports (significant clock skew) are marked undated instead of current, with regression coverage.
+- Latest branch validation must pass again after these amendments.
