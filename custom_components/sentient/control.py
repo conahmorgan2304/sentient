@@ -203,7 +203,7 @@ class Control:
         session.entities = [a['entity_id'] for a in actions]
         prior = (session.correction or {}).get('previous_action') or {}
         correction_after_action = bool(prior.get('actions'))
-        if self.needs_confirmation(actions) or correction_after_action:
+        if review.requires_confirmation or self.needs_confirmation(actions) or correction_after_action:
             session.pending = {'actions': actions, 'turn': session.turn,
                                'expires': dt_util.utcnow() + timedelta(seconds=60),
                                'before': {a['entity_id']: snapshot(self.hass.states.get(a['entity_id'])) for a in actions},
