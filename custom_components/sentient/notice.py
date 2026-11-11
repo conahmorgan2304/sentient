@@ -330,7 +330,7 @@ class Noticer:
                 else:
                     result = await self.speech.async_say(message, "normal", None, source="notice")
             record["result"] = result.reason
-            if result.spoken:
+            if getattr(result, "spoken", False):
                 now = dt_util.utcnow()
                 self._said_about = {k: t for k, t in self._said_about.items() if now - t < timedelta(hours=24)}
                 for c in changes:
