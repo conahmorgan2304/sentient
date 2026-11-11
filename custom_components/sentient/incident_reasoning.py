@@ -30,6 +30,16 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         reasons.append("multiple_sources_close_in_time")
     if unknown:
         reasons.append("unsettled_evidence")
+    # Independent sensor kinds can corroborate that activity occurred, not
+    # who was there or whether any particular route was taken.
+    contact_seen = any(row.get("kind") == "contact" and row.get("status") == "observed"
+                       for row in evidence)
+    camera_seen = any(row.get("kind") == "detection" and row.get("status") == "observed"
+                      for row in evidence)
+    if contact_seen and camera_seen:
+        reasons.append("contact_and_camera_activity")
+    elif kinds["contact"] and kinds["detection"]:
+        reasons.append("contact_and_camera_reports_unconfirmed")
     return {
         "status": "observed" if observed and not (inferred or unknown) else
                   "mixed" if observed else "inferred" if inferred else "unknown",
@@ -40,5 +50,6 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         "unknown_reports": unknown,
         "identity_confirmed": False,
         "route_confirmed": False,
+        "corroboration": "reported_activity" if contact_seen and camera_seen else "unconfirmed",
         "limitation": "Events near in time may be unrelated. No person identity, route, or intrusion is proven.",
     }
