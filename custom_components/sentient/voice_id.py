@@ -95,6 +95,51 @@ def private_history(rt: Any, device_id: str | None) -> bool:
             or bool(getattr(getattr(rt, "speech", None), "guest_mode", False)))
 
 
+CONF_SPEAKER_MEMORIES = "speaker_memories"
+_OWNER = re.compile(r"^\s*([^:\n]{1,40}):\s+\S")
+
+
+def owner_of(text: str, people: set[str]) -> str | None:
+    """The person a memory is about, when it is filed as "Name: ..." under a known person's name."""
+    found = _OWNER.match(text or "")
+    if found and found.group(1).strip().casefold() in people:
+        return found.group(1).strip().casefold()
+    return None
+
+
+def known_people(hass: HomeAssistant) -> set[str]:
+    """The household's people: Home Assistant person entities and the voices heard lately."""
+    names = {(st.name or "").strip().casefold() for st in hass.states.async_all("person")}
+    for row in hass.data.get(RECENT_KEY) or []:
+        if isinstance(row, dict) and row.get("name"):
+            names.add(str(row["name"]).strip().casefold())
+    return {n for n in names if n}
+
+
+def speaker_scope(hass: HomeAssistant, options: dict[str, Any], memories: list[Any], speaker: Any = None) -> list[Any]:
+    """Speaker-aware memories (setting "speaker_memories", off by default; needs voice recognition running).
+
+    A matched voice gets their own memories first and other people's personal ones are left out; a voice that was
+    heard but not matched gets none of anyone's personal memories. With no voice to go on (typed in the app, an
+    Echo), nothing changes. Household facts are never touched.
+    """
+    speaker = current_speaker.get() if speaker is None else speaker
+    if not options.get(CONF_SPEAKER_MEMORIES) or not enabled(hass, options) or speaker is None:
+        return memories
+    people = known_people(hass)
+    me = (name_of(speaker) or "").casefold() if speaker is not UNKNOWN_SPEAKER else ""
+    if me:
+        people.add(me)
+    own, shared = [], []
+    for m in memories:
+        whose = owner_of(getattr(m, "text", ""), people)
+        if whose is None:
+            shared.append(m)
+        elif me and whose == me:
+            own.append(m)
+    return own + shared
+
+
 def standing_lines(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
     """Said every turn while voice recognition is running, so the assistant never denies it exists."""
     if not enabled(hass, options):

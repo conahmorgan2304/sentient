@@ -309,9 +309,9 @@ _LOGGER = logging.getLogger(__name__)
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
-        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
+        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -334,7 +334,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
-        CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
+        CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE, "security_reasoning",
         CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
@@ -368,7 +368,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
     ("voicebackup", "Voice backup", "mdi:lifebuoy", "If the AI voice agent fails or times out, the same request goes to a backup agent so simple things still work. Point your Assist pipeline at the “with backup” agent to use it.", [
-        CONF_VOICE_AGENT, CONF_BACKUP_AGENT,
+        CONF_VOICE_AGENT, CONF_BACKUP_AGENT, "offline_answers",
     ]),
     ("screen", "Tablet screen", "mdi:tablet-dashboard", "What the Sentient screen card shows: alerts with the camera, notices, a morning card and the house at a glance. Actions can wake a tablet and switch it to that page.", [
         CONF_SCREEN, CONF_SCREEN_ACTIONS, CONF_SCREEN_CLEAR_ACTIONS,
@@ -411,7 +411,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_GAMES,
     ]),
     ("voiceid", "Voice recognition", "mdi:account-voice", "Know who is speaking. With the Sentient Voice Recognition add-on, the assistants can tell which enrolled person spoke and greet them by name, and treat \u201cremember that I\u2026\u201d as being about them. It is a good guess from the voice, never proof, so it never allows anything that asks for confirmation. Without the add-on, this page shows where to get it.", [
-        CONF_VOICE_ID, CONF_VOICE_ID_UNKNOWN,
+        CONF_VOICE_ID, CONF_VOICE_ID_UNKNOWN, "speaker_memories",
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
         CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
@@ -1086,6 +1086,11 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
 # (their values are kept, so switching back on brings them back as they were)
 DEPENDS: dict[str, str] = {
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
+    "speaker_memories": CONF_VOICE_ID,
+    "conversation_cues": CONF_SESSIONS,
+    "manuals_local_text": CONF_MANUALS,
+    "security_reasoning": CONF_CAMSEC,
+    "recheck_unconfirmed": CONF_GUARDED,
     CONF_ROOM_HANDOFF: CONF_SESSIONS,
     CONF_BEDTIME_LIGHTS: CONF_BEDTIME,
     CONF_BEDTIME_CONTACTS: CONF_BEDTIME,

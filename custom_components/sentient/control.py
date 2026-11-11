@@ -13,6 +13,9 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_VOICE_UNLOCK
+
+CONF_RECHECK = "recheck_unconfirmed"  # look again at device changes that hadn't reported back yet
+RECHECK_AFTER = 20  # seconds
 from .sessions import CONF_UNDO
 
 # No service strings, scripts, scenes, templates, area targets or arbitrary service data.
@@ -340,7 +343,43 @@ class Control:
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')
+        if self.options.get(CONF_RECHECK, True) and any(o['status'] == 'attempted' for o in outcomes):
+            self._recheck_later(session, actions, result)
         return result
+
+    def _recheck_later(self, session, actions, result):
+        """A slow device (a garage door, a cloud plug) often reports after the reply: look once more, then update the
+        record so "did that work?" is answered from what the device says now. Nothing is sent again."""
+        from homeassistant.helpers.event import async_call_later
+
+        wanted = {a['entity_id']: a for a in actions}
+
+        def _look(_now):
+            if session.forgotten or session.last_action is not result:
+                return
+            changed = []
+            for row in result['actions']:
+                if row['status'] != 'attempted' or row['entity_id'] not in wanted:
+                    continue
+                if target_reached(self.hass.states.get(row['entity_id']), wanted[row['entity_id']]):
+                    row['status'], row['verified_later'] = 'verified', True
+                    changed.append(row['entity_id'])
+                else:
+                    row['reason'] = f'still not reported {RECHECK_AFTER} seconds later'
+            from .outcome_review import evaluate_outcomes
+
+            result['assessment'] = evaluate_outcomes(result['actions'])
+            result['rechecked_at'] = dt_util.utcnow().isoformat()
+            if changed:
+                from .cognitive import decision
+
+                self.timeline.add('voice', f"Confirmed later: {result['summary']}", ', '.join(changed), evidence='verified',
+                                  decision=decision('recheck', evidence=[f'{e} reported the requested state' for e in changed],
+                                                    gaps=[], choice='record updated; nothing sent again',
+                                                    reasons=['late_report']))
+
+        self._rechecks = [h for h in getattr(self, '_rechecks', []) if h is not None][-20:]
+        self._rechecks.append(async_call_later(self.hass, RECHECK_AFTER, _look))
 
     async def undo(self, session, context):
         if not session.authorised or session.closed or not self.options.get(CONF_UNDO):

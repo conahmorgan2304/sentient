@@ -386,6 +386,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_BACKUP_AGENT, **d(CONF_BACKUP_AGENT, DEFAULT_BACKUP_AGENT)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="conversation")
             ),
+            vol.Required("offline_answers", **d("offline_answers", True)): selector.BooleanSelector(),
             vol.Required(CONF_SCREEN, **d(CONF_SCREEN, True)): selector.BooleanSelector(),
             vol.Optional(CONF_SCREEN_ACTIONS, **d(CONF_SCREEN_ACTIONS, [])): selector.ActionSelector(),
             vol.Optional(CONF_SCREEN_CLEAR_ACTIONS, **d(CONF_SCREEN_CLEAR_ACTIONS, [])): selector.ActionSelector(),
@@ -457,6 +458,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_VOICE_TIMING_DIAGNOSTICS, **d(CONF_VOICE_TIMING_DIAGNOSTICS, False)): selector.BooleanSelector(),
             vol.Required(CONF_SPECIFIC_CLARIFICATION, **d(CONF_SPECIFIC_CLARIFICATION, False)): selector.BooleanSelector(),
             vol.Required(CONF_ACTION_RECOVERY, **d(CONF_ACTION_RECOVERY, False)): selector.BooleanSelector(),
+            vol.Required("recheck_unconfirmed", **d("recheck_unconfirmed", True)): selector.BooleanSelector(),
             vol.Optional(CONF_VOICE_LANGUAGE, **d(CONF_VOICE_LANGUAGE, "auto")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=["auto", "en", "es", "fr", "de", "pt", "it", "nl", "pl", "fi", "sv", "da", "nb", "tr", "ru", "uk", "ar", "hi", "bn", "zh", "ja", "ko", "id", "vi", "th", "he", "el", "cs", "ro", "hu"], custom_value=True)
             ),
@@ -478,6 +480,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             ),
             vol.Required(CONF_CONTEXTUAL_FOLLOWUPS, **d(CONF_CONTEXTUAL_FOLLOWUPS, False)): selector.BooleanSelector(),
             vol.Required("recent_followup_context", **d("recent_followup_context", False)): selector.BooleanSelector(),
+            vol.Required("conversation_cues", **d("conversation_cues", True)): selector.BooleanSelector(),
             vol.Required("behaviour_explanations", **d("behaviour_explanations", False)): selector.BooleanSelector(),
             vol.Required("current_house_context", **d("current_house_context", False)): selector.BooleanSelector(),
             vol.Optional("house_context_entities", **d("house_context_entities", [])): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
@@ -594,6 +597,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "cover", "lock"], multiple=True)
             ),
             vol.Required(CONF_CAMSEC_DESCRIBE, **d(CONF_CAMSEC_DESCRIBE, True)): selector.BooleanSelector(),
+            vol.Required("security_reasoning", **d("security_reasoning", False)): selector.BooleanSelector(),
             vol.Required(CONF_PARTY_WHOLE_HOUSE, **d(CONF_PARTY_WHOLE_HOUSE, False)): selector.BooleanSelector(),
             vol.Optional(CONF_PARTY_LIGHTS, **d(CONF_PARTY_LIGHTS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="light", multiple=True)
@@ -803,6 +807,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_GAMES, **d(CONF_GAMES, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID, **d(CONF_VOICE_ID, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID_UNKNOWN, **d(CONF_VOICE_ID_UNKNOWN, False)): selector.BooleanSelector(),
+            vol.Required("speaker_memories", **d("speaker_memories", False)): selector.BooleanSelector(),
             vol.Required(CONF_BOOKS, **d(CONF_BOOKS, False)): selector.BooleanSelector(),
             vol.Optional(CONF_BOOKS_FOLDER, **d(CONF_BOOKS_FOLDER, DEFAULT_BOOKS_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_READING_TTS, **d(CONF_READING_TTS, None)): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),

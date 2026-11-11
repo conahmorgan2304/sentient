@@ -20,6 +20,7 @@ REASONS = {
     'completed_single_request': 'The single request was complete and my reply did not end with a question.',
     'error_or_empty_reply': 'The previous turn returned an error or an empty reply.',
     'user_ended': 'You ended the conversation.',
+    'new_subject': 'You changed the subject, so I started afresh without the earlier devices.',
 }
 
 

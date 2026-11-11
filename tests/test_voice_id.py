@@ -94,7 +94,7 @@ async def test_settings_tab_offers_download_until_installed(hass: HomeAssistant,
     _install(hass)
     await ws.send_json({"id": 2, "type": "sentient/settings"})
     tab = next(g for g in (await ws.receive_json())["result"]["groups"] if g["id"] == "voiceid")
-    assert {f["name"] for f in tab["schema"]} == {"voice_id", "voice_id_unknown"} and tab["voice_id"]["installed"]
+    assert {f["name"] for f in tab["schema"]} == {"voice_id", "voice_id_unknown", "speaker_memories"} and tab["voice_id"]["installed"]
     await ws.send_json({"id": 3, "type": "sentient/voice_id"})
     assert (await ws.receive_json())["result"]["installed"] is True
 
