@@ -16,7 +16,7 @@ function load() {
   return { Panel, store };
 }
 
-function setup(features) {
+function setup(features, platform = null) {
   const { Panel, store } = load();
   const img = { listeners: {}, addEventListener(n, f) { this.listeners[n] = f; }, removeAttribute() {} };
   const holder = { isConnected: true, innerHTML: '', querySelector: (s) => (s === 'img' ? img : null) };
@@ -24,7 +24,7 @@ function setup(features) {
   const panel = new Panel();
   panel._$ = () => el;
   panel._cams = { cameras: [{ entity_id: 'camera.nest' }] };
-  panel._hass = { states: { 'camera.nest': { attributes: { entity_picture: '/api/camera_proxy/camera.nest?token=x', supported_features: features, friendly_name: 'Nest' } } } };
+  panel._hass = { entities: platform ? { 'camera.nest': { platform } } : {}, states: { 'camera.nest': { attributes: { entity_picture: '/api/camera_proxy/camera.nest?token=x', supported_features: features, friendly_name: 'Nest' } } } };
   panel.renders = 0;
   panel._render = () => { panel.renders++; };
   return { panel, img, holder, store };
@@ -54,5 +54,29 @@ test('a camera that cannot use the player never gets a fallback', () => {
   panel._drawLive({ security_events: [] });
   assert.equal(img.listeners.error, undefined);
   assert.equal(store['sentient-live-auto'], undefined);
+  panel._clearLive();
+});
+
+test('Nest defaults to native live player before a successful placeholder picture can suppress fallback', () => {
+  const { panel, img, store } = setup(2, 'nest');
+  panel._drawLive({ security_events: [] });
+  assert.equal(panel._liveCamKey, 'camera.nest|smooth');
+  assert.equal(img.listeners.load, undefined);
+  assert.equal(store['sentient-live-auto'], undefined);
+  panel._clearLive();
+});
+
+test('Nest manual picture preference overrides native live default', () => {
+  const { panel, store } = setup(2, 'nest');
+  store['sentient-live-picture'] = JSON.stringify(['camera.nest']);
+  panel._drawLive({ security_events: [] });
+  assert.equal(panel._liveCamKey, 'camera.nest|picture');
+  panel._clearLive();
+});
+
+test('non-Nest cameras preserve the picture-first behaviour', () => {
+  const { panel } = setup(2, 'wyzeapi');
+  panel._drawLive({ security_events: [] });
+  assert.equal(panel._liveCamKey, 'camera.nest|picture');
   panel._clearLive();
 });
