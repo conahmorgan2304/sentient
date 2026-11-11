@@ -192,6 +192,13 @@ class Control:
             return {'error': 'Choose a device or value before proposing an action'}
         if session.pending:
             return {'error': 'Answer or cancel the pending action before requesting another'}
+        from .plan_review import review_plan
+
+        # Separate planning from authorisation: validate above, then audit the
+        # bounded action sequence before the existing confirmation/execution.
+        review = review_plan(actions, validated=True)
+        if review.status != 'reviewed':
+            return {'error': 'Plan review blocked: ' + ', '.join(review.reasons)}
         actions = deepcopy(actions)
         session.entities = [a['entity_id'] for a in actions]
         prior = (session.correction or {}).get('previous_action') or {}
