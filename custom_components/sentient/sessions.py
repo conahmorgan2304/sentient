@@ -286,16 +286,19 @@ class Sessions:
             # follow-up questions when they fit, so a stock one isn't added
             text += " " + self.next_follow_up(session.language)
             result.response.async_set_speech(text)
-        session.waiting = ends_in_question(text)
-        result.continue_conversation = session.waiting
+        from .conversation_policy import decide_listening
+
+        listening = decide_listening(reply_is_question=ends_in_question(text),
+                                     discussion_active=session.active)
+        session.waiting = listening.continue_listening
+        result.continue_conversation = listening.continue_listening
+        session.listen_reason = listening.reason
         if session.waiting:
             session.question = re.split(r"(?<=[.!])\s+", text)[-1][-300:]
             session.task_state = 'waiting' if not session.active else session.task_state
-            session.listen_reason = 'discussion_follow_up' if session.active else 'reply_ends_in_question'
         else:
             session.task_state = 'completed'
             session.missing_detail = ''
-            session.listen_reason = 'completed_single_request'
         return result
 
     def next_follow_up(self, language=None) -> str:
