@@ -1748,15 +1748,17 @@
       const stream = pic.replace("/api/camera_proxy/", "/api/camera_proxy_stream/");
       const key = cam + "|" + stream;
       const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
-      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam) || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
+      const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam) || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam) || (this._hass.entities?.[cam]?.platform === "nest" && !JSON.parse(localStorage.getItem("sentient-live-picture") || "[]").includes(cam)); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
       const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
-      // the plain picture stream works for every camera; Home Assistant's own player (smoother, WebRTC/HLS) is
-      // opt-in per camera, because a stream it can't play (an H.265 camera, a restream it can't reach) shows black
-      // a camera whose picture feed never loaded (a WebRTC-only Nest, a bridged Wyze) is moved to the player automatically
+      // Nest WebRTC cameras can return a successful placeholder image from the picture proxy.
+      // Prefer Home Assistant's native player for Nest immediately, without relying on an image error.
+      // Other cameras retain the existing picture-first fallback; users can override either mode.
       let smooth = false;
       try {
         smooth = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam)
-          || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam);
+          || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam)
+          || (this._hass.entities?.[cam]?.platform === "nest"
+            && !JSON.parse(localStorage.getItem("sentient-live-picture") || "[]").includes(cam));
       } catch (e) { /* storage off */ }
       const canSmooth = ((st.attributes.supported_features || 0) & 2) === 2;
       const mode = cam + "|" + (smooth && canSmooth ? "smooth" : "picture");
@@ -2258,9 +2260,12 @@
         try {
           const list = JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]");
           const auto = JSON.parse(localStorage.getItem("sentient-live-auto") || "[]");
-          const on = list.includes(id) || auto.includes(id);
+          const picture = JSON.parse(localStorage.getItem("sentient-live-picture") || "[]");
+          const isNest = this._hass.entities?.[id]?.platform === "nest";
+          const on = list.includes(id) || auto.includes(id) || (isNest && !picture.includes(id));
           localStorage.setItem("sentient-live-smooth", JSON.stringify(on ? list.filter((x) => x !== id) : [...list, id]));
           localStorage.setItem("sentient-live-auto", JSON.stringify(auto.filter((x) => x !== id)));
+          localStorage.setItem("sentient-live-picture", JSON.stringify(isNest && on ? [...picture.filter((x) => x !== id), id] : picture.filter((x) => x !== id)));
         } catch (e) { /* storage off: stays on the picture stream */ }
         this._render();
       }
