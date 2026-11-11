@@ -20,3 +20,17 @@ The current `security.check` and voice-filtered `check_for_voice` paths use the 
 4. Add decision/outcome coverage to CI, including permissions, safety bypasses and graceful offline fallback.
 
 This PR intentionally does **not** introduce autonomous actuation, an always-listening loop, or persistent personal profiling.
+
+## Further implementation on PR #127
+
+### Permission-filtered world model
+`world_model.summarise_world` operates on `HouseContext.snapshot` only **after** Assist exposure, Home Assistant user permissions, private-room and guest-mode filtering. It produces bounded provenance, age and uncertainty annotations, and never scans devices independently. Older reports are not automatically called sensor failures. It does not grant action authority.
+
+### Conversation listening policy
+`conversation_policy.decide_listening` is used by `Sessions.finish`. It explicitly preserves the existing speech rule: a final response ending in a real question may keep the microphone open; a one-shot non-question does not. Explicit spoken endings are still handled by the original termination logic. It does not bypass Home Assistant's pipeline limitations.
+
+### Multi-source security investigation
+`incident_reasoning.assess_incident` augments read-only `Incidents.recent()` responses with observed/inferred/unknown evidence, source counts and reasons. Time correlation is *never* used to establish identity or a confirmed route. This layer does not change alert escalation, deduplication, Frigate requests, or speech policies.
+
+### Scope and limitations
+The existing HA voice backup continues to provide eligible local fallback; this PR does not claim to offer an unrestricted offline LLM. Document retrieval remains an independent feature requiring future measured indexing improvements. Runtime behaviour still needs CI and Home Assistant hardware testing before merging.
