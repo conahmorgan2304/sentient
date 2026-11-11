@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar, entity_registry as er
 from homeassistant.util import dt as dt_util
 
+from .const import CONF_SPEAKERS, DOMAIN
 from .presence import area_of
 
 DOMAIN_MA = "music_assistant"
@@ -34,6 +35,34 @@ def players(hass: HomeAssistant) -> list[str]:
             and not e.disabled_by]
 
 
+def _own_speakers(hass: HomeAssistant) -> tuple[set[str], set[str]]:
+    """Unique ids and names of the speakers Sentient is set to talk through."""
+    entries = hass.config_entries.async_loaded_entries(DOMAIN)
+    options = getattr(entries[0].runtime_data, "options", None) if entries else None
+    reg, ids, names = er.async_get(hass), set(), set()
+    for speaker in (options or {}).get(CONF_SPEAKERS) or []:
+        if (entry := reg.async_get(speaker)) and entry.unique_id:
+            ids.add(entry.unique_id)
+        if st := hass.states.get(speaker):
+            names.add(st.name.lower())
+    return ids, names
+
+
+def _best(hass: HomeAssistant, candidates: list[str]) -> str | None:
+    """Of several players: one that's on, then the house's own speaker, then a speaker rather than a TV."""
+    ids, names = _own_speakers(hass)
+    reg = er.async_get(hass)
+
+    def rank(player: str) -> tuple[bool, bool, bool]:
+        st = hass.states.get(player)
+        entry = reg.async_get(player)
+        own = (entry is not None and entry.unique_id in ids) or (st is not None and st.name.lower() in names)
+        return (st is None or st.state in ("unavailable", "unknown"), not own,
+                st is None or st.attributes.get("device_class") != "speaker")
+
+    return min(candidates, key=rank, default=None)
+
+
 def player_in(hass: HomeAssistant, room: str | None = None, area_id: str | None = None) -> str | None:
     """The Music Assistant player in that room (by name or area), else None."""
     areas = ar.async_get(hass)
@@ -41,10 +70,10 @@ def player_in(hass: HomeAssistant, room: str | None = None, area_id: str | None 
         low = room.strip().lower().removeprefix("the ")
         area_id = next((a.id for a in areas.async_list_areas() if a.name.lower() == low or low in a.name.lower()), None)
         if area_id is None:  # maybe they named the player itself
-            return next((p for p in players(hass) if (st := hass.states.get(p)) and low in st.name.lower()), None)
+            return _best(hass, [p for p in players(hass) if (st := hass.states.get(p)) and low in st.name.lower()])
     if area_id is None:
         return None
-    return next((p for p in players(hass) if area_of(hass, p) == area_id), None)
+    return _best(hass, [p for p in players(hass) if area_of(hass, p) == area_id])
 
 
 class Music:
