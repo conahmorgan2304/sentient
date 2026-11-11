@@ -596,6 +596,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "cover", "lock"], multiple=True)
             ),
             vol.Required(CONF_CAMSEC_DESCRIBE, **d(CONF_CAMSEC_DESCRIBE, True)): selector.BooleanSelector(),
+            vol.Required("security_reasoning", **d("security_reasoning", False)): selector.BooleanSelector(),
             vol.Required(CONF_PARTY_WHOLE_HOUSE, **d(CONF_PARTY_WHOLE_HOUSE, False)): selector.BooleanSelector(),
             vol.Optional(CONF_PARTY_LIGHTS, **d(CONF_PARTY_LIGHTS, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="light", multiple=True)

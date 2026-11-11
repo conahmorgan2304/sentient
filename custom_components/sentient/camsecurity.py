@@ -101,6 +101,7 @@ class CameraSecurity:
         self._stopped = False
         self._generation = 0
         self._tasks: set[asyncio.Task] = set()
+        self._said: dict[str, list[datetime]] = {}  # when each sensor's alert was last said out loud
 
     def _stamp(self) -> tuple:
         rt = self._rt()
@@ -308,11 +309,15 @@ class CameraSecurity:
                 return
             local = dt_util.as_local(dt_util.utcnow())
             camera = camera_for(self.hass, sensor)
-            item = rt.timeline.add("security", f"{text} ({local:%H:%M}).", "camera security",
-                                   alert=True, incident_id=incident_id, evidence="inferred", camera=camera)
+            weighed = self._weigh(rt, sensor, camera, reason, when or dt_util.utcnow())
+            detail = "camera security" + (f" \u00b7 {weighed['verdict']} ({weighed['explanation']})" if weighed else "")
+            item = rt.timeline.add("security", f"{text} ({local:%H:%M}).", detail,
+                                   alert=True, incident_id=incident_id, evidence="inferred", camera=camera,
+                                   reasoning=weighed)
             accepted = True
             speech = None
-            if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE):
+            if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE) and (weighed is None or weighed["announce"]):
+                self._said.setdefault(sensor, []).append(when or dt_util.utcnow())
                 speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
                 speech = rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}.",
                                             "urgent", speakers, source="camera security")
@@ -330,6 +335,34 @@ class CameraSecurity:
                     self._pending_alert_keys.pop(key, None)
                 if accepted and self._valid(stamp, sensor):
                     self._last_alert[key] = dt_util.utcnow()
+
+    def _weigh(self, rt, sensor: str, camera: str | None, reason: str, when: datetime) -> dict[str, Any] | None:
+        """The rest of the house's evidence for this alert (setting "security_reasoning"); None when off."""
+        from .security_reasoning import CONF_SECURITY_REASONING, REPEAT_WINDOW, weigh
+
+        if not self.options.get(CONF_SECURITY_REASONING):
+            return None
+        alarm = next((st.state for st in self.hass.states.async_all("alarm_control_panel")), None)
+        entries = []
+        for entity_id in self.options.get(CONF_CAMSEC_ENTRIES) or []:
+            st = self.hass.states.get(entity_id)
+            if st is not None and st.state not in ("unknown", "unavailable"):
+                entries.append((st.name, (when - st.last_changed).total_seconds()))
+        night_watch = getattr(rt, "night_watch", None)
+        indoor = bool(night_watch is not None and night_watch.someone_inside(when) is not None)
+        away = getattr(rt, "away", None)
+        everyone_away = bool(away is not None and away.everyone_away())
+        recent = [t for t in self._said.get(sensor, []) if (when - t).total_seconds() <= REPEAT_WINDOW]
+        self._said[sensor] = recent
+        labels = []
+        events = getattr(rt, "security_events", None)
+        name = (camera or "").removeprefix("camera.")
+        for event in (getattr(events, "items", {}) or {}).values() if name else ():
+            start = event.get("start")
+            if event.get("camera") == name and isinstance(start, (int, float)) and abs(when.timestamp() - start) <= 120:
+                labels.append(str(event.get("label")))
+        return weigh(reason=reason, alarm_state=alarm, entries_opened=entries, indoor_activity=indoor,
+                     everyone_away=everyone_away, repeats=len(recent), frigate_labels=labels)
 
     async def _enrich_alert(self, rt, item, sensor, camera, text, reason, incident_id, stamp, when):
         from .security_events import CONF_EVENT_EVIDENCE

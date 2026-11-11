@@ -334,7 +334,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NIGHT_WATCH, CONF_NIGHT_WATCH_ENTITIES, CONF_NIGHT_WATCH_ANNOUNCE, CONF_NIGHT_WATCH_SPEAKERS,
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
-        CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE,
+        CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE, "security_reasoning",
         CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
