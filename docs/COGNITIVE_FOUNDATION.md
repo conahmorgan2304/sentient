@@ -13,7 +13,7 @@ This change starts the shared observe → assess → explain architecture withou
 ## First integration
 The current `security.check` and voice-filtered `check_for_voice` paths use the same assessor. Existing security and incident tests remain the compatibility baseline; `tests/test_cognitive.py` covers the new boundary.
 
-## Follow-on work (separate PRs)
+## Follow-on work in this PR and future iterations
 1. Add bounded, timestamped observations and uncertainty/provenance metadata to a shared world snapshot without duplicating the HA state machine.
 2. Pilot this assessor with camera incidents and night watch in shadow mode; compare outputs before allowing it to affect alerts.
 3. Add a conversation-state evaluator that respects existing one-shot commands and explicit stop phrases.
@@ -63,3 +63,12 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - Guarded `sentient_incidents` now computes its assessment **after** `readable_evidence` permission filtering, rather than using the unfiltered episode summary.
 - Future-dated sensor reports (significant clock skew) are marked undated instead of current, with regression coverage.
 - Latest branch validation must pass again after these amendments.
+
+### CI failure correction and outcome verification
+- The previously failing 13 replay-test cases were expecting the microphone to remain open after an isolated light command in a live discussion. The expected assertions now match the chosen one-shot listening policy: discussion questions keep the microphone open, while the light command closes it. Explicit ending phrases are still checked.
+- Guarded multi-step execution now reports a non-actuating `assessment` of its actual outcomes. A `verified` device state is a Home Assistant report, not physical proof. Partial, failed and unverified batches never authorise automatic replay; check the device before making a fresh request.
+
+### Outstanding substantial work
+- More useful cross-room, speaker-scoped preferences require careful consent, matching and privacy tests; the existing per-turn integration remains in place.
+- A richer offline LLM and semantic PDF search would be separate optional dependencies and should be benchmarked on the deployed hardware before offering as defaults.
+- Sensor-fusion alert decisions should initially run alongside existing security alerts without changing delivery, false-positive handling or safety escalation until comparison tests are complete.
