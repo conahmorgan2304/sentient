@@ -48,3 +48,12 @@ The existing voice-backup mechanism already routes eligible requests to a config
 - Check camera timeline compatibility and alert deduplication.
 - Check household guest mode and private-room context do not expose extra entities.
 - Verify that text-file document selection stays within the configured media folder.
+
+### Guarded planning and verification
+`plan_review.review_plan` now runs after the existing `Control.validate` permission, exposure and never-touch checks. It rejects conflicting target steps, bounds the batch to 20 actions, and independently marks lock and cover operations for separate-turn confirmation. `Control` still owns execution, per-target verification and recovery; the review alone is never permission to act. This is useful multi-device planning but **not** arbitrary autonomous task execution.
+
+### Local security reasoning
+`local_mind.explain_security_offline` produces a deterministic, no-AI explanation directly from authorised security reports. A missing or partially unavailable sensor stays uncertain. This is included as an `offline_explanation` on the existing security report, for callers to use without depending on a cloud model. It does not replace the existing voice fallback agent.
+
+### Speaker identity scope
+Sentient already has per-turn voice recognition with opt-in name sharing and cautious unknown-speaker handling in `voice_id.py`. The existing person attribution and guest/privacy safeguards remain active; no cross-person session sharing or speaker-based unlocking has been introduced. A future speaker-based preference layer must require explicit consent and real-home testing; a voice similarity score is not proof of identity.
