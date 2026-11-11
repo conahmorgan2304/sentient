@@ -331,7 +331,12 @@ class Control:
         if self.options.get('action_recovery'):
             seen = {row['entity_id'] for row in outcomes}
             outcomes.extend({'entity_id': a['entity_id'], 'status': 'not_started', 'reason': 'batch stopped before dispatch'} for a in actions if a['entity_id'] not in seen)
-        result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(), 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
+        from .outcome_review import evaluate_outcomes
+
+        result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(),
+                  'summary': self.summary(actions),
+                  'assessment': evaluate_outcomes(outcomes),
+                  'note': 'Verified means the device reported the requested state.'}
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')
