@@ -90,6 +90,7 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
         text += " Some security readings are outside this request's access."
     return {
         "secure": assessment.secure,
+        "assessment": assessment.as_dict(),
         "unknown": unknown,
         "evidence": evidence,
         "open": open_items,
