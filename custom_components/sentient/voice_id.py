@@ -31,6 +31,7 @@ EVENT_TURN = f"{VOICE_RECOGNITION_DOMAIN}_turn"
 ENROL_DOMAIN = VOICE_RECOGNITION_DOMAIN
 REASONS = {
     "matched": "matched a profile",
+    "carried_over": "too short to judge, so the voice matched a moment ago on this speaker was kept",
     "below_threshold": "too different from every saved voice (below the match level)",
     "ambiguous": "too close to two saved voices to be sure",
     "no_profiles": "no voice profiles are saved yet",

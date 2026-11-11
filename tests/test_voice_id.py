@@ -413,3 +413,8 @@ async def test_each_satellite_uses_its_assigned_pipeline_in_house_check(hass, tm
         hass.states.async_set(selector, "preferred")
         rows = {row["name"]: row for row in check(hass, entry.runtime_data)}
         assert rows["Kitchen voice pipeline"]["status"] == "ok"
+
+
+def test_a_carried_over_match_is_explained_in_plain_words():
+    from custom_components.sentient.voice_id import REASONS
+    assert "moment ago" in REASONS["carried_over"]

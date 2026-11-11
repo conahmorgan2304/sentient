@@ -37,6 +37,9 @@ from .const import CONF_CARRY_ON_MINUTES, MAX_CARRY_ON_MINUTES, CONF_ALEXA_LATE,
 _LOGGER = logging.getLogger(__name__)
 
 MAIN_TIMEOUT = 45  # seconds; a voice request that takes longer than this has failed
+RETRY_PAUSE = 1  # seconds before the one extra try when the AI service says it is busy
+BUSY_SIGNS = ("503", "500", "502", "504", "429", "unavailable", "high demand", "overloaded", "internal error",
+              "resource_exhausted", "try again later")
 FAILED_CODES = {intent.IntentResponseErrorCode.UNKNOWN}
 def find_ai_agent(hass: HomeAssistant, opts: dict[str, Any], me: str | None) -> str | None:
     """The AI conversation agent that does the thinking — never one of Sentient's own agents (no going round
@@ -777,21 +780,37 @@ class BackedUpAgent(conversation.ConversationEntity):
         finally:
             speech_attempt.reset(token)
 
+    @staticmethod
+    def _worth_retrying(user_input, attempt, why: str) -> bool:
+        """The AI service was only busy, nothing was spoken or done, and the request isn't a command.
+
+        A command is never sent twice: the first try may have acted before the service failed."""
+        from .sessions import COMMAND
+
+        text = why.lower()
+        return (any(sign in text for sign in BUSY_SIGNS) and not attempt.get('started')
+                and not attempt.get('action_started') and not COMMAND.search(user_input.text))
+
     async def _async_process_with_fallback(self, user_input, attempt):
         gate = getattr(getattr(self._entry, "runtime_data", None), "ai", None)
         why = "no main agent chosen in Sentient's settings"
         if self.main_agent:
-            try:
-                async with asyncio.timeout(MAIN_TIMEOUT):
-                    result = await self._converse(self.main_agent, user_input)
-                response = result.response
-                if response.response_type != intent.IntentResponseType.ERROR or response.error_code not in FAILED_CODES:
-                    if gate is not None:
-                        gate.ok()
-                    return result
-                why = response.speech.get("plain", {}).get("speech") or "an error"
-            except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
-                why = str(err) or type(err).__name__
+            for tries_left in (1, 0):
+                try:
+                    async with asyncio.timeout(MAIN_TIMEOUT):
+                        result = await self._converse(self.main_agent, user_input)
+                    response = result.response
+                    if response.response_type != intent.IntentResponseType.ERROR or response.error_code not in FAILED_CODES:
+                        if gate is not None:
+                            gate.ok()
+                        return result
+                    why = response.speech.get("plain", {}).get("speech") or "an error"
+                except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
+                    why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
+                if not (tries_left and self._worth_retrying(user_input, attempt, why)):
+                    break
+                _LOGGER.info("Sentient: the AI service was busy (%s); trying once more", why[:80])
+                await asyncio.sleep(RETRY_PAUSE)
             if gate is not None:
                 gate.failed(RuntimeError(f"voice agent: {why}"))
         if attempt.get('started'):
