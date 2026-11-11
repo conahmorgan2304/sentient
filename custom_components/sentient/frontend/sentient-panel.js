@@ -13,7 +13,17 @@
     security: ["spots", "checks"],
   };
   const TAB_OF = Object.fromEntries(Object.entries(ON_TABS).flatMap(([tab, ids]) => ids.map((id) => [id, tab])));
-  const TAB_EL = { house: ["hmgr", "hws", "hwsb"], mind: ["mmgr", "mws", "mwsb"], security: ["smgr", "sws", "swsb"] };
+  const SWITCH = { clips: "clip_watch", camsec: "camera_security", nightwatch: "night_watch", away: "away_lights_on", bins: "bins_check",
+    rain: "rain_warnings", alexa: "alexa_skill", energy: "energy_insight", autobackup: "auto_backup", screen: "screen", updates: "update_checker",
+    party: "party_whole_house", safety: "critical_alerts", heating: "preheat", appliances: "appliance_announce", briefing: "briefings",
+    search: "search_hints", door: "faces", animals: "hutch_check" };
+  // where each list sits on its tab: a card of rows in the column it belongs with (card id -> [title, pages])
+  const MANAGE = {
+    hmg1: ["ALARMS &amp; ROUTINES", ["alarms", "schedules", "shortcuts", "maintenance", "games"]],
+    hmg2: ["MOTION &amp; AUTO-OFF", ["motion", "autooff"]],
+    mmg: ["MEMORY &amp; PRIVACY", ["memories", "mutes", "usage", "privacy"]],
+    smg: ["CAMERA SET-UP", ["spots", "checks"]],
+  };
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
   const heldWhy = (reason) => {
@@ -90,7 +100,6 @@
 
     connectedCallback() { this._tick = setInterval(() => this._render(), 30000); }
     disconnectedCallback() {
-      if (this._mgrRO) { this._mgrRO.disconnect(); this._mgrRO = null; }
       clearInterval(this._tick);
       this._clearLive();
       if (this._tlSub) { this._tlSub.then((unsub) => unsub()).catch(() => {}); this._tlSub = null; }
@@ -135,29 +144,27 @@
             <section class="lane" aria-label="Coming up"><div class="lt">COMING UP</div><div id="soon" class="card"></div><div id="watch" class="card"></div><div id="mind" class="card"></div></section>
           </div></div>
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
-          <div id="mmgr" class="mgr" hidden></div><div id="mws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="mwsb" class="wsb body"></div></div>
           <div class="lanes ov3">
-            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mlater" class="card" hidden></div></section>
+            <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mmg" class="card mg" hidden></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
-          <div id="hmgr" class="mgr" hidden></div><div id="hws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="hwsb" class="wsb body"></div></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Heating"><div class="lt">HEATING</div><div id="heat" class="card"></div></section>
-            <section class="lane" aria-label="Energy, appliances and routines"><div class="lt">ROUTINES &amp; APPLIANCES</div><div id="rout" class="card"></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
-            <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Energy, appliances and routines"><div class="lt">ROUTINES &amp; APPLIANCES</div><div id="rout" class="card"></div><div id="hmg1" class="card mg" hidden></div><div id="energy" class="card" hidden></div><div id="apl" class="card" hidden></div></section>
+            <section class="lane" aria-label="Comfort"><div class="lt">COMFORT &amp; LIGHTS</div><div id="ins" class="card" hidden></div><div id="mlc" class="card" hidden></div><div id="hmg2" class="card mg" hidden></div></section>
           </div></div>
         <div class="page" id="scp" hidden>
-          <div id="smgr" class="mgr first" hidden></div><div id="sws" class="card ws" hidden><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="swsb" class="wsb body"></div></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Live"><div class="lt">LIVE</div><div id="camc" class="card"></div><div id="live" class="card"></div><div id="sec2" class="card"></div></section>
             <section class="lane" aria-label="Linked events"><div class="lt">LINKED EVENTS</div><div id="sectl" class="card"></div><div id="snaps" class="card" hidden></div></section>
-            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="frigatehealth" class="card" hidden></div><div id="visit" class="card"></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
+            <section class="lane" aria-label="Around the house"><div class="lt">AROUND THE HOUSE</div><div id="frigatehealth" class="card" hidden></div><div id="visit" class="card"></div><div id="smg" class="card mg" hidden></div><div id="minc" class="card" hidden></div><div id="clipc" class="card" hidden></div></section>
           </div></div>
         <div class="page tlp" id="tl" hidden><div class="card"><div class="h"><span class="t">TIMELINE</span><i></i><em id="tlcount"></em></div>
           <div class="digest" id="tldig"></div><div class="filters" id="tlf"></div><div id="tllist"></div></div></div>
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
+        <div class="wiz sheet" id="sheet" hidden><div class="card sheetc" role="dialog" aria-modal="true"><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="sheetb" class="body"></div></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
@@ -174,6 +181,11 @@
       this._$("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
+      this._$("sheet").addEventListener("click", (ev) => {
+        if (ev.target !== this._$("sheet")) return;
+        if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
+        this._dirty = false; this._closeTabPage();
+      });
       this.shadowRoot.addEventListener("change", (ev) => {
         const id = ev.target.dataset && ev.target.dataset.mltoggle;
         if (!id) return;
@@ -186,8 +198,9 @@
       });
       this.shadowRoot.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape" && this._editing) { this._editing = null; this._drawMemories(); }
+        else if (ev.key === "Escape" && this._host && (!this._dirty || window.confirm("Leave without saving your changes?"))) { this._dirty = false; this._closeTabPage(); }
       });
-      this._group = "memories";
+      this._group = "home";
       this._show(this._view || "overview", false);
     }
 
@@ -195,8 +208,8 @@
       if (this._view === "security" && view !== "security") { this._clearLive(); this._frigateHealthAt = 0; }
       // an editor open on another tab is closed (its ids would clash with the Settings page); a page that now lives
       // on a tab isn't left as the Settings page to show
-      for (const t of Object.keys(ON_TABS)) if (t !== view) this._closeTabPage(t, true);
-      if (view === "settings") { this._host = null; if (TAB_OF[this._group]) this._group = "doctor"; }
+      if (view !== this._view) this._closeTabPage();
+      if (view === "settings" && (TAB_OF[this._group] || view !== this._view)) this._group = "home";  // Settings opens on its front page
       this._view = view;
       this.setAttribute("view", view);
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
@@ -511,15 +524,8 @@
       return pages;
     }
 
-    _drawSide() {
-      const groups = (this._settings && this._settings.groups) || [];
-      const pages = this._pages();
-      // Essentials first; optional features under Extras, each with its on/off state. Anything not listed lands last.
-      const data = (this._settings && this._settings.data) || {};
-      const SWITCH = { clips: "clip_watch", camsec: "camera_security", nightwatch: "night_watch", away: "away_lights_on", bins: "bins_check",
-        rain: "rain_warnings", alexa: "alexa_skill", energy: "energy_insight", autobackup: "auto_backup", screen: "screen", updates: "update_checker",
-        party: "party_whole_house", safety: "critical_alerts", heating: "preheat", appliances: "appliance_announce", briefing: "briefings",
-        search: "search_hints", door: "faces", animals: "hutch_check" };
+    // the Settings menus: [section, id, icon, title, pages]
+    _menus(pages) {
       const menus = [
         ["essentials", "voice", "mdi:account-voice", "Voice", ["voice", "voicebackup", "voiceid", "alexa", "search"]],
         ["essentials", "speaking", "mdi:bullhorn-outline", "Speaking", ["quiet", "rooms", "announce", "offers", "briefing", "phone", "screen"]],
@@ -534,6 +540,15 @@
       const placed = new Set(menus.flatMap((m) => m[4]));
       // Story games' on/off switch stays here; its games are on the House tab. Anything new lands in Brain & memory.
       Object.keys(pages).forEach((id) => { if (!placed.has(id) && !TAB_OF[id]) menus[menus.length - 1][4].push(id); });
+      return menus;
+    }
+
+    _drawSide() {
+      const groups = (this._settings && this._settings.groups) || [];
+      const pages = this._pages();
+      // Essentials first; optional features under Extras, each with its on/off state. Anything not listed lands last.
+      const data = (this._settings && this._settings.data) || {};
+      const menus = this._menus(pages);
       const mine = menus.find((m) => m[4].includes(this._group));
       if (!this._openMenus) this._openMenus = new Set();
       if (mine && this._menuFor !== this._group) { this._menuFor = this._group; if (!this._phone()) this._openMenus.add(mine[1]); }
@@ -544,7 +559,7 @@
       };
       const side = this._$("side");
       if (!side.querySelector("#sfind")) {
-        side.innerHTML = `<div class="sh">SETTINGS</div><button class="btn ghost wizbtn" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon>SET-UP WIZARD</button>
+        side.innerHTML = `<button class="sh shb" data-act="group" data-id="home" title="Settings front page"><ha-icon icon="mdi:cog-outline"></ha-icon>SETTINGS</button>
           <label class="find sfind"><ha-icon icon="mdi:magnify"></ha-icon><input id="sfind" type="search" placeholder="Search settings…" autocomplete="off" value="${esc(this._sq || "")}"></label><div id="snav"></div>`;
       }
       const q = (this._sq || "").trim().toLowerCase();
@@ -585,71 +600,77 @@
     }
 
     // ---------- list pages on the House, Mind and Security tabs ----------
-    // A strip of tiles (one per page: what it is and how many) above the tab's columns; tapping one opens its editor
-    // full width beneath the strip, where it has room for the camera pictures and forms it was drawn for.
+    // Each list is a row in a card that sits in the column it belongs with (alarms beside the routines, memories under
+    // what it's thinking); tapping a row opens its editor in a sheet over the page, so the tab itself never jumps about.
     _drawManage() {
       const admin = !!(this._hass && this._hass.user && this._hass.user.is_admin);
       const pages = this._pages();
-      for (const [tab, ids] of Object.entries(ON_TABS)) {
-        const el = this._$(TAB_EL[tab][0]);
+      for (const [cid, [title, ids]] of Object.entries(MANAGE)) {
+        const el = this._$(cid);
         if (!el) continue;
         const list = ids.filter((id) => pages[id]);
         el.hidden = !admin || !list.length;
         if (el.hidden) continue;
-        // as many to a row as fit, with the rows balanced (7 tiles: 7, or 4 + 3, never 5 + 2); a single row on a wide
-        // screen uses at least three columns so the tiles line up with the columns below
-        const width = el.clientWidth || this.clientWidth || 1200;
-        const fit = Math.max(1, Math.floor((width + 10) / (this._phone() ? 170 : 238)));
-        const rows = Math.ceil(list.length / fit);
-        const per = Math.ceil(list.length / rows);
-        el.style.setProperty("--n", rows === 1 && !this._phone() ? Math.max(3, per) : per);
-        if (!this._mgrRO && window.ResizeObserver) {
-          this._mgrRO = new ResizeObserver(() => { clearTimeout(this._mgrRT); this._mgrRT = setTimeout(() => this._drawManage(), 80); });
-          Object.values(TAB_EL).forEach(([m]) => this._$(m) && this._mgrRO.observe(this._$(m)));
-        }
-        const open = (this._tabPage || {})[tab];
-        el.innerHTML = list.map((id) => {
-          const [icon, title, sub] = pages[id];
-          return `<button class="mt${open === id ? " on" : ""}" data-act="${open === id ? "tabpageclose" : "tabpage"}" data-id="${esc(id)}" aria-expanded="${open === id}">
-            <ha-icon icon="${esc(icon)}"></ha-icon><span><b>${esc(title)}</b><i>${esc(sub || "")}</i></span><ha-icon class="chev" icon="mdi:chevron-down"></ha-icon></button>`;
+        el.innerHTML = this._h(title, "TAP TO EDIT") + list.map((id) => {
+          const [icon, name, sub] = pages[id];
+          return `<button class="r mgrow" data-act="tabpage" data-id="${esc(id)}"><ha-icon icon="${esc(icon)}"></ha-icon><b>${esc(name)}</b><u>${esc(sub || "")}</u><ha-icon class="go" icon="mdi:chevron-right"></ha-icon></button>`;
         }).join("");
       }
     }
 
     async _openTabPage(id) {
-      const tab = TAB_OF[id];
-      if (!tab || this._view !== tab) return;
-      this._tabPage = this._tabPage || {};
-      const ws = this._$(TAB_EL[tab][1]), host = this._$(TAB_EL[tab][2]);
+      if (!TAB_OF[id] || this._view !== TAB_OF[id]) return;
+      const sheet = this._$("sheet"), host = this._$("sheetb");
       const settingsBody = this.shadowRoot.getElementById("body");
       if (settingsBody) settingsBody.innerHTML = "";  // one copy of each editor on the page at a time
-      this._tabPage[tab] = id;
       this._host = host;
       this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null; this._itEdit = null; this._form = null;
-      ws.hidden = false;
+      sheet.hidden = false;
       host.innerHTML = '<div class="e">LOADING…</div>';
-      this._drawManage();
       if (!this._settings && !this._settingsErr) {
         try { this._settings = await this._hass.callWS({ type: "sentient/settings", language: this._hass.language }); }
         catch (e) { this._settingsErr = e.message || String(e); }
       }
-      if (this._tabPage[tab] !== id || this._host !== host) return;
+      if (this._host !== host || this._group !== id) return;
       if (id === "memories") this._loadMemories();
       else if (id === "spots") this._loadSpots();
       else if (id === "motion") this._loadMotion();
       this._drawBody();
-      this._drawManage();
-      if (this._phone()) ws.scrollIntoView({ behavior: "smooth", block: "start" });
+      const x = sheet.querySelector(".wsx");
+      if (x) x.focus();
     }
 
-    _closeTabPage(tab, quiet) {
-      if (!TAB_EL[tab]) return;
-      const ws = this._$(TAB_EL[tab][1]), host = this._$(TAB_EL[tab][2]);
-      if (this._tabPage) this._tabPage[tab] = null;
-      if (host && this._host === host) { this._host = null; this._form = null; this._editing = null; this._mlEdit = null; this._scEdit = null; this._itEdit = null; }
-      if (ws) ws.hidden = true;
-      if (host) host.innerHTML = "";
-      if (!quiet) this._drawManage();
+    _closeTabPage() {
+      const sheet = this._$("sheet"), host = this._$("sheetb");
+      if (!sheet || sheet.hidden) return;
+      this._host = null; this._form = null; this._forms = []; this._editing = null; this._mlEdit = null; this._scEdit = null; this._itEdit = null;
+      sheet.hidden = true;
+      host.innerHTML = "";
+      this._mgrAt = 0;  // counts on the rows follow what was just changed
+      this._render();
+    }
+
+    // ---------- Settings front page ----------
+    _drawHome() {
+      const body = this.shadowRoot.getElementById("body");
+      if (!body) return;
+      const pages = this._pages(), menus = this._menus(pages), data = (this._settings && this._settings.data) || {};
+      const doc = this._doc;
+      const card = ([sec, mid, icon, title, ids]) => {
+        const list = ids.filter((id) => pages[id]);
+        if (!list.length) return "";
+        const on = list.filter((id) => SWITCH[id] && data[SWITCH[id]]).length;
+        return `<button class="hc" data-act="homemenu" data-id="${esc(mid)}"><ha-icon icon="${esc(icon)}"></ha-icon><span><b>${esc(title)}</b><i>${esc(list.map((id) => pages[id][1]).join(" · "))}</i></span><em>${sec === "extras" ? `${on} on` : list.length}</em></button>`;
+      };
+      const tabs = [["house", "mdi:home-lightning-bolt-outline", "House"], ["mind", "mdi:head-lightbulb-outline", "Mind"], ["security", "mdi:shield-home-outline", "Security"]];
+      body.innerHTML = `<div class="bh"><ha-icon icon="mdi:cog-outline"></ha-icon><div><div class="bt">SETTINGS</div><div class="bs">Every switch and set-up page. Pick a group, or search for a setting by name.</div></div></div>
+        <div class="hrow"><button class="hc act" data-act="wizard"><ha-icon icon="mdi:auto-fix"></ha-icon><span><b>Set-up wizard</b><i>Ten short steps, filled in from your house</i></span></button>
+          <button class="hc act" data-act="group" data-id="doctor"><ha-icon icon="mdi:stethoscope"></ha-icon><span><b>Setup doctor</b><i>${doc ? (doc.status === "ok" ? "All good" : `${doc.rows.filter((r) => r.status !== "ok").length} to look at`) : "Check the setup and what to fix"}</i></span></button>
+          <button class="hc act" data-act="group" data-id="backup"><ha-icon icon="mdi:backup-restore"></ha-icon><span><b>Backup</b><i>Download or restore everything</i></span></button></div>
+        <div class="hsec">Essentials</div><div class="hgrid">${menus.filter((m) => m[0] === "essentials").map(card).join("")}</div>
+        <div class="hsec">Optional features</div><div class="hgrid">${menus.filter((m) => m[0] === "extras").map(card).join("")}</div>
+        <div class="hsec">Kept on their own tabs</div><div class="hgrid">${tabs.map(([tab, icon, name]) => `<button class="hc" data-act="hometab" data-id="${tab}"><ha-icon icon="${icon}"></ha-icon><span><b>${name} tab</b><i>${esc(ON_TABS[tab].filter((id) => pages[id]).map((id) => pages[id][1]).join(" · "))}</i></span><ha-icon class="go" icon="mdi:chevron-right"></ha-icon></button>`).join("")}</div>
+        ${this._settingsErr ? `<div class="note">${esc(this._settingsErr)}</div>` : ""}`;
     }
 
     async _loadMemories() {
@@ -665,6 +686,7 @@
 
     _drawBody() {
       this._forms = [];
+      if (this._group === "home") { this._form = null; this._drawHome(); return; }
       if (this._group === "memories") { this._form = null; this._drawMemories(); return; }
       if (this._group === "spots") { this._form = null; this._drawSpots(); return; }
       if (this._group === "motion") { this._form = null; this._drawMotion(); return; }
@@ -676,7 +698,7 @@
       if (this._group === "usage") { this._form = null; this._drawUsage(); return; }
       if (["alarms", "schedules", "offers", "announce", "checks", "autooff", "rules", "rooms", "maintenance"].includes(this._group)) { this._form = null; this._itEdit = null; this._loadItems(this._group); return; }
       const g = this._settings && this._settings.groups.find((x) => x.id === this._group);
-      if (!g) { this._group = "memories"; this._drawMemories(); return; }
+      if (!g) { this._group = "home"; this._drawHome(); return; }
       const body = this._$("body");
       if (g.id === "voiceid" && g.voice_id && !g.voice_id.installed) {
         // the add-on isn't running: no options, just where to get it
@@ -2464,8 +2486,14 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "homemenu") {
+        const menu = this._menus(this._pages()).find((m) => m[1] === id);
+        const first = menu && menu[4].find((x) => this._pages()[x]);
+        if (first) { if (!this._openMenus) this._openMenus = new Set(); this._openMenus.clear(); this._openMenus.add(id); this._group = first; this._drawSide(); this._drawBody(); if (this._phone()) this._$("body").scrollIntoView({ behavior: "smooth", block: "start" }); }
+      }
+      else if (act === "hometab") this._show(id, true);
       else if (act === "tabpage") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._openTabPage(id); }
-      else if (act === "tabpageclose") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._closeTabPage(this._view); }
+      else if (act === "tabpageclose") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._closeTabPage(); }
       else if (act === "wizard") this._openWizard();
       else if (act === "wizback") this._wizGo(this._wiz.i - 1);
       else if (act === "wiznext") this._wizNext();
@@ -3016,7 +3044,7 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .rt .x{margin-left:8px} .lnk{display:inline-block;margin-top:6px;font-size:11px;letter-spacing:.12em;color:var(--ac,#00fff7);cursor:pointer;opacity:.8} .lnk:hover{opacity:1}
 .gmsg{margin:8px 2px;padding:8px 10px;border-radius:8px;font-size:12px;letter-spacing:.08em;border:1px solid rgba(0,255,247,.25);color:#7fffe9} .gmsg.warn{color:#ffd166;border-color:rgba(255,209,102,.4)} .gmsg.bad{color:#ff6b7a;border-color:rgba(255,107,122,.5)} .gmsg[hidden]{display:none}
 .hint{font-size:8.5px;letter-spacing:.14em;color:rgba(150,220,235,.55);margin:6px 2px 0}
-.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:7px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:7px}
 .rt{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 9px;border-radius:12px;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.035)}
 .rt.here{border-color:rgba(0,255,247,.6);box-shadow:inset 0 0 14px rgba(0,255,247,.14)} .rt.lit{background:linear-gradient(160deg,rgba(255,200,90,.09),rgba(0,255,247,.03))}
 .rn{display:flex;align-items:center;gap:6px;min-width:0} .rn ha-icon{--mdc-icon-size:15px;color:#00fff7;flex:none} .rn b{font-size:10px;font-weight:700;letter-spacing:.12em;color:#e6f5fa;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .rn s{margin-left:auto;text-decoration:none;font-size:7.5px;font-weight:700;letter-spacing:.14em;color:#00fff7}
@@ -3175,27 +3203,33 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .bar2 b{position:absolute;top:-3px;width:2px;height:13px;background:rgba(255,255,255,.7);border-radius:1px}
 .en.hot .bar2 i{background:linear-gradient(90deg,#ff9a3d,#ff5a78)} .en.hot u{color:#ff7088}
 .tli.k-energy .dot ha-icon{color:#ffbe55} .tli.k-security .dot ha-icon{color:#ff7088}
-/* list pages on the House, Mind and Security tabs: a strip of same-size tiles, then the open page beneath it */
-.mgr{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:10px;margin-top:16px}
-
-.mgr.first{margin-top:0}
-.mt{display:flex;align-items:center;gap:12px;min-width:0;padding:11px 14px;border-radius:16px;text-align:left;
-  border:1px solid rgba(0,255,247,.16);background:linear-gradient(160deg,rgba(10,15,25,.92),rgba(18,26,50,.88));box-shadow:inset 0 0 18px rgba(0,255,247,.04)}
-.mt>ha-icon:first-child{--mdc-icon-size:22px;color:#5fd8e6;flex:none}
-.mt span{display:flex;flex-direction:column;flex:1;min-width:0}
-.mt b{font-size:13px;font-weight:500;color:#e6f5fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mt i{font-style:normal;font-size:10.5px;color:rgba(150,220,235,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mt .chev{--mdc-icon-size:18px;color:rgba(150,220,235,.45);flex:none;transition:transform .2s}
-.mt:hover{border-color:rgba(0,255,247,.32);background:linear-gradient(160deg,rgba(12,22,34,.95),rgba(20,32,58,.9))}
-.mt:focus-visible{outline:2px solid #00fff7;outline-offset:2px}
-.mt.on{border-color:rgba(0,255,247,.5);box-shadow:0 0 14px rgba(0,255,247,.18),inset 0 0 18px rgba(0,255,247,.06)}
-.mt.on>ha-icon:first-child{color:#00fff7} .mt.on .chev{transform:rotate(180deg);color:#00fff7}
-.ws{margin-top:12px;padding:6px 8px}
-.ws .wsb.body{padding:12px 14px;min-height:0}
-.wsx{position:absolute;top:12px;right:12px;z-index:2;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;
+/* lists on the House, Mind and Security tabs: rows in a card in the column they belong with */
+.mgrow{width:100%;text-align:left;cursor:pointer;font:inherit}
+.mgrow u{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgrow .go,.hc .go{--mdc-icon-size:18px;color:rgba(150,220,235,.5);flex:none}
+.mgrow:hover{border-color:rgba(0,255,247,.4);background:rgba(0,255,247,.07)} .mgrow:hover .go{color:#00fff7}
+.mgrow:focus-visible,.hc:focus-visible,.shb:focus-visible{outline:2px solid #00fff7;outline-offset:2px}
+/* the editor for one of those lists: a sheet over the page */
+.sheet{padding:4vh 16px 16px;align-items:flex-start}
+.sheetc{width:100%;max-width:1500px;margin:0 auto;max-height:92vh;padding:0;display:flex;flex-direction:column}
+.sheetc>.body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 22px;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.3) transparent}
+.sheetc .bh{padding-right:48px}
+.wsx{position:absolute;top:14px;right:14px;z-index:2;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;
   color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.18);background:rgba(4,12,20,.7)}
-.wsx ha-icon{--mdc-icon-size:18px} .wsx:hover{color:#00fff7;border-color:rgba(0,255,247,.45)}
-.ws .bh{padding-right:44px}
+.wsx ha-icon{--mdc-icon-size:18px} .wsx:hover,.wsx:focus-visible{color:#00fff7;border-color:rgba(0,255,247,.45);outline:none}
+/* Settings front page */
+.shb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border-radius:10px} .shb ha-icon{--mdc-icon-size:16px} .shb:hover{background:rgba(0,255,247,.05)}
+.hsec{margin:20px 2px 8px;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(127,239,255,.6)}
+.hrow,.hgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hc{display:flex;align-items:center;gap:12px;min-width:0;padding:13px 14px;border-radius:14px;text-align:left;border:1px solid rgba(0,255,247,.14);background:rgba(0,255,247,.03)}
+.hc>ha-icon:first-child{--mdc-icon-size:22px;color:#5fd8e6;flex:none}
+.hc span{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.hc b{font-size:14px;font-weight:500;color:#e6f5fa}
+.hc i{font-style:normal;font-size:11px;line-height:1.35;color:rgba(150,220,235,.62);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.hc em{flex:none;font-style:normal;font-size:10px;font-weight:600;color:rgba(150,220,235,.75);border:1px solid rgba(0,255,247,.2);border-radius:9px;padding:1px 8px}
+.hc:hover{border-color:rgba(0,255,247,.4);background:rgba(0,255,247,.07)} .hc:hover>ha-icon:first-child{color:#00fff7}
+.hc.act{border-color:rgba(0,255,247,.3);background:linear-gradient(160deg,rgba(0,200,255,.09),rgba(0,255,247,.03))}
+@media (max-width: 1100px){ .hrow,.hgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* the longest settings pages fold into sections */
 .sec{margin:0 0 10px;border-radius:14px;border:1px solid rgba(0,255,247,.1);background:rgba(0,255,247,.015)}
 .sec[open]{border-color:rgba(0,255,247,.22)}
@@ -3207,8 +3241,8 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .sec>summary em{font-style:normal;font-size:10px;letter-spacing:0;font-weight:600;color:rgba(150,220,235,.7);border:1px solid rgba(0,255,247,.2);border-radius:9px;padding:1px 7px}
 .sec>summary .chev{--mdc-icon-size:18px;color:rgba(150,220,235,.55);transition:transform .2s} .sec[open]>summary .chev{transform:rotate(180deg)}
 .sec>ha-form{display:block;padding:2px 14px 14px}
-@media (max-width: 720px){ .mgr{gap:8px} .mt{padding:10px 11px;gap:9px} .mt .chev{display:none} .mt i{font-size:10px} .ws{padding:4px} .ws .wsb.body{padding:10px 8px} }
-@media (prefers-reduced-motion: reduce){ .mt .chev,.sec>summary .chev{transition:none} }
+@media (max-width: 720px){ .hrow,.hgrid{grid-template-columns:1fr} .sheet{padding:0} .sheetc{max-height:100dvh;height:100dvh;border-radius:0} .sheetc>.body{padding:14px 12px} .sh.shb{display:flex} .mgrow u{display:none} }
+@media (prefers-reduced-motion: reduce){ .sec>summary .chev{transition:none} }
 @media (max-width: 1100px){ .cols{grid-template-columns:1fr 1fr} .rm{display:none} .set{grid-template-columns:230px minmax(0,1fr)} .nav i{display:none} }
 @media (max-width: 900px){ .ask{display:none} }
 @media (max-width: 720px){ .page{padding:10px} .top{padding:0 8px;gap:6px} .top .ttl{letter-spacing:.2em;font-size:12px;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1} .tabs{margin-left:0} .tabs button{padding:6px 9px} .brief span{display:none} .brief{padding:6px 8px}
@@ -3224,11 +3258,6 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
   :host([view="overview"]),:host([view="house"]),:host([view="mind"]),:host([view="security"]){overflow-y:hidden}
   #ov,#hp,#mp,#scp{height:calc(100vh - 56px);height:calc(100dvh - 56px);display:flex;flex-direction:column;gap:10px;padding:10px 12px}
   #ov>*,#mp>*{margin-top:0}
-  /* the tile strip sits above the columns; an open page shares the height with them and scrolls inside itself */
-  #hp>.mgr,#mp>.mgr,#scp>.mgr{flex:none;margin:0}
-  #hp>.ws,#mp>.ws,#scp>.ws{flex:1 1 60%;min-height:0;margin:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,255,247,.3) transparent}
-  #hp>.ws .wsx,#mp>.ws .wsx,#scp>.ws .wsx{position:sticky;float:right;top:6px;margin:6px 6px 0 0}
-  .ws:not([hidden])~.lanes{flex:1 1 40%;min-height:190px}
   #ov>.card.head,#ov>.warnbar,#mp>.warnbar,#mp>.brain,#hp>.card.rooms{flex:none;margin:0}
   .lanes{flex:1 1 auto;min-height:0;margin-top:0;gap:10px;align-items:stretch !important}
   .lanes{grid-template-columns:none !important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
