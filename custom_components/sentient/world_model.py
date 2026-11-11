@@ -50,7 +50,8 @@ def summarise_world(snapshot: dict[str, Any]) -> dict[str, Any]:
         age = (now - reported).total_seconds() if now and reported else None
         if status not in ("reported", "observed") or row.get("state") in ("unknown", "unavailable"):
             certainty = "unknown"
-        elif age is None:
+        elif age is None or age < -60:
+            # A clock that reports from the future is not a trustworthy live sample.
             certainty = "undated"
         elif age > MAX_AGE_SECONDS:
             # Old reports are not proof of staleness; we simply flag their age.
@@ -60,7 +61,7 @@ def summarise_world(snapshot: dict[str, Any]) -> dict[str, Any]:
         counts[certainty] += 1
         observations.append({"entity_id": entity, "certainty": certainty,
                              "reported_at": reported.isoformat() if reported else None,
-                             "report_age_seconds": max(0, int(age)) if age is not None else None})
+                             "report_age_seconds": max(0, int(age)) if age is not None and age >= -60 else None})
     changes: list[dict[str, str]] = []
     for row in (snapshot.get("recent_changes") or [])[:MAX_CHANGES]:
         if not isinstance(row, dict) or row.get("entity_id") not in seen:
