@@ -64,8 +64,17 @@ async def async_answer(hass: HomeAssistant, rt: Any, question: str, name: str | 
     if not files:
         return {"error": f"no documents yet — put PDFs in the media folder '{options.get(CONF_MANUALS_FOLDER) or DEFAULT_MANUALS_FOLDER}'"}
     chosen = pick(files, question, name)
+    if chosen is None and not name:
+        # An unmatched filename can still contain the requested text. This
+        # bounded local fallback never reads PDFs or images and is optional.
+        from .document_retrieval import search_local_text
+
+        where = folder(hass, options)
+        if where:
+            chosen = await hass.async_add_executor_job(search_local_text, where[0], files, question)
     if chosen is None:
-        return {"error": "none of the documents' names match; ask which one", "documents": [os.path.splitext(f)[0] for f in files]}
+        return {"error": "none of the documents could be matched confidently; ask which one",
+                "documents": [os.path.splitext(f)[0] for f in files]}
     rt.ai.spend("manual", force=True)  # someone asked: always allowed, but counted on the meter
     from .ai import AIUnavailable
 
