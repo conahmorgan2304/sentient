@@ -192,11 +192,18 @@ class Control:
             return {'error': 'Choose a device or value before proposing an action'}
         if session.pending:
             return {'error': 'Answer or cancel the pending action before requesting another'}
+        from .plan_review import review_plan
+
+        # Separate planning from authorisation: validate above, then audit the
+        # bounded action sequence before the existing confirmation/execution.
+        review = review_plan(actions, validated=True)
+        if review.status != 'reviewed':
+            return {'error': 'Plan review blocked: ' + ', '.join(review.reasons)}
         actions = deepcopy(actions)
         session.entities = [a['entity_id'] for a in actions]
         prior = (session.correction or {}).get('previous_action') or {}
         correction_after_action = bool(prior.get('actions'))
-        if self.needs_confirmation(actions) or correction_after_action:
+        if review.requires_confirmation or self.needs_confirmation(actions) or correction_after_action:
             session.pending = {'actions': actions, 'turn': session.turn,
                                'expires': dt_util.utcnow() + timedelta(seconds=60),
                                'before': {a['entity_id']: snapshot(self.hass.states.get(a['entity_id'])) for a in actions},
@@ -324,7 +331,12 @@ class Control:
         if self.options.get('action_recovery'):
             seen = {row['entity_id'] for row in outcomes}
             outcomes.extend({'entity_id': a['entity_id'], 'status': 'not_started', 'reason': 'batch stopped before dispatch'} for a in actions if a['entity_id'] not in seen)
-        result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(), 'summary': self.summary(actions), 'note': 'Verified means the device reported the requested state.'}
+        from .outcome_review import evaluate_outcomes
+
+        result = {'actions': outcomes, 'recorded_at': dt_util.utcnow().isoformat(),
+                  'summary': self.summary(actions),
+                  'assessment': evaluate_outcomes(outcomes),
+                  'note': 'Verified means the device reported the requested state.'}
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')

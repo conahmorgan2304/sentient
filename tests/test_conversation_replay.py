@@ -54,7 +54,7 @@ async def test_information_discussion_adds_followup(hass, text):
     'stop listening', 'stop', 'no thanks', "no, that's all", 'nothing else',
     "we’re done", "that's all for now, thank you", 'that is enough please',
 ])
-async def test_discussion_replay_stays_open_until_user_finishes(hass, ending):
+async def test_discussion_replay_stops_listening_after_one_shot_command(hass, ending):
     obj, rt = agent(hass, {'conversation_sessions': True})
     turns = [
         ('Is the house secure?', 'The gate is open.'),
@@ -63,8 +63,10 @@ async def test_discussion_replay_stays_open_until_user_finishes(hass, ending):
         ('Turn off the hall light', 'The light is reporting off.'),
     ]
     with patch.object(obj, '_async_process_legacy', AsyncMock(side_effect=[response(reply) for _, reply in turns])) as model:
-        for text, _ in turns:
-            assert (await obj.async_process(request(text))).continue_conversation
+        for index, (text, _) in enumerate(turns):
+            # Information questions keep a discussion open, but an isolated
+            # device command must close the microphone even in that discussion.
+            assert (await obj.async_process(request(text))).continue_conversation is (index < 3)
         assert not (await obj.async_process(request(ending))).continue_conversation
         assert model.await_count == len(turns)
     assert rt.sessions.describe() == []
