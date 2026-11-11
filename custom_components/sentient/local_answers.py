@@ -21,11 +21,13 @@ CONF_OFFLINE_ANSWERS = "offline_answers"
 _QUESTION = re.compile(r"^\s*(is|are|was|were|did|do|does|have|has|any|anything|anyone|anybody|what|what's|whats|when|"
                        r"when's|who|which|how|can you tell)\b|\?\s*$", re.I)
 SECURITY = re.compile(r"\b(locked up|lock(ed)? up|all locked|(door|doors|window|windows|gate|garage)\b.*\b(open|locked|shut|closed)|"
-                      r"(left|leave) (a|any|the)? ?(door|window|gate)s?\b.*open|anything (left )?open|house (secure|safe)|secure)\b", re.I)
+                      r"(left|leave) (a|any|the)? ?(door|window|gate)s?\b.*open|anything (left )?open|house (secure|safe)|"
+                      r"(everything|all|we) (is |are )?(secure|safe))\b", re.I)
 COMING = re.compile(r"\b(next alarm|alarms?\b.*\b(set|tomorrow|morning)|reminders?|remind me (about|of) anything|"
-                    r"what'?s (coming up|next|on later))\b", re.I)
-VISITORS = re.compile(r"\b(anyone|anybody|someone|visitors?|callers?|deliver(y|ies)|parcels?)\b.*\b(come|came|been|call(ed)?|round|"
-                      r"door|ring|rang|left|today)\b|\bwho (came|called|rang)\b", re.I)
+                    r"what'?s coming up)\b", re.I)
+VISITORS = re.compile(r"\b(anyone|anybody|someone)\b.*\b(come round|came round|been round|call(ed)? round|at the door|"
+                      r"to the door|knock(ed)?|rang|ring the (bell|doorbell))\b|\bvisitors?\b|\bwho (came|called|rang)\b|"
+                      r"\b(parcels?|delivery|deliveries)\b.*\b(come|came|left|arrived|been)\b", re.I)
 LEAD = "My AI isn't answering right now, so this is straight from the house: "
 
 

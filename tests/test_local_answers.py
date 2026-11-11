@@ -77,3 +77,14 @@ def test_commands_are_never_treated_as_questions():
     assert not is_question('open the garage')
     assert is_question('is the front door locked?')
     assert is_question('have I left a window open')
+
+
+def test_everyday_questions_that_are_not_about_the_house_are_left_alone():
+    from custom_components.sentient.local_answers import COMING, SECURITY, VISITORS
+
+    for text in ("is the dog secure in the garden?", "when does the shop open?"):
+        assert not SECURITY.search(text), text
+    assert not COMING.search("what's next in the recipe?")
+    assert not VISITORS.search("has anyone been in the kitchen?")
+    assert VISITORS.search("did anyone come round today?") and VISITORS.search("has a parcel arrived?")
+    assert SECURITY.search("is everything secure?") and SECURITY.search("is the back door locked?")
