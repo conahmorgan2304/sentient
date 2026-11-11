@@ -61,6 +61,22 @@ LABELS: dict[str, str] = {
 }
 # lists where a thing switched off at the wall for a while is normal: only report it once it is gone for good
 ONLY_WHEN_GONE = {CONF_LEARN_ENTITIES}
+# An entity can vanish for a while without being gone: during a restart, or while its integration reloads (ZHA,
+# Alexa Media, Sentient itself after a settings save). It counts as gone only once it has been missing this long.
+MISSING_FOR = timedelta(minutes=15)
+MISSING_KEY = "sentient_wiring_missing"
+
+
+def _integration_starting(hass: HomeAssistant, eid: str) -> bool:
+    """Its integration is known but not running yet (setting up, retrying, reloading): not 'gone'."""
+    from homeassistant.config_entries import ConfigEntryState
+    from homeassistant.helpers import entity_registry as er
+
+    entry = er.async_get(hass).async_get(eid)
+    if entry is None or entry.disabled_by is not None or not entry.config_entry_id:
+        return False
+    config = hass.config_entries.async_get_entry(entry.config_entry_id)
+    return config is not None and config.state is not ConfigEntryState.LOADED
 
 
 def _ids(value: Any) -> list[str]:
@@ -74,6 +90,8 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
     now = dt_util.utcnow()
     out: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
+    missing: dict[str, Any] = hass.data.setdefault(MISSING_KEY, {})
+    still_missing: set[str] = set()
     for key, label in LABELS.items():
         for eid in _ids(options.get(key)):
             if eid in ignore or (key, eid) in seen:
@@ -84,6 +102,11 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
             if st is None:
                 if domain == "notify" and hass.services.has_service("notify", object_id):
                     continue  # an old-style notify action, not an entity
+                if _integration_starting(hass, eid):
+                    continue
+                still_missing.add(eid)
+                if now - missing.setdefault(eid, now) < MISSING_FOR:
+                    continue
                 out.append({"kind": "wiring", "name": eid, "entity_id": eid, "setting": label, "gone": True})
             elif st.state == STATE_UNAVAILABLE and (st.attributes.get("restored") or (
                     key not in ONLY_WHEN_GONE and now - st.last_changed > DEAD_FOR)):
@@ -91,4 +114,6 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
                 # last_changed, so a long-dead entity would otherwise never look old enough)
                 out.append({"kind": "wiring", "name": st.name or eid, "entity_id": eid, "setting": label,
                             "gone": False, "since": st.last_changed.isoformat()})
+    for eid in set(missing) - still_missing:
+        missing.pop(eid, None)  # back (or no longer chosen): the clock starts again if it vanishes later
     return out
