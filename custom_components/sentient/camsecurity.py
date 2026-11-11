@@ -313,7 +313,8 @@ class CameraSecurity:
             detail = "camera security" + (f" \u00b7 {weighed['verdict']} ({weighed['explanation']})" if weighed else "")
             item = rt.timeline.add("security", f"{text} ({local:%H:%M}).", detail,
                                    alert=True, incident_id=incident_id, evidence="inferred", camera=camera,
-                                   reasoning=weighed)
+                                   reasoning=weighed, decision=(weighed or {}).get("decision"),
+                                   why=f"{weighed['verdict']} ({weighed['explanation']})" if weighed else None)
             accepted = True
             speech = None
             if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE) and (weighed is None or weighed["announce"]):

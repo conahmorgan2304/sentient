@@ -41,13 +41,14 @@ async def test_security_question_is_answered_from_the_house_when_the_ai_fails(ha
         text, agents = await _ask(obj, 'Is the house locked up?')
     assert text.startswith(LEAD) and 'Back door is open' in text
     assert obj.backup_agent not in agents
-    rt.timeline.add.assert_any_call('health', 'Answered without the AI', 'the AI failed: Internal error')
+    assert any(c.args == ('health', 'Answered without the AI', 'the AI failed: Internal error')
+               and c.kwargs['decision']['kind'] == 'offline_answer' for c in rt.timeline.add.call_args_list)
 
 
 async def test_alarms_and_visitors_are_answered_locally(hass):
     obj, _rt = _failing_agent(hass)
     text, _ = await _ask(obj, "When's my next alarm?")
-    assert 'your next alarm is Work' in text.lower() or 'Your next alarm is Work' in text
+    assert 'Your next alarm is Work' in text
     text, _ = await _ask(obj, 'Did anyone come round today?')
     assert 'a courier with a parcel' in text
 

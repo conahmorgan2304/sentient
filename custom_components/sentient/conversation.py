@@ -849,7 +849,13 @@ class BackedUpAgent(conversation.ConversationEntity):
         local = await local_answer(self.hass, rt_local, user_input.text, user_input.context)
         if local:
             if rt_local is not None:
-                rt_local.timeline.add("health", "Answered without the AI", f"the AI failed: {why[:120]}")
+                from .cognitive import decision
+
+                rt_local.timeline.add("health", "Answered without the AI", f"the AI failed: {why[:120]}",
+                                      decision=decision("offline_answer", evidence=["the house's own records"],
+                                                        gaps=["the AI agent didn't answer"], choice="answered locally",
+                                                        reasons=["ai_unavailable", "common_question"]),
+                                      why="the AI didn't answer, and this question can be answered from the house itself")
             try:  # so a streaming pipeline speaks it too
                 from homeassistant.components.conversation.chat_log import current_chat_log
 

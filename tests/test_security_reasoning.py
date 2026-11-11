@@ -82,3 +82,16 @@ async def test_off_nothing_changes(hass: HomeAssistant, freezer) -> None:
     assert [c for c in said if "person" in c.data["message"]]
     item = next(i for i in entry.runtime_data.timeline.items if i["kind"] == "security")
     assert "reasoning" not in item and item["detail"] == "camera security"
+
+
+async def test_a_kept_quiet_alert_explains_itself(hass: HomeAssistant, freezer) -> None:
+    entry = await _night(hass, freezer)
+    async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("binary_sensor.back_gate", "on", {"device_class": "door", "friendly_name": "Back gate"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=30))
+    await _see(hass, "gate_person")
+    item = next(i for i in entry.runtime_data.timeline.items if i["kind"] == "security")
+    assert item["why"].startswith("kept quiet: probably someone from the house going out")
+    assert item["decision"]["kind"] == "camera_alert_speech" and item["decision"]["choice"] == "kept quiet"
+    assert item["decision"]["ai_used"] is False

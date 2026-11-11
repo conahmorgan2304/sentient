@@ -61,6 +61,11 @@ def weigh(*, reason: str, alarm_state: str | None, entries_opened: list[tuple[st
         verdict = "kept quiet: already said for this camera"
     else:
         verdict = "said"
+    from .cognitive import decision
+
+    gaps = [] if alarm_state is not None else ["no alarm panel"]
     return {"announce": announce, "reasons": reasons, "verdict": verdict,
+            "decision": decision("camera_alert_speech", evidence=notes, gaps=gaps,
+                                 choice="spoken" if announce else "kept quiet", reasons=reasons),
             "explanation": "; ".join(notes) if notes else "nothing else in the house to go on",
             "identity_confirmed": False, "route_confirmed": False}

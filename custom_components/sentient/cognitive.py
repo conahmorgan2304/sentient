@@ -34,6 +34,16 @@ class Assessment:
                 "confirmed": self.confirmed}
 
 
+def decision(kind: str, *, evidence: list[str], gaps: list[str], choice: str, reasons: list[str]) -> dict:
+    """One shape for every no-AI decision the house records (kept on the timeline item as ``decision``).
+
+    evidence: what was looked at; gaps: what couldn't be known; choice: what was done; reasons: machine codes.
+    It records a decision already made; it never makes or authorises one.
+    """
+    return {"kind": kind, "evidence": list(evidence)[:8], "gaps": list(gaps)[:6], "choice": choice,
+            "reasons": list(reasons)[:8], "ai_used": False}
+
+
 def assess_security(*, open_count: int, unlocked_count: int,
                     alarm_triggered: bool, unknown_count: int,
                     perimeter_present: bool, access_limited: bool) -> Assessment:
