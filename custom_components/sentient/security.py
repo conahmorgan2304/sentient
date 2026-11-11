@@ -88,9 +88,13 @@ def check(hass: HomeAssistant, ignore: set[str] | None = None, *,
         text = "No security sensors are available to confirm the house is secure."
     if limited:
         text += " Some security readings are outside this request's access."
+    from .local_mind import explain_security_offline
+
+    offline_report = {"summary": text, "assessment": assessment.as_dict()}
     return {
         "secure": assessment.secure,
         "assessment": assessment.as_dict(),
+        "offline_explanation": explain_security_offline(offline_report),
         "unknown": unknown,
         "evidence": evidence,
         "open": open_items,
