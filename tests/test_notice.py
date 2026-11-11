@@ -193,3 +193,33 @@ async def test_weather_only_news_when_wet(hass: HomeAssistant, freezer) -> None:
     hass.states.async_set("weather.home", "rainy", {"friendly_name": "Weather"})
     await _settle(hass, freezer)
     assert len(ai) == 1
+
+
+async def test_the_same_news_in_different_words_is_said_once_per_window(hass: HomeAssistant, freezer) -> None:
+    """11 Nov: the kettle was announced four times in under three hours, each time worded differently."""
+    await _setup(hass, remark_repeat_hours=3)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    wordings = iter(["The washing machine has finished.", "The washing's done.", "Washer's finished its cycle."])
+    calls: list[ServiceCall] = []
+
+    async def generate(call: ServiceCall):
+        calls.append(call)
+        return {"conversation_id": "x", "data": {"speak": True, "message": next(wordings), "question": False}}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    for _ in range(2):
+        hass.states.async_set("sensor.washer", "running", {"friendly_name": "Washing machine"})
+        await hass.async_block_till_done()
+        freezer.tick(timedelta(minutes=10))
+        hass.states.async_set("sensor.washer", "finished", {"friendly_name": "Washing machine"})
+        await hass.async_block_till_done()
+        await _settle(hass, freezer)
+    assert len(said) == 1 and len(calls) == 1  # the second "finished" isn't news, and the AI isn't even asked
+    freezer.tick(timedelta(hours=3, minutes=1))
+    hass.states.async_set("sensor.washer", "running", {"friendly_name": "Washing machine"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=10))
+    hass.states.async_set("sensor.washer", "finished", {"friendly_name": "Washing machine"})
+    await hass.async_block_till_done()
+    await _settle(hass, freezer)
+    assert len(said) == 2  # after the window it's news again

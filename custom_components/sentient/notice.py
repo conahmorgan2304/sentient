@@ -37,6 +37,8 @@ from .const import (
     CONF_HOUSE_RULES,
     CONF_NOTICE_ENTITIES,
     CONF_PERSONA,
+    CONF_REMARK_REPEAT_HOURS,
+    DEFAULT_REMARK_REPEAT_HOURS,
     CHATTINESS_LIMITS,
     DEFAULT_CHATTINESS,
     DEFAULT_PERSONA,
@@ -130,6 +132,10 @@ class Noticer:
         self.skip: Any = None  # () -> entity ids handled elsewhere (appliances)
         self._pending: list[Change] = []
         self._last_seen: dict[str, datetime] = {}
+        # (entity, state it reached) -> when a remark about it was last said. The AI words the same news differently
+        # each time ("the kettle's done", "the kettle has finished boiling"), so the said-recently rule keys on what
+        # happened, not on the words, and the AI isn't asked again at all.
+        self._said_about: dict[tuple[str, str], datetime] = {}
         self._remarks: deque[datetime] = deque(maxlen=50)
         self.decisions: deque[dict[str, Any]] = deque(maxlen=20)
         self._flush_unsub = None
@@ -192,6 +198,10 @@ class Noticer:
                 return  # jitter
         if old.state.lower() in _RESTING and new.state.lower() in _GOING and self._just_started(new.entity_id, now):
             return  # someone just switched it on (by hand, an offer, a routine): they know already
+        hours = float(self.options.get(CONF_REMARK_REPEAT_HOURS, DEFAULT_REMARK_REPEAT_HOURS) or 0)
+        said = self._said_about.get((new.entity_id, new.state.lower()))
+        if hours and said is not None and now - said < timedelta(hours=hours):
+            return  # already said that it got here; once in the window is enough, however it would be worded
         self._last_seen[new.entity_id] = now
         area_id = area_of(self.hass, new.entity_id)
         area = ar.async_get(self.hass).async_get_area(area_id) if area_id else None
@@ -320,6 +330,11 @@ class Noticer:
                 else:
                     result = await self.speech.async_say(message, "normal", None, source="notice")
             record["result"] = result.reason
+            if result.spoken:
+                now = dt_util.utcnow()
+                self._said_about = {k: t for k, t in self._said_about.items() if now - t < timedelta(hours=24)}
+                for c in changes:
+                    self._said_about[(c.entity_id, str(c.new).lower())] = now
         return record
 
     def _context(self) -> str:
