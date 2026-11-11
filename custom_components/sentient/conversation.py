@@ -214,7 +214,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Everyday sign-offs, corrections and changes of subject (setting "conversation_cues", on by default)."""
         from .sessions import CONF_CUES
 
-        return bool(self._options().get(CONF_CUES, True))
+        opts = self._options()
+        return bool(opts.get(CONF_CUES, True) and opts.get(CONF_SESSIONS))  # part of conversation sessions
 
     def _guest(self):
         return bool(getattr(getattr(self._entry.runtime_data, "speech", None), "guest_mode", False))

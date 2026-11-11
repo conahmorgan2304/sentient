@@ -412,6 +412,9 @@ class RecallTool(_Tool):
         if cautious_turn(getattr(rt, "options", {})):
             return {"memories": []}
         found = rt.memory.search(tool_input.tool_args["query"])
+        from .voice_id import speaker_scope
+
+        found = speaker_scope(hass, getattr(rt, "options", {}), found)  # never someone else's personal memories
         if getattr(rt, "profiles", None) is not None and (rt.profiles.for_device(llm_context.device_id) or {}).get("private"):
             found = [m for m in found if m.category == "correction"]  # a private room: only how things are named
         return {"memories": [
@@ -2194,6 +2197,7 @@ class SentientAPI(llm.API):
             lines.extend(f"- {m.text}" for m in lessons)
         memories = [] if private else self._memories(rt, int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)),
                                                       bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
+        memories = voice_id.speaker_scope(self.hass, opts, memories)
         if memories:
             lines.append("Things you know about this household:")
             lines.extend(f"- {m.text}" for m in memories)

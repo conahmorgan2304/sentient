@@ -806,6 +806,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_GAMES, **d(CONF_GAMES, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID, **d(CONF_VOICE_ID, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID_UNKNOWN, **d(CONF_VOICE_ID_UNKNOWN, False)): selector.BooleanSelector(),
+            vol.Required("speaker_memories", **d("speaker_memories", False)): selector.BooleanSelector(),
             vol.Required(CONF_BOOKS, **d(CONF_BOOKS, False)): selector.BooleanSelector(),
             vol.Optional(CONF_BOOKS_FOLDER, **d(CONF_BOOKS_FOLDER, DEFAULT_BOOKS_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_READING_TTS, **d(CONF_READING_TTS, None)): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),

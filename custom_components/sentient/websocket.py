@@ -411,7 +411,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_GAMES,
     ]),
     ("voiceid", "Voice recognition", "mdi:account-voice", "Know who is speaking. With the Sentient Voice Recognition add-on, the assistants can tell which enrolled person spoke and greet them by name, and treat \u201cremember that I\u2026\u201d as being about them. It is a good guess from the voice, never proof, so it never allows anything that asks for confirmation. Without the add-on, this page shows where to get it.", [
-        CONF_VOICE_ID, CONF_VOICE_ID_UNKNOWN,
+        CONF_VOICE_ID, CONF_VOICE_ID_UNKNOWN, "speaker_memories",
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
         CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
@@ -1086,6 +1086,10 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
 # (their values are kept, so switching back on brings them back as they were)
 DEPENDS: dict[str, str] = {
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
+    "speaker_memories": CONF_VOICE_ID,
+    "conversation_cues": CONF_SESSIONS,
+    "manuals_local_text": CONF_MANUALS,
+    "security_reasoning": CONF_CAMSEC,
     CONF_ROOM_HANDOFF: CONF_SESSIONS,
     CONF_BEDTIME_LIGHTS: CONF_BEDTIME,
     CONF_BEDTIME_CONTACTS: CONF_BEDTIME,

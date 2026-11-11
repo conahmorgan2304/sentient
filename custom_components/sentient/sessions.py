@@ -244,7 +244,7 @@ class Sessions:
 
         connected = self.options.get(CONF_SESSIONS) and self.options.get(CONF_CONTEXTUAL_FOLLOWUPS)
         prior_follow = session.follow_up_context or {}
-        cues = bool(self.options.get(CONF_CUES, True))
+        cues = bool(self.options.get(CONF_CUES, True) and self.options.get(CONF_SESSIONS))
         change = SUBJECT_CHANGE.match(text) if cues and (session.active or session.goal) else None
         if change:
             # "On another note, ..." starts afresh: no devices, correction or follow-up carried over from before.
