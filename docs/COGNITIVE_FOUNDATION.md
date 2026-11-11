@@ -72,3 +72,9 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - More useful cross-room, speaker-scoped preferences require careful consent, matching and privacy tests; the existing per-turn integration remains in place.
 - A richer offline LLM and semantic PDF search would be separate optional dependencies and should be benchmarked on the deployed hardware before offering as defaults.
 - Sensor-fusion alert decisions should initially run alongside existing security alerts without changing delivery, false-positive handling or safety escalation until comparison tests are complete.
+
+### Additional security reasoning and CI alignment
+- Investigated actual GitHub pytest logs: 13 failures were all `test_discussion_replay_stays_open_until_user_finishes` variants expecting the old microphone behaviour after a one-shot device command. Updated these expectations to protect the established one-shot-close rule while keeping question-based discussion and verbal termination tests.
+- Camera contact + person detection reports can now be distinguished from independently **observed** contact + camera activity. Neither establishes identity, intrusion, or a particular route; alert decisions remain unchanged.
+- Partial guarded-control action results now include an explicit outcome assessment, advising verification before a new request rather than automatic retry.
+- New tests cover outcome evaluation and sensor signal corroboration. Review latest full CI before release.
