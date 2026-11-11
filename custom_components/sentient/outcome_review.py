@@ -26,6 +26,9 @@ def evaluate_outcomes(actions: list[dict[str, Any]]) -> dict[str, Any]:
         state = "reported_complete"
     elif counts["verified"]:
         state = "partial"
+    elif counts["failed"]:
+        # A refused or erroring step is a failure even if an earlier step was sent; never call it merely unverified.
+        state = "failed"
     elif counts["attempted"]:
         state = "unverified"
     else:

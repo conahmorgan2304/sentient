@@ -127,3 +127,12 @@ async def test_passage_never_reads_outside_the_folder(tmp_path) -> None:
     assert best_passage(str(inner), "../secret.txt", "kettle filter") is None
     assert best_passage(str(inner), "link.txt", "kettle filter") is None
     assert best_passage(str(inner), "manual.pdf", "kettle filter") is None
+
+
+# --- outcomes: a failed step is reported as a failure, not as "unverified" -------------------------------------------
+def test_failed_step_is_reported_as_failed_not_unverified() -> None:
+    from custom_components.sentient.outcome_review import evaluate_outcomes
+
+    row = evaluate_outcomes([{"entity_id": "light.one", "status": "attempted"}, {"entity_id": "lock.front", "status": "failed"}])
+    assert row["state"] == "failed" and row["failed"] == 1 and row["can_retry_automatically"] is False
+    assert evaluate_outcomes([{"entity_id": "cover.garage", "status": "attempted"}])["state"] == "unverified"

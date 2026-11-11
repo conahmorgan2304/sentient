@@ -86,3 +86,4 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - **Prompt size:** the world assessment repeated every reading (already in the snapshot with its age) on every voice turn. It now carries only counts and the readings that need care.
 - **Manuals offline:** the text search only chose a file and still needed the AI. When the AI can't be reached it now quotes the closest passage from a `.txt`/`.md` document (bounded, no symlinks, no parent paths). Both the inside-text search and the quote sit behind a new switch, *Look inside text documents* (on by default; off matches file names only).
 - **Mind sensor:** incident assessments are worked out only for the eight incidents returned, not every stored one.
+- **Outcome wording:** a batch where a step failed and nothing was verified is now reported as `failed`, not `unverified`.
