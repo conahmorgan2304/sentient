@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+from .cognitive import decision
+
 # Frigate events (kind "event") are camera detections just as much as a person sensor is.
 CAMERA_KINDS = frozenset({"detection", "event"})
 
@@ -46,9 +48,26 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         reasons.append("contact_and_camera_activity")
     elif kinds["contact"] and camera_reports:
         reasons.append("contact_and_camera_reports_unconfirmed")
+    status = ("observed" if observed and not (inferred or unknown) else
+              "mixed" if observed else "inferred" if inferred else "unknown")
+    gaps = []
+    if unknown:
+        gaps.append("unsettled_evidence")
+    if not evidence:
+        gaps.append("no_evidence")
+    if not (contact_seen and camera_seen):
+        gaps.append("unconfirmed_cross_sensor_link")
     return {
-        "status": "observed" if observed and not (inferred or unknown) else
-                  "mixed" if observed else "inferred" if inferred else "unknown",
+        "status": status,
+        # Uses the same non-actuating decision envelope as other household
+        # assessments. It records evidence only AFTER callers filter access.
+        "decision": decision(
+            "security_incident_assessment",
+            evidence=[f"{r.get('kind', 'unknown')}:{r.get('status', 'unknown')}" for r in evidence[-8:]],
+            gaps=gaps,
+            choice=status,
+            reasons=reasons,
+        ),
         "reasons": reasons,
         "source_count": source_count,
         "reported_observations": observed,
