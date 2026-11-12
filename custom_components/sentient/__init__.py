@@ -198,6 +198,9 @@ class SentientRuntime:
     goals: Any = None  # goals over days or weeks
     books: Any = None  # audiobooks and ebooks with bookmarks
     games: Any = None  # story games with their own memory
+    brain: Any = None  # the database, house ledger, expectations, beliefs and learning (brain.py)
+    warnings: Any = None  # official weather and flood warnings
+    inbox: Any = None  # read-only email from Home Assistant's IMAP integration
     recipes: Any = None  # recipes and cooking mode
     focus: Any = None  # focused voice tools
 
@@ -722,6 +725,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     for engine in (offers, announcements, alarms, checks, camsec, autooff, rules):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
+    from .brain import Brain
+    from .skills import Inbox
+    from .warnings_feed import Warnings
+
+    brain = Brain(hass, entry.entry_id, options, lambda: entry.runtime_data)
+    entry.runtime_data.brain = brain
+    try:
+        await brain.async_start()
+        entry.runtime_data.ai.cases = brain
+        entry.runtime_data.noticer.brain = brain
+        entry.async_on_unload(brain.async_stop)
+    except Exception:  # noqa: BLE001 - the brain is an addition: Sentient still works without it
+        _LOGGER.warning("Sentient's memory database could not start", exc_info=True)
+        entry.runtime_data.brain = None
+    entry.runtime_data.warnings = Warnings(hass, options, lambda: entry.runtime_data)
+    entry.runtime_data.warnings.configure(options)
+    entry.async_on_unload(entry.runtime_data.warnings.stop)
+    entry.runtime_data.inbox = Inbox(hass, options)
+    entry.runtime_data.inbox.configure(options)
+    entry.async_on_unload(entry.runtime_data.inbox.stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -846,6 +869,15 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
             entry.async_on_unload(engine.async_stop)
             entry.runtime_data.dormant.discard(name)
     entry.runtime_data.frigate_health.configure(options)
+    if (brain := entry.runtime_data.brain) is not None:
+        brain.options = options
+        await brain.async_apply()
+        if not options.get("ai_case_memory", True):
+            brain.case_clear()
+    if entry.runtime_data.warnings is not None:
+        entry.runtime_data.warnings.configure(options)
+    if entry.runtime_data.inbox is not None:
+        entry.runtime_data.inbox.configure(options)
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()

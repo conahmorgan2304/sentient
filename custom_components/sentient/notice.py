@@ -141,6 +141,7 @@ class Noticer:
         self._flush_unsub = None
         self._unsub = None
         self.feedback = None  # set by the runtime
+        self.brain = None  # expectations: skip remarks about what's usual for this time (set by the runtime)
         self._generation = 0
 
     # ----- settings -------------------------------------------------------------
@@ -289,6 +290,8 @@ class Noticer:
         if reason := self._free_rules():
             record["result"] = f"skipped: {reason}"
             return record
+        if self.brain is not None and self.brain.gate_remark(record, [(c.entity_id, c.new) for c in changes]):
+            return record  # usual for this time: not worth an AI call (surprise gating on)
         if not self.watches.spend("noticing"):
             record["result"] = "skipped: daily AI limit reached"
             return record

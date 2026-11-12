@@ -365,6 +365,13 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .voice_timing import VoiceTimings
 
         rt = self._entry.runtime_data
+        if (brain := getattr(rt, 'brain', None)) is not None:
+            try:
+                where = self.hass.states.get(user_input.satellite_id) if user_input.satellite_id else None
+                brain.voice_request(user_input.satellite_id, user_input.text, user_input.context,
+                                    where.name if where is not None else None)
+            except Exception:  # noqa: BLE001 - learning must never get in the way of an answer
+                pass
         checks = getattr(rt, 'voice_checks', None)
         check_generation = getattr(checks, 'generation', None)
         if self._options().get('voice_timing_diagnostics') and not self._guest():

@@ -38,6 +38,8 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         gone_checks = 0
     if timing := getattr(rt.ai, "voice_timings", None):
         timing.clear()
+    if (brain := getattr(rt, "brain", None)) is not None:
+        brain.case_clear()  # saved AI answers from case memory go too
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {'action_checks': gone_checks}

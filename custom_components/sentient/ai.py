@@ -76,6 +76,7 @@ class AIGate:
         from .voice_timing import VoiceTimings
 
         self.voice_timings = VoiceTimings(hass)
+        self.cases = None  # case memory (the brain), when switched on
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
 
     async def async_start(self) -> None:
@@ -272,6 +273,10 @@ class AIGate:
             )
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
             data["entity_id"] = ai
+        cases = self.cases
+        if cases is not None and (remembered := cases.case_get(data)) is not None:
+            return remembered  # the same job, asked moments ago: case memory answers without another call
+
         async def attempt(retry=False):
             self._roll()
             self.service_attempts += 1
@@ -305,6 +310,8 @@ class AIGate:
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
         if current():
             self.ok()
+            if cases is not None:
+                cases.case_put(data, response)
         return response or {}
 
     def failed(self, err: BaseException) -> None:

@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.0": [
+        "The house ledger: every change to every device is now recorded with what caused it — a person, a voice request, an automation, Sentient, or nothing in Home Assistant (the device itself or its app). Ask \"when did the heating go off, and why?\".",
+        "Sentient now learns what's usual at each hour and notices what isn't. The Mind tab's HOW I'M LEARNING card shows how much of each day it expected, and that number should rise week on week.",
+        "An important device that changes by itself is mentioned once, and repeats are linked: \"the third time this week, always around 11am\".",
+        "Memories, conversations and the timeline are kept for a year in Sentient's own database, and recall searches all of it.",
+        "New on Settings: Memory & learning, Weather warnings (your own country's service) and Extra skills (read-only email, calendar clashes, a security check and automations from plain English).",
+    ],
     "0.88.2": [
         "Sentient is in the Home Assistant Marketplace (Settings → Marketplace, formerly HACS); updates show under Settings → Updates.",
     ],
