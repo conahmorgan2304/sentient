@@ -32,6 +32,9 @@ CONF_AUTOMATION_BUILDER = "automation_builder"
 EVENT_IMAP = "imap_content"
 TIGHT = timedelta(minutes=15)
 SENSITIVE = ("lock", "alarm_control_panel", "valve")
+# what an automation made by voice may never do, directly or by calling something else that could
+REFUSED_DOMAINS = ("lock", "alarm_control_panel", "script", "automation", "shell_command", "python_script", "pyscript",
+                   "rest_command", "hassio", "homeassistant", "recorder", "backup", "update", "system_log", "logger")
 SENSITIVE_COVERS = ("garage", "gate", "door")
 _ENTITY = re.compile(r"\b([a-z_]+)\.([a-z0-9_]+)\b")
 _SERVICE_KEYS = ("action", "service")
@@ -207,10 +210,18 @@ async def async_check_automation(hass: HomeAssistant, config: dict[str, Any]) ->
             problems.append(f"There's no {entity_id}" + (f" — did you mean {near}?" if near else "."))
     for service in sorted(referenced_services(config)):
         domain, name = service.split(".", 1)
-        if domain in ("lock", "alarm_control_panel"):
-            problems.append(f"{service} locks, unlocks, arms or disarms: make that in Home Assistant's automation editor.")
+        if domain in REFUSED_DOMAINS:
+            problems.append(f"{service} could lock, unlock, arm, disarm, run other automations or scripts, or run "
+                            "commands: make that in Home Assistant's automation editor.")
         elif not hass.services.has_service(domain, name):
             problems.append(f"There's no action {service}.")
+        elif domain == "scene":
+            for scene in referenced_entities(config):
+                st = hass.states.get(scene) if scene.startswith("scene.") else None
+                if st is not None and any(str(e).split(".")[0] in REFUSED_DOMAINS for e in st.attributes.get("entity_id", [])):
+                    problems.append(f"{scene} sets a lock or alarm: make that in Home Assistant's automation editor.")
+    if (s := str(config)) and ("{{" in s or "{%" in s):
+        problems.append("Templates aren't allowed in automations made by voice: make that in the automation editor.")
     if problems:
         return {"ok": False, "problems": problems}
     try:
@@ -282,6 +293,13 @@ def routine_automation(routine: Any) -> dict[str, Any] | None:
         conditions.append({"condition": "time", "weekday": WEEKEND})
     return {"alias": f"{routine.name} {state} ({routine.days})", "description": "Made by Sentient from a learned routine.",
             "triggers": [trigger], "conditions": conditions, "actions": [action], "mode": "single"}
+
+
+def automation_fingerprint(config: dict[str, Any]) -> str:
+    import hashlib
+    import json
+
+    return hashlib.sha256(json.dumps(config, sort_keys=True, default=str).encode()).hexdigest()
 
 
 def describe_automation(config: dict[str, Any]) -> str:

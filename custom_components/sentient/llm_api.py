@@ -819,12 +819,56 @@ def _brain(hass: HomeAssistant) -> Any:
 
 
 def _household_private(hass: HomeAssistant, llm_context: llm.LLMContext) -> bool:
-    """Guests in, or a private room: household history stays out."""
+    """Guests in, a private room, or a voice that voice ID couldn't place: household history stays out
+    (the same rule as earlier conversations and the house context)."""
     rt = _runtime(hass)
-    if rt is None or rt.speech.guest_mode:
+    if rt is None:
         return True
-    profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) is not None else None
-    return bool((profile or {}).get("private"))
+    from .voice_id import private_history
+
+    return private_history(rt, llm_context.device_id)
+
+
+async def _signed_in_admin(hass: HomeAssistant, llm_context: llm.LLMContext) -> bool:
+    """A signed-in, active administrator: a voice satellite (no user) never counts."""
+    context = llm_context.context
+    if context is None or not context.user_id:
+        return False
+    user = await hass.auth.async_get_user(context.user_id)
+    return bool(user and user.is_active and user.is_admin)
+
+
+AUTOMATION_PENDING_SECONDS = 600
+
+
+def _owner(llm_context: llm.LLMContext) -> str:
+    ctx = llm_context.context
+    return f"{getattr(ctx, 'user_id', None)}|{llm_context.device_id}"
+
+
+def _propose_automation(rt: Any, llm_context: llm.LLMContext, config: dict[str, Any]) -> None:
+    """Keep the exact automation read back, for a yes in a later turn."""
+    from .skills import automation_fingerprint
+
+    rt.automation_pending[_owner(llm_context)] = {"fingerprint": automation_fingerprint(config), "config": config,
+                                    "turn": getattr(llm_context.context, "id", None),
+                                    "at": dt_util.utcnow().timestamp()}
+
+
+def _confirmed_automation(rt: Any, llm_context: llm.LLMContext, config: dict[str, Any]) -> str | None:
+    """None when this is the same automation read back in an earlier turn; otherwise why not."""
+    from .skills import automation_fingerprint
+
+    pending = rt.automation_pending.get(_owner(llm_context))
+    if pending is None:
+        return "Nothing has been read back yet: call without confirm first, read it back and wait for a yes."
+    if dt_util.utcnow().timestamp() - pending["at"] > AUTOMATION_PENDING_SECONDS:
+        return "That read-back has expired: read it back again."
+    if pending["fingerprint"] != automation_fingerprint(config):
+        return "This isn't the automation that was read back: read the changed one back first."
+    if pending["turn"] is not None and pending["turn"] == getattr(llm_context.context, "id", None):
+        return "The yes has to come from the person, in their next turn, after the read-back."
+    return None
 
 
 class HistoryTool(_Tool):
@@ -877,7 +921,7 @@ class RootCauseTool(_Tool):
         found = [e for e in resolve_entities(hass, tool_input.tool_args["what"]) if _exposed(hass, e)]
         if not found:
             return {"error": f"No device called '{tool_input.tool_args['what']}' that voice assistants may use."}
-        return await brain.async_root_cause(found[0])
+        return await brain.async_root_cause(found[0], lambda e: _exposed(hass, e))
 
 
 class WarningsTool(_Tool):
@@ -972,8 +1016,8 @@ class CreateAutomationTool(_Tool):
         rt = _runtime(hass)
         if rt is None or not rt.options.get("automation_builder"):
             return {"error": "Building automations is switched off (Settings → Extra skills)."}
-        if not await _can_manage_house(hass, llm_context) or _household_private(hass, llm_context):
-            return {"error": "Only an admin can make automations."}
+        if not await _signed_in_admin(hass, llm_context) or _household_private(hass, llm_context):
+            return {"error": "Only an administrator signed in to Home Assistant (the app or a dashboard) can make automations."}
         from .skills import async_check_automation, async_save_automation, describe_automation
 
         a = tool_input.tool_args
@@ -983,7 +1027,11 @@ class CreateAutomationTool(_Tool):
         if not checked["ok"]:
             return {"error": "Not saved: " + " ".join(checked["problems"])}
         if not a["confirm"]:
-            return {"read_back": describe_automation(config), "next": "Read this back and save it only after a yes."}
+            _propose_automation(rt, llm_context, config)
+            return {"read_back": describe_automation(config), "next": "Read this back and save it only after a yes in their next turn."}
+        if why := _confirmed_automation(rt, llm_context, config):
+            return {"error": why}
+        rt.automation_pending.pop(_owner(llm_context), None)
         saved = await async_save_automation(hass, config)
         if saved.get("saved"):
             rt.timeline.add("mode", f"New automation: {a['alias']}", describe_automation(config))
@@ -1438,10 +1486,12 @@ class AdoptRoutineTool(_Tool):
         "does that', 'that's already set up', 'no need' or anything unclear is NOT a yes — then call "
         "sentient_forget_routine for it if they say it's already handled, otherwise ask again. With "
         "'as_automation' true it becomes a real Home Assistant automation instead (only when Build automations is "
-        "on, for an admin), so it runs even without Sentient."
+        "on, for a signed-in admin): the first call returns a read-back; only after a yes in their next turn call "
+        "again with confirm true."
     )
     parameters = vol.Schema({vol.Required("routine"): cv.string, vol.Optional("adopt", default=True): cv.boolean,
-                             vol.Optional("as_automation", default=False): cv.boolean})
+                             vol.Optional("as_automation", default=False): cv.boolean,
+                             vol.Optional("confirm", default=False): cv.boolean})
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
@@ -1451,18 +1501,19 @@ class AdoptRoutineTool(_Tool):
             return {"error": "Sentient is not loaded"}
         args = tool_input.tool_args
         if args.get("as_automation") and args.get("adopt", True):
-            return await _routine_as_automation(hass, rt, args["routine"], llm_context)
+            return await _routine_as_automation(hass, rt, args["routine"], llm_context, args.get("confirm", False))
         routine = rt.learner.adopt(args["routine"], args.get("adopt", True))
         if routine is None:
             return {"error": "No learned routine matches that"}
         return {"routine": routine.describe(), "house_does_it": routine.adopted}
 
 
-async def _routine_as_automation(hass: HomeAssistant, rt: Any, words: str, llm_context: llm.LLMContext) -> dict[str, Any]:
+async def _routine_as_automation(hass: HomeAssistant, rt: Any, words: str, llm_context: llm.LLMContext,
+                                 confirm: bool = False) -> dict[str, Any]:
     if not rt.options.get("automation_builder"):
         return {"error": "Building automations is switched off (Settings → Extra skills)."}
-    if not await _can_manage_house(hass, llm_context):
-        return {"error": "Only an admin can make automations."}
+    if not await _signed_in_admin(hass, llm_context) or _household_private(hass, llm_context):
+        return {"error": "Only an administrator signed in to Home Assistant (the app or a dashboard) can make automations."}
     from .learning import Routine
     from .skills import async_check_automation, async_save_automation, describe_automation, routine_automation
 
@@ -1475,6 +1526,12 @@ async def _routine_as_automation(hass: HomeAssistant, rt: Any, words: str, llm_c
     checked = await async_check_automation(hass, config)
     if not checked["ok"]:
         return {"error": "Not saved: " + " ".join(checked["problems"])}
+    if not confirm:
+        _propose_automation(rt, llm_context, config)
+        return {"read_back": describe_automation(config), "next": "Read this back; save only after a yes in their next turn (confirm true)."}
+    if why := _confirmed_automation(rt, llm_context, config):
+        return {"error": why}
+    rt.automation_pending.pop(_owner(llm_context), None)
     saved = await async_save_automation(hass, config)
     if saved.get("saved"):
         routine.adopted, routine.declined = False, True  # the automation does it now; never offered again

@@ -141,7 +141,7 @@ async def test_automations_are_checked_before_they_are_saved(hass: HomeAssistant
     assert saved["saved"] and "light.porch" in path.read_text() and len(reload) == 1
 
 
-async def test_the_automation_tool_needs_its_switch_and_a_yes(hass: HomeAssistant):
+async def test_an_automation_needs_a_signed_in_admin_and_a_yes_in_a_later_turn(hass: HomeAssistant):
     from homeassistant.core import Context
     from homeassistant.helpers import llm
 
@@ -149,20 +149,48 @@ async def test_the_automation_tool_needs_its_switch_and_a_yes(hass: HomeAssistan
 
     entry = await _setup(hass)
     tool = CreateAutomationTool()
-    ctx = llm.LLMContext(platform="test", context=Context(), language="en", assistant="conversation", device_id=None)
+    admin = await hass.auth.async_create_user("Admin", group_ids=["system-admin"])
     args = {"alias": "Porch", "triggers": [{"trigger": "sun", "event": "sunset"}],
             "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.porch"}}]}
-    out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args=dict(args)), ctx)
-    data = out.data if hasattr(out, "data") else out
-    assert "switched off" in data["error"]
+
+    async def call(context, **extra):
+        ctx = llm.LLMContext(platform="test", context=context, language="en", assistant="conversation", device_id=None)
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={**args, **extra}), ctx)
+        return out.data if hasattr(out, "data") else out
+
+    assert "switched off" in (await call(Context(user_id=admin.id)))["error"]
     hass.config_entries.async_update_entry(entry, options={**entry.options, "automation_builder": True})
     await hass.async_block_till_done()
     hass.states.async_set("light.porch", "off")
     async_mock_service(hass, "light", "turn_on")
-    with patch("custom_components.sentient.skills.async_save_automation", AsyncMock()) as save:
-        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args=dict(args)), ctx)
-        data = out.data if hasattr(out, "data") else out
-        assert "read_back" in data and not save.called
+    assert "signed in" in (await call(Context()))["error"]  # a voice satellite has no user: never enough
+    with patch("custom_components.sentient.skills.async_save_automation", AsyncMock(return_value={"saved": True})) as save:
+        turn = Context(user_id=admin.id)
+        assert "read_back" in await call(turn)
+        assert "next turn" in (await call(turn, confirm=True))["error"]  # the model can't say yes for them
+        changed = {"actions": [{"action": "light.turn_on", "target": {"entity_id": "light.porch"}, "data": {"brightness": 255}}]}
+        assert "isn't the automation that was read back" in (await call(Context(user_id=admin.id), confirm=True, **changed))["error"]
+        assert not save.called
+        assert (await call(Context(user_id=admin.id), confirm=True)) == {"saved": True}
+        assert save.call_count == 1
+        assert "Nothing has been read back" in (await call(Context(user_id=admin.id), confirm=True))["error"]  # used once
+
+
+async def test_indirect_and_templated_actions_are_refused(hass: HomeAssistant):
+    await _setup(hass)
+    hass.states.async_set("scene.night", "scening", {"entity_id": ["lock.front", "light.hall"]})
+    hass.states.async_set("script.unlock_all", "off")
+    async_mock_service(hass, "scene", "turn_on")
+    async_mock_service(hass, "script", "turn_on")
+    base = {"alias": "x", "triggers": [{"trigger": "sun", "event": "sunset"}]}
+    nested = {**base, "actions": [{"choose": [{"conditions": [], "sequence": [{"action": "script.turn_on", "target": {"entity_id": "script.unlock_all"}}]}]}]}
+    assert not (await async_check_automation(hass, nested))["ok"]
+    scene = {**base, "actions": [{"action": "scene.turn_on", "target": {"entity_id": "scene.night"}}]}
+    assert "sets a lock or alarm" in (await async_check_automation(hass, scene))["problems"][0]
+    hass.states.async_set("light.hall", "off")
+    async_mock_service(hass, "light", "turn_on")
+    templ = {**base, "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.hall"}, "data": {"brightness": "{{ 255 }}"}}]}
+    assert "Templates" in (await async_check_automation(hass, templ))["problems"][0]
 
 
 # ----- incident stages -------------------------------------------------------------------------

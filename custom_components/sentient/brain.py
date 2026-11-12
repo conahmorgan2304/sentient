@@ -443,7 +443,7 @@ class Brain:
             out["note"] = "Nothing recorded for that in the ledger (it only knows changes since it was switched on)."
         return out
 
-    async def async_root_cause(self, what: str) -> dict[str, Any]:
+    async def async_root_cause(self, what: str, allowed: Callable[[str], bool] | None = None) -> dict[str, Any]:
         """What changed around the last time this device changed or went wrong, oldest first."""
         if self.ledger is None or not self.ledger.enabled:
             return {"error": "The house ledger is switched off (Settings → Memory & learning)."}
@@ -464,6 +464,8 @@ class Brain:
             same_device = r["entity"] in siblings
             same_area = row.get("area") and r.get("area") == row.get("area")
             dropped = r["new"] in ("unavailable", "unknown") or r["old"] in ("unavailable", "unknown")
+            if allowed is not None and not allowed(r["entity"]):
+                continue  # only what this person's voice assistant may see
             if r["entity"] == target or same_device or (same_area and r["domain"] not in ("sensor",)) or (dropped and same_area):
                 related.append({"when": _clock(r["ts"]), "line": describe(r), "same_device": same_device,
                                 "went_offline": r["new"] in ("unavailable", "unknown")})
@@ -601,10 +603,6 @@ class Brain:
 
         def _night(conn: Any) -> dict[str, Any]:
             out: dict[str, Any] = {"pruned": self.db.prune_ledger(conn, cutoff_ledger)}
-            try:
-                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")  # the main file complete for the night's backups
-            except Exception:  # noqa: BLE001
-                pass
             for kind in ("conversation", "timeline"):
                 self.db.prune_memories(conn, kind, cutoff_memory)
             if self.on(CONF_BELIEFS):
@@ -622,6 +620,10 @@ class Brain:
         except Exception:  # noqa: BLE001
             _LOGGER.warning("Sentient's overnight learning failed", exc_info=True)
             return {}
+        try:  # after the night's changes are committed: a checkpoint can't run inside a write transaction
+            report["checkpoint"] = await self.db.call(self.db.checkpoint)
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug("WAL checkpoint failed", exc_info=True)
         rt = self._rt()
         for belief in report.pop("held", [])[:1]:
             if rt is not None and getattr(rt, "curiosity", None) is not None and rt.curiosity.enabled:
@@ -675,6 +677,6 @@ class Brain:
             "outcome": {"good": good, "bad": bad, "percent": round(100 * good / (good + bad)) if good + bad else None},
             "independence": {"ai_calls": calls, "without_ai": saved,
                              "percent": round(100 * saved / (saved + calls)) if calls is not None and saved + calls else None},
-            "recall_misses": counts.get("recall_miss", 0),
+            "recall_misses": counts.get("recall_miss", 0), "disk_mb": await self.hass.async_add_executor_job(self.db.size_mb),
             "voice": self.voice_issues(), "trust": self.trust(), "situations": self.situations(), **stored,
         }

@@ -444,7 +444,8 @@ async def test_a_cloud_device_catching_up_is_not_a_mystery(hass: HomeAssistant):
     hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})  # later, by itself
     await hass.async_block_till_done()
     rows = await entry.runtime_data.brain.ledger.async_changes(entities=["climate.heating"], newest_first=False)
-    assert [(r["new"], r["cause"], r["who"]) for r in rows] == [("off", "automation", "Heating off at lunch"), ("heat", "device", None)]
+    assert [(r["new"], r["cause"]) for r in rows] == [("off", "automation"), ("heat", "device")]
+    assert rows[0]["who"].startswith("Heating off at lunch") and "matched by time" in rows[0]["who"]
 
 
 async def test_severe_warnings_alert_phones_only_when_dangerous(hass: HomeAssistant):
@@ -455,3 +456,86 @@ async def test_severe_warnings_alert_phones_only_when_dangerous(hass: HomeAssist
                                {"id": "2", "title": "Red snow", "level": "red", "source": "Met Office"}])
     kinds = {i["text"]: i["kind"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Met Office")}
     assert kinds == {"Met Office: Amber wind": "noticed", "Met Office: Red snow": "critical"}
+
+
+async def test_the_nightly_checkpoint_really_runs(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    hass.states.async_set("light.x", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.x", "off")
+    await hass.async_block_till_done()
+    await brain.ledger.async_flush()
+    report = await brain.async_think_overnight()
+    assert report["checkpoint"][0] == 0  # 0 = not blocked by an open write
+    assert (await brain.async_status())["disk_mb"] >= 0
+
+
+async def test_a_failed_ledger_write_is_kept_and_retried(hass: HomeAssistant):
+    entry = await _setup(hass)
+    ledger = entry.runtime_data.brain.ledger
+    hass.states.async_set("light.y", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.y", "off")
+    await hass.async_block_till_done()
+    with patch.object(ledger.db, "call", AsyncMock(side_effect=OSError("disk busy"))):
+        await ledger.async_flush()
+    assert [r["entity"] for r in ledger._buffer] == ["light.y"]
+    await ledger.async_flush()
+    assert not ledger._buffer and await ledger.async_changes(entities=["light.y"])
+
+
+async def test_root_cause_only_shows_what_the_voice_may_see(hass: HomeAssistant):
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+
+    entry = await _setup(hass)
+    hall = ar.async_get(hass).async_create("Hall").id
+    reg = er.async_get(hass)
+    for eid in ("climate.heating", "light.private_lamp"):
+        d, o = eid.split(".")
+        reg.async_get_or_create(d, "test", o, suggested_object_id=o)
+        reg.async_update_entity(eid, area_id=hall)
+        hass.states.async_set(eid, "off" if d == "light" else "heat")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.private_lamp", "on")
+    hass.states.async_set("climate.heating", "off")
+    await hass.async_block_till_done()
+    brain = entry.runtime_data.brain
+    full = await brain.async_root_cause("climate.heating")
+    assert any("private lamp" in x["line"] for x in full["timeline_before"])
+    shown = await brain.async_root_cause("climate.heating", lambda e: e != "light.private_lamp")
+    assert not any("private lamp" in x["line"] for x in shown["timeline_before"])
+
+
+async def test_history_stays_private_for_an_unplaced_voice(hass: HomeAssistant):
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.llm_api import HistoryTool
+
+    await _setup(hass)
+    tool = HistoryTool()
+    ctx = llm.LLMContext(platform="test", context=Context(), language="en", assistant="conversation", device_id=None)
+    with patch("custom_components.sentient.voice_id.cautious_turn", return_value=True):
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={}), ctx)
+    data = out.data if hasattr(out, "data") else out
+    assert "isn't shared" in data["error"]
+
+
+async def test_warnings_already_said_stay_said_after_a_restart(hass: HomeAssistant):
+    entry = await _setup(hass, weather_warnings=True)
+    amber = {"id": "w1", "title": "Amber wind", "level": "amber", "source": "Met Office"}
+    with patch.object(entry.runtime_data.speech, "async_say", AsyncMock()) as say:
+        await entry.runtime_data.warnings._announce_new([amber])
+        await hass.async_block_till_done()
+        await entry.runtime_data.warnings._store.async_save({"seen": entry.runtime_data.warnings.seen})
+        from custom_components.sentient.warnings_feed import Warnings
+
+        fresh = Warnings(hass, entry.runtime_data.options, lambda: entry.runtime_data, entry.entry_id)
+        await fresh._announce_new([amber])
+        assert say.call_count == 1
+        await fresh._announce_new([{**amber, "level": "red"}])  # escalated: but already severe, so not again
+        assert say.call_count == 1
+        yellow = {"id": "w2", "title": "Yellow rain", "level": "yellow", "source": "Met Office"}
+        await fresh._announce_new([yellow])
+        await fresh._announce_new([{**yellow, "level": "amber"}])  # yellow to amber: said
+        assert say.call_count == 2

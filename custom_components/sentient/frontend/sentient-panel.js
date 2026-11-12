@@ -146,7 +146,7 @@
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mmg" class="card mg" hidden></div><div id="mlater" class="card" hidden></div></section>
-            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mbrain" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
+            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mlearn" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
@@ -1581,7 +1581,7 @@
 
     // HOW I'M LEARNING: how much of the day it expected, how its remarks and actions landed, AI calls saved
     _drawBrain() {
-      const el = this._$("mbrain");
+      const el = this._$("mlearn");
       if (!el) return;
       const b = this._brain;
       el.hidden = !(b && b.on);

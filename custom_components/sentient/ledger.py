@@ -35,6 +35,7 @@ DEAD = ("unavailable", "unknown")
 NUMBER_EVERY = 3600  # a number is recorded at most hourly unless it jumps
 NUMBER_JUMP = 0.25  # ...or changes by a quarter or more
 FLUSH_SECONDS = 5
+MAX_BUFFER = 20000  # changes held while the database can't be written
 ASKED_SECONDS = 300  # a device reporting within five minutes of being asked is doing what it was asked
 RECENT = 3000
 CAUSE_WORDS = {
@@ -214,7 +215,8 @@ class Ledger:
             cause, who = self.cause_of(new.context)
             asked = self._asked.pop(new.entity_id, None)  # only the first change after a request can be its echo
             if cause == "device" and asked is not None and 0 <= new.last_changed.timestamp() - asked[0] <= ASKED_SECONDS:
-                cause, who = asked[1], asked[2]  # the device caught up with a request from a few minutes ago
+                # the device caught up with a request from a few minutes ago: credited, and marked as matched by time
+                cause, who = asked[1], f"{asked[2] or CAUSE_WORDS.get(asked[1], asked[1])} (reported by the device later; matched by time)"
             row = {"ts": new.last_changed.timestamp(), "entity": new.entity_id, "name": new.name,
                    "domain": new.domain, "area": self._area(new.entity_id), "old": old.state, "new": new.state,
                    "cause": cause, "who": who, "surprise": None}
@@ -248,8 +250,11 @@ class Ledger:
                    r.get("cause"), r.get("who"), r.get("surprise")) for r in rows]
         try:
             await self.db.call(lambda conn: self.db.add_changes(conn, tuples))
-        except Exception:  # noqa: BLE001
-            _LOGGER.warning("Sentient could not save %s house changes", len(rows), exc_info=True)
+        except Exception:  # noqa: BLE001 - kept (oldest first) and tried again with the next flush
+            _LOGGER.warning("Sentient could not save %s house changes; trying again shortly", len(rows), exc_info=True)
+            self._buffer = (rows + self._buffer)[-MAX_BUFFER:]
+            if self.enabled and self._flush_unsub is None:
+                self._flush_unsub = async_call_later(self.hass, FLUSH_SECONDS * 6, self._flush_later)
 
     # ----- reading ----------------------------------------------------------------------------
     async def async_changes(self, **kwargs: Any) -> list[dict[str, Any]]:

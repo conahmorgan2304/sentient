@@ -115,6 +115,15 @@ class Database:
     async def call(self, fn: Callable[[sqlite3.Connection], Any]) -> Any:
         return await self.hass.async_add_executor_job(self.run, fn)
 
+    @staticmethod
+    def checkpoint(conn: sqlite3.Connection) -> list[int]:
+        """Fold the write-ahead log into the main file (run on its own, never inside a write)."""
+        return list(conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone())
+
+    def size_mb(self) -> float:
+        total = sum(os.path.getsize(p) for p in (self.path, self.path + "-wal") if os.path.exists(p))
+        return round(total / 1_048_576, 1)
+
     async def async_open(self) -> None:
         await self.call(lambda conn: None)
 

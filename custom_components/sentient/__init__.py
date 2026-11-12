@@ -192,6 +192,7 @@ class SentientRuntime:
     usage: Any = None  # which features are used
     own: Any = None  # what the house itself switched (so nothing mistakes it for a person)
     alarm_confirmations: dict = field(default_factory=dict)
+    automation_pending: dict = field(default_factory=dict)  # automations read back, waiting for a yes in a later turn
     outside_read: dict = field(default_factory=dict)  # conversation -> the turn outside text was last read in
     dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
     startup: dict = field(default_factory=dict)  # how long start-up took (for diagnostics)
@@ -739,7 +740,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     except Exception:  # noqa: BLE001 - the brain is an addition: Sentient still works without it
         _LOGGER.warning("Sentient's memory database could not start", exc_info=True)
         entry.runtime_data.brain = None
-    entry.runtime_data.warnings = Warnings(hass, options, lambda: entry.runtime_data)
+    entry.runtime_data.warnings = Warnings(hass, options, lambda: entry.runtime_data, entry.entry_id)
     entry.runtime_data.warnings.configure(options)
     entry.async_on_unload(entry.runtime_data.warnings.stop)
     entry.runtime_data.inbox = Inbox(hass, options)

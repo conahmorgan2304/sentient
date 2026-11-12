@@ -129,12 +129,16 @@ def is_severe(warning: dict[str, Any]) -> bool:
 
 
 class Warnings:
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Any) -> None:
+    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Any, entry_id: str = "") -> None:
+        from homeassistant.helpers.storage import Store
+
         self.hass = hass
         self.options = options
         self._rt = rt_getter
         self.current: list[dict[str, Any]] = []
-        self.seen: set[str] = set()
+        self.seen: dict[str, dict[str, Any]] = {}  # id -> {"level", "until"}: kept over restarts, so nothing is said twice
+        self._store: Any = Store(hass, 1, f"sentient.{entry_id}.warnings") if entry_id else None
+        self._loaded = False
         self.error: str | None = None
         self.checked: str | None = None
         self._unsub = None
@@ -154,7 +158,9 @@ class Warnings:
             self.hass.async_create_background_task(self.async_check(), "sentient warnings")
         elif not self.enabled:
             self.stop()
-            self.current, self.seen, self.error = [], set(), None
+            self.current, self.seen, self.error = [], {}, None
+            if self._store is not None:
+                self.hass.async_create_background_task(self._store.async_remove(), "sentient warnings forget")
 
     def stop(self) -> None:
         if self._unsub:
@@ -211,9 +217,21 @@ class Warnings:
         return found
 
     async def _announce_new(self, found: list[dict[str, Any]]) -> None:
+        from homeassistant.util import dt as dt_util
+
+        if self._store is not None and not self._loaded:
+            self._loaded = True
+            self.seen = {**((await self._store.async_load()) or {}).get("seen", {}), **self.seen}
         rt = self._rt()
-        new = [w for w in found if w["id"] not in self.seen]
-        self.seen = {w["id"] for w in found} | (self.seen if len(self.seen) < 500 else set())
+        now = dt_util.utcnow().timestamp()
+        self.seen = {k: v for k, v in self.seen.items() if v.get("until", 0) > now}
+        # new, or escalated to severe since it was last seen (yellow to amber, alert to warning)
+        new = [w for w in found if w["id"] not in self.seen
+               or (is_severe(w) and not self.seen[w["id"]].get("severe"))]
+        for w in found:
+            self.seen[w["id"]] = {"severe": is_severe(w), "until": now + 3 * 86400}
+        if self._store is not None:
+            self._store.async_delay_save(lambda: {"seen": self.seen}, 5)
         if rt is None:
             return
         for w in new:
