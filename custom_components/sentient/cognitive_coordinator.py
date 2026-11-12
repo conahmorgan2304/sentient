@@ -11,6 +11,8 @@ names, identifiers or original event data in its counters.
 from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
+from hashlib import blake2s
+from secrets import token_bytes
 from datetime import datetime, timezone
 from time import perf_counter_ns
 from typing import Any
@@ -210,6 +212,9 @@ class CognitiveCoordinator:
     """Bounded per-runtime counters; no personal or raw event data stored."""
 
     def __init__(self) -> None:
+        # Use per-runtime keyed digests rather than retaining incident IDs or
+        # personally identifiable source IDs in shadow metrics.
+        self._key = token_bytes(32)
         self._seen: dict[str, tuple[Any, ...]] = {}
         self._recent: deque[str] = deque(maxlen=MAX_TRACKED)
         self.incidents = Counter()
@@ -218,6 +223,9 @@ class CognitiveCoordinator:
         self._evaluations = 0
         self._elapsed_ns = 0
         self._slowest_ns = 0
+
+    def _digest(self, identifier: str) -> str:
+        return blake2s(identifier.encode("utf-8", errors="replace"), key=self._key, digest_size=16).hexdigest()
 
     def incident(self, item: dict[str, Any], assessment: dict[str, Any],
                  baseline_stage: str, *, now: datetime | None = None) -> dict[str, Any]:
@@ -228,10 +236,18 @@ class CognitiveCoordinator:
         self._elapsed_ns += elapsed_ns
         self._slowest_ns = max(self._slowest_ns, elapsed_ns)
         # Deduplicate periodic Mind-card redraws; count only changed evidence.
-        key = str(item.get("id") or "")
-        if key:
+        identifier = str(item.get("id") or "")
+        if identifier:
+            key = self._digest(identifier)
+            # Count changes to evidence composition, including when one report
+            # is corrected but the total number of reports stays unchanged.
+            # Store only aggregated counts, never source names or event text.
+            evidence_counts = Counter(
+                (str(row.get("kind") or "unknown"), str(row.get("status") or "unknown"))
+                for row in (item.get("evidence") or [])[-50:] if isinstance(row, dict)
+            )
             signature = (
-                item.get("end"), len(item.get("evidence") or []),
+                item.get("end"), tuple(sorted(evidence_counts.items())),
                 int(item.get("alert_level") or 0), baseline_stage, shadow["stage"],
                 assessment.get("status"), assessment.get("corroboration"),
                 assessment.get("reported_observations"), assessment.get("inferences"),
