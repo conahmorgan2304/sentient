@@ -115,18 +115,18 @@ async def test_frigate_summaries_need_no_ai(hass: HomeAssistant, tmp_path) -> No
 
 async def test_whose_from_looks_when_the_face_is_hidden(hass: HomeAssistant, aioclient_mock, tmp_path) -> None:
     entry = await _setup(hass, tmp_path, **WATCH, clip_whose=True,
-                         clip_looks="Alex: black motorbike helmet and riding jacket, on the motorbike")
+                         clip_looks="Alex: red cycling helmet and a yellow coat, on a bike")
     aioclient_mock.get(f"{URL}/api/faces", json={"train": [], "Alex": ["Alex-1.webp"]})
     aioclient_mock.get(f"{URL}/clips/faces/Alex/Alex-1.webp", content=b"RIFF webp")
     aioclient_mock.get(CLIP,
                        content=b"\x00 clip")
-    ai = _ai(hass, {"summary": "Someone in a black helmet rode out of the gate on a motorbike", "kind": "household",
+    ai = _ai(hass, {"summary": "Someone in a red helmet cycled out of the gate", "kind": "household",
                     "worth": False, "whose": "alex"})
     cw = entry.runtime_data.clipwatch
     cw._message(_review())
     await hass.async_block_till_done()
     data = ai[0].data
-    assert "motorbike helmet" in data["instructions"] and "whose" in data["structure"]
+    assert "cycling helmet" in data["instructions"] and "whose" in data["structure"]
     assert [a["media_content_type"] for a in data["attachments"]] == ["video/mp4", "image/webp"]
     assert cw.items[0]["whose"] == "Alex"
     assert "(probably Alex)" in entry.runtime_data.timeline.items[0]["text"]

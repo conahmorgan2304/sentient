@@ -814,8 +814,8 @@
           "calendar_clashes": "On: \"any clashes tomorrow?\" finds events that overlap, or with under 15 minutes between, in the briefing's calendars (or all calendars). Off: not offered.",
           "security_audit": "On: an admin can ask \"is my setup secure?\" for a read-only check of plain-http remote access, locks and alarms the voice can reach without a confirmation, long-lived tokens and admins without two-factor login. Off: not offered.",
           "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
-          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Conah is pronounced Connor\". Off: names are read as spelt.",
-          "pronunciations": "Written = said, one per line, e.g. Conah = Connor. Spell the said version the way the voice should read it.",
+          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Siobhan is pronounced Shivawn\". Off: names are read as spelt.",
+          "pronunciations": "Written = said, one per line, e.g. Siobhan = Shivawn. Spell the said version the way the voice should read it.",
           "health_duplicates": "On: a device that appears twice under one name where one copy is empty (a plug in Tuya Local and again from Tuya's cloud) is shown in House health, with a button to disable the empty copy. Off: not checked."
         }
       },

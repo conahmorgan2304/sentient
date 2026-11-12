@@ -59,7 +59,7 @@ async def test_old_ledger_days_are_summarised_then_dropped(hass: HomeAssistant, 
 async def test_every_change_records_its_cause(hass: HomeAssistant):
     entry = await _setup(hass)
     rt = entry.runtime_data
-    user = await hass.auth.async_create_user("Conah")
+    user = await hass.auth.async_create_user("Siobhan")
     await hass.async_block_till_done(wait_background_tasks=True)
     hass.states.async_set("light.landing", "off", {"friendly_name": "Landing light"})
     hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})
@@ -78,7 +78,7 @@ async def test_every_change_records_its_cause(hass: HomeAssistant):
     rows = await rt.brain.ledger.async_changes(newest_first=False)
     causes = [(r["entity"], r["cause"], r["who"]) for r in rows]
     assert ("climate.heating", "device", None) in causes
-    assert ("light.landing", "person", "Conah") in causes
+    assert ("light.landing", "person", "Siobhan") in causes
     assert ("light.landing", "automation", "Evening lights") in causes
     assert ("light.landing", "sentient", "motion lights") in causes
     assert ("light.landing", "voice", "kitchen speaker") in causes
@@ -631,7 +631,7 @@ async def test_diagnostics_and_doctor_show_the_database_without_names(hass: Home
     from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
     from custom_components.sentient.doctor import async_check
 
-    entry = await _setup(hass, pronunciations="Conah = Connor", warnings_region="North West England")
+    entry = await _setup(hass, pronunciations="Siobhan = Shivawn", warnings_region="North West England")
     data = await async_get_config_entry_diagnostics(hass, entry)
     assert data["brain"]["ledger_on"] is True and "disk_mb" in data["brain"]
     assert data["options"]["pronunciations"] == "**REDACTED**" and data["options"]["warnings_region"] == "**REDACTED**"

@@ -53,16 +53,16 @@ async def test_newer_replaces_older_only_when_just_the_value_changed(hass: HomeA
 async def test_links_and_synonyms_help_recall(hass: HomeAssistant):
     area = ar.async_get(hass).async_create("Living Room")
     hass.states.async_set("light.landing_light", "off", {"friendly_name": "Landing light"})
-    hass.states.async_set("person.kayleigh", "home", {"friendly_name": "Kayleigh"})
+    hass.states.async_set("person.alex", "home", {"friendly_name": "Alex"})
     store = MemoryStore(hass, "t")
     await store.async_load()
-    m = store.add("Kayleigh likes the landing light dim at night")
-    assert set(m.links) == {"light.landing_light", "person.kayleigh"}
+    m = store.add("Alex likes the landing light dim at night")
+    assert set(m.links) == {"light.landing_light", "person.alex"}
     lamp = store.add("The lamp in the living room goes on at sunset")
     assert f"area:{area.id}" in lamp.links
     store.add("The rabbits live by the shed")
     assert store.search("living room light", count_hits=False)[0].id == lamp.id  # synonym: light ~ lamp
-    assert store.for_prompt("what does Kayleigh like?", 2)[0].id == m.id
+    assert store.for_prompt("what does Alex like?", 2)[0].id == m.id
 
 
 

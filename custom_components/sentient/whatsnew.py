@@ -35,7 +35,7 @@ NOTES: dict[str, list[str]] = {
         "Sentient now learns what's usual at each hour and notices what isn't. The Mind tab's HOW I'M LEARNING card shows how much of each day it expected, and that number should rise week on week.",
         "An important device that changes by itself is mentioned once, and repeats are linked: \"the third time this week, always around 11am\".",
         "Memories, conversations and the timeline are kept for a year in Sentient's own database, and recall searches all of it.",
-        "Names are said the way they're pronounced: \"Conah is pronounced Connor\" (a memory, or Settings → Voice → Pronunciations) changes what the speakers say, while the chat and timeline keep the real spelling.",
+        "Names are said the way they're pronounced: \"Siobhan is pronounced Shivawn\" (a memory, or Settings → Voice → Pronunciations) changes what the speakers say, while the chat and timeline keep the real spelling.",
         "New on Settings: Memory & learning, Weather warnings (your own country's service) and Extra skills (read-only email, calendar clashes, a security check and automations from plain English).",
     ],
     "0.88.2": [

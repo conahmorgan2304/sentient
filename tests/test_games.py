@@ -104,7 +104,7 @@ async def test_game_tools_refuse_when_no_game_is_on(hass: HomeAssistant) -> None
 async def test_game_memory_is_separate_from_the_houses_memory(hass: HomeAssistant) -> None:
     entry = await _setup(hass, games=True)
     rt = entry.runtime_data
-    rt.memory.add("Conah likes jazz", "preference")
+    rt.memory.add("Siobhan likes jazz", "preference")
     api = await _api(hass)
     await _call(api, "sentient_game", action="new", game="Heist")
     api = await _api(hass)
@@ -112,7 +112,7 @@ async def test_game_memory_is_separate_from_the_houses_memory(hass: HomeAssistan
     assert all("crowbar" not in m.text for m in rt.memory.items)  # nothing the game does reaches the house
     assert "sentient_recall" in _names(api)  # but the house's memory can be read for the game
     found = await _call(api, "sentient_recall", query="jazz")
-    assert "Conah likes jazz" in str(found)
+    assert "Siobhan likes jazz" in str(found)
     assert "crowbar" not in str(await _call(api, "sentient_recall", query="crowbar"))  # and the game stays out of it
 
 
