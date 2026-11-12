@@ -20,7 +20,9 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
     kinds = Counter(r.get("kind") for r in evidence)
     observed = sum(r.get("status") == "observed" for r in evidence)
     inferred = sum(r.get("status") == "inferred" for r in evidence)
-    unknown = sum(r.get("status") == "unknown" for r in evidence)
+    # Unrecognised or absent statuses are unknown; never silently treat an
+    # incomplete sensor report as settled evidence.
+    unknown = sum(r.get("status") not in ("observed", "inferred") for r in evidence)
     source_count = len({r.get("source") for r in evidence if isinstance(r.get("source"), str)})
     reasons: list[str] = []
     if kinds["contact"]:
@@ -61,8 +63,8 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         reasons.append("contact_and_camera_activity")
     elif kinds["contact"] and camera_reports:
         reasons.append("contact_and_camera_reports_unconfirmed")
-    status = ("observed" if observed and not (inferred or unknown) else
-              "mixed" if observed else "inferred" if inferred else "unknown")
+    status = ("mixed" if sum(bool(v) for v in (observed, inferred, unknown)) > 1 else
+              "observed" if observed else "inferred" if inferred else "unknown")
     gaps = []
     if unknown:
         gaps.append("unsettled_evidence")
