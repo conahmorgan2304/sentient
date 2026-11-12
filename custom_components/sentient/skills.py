@@ -263,8 +263,22 @@ async def async_save_automation(hass: HomeAssistant, config: dict[str, Any]) -> 
         await hass.async_add_executor_job(_write)
     except Exception as err:  # noqa: BLE001
         return {"error": f"Couldn't save it: {err}"}
-    await hass.services.async_call("automation", "reload", {}, blocking=True)
-    return {"saved": True, "id": new_id, "alias": item.get("alias")}
+    return {"saved": True, "id": new_id, "alias": item.get("alias"), **await async_activate(hass, new_id)}
+
+
+async def async_activate(hass: HomeAssistant, automation_id: str) -> dict[str, Any]:
+    """Reload automations (tried twice). If it still fails the automation is saved but not running: say so, and never
+    write it again (that would make a duplicate) — reloading later is enough."""
+    error = None
+    for _ in range(2):
+        try:
+            await hass.services.async_call("automation", "reload", {}, blocking=True)
+            return {"active": True}
+        except Exception as err:  # noqa: BLE001
+            error = err
+    return {"active": False, "id": automation_id,
+            "note": ("Saved to automations.yaml but not running yet: Home Assistant couldn't reload automations "
+                     f"({error}). Don't save it again; reload automations from Settings → Automations, or restart.")}
 
 
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri"]

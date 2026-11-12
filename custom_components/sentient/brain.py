@@ -96,6 +96,11 @@ class Brain:
         self.warming = False
         self._warm_task: Any = None
         self._generation = 0
+        from homeassistant.helpers.storage import Store
+
+        # forgotten periods not yet deleted from the database: kept on disk until they are
+        self._forget_store: Any = Store(hass, 1, f"sentient.{entry_id}.forget")
+        self._forget_pending: list[tuple[float, float]] = []
 
     # ----- settings ---------------------------------------------------------------------------
     def on(self, key: str) -> bool:
@@ -109,6 +114,13 @@ class Brain:
     # ----- start and stop ---------------------------------------------------------------------
     async def async_start(self) -> None:
         await self.db.async_open()
+        # a forget that was interrupted (Home Assistant stopped part-way) is finished before anything else is written
+        unfinished = ((await self._forget_store.async_load()) or {}).get("pending") or []
+        for start, end in unfinished:
+            self.db.forget_window(float(start), float(end))
+            self._forget_pending.append((float(start), float(end)))
+        if self._forget_pending:
+            await self.async_finish_forget()
         saved = await self.db.call(lambda c: {k: self.db.get_kv(c, k) for k in ("expectations", "outcomes", "cases", "counters")})
         self.expect.load(saved.get("expectations"))
         self.outcomes = saved.get("outcomes") or {"good": [], "bad": []}
@@ -201,11 +213,12 @@ class Brain:
         await self.db.call(lambda c: [self.db.set_kv_text(c, k, v) for k, v in data.items()])
 
     def forget_since(self, since: datetime) -> int:
-        """'Forget the last N hours': the ledger, copied conversations and timeline entries from then on. Pending and
-        in-flight writes in that window are refused by the database, so nothing comes back. Returns rows dropped
-        before they were written. (Expectations keep only counts, not records, so nothing in them can be recalled.)"""
+        """'Forget the last N hours', the part that can't wait: the period is refused by every database write from now
+        on, and changes still waiting to be saved are dropped. The database deletion itself is ``async_finish_forget``,
+        which the caller awaits before saying it's done. (Expectations keep only counts, not records.)"""
         start, end = since.timestamp(), dt_util.utcnow().timestamp()
         self.db.forget_window(start, end)
+        self._forget_pending.append((start, end))
         dropped = 0
         if self.ledger is not None:
             before = len(self.ledger._buffer)
@@ -214,10 +227,22 @@ class Brain:
             for row in [r for r in self.ledger.recent if start <= r["ts"] <= end]:
                 self.ledger.recent.remove(row)
         self._remarks = [(t, e) for t, e in self._remarks if t < start]
-        if self.started:
-            self.hass.async_create_background_task(self.db.call(lambda c: self.db.forget_since(c, start, end)),
-                                                   "sentient forget recent")
         return dropped
+
+    async def async_finish_forget(self) -> dict[str, Any]:
+        """Delete every pending forgotten period from the database, recorded first so a restart part-way finishes
+        the job (see ``async_start``). Raises if the database couldn't be cleared."""
+        pending = list(self._forget_pending)
+        if not pending:
+            return {}
+        await self._forget_store.async_save({"pending": pending})
+        gone: dict[str, int] = {}
+        for start, end in pending:
+            for key, n in (await self.db.call(lambda c, a=start, b=end: self.db.forget_since(c, a, b))).items():
+                gone[key] = gone.get(key, 0) + n
+        self._forget_pending = [w for w in self._forget_pending if w not in pending]
+        await self._forget_store.async_save({"pending": self._forget_pending})
+        return gone
 
     async def async_clear(self, what: str) -> None:
         """'ledger' (every recorded change) or 'learning' (expectations, beliefs, outcomes, cases)."""
@@ -559,7 +584,9 @@ class Brain:
         for e in list(getattr(rt.conversations, "episodes", []) or []):
             body = " ".join(f"{'They' if t.get('who') == 'them' else 'You'}: {t.get('text', '')}"
                             for t in e.get("turns", []) if isinstance(t, dict))
-            episodes.append((str(e.get("id") or e.get("start")), e.get("start"), f"{e.get('room') or ''} {body}".strip(), {"room": e.get("room")}))
+            # timestamped by last activity (as the conversation store forgets and expires them), start kept alongside
+            episodes.append((str(e.get("id") or e.get("start")), e.get("last") or e.get("start"),
+                             f"{e.get('room') or ''} {body}".strip(), {"room": e.get("room"), "start": e.get("start")}))
 
         def _sync(conn: Any) -> None:  # forgotten periods are refused inside put_memory
             have = {r[0] for r in conn.execute("SELECT ref FROM memories WHERE kind = 'fact'")}

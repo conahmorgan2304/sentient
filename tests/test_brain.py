@@ -661,7 +661,7 @@ async def test_warm_up_waits_for_home_assistant_to_finish_starting(hass: HomeAss
 
 
 async def test_forgetting_the_last_hours_reaches_the_database(hass: HomeAssistant):
-    from custom_components.sentient.privacy import forget_recent
+    from custom_components.sentient.privacy import async_forget_recent
 
     entry = await _setup(hass)
     rt = entry.runtime_data
@@ -678,8 +678,8 @@ async def test_forgetting_the_last_hours_reaches_the_database(hass: HomeAssistan
     hass.states.async_set("light.b", "on")  # waiting in the buffer, not yet written
     await hass.async_block_till_done()
     late = now.isoformat()
-    forget_recent(rt, 48)
-    await hass.async_block_till_done(wait_background_tasks=True)
+    result = await async_forget_recent(rt, 48)
+    assert result["database_conversation"] == 1 and result["database_timeline"] == 1 and result["database_ledger"] == 1
     # a copy that was already on its way when the forgetting happened can't bring it back
     await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "late", late, "Boiler noticed again"))
     await brain.ledger.async_flush()
@@ -713,3 +713,57 @@ async def test_clearing_the_ledger_cant_be_undone_by_a_waiting_write(hass: HomeA
     await hass.async_block_till_done()
     await brain.ledger.async_flush()
     assert await brain.db.call(lambda c: c.execute("SELECT COUNT(*) FROM ledger").fetchone()[0]) == 1
+
+
+async def test_a_conversation_still_going_inside_the_window_is_forgotten(hass: HomeAssistant):
+    from custom_components.sentient.privacy import async_forget_recent
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    now = dt_util.utcnow()
+    rt.conversations.episodes = [{"id": "e1", "start": (now - timedelta(hours=3)).isoformat(),
+                                  "last": (now - timedelta(minutes=30)).isoformat(), "room": "Kitchen",
+                                  "turns": [{"who": "them", "text": "the boiler surprise for her birthday"}]}]
+    await rt.brain.async_sync_memories()
+    assert await rt.brain.async_search(["birthday"])
+    await async_forget_recent(rt, 1)  # began three hours ago, but was still going an hour ago
+    assert not await rt.brain.async_search(["birthday"])
+
+
+async def test_forgetting_says_so_when_the_database_cant_and_finishes_at_the_next_start(hass: HomeAssistant):
+    from custom_components.sentient.brain import Brain
+    from custom_components.sentient.privacy import async_forget_recent
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    brain = rt.brain
+    recent = (dt_util.utcnow() - timedelta(minutes=10)).isoformat()
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "t", recent, "The surprise party plan"))
+    with patch.object(brain.db, "forget_since", side_effect=OSError("disk full")):
+        result = await async_forget_recent(rt, 2)
+    assert "couldn't be cleared yet" in result["database_error"]
+    assert brain._forget_pending  # still owed, and recorded on disk
+    # Home Assistant restarts: the owed forget is finished before anything else
+    path = brain.db.path
+    await brain.async_stop()
+    again = Brain(hass, entry.entry_id, entry.options, lambda: rt, path)
+    await again.async_start()
+    assert not again._forget_pending and not await again.async_search(["surprise"])
+    await again.async_stop()
+
+
+async def test_an_automation_that_wont_activate_is_saved_once_and_says_so(hass: HomeAssistant, tmp_path):
+    from custom_components.sentient.skills import async_save_automation
+
+    await _setup(hass)
+    path = tmp_path / "automations.yaml"
+    path.write_text("[]\n")
+
+    async def broken(call):
+        raise RuntimeError("reload failed")
+
+    hass.services.async_register("automation", "reload", broken)
+    with patch.object(hass.config, "path", return_value=str(path)):
+        out = await async_save_automation(hass, {"alias": "Porch", "triggers": [], "actions": []})
+    assert out["saved"] and out["active"] is False and "Don't save it again" in out["note"]
+    assert path.read_text().count("Porch") == 1

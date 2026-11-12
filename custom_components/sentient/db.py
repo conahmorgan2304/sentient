@@ -102,7 +102,7 @@ class Database:
         self.forgotten: list[tuple[float, float, str]] = []  # (start, end, "all" or "ledger")
 
     def forget_window(self, start: float, end: float, scope: str = "all") -> None:
-        self.forgotten = (self.forgotten + [(start, end, scope)])[-50:]
+        self.forgotten = (self.forgotten + [(start, end, scope)])[-500:]
 
     def is_forgotten(self, ts: float | None, what: str = "memories") -> bool:
         return ts is not None and any(a <= ts <= b and (scope == "all" or scope == what) for a, b, scope in self.forgotten)

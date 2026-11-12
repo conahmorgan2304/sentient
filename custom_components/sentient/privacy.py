@@ -23,6 +23,19 @@ def _after(stamp: Any, since) -> bool:
     return when is not None and dt_util.as_utc(when) >= since
 
 
+async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
+    """Forget, and report it done only once the database has really deleted its copies."""
+    gone: dict[str, Any] = forget_recent(rt, hours)
+    if (brain := getattr(rt, "brain", None)) is not None and brain.started:
+        try:
+            for key, n in (await brain.async_finish_forget()).items():
+                gone[f"database_{key}"] = n
+        except Exception as err:  # noqa: BLE001 - said plainly: the period stays blocked and is retried at the next start
+            gone["database_error"] = ("The memory database couldn't be cleared yet; it will finish when Sentient next "
+                                      f"starts, and nothing from that period can be saved meanwhile ({err}).")
+    return gone
+
+
 def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     from .language import clear_translations
 

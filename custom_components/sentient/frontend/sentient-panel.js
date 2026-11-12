@@ -2699,8 +2699,9 @@
       else if (act === "privforget") {
         if (!window.confirm("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
         this._hass.callWS({ type: "sentient/privacy/forget", hours: 48 }).then((r) => {
-          const total = Object.values(r.forgot).reduce((a, b) => a + b, 0);
-          this._status(`FORGOT ${total} THING${total === 1 ? "" : "S"} ✓`, "ok");
+          const total = Object.values(r.forgot).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
+          if (r.forgot.database_error) this._status(r.forgot.database_error, "warn");
+          else this._status(`FORGOT ${total} THING${total === 1 ? "" : "S"} ✓`, "ok");
           this._drawPrivacy(true);
         }, (e) => this._status(e.message || String(e), "bad"));
       }

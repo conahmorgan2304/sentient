@@ -941,16 +941,16 @@ def ws_privacy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/privacy/forget", vol.Optional("hours", default=48): vol.All(vol.Coerce(float), vol.Range(min=1, max=168))})
 @websocket_api.require_admin
-@callback
-def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+@websocket_api.async_response
+async def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Forget everything Sentient kept from the last few hours."""
     entry = _entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
-    from .privacy import forget_recent
+    from .privacy import async_forget_recent
 
-    connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
+    connection.send_result(msg["id"], {"forgot": await async_forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
