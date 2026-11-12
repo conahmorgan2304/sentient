@@ -270,8 +270,10 @@ class Watchdog:
     def _device_id(self, name: str) -> str | None:
         from homeassistant.helpers import device_registry as dr
 
-        for device in dr.async_get(self.hass).devices.values():
-            if (device.name_by_user or device.name) == name:
+        reg = dr.async_get(self.hass)
+        for item in reg.devices:  # newer Home Assistant iterates the devices themselves, older ones their ids
+            device = item if hasattr(item, "name_by_user") else reg.async_get(item)
+            if device is not None and (device.name_by_user or device.name) == name:
                 return device.id
         return None
 
