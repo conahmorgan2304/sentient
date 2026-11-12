@@ -66,6 +66,7 @@ class Control:
         self.recovery_turns = {}
         self.recovery_serial = 0
         self.on_result = None
+        self.cognitive = None  # attached by runtime; shadow only, never authorises service calls
 
     def clear_recovery(self):
         self.recovery_generation += 1
@@ -340,6 +341,8 @@ class Control:
                   'summary': self.summary(actions),
                   'assessment': evaluate_outcomes(outcomes),
                   'note': 'Verified means the device reported the requested state.'}
+        if self.cognitive is not None:
+            result['cognitive_shadow'] = self.cognitive.outcome(result)
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')
@@ -369,6 +372,8 @@ class Control:
             from .outcome_review import evaluate_outcomes
 
             result['assessment'] = evaluate_outcomes(result['actions'])
+            if self.cognitive is not None:
+                result['cognitive_shadow'] = self.cognitive.outcome(result)
             result['rechecked_at'] = dt_util.utcnow().isoformat()
             if changed:
                 from .cognitive import decision
