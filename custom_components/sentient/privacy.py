@@ -185,7 +185,7 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
 
     mem = rt.memory
     recent = [m for m in mem.items if _after(m.created, since) and not m.pinned]
-    gone['memory_changes'] = mem.forget_changes_since(since)
+    gone['memory_changes'] = mem.forget_changes_since(since, until=_until)
     for m in recent:
         mem.forget(m.id)
     gone["memories"] = len(recent)
@@ -242,5 +242,5 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
     rt.speech.hass.bus.async_fire("sentient_voice_session")
 
     if (ai := getattr(rt, "ai", None)) is not None:
-        gone["sent_records"] = ai.forget_sent(since.isoformat())
+        gone["sent_records"] = ai.forget_sent(since.isoformat(), until=dt_util.utc_from_timestamp(_until).isoformat() if _until is not None else None)
     return gone
