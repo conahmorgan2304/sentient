@@ -43,7 +43,8 @@ def _coming_up(rt: Any) -> str | None:
     alarms = [a for a in (rt.alarms.listing() if getattr(rt, "alarms", None) else []) if a["on"] and a["next"]]
     reminders = []
     watches = getattr(rt, "watches", None)
-    for w in (watches.watches() if watches is not None else []):
+    listed = getattr(watches, "watches", []) if watches is not None else []
+    for w in (listed() if callable(listed) else listed):  # a property on the real engine
         if getattr(w, "kind", "") == "reminder":
             reminders.append(w)
     parts = []
@@ -86,6 +87,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             report = await check_for_voice(hass, context)
             verdict = (report.get("assessment") or {}).get("verdict")
             body = report["summary"] if verdict == "problem" else report.get("offline_explanation") or report["summary"]
+            if (brain := getattr(rt, "brain", None)) is not None:
+                brain.count("local")
             return LEAD + body
         if guest:
             return None  # alarms, reminders and visitors are household details
@@ -97,4 +100,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             return None
     except Exception:  # noqa: BLE001 - a local answer is a bonus; never stop the backup agent from trying
         return None
-    return LEAD + body if body else None
+    if not body:
+        return None
+    if (brain := getattr(rt, "brain", None)) is not None:
+        brain.count("local")  # answered from the house, no AI
+    return LEAD + body

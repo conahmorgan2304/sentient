@@ -878,3 +878,47 @@ async def test_a_failed_forget_replay_at_start_never_stops_the_brain(hass: HomeA
     assert again.db.is_forgotten(start + 60)  # nothing from that period can be saved meanwhile
     assert any("couldn't be finished yet" in i["text"] for i in rt.timeline.items)
     await again.async_stop()
+
+
+async def test_a_script_finishing_is_not_a_reaction(hass: HomeAssistant):
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    hass.states.async_set("script.camera_alert", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("script.camera_alert", "on", context=rt.own.context("camera security"))
+    await hass.async_block_till_done()
+    hass.states.async_set("script.camera_alert", "off", context=Context())
+    await hass.async_block_till_done()
+    assert rt.brain.outcomes["bad"] == []
+
+
+async def test_sensors_changing_by_themselves_are_not_counted_as_unexplained(hass: HomeAssistant):
+    entry = await _setup(hass)
+    for eid, a, b in (("binary_sensor.motion", "off", "on"), ("sensor.temp", "18", "40"), ("light.porch", "off", "on")):
+        hass.states.async_set(eid, a)
+        await hass.async_block_till_done()
+        hass.states.async_set(eid, b)
+        await hass.async_block_till_done()
+    status = await entry.runtime_data.brain.async_status()
+    assert status["unexplained_week"] == 1  # only the porch light
+
+
+async def test_answers_from_the_house_count_as_without_the_ai(hass: HomeAssistant):
+    from custom_components.sentient.local_answers import async_answer
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    # the real alarms and reminders engines (1.4.0's test used stand-ins, which hid a crash on the live system)
+    out = await async_answer(hass, rt, "when's my next alarm?", None)
+    assert out and "no alarms or reminders" in out
+    assert (await rt.brain.async_status())["independence"]["without_ai"] == 1
+
+
+async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    for day in range(1, 10):
+        brain.expect.learn("switch.kettle", "off", dt_util.utcnow().timestamp() - day * 86400)
+    brain.expect.days = [9, 9]
+    brain.gate_remark({}, [("switch.kettle", "off")])
+    assert (await brain.async_status())["would_skip"] == 1

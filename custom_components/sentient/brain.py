@@ -49,6 +49,10 @@ DEFAULTS = {CONF_LEDGER: True, CONF_EXPECTATIONS: True, CONF_UNEXPLAINED: True, 
             CONF_REACTIONS: True, CONF_CASES: True, CONF_VOICE_SPEED: True, CONF_VOICE_RESTART: False,
             CONF_SITUATIONS: True, CONF_BELIEFS: True}
 # devices whose unexplained changes matter by default (when none are chosen in Settings)
+# things a person switches: putting one straight back after Sentient changed it is a reaction
+TOGGLES = ("light", "switch", "fan", "cover", "climate", "humidifier", "input_boolean", "valve", "lock", "water_heater")
+# things that are controlled (not sensors): one changing with nothing in Home Assistant behind it is worth counting
+CONTROLLED = TOGGLES + ("media_player", "vacuum", "alarm_control_panel", "siren", "lawn_mower")
 IMPORTANT_DOMAINS = ("climate", "water_heater", "valve")  # locks, doors and gates are used by hand: chosen, not default
 UNEXPLAINED_GAP = 1800  # one mention per device per half hour
 REVERT_SECONDS = 60  # 'straight back': longer is more likely someone leaving the room
@@ -143,6 +147,9 @@ class Brain:
         saved = await self.db.call(lambda c: {k: self.db.get_kv(c, k) for k in ("expectations", "outcomes", "cases", "counters")})
         self.expect.load(saved.get("expectations"))
         self.outcomes = saved.get("outcomes") or {"good": [], "bad": []}
+        if not self.outcomes.get("v"):
+            # 1.5.0 counted a script finishing as being "put straight back": start the tally again
+            self.outcomes = {"good": [], "bad": [], "v": 2}
         self.cases = saved.get("cases") or {}
         self.counters = saved.get("counters") or {}
         rt = self._rt()
@@ -290,7 +297,7 @@ class Brain:
             self._cancel_warm()
             self.expect = Expectations()
             self.expect.warmed = True  # cleared on purpose: don't refill it from history
-            self.outcomes, self.cases, self.counters = {"good": [], "bad": []}, {}, {}
+            self.outcomes, self.cases, self.counters = {"good": [], "bad": [], "v": 2}, {}, {}
         if self.ledger is not None and what in ("ledger", "all"):
             self.ledger.recent.clear()
         await self.db.call(lambda c: self.db.clear(c, what))
@@ -363,8 +370,8 @@ class Brain:
 
     def _reaction(self, row: dict[str, Any]) -> None:
         """Sentient's change switched straight back = bad; a remark followed by a person acting = good."""
-        if self.ledger is None or row["cause"] == "sentient":
-            return
+        if self.ledger is None or row["cause"] == "sentient" or row["domain"] not in TOGGLES:
+            return  # scripts, scenes, buttons and the like switch themselves back: that's not a reaction
         now = row["ts"]
         for prev in reversed(self.ledger.recent_rows(now - REVERT_SECONDS, row["entity"])[:-1]):
             if prev["cause"] == "sentient" and prev["old"] == row["new"]:
@@ -385,7 +392,7 @@ class Brain:
 
     def _trim_outcomes(self) -> None:
         cutoff = dt_util.utcnow().timestamp() - 30 * 86400
-        self.outcomes = {k: [t for t in v if t >= cutoff] for k, v in self.outcomes.items()}
+        self.outcomes = {k: ([t for t in v if t >= cutoff] if isinstance(v, list) else v) for k, v in self.outcomes.items()}
 
     @callback
     def _noticed(self, event: Event) -> None:
@@ -421,6 +428,7 @@ class Brain:
             return False
         if mode == "watch":
             record["would_skip"] = "usual for this time"
+            self.count("would_gate")
             return False
         record["result"] = "skipped: usual for this time"
         self.count("gated")
@@ -780,8 +788,10 @@ class Brain:
         def _counts(conn: Any) -> dict[str, Any]:
             return {
                 "ledger": conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0],
-                "unexplained_week": conn.execute("SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ?",
-                                                 (dt_util.utcnow().timestamp() - 7 * 86400,)).fetchone()[0],
+                # controlled devices only: a motion sensor or thermometer changes by itself all the time, by design
+                "unexplained_week": conn.execute(
+                    f"SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ? AND domain IN ({','.join('?' * len(CONTROLLED))})",
+                    (dt_util.utcnow().timestamp() - 7 * 86400, *CONTROLLED)).fetchone()[0],
                 "memories": dict(conn.execute("SELECT kind, COUNT(*) FROM memories GROUP BY kind").fetchall()),
                 "beliefs": self.beliefs.all(conn)[:12],
             }
@@ -797,6 +807,6 @@ class Brain:
             "outcome": {"good": good, "bad": bad, "percent": round(100 * good / (good + bad)) if good + bad else None},
             "independence": {"ai_calls": calls, "without_ai": saved,
                              "percent": round(100 * saved / (saved + calls)) if calls is not None and saved + calls else None},
-            "recall_misses": counts.get("recall_miss", 0), "disk_mb": await self.hass.async_add_executor_job(self.db.size_mb),
+            "recall_misses": counts.get("recall_miss", 0), "would_skip": counts.get("would_gate", 0), "disk_mb": await self.hass.async_add_executor_job(self.db.size_mb),
             "voice": self.voice_issues(), "trust": self.trust(), "situations": self.situations(), **stored,
         }
