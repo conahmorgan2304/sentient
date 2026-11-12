@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.5": [
+        "Live camera: Home Assistant's own player that loads but never shows a picture now falls back to the still picture after 12 seconds, instead of staying black.",
+        "Security incidents: a door and a camera only count as backing each other up when they're different devices, and evidence with no clear status is treated as unknown rather than settled.",
+        "Long paragraphs in text manuals are split into sections instead of losing their end; voice recognition no longer suggests a match level from broken or ambiguous scores.",
+        "For testing, off by default: \"Compare security incidents\" (Settings → Safety & security) judges each incident a second, stricter way alongside the usual stages and counts how often they agree, as totals on the Mind sensor. It never changes an alert, a stage or what is said.",
+    ],
     "1.5.4": [
         "Manuals say which page: each PDF is read page by page once, on this machine, and a question sends the AI only the few pages that match instead of the whole document — far cheaper — so the answer can say \"it's on page 14\". A manual is also found by what it says when its name doesn't match, and with the AI down the closest passage is read out with its page. Scanned PDFs are still read whole (the Setup doctor lists them). Switch: Settings → Manuals & documents → Read PDFs page by page.",
     ],

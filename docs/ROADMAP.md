@@ -2,7 +2,7 @@
 
 Sentient is built in stages. Each stage is used in a real house before the next one starts.
 
-## Stage 1 — Shared brain *(in progress)*
+## Stage 1 — Shared brain *(implemented; ongoing refinements)*
 - [x] Setup wizard: name, speakers, quiet hours, banned words, hush-after automations
 - [x] Long-term memory with merging of near-duplicates, and services
 - [x] LLM API: memories in the prompt, plus remember / recall / forget / announce tools
@@ -14,7 +14,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Dashboard card (core, feed and stats) shipped with the integration (0.40.0: custom:sentient-hub-card, custom:sentient-shows-card)
 - [x] Memory manager in the options flow (view, edit, delete) (0.3.0)
 
-## Stage 2 — Watches *(in progress)*
+## Stage 2 — Watches *(implemented; ongoing refinements)*
 - [x] "Keep an eye on X until Y and tell me if Z", by voice (0.4.0)
 - [x] Device/sensor watches: reach a state, or cross a number — no AI needed (0.4.0)
 - [x] Camera checks through the configured AI task, woken only by that camera's own motion/object sensors, with a cooldown (0.4.0)
@@ -25,7 +25,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Local times everywhere; never read IDs aloud; list and cancel by voice (0.4.0)
 - [x] Doorbell visitor log: one AI look when the bell rings, kept quiet by default; parcel-left check after deliveries (0.9.0)
 
-## Stage 3 — Speaking up *(in progress)*
+## Stage 3 — Speaking up *(implemented; ongoing refinements)*
 - [x] Noticing: chosen entities → free rules (quiet hours, hush, hourly limit, jitter, batching) → AI decides whether to speak (0.6.0)
 - [x] House rules every voice must follow (0.6.0)
 - [x] `sentient.ask`: ask out loud and open the mic for the reply (0.6.0)
@@ -34,7 +34,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Proactive remarks and questions with follow-up listening (0.6.0)
 - [x] Briefings on request: facts for any voice agent, or spoken via `sentient.briefing` (0.8.0)
 
-## Stage 4 — Learning *(in progress)*
+## Stage 4 — Learning *(implemented; ongoing refinements)*
 - [x] Learn routines from history with plain statistics — no AI (0.7.0)
 - [x] Share them with every voice agent, offer each once, and do adopted ones at their usual time (0.7.0)
 - [x] Learn links — what people do straight after something else ("when the back door opens after dark, the kitchen light goes on"), offered and done on request (0.32.0)
@@ -42,6 +42,13 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Learning from feedback: shushes, hushes straight after a remark and declined routines make it quieter about those things by itself, fading over a month (0.34.0)
 - [x] Weekly report: what it learned and noticed this week (0.34.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
+
+## Next integration work (separate from the completed release checklist)
+- [ ] Cognitive Core 2.0: pilot a shared, read-only evidence-to-decision envelope across security, incident and action outcomes; compare with existing behaviour before modifying alerts or device control.
+- [ ] Voice Recognition: verify multiple consenting household voices, noise and ambiguous speaker matches on real ESPHome satellites; no identity-based permission elevation.
+- [ ] Camera streaming: test Nest/Home Assistant stream lifecycle and failover using actual Nest diagnostics; keep manual picture/video selection.
+- [ ] Document retrieval: validate the existing v1.5.4 PDF page index and page citations against text and scanned PDFs before adding another retrieval engine.
+- [ ] 3D talking head: separate prototype, explicitly excluded from this integration work.
 
 ## Stage 5 — Its own page
 - [x] Built-in sidebar panel, not an editable dashboard (0.13.0)
@@ -232,4 +239,5 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 1.5.1 — Learning card fixes from the first live day: reactions only for things a person switches (scripts finishing were counted as "put straight back"; the 1.5.0 tally is reset once), "switched by themselves" counts controlled devices only (3,220 of 3,435 changes were sensors), local answers counted as without the AI, watch mode shows the calls it would save. Fixed the offline alarms/reminders answer, which crashed on the real reminders engine (a property read as a method; the 1.4.0 test used a stand-in).
 - [x] 1.5.2 — Restart churn: changes from or to unavailable/unknown are left out of "switched by themselves" and of belief forming and testing (live: most of 379 "by themselves" in six hours were devices coming back after a restart).
 - [x] 1.5.3 — One surprise per device per two-minute burst on the Mind card and in the voice's situations (live: Boys echo playing/idle/paused listed three times in a second). Stop flagging picks the same-named device with entities (live: bedroom waxmelt in Tuya Local and an empty "unsupported" copy from Tuya cloud). House health spots same-named devices with an empty copy and can disable it. Mind card lists the top devices switched by themselves. A week of watch mode with 20+ calls saved suggests switching "skip the usual" on, once. Mind sensor defers the self-check out of its update (live: 0.77 s at start-up).
-- [ ] 1.5.4 (open) — Manuals read page by page (pages.py, pypdf): each PDF and text document is read once into the database with FTS5; a question sends the AI only the best three pages and the answer names the page; a document is found by its contents when no name matches; NOT_HERE falls back to the whole PDF with the search's guess; with the AI down the closest passage is quoted with its page; scanned PDFs are read whole and listed in the Setup doctor. Switch: Read PDFs page by page (on; off clears what was read). The owner's name and details removed from examples.
+- [x] 1.5.4 — Manuals read page by page (pages.py, pypdf): each PDF and text document is read once into the database with FTS5; a question sends the AI only the best three pages and the answer names the page; a document is found by its contents when no name matches; NOT_HERE falls back to the whole PDF with the search's guess; with the AI down the closest passage is quoted with its page; scanned PDFs are read whole and listed in the Setup doctor. Switch: Read PDFs page by page (on; off clears what was read). The owner's name and details removed from examples.
+- [x] 1.5.5 — Cognitive Core 2.0 as a testing comparison, off by default (Settings → Safety & security → Compare security incidents): a stricter second stage for each security incident, counted against the usual one per change in evidence (household episodes included), and a step-by-step summary of guarded actions; totals on the Mind sensor, not recorded, hidden for guests; nothing added to what the voice is told. Also: contact and camera evidence back each other up only from different sources; evidence with no status counts as unknown; long text-manual paragraphs are split instead of cut; voice-recognition advice ignores broken or ambiguous scores; a Home Assistant live player that never shows a frame falls back to the picture after 12 seconds.

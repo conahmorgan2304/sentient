@@ -418,3 +418,16 @@ async def test_each_satellite_uses_its_assigned_pipeline_in_house_check(hass, tm
 def test_a_carried_over_match_is_explained_in_plain_words():
     from custom_components.sentient.voice_id import REASONS
     assert "moment ago" in REASONS["carried_over"]
+
+
+def test_voice_match_advice_refuses_invalid_and_ambiguous_scores():
+    from custom_components.sentient.voice_id import advice
+
+    healthy = [{"reason": "below_threshold", "similarity": 0.62, "gap": 0.2}] * 3
+    assert advice({"threshold": 0.70}, healthy)["value"] < 0.70
+    assert advice({"threshold": "not-a-number"}, healthy) is None
+    assert advice({"threshold": float("nan")}, healthy) is None
+    invalid = [{"reason": "below_threshold", "similarity": float("nan")}] * 3
+    assert advice({"threshold": 0.70}, invalid) is None
+    ambiguous = [{"reason": "below_threshold", "similarity": 0.67, "gap": 0.02}] * 3
+    assert advice({"threshold": 0.70}, ambiguous) is None

@@ -8,6 +8,7 @@ friendly, never proof: it is not used to allow anything that needs confirmation.
 from __future__ import annotations
 
 import re
+import math
 from collections import deque
 from statistics import median
 from contextvars import ContextVar
@@ -240,9 +241,32 @@ def advice(detail: dict[str, Any] | None, recent: list[dict[str, Any]]) -> dict[
     """Suggest a lower match level when several recent voices only just missed it. The person decides."""
     if not detail:
         return None
-    level = float(detail.get("threshold") or 0)
-    misses = [float(h["similarity"]) for h in recent if h.get("reason") == "below_threshold" and h.get("similarity") is not None]
-    if len(misses) < MIN_TURNS_FOR_ADVICE or not level:
+    # A damaged or non-finite engine score must never produce an invalid
+    # match-level recommendation. Ambiguous voices are not threshold misses.
+    try:
+        level = float(detail.get("threshold") or 0)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(level) or not 0 < level <= 1:
+        return None
+    misses = []
+    for row in recent:
+        if not isinstance(row, dict) or row.get("reason") != "below_threshold":
+            continue
+        try:
+            score = float(row.get("similarity"))
+            gap = row.get("gap")
+            gap = float(gap) if gap is not None else None
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if not math.isfinite(score) or not 0 <= score <= 1:
+            continue
+        # An uncertain runner-up requires better enrolment, not lowering the
+        # threshold; a null runner-up is legitimate with a single profile.
+        if gap is not None and (not math.isfinite(gap) or gap < 0.10):
+            continue
+        misses.append(score)
+    if len(misses) < MIN_TURNS_FOR_ADVICE:
         return None
     middle = median(misses)
     if middle < level - NEAR_MISS:

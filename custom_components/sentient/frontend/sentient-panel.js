@@ -1981,14 +1981,44 @@
           this._liveTimer = setTimeout(giveUp, 8000);
         };
         if (smooth && canSmooth && window.loadCardHelpers) {
-          window.loadCardHelpers().then((helpers) => {
-            if (this._liveCamKey !== mode || !holder.isConnected) return;
-            const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
+          // Native stream cards can fail to initialise (or reject their helper
+          // promise) without ever raising an <img> error. Keep a usable
+          // picture fallback rather than a permanently empty Nest player.
+          let resolved = false;
+          const nativeFallback = () => {
+            if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+            resolved = true;
+            picture();
+          };
+          // A player that loads but never shows a frame (no error raised either) also falls back: after 12 s
+          // the card is looked inside for a video that is playing or a picture that loaded.
+          const showing = (root, depth = 0) => {
+            if (!root || depth > 8) return false;
+            for (const v of root.querySelectorAll ? root.querySelectorAll("video") : []) if (v.readyState >= 2) return true;
+            for (const i of root.querySelectorAll ? root.querySelectorAll("img") : []) if (i.complete && i.naturalWidth > 0) return true;
+            for (const n of root.querySelectorAll ? root.querySelectorAll("*") : []) if (n.shadowRoot && showing(n.shadowRoot, depth + 1)) return true;
+            return false;
+          };
+          this._liveTimer = setTimeout(nativeFallback, 12000);
+          Promise.resolve().then(() => window.loadCardHelpers()).then((helpers) => {
+            if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+            let card;
+            try {
+              card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
+            } catch (e) { card = null; }
+            if (!card || /error/i.test(card.localName || "")) { clearTimeout(this._liveTimer); nativeFallback(); return; }
             card.hass = this._hass;
             this._liveCard = card;
             holder.innerHTML = "";
             holder.appendChild(card);
-          }, () => { if (holder.isConnected) picture(); });
+            clearTimeout(this._liveTimer);
+            this._liveTimer = setTimeout(() => {
+              if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+              if (showing(card) || showing(card.shadowRoot)) { resolved = true; return; }
+              this._liveCard = null;
+              nativeFallback();
+            }, 12000);
+          }, nativeFallback);
         } else picture();
       } else {
         if (this._liveCard) this._liveCard.hass = this._hass;

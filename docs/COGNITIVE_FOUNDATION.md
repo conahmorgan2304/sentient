@@ -87,3 +87,25 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - **Manuals offline:** the text search only chose a file and still needed the AI. When the AI can't be reached it now quotes the closest passage from a `.txt`/`.md` document (bounded, no symlinks, no parent paths). Both the inside-text search and the quote sit behind a new switch, *Look inside text documents* (on by default; off matches file names only).
 - **Mind sensor:** incident assessments are worked out only for the eight incidents returned, not every stored one.
 - **Outcome wording:** a batch where a step failed and nothing was verified is now reported as `failed`, not `unverified`.
+
+
+## Cognitive Core 2.0 — shadow comparison (1.5.5)
+
+`cognitive_coordinator.py` is a **read-only second opinion**, off unless Settings → Safety & security → "Compare security
+incidents (testing)" is on. Switched off, nothing is compared and the counts start again.
+
+- **Incidents:** `Incidents.recent` keeps the existing `stage()` as the one that counts and adds
+  `cognitive_shadow`: a stricter stage (observed, investigating, likely household, concerning, resolved or
+  unknown) from the same evidence, with what it couldn't be sure of. Agreement is counted once per change in an
+  incident's evidence, so redrawing the Mind card doesn't inflate it, and is reported only after ten incidents.
+  Contact and camera evidence back each other up only when they come from different sources; neither proves who
+  someone was or where they went.
+- **Actions by voice:** `Control` adds a step-by-step summary of how a guarded batch went (verified, attempted,
+  failed, not started). It never retries a step or grants anything.
+- **What it never touches:** alerts, stages, speech, permissions, device control and what the voice is told. The
+  house context sent to the voice has nothing from it.
+- **Privacy and size:** the Mind sensor shows totals only (`cognitive_shadow`), hidden in guest mode and not
+  kept by the recorder. Incident ids are kept as keyed digests for this run only, and at most 128 of them.
+- **Before anything acts on it:** compare enough distinct real incidents, look at every disagreement, test
+  unavailable sensors, restarts and overlapping episodes, and measure the cost on the house's own hardware.
+  A disagreement is something to look at, not proof that either way is right.

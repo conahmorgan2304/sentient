@@ -8,6 +8,8 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+from .cognitive import decision
+
 SUCCESS = frozenset({"verified"})
 INCOMPLETE = frozenset({"attempted", "not_started", "skipped", "failed"})
 
@@ -35,6 +37,18 @@ def evaluate_outcomes(actions: list[dict[str, Any]]) -> dict[str, Any]:
         state = "not_completed"
     return {
         "state": state,
+        # The same explanatory envelope as camera/security decisions. This
+        # never authorises an action, and entity IDs are limited to the
+        # already supplied guarded-action results.
+        "decision": decision(
+            "guarded_action_outcome",
+            evidence=[f"{row.get('entity_id', 'unknown')}:{row.get('status', 'unknown')}" for row in rows],
+            gaps=["unverified_device_state"] if state != "reported_complete" else
+                 ["physical_completion_unconfirmed"],
+            choice=state,
+            reasons=[f"status_{key}" for key in ("verified", "attempted", "failed", "not_started", "skipped")
+                     if counts[key]],
+        ),
         "verified": counts["verified"],
         "attempted": counts["attempted"],
         "failed": counts["failed"],
