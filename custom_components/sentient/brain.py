@@ -57,6 +57,8 @@ IMPORTANT_DOMAINS = ("climate", "water_heater", "valve")  # locks, doors and gat
 UNEXPLAINED_GAP = 1800  # one mention per device per half hour
 REVERT_SECONDS = 60  # 'straight back': longer is more likely someone leaving the room
 ACTED_SECONDS = 600
+GATING_WATCH_DAYS = 7
+GATING_WORTH = 20  # calls a week before it's worth suggesting
 CASE_HOURS = 6
 CASE_MAX = 200
 # jobs whose answer only depends on what they're given: wording a remark, reading a manual or recipe, translating
@@ -438,9 +440,9 @@ class Brain:
         day = dt_util.now().date().isoformat()
         self.counters.setdefault(day, {})
         self.counters[day][what] = self.counters[day].get(what, 0) + 1
-        if len(self.counters) > 60:
-            for key in sorted(self.counters)[:-60]:
-                self.counters.pop(key, None)
+        days = sorted(k for k in self.counters if k[:1].isdigit())
+        for key in days[:-60]:
+            self.counters.pop(key, None)
 
     # ----- case memory ------------------------------------------------------------------------
     @staticmethod
@@ -766,6 +768,7 @@ class Brain:
                 question = f"Is {name} meant to go to {p['state']} by itself around {_hour_words(p['hour'])}? It keeps happening."
                 if rt.curiosity.wonder(question, belief["claim"], "beliefs"):
                     await self.db.call(lambda c, bid=belief["id"]: self.beliefs.mark_asked(c, bid))
+        self._suggest_gating(rt)
         score = self.expect.score(yesterday.date().isoformat())
         tested = report.get("tested") or {}
         if rt is not None and (tested or score.get("judged")):
@@ -780,6 +783,21 @@ class Brain:
             rt.timeline.add("mind", "Overnight: " + "; ".join(parts) + ".", "learning", decision={"kind": "overnight_learning", "ai_used": False})
         await self.async_save()
         return report
+
+    def _suggest_gating(self, rt: Any) -> None:
+        """After a week of watching, if skipping the usual would have saved real AI calls, say so once."""
+        if self.gating != "watch" or rt is None or self.counters.get("_meta", {}).get("gating_suggested"):
+            return
+        days = sorted(k for k in self.counters if k[:1].isdigit())
+        if len(days) < GATING_WATCH_DAYS:
+            return
+        saved = sum(self.counters[d].get("would_gate", 0) for d in days[-GATING_WATCH_DAYS:])
+        if saved < GATING_WORTH:
+            return
+        self.counters.setdefault("_meta", {})["gating_suggested"] = dt_util.utcnow().isoformat()
+        rt.timeline.add("mind", f"Over the last week, skipping remarks about what's usual for the time would have saved "
+                        f"{saved} AI calls. Switch it on in Settings → Memory & learning → Skip remarks about what's usual.",
+                        "a suggestion", decision={"kind": "gating_suggestion", "would_save": saved, "ai_used": False})
 
     # ----- what the Mind tab shows ------------------------------------------------------------
     async def async_status(self) -> dict[str, Any]:
@@ -799,6 +817,12 @@ class Brain:
                     f"SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ? AND domain IN ({','.join('?' * len(CONTROLLED))}) "
                     "AND old NOT IN ('unavailable', 'unknown') AND new NOT IN ('unavailable', 'unknown')",  # not restarts
                     (dt_util.utcnow().timestamp() - 7 * 86400, *CONTROLLED)).fetchone()[0],
+                "by_themselves": [{"name": r[0] or r[1], "entity_id": r[1], "times": r[2]} for r in conn.execute(
+                    f"SELECT MAX(name), entity, COUNT(*) AS n FROM ledger WHERE cause = 'device' AND ts > ? "
+                    f"AND domain IN ({','.join('?' * len(CONTROLLED))}) "
+                    "AND old NOT IN ('unavailable', 'unknown') AND new NOT IN ('unavailable', 'unknown') "
+                    "GROUP BY entity ORDER BY n DESC LIMIT 5",
+                    (dt_util.utcnow().timestamp() - 7 * 86400, *CONTROLLED))],
                 "memories": dict(conn.execute("SELECT kind, COUNT(*) FROM memories GROUP BY kind").fetchall()),
                 "beliefs": self.beliefs.all(conn)[:12],
             }

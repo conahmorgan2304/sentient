@@ -960,3 +960,45 @@ async def test_situations_name_a_flickering_device_once(hass: HomeAssistant):
                                     "name": "Boys echo", "surprise": 1.0, "area": None})
     line = next(x for x in brain.situations() if x.startswith("Unusual"))
     assert line.count("Boys echo") == 1 and "playing" in line
+
+
+async def test_the_mind_card_names_what_switched_by_itself_most(hass: HomeAssistant):
+    entry = await _setup(hass)
+    for eid, flips in (("climate.heating", 3), ("light.porch", 1)):
+        hass.states.async_set(eid, "off", {"friendly_name": eid.split(".")[1].title()})
+        await hass.async_block_till_done()
+        for n in range(flips):
+            hass.states.async_set(eid, "heat" if eid.startswith("climate") and n % 2 == 0 else ("on" if n % 2 == 0 else "off"),
+                                  {"friendly_name": eid.split(".")[1].title()})
+            await hass.async_block_till_done()
+    top = (await entry.runtime_data.brain.async_status())["by_themselves"]
+    assert [(t["entity_id"], t["times"]) for t in top] == [("climate.heating", 3), ("light.porch", 1)]
+    assert top[0]["name"] == "Heating"
+
+
+async def test_a_week_of_watching_suggests_skipping_the_usual_once(hass: HomeAssistant):
+    entry = await _setup(hass, surprise_gating="watch")
+    rt = entry.runtime_data
+    brain = rt.brain
+    today = dt_util.now().date()
+    for d in range(7):
+        brain.counters[(today - timedelta(days=d)).isoformat()] = {"would_gate": 4}
+    brain._suggest_gating(rt)
+    brain._suggest_gating(rt)
+    notes = [e for e in rt.timeline.items if "would have saved 28 AI calls" in (e.get("text") or "")]
+    assert len(notes) == 1
+    assert brain.counters["_meta"]["gating_suggested"]
+    brain.count("said")  # the daily trim keeps the flag
+    assert "_meta" in brain.counters
+
+
+async def test_too_little_saving_or_too_short_a_watch_suggests_nothing(hass: HomeAssistant):
+    entry = await _setup(hass, surprise_gating="watch")
+    rt = entry.runtime_data
+    today = dt_util.now().date()
+    for d in range(7):
+        rt.brain.counters[(today - timedelta(days=d)).isoformat()] = {"would_gate": 1}
+    rt.brain._suggest_gating(rt)
+    rt.brain.counters = {today.isoformat(): {"would_gate": 50}}
+    rt.brain._suggest_gating(rt)
+    assert not [e for e in rt.timeline.items if "would have saved" in (e.get("text") or "")]

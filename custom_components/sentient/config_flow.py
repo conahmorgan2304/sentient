@@ -894,6 +894,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional("pronunciations", **d("pronunciations", "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),
+            vol.Required("health_duplicates", **d("health_duplicates", True)): selector.BooleanSelector(),
             # memory and learning (brain.py)
             vol.Required("house_ledger", **d("house_ledger", True)): selector.BooleanSelector(),
             vol.Required("unexplained_changes", **d("unexplained_changes", True)): selector.BooleanSelector(),

@@ -173,3 +173,15 @@ async def test_notices_its_own_failures(hass: HomeAssistant, freezer) -> None:
         rt.speech.reading_fallbacks.append((datetime.now(timezone.utc), "tts.slow", "assist_satellite.kitchen"))
     kinds = {f["about"] for f in rt.selfaware.check()["findings"] if f["kind"] == "failing"}
     assert {"voice", "reading voice"} <= kinds
+
+
+async def test_the_mind_sensor_never_runs_the_self_check_inside_its_update(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    sa = entry.runtime_data.selfaware
+    sa._cache = None
+    with patch.object(sa, "check", wraps=sa.check) as check:
+        first = sa.summary(fresh=False)
+        assert check.call_count == 0 and "status" in first
+        await hass.async_block_till_done()
+        assert check.call_count >= 1  # worked out straight after, outside the update
+    assert sa._cache is not None and not sa._refreshing

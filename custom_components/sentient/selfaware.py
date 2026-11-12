@@ -10,6 +10,8 @@ again over time). Nothing to do with safety, security or control is ever changed
 
 from __future__ import annotations
 
+import logging
+
 from collections import Counter, defaultdict
 from datetime import timedelta
 import re
@@ -80,6 +82,9 @@ def asked_often(rt: Any, days: float = DAYS, top: int = 3) -> list[tuple[str, in
     return [(examples[k], n) for k, n in asked.most_common(top) if n >= REPEATED_QUESTION]
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 class SelfAware:
     def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
         self.hass = hass
@@ -88,6 +93,7 @@ class SelfAware:
         self.last: dict[str, Any] | None = None
         self._unsub = None
         self._cache: tuple[Any, dict[str, Any]] | None = None
+        self._refreshing = False
 
     @property
     def enabled(self) -> bool:
@@ -138,11 +144,13 @@ class SelfAware:
         by_kind = Counter(_kind(i.get("source")) for i in said)
         hushes = [i for i in items if i["kind"] == "mode" and str(i.get("text", "")).startswith("Hushed")]
         hushed_after: Counter[str] = Counter()
-        for h in hushes:
-            ht = dt_util.parse_datetime(h["time"])
-            before = [s for s in said if ht and timedelta(0) <= ht - dt_util.parse_datetime(s["time"]) <= timedelta(minutes=3)]
-            if before:
-                hushed_after[_kind(before[0].get("source"))] += 1
+        if hushes:
+            said_at = [(dt_util.parse_datetime(s["time"]), s) for s in said]  # each time read once, not once per hush
+            for h in hushes:
+                ht = dt_util.parse_datetime(h["time"])
+                before = [s for t, s in said_at if ht and t and timedelta(0) <= ht - t <= timedelta(minutes=3)]
+                if before:
+                    hushed_after[_kind(before[0].get("source"))] += 1
         thumbs_down: Counter[str] = Counter()
         fb = getattr(rt, "feedback", None)
         if fb is not None:
@@ -311,11 +319,18 @@ class SelfAware:
                 rt.timeline.add("health", f"The AI hasn't answered {len(self._fallbacks)} times in the last hour",
                                 f"the basic voice agent answered instead; last reason: {why[:120]}")
 
-    def summary(self) -> dict[str, Any]:
-        """For the Mind page: status now and the self-check (kept for five minutes)."""
+    def summary(self, fresh: bool = True) -> dict[str, Any]:
+        """For the Mind page: status now and the self-check (kept for five minutes). With fresh=False (the Mind
+        sensor), an out-of-date check is never run during the sensor's update: the last one is shown (or just the
+        status), and a new one is worked out straight after, outside the update."""
         now = dt_util.utcnow()
         if self._cache and now - self._cache[0] < timedelta(minutes=5):
             return self._cache[1]
+        if not fresh:
+            if not self._refreshing:
+                self._refreshing = True
+                self.hass.loop.call_soon(self._refresh)
+            return self._cache[1] if self._cache else {"status": [], "enabled": self.enabled}  # status reads a day too
         out: dict[str, Any] = {"status": self.status(), "enabled": self.enabled}
         if self.enabled:
             report = self.check()
@@ -324,6 +339,14 @@ class SelfAware:
             out["adjusted"] = (self.last or {}).get("adjusted") or []
         self._cache = (now, out)
         return out
+
+    def _refresh(self) -> None:
+        self._refreshing = False
+        try:
+            self._cache = None
+            self.summary()
+        except Exception:  # noqa: BLE001 - shown again next time
+            _LOGGER.debug("Self-check refresh failed", exc_info=True)
 
     # ----- what it can do right now --------------------------------------------------------
     def status(self) -> list[dict[str, str]]:
