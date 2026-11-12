@@ -254,3 +254,20 @@ async def test_garage_doors_and_gates_are_refused(hass: HomeAssistant):
     out = await async_check_automation(hass, {"alias": "x", "triggers": [{"trigger": "sun", "event": "sunset"}],
                                               "actions": [{"action": "cover.open_cover", "target": {"entity_id": "cover.garage"}}]})
     assert not out["ok"] and "garage door" in out["problems"][0]
+
+
+async def test_reload_receipt_is_not_proof_new_automation_is_active(hass: HomeAssistant):
+    from custom_components.sentient.skills import async_activate
+
+    async_mock_service(hass, "automation", "reload")
+    missing = await async_activate(hass, "generated-123")
+    assert missing["reload_accepted"] is True
+    assert missing["active"] is False and missing["loaded"] is False
+
+    hass.states.async_set("automation.generated", "off", {"id": "generated-123"})
+    disabled = await async_activate(hass, "generated-123")
+    assert disabled["loaded"] is True and disabled["active"] is False
+
+    hass.states.async_set("automation.generated", "on", {"id": "generated-123"})
+    active = await async_activate(hass, "generated-123")
+    assert active["loaded"] is True and active["active"] is True
