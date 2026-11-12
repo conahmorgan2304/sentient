@@ -32,3 +32,14 @@ def test_too_many_steps_fails_closed():
     result = review_plan([
         {"entity_id": f"light.{i}", "action": "turn_on"} for i in range(21)], validated=True)
     assert result.status == "blocked"
+
+
+def test_plan_review_records_shared_decision_without_authorising_execution():
+    result = review_plan([{"entity_id": "lock.front", "action": "unlock"}], validated=True)
+    audit = result.as_dict()
+    assert audit["execute"] is False
+    assert audit["decision"]["kind"] == "guarded_plan_preflight"
+    assert audit["decision"]["choice"] == "reviewed"
+    assert audit["decision"]["ai_used"] is False
+    assert "action_permission_requires_revalidation" in audit["decision"]["gaps"]
+    assert "sensitive_confirmation" in audit["decision"]["reasons"]
