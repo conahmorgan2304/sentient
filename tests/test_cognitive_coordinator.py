@@ -266,3 +266,45 @@ async def test_the_voice_is_told_nothing_new(hass):
 
     source = inspect.getsource(house_context)
     assert "cognitive_quality" not in source and "cognitive_coordinator" not in source
+
+
+def test_cognitive_toggle_keeps_shared_control_reference_and_resets_both_counters(hass):
+    """Control and Mind must share one coordinator across option changes."""
+    from custom_components.sentient.control import Control
+    from custom_components.sentient.incidents import Incidents
+
+    enabled = {"security_incidents": True, "cognitive_shadow": True}
+    incidents = Incidents(hass, "cognitive-shared", enabled)
+    control = Control(hass, enabled, None)
+    control.cognitive = incidents.cognitive
+    shared = incidents.cognitive
+
+    episode = _episode("toggle-shared")
+    shared.incident(episode, assess_incident(episode), "observed", now=NOW)
+    shared.outcome({"recorded_at": "toggle-action", "assessment": {"state": "reported_complete"},
+                    "actions": [{"entity_id": "light.hall", "status": "verified"}]})
+    assert shared.summary()["incidents_compared"] == 1
+    assert shared.summary()["reported_successes"] == 1
+
+    disabled = {"security_incidents": True, "cognitive_shadow": False}
+    incidents.configure(disabled)
+    control.options = disabled
+    assert incidents.cognitive is shared
+    assert control.cognitive is shared
+    assert shared.summary()["incidents_compared"] == 0
+    assert shared.summary()["reported_successes"] == 0
+
+    incidents.configure(enabled)
+    control.options = enabled
+    assert incidents.cognitive is control.cognitive is shared
+    shared.incident(episode, assess_incident(episode), "observed", now=NOW)
+    shared.outcome({"recorded_at": "new-action", "assessment": {"state": "reported_complete"},
+                    "actions": [{"entity_id": "light.hall", "status": "verified"}]})
+    assert incidents.cognitive.summary()["incidents_compared"] == 1
+    assert incidents.cognitive.summary()["reported_successes"] == 1
+
+    # Disabling the required incidents subsystem must also reset the shared state.
+    incidents.configure({"security_incidents": False, "cognitive_shadow": True})
+    assert control.cognitive is incidents.cognitive is shared
+    assert shared.summary()["incidents_compared"] == 0
+    assert shared.summary()["reported_successes"] == 0
