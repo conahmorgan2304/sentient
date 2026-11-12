@@ -54,3 +54,19 @@ async def test_security_check_exposes_reasoned_verdict_without_claiming_unknown_
     assert result["secure"] is False
     assert result["assessment"]["confirmed"] is False
     assert "opening_reported" in result["assessment"]["reasons"]
+
+
+def test_decision_explanations_are_bounded_for_voice_and_timeline():
+    from custom_components.sentient.cognitive import decision
+
+    note = decision("x" * 500, evidence=["e" * 500] * 20,
+                    gaps=["g" * 500] * 20, choice="c" * 500,
+                    reasons=["r" * 500] * 20)
+    assert len(note["kind"]) <= 80
+    assert len(note["choice"]) <= 80
+    assert len(note["evidence"]) == 8
+    assert all(len(value) <= 180 for value in note["evidence"])
+    assert len(note["gaps"]) == 6
+    assert all(len(value) <= 180 for value in note["gaps"])
+    assert len(note["reasons"]) == 8
+    assert all(len(value) <= 80 for value in note["reasons"])
