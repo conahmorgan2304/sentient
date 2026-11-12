@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
 from datetime import datetime, timezone
+from time import perf_counter_ns
 from typing import Any
 
 from .cognitive import decision
@@ -214,10 +215,18 @@ class CognitiveCoordinator:
         self.incidents = Counter()
         self.outcomes = Counter()
         self._outcome_seen = OrderedDict()
+        self._evaluations = 0
+        self._elapsed_ns = 0
+        self._slowest_ns = 0
 
     def incident(self, item: dict[str, Any], assessment: dict[str, Any],
                  baseline_stage: str, *, now: datetime | None = None) -> dict[str, Any]:
+        started_ns = perf_counter_ns()
         shadow = investigate(item, assessment, baseline_stage=baseline_stage, now=now)
+        elapsed_ns = perf_counter_ns() - started_ns
+        self._evaluations += 1
+        self._elapsed_ns += elapsed_ns
+        self._slowest_ns = max(self._slowest_ns, elapsed_ns)
         # Deduplicate periodic Mind-card redraws; count only changed evidence.
         key = str(item.get("id") or "")
         if key:
@@ -260,6 +269,10 @@ class CognitiveCoordinator:
         checked = self.outcomes["reported_success"] + self.outcomes["needs_verification"]
         return {
             "mode": "shadow",
+            "evaluations": self._evaluations,
+            "mean_evaluation_ms": round(self._elapsed_ns / self._evaluations / 1_000_000, 3)
+                                  if self._evaluations else 0,
+            "slowest_evaluation_ms": round(self._slowest_ns / 1_000_000, 3),
             "reported_completion_rate": round(self.outcomes["reported_success"] / checked, 3) if checked >= 10 else None,
             "incidents_compared": self.incidents["compared"],
             "incidents_agreed": self.incidents["agreed"],
