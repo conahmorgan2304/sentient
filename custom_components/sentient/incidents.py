@@ -213,8 +213,14 @@ class Incidents:
         return out
 
     def configure(self, options):
-        if not options.get(CONF_COGNITIVE_SHADOW):
-            self.cognitive = CognitiveCoordinator()  # switched off: the comparison counts start again
+        # The guarded Control path holds a reference to this coordinator.
+        # Never replace the object on an options update; clear its state only
+        # on the enabled -> disabled transition, including when incidents are
+        # disabled. This keeps Mind and action outcomes on the same counters.
+        was_enabled = bool(self.options.get(CONF_COGNITIVE_SHADOW) and self.options.get(CONF_INCIDENTS))
+        enabled = bool(options.get(CONF_COGNITIVE_SHADOW) and options.get(CONF_INCIDENTS))
+        if was_enabled and not enabled:
+            self.cognitive.reset()
         self.options = options
         if not options.get(CONF_COVERAGE):
             had_gaps = False
