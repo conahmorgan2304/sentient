@@ -836,3 +836,26 @@ async def test_recovery_finishes_source_conversation_forget_after_early_crash(ha
     assert not await recovered.async_search(["garden"])
     assert not recovered._forget_pending
     await recovered.async_stop()
+
+
+async def test_recovery_window_preserves_later_memory_and_security_events(hass: HomeAssistant):
+    from custom_components.sentient.privacy import forget_recent
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    now = dt_util.utcnow()
+    start = now - timedelta(hours=2)
+    finish = (now - timedelta(hours=1)).timestamp()
+    rt.security_events.items = {
+        "inside": {"start": (now - timedelta(minutes=90)).timestamp()},
+        "after": {"start": (now - timedelta(minutes=5)).timestamp()},
+    }
+    rt.ai.sent = [
+        {"time": (now - timedelta(minutes=90)).isoformat()},
+        {"time": (now - timedelta(minutes=5)).isoformat()},
+    ]
+    forget_recent(rt, 2, _registered=True, _since=start, _until=finish)
+    assert "inside" not in rt.security_events.items
+    assert "after" in rt.security_events.items
+    assert len(rt.ai.sent) == 1
+    assert rt.ai.sent[0]["time"] == (now - timedelta(minutes=5)).isoformat()
