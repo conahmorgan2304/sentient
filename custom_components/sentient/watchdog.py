@@ -270,12 +270,20 @@ class Watchdog:
     def _device_id(self, name: str) -> str | None:
         from homeassistant.helpers import device_registry as dr
 
+        from homeassistant.helpers import entity_registry as er
+
         reg = dr.async_get(self.hass)
+        ents = er.async_get(self.hass)
+        best: tuple[int, str] | None = None
         for item in reg.devices:  # newer Home Assistant iterates the devices themselves, older ones their ids
             device = item if hasattr(item, "name_by_user") else reg.async_get(item)
             if device is not None and (device.name_by_user or device.name) == name:
-                return device.id
-        return None
+                # two devices can share a name (a plug in Tuya Local and an empty copy from Tuya's cloud): the one
+                # with entities is the one that drops offline and the one that can be ignored
+                count = len(er.async_entries_for_device(ents, device.id))
+                if best is None or count > best[0]:
+                    best = (count, device.id)
+        return best[1] if best else None
 
     def _ignored_devices(self) -> set[str]:
         """Device names with an entity on House health's ignore list (Settings → House health), as House health reads it."""

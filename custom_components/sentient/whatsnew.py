@@ -17,6 +17,7 @@ from .const import CONF_WHATS_NEW, DOMAIN
 NOTES: dict[str, list[str]] = {
     "1.5.3": [
         "A device flickering between states (an Echo going playing, idle, paused in a second) counts as one unusual event, not three, on the Mind tab and in what the voice is told.",
+        "Fixed: \"Stop flagging\" on a device that shares its name with an empty copy (a plug in Tuya Local and again from Tuya's cloud) said there was nothing to ignore; it now picks the real one.",
     ],
     "1.5.2": [
         "Restarts no longer count as devices switching by themselves: everything coming back from unavailable is left out of that count and of the patterns Sentient forms overnight, so a restart at the same time on a few days can't become a belief.",
