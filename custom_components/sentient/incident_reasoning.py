@@ -44,7 +44,20 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
                        for row in evidence)
     camera_seen = any(row.get("kind") in CAMERA_KINDS and row.get("status") == "observed"
                       for row in evidence)
-    if contact_seen and camera_seen:
+    # Corroboration needs two identifiable, distinct sources, not merely two
+    # evidence kinds. A duplicated/mislabelled source cannot corroborate itself.
+    contact_sources = {
+        row["source"] for row in evidence
+        if row.get("kind") == "contact" and row.get("status") == "observed"
+        and isinstance(row.get("source"), str) and row["source"].strip()
+    }
+    camera_sources = {
+        row["source"] for row in evidence
+        if row.get("kind") in CAMERA_KINDS and row.get("status") == "observed"
+        and isinstance(row.get("source"), str) and row["source"].strip()
+    }
+    corroborated = any(contact != camera for contact in contact_sources for camera in camera_sources)
+    if corroborated:
         reasons.append("contact_and_camera_activity")
     elif kinds["contact"] and camera_reports:
         reasons.append("contact_and_camera_reports_unconfirmed")
@@ -55,7 +68,7 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         gaps.append("unsettled_evidence")
     if not evidence:
         gaps.append("no_evidence")
-    if not (contact_seen and camera_seen):
+    if not corroborated:
         gaps.append("unconfirmed_cross_sensor_link")
     return {
         "status": status,
@@ -75,6 +88,6 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         "unknown_reports": unknown,
         "identity_confirmed": False,
         "route_confirmed": False,
-        "corroboration": "reported_activity" if contact_seen and camera_seen else "unconfirmed",
+        "corroboration": "reported_activity" if corroborated else "unconfirmed",
         "limitation": "Events near in time may be unrelated. No person identity, route, or intrusion is proven.",
     }
