@@ -227,3 +227,24 @@ def test_shadow_exposes_bounded_latency_measurement_without_service_calls():
     assert status["mean_evaluation_ms"] >= 0
     assert status["slowest_evaluation_ms"] >= 0
     assert status["autonomous_actions"] == 0
+
+
+def test_shadow_incident_metrics_do_not_retain_original_incident_ids():
+    core = CognitiveCoordinator()
+    episode = _episode("private-person-location-record")
+    core.incident(episode, assess_incident(episode), "observed", now=NOW)
+    assert "private-person-location-record" not in core._seen
+    assert "private-person-location-record" not in core._recent
+    assert list(core._seen) == list(core._recent)
+    assert all(len(key) == 32 for key in core._seen)
+
+
+def test_shadow_comparison_notices_evidence_kind_change_with_same_counts():
+    core = CognitiveCoordinator()
+    item = _episode("revision-1")
+    core.incident(item, assess_incident(item), "observed", now=NOW)
+    item["evidence"][1]["kind"] = "event"
+    core.incident(item, assess_incident(item), "observed", now=NOW)
+    assert core.summary()["incidents_compared"] == 2
+    core.incident(item, assess_incident(item), "observed", now=NOW)
+    assert core.summary()["incidents_compared"] == 2
