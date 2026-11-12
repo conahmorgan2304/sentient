@@ -236,7 +236,9 @@ class CognitiveCoordinator:
     def outcome(self, outcome: dict[str, Any]) -> dict[str, Any]:
         feedback = review_outcome(outcome)
         feedback["task"] = task_progress(outcome)
-        key = id(outcome)
+        # Control sets recorded_at once per batch and keeps it through its
+        # delayed verification. Use that stable timestamp when available.
+        key = outcome.get("recorded_at") or id(outcome)
         new = feedback["lesson"]
         old = self._outcome_seen.get(key)
         if old != new:
