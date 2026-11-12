@@ -1990,10 +1990,10 @@
             resolved = true;
             picture();
           };
-          const timeout = setTimeout(nativeFallback, 12000);
+          this._liveTimer = setTimeout(nativeFallback, 12000);
           Promise.resolve().then(() => window.loadCardHelpers()).then((helpers) => {
             if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
-            clearTimeout(timeout);
+            clearTimeout(this._liveTimer);
             resolved = true;
             try {
               const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
