@@ -206,6 +206,7 @@ class SpeechRouter:
         self.hass = hass
         self.options = options
         self.tracker = tracker
+        self.pronounce = lambda text: text  # names as they're said (pronounce.py; set by the runtime)
         self._recent: dict[str, datetime] = {}
         self._remarks: dict[str, datetime] = {}  # remark -> when last said; kept across restarts
         self.silent_runs: dict[str, int] = {}  # Echo -> announcements in a row it showed no sign of playing
@@ -636,6 +637,7 @@ class SpeechRouter:
 
     async def _speak_voice(self, text: str, speaker: str, engine: str, voice: str | None) -> list[dict[str, Any]] | None:
         """Speak with a chosen text-to-speech service and voice; None when this speaker can't (an Echo)."""
+        text = self.pronounce(text)
         if self.hass.states.get(engine) is None or (speaker.startswith("media_player.") and _platform(self.hass, speaker) == "alexa_media"):
             return None
         language = tts_language(self.hass, engine, selected_language(self.hass, self.options) if self.options.get("speak_house_language") else None)
@@ -693,15 +695,15 @@ class SpeechRouter:
             try:
                 if eid.startswith('assist_satellite.'):
                     domain, service = 'assist_satellite', 'announce'
-                    data, target = {'message': text, 'preannounce': chime}, {'entity_id': [eid]}
+                    data, target = {'message': self.pronounce(text), 'preannounce': chime}, {'entity_id': [eid]}
                 elif eid.startswith('media_player.') and _platform(self.hass, eid) == 'alexa_media':
                     domain, service = 'notify', 'alexa_media'
                     # Each call targets one Echo; use its entity ID directly.
                     kind = 'tts' if self.options.get(CONF_ALEXA_TTS_ONLY, False) or not chime else 'announce'
-                    data, target = {'message': text, 'target': eid, 'data': {'type': kind}}, None
+                    data, target = {'message': self.pronounce(text), 'target': eid, 'data': {'type': kind}}, None
                 elif eid.startswith('media_player.') and (tts := self.options.get(CONF_TTS_ENTITY)):
                     domain, service = 'tts', 'speak'
-                    data, target = {'media_player_entity_id': [eid], 'message': text, 'cache': True}, {'entity_id': tts}
+                    data, target = {'media_player_entity_id': [eid], 'message': self.pronounce(text), 'cache': True}, {'entity_id': tts}
                 else:
                     row.update(status='unroutable', error='No usable announcement or TTS service is configured')
                     return row
@@ -865,7 +867,7 @@ class SpeechRouter:
                 "assist_satellite",
                 "start_conversation",
                 {
-                    "start_message": spoken,
+                    "start_message": self.pronounce(spoken),
                     "extra_system_prompt": prompt,
                     "preannounce": self.chime if preannounce is None else preannounce,
                 },

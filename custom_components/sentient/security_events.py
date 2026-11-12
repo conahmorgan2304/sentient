@@ -410,12 +410,24 @@ class SecurityEvents:
             self._focus[owner] = (event_id, now, self.stamp())
         return self._focus.get(owner, (None,))[0]
 
-    def forget(self, since):
+    def forget(self, since, until: float | None = None):
+        """Forget incidents in an interval; recovery must preserve later events."""
         self.invalidate()
+
+        def outside(value):
+            when = dt_util.parse_datetime(str(value or ""))
+            return (when is not None and
+                    (dt_util.as_utc(when) < since or
+                     (until is not None and dt_util.as_utc(when).timestamp() > until)))
+
+        def keep(row):
+            start = dt_util.utc_from_timestamp(row["start"])
+            return (outside(start) and
+                    all(outside(a.get("time")) for a in row.get("alerts", [])) and
+                    (not row.get("feedback") or outside(row["feedback"].get("at"))) and
+                    (not row.get("analysis") or outside(row["analysis"].get("at"))))
+
         previous_count = len(self.items)
-        self.items = {key: row for key, row in self.items.items() if dt_util.utc_from_timestamp(row["start"]) < since
-                      and all(before(a.get("time"), since) for a in row.get("alerts", []))
-                      and (not row.get("feedback") or before(row["feedback"].get("at"), since))
-                      and (not row.get("analysis") or before(row["analysis"].get("at"), since))}
+        self.items = {key: row for key, row in self.items.items() if keep(row)}
         self._save()
         return previous_count - len(self.items)

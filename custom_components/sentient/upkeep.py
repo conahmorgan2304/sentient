@@ -192,6 +192,7 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
 
     if "calendar" in want and (calendars := opts.get(CONF_BRIEFING_CALENDARS)):
         events: list[str] = []
+        timed: list[dict[str, Any]] = []
         try:
             resp = await hass.services.async_call(
                 "calendar", "get_events",
@@ -203,10 +204,22 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime) -> dict[str,
                     start = dt_util.parse_datetime(str(ev.get("start", "")))
                     when = local_when(start) if start else "all day"
                     events.append(f"{ev.get('summary', 'Event')} ({when})")
+                    if "T" in str(ev.get("start")):
+                        timed.append(ev)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Briefing could not read calendars: %s", err)
         if events:
             out["calendar_next_24h"] = events[:8]
+        if opts.get("calendar_clashes") and timed:
+            from .skills import find_clashes
+
+            if clashes := find_clashes(timed):
+                out["calendar_clashes"] = [
+                    (f"{c['first']} and {c['second']} overlap at {c['at']}" if c["kind"] == "overlap"
+                     else f"only {c['minutes']} minutes between {c['first']} and {c['second']} ({c['at']})")
+                    for c in clashes[:3]]
+    if (warnings := getattr(rt, "warnings", None)) is not None and warnings.enabled and warnings.current:
+        out["official_warnings"] = [w["title"] for w in warnings.current[:3]]
     return out
 
 
@@ -223,6 +236,10 @@ def plain_briefing(facts: dict[str, Any]) -> str:
                    + (" is open." if len(open_now) == 1 else "."))
     if due := facts.get("maintenance_due"):
         out.append("Due: " + str(due[0]).split(":")[0] + ".")
+    if clashes := facts.get("calendar_clashes"):
+        out.append("Calendar: " + "; ".join(clashes[:2]) + ".")
+    if warnings := facts.get("official_warnings"):
+        out.append("Warning in force: " + warnings[0] + ".")
     if facts.get("parcel_expected_today"):
         out.append("A parcel's out for delivery today.")
     if world := facts.get("outside_information"):

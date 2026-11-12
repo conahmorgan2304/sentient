@@ -146,7 +146,7 @@
         <div class="page" id="mp" hidden><div id="aiwarn2" class="warnbar" role="status" hidden></div><div id="mbrain" class="card brain"></div>
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mmg" class="card mg" hidden></div><div id="mlater" class="card" hidden></div></section>
-            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
+            <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mlearn" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
             <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
@@ -537,9 +537,9 @@
         ["extras", "cameras", "mdi:cctv", "Cameras", ["camsec", "nightwatch", "door", "clips", "drive", "camwake", "safety", "never"]],
         ["extras", "lights", "mdi:lightbulb-auto-outline", "Routines", ["rules", "trust", "away", "party"]],
         ["extras", "heat", "mdi:radiator", "Heating", ["heating", "heating_zones", "energy", "appliances"]],
-        ["extras", "outdoors", "mdi:pine-tree", "Outdoors", ["animals", "rain", "bins"]],
+        ["extras", "outdoors", "mdi:pine-tree", "Outdoors", ["animals", "rain", "warnings", "bins"]],
         ["extras", "media", "mdi:book-open-variant", "Books & docs", ["reading", "manuals"]],
-        ["extras", "brain", "mdi:brain", "Brain", ["mind", "noticing"]],
+        ["extras", "brain", "mdi:brain", "Brain", ["mind", "memory", "noticing", "skills"]],
       ];
       const placed = new Set(menus.flatMap((m) => m[4]));
       // Story games' on/off switch stays here; its games are on the House tab. Anything new lands in Brain & memory.
@@ -1576,6 +1576,31 @@
       this._innerAt = Date.now();
       this._hass.callWS({ type: "sentient/inner" }).then((r) => { this._inner = r; this._drawInner(); }, () => { this._inner = null; this._drawInner(); });
       this._hass.callWS({ type: "sentient/memory/review" }).then((r) => { this._mcheck = r.pairs || []; this._drawCheck(); }, () => {});
+      this._hass.callWS({ type: "sentient/brain" }).then((r) => { this._brain = r; this._drawBrain(); }, () => { this._brain = null; this._drawBrain(); });
+    }
+
+    // HOW I'M LEARNING: how much of the day it expected, how its remarks and actions landed, AI calls saved
+    _drawBrain() {
+      const el = this._$("mlearn");
+      if (!el) return;
+      const b = this._brain;
+      el.hidden = !(b && b.on);
+      if (!b || !b.on) { el.innerHTML = ""; return; }
+      const pct = (v) => (v == null ? "—" : `${v}%`);
+      const p = b.prediction || {}, o = b.outcome || {}, ind = b.independence || {};
+      const rows = [];
+      rows.push(`<div class="r"><ha-icon icon="mdi:crystal-ball"></ha-icon><b class="wrap">Expected ${pct(p.percent)} of today's changes<small>${b.warming ? "warming up from history…" : `${p.judged || 0} judged${(b.trend || []).length > 1 ? ` · ${b.trend[0].percent}% → ${b.trend[b.trend.length - 1].percent}% over ${b.trend.length} days` : ""}`}</small></b></div>`);
+      if ((p.surprises || []).length) rows.push(`<div class="r warn"><ha-icon icon="mdi:alert-decagram-outline"></ha-icon><b class="wrap">Surprises today<small>${esc(p.surprises.slice(-3).map((x) => `${x.name || x.entity} ${x.new} at ${hm(new Date(x.ts * 1000).toISOString())}`).join(" · "))}</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:thumbs-up-down-outline"></ha-icon><b class="wrap">Reactions: ${pct(o.percent)} went well<small>${o.good || 0} acted on · ${o.bad || 0} put straight back (30 days)</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:piggy-bank-outline"></ha-icon><b class="wrap">Without the AI: ${pct(ind.percent)}<small>${ind.without_ai || 0} saved today · ${ind.ai_calls == null ? "?" : ind.ai_calls} AI calls</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:database-clock-outline"></ha-icon><b class="wrap">House ledger: ${b.ledger_on ? (b.ledger || 0).toLocaleString() + " changes" : "off"}<small>${b.unexplained_week || 0} unexplained this week · search: ${esc(b.search)}${b.recall_misses ? ` · ${b.recall_misses} found nothing today` : ""}</small></b></div>`);
+      (b.beliefs || []).slice(0, 4).forEach((x) => rows.push(`<div class="r${x.status === "held" ? "" : " dim"}"><ha-icon icon="mdi:lightbulb-question-outline"></ha-icon><b class="wrap">${esc(x.claim)}<small>${esc(x.status)} · confidence ${Math.round(x.confidence * 100)}% · ${x.support} held, ${x.against} missed</small></b></div>`));
+      (b.voice || []).forEach((v) => rows.push(`<div class="r warn"><ha-icon icon="mdi:microphone-off"></ha-icon><b class="wrap">${esc(v.name)} is slow to hear you<small>${esc(v.samples.map((s) => `${s.seconds}s for ${s.words} words`).join(" · "))}</small></b></div>`));
+      (b.trust || []).slice(0, 3).forEach((t) => rows.push(`<div class="r dim"><ha-icon icon="mdi:shield-half-full"></ha-icon><b class="wrap">${esc(t.name)}: trusted ${Math.round(t.trust * 100)}%<small>${esc(t.why)}</small></b></div>`));
+      const admin = this._hass.user && this._hass.user.is_admin;
+      el.innerHTML = this._h("HOW I'M LEARNING", b.gating === "on" ? "SKIPPING THE USUAL" : b.gating === "watch" ? "WATCHING" : "")
+        + rows.join("")
+        + (admin ? `<div class="r dim"><ha-icon icon="mdi:eraser"></ha-icon><b class="wrap">Start again<small><a class="lnk" data-act="brainclear" data-id="ledger">Clear the ledger</a> · <a class="lnk" data-act="brainclear" data-id="learning">Clear what it learned</a></small></b></div>` : "");
     }
 
     _drawCheck() {
@@ -2491,6 +2516,11 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "brainclear") {
+        const what = id === "ledger" ? "every recorded change in the house ledger" : "everything it has learned (expectations, beliefs, reactions, saved AI answers)";
+        if (!window.confirm(`Clear ${what}? This can't be undone.`)) return;
+        this._hass.callWS({ type: "sentient/brain/clear", what: id }).then(() => { this._innerAt = 0; this._loadInner(); }, (e) => window.alert(e.message || String(e)));
+      }
       else if (act === "hignore") {
         const name = el.dataset.name || "this device";
         if (!window.confirm(`Stop flagging ${name}? It goes on House health's ignore list; take it off again in Settings → House health.`)) return;
@@ -2669,8 +2699,9 @@
       else if (act === "privforget") {
         if (!window.confirm("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
         this._hass.callWS({ type: "sentient/privacy/forget", hours: 48 }).then((r) => {
-          const total = Object.values(r.forgot).reduce((a, b) => a + b, 0);
-          this._status(`FORGOT ${total} THING${total === 1 ? "" : "S"} ✓`, "ok");
+          const total = Object.values(r.forgot).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
+          if (r.forgot.database_error) this._status(r.forgot.database_error, "warn");
+          else this._status(`FORGOT ${total} THING${total === 1 ? "" : "S"} ✓`, "ok");
           this._drawPrivacy(true);
         }, (e) => this._status(e.message || String(e), "bad"));
       }

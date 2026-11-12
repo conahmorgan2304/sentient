@@ -342,13 +342,14 @@ class MemoryStore:
             self._save()
         return target
 
-    def forget_changes_since(self, since: datetime) -> int:
-        """Clear the recent copies of memory text used by reflection."""
+    def forget_changes_since(self, since: datetime, until: float | None = None) -> int:
+        """Clear copies of memory text in the requested interval."""
         before = len(self.changed)
         self.changed = [
             row for row in self.changed
             if (when := dt_util.parse_datetime(row.get("time") or "")) is not None
-            and dt_util.as_utc(when) < since
+            and (dt_util.as_utc(when) < since
+                 or (until is not None and dt_util.as_utc(when).timestamp() > until))
         ]
         removed = before - len(self.changed)
         if removed:

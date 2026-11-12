@@ -23,8 +23,43 @@ def _after(stamp: Any, since) -> bool:
     return when is not None and dt_util.as_utc(when) >= since
 
 
-def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
+async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
+    """Persist the privacy request first, then forget all stores and await SQLite."""
+    brain = getattr(rt, "brain", None)
+    if brain is None or not brain.started:
+        return forget_recent(rt, hours)
+    # A single lock covers both saving the intent and clearing its completion
+    # record. Concurrent forget commands must not overwrite one another.
+    async with brain._forget_lock:
+        hours = max(1.0, min(float(hours), MAX_HOURS))
+        since = dt_util.utcnow() - timedelta(hours=hours)
+        try:
+            start, end = await brain.async_prepare_forget(since)
+        except Exception as err:  # noqa: BLE001 - do not clear other stores without a recovery record
+            return {"database_error": f"Could not safely start forgetting: {err}. Nothing was cleared."}
+        gone: dict[str, Any] = forget_recent(rt, hours, _registered=True, _since=since, _until=end)
+        try:
+            for key, n in (await brain.async_finish_forget()).items():
+                gone[f"database_{key}"] = n
+        except Exception as err:  # noqa: BLE001 - pending record survives until a successful restart replay
+            gone["database_error"] = ("The memory database couldn't be cleared yet; it will finish when Sentient next "
+                                      f"starts, and nothing from that period can be saved meanwhile ({err}).")
+        return gone
+
+
+def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
+                  _since: Any = None, _until: float | None = None) -> dict[str, int]:
     from .language import clear_translations
+
+    # During restart recovery, replay exactly the originally requested period;
+    # do not erase activity created after the user asked to forget.
+    def _after(stamp: Any, since: Any) -> bool:
+        when = dt_util.parse_datetime(str(stamp or ""))
+        return (when is not None and dt_util.as_utc(when) >= since
+                and (_until is None or dt_util.as_utc(when).timestamp() <= _until))
+
+    def _outside(when: Any, since: Any) -> bool:
+        return when < since or (_until is not None and when.timestamp() > _until)
 
     clear_translations(rt.ai)
     if house_context := getattr(rt, "house_context", None):
@@ -38,13 +73,20 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         gone_checks = 0
     if timing := getattr(rt.ai, "voice_timings", None):
         timing.clear()
+    if (brain := getattr(rt, "brain", None)) is not None:
+        brain.case_clear()  # saved AI answers from case memory go too
+    if isinstance(getattr(rt, "automation_pending", None), dict):
+        rt.automation_pending.clear()  # automations read back and waiting for a yes
     hours = max(1.0, min(float(hours), MAX_HOURS))
-    since = dt_util.utcnow() - timedelta(hours=hours)
+    since = _since if _since is not None else dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {'action_checks': gone_checks}
+    if (brain := getattr(rt, "brain", None)) is not None:
+        # the database's copies (house ledger, conversations, timeline) for the same period, and anything still queued
+        gone['ledger_waiting'] = brain.forget_since(since, registered=_registered, until=_until)
     if cache := getattr(rt, "clip_analysis", None):
         cache.clear()
     if events := getattr(rt, "security_events", None):
-        gone["security_events"] = events.forget(since)
+        gone["security_events"] = events.forget(since, until=_until)
 
     noticer = getattr(rt, 'noticer', None)
     if noticer is not None:
@@ -52,8 +94,8 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         retained = [row for row in decisions if not _after(row.get('time'), since)]
         gone['noticing_decisions'] = len(decisions) - len(retained)
         noticer.decisions = deque(retained, maxlen=decisions.maxlen)
-        noticer._pending = [change for change in noticer._pending if change.when < since]
-        noticer._last_seen = {eid: stamp for eid, stamp in noticer._last_seen.items() if stamp < since}
+        noticer._pending = [change for change in noticer._pending if _outside(change.when, since)]
+        noticer._last_seen = {eid: stamp for eid, stamp in noticer._last_seen.items() if _outside(stamp, since)}
         if not noticer._pending and noticer._flush_unsub:
             noticer._flush_unsub()
             noticer._flush_unsub = None
@@ -143,7 +185,7 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
 
     mem = rt.memory
     recent = [m for m in mem.items if _after(m.created, since) and not m.pinned]
-    gone['memory_changes'] = mem.forget_changes_since(since)
+    gone['memory_changes'] = mem.forget_changes_since(since, until=_until)
     for m in recent:
         mem.forget(m.id)
     gone["memories"] = len(recent)
@@ -153,10 +195,10 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         tasks.clear()
     for attr in ("_recent", "_remarks", "_delivered_recent"):
         cache = getattr(rt.speech, attr, {})
-        setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if stamp < since})
+        setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if _outside(stamp, since)})
     rt.speech.save_remarks()
     said = rt.speech._said
-    keep_s = [(t, text) for t, text in said if t < since]
+    keep_s = [(t, text) for t, text in said if _outside(t, since)]
     said.clear()
     said.extend(keep_s)
 
@@ -170,7 +212,7 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
         gone[label] = len(rows) - len(keep)
         setattr(owner, attr, deque(keep, maxlen=rows.maxlen) if isinstance(rows, deque) else keep)
     for key, session in list(rt.sessions.items.items()):
-        if session.touched >= since:
+        if not _outside(session.touched, since):
             rt.sessions.close(session)
             session.forgotten = True
             session.topic = session.goal = session.missing_detail = ""
@@ -200,5 +242,5 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     rt.speech.hass.bus.async_fire("sentient_voice_session")
 
     if (ai := getattr(rt, "ai", None)) is not None:
-        gone["sent_records"] = ai.forget_sent(since.isoformat())
+        gone["sent_records"] = ai.forget_sent(since.isoformat(), until=dt_util.utc_from_timestamp(_until).isoformat() if _until is not None else None)
     return gone

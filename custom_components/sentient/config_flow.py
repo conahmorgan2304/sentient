@@ -362,6 +362,12 @@ _SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["assist
 _ONE_SPEAKER = selector.EntitySelector(selector.EntitySelectorConfig(domain=["assist_satellite", "media_player"]))
 
 
+def _warning_countries() -> list[selector.SelectOptionDict]:
+    from .warnings_feed import countries
+
+    return [selector.SelectOptionDict(value=c["value"], label=c["label"]) for c in countries()]
+
+
 def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
     def d(key: str, fallback: Any = None) -> dict[str, Any]:
         value = defaults.get(key, fallback)
@@ -884,6 +890,39 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_ROUTINE_EVIDENCE, **d(CONF_ROUTINE_EVIDENCE, True)): selector.BooleanSelector(),
+            vol.Required("pronounce_names", **d("pronounce_names", True)): selector.BooleanSelector(),
+            vol.Optional("pronunciations", **d("pronunciations", "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
+            # memory and learning (brain.py)
+            vol.Required("house_ledger", **d("house_ledger", True)): selector.BooleanSelector(),
+            vol.Required("unexplained_changes", **d("unexplained_changes", True)): selector.BooleanSelector(),
+            vol.Optional("unexplained_entities", **d("unexplained_entities", [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(multiple=True)
+            ),
+            vol.Required("expectations", **d("expectations", True)): selector.BooleanSelector(),
+            vol.Required("surprise_gating", **d("surprise_gating", "watch")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=["off", "watch", "on"], translation_key="surprise_gating")
+            ),
+            vol.Required("situations", **d("situations", True)): selector.BooleanSelector(),
+            vol.Required("beliefs", **d("beliefs", True)): selector.BooleanSelector(),
+            vol.Required("learn_reactions", **d("learn_reactions", True)): selector.BooleanSelector(),
+            vol.Required("ai_case_memory", **d("ai_case_memory", True)): selector.BooleanSelector(),
+            vol.Required("voice_speed_watchdog", **d("voice_speed_watchdog", True)): selector.BooleanSelector(),
+            vol.Required("voice_speed_restart", **d("voice_speed_restart", False)): selector.BooleanSelector(),
+            vol.Required("incident_stages", **d("incident_stages", True)): selector.BooleanSelector(),
+            # weather and flood warnings (warnings_feed.py)
+            vol.Required("weather_warnings", **d("weather_warnings", False)): selector.BooleanSelector(),
+            vol.Optional("warnings_country", **d("warnings_country")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=_warning_countries(), mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
+            vol.Optional("warnings_region", **d("warnings_region", "")): selector.TextSelector(),
+            vol.Required("warnings_speak", **d("warnings_speak", True)): selector.BooleanSelector(),
+            # extra skills (skills.py)
+            vol.Required("email_read", **d("email_read", False)): selector.BooleanSelector(),
+            vol.Required("calendar_clashes", **d("calendar_clashes", False)): selector.BooleanSelector(),
+            vol.Required("security_audit", **d("security_audit", True)): selector.BooleanSelector(),
+            vol.Required("automation_builder", **d("automation_builder", False)): selector.BooleanSelector(),
         }
     )
 

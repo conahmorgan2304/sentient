@@ -45,3 +45,12 @@ def test_pages_moved_to_the_tabs_never_wait_for_the_settings_tab():
     checks = [line.strip() for line in js.splitlines() if re.search(r'_view\s*[!=]==?\s*"settings"', line)]
     allowed = ("_editorOpen() {", 'if (this._view === "settings") {')
     assert all(any(a in c for a in allowed) for c in checks), checks
+
+
+def test_no_two_elements_on_the_page_share_an_id():
+    # two id="mbrain" (the Mind card and the learning card) left the learning card blank in 1.5.0's first draft
+    js = PANEL.read_text()
+    ids = re.findall(r'\bid="([A-Za-z][\w-]*)"', js)
+    one_at_a_time = {"status", "rx"}  # in alternative templates (each sheet's bar, the reply's two endings): only one drawn
+    dupes = sorted({i for i in ids if ids.count(i) > 1} - one_at_a_time)
+    assert not dupes, dupes

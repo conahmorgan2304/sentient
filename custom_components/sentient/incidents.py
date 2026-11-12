@@ -12,6 +12,31 @@ from homeassistant.util import dt as dt_util
 from .sessions import CONF_INCIDENTS
 
 CONF_COVERAGE = "security_coverage"
+CONF_STAGES = "incident_stages"
+RESOLVED_AFTER = timedelta(minutes=30)
+
+
+def stage(item, assessment=None):
+    """Where an incident has got to: observed, investigating, likely household, concerning or resolved.
+
+    Built only from what was recorded (alert levels, sources, what was kept quiet and why); it never claims who
+    someone was or where they went."""
+    texts = ' '.join(str(e.get('text', '')) for e in item.get('evidence', [])).lower()
+    sources = len(item.get('sources') or [])
+    level = item.get('alert_level') or 0
+    end = dt_util.parse_datetime(item.get('end') or '') or dt_util.utcnow()
+    household = 'someone from the house' in texts or 'false alarm' in texts or 'household' in texts
+    if dt_util.utcnow() - end > RESOLVED_AFTER:
+        if household:
+            return 'resolved', 'quiet for half an hour; most likely someone from the house'
+        return 'resolved', 'nothing new for half an hour' + (' after an alert' if level else '')
+    if household and level < 2:
+        return 'likely household', 'an entry door opened just before, or it was marked as a household event'
+    if level >= 2:
+        return 'concerning', 'alerted while the alarm was set, everyone was out, or someone stayed a while'
+    if level == 1 or sources > 1:
+        return 'investigating', 'more than one camera or sensor involved' if sources > 1 else 'alerted at night'
+    return 'observed', 'one report so far'
 GAP = timedelta(minutes=3)
 ALERT_LEVELS = {'night': 1, 'away': 2, 'fence': 2, 'loitering': 3}
 
@@ -172,7 +197,13 @@ class Incidents:
         # Pick the eight first, then assess only those: this runs on every update of the Mind sensor.
         chosen = [i for i in self.items
                   if not query or query in (' '.join(i['sources']) + ' ' + ' '.join(e['text'] for e in i['evidence'])).lower()][:8]
-        return [dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i)) for i in chosen]
+        out = []
+        for i in chosen:
+            row = dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i))
+            if self.options.get(CONF_STAGES, True):
+                row['stage'], row['stage_why'] = stage(i, row['assessment'])
+            out.append(row)
+        return out
 
     def configure(self, options):
         self.options = options

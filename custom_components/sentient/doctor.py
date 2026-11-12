@@ -254,5 +254,15 @@ async def async_check(hass: HomeAssistant, rt: Any) -> dict[str, Any]:
     if voice_id.enabled(hass, rt.options):  # nothing about voice recognition appears unless it is installed and switched on
         rows += [_row("Voice", t, st, msg, fix) if fix else _row("Voice", t, st, msg)
                  for t, st, msg, fix in voice_id.health_rows(await voice_id.details(hass))]
+    brain = getattr(rt, "brain", None)
+    if brain is not None and brain.started:
+        size = await hass.async_add_executor_job(brain.db.size_mb)
+        if brain.db.recovered:
+            rows.append(_row("Memory", "Memory database", "warn", "It was damaged and a fresh one was started.",
+                             f"The old one is kept at {brain.db.recovered}; delete it once you don't need it."))
+        else:
+            rows.append(_row("Memory", "Memory database", "ok",
+                             f"{size} MB · search: {'full-text' if brain.db.fts else 'word matching'}"
+                             + (" · ledger on" if brain.ledger is not None and brain.ledger.enabled else " · ledger off")))
     worst = "bad" if any(r["status"] == "bad" for r in rows) else "warn" if any(r["status"] == "warn" for r in rows) else "ok"
     return {"status": worst, "rows": rows}

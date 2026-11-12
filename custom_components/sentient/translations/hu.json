@@ -541,7 +541,29 @@
           "speech_failure_notification": "Értesítés hangszóró-kézbesítési hibáról",
           "recent_followup_context": "Rövid visszakérdezések új ébresztőszó után",
           "conversation_cues": "Elköszönések, javítások és témaváltások felismerése",
-          "behaviour_explanations": "A figyelési és cselekvési döntések elmagyarázása"
+          "behaviour_explanations": "A figyelési és cselekvési döntések elmagyarázása",
+          "house_ledger": "House ledger",
+          "unexplained_changes": "Mention unexplained changes",
+          "unexplained_entities": "Devices to watch for unexplained changes",
+          "expectations": "Expectations and surprise",
+          "surprise_gating": "Skip remarks about what's usual",
+          "situations": "Tell the voice what's going on now",
+          "beliefs": "Form and test beliefs",
+          "learn_reactions": "Learn from reactions",
+          "ai_case_memory": "Save AI calls (case memory)",
+          "voice_speed_watchdog": "Voice speed watchdog",
+          "voice_speed_restart": "Restart a slow speaker by itself",
+          "incident_stages": "Security incident stages",
+          "weather_warnings": "Weather and flood warnings",
+          "warnings_country": "Country",
+          "warnings_region": "Region (optional)",
+          "warnings_speak": "Say severe warnings",
+          "email_read": "Read-only email",
+          "calendar_clashes": "Calendar clashes",
+          "security_audit": "Security check",
+          "automation_builder": "Build automations",
+          "pronounce_names": "Say names as they're pronounced",
+          "pronunciations": "Pronunciations (one per line)"
         },
         "data_description": {
           "motion_window": "Hány percnyi mozgás-előzményt vegyen figyelembe, amikor eldönti, hol vannak az emberek.",
@@ -770,7 +792,29 @@
           "speech_failure_notification": "Home Assistant-értesítés, ha a hangszórón való kézbesítés sikertelen vagy bizonytalan. Alapból ki van kapcsolva. Nem tartalmazza az elhangzott szöveget, és nem ismétli meg a beszédet. Vendég módban kikapcsol; a meglévő értesítések elvetésig megmaradnak.",
           "recent_followup_context": "Egy nemrég lezárt téma használata új ébresztőszó után ugyanazon a hangszórón és felhasználónál. Beszélgetésmenetek és kontextuális visszakérdezések kellenek hozzá. A menet időkorlátját használja; soha nem állítja vissza a megerősítést vagy a figyelést. Alapból ki van kapcsolva. Befejezés vagy elfelejtés törli a kontextust.",
           "conversation_cues": "Beszélgetés közben: a hétköznapi elköszönések lezárják, ha semmi nem vár válaszra; a „bocsánat, úgy értettem…” javítás; a „más téma: …” új témát kezd. MI nélkül.",
-          "behaviour_explanations": "Rövid kérdések a figyelésről és a rögzített eszközeredményekről közvetlen megválaszolása, AI-hívás nélkül. Beszélgetésmenetek kellenek hozzá. A meglévő menetnaplót használja, tiszteletben tartja a vendég módot és az eszközhozzáférést, és soha nem ismétel meg műveletet. Alapból ki van kapcsolva; nem tárol további előzményt."
+          "behaviour_explanations": "Rövid kérdések a figyelésről és a rögzített eszközeredményekről közvetlen megválaszolása, AI-hívás nélkül. Beszélgetésmenetek kellenek hozzá. A meglévő menetnaplót használja, tiszteletben tartja a vendég módot és az eszközhozzáférést, és soha nem ismétel meg műveletet. Alapból ki van kapcsolva; nem tárol további előzményt.",
+          "house_ledger": "On: every change to every device is recorded with what caused it (a person, a voice request, an automation, Sentient, or nothing in Home Assistant, meaning the device itself, its app or someone at it), so you can ask \"when did the heating go off, and why?\". Fast-changing numbers are kept as notable changes. Kept 90 days in Sentient's own database, then summarised by day. Off: nothing new is recorded; what was kept stays until you clear it on the Mind tab.",
+          "unexplained_changes": "On: when a watched device (by default the heating, water heaters and valves) changes with nothing in Home Assistant behind it at a time that's unusual for it, it is said once and put on the timeline, and repeats are linked: \"the third time this week, always around 11am\". While it is still learning a device, or once a repeat becomes usual, it only goes on the timeline. Off: still recorded, never mentioned.",
+          "unexplained_entities": "Leave empty for the heating, water heaters and valves. Locks, doors and gates are used by hand every day, so add them only if you want to hear about them.",
+          "expectations": "On: learns how often each device changes at each hour, on weekdays and at weekends (warmed up from the last three weeks of history), and scores every change from usual to very unusual. The Mind tab shows how much of each day it expected. Plain counting, no AI. Off: no scores; clear what it learned on the Mind tab.",
+          "surprise_gating": "Watch: notes which remarks it would skip because the change is usual for the time, without skipping any. On: skips them, which also saves the AI call. Never applies to safety alerts, alarms or anything you asked for.",
+          "situations": "On: the voice is told a few plain lines of what's going on now (just got home, movement in the last 15 minutes, anything unusual in the last hour). Not shared with guests or in a private room. Off: nothing extra is sent.",
+          "beliefs": "On: each night it looks for things that keep happening by themselves at about the same time, tests each one against the day just gone, asks about one that holds, and drops ones that don't. No AI. Off: no new beliefs and no testing; existing ones are cleared with the learning on the Mind tab.",
+          "learn_reactions": "On: something Sentient switched that's put straight back counts against doing it again, and a remark someone acts on counts in its favour. Off: reactions aren't scored.",
+          "ai_case_memory": "On: a background AI job identical to one in the last six hours reuses that answer instead of another call. Never used for pictures or clips. Off: every job calls the AI, and the saved answers are cleared.",
+          "voice_speed_watchdog": "On: notices when a speaker takes far longer to hear you than you took to speak (its audio arriving slower than real time) and puts it in the timeline with a restart suggestion. Off: no check.",
+          "voice_speed_restart": "On: a speaker that keeps lagging is restarted with its own restart button. Off: it's only suggested.",
+          "incident_stages": "On: each security incident shows how far it has got — observed, investigating, likely household, concerning or resolved — from what was recorded, never who someone was. Off: incidents are listed without a stage.",
+          "weather_warnings": "On: official warnings for your country are checked every 30 minutes (Met Office and Environment Agency in the UK, MeteoAlarm across Europe, the National Weather Service in the US), using Home Assistant's location. Off: no checks, and what was found is forgotten.",
+          "warnings_country": "Leave empty to use Home Assistant's country.",
+          "warnings_region": "Only warnings naming this region, e.g. North West England. Leave empty for all of the country (flood and US warnings are always near home).",
+          "warnings_speak": "On: a new amber, red or severe warning is said once. Off: warnings only go on the timeline.",
+          "email_read": "On: keeps the sender, subject and a short preview of the last 20 messages Home Assistant's IMAP integration reports, so you can ask \"any new email?\". Read-only, no password, never shared with guests. Off: nothing is kept and what was kept is cleared.",
+          "calendar_clashes": "On: \"any clashes tomorrow?\" finds events that overlap, or with under 15 minutes between, in the briefing's calendars (or all calendars). Off: not offered.",
+          "security_audit": "On: an admin can ask \"is my setup secure?\" for a read-only check of plain-http remote access, locks and alarms the voice can reach without a confirmation, long-lived tokens and admins without two-factor login. Off: not offered.",
+          "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
+          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Conah is pronounced Connor\". Off: names are read as spelt.",
+          "pronunciations": "Written = said, one per line, e.g. Conah = Connor. Spell the said version the way the voice should read it."
         }
       },
       "memories": {
@@ -1055,6 +1099,13 @@
       "options": {
         "brief": "Tömör",
         "natural": "Természetes"
+      }
+    },
+    "surprise_gating": {
+      "options": {
+        "off": "Off",
+        "watch": "Watch only",
+        "on": "On"
       }
     }
   },

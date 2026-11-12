@@ -553,7 +553,29 @@
           "heating_revert": "Retour au programme après un changement manuel",
           "rooms_view": "Pièces en un coup d’œil (onglet Maison et vue d’ensemble)",
           "knowledge_card": "Carte CE QUE JE SAIS dans l’onglet Esprit",
-          "day_chart": "Graphique LA JOURNÉE JUSQU’ICI sur la vue d’ensemble"
+          "day_chart": "Graphique LA JOURNÉE JUSQU’ICI sur la vue d’ensemble",
+          "house_ledger": "House ledger",
+          "unexplained_changes": "Mention unexplained changes",
+          "unexplained_entities": "Devices to watch for unexplained changes",
+          "expectations": "Expectations and surprise",
+          "surprise_gating": "Skip remarks about what's usual",
+          "situations": "Tell the voice what's going on now",
+          "beliefs": "Form and test beliefs",
+          "learn_reactions": "Learn from reactions",
+          "ai_case_memory": "Save AI calls (case memory)",
+          "voice_speed_watchdog": "Voice speed watchdog",
+          "voice_speed_restart": "Restart a slow speaker by itself",
+          "incident_stages": "Security incident stages",
+          "weather_warnings": "Weather and flood warnings",
+          "warnings_country": "Country",
+          "warnings_region": "Region (optional)",
+          "warnings_speak": "Say severe warnings",
+          "email_read": "Read-only email",
+          "calendar_clashes": "Calendar clashes",
+          "security_audit": "Security check",
+          "automation_builder": "Build automations",
+          "pronounce_names": "Say names as they're pronounced",
+          "pronunciations": "Pronunciations (one per line)"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -794,7 +816,29 @@
           "heating_revert": "Activé : un thermostat modifié à la main est laissé un moment puis remis sur le programme : la température de la période le jour, la température de nuit la nuit.",
           "rooms_view": "Activé : l’onglet Maison montre une tuile par pièce — température, humidité, lumières allumées, portes et fenêtres ouvertes, dernier mouvement et ce qui joue — et la vue d’ensemble reçoit une courte carte « autour de la maison ». Construit à partir de vos pièces ; rien n’est conservé. Désactivé : les deux sont masqués.",
           "knowledge_card": "Activé : l’onglet Esprit résume ce qu’il a appris de la maison — heure habituelle du coucher et du lever, capteurs mis de côté, vitesse de chauffe, prédictions de pièce, routines et souvenirs. Il ne montre que ce qui est déjà connu ; rien de plus n’est conservé. Désactivé : la carte est masquée.",
-          "day_chart": "Activé : la vue d’ensemble montre la journée heure par heure — mouvements, ce qu’il a dit, ce qui s’est passé dehors et ce que vous lui avez demandé — avec le premier lever et l’heure la plus chargée. Compté à partir de la chronologie ; rien de plus n’est conservé. Désactivé : le graphique est masqué."
+          "day_chart": "Activé : la vue d’ensemble montre la journée heure par heure — mouvements, ce qu’il a dit, ce qui s’est passé dehors et ce que vous lui avez demandé — avec le premier lever et l’heure la plus chargée. Compté à partir de la chronologie ; rien de plus n’est conservé. Désactivé : le graphique est masqué.",
+          "house_ledger": "On: every change to every device is recorded with what caused it (a person, a voice request, an automation, Sentient, or nothing in Home Assistant, meaning the device itself, its app or someone at it), so you can ask \"when did the heating go off, and why?\". Fast-changing numbers are kept as notable changes. Kept 90 days in Sentient's own database, then summarised by day. Off: nothing new is recorded; what was kept stays until you clear it on the Mind tab.",
+          "unexplained_changes": "On: when a watched device (by default the heating, water heaters and valves) changes with nothing in Home Assistant behind it at a time that's unusual for it, it is said once and put on the timeline, and repeats are linked: \"the third time this week, always around 11am\". While it is still learning a device, or once a repeat becomes usual, it only goes on the timeline. Off: still recorded, never mentioned.",
+          "unexplained_entities": "Leave empty for the heating, water heaters and valves. Locks, doors and gates are used by hand every day, so add them only if you want to hear about them.",
+          "expectations": "On: learns how often each device changes at each hour, on weekdays and at weekends (warmed up from the last three weeks of history), and scores every change from usual to very unusual. The Mind tab shows how much of each day it expected. Plain counting, no AI. Off: no scores; clear what it learned on the Mind tab.",
+          "surprise_gating": "Watch: notes which remarks it would skip because the change is usual for the time, without skipping any. On: skips them, which also saves the AI call. Never applies to safety alerts, alarms or anything you asked for.",
+          "situations": "On: the voice is told a few plain lines of what's going on now (just got home, movement in the last 15 minutes, anything unusual in the last hour). Not shared with guests or in a private room. Off: nothing extra is sent.",
+          "beliefs": "On: each night it looks for things that keep happening by themselves at about the same time, tests each one against the day just gone, asks about one that holds, and drops ones that don't. No AI. Off: no new beliefs and no testing; existing ones are cleared with the learning on the Mind tab.",
+          "learn_reactions": "On: something Sentient switched that's put straight back counts against doing it again, and a remark someone acts on counts in its favour. Off: reactions aren't scored.",
+          "ai_case_memory": "On: a background AI job identical to one in the last six hours reuses that answer instead of another call. Never used for pictures or clips. Off: every job calls the AI, and the saved answers are cleared.",
+          "voice_speed_watchdog": "On: notices when a speaker takes far longer to hear you than you took to speak (its audio arriving slower than real time) and puts it in the timeline with a restart suggestion. Off: no check.",
+          "voice_speed_restart": "On: a speaker that keeps lagging is restarted with its own restart button. Off: it's only suggested.",
+          "incident_stages": "On: each security incident shows how far it has got — observed, investigating, likely household, concerning or resolved — from what was recorded, never who someone was. Off: incidents are listed without a stage.",
+          "weather_warnings": "On: official warnings for your country are checked every 30 minutes (Met Office and Environment Agency in the UK, MeteoAlarm across Europe, the National Weather Service in the US), using Home Assistant's location. Off: no checks, and what was found is forgotten.",
+          "warnings_country": "Leave empty to use Home Assistant's country.",
+          "warnings_region": "Only warnings naming this region, e.g. North West England. Leave empty for all of the country (flood and US warnings are always near home).",
+          "warnings_speak": "On: a new amber, red or severe warning is said once. Off: warnings only go on the timeline.",
+          "email_read": "On: keeps the sender, subject and a short preview of the last 20 messages Home Assistant's IMAP integration reports, so you can ask \"any new email?\". Read-only, no password, never shared with guests. Off: nothing is kept and what was kept is cleared.",
+          "calendar_clashes": "On: \"any clashes tomorrow?\" finds events that overlap, or with under 15 minutes between, in the briefing's calendars (or all calendars). Off: not offered.",
+          "security_audit": "On: an admin can ask \"is my setup secure?\" for a read-only check of plain-http remote access, locks and alarms the voice can reach without a confirmation, long-lived tokens and admins without two-factor login. Off: not offered.",
+          "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
+          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Conah is pronounced Connor\". Off: names are read as spelt.",
+          "pronunciations": "Written = said, one per line, e.g. Conah = Connor. Spell the said version the way the voice should read it."
         }
       },
       "memories": {
@@ -1064,6 +1108,13 @@
       "options": {
         "brief": "Bref",
         "natural": "Naturel"
+      }
+    },
+    "surprise_gating": {
+      "options": {
+        "off": "Off",
+        "watch": "Watch only",
+        "on": "On"
       }
     }
   },

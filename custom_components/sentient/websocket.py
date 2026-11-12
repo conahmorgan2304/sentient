@@ -311,7 +311,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
-        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
+        CONF_PERSONALITY, CONF_PERSONALITY_NOTES, "pronounce_names", "pronunciations", CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
         CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
@@ -425,6 +425,16 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("autobackup", "Weekly backup", "mdi:calendar-sync-outline", "Every Sunday night, the same backup as the download button, saved in Home Assistant's config folder (so Home Assistant's own backups have it too). The newest few are kept; restore one from Backup.", [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
+    ]),
+    ("memory", "Memory & learning", "mdi:database-clock-outline", "The house ledger of every change and what caused it, what's usual when, beliefs it tests each night, learning from how people react, and saving AI calls. Kept in Sentient's own database; nothing leaves the house.", [
+        "house_ledger", "unexplained_changes", "unexplained_entities", "expectations", "surprise_gating", "situations",
+        "beliefs", "learn_reactions", "ai_case_memory", "voice_speed_watchdog", "voice_speed_restart", "incident_stages",
+    ]),
+    ("warnings", "Weather warnings", "mdi:weather-lightning-rainy", "Official weather and flood warnings for your country, from its own weather service. Severe ones are said once; the rest go on the timeline.", [
+        "weather_warnings", "warnings_country", "warnings_region", "warnings_speak",
+    ]),
+    ("skills", "Extra skills", "mdi:puzzle-outline", "Reading email through Home Assistant's IMAP integration, calendar clashes, a security check of your setup, and making automations from plain English.", [
+        "email_read", "calendar_clashes", "security_audit", "automation_builder",
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
         CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
@@ -608,6 +618,37 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     nxt = next_change(progs, dt_util.now()) if sched_on(opts) else None
     out["heating"] = {"zones": zones, "next": {**nxt, "night": night_temp(opts)} if nxt else None}
     connection.send_result(msg["id"], out)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/brain"})
+@page_access
+@websocket_api.async_response
+async def ws_brain(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """The Mind tab's HOW I'M LEARNING card: prediction, outcome and independence scores, beliefs, the ledger."""
+    entry = _entry(hass)
+    brain = getattr(entry.runtime_data, "brain", None) if entry is not None else None
+    if brain is None:
+        connection.send_result(msg["id"], {"on": False})
+        return
+    status = await brain.async_status()
+    if entry.runtime_data.speech.guest_mode:
+        status = {k: v for k, v in status.items() if k not in ("situations", "beliefs", "voice")}
+    warnings = getattr(entry.runtime_data, "warnings", None)
+    connection.send_result(msg["id"], {"on": True, **status, "warnings": warnings.listing() if warnings is not None else None})
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/brain/clear",
+                                  vol.Required("what"): vol.In(["ledger", "learning"])})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_brain_clear(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    brain = getattr(entry.runtime_data, "brain", None) if entry is not None else None
+    if brain is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient's memory database isn't running")
+        return
+    await brain.async_clear(msg["what"])
+    connection.send_result(msg["id"], {"cleared": msg["what"]})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/glance"})
@@ -900,16 +941,16 @@ def ws_privacy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/privacy/forget", vol.Optional("hours", default=48): vol.All(vol.Coerce(float), vol.Range(min=1, max=168))})
 @websocket_api.require_admin
-@callback
-def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+@websocket_api.async_response
+async def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Forget everything Sentient kept from the last few hours."""
     entry = _entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
-    from .privacy import forget_recent
+    from .privacy import async_forget_recent
 
-    connection.send_result(msg["id"], {"forgot": forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
+    connection.send_result(msg["id"], {"forgot": await async_forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
@@ -1002,6 +1043,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_memory_resolve)
     websocket_api.async_register_command(hass, ws_today)
     websocket_api.async_register_command(hass, ws_glance)
+    websocket_api.async_register_command(hass, ws_brain)
+    websocket_api.async_register_command(hass, ws_brain_clear)
     websocket_api.async_register_command(hass, ws_day)
     websocket_api.async_register_command(hass, ws_heating_programme_save)
     websocket_api.async_register_command(hass, ws_heating_programme_delete)
@@ -1127,7 +1170,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "media_speakers", "media_important_only", "alexa_tts_only", "tts_entity", "stream_voice_replies"]},
         {"title": "Personality & house rules", "open": False, "names": [
             "personality", "personality_notes", "style_feedback", "style_notes", "chattiness", "conversation_style",
-            "banned_words", "house_rules", "confirm_kinds"]},
+            "banned_words", "house_rules", "confirm_kinds", "pronounce_names", "pronunciations"]},
         {"title": "Conversations", "open": False, "names": [
             "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
             "contextual_followups", "recent_followup_context", "conversation_cues", "specific_clarification",
@@ -1174,6 +1217,12 @@ DEPENDS: dict[str, str] = {
     **{k: "current_house_context" for k in ("house_context_entities", "house_context_updates")},
     **{k: CONF_GUARDED for k in ("voice_unlock", "voice_undo")},
     "follow_minutes": CONF_FOLLOW_YOU,
+    **{k: "house_ledger" for k in ("unexplained_changes", "expectations", "beliefs", "learn_reactions", "situations")},
+    "unexplained_entities": "unexplained_changes",
+    "surprise_gating": "expectations",
+    "voice_speed_restart": "voice_speed_watchdog",
+    "pronunciations": "pronounce_names",
+    **{k: "weather_warnings" for k in ("warnings_country", "warnings_region", "warnings_speak")},
     CONF_OUTDOOR_AREAS: CONF_ROOMS_VIEW,
     "conversation_cues": CONF_SESSIONS,
     "manuals_local_text": CONF_MANUALS,

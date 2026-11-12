@@ -34,6 +34,7 @@ ALWAYS = {
     "sentient_session", "sentient_clarify", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_undo_last", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
     "sentient_search", "sentient_ask_later", "sentient_self", "sentient_game", "sentient_game_set", "sentient_game_log",
+    "sentient_history", "sentient_root_cause",
 }
 
 TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
@@ -47,11 +48,18 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
                   r"\bin (?:a|an|\d+)\b|minutes?|hours?|cancel|o'?clock",
          ["sentient_watch", "sentient_remind", "sentient_watches", "sentient_cancel_watch", "sentient_alarm"]),
         ("security", r"\block|secure|\bopen|\bshut|closed|window|\bdoor|alarm|night watch|\bsafe\b",
-         ["sentient_security", "sentient_night_watch", "sentient_house_check"]),
+         ["sentient_security", "sentient_night_watch", "sentient_house_check", "sentient_security_audit"]),
+        ("warnings", r"warning|storm|flood|gale|snow|ice\b|weather",
+         ["sentient_warnings"]),
+        ("email", r"e-?mails?|inbox|\bmail\b",
+         ["sentient_email"]),
+        ("calendar", r"calendar|clash|diary|appointment|meeting|double.?booked|busy (?:today|tomorrow)",
+         ["sentient_calendar_clashes"]),
         ("routines", r"good ?night|morning|\bbed\b|routine|hoover|vacuum|party|disco|light show|scene|briefing|"
                      r"motion light|\brule\b|every time|whenever|automat",
          ["sentient_routines", "sentient_adopt_routine", "sentient_forget_routine", "sentient_run_routine",
-          "sentient_briefing", "sentient_party", "sentient_scenes", "sentient_motion_lights", "sentient_make_rule"]),
+          "sentient_briefing", "sentient_party", "sentient_scenes", "sentient_motion_lights", "sentient_make_rule",
+          "sentient_create_automation"]),
         ("quiet", r"quiet|shush|hush|stop (?:telling|saying|talking)|guests?|talk again|shut up",
          ["sentient_quiet", "sentient_shush"]),
         ("manuals", r"manual|instructions|warranty|guarantee|receipt|filter|descale|model number|how do (?:i|you) (?:clean|reset|change|fit)",
