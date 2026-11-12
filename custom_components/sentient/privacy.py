@@ -86,7 +86,7 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
     if cache := getattr(rt, "clip_analysis", None):
         cache.clear()
     if events := getattr(rt, "security_events", None):
-        gone["security_events"] = events.forget(since)
+        gone["security_events"] = events.forget(since, until=_until)
 
     noticer = getattr(rt, 'noticer', None)
     if noticer is not None:
