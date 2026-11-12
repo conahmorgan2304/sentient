@@ -847,8 +847,8 @@ async def test_recovery_window_preserves_later_memory_and_security_events(hass: 
     start = now - timedelta(hours=2)
     finish = (now - timedelta(hours=1)).timestamp()
     rt.security_events.items = {
-        "inside": {"start": (now - timedelta(minutes=90)).timestamp()},
-        "after": {"start": (now - timedelta(minutes=5)).timestamp()},
+        "inside": {"id": "inside", "start": (now - timedelta(minutes=90)).timestamp()},
+        "after": {"id": "after", "start": (now - timedelta(minutes=5)).timestamp()},
     }
     rt.ai.sent = [
         {"time": (now - timedelta(minutes=90)).isoformat()},
