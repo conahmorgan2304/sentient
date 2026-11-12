@@ -181,6 +181,10 @@ class CognitiveCoordinator:
         self._elapsed_ns = 0
         self._slowest_ns = 0
 
+    def reset(self) -> None:
+        """Discard shadow statistics in place so other runtime users keep the same coordinator."""
+        self.__init__()
+
     def _digest(self, identifier: str) -> str:
         return blake2s(identifier.encode("utf-8", errors="replace"), key=self._key, digest_size=16).hexdigest()
 
