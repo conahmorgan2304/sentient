@@ -268,10 +268,14 @@ async def async_check(hass: HomeAssistant, rt: Any) -> dict[str, Any]:
 
     if brain is not None and brain.started and manuals._index(rt) is not None and rt.options.get("manuals"):
         try:
-            await manuals.async_sync(hass, rt)
+            synced = await manuals.async_sync(hass, rt) or {}
             seen = await hass.async_add_executor_job(pages.status, brain.db)
         except Exception:  # noqa: BLE001
-            seen = None
+            synced, seen = {}, None
+        if synced.get("error"):
+            rows.append(_row("Manuals", "Manuals page by page", "warn", "The PDF reader (pypdf) isn't installed, so "
+                             "manuals are read whole by the AI every time.", "Restart Home Assistant so it installs "
+                             "Sentient's requirements; check the log for an install error."))
         if seen is not None and seen["documents"]:
             whole = seen["whole_only"]
             rows.append(_row("Manuals", "Manuals page by page", "warn" if whole else "ok",

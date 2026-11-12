@@ -151,3 +151,15 @@ async def test_switching_it_off_clears_what_was_read(hass: HomeAssistant, tmp_pa
     hass.config_entries.async_update_entry(entry, options={"manuals": True, "manuals_pages": False})
     await hass.async_block_till_done(wait_background_tasks=True)
     assert (await hass.async_add_executor_job(pages.status, db))["documents"] == 0
+
+
+async def test_without_the_pdf_reader_manuals_still_work_whole(hass: HomeAssistant, tmp_path) -> None:
+    import builtins
+    from unittest.mock import patch
+
+    _folder(hass, tmp_path)
+    rt = _rt(hass, tmp_path)
+    real = builtins.__import__
+    with patch("builtins.__import__", side_effect=lambda n, *a, **k: (_ for _ in ()).throw(ImportError(n)) if n == "pypdf" else real(n, *a, **k)):
+        result = await async_answer(hass, rt, "which filter does the air purifier need?")
+    assert "attachments" in rt.ai.async_call.call_args.args[0] and result["document"] == "Air purifier"
