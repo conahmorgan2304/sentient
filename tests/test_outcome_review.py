@@ -27,3 +27,16 @@ def test_attempted_only_is_unverified():
 
 def test_empty_plan_is_unknown():
     assert evaluate_outcomes([])["state"] == "unknown"
+
+
+def test_guarded_outcome_uses_shared_decision_record_without_action_permission():
+    row = evaluate_outcomes([
+        {"entity_id": "light.hall", "status": "verified"},
+        {"entity_id": "light.kitchen", "status": "attempted"},
+    ])
+    note = row["decision"]
+    assert note["kind"] == "guarded_action_outcome"
+    assert note["choice"] == "partial"
+    assert "unverified_device_state" in note["gaps"]
+    assert note["ai_used"] is False
+    assert row["can_retry_automatically"] is False
