@@ -74,6 +74,16 @@ class Expectations:
         self.warmed = bool(data.get("warmed"))
         self.last_day = data.get("last_day")
 
+    def merge(self, past: "Expectations") -> None:
+        """Add what a warm-up learned from history to what has been learned live."""
+        for entity, states in past.counts.items():
+            for state, values in states.items():
+                row = self.counts.setdefault(entity, {}).setdefault(state, [0.0] * 48)
+                for i, v in enumerate(values):
+                    row[i] += v
+        self.days = [a + b for a, b in zip(self.days, past.days)]
+        self.warmed = True
+
     # ----- learning ---------------------------------------------------------------------------
     def learn(self, entity: str, state: str, ts: float, weight: float = 1.0) -> None:
         kind, hour = bucket(ts)

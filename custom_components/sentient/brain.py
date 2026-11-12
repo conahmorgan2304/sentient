@@ -94,6 +94,8 @@ class Brain:
         self._unsubs: list[Callable[[], None]] = []
         self.started = False
         self.warming = False
+        self._warm_task: Any = None
+        self._generation = 0
 
     # ----- settings ---------------------------------------------------------------------------
     def on(self, key: str) -> bool:
@@ -113,6 +115,9 @@ class Brain:
         self.cases = saved.get("cases") or {}
         self.counters = saved.get("counters") or {}
         rt = self._rt()
+        if self.db.recovered and rt is not None:
+            rt.timeline.add("health", "Sentient's memory database was damaged, so a fresh one was started. The old one is kept "
+                            "beside it for inspection; facts and settings are unaffected.", self.db.recovered)
         self.ledger = Ledger(self.hass, self.db, getattr(rt, "own", None))
         self.ledger.score = self._score
         self.ledger.hooks.append(self._after_change)
@@ -141,17 +146,34 @@ class Brain:
             await self.ledger.async_stop()
         if self.on(CONF_EXPECTATIONS) and not self.expect.warmed and not self.warming:
             self.warming = True
-            self.hass.async_create_background_task(self._warm(), "sentient expectations warm-up")
+            self._warm_task = self.hass.async_create_background_task(self._warm(self._generation), "sentient expectations warm-up")
+        elif not self.on(CONF_EXPECTATIONS):
+            self._cancel_warm()
 
-    async def _warm(self) -> None:
+    def _cancel_warm(self) -> None:
+        self._generation += 1  # anything still warming up is thrown away
+        if self._warm_task is not None and not self._warm_task.done():
+            self._warm_task.cancel()
+        self._warm_task = None
+        self.warming = False
+
+    async def _warm(self, generation: int) -> None:
+        """Learn the past into a separate model, then add it in, only if nothing was cleared or stopped meanwhile.
+        History ends where the warm-up began, and live changes from then on are counted live, so nothing is counted twice."""
         try:
-            learned = await async_warm_up(self.hass, self.expect)
+            past = Expectations()
+            learned = await async_warm_up(self.hass, past)
+            if generation != self._generation or not self.started or not self.on(CONF_EXPECTATIONS):
+                return
+            self.expect.merge(past)
             _LOGGER.debug("Expectations learned %s past changes", learned)
             await self.async_save()
         finally:
-            self.warming = False
+            if generation == self._generation:
+                self.warming = False
 
     async def async_stop(self) -> None:
+        self._cancel_warm()
         for unsub in self._unsubs:
             unsub()
         self._unsubs = []
@@ -171,7 +193,9 @@ class Brain:
     async def async_clear(self, what: str) -> None:
         """'ledger' (every recorded change) or 'learning' (expectations, beliefs, outcomes, cases)."""
         if what in ("learning", "all"):
+            self._cancel_warm()
             self.expect = Expectations()
+            self.expect.warmed = True  # cleared on purpose: don't refill it from history
             self.outcomes, self.cases, self.counters = {"good": [], "bad": []}, {}, {}
         if self.ledger is not None and what in ("ledger", "all"):
             self.ledger.recent.clear()

@@ -145,6 +145,7 @@ async def test_an_automation_needs_a_signed_in_admin_and_a_yes_in_a_later_turn(h
     from homeassistant.core import Context
     from homeassistant.helpers import llm
 
+    from custom_components.sentient.focus import current_request
     from custom_components.sentient.llm_api import CreateAutomationTool
 
     entry = await _setup(hass)
@@ -169,11 +170,25 @@ async def test_an_automation_needs_a_signed_in_admin_and_a_yes_in_a_later_turn(h
         assert "read_back" in await call(turn)
         assert "next turn" in (await call(turn, confirm=True))["error"]  # the model can't say yes for them
         changed = {"actions": [{"action": "light.turn_on", "target": {"entity_id": "light.porch"}, "data": {"brightness": 255}}]}
-        assert "isn't the automation that was read back" in (await call(Context(user_id=admin.id), confirm=True, **changed))["error"]
+        token = current_request.set("yes")
+        try:
+            assert "isn't the automation that was read back" in (await call(Context(user_id=admin.id), confirm=True, **changed))["error"]
+        finally:
+            current_request.reset(token)
+        for words in ("what's the weather like?", "yes but make it ten minutes later", ""):
+            token = current_request.set(words)
+            try:
+                assert "plainly said yes" in (await call(Context(user_id=admin.id), confirm=True))["error"], words
+            finally:
+                current_request.reset(token)
         assert not save.called
-        assert (await call(Context(user_id=admin.id), confirm=True)) == {"saved": True}
-        assert save.call_count == 1
-        assert "Nothing has been read back" in (await call(Context(user_id=admin.id), confirm=True))["error"]  # used once
+        token = current_request.set("Yes, save it please.")
+        try:
+            assert (await call(Context(user_id=admin.id), confirm=True)) == {"saved": True}
+            assert save.call_count == 1
+            assert "Nothing has been read back" in (await call(Context(user_id=admin.id), confirm=True))["error"]  # used once
+        finally:
+            current_request.reset(token)
 
 
 async def test_indirect_and_templated_actions_are_refused(hass: HomeAssistant):
@@ -230,3 +245,12 @@ def test_a_learned_routine_becomes_an_automation():
     dusk = Routine("light.porch", "Porch", "on", 0, "every day", 0.8, 10, 5.0, anchor="sunset", offset=-15)
     assert routine_automation(dusk)["triggers"] == [{"trigger": "sun", "event": "sunset", "offset": "-00:15:00"}]
     assert routine_automation(Routine("light.x", "X", "on", 0, "every day", 0.8, 10, 5.0, anchor="getting up")) is None
+
+
+async def test_garage_doors_and_gates_are_refused(hass: HomeAssistant):
+    await _setup(hass)
+    hass.states.async_set("cover.garage", "closed", {"device_class": "garage"})
+    async_mock_service(hass, "cover", "open_cover")
+    out = await async_check_automation(hass, {"alias": "x", "triggers": [{"trigger": "sun", "event": "sunset"}],
+                                              "actions": [{"action": "cover.open_cover", "target": {"entity_id": "cover.garage"}}]})
+    assert not out["ok"] and "garage door" in out["problems"][0]

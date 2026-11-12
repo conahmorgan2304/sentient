@@ -215,6 +215,11 @@ async def async_check_automation(hass: HomeAssistant, config: dict[str, Any]) ->
                             "commands: make that in Home Assistant's automation editor.")
         elif not hass.services.has_service(domain, name):
             problems.append(f"There's no action {service}.")
+        elif domain == "cover":
+            for cover in referenced_entities(config):
+                st = hass.states.get(cover) if cover.startswith("cover.") else None
+                if st is not None and st.attributes.get("device_class") in SENSITIVE_COVERS:
+                    problems.append(f"{cover} is a garage door, gate or door: make that in Home Assistant's automation editor.")
         elif domain == "scene":
             for scene in referenced_entities(config):
                 st = hass.states.get(scene) if scene.startswith("scene.") else None

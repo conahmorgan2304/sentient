@@ -539,3 +539,89 @@ async def test_warnings_already_said_stay_said_after_a_restart(hass: HomeAssista
         await fresh._announce_new([yellow])
         await fresh._announce_new([{**yellow, "level": "amber"}])  # yellow to amber: said
         assert say.call_count == 2
+
+
+async def test_clearing_learning_during_warm_up_stays_cleared(hass: HomeAssistant):
+    import asyncio
+
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def slow_warm(_hass, model):
+        started.set()
+        await release.wait()
+        model.learn("light.old", "on", _at(1, 8))
+        model.warmed = True
+        return 1
+
+    brain.expect = Expectations()
+    with patch("custom_components.sentient.brain.async_warm_up", slow_warm):
+        await brain.async_apply()
+        await started.wait()
+        await brain.async_clear("learning")
+        release.set()
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert "light.old" not in brain.expect.counts and not brain.warming
+
+
+async def test_warm_up_adds_to_live_learning_without_losing_it(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+
+    async def warm(_hass, model):
+        model.learn("light.old", "on", _at(3, 8))
+        model.days = [5, 2]
+        model.warmed = True
+        return 1
+
+    brain.expect = Expectations()
+    brain.expect.learn("light.live", "on", _at(0, 9))
+    with patch("custom_components.sentient.brain.async_warm_up", warm):
+        await brain.async_apply()
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert {"light.old", "light.live"} <= set(brain.expect.counts) and brain.expect.days == [5, 2] and brain.expect.warmed
+
+
+async def test_the_size_cap_keeps_daily_summaries(hass: HomeAssistant, tmp_path):
+    db = Database(hass, "x", str(tmp_path / "s.db"))
+    rows = [(_at(5, 10, i), "light.a", "A", "light", None, "off", "on", "device", None, None) for i in range(6)]
+    await db.call(lambda c: db.add_changes(c, rows))
+    await db.call(lambda c: db.prune_ledger(c, _at(90, 0), max_rows=2))
+    assert len(await db.call(lambda c: db.changes(c))) == 2
+    await db.call(lambda c: db.prune_ledger(c, _at(90, 0), max_rows=1))
+    total = await db.call(lambda c: c.execute("SELECT SUM(changes), SUM(unexplained) FROM ledger_days").fetchone())
+    assert tuple(total) == (5, 5)  # nothing dropped without being counted, and two nights added, not overwritten
+    db.close()
+
+
+async def test_a_damaged_database_is_set_aside_and_a_fresh_one_started(hass: HomeAssistant, tmp_path):
+    path = tmp_path / "s.db"
+    path.write_bytes(b"this is not a database" * 100)
+    db = Database(hass, "x", str(path))
+    await db.async_open()
+    assert db.recovered and (tmp_path / db.recovered.split("/")[-1]).exists()
+    await db.call(lambda c: db.put_memory(c, "timeline", "1", None, "fresh start"))
+    assert await db.call(lambda c: db.search(c, ["fresh"]))
+    db.close()
+
+
+async def test_older_conversations_stay_out_when_memories_are_per_speaker(hass: HomeAssistant):
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.llm_api import RecallTool
+
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    await brain.db.call(lambda c: brain.db.put_memory(c, "conversation", "p", "2026-02-01", "They: my secret boiler plan"))
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "t", "2026-02-01", "Boiler serviced"))
+    tool = RecallTool()
+    ctx = llm.LLMContext(platform="test", context=Context(), language="en", assistant="conversation", device_id=None)
+
+    async def recall():
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"query": "boiler"}), ctx)
+        return (out.data if hasattr(out, "data") else out)["earlier"]
+
+    assert {e["kind"] for e in await recall()} == {"conversation", "timeline"}
+    entry.runtime_data.options = {**entry.runtime_data.options, "speaker_memories": True}
+    assert {e["kind"] for e in await recall()} == {"timeline"}

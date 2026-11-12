@@ -424,9 +424,13 @@ class RecallTool(_Tool):
         earlier: list[dict[str, Any]] = []
         brain = getattr(rt, "brain", None)
         if brain is not None and not _household_private(hass, llm_context):
+            from .voice_id import CONF_SPEAKER_MEMORIES
+
+            # with speaker-aware memories on, past conversations can't be tied safely to one person: leave them out
+            kinds = ["timeline"] if rt.options.get(CONF_SPEAKER_MEMORIES) else ["conversation", "timeline"]
             try:
                 earlier = await brain.async_search([tool_input.tool_args["query"], *tool_input.tool_args.get("also", [])[:4]],
-                                                   ["conversation", "timeline"], 6)
+                                                   kinds, 6)
             except Exception:  # noqa: BLE001 - older memories are a bonus
                 earlier = []
         if brain is not None and not found and not earlier:
@@ -868,7 +872,18 @@ def _confirmed_automation(rt: Any, llm_context: llm.LLMContext, config: dict[str
         return "This isn't the automation that was read back: read the changed one back first."
     if pending["turn"] is not None and pending["turn"] == getattr(llm_context.context, "id", None):
         return "The yes has to come from the person, in their next turn, after the read-back."
+    from .focus import current_request
+
+    said = (current_request.get() or "").strip()  # the person's own words this turn, set before the model runs
+    if not AUTOMATION_YES.match(said):
+        return "The person hasn't plainly said yes to the read-back: ask them, and save only after a clear yes."
     return None
+
+
+# a whole reply that is a plain yes (nothing else, so "yes but change the time" is not one)
+AUTOMATION_YES = re.compile(
+    r"^(?:yes|yeah|yep|yup|aye|ok(?:ay)?|sure|correct|confirm(?:ed)?|go (?:on|ahead)|do it|save it|that'?s (?:right|fine|it)"
+    r"|sounds good|please do)(?:[ ,]+(?:please|thanks|thank you|save it|do it|go ahead|that'?s (?:right|fine)))*[.!]*$", re.I)
 
 
 class HistoryTool(_Tool):

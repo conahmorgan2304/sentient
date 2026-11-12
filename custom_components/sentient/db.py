@@ -21,6 +21,7 @@ import os
 import re
 import sqlite3
 import threading
+import time
 from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant
@@ -80,13 +81,31 @@ class Database:
         self._conn: sqlite3.Connection | None = None
         self._lock = threading.Lock()
         self.fts = False
+        self.recovered: str | None = None  # where a damaged database was set aside
 
     # ----- plumbing ---------------------------------------------------------------------------
     def _open(self) -> sqlite3.Connection:
         if self._conn is None:
             os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            conn = sqlite3.connect(self.path, check_same_thread=False, timeout=10)
+            try:
+                conn = self._connect()
+            except sqlite3.DatabaseError:
+                # damaged (a power cut mid-write, a full disk): kept aside for inspection, and a fresh one started
+                aside = f"{self.path}.damaged-{int(time.time())}"
+                for suffix in ("", "-wal", "-shm"):
+                    if os.path.exists(self.path + suffix):
+                        os.replace(self.path + suffix, aside + suffix)
+                self.recovered = aside
+                conn = self._connect()
+            self._conn = conn
+        return self._conn
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.path, check_same_thread=False, timeout=10)
+        try:
             conn.row_factory = sqlite3.Row
+            if conn.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                raise sqlite3.DatabaseError("quick_check failed")
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
             for stmt in SCHEMA:
@@ -97,8 +116,10 @@ class Database:
             except sqlite3.OperationalError:
                 self.fts = False
             conn.commit()
-            self._conn = conn
-        return self._conn
+            return conn
+        except Exception:
+            conn.close()
+            raise
 
     def run(self, fn: Callable[[sqlite3.Connection], Any]) -> Any:
         """Run fn(connection) in this thread (callers in the event loop use ``call``)."""
@@ -161,16 +182,26 @@ class Database:
         return [dict(r) for r in conn.execute(sql, [*args, limit])]
 
     @staticmethod
-    def prune_ledger(conn: sqlite3.Connection, cutoff: float) -> int:
-        """Summarise old days by entity, then let the detail go."""
+    def _summarise_and_drop(conn: sqlite3.Connection, where: str, args: tuple) -> int:
+        """Add the rows' counts to each day's summary (adding, so a day pruned over two nights isn't overwritten),
+        then let the detail go."""
         conn.execute(
-            "INSERT OR REPLACE INTO ledger_days (day, entity, changes, unexplained) "
-            "SELECT date(ts, 'unixepoch'), entity, COUNT(*), SUM(cause = 'device') FROM ledger WHERE ts < ? "
-            "GROUP BY date(ts, 'unixepoch'), entity", (cutoff,))
-        gone = conn.execute("DELETE FROM ledger WHERE ts < ?", (cutoff,)).rowcount
-        over = conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0] - LEDGER_MAX_ROWS
+            "INSERT INTO ledger_days (day, entity, changes, unexplained) "
+            f"SELECT date(ts, 'unixepoch'), entity, COUNT(*), SUM(cause = 'device') FROM ledger WHERE {where} "
+            "GROUP BY date(ts, 'unixepoch'), entity "
+            "ON CONFLICT(day, entity) DO UPDATE SET changes = changes + excluded.changes, "
+            "unexplained = unexplained + excluded.unexplained", args)
+        return conn.execute(f"DELETE FROM ledger WHERE {where}", args).rowcount
+
+    @classmethod
+    def prune_ledger(cls, conn: sqlite3.Connection, cutoff: float, max_rows: int | None = None) -> int:
+        """Older than 90 days, and the oldest beyond the size cap: summarised by day, then dropped."""
+        gone = cls._summarise_and_drop(conn, "ts < ?", (cutoff,))
+        over = conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0] - (max_rows or LEDGER_MAX_ROWS)
         if over > 0:
-            gone += conn.execute("DELETE FROM ledger WHERE id IN (SELECT id FROM ledger ORDER BY ts LIMIT ?)", (over,)).rowcount
+            last = conn.execute("SELECT id FROM ledger ORDER BY ts, id LIMIT 1 OFFSET ?", (over - 1,)).fetchone()[0]
+            edge = conn.execute("SELECT ts FROM ledger WHERE id = ?", (last,)).fetchone()[0]
+            gone += cls._summarise_and_drop(conn, "(ts < ? OR (ts = ? AND id <= ?))", (edge, edge, last))
         return gone
 
     # ----- memories and search ----------------------------------------------------------------
