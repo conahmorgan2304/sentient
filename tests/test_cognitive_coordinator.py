@@ -166,3 +166,27 @@ def test_multi_step_progress_never_resends_failed_or_unverified_actions():
     assert report["can_continue_automatically"] is False
     assert report["requires_fresh_state_check"] is True
     assert "no_automatic_retry" in report["decision"]["reasons"]
+
+
+def test_incident_collection_preserves_legacy_stage_and_counts_one_shadow_revision(hass):
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.incidents import Incidents
+
+    incidents = Incidents(hass, "cognitive-shadow", {"security_incidents": True})
+    now = dt_util.utcnow()
+    incidents.items = [{
+        "id": "gate-event", "start": now.isoformat(), "end": now.isoformat(),
+        "sources": ["binary_sensor.gate", "camera.garden"], "alert_level": 1,
+        "evidence": [
+            {"source": "binary_sensor.gate", "kind": "contact", "status": "observed",
+             "text": "Gate open", "time": now.isoformat()},
+            {"source": "camera.garden", "kind": "detection", "status": "observed",
+             "text": "Person reported", "time": now.isoformat()},
+        ],
+    }]
+    first = incidents.recent()[0]
+    assert first["stage"] == "investigating"  # existing algorithm is authoritative
+    assert first["cognitive_shadow"]["authoritative"] is False
+    assert incidents.cognitive.summary()["incidents_compared"] == 1
+    incidents.recent()
+    assert incidents.cognitive.summary()["incidents_compared"] == 1
