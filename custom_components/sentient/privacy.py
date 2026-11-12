@@ -24,19 +24,31 @@ def _after(stamp: Any, since) -> bool:
 
 
 async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
-    """Forget, and report it done only once the database has really deleted its copies."""
-    gone: dict[str, Any] = forget_recent(rt, hours)
-    if (brain := getattr(rt, "brain", None)) is not None and brain.started:
+    """Persist the privacy request first, then forget all stores and await SQLite."""
+    brain = getattr(rt, "brain", None)
+    if brain is None or not brain.started:
+        return forget_recent(rt, hours)
+    # A single lock covers both saving the intent and clearing its completion
+    # record. Concurrent forget commands must not overwrite one another.
+    async with brain._forget_lock:
+        hours = max(1.0, min(float(hours), MAX_HOURS))
+        since = dt_util.utcnow() - timedelta(hours=hours)
+        try:
+            start, end = await brain.async_prepare_forget(since)
+        except Exception as err:  # noqa: BLE001 - do not clear other stores without a recovery record
+            return {"database_error": f"Could not safely start forgetting: {err}. Nothing was cleared."}
+        gone: dict[str, Any] = forget_recent(rt, hours, _registered=True, _since=since, _until=end)
         try:
             for key, n in (await brain.async_finish_forget()).items():
                 gone[f"database_{key}"] = n
-        except Exception as err:  # noqa: BLE001 - said plainly: the period stays blocked and is retried at the next start
+        except Exception as err:  # noqa: BLE001 - pending record survives until a successful restart replay
             gone["database_error"] = ("The memory database couldn't be cleared yet; it will finish when Sentient next "
                                       f"starts, and nothing from that period can be saved meanwhile ({err}).")
-    return gone
+        return gone
 
 
-def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
+def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
+                  _since: Any = None, _until: float | None = None) -> dict[str, int]:
     from .language import clear_translations
 
     clear_translations(rt.ai)
@@ -56,11 +68,11 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     if isinstance(getattr(rt, "automation_pending", None), dict):
         rt.automation_pending.clear()  # automations read back and waiting for a yes
     hours = max(1.0, min(float(hours), MAX_HOURS))
-    since = dt_util.utcnow() - timedelta(hours=hours)
+    since = _since if _since is not None else dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {'action_checks': gone_checks}
     if (brain := getattr(rt, "brain", None)) is not None:
         # the database's copies (house ledger, conversations, timeline) for the same period, and anything still queued
-        gone['ledger_waiting'] = brain.forget_since(since)
+        gone['ledger_waiting'] = brain.forget_since(since, registered=_registered, until=_until)
     if cache := getattr(rt, "clip_analysis", None):
         cache.clear()
     if events := getattr(rt, "security_events", None):
