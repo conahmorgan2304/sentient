@@ -40,8 +40,15 @@ def decision(kind: str, *, evidence: list[str], gaps: list[str], choice: str, re
     evidence: what was looked at; gaps: what couldn't be known; choice: what was done; reasons: machine codes.
     It records a decision already made; it never makes or authorises one.
     """
-    return {"kind": kind, "evidence": list(evidence)[:8], "gaps": list(gaps)[:6], "choice": choice,
-            "reasons": list(reasons)[:8], "ai_used": False}
+    def bounded(rows: list[str], count: int, chars: int = 180) -> list[str]:
+        # A single long device label or provider error should not flood the
+        # timeline, voice context or websocket. These are explanations, not
+        # original evidence; original observations remain in their own stores.
+        return [str(row)[:chars] for row in list(rows)[:count]]
+
+    return {"kind": str(kind)[:80], "evidence": bounded(evidence, 8),
+            "gaps": bounded(gaps, 6), "choice": str(choice)[:80],
+            "reasons": bounded(reasons, 8, 80), "ai_used": False}
 
 
 def assess_security(*, open_count: int, unlocked_count: int,
