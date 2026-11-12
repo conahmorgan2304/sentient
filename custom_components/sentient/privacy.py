@@ -51,6 +51,16 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
                   _since: Any = None, _until: float | None = None) -> dict[str, int]:
     from .language import clear_translations
 
+    # During restart recovery, replay exactly the originally requested period;
+    # do not erase activity created after the user asked to forget.
+    def _after(stamp: Any, since: Any) -> bool:
+        when = dt_util.parse_datetime(str(stamp or ""))
+        return (when is not None and dt_util.as_utc(when) >= since
+                and (_until is None or dt_util.as_utc(when).timestamp() <= _until))
+
+    def _outside(when: Any, since: Any) -> bool:
+        return when < since or (_until is not None and when.timestamp() > _until)
+
     clear_translations(rt.ai)
     if house_context := getattr(rt, "house_context", None):
         house_context.clear()
@@ -84,8 +94,8 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
         retained = [row for row in decisions if not _after(row.get('time'), since)]
         gone['noticing_decisions'] = len(decisions) - len(retained)
         noticer.decisions = deque(retained, maxlen=decisions.maxlen)
-        noticer._pending = [change for change in noticer._pending if change.when < since]
-        noticer._last_seen = {eid: stamp for eid, stamp in noticer._last_seen.items() if stamp < since}
+        noticer._pending = [change for change in noticer._pending if _outside(change.when, since)]
+        noticer._last_seen = {eid: stamp for eid, stamp in noticer._last_seen.items() if _outside(stamp, since)}
         if not noticer._pending and noticer._flush_unsub:
             noticer._flush_unsub()
             noticer._flush_unsub = None
@@ -185,10 +195,10 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
         tasks.clear()
     for attr in ("_recent", "_remarks", "_delivered_recent"):
         cache = getattr(rt.speech, attr, {})
-        setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if stamp < since})
+        setattr(rt.speech, attr, {k: stamp for k, stamp in cache.items() if _outside(stamp, since)})
     rt.speech.save_remarks()
     said = rt.speech._said
-    keep_s = [(t, text) for t, text in said if t < since]
+    keep_s = [(t, text) for t, text in said if _outside(t, since)]
     said.clear()
     said.extend(keep_s)
 
@@ -202,7 +212,7 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
         gone[label] = len(rows) - len(keep)
         setattr(owner, attr, deque(keep, maxlen=rows.maxlen) if isinstance(rows, deque) else keep)
     for key, session in list(rt.sessions.items.items()):
-        if session.touched >= since:
+        if not _outside(session.touched, since):
             rt.sessions.close(session)
             session.forgotten = True
             session.topic = session.goal = session.missing_detail = ""
