@@ -18,6 +18,7 @@ Everything except case memory works without AI. Each part has its own switch (Se
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import asyncio
 import hashlib
 import json
 import logging
@@ -101,6 +102,7 @@ class Brain:
         # forgotten periods not yet deleted from the database: kept on disk until they are
         self._forget_store: Any = Store(hass, 1, f"sentient.{entry_id}.forget")
         self._forget_pending: list[tuple[float, float]] = []
+        self._forget_lock = asyncio.Lock()  # serialise durable registration, deletion and completion
 
     # ----- settings ---------------------------------------------------------------------------
     def on(self, key: str) -> bool:
@@ -212,13 +214,29 @@ class Brain:
                                                           ("cases", self.cases), ("counters", self.counters))}
         await self.db.call(lambda c: [self.db.set_kv_text(c, k, v) for k, v in data.items()])
 
-    def forget_since(self, since: datetime) -> int:
+    async def async_prepare_forget(self, since: datetime) -> tuple[float, float]:
+        """Persist a privacy deletion before touching any of the source stores.
+
+        Call while holding _forget_lock. An interrupted operation is replayed on
+        restart, even if Home Assistant stops immediately after this returns.
+        """
+        start, end = since.timestamp(), dt_util.utcnow().timestamp()
+        pending = [*self._forget_pending, (start, end)]
+        await self._forget_store.async_save({"pending": pending})
+        self._forget_pending = pending
+        self.db.forget_window(start, end)
+        return start, end
+
+    def forget_since(self, since: datetime, *, registered: bool = False) -> int:
         """'Forget the last N hours', the part that can't wait: the period is refused by every database write from now
         on, and changes still waiting to be saved are dropped. The database deletion itself is ``async_finish_forget``,
         which the caller awaits before saying it's done. (Expectations keep only counts, not records.)"""
         start, end = since.timestamp(), dt_util.utcnow().timestamp()
-        self.db.forget_window(start, end)
-        self._forget_pending.append((start, end))
+        if not registered:
+            # Legacy in-memory entry point. User-facing forgetting must call
+            # async_prepare_forget first to guarantee restart recovery.
+            self.db.forget_window(start, end)
+            self._forget_pending.append((start, end))
         dropped = 0
         if self.ledger is not None:
             before = len(self.ledger._buffer)
