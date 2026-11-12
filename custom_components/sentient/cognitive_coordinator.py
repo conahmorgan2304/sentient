@@ -221,8 +221,13 @@ class CognitiveCoordinator:
         # Deduplicate periodic Mind-card redraws; count only changed evidence.
         key = str(item.get("id") or "")
         if key:
-            signature = (item.get("end"), len(item.get("evidence") or []),
-                         int(item.get("alert_level") or 0), baseline_stage, shadow["stage"])
+            signature = (
+                item.get("end"), len(item.get("evidence") or []),
+                int(item.get("alert_level") or 0), baseline_stage, shadow["stage"],
+                assessment.get("status"), assessment.get("corroboration"),
+                assessment.get("reported_observations"), assessment.get("inferences"),
+                assessment.get("unknown_reports"), assessment.get("source_count"),
+            )
             if self._seen.get(key) != signature:
                 if key not in self._seen:
                     if len(self._recent) == MAX_TRACKED:
