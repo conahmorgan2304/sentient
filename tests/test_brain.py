@@ -767,3 +767,43 @@ async def test_an_automation_that_wont_activate_is_saved_once_and_says_so(hass: 
         out = await async_save_automation(hass, {"alias": "Porch", "triggers": [], "actions": []})
     assert out["saved"] and out["active"] is False and "Don't save it again" in out["note"]
     assert path.read_text().count("Porch") == 1
+
+
+async def test_forget_intent_is_durable_before_any_source_store_changes(hass: HomeAssistant):
+    from custom_components.sentient.privacy import async_forget_recent
+
+    entry = await _setup(hass)
+    rt, brain = entry.runtime_data, entry.runtime_data.brain
+    now = dt_util.utcnow()
+    rt.conversations.episodes = [{
+        "id": "keep", "start": now.isoformat(), "last": now.isoformat(),
+        "turns": [{"who": "them", "text": "Private note"}],
+    }]
+    with patch.object(brain._forget_store, "async_save",
+                      AsyncMock(side_effect=OSError("storage unavailable"))):
+        out = await async_forget_recent(rt, 1)
+    assert "database_error" in out
+    assert len(rt.conversations.episodes) == 1  # no partial privacy deletion
+    assert not brain._forget_pending
+    assert not brain.db.forgotten
+
+
+async def test_simultaneous_forget_requests_keep_both_windows(hass: HomeAssistant):
+    import asyncio
+    from custom_components.sentient.privacy import async_forget_recent
+
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    now = dt_util.utcnow()
+    for ref, age in (("first", 90), ("second", 30)):
+        await brain.db.call(lambda c, ref=ref, age=age: brain.db.put_memory(
+            c, "timeline", ref, (now - timedelta(minutes=age)).isoformat(),
+            "private " + ref))
+    first, second = await asyncio.gather(
+        async_forget_recent(entry.runtime_data, 1),
+        async_forget_recent(entry.runtime_data, 2),
+    )
+    assert "database_error" not in first and "database_error" not in second
+    assert not brain._forget_pending
+    assert (await brain._forget_store.async_load()).get("pending") == []
+    assert await brain.async_search(["private"]) == []
