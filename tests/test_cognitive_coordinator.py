@@ -216,3 +216,14 @@ def test_shadow_comparison_sees_corrected_status_without_event_count_change():
     item["evidence"][1]["status"] = "unknown"
     core.incident(item, assess_incident(item), "investigating", now=NOW)
     assert core.summary()["incidents_compared"] == 2
+
+
+def test_shadow_exposes_bounded_latency_measurement_without_service_calls():
+    core = CognitiveCoordinator()
+    episode = _episode()
+    core.incident(episode, assess_incident(episode), "investigating", now=NOW)
+    status = core.summary()
+    assert status["evaluations"] == 1
+    assert status["mean_evaluation_ms"] >= 0
+    assert status["slowest_evaluation_ms"] >= 0
+    assert status["autonomous_actions"] == 0
