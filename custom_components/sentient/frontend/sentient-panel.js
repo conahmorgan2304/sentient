@@ -1981,14 +1981,31 @@
           this._liveTimer = setTimeout(giveUp, 8000);
         };
         if (smooth && canSmooth && window.loadCardHelpers) {
-          window.loadCardHelpers().then((helpers) => {
-            if (this._liveCamKey !== mode || !holder.isConnected) return;
-            const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
-            card.hass = this._hass;
-            this._liveCard = card;
-            holder.innerHTML = "";
-            holder.appendChild(card);
-          }, () => { if (holder.isConnected) picture(); });
+          // Native stream cards can fail to initialise (or reject their helper
+          // promise) without ever raising an <img> error. Keep a usable
+          // picture fallback rather than a permanently empty Nest player.
+          let resolved = false;
+          const nativeFallback = () => {
+            if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+            resolved = true;
+            picture();
+          };
+          const timeout = setTimeout(nativeFallback, 12000);
+          Promise.resolve().then(() => window.loadCardHelpers()).then((helpers) => {
+            if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+            clearTimeout(timeout);
+            resolved = true;
+            try {
+              const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
+              card.hass = this._hass;
+              this._liveCard = card;
+              holder.innerHTML = "";
+              holder.appendChild(card);
+            } catch (e) {
+              this._liveCard = null;
+              picture();
+            }
+          }, nativeFallback);
         } else picture();
       } else {
         if (this._liveCard) this._liveCard.hass = this._hass;
