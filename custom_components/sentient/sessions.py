@@ -251,6 +251,7 @@ class Sessions:
             text = change.group(1).strip() or text
             session.entities = []
             session.correction = None
+            session.investigation = None  # a new subject cannot inherit stale evidence
             session.follow_up_context = None
             prior_follow = {}
         kind = classify(text) if connected else None
