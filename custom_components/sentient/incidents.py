@@ -10,6 +10,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .sessions import CONF_INCIDENTS
+from .cognitive_coordinator import CognitiveCoordinator
 
 CONF_COVERAGE = "security_coverage"
 CONF_STAGES = "incident_stages"
@@ -64,6 +65,7 @@ class Incidents:
         self._store = Store(hass, 1, f'sentient.{entry_id}.incidents')
         self.items = []
         self._pending_alerts = {}
+        self.cognitive = CognitiveCoordinator()  # bounded, read-only shadow comparisons
         self._unsub = None
 
     @property
@@ -200,8 +202,12 @@ class Incidents:
         out = []
         for i in chosen:
             row = dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i))
+            # The original stage remains authoritative; the new coordinator
+            # only compares decisions and tracks disagreement for later review.
+            legacy_stage, legacy_reason = stage(i, row['assessment'])
+            row['cognitive_shadow'] = self.cognitive.incident(i, row['assessment'], legacy_stage)
             if self.options.get(CONF_STAGES, True):
-                row['stage'], row['stage_why'] = stage(i, row['assessment'])
+                row['stage'], row['stage_why'] = legacy_stage, legacy_reason
             out.append(row)
         return out
 
