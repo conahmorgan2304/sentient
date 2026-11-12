@@ -82,21 +82,42 @@ def read_text(path: str) -> tuple[list[tuple[int, str, str]], int]:
     with open(path, "rb") as handle:
         text = handle.read(4 * 1_048_576).decode("utf-8", errors="replace")
     sections: list[tuple[str, str]] = []
-    heading, buf = "", []
+    heading, buf, size = "", [], 0
+
+    def flush() -> None:
+        nonlocal buf, size
+        if buf:
+            sections.append((heading, "\n\n".join(buf)))
+            buf, size = [], 0
+
     for block in re.split(r"\n\s*\n", text):
         block = block.strip()
         if not block:
             continue
         first = block.splitlines()[0]
-        if first.startswith("#") or sum(len(b) for b in buf) + len(block) > SECTION_CHARS:
-            if buf:
-                sections.append((heading, "\n\n".join(buf)))
-                buf = []
-            if first.startswith("#"):
-                heading = first.lstrip("#").strip()[:60]
-        buf.append(block)
-    if buf:
-        sections.append((heading, "\n\n".join(buf)))
+        if first.startswith("#"):
+            flush()
+            heading = first.lstrip("#").strip()[:60]
+        # A single pasted paragraph can be much longer than a page. Split it
+        # rather than silently truncating everything past MAX_PAGE_CHARS.
+        while block:
+            capacity = SECTION_CHARS - size - (2 if buf else 0)
+            if capacity < 100:
+                flush()
+                capacity = SECTION_CHARS
+            if len(block) <= capacity:
+                buf.append(block)
+                size += len(block) + (2 if len(buf) > 1 else 0)
+                break
+            cut = block.rfind(" ", max(0, capacity // 2), capacity + 1)
+            if cut < capacity // 2:
+                cut = capacity
+            part = block[:cut].strip()
+            if part:
+                buf.append(part)
+            flush()
+            block = block[cut:].lstrip()
+    flush()
     out = [(i + 1, head or str(i + 1), _tidy(body)) for i, (head, body) in enumerate(sections[:MAX_PAGES])]
     return out, len(sections)
 
