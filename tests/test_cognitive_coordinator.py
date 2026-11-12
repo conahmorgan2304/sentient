@@ -248,3 +248,19 @@ def test_shadow_comparison_notices_evidence_kind_change_with_same_counts():
     assert core.summary()["incidents_compared"] == 2
     core.incident(item, assess_incident(item), "observed", now=NOW)
     assert core.summary()["incidents_compared"] == 2
+
+
+def test_shadow_agreement_uses_latest_incident_stage_not_noisy_revision_count():
+    core = CognitiveCoordinator()
+    for index in range(10):
+        episode = _episode(f"anonymous-{index}")
+        core.incident(episode, assess_incident(episode), "observed", now=NOW)
+    metrics = core.summary()
+    assert metrics["tracked_incidents"] == 10
+    assert metrics["latest_stage_agreement_rate"] is not None
+    first = _episode("anonymous-0")
+    for _ in range(20):
+        first["evidence"].append({"source": "camera.gate", "kind": "event", "status": "inferred"})
+        core.incident(first, assess_incident(first), "observed", now=NOW)
+    assert core.summary()["tracked_incidents"] == 10
+    assert core.summary()["latest_stage_agreement_rate"] == metrics["latest_stage_agreement_rate"]
