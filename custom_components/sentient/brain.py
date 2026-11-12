@@ -122,6 +122,16 @@ class Brain:
             self.db.forget_window(float(start), float(end))
             self._forget_pending.append((float(start), float(end)))
         if self._forget_pending:
+            # A crash may occur immediately after the durable intent is saved,
+            # before the ordinary conversation stores have been cleared.
+            # Replay that original bounded interval as well as SQLite deletion.
+            from .privacy import forget_recent
+
+            rt = self._rt()
+            if rt is not None:
+                for start, end in list(self._forget_pending):
+                    forget_recent(rt, (end - start) / 3600, _registered=True,
+                                  _since=dt_util.utc_from_timestamp(start), _until=end)
             await self.async_finish_forget()
         saved = await self.db.call(lambda c: {k: self.db.get_kv(c, k) for k in ("expectations", "outcomes", "cases", "counters")})
         self.expect.load(saved.get("expectations"))
