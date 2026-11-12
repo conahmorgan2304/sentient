@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.1": [
+        "The Mind tab's learning card counts properly: a script finishing is no longer taken as someone putting Sentient's change straight back, \"switched by themselves\" counts controlled devices only (not every sensor reading), answers straight from the house count as done without the AI, and watch mode shows how many AI calls skipping the usual would save.",
+        "Fixed: when the AI is down, \"when's my next alarm?\" and \"any reminders?\" are answered from the house again (the reminders list was read the wrong way, so no answer came).",
+    ],
     "1.5.0": [
         "The house ledger: every change to every device is now recorded with what caused it — a person, a voice request, an automation, Sentient, or nothing in Home Assistant (the device itself or its app). Ask \"when did the heating go off, and why?\".",
         "Sentient now learns what's usual at each hour and notices what isn't. The Mind tab's HOW I'M LEARNING card shows how much of each day it expected, and that number should rise week on week.",
