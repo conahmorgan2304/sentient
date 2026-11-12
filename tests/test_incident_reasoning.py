@@ -46,3 +46,17 @@ def test_inferred_detection_is_not_corroborated_as_observed():
     ]})
     assert result["corroboration"] == "unconfirmed"
     assert "contact_and_camera_reports_unconfirmed" in result["reasons"]
+
+
+def test_incident_assessment_uses_shared_non_actuating_decision_record():
+    result = assess_incident({"evidence": [
+        {"source": "binary_sensor.gate", "kind": "contact", "status": "observed"},
+        {"source": "camera.garden", "kind": "detection", "status": "unknown"},
+    ]})
+    decision = result["decision"]
+    assert decision["kind"] == "security_incident_assessment"
+    assert decision["choice"] == "mixed"
+    assert "unsettled_evidence" in decision["gaps"]
+    assert decision["ai_used"] is False
+    assert result["identity_confirmed"] is False
+    assert result["route_confirmed"] is False
