@@ -42,10 +42,6 @@ def assess_incident(incident: dict[str, Any]) -> dict[str, Any]:
         reasons.append("unsettled_evidence")
     # Independent sensor kinds can corroborate that activity occurred, not
     # who was there or whether any particular route was taken.
-    contact_seen = any(row.get("kind") == "contact" and row.get("status") == "observed"
-                       for row in evidence)
-    camera_seen = any(row.get("kind") in CAMERA_KINDS and row.get("status") == "observed"
-                      for row in evidence)
     # Corroboration needs two identifiable, distinct sources, not merely two
     # evidence kinds. A duplicated/mislabelled source cannot corroborate itself.
     contact_sources = {

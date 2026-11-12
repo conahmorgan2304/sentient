@@ -10,7 +10,6 @@ import pytest
 from custom_components.sentient.cognitive_coordinator import (
     MAX_TRACKED,
     CognitiveCoordinator,
-    assess_observations,
     investigate,
     review_outcome,
 )
@@ -26,39 +25,6 @@ def _episode(incident_id="event-1", end=None, level=0):
                 {"kind": "contact", "status": "observed", "source": "binary_sensor.gate"},
                 {"kind": "detection", "status": "observed", "source": "camera.garden"},
             ]}
-
-
-def test_world_quality_never_reports_physical_safety():
-    data = assess_observations([
-        {"entity_id": "binary_sensor.gate", "state": "off", "status": "reported",
-         "reported_at": (NOW - timedelta(seconds=8)).isoformat()},
-        {"entity_id": "lock.front", "state": "unknown", "status": "reported",
-         "reported_at": NOW.isoformat()},
-    ], now=NOW)
-    assert data["reported"] == 1 and data["unknown"] == 1
-    assert data["coverage"] == "partial"
-    assert "unknown" in data["decision"]["gaps"]
-    assert "secure" not in data and "authorise" not in data
-
-
-def test_old_and_future_readings_are_explicitly_uncertain():
-    data = assess_observations([
-        {"entity_id": "sensor.old", "state": "20", "status": "reported",
-         "reported_at": (NOW - timedelta(hours=2)).isoformat()},
-        {"entity_id": "sensor.future", "state": "20", "status": "observed",
-         "reported_at": (NOW + timedelta(hours=2)).isoformat()},
-        {"entity_id": "sensor.undated", "state": "20", "status": "reported"},
-    ], now=NOW)
-    assert (data["old_report"], data["future"], data["undated"]) == (1, 1, 1)
-    assert data["decision"]["choice"] == "uncertain"
-
-
-def test_duplicate_reports_do_not_inflate_world_observations():
-    data = assess_observations([{
-        "entity_id": "sensor.one", "state": "5", "status": "reported",
-        "reported_at": NOW.isoformat(),
-    }] * 30, now=NOW)
-    assert data["total"] == 1 and data["reported"] == 1
 
 
 def test_shadow_investigation_never_confirms_route_or_identity():
@@ -117,8 +83,9 @@ def test_outcome_learning_is_read_only_and_requires_verified_results():
 
 
 def test_naive_now_is_rejected_instead_of_guessing_timezone():
+    item = _episode()
     with pytest.raises(ValueError):
-        assess_observations([], now=datetime(2026, 11, 12, 20, 0))
+        investigate(item, assess_incident(item), baseline_stage="observed", now=datetime(2026, 11, 12, 20, 0))
 
 
 def test_new_conversation_subject_discards_prior_investigation():
@@ -172,7 +139,7 @@ def test_incident_collection_preserves_legacy_stage_and_counts_one_shadow_revisi
     from homeassistant.util import dt as dt_util
     from custom_components.sentient.incidents import Incidents
 
-    incidents = Incidents(hass, "cognitive-shadow", {"security_incidents": True})
+    incidents = Incidents(hass, "cognitive-shadow", {"security_incidents": True, "cognitive_shadow": True})
     now = dt_util.utcnow()
     incidents.items = [{
         "id": "gate-event", "start": now.isoformat(), "end": now.isoformat(),
@@ -264,3 +231,38 @@ def test_shadow_agreement_uses_latest_incident_stage_not_noisy_revision_count():
         core.incident(first, assess_incident(first), "observed", now=NOW)
     assert core.summary()["tracked_incidents"] == 10
     assert core.summary()["latest_stage_agreement_rate"] == metrics["latest_stage_agreement_rate"]
+
+
+def test_a_household_episode_agrees_with_the_existing_stage():
+    item = _episode()
+    item["evidence"].append({"kind": "alert", "status": "inferred", "source": "camera.garden",
+                             "text": "Probably someone from the house"})
+    result = investigate(item, assess_incident(item), baseline_stage="likely household", now=NOW)
+    assert result["stage"] == "likely household" and result["agrees"] is True
+
+
+def test_switched_off_nothing_is_compared_and_switching_off_starts_the_counts_again(hass):
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.incidents import Incidents
+
+    incidents = Incidents(hass, "cognitive-off", {"security_incidents": True})
+    now = dt_util.utcnow()
+    incidents.items = [{"id": "x", "start": now.isoformat(), "end": now.isoformat(), "sources": ["camera.garden"],
+                        "alert_level": 0, "evidence": [{"source": "camera.garden", "kind": "detection",
+                                                        "status": "observed", "text": "Person", "time": now.isoformat()}]}]
+    assert "cognitive_shadow" not in incidents.recent()[0]
+    assert incidents.cognitive.summary()["evaluations"] == 0
+    incidents.configure({"security_incidents": True, "cognitive_shadow": True})
+    incidents.recent()
+    assert incidents.cognitive.summary()["evaluations"] == 1
+    incidents.configure({"security_incidents": True})
+    assert incidents.cognitive.summary()["evaluations"] == 0
+
+
+async def test_the_voice_is_told_nothing_new(hass):
+    """The comparison is for testing: the house context the voice reads has no shadow or quality block."""
+    import inspect
+    from custom_components.sentient import house_context
+
+    source = inspect.getsource(house_context)
+    assert "cognitive_quality" not in source and "cognitive_coordinator" not in source

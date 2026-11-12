@@ -341,7 +341,7 @@ class Control:
                   'summary': self.summary(actions),
                   'assessment': evaluate_outcomes(outcomes),
                   'note': 'Verified means the device reported the requested state.'}
-        if self.cognitive is not None:
+        if self.cognitive is not None and self.options.get('cognitive_shadow'):
             result['cognitive_shadow'] = self.cognitive.outcome(result)
         session.last_action = result
         self.timeline.add('voice', result['summary'], str(outcomes),
@@ -372,7 +372,7 @@ class Control:
             from .outcome_review import evaluate_outcomes
 
             result['assessment'] = evaluate_outcomes(result['actions'])
-            if self.cognitive is not None:
+            if self.cognitive is not None and self.options.get('cognitive_shadow'):
                 result['cognitive_shadow'] = self.cognitive.outcome(result)
             result['rechecked_at'] = dt_util.utcnow().isoformat()
             if changed:

@@ -247,7 +247,7 @@ def advice(detail: dict[str, Any] | None, recent: list[dict[str, Any]]) -> dict[
         level = float(detail.get("threshold") or 0)
     except (TypeError, ValueError, OverflowError):
         return None
-    if not math.isfinite(level) or not 0.5 <= level <= 1:
+    if not math.isfinite(level) or not 0 < level <= 1:
         return None
     misses = []
     for row in recent:

@@ -1990,21 +1990,34 @@
             resolved = true;
             picture();
           };
+          // A player that loads but never shows a frame (no error raised either) also falls back: after 12 s
+          // the card is looked inside for a video that is playing or a picture that loaded.
+          const showing = (root, depth = 0) => {
+            if (!root || depth > 8) return false;
+            for (const v of root.querySelectorAll ? root.querySelectorAll("video") : []) if (v.readyState >= 2) return true;
+            for (const i of root.querySelectorAll ? root.querySelectorAll("img") : []) if (i.complete && i.naturalWidth > 0) return true;
+            for (const n of root.querySelectorAll ? root.querySelectorAll("*") : []) if (n.shadowRoot && showing(n.shadowRoot, depth + 1)) return true;
+            return false;
+          };
           this._liveTimer = setTimeout(nativeFallback, 12000);
           Promise.resolve().then(() => window.loadCardHelpers()).then((helpers) => {
             if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
-            clearTimeout(this._liveTimer);
-            resolved = true;
+            let card;
             try {
-              const card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
-              card.hass = this._hass;
-              this._liveCard = card;
-              holder.innerHTML = "";
-              holder.appendChild(card);
-            } catch (e) {
+              card = helpers.createCardElement({ type: "picture-entity", entity: cam, camera_view: "live", show_name: false, show_state: false });
+            } catch (e) { card = null; }
+            if (!card || /error/i.test(card.localName || "")) { clearTimeout(this._liveTimer); nativeFallback(); return; }
+            card.hass = this._hass;
+            this._liveCard = card;
+            holder.innerHTML = "";
+            holder.appendChild(card);
+            clearTimeout(this._liveTimer);
+            this._liveTimer = setTimeout(() => {
+              if (resolved || this._liveCamKey !== mode || !holder.isConnected) return;
+              if (showing(card) || showing(card.shadowRoot)) { resolved = true; return; }
               this._liveCard = null;
-              picture();
-            }
+              nativeFallback();
+            }, 12000);
           }, nativeFallback);
         } else picture();
       } else {

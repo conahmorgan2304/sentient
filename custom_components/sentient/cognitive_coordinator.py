@@ -1,6 +1,7 @@
 """Read-only Cognitive Core 2.0 coordinator and bounded shadow evaluation.
 
-Callers supply only already-authorised, appropriately filtered evidence. This
+Off unless Settings → Safety & security → "Compare security incidents (testing)" is on. It adds nothing to
+what the voice is told. Callers supply only already-authorised, appropriately filtered evidence. This
 module never reads Home Assistant state, calls services, triggers speech or
 grants permission. Existing alert/automation rules remain authoritative.
 
@@ -19,9 +20,10 @@ from typing import Any
 
 from .cognitive import decision
 
+CONF_COGNITIVE_SHADOW = "cognitive_shadow"  # off by default: a second opinion, measured, never acted on
 MAX_TRACKED = 128
-MAX_AGE_SECONDS = 3600
-PROPOSED = frozenset({"observed", "investigating", "concerning", "resolved", "unknown"})
+PROPOSED = frozenset({"observed", "investigating", "likely household", "concerning", "resolved", "unknown"})
+HOUSEHOLD_WORDS = ("someone from the house", "false alarm", "household")
 
 
 def _time(value: Any) -> datetime | None:
@@ -43,56 +45,6 @@ def _as_utc(now: datetime | None) -> datetime:
     return stamp.astimezone(timezone.utc)
 
 
-def assess_observations(readings: list[dict[str, Any]], *,
-                        now: datetime | None = None) -> dict[str, Any]:
-    """Classify a pre-filtered set of observations; old/unknown is never safe.
-
-    Distinct entity IDs are only used within this invocation, not retained.
-    A report from the future is uncertain, and an old report is not proof of
-    a sensor fault. Unknown status or state cannot establish coverage.
-    """
-    now = _as_utc(now)
-    seen: set[str] = set()
-    counts: Counter[str] = Counter()
-    for row in readings[:32]:
-        if not isinstance(row, dict):
-            continue
-        entity = row.get("entity_id")
-        if not isinstance(entity, str) or not entity or entity in seen:
-            continue
-        seen.add(entity)
-        stamp = _time(row.get("reported_at"))
-        status = row.get("status")
-        state = row.get("state")
-        if status not in ("reported", "observed") or state in ("unknown", "unavailable", None):
-            kind = "unknown"
-        elif stamp is None:
-            kind = "undated"
-        else:
-            age = (now - stamp).total_seconds()
-            kind = ("future" if age < -60 else
-                    "old_report" if age > MAX_AGE_SECONDS else "reported")
-        counts[kind] += 1
-    gaps = [kind for kind in ("unknown", "undated", "future", "old_report") if counts[kind]]
-    return {
-        "total": len(seen),
-        "reported": counts["reported"],
-        "unknown": counts["unknown"],
-        "undated": counts["undated"],
-        "future": counts["future"],
-        "old_report": counts["old_report"],
-        "coverage": "partial" if gaps or not seen else "reported_only",
-        "decision": decision(
-            "world_observation_quality",
-            evidence=[f"{kind}:{counts[kind]}" for kind in
-                      ("reported", "unknown", "undated", "future", "old_report") if counts[kind]],
-            gaps=gaps if gaps else (["no_readings"] if not seen else ["physical_state_unverified"]),
-            choice="uncertain" if gaps or not seen else "reports_current",
-            reasons=["sensor_reports_are_not_physical_proof"],
-        ),
-    }
-
-
 def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
                 baseline_stage: str, now: datetime | None = None) -> dict[str, Any]:
     """Offer a second explanation without changing the existing incident stage.
@@ -111,8 +63,13 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
     if end is None or end > now:
         gaps.append("end_time_unsettled")
     age = (now - end).total_seconds() if end is not None else None
+    household = any(word in str(row.get("text", "")).lower() for row in (incident.get("evidence") or [])
+                    if isinstance(row, dict) for word in HOUSEHOLD_WORDS)
     if age is not None and age > 1800:
         candidate = "resolved"
+    elif household and level < 2:
+        # Reads the same household marks as the existing stages, so a household episode can agree with them.
+        candidate = "likely household"
     elif level >= 2:
         candidate = "concerning"
     elif unknown and not observed and not level:

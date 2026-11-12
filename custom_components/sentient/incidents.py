@@ -10,7 +10,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .sessions import CONF_INCIDENTS
-from .cognitive_coordinator import CognitiveCoordinator
+from .cognitive_coordinator import CONF_COGNITIVE_SHADOW, CognitiveCoordinator
 
 CONF_COVERAGE = "security_coverage"
 CONF_STAGES = "incident_stages"
@@ -205,13 +205,16 @@ class Incidents:
             # The original stage remains authoritative; the new coordinator
             # only compares decisions and tracks disagreement for later review.
             legacy_stage, legacy_reason = stage(i, row['assessment'])
-            row['cognitive_shadow'] = self.cognitive.incident(i, row['assessment'], legacy_stage)
+            if self.options.get(CONF_COGNITIVE_SHADOW):
+                row['cognitive_shadow'] = self.cognitive.incident(i, row['assessment'], legacy_stage)
             if self.options.get(CONF_STAGES, True):
                 row['stage'], row['stage_why'] = legacy_stage, legacy_reason
             out.append(row)
         return out
 
     def configure(self, options):
+        if not options.get(CONF_COGNITIVE_SHADOW):
+            self.cognitive = CognitiveCoordinator()  # switched off: the comparison counts start again
         self.options = options
         if not options.get(CONF_COVERAGE):
             had_gaps = False

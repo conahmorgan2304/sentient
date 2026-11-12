@@ -90,3 +90,40 @@ test('native video initialisation failure falls back to an image rather than an 
   assert.match(holder.innerHTML, /<img /);
   panel._clearLive();
 });
+
+function fakeTimers(context) {
+  const due = [];
+  context.setTimeout = (f, ms) => { due.push({ f, ms }); return due.length; };
+  context.clearTimeout = (id) => { if (due[id - 1]) due[id - 1].f = null; };
+  return () => { for (const t of due.splice(0)) if (t.f) t.f(); };
+}
+
+test('a native player that loads but never shows a frame falls back to the picture', async () => {
+  const { panel, holder, context } = setup(2, 'nest');
+  const run = fakeTimers(context);
+  const card = { localName: 'hui-picture-entity-card', querySelectorAll: () => [], shadowRoot: null };
+  holder.appendChild = (c) => { holder.child = c; };
+  context.window.loadCardHelpers = () => Promise.resolve({ createCardElement: () => card });
+  panel._drawLive({ security_events: [] });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(holder.child, card);
+  run();
+  assert.match(holder.innerHTML, /<img /);
+  panel._clearLive();
+});
+
+test('a native player showing video is kept', async () => {
+  const { panel, holder, context } = setup(2, 'nest');
+  const run = fakeTimers(context);
+  const video = { readyState: 4 };
+  const card = { localName: 'hui-picture-entity-card', shadowRoot: null,
+                 querySelectorAll: (s) => (s === 'video' ? [video] : []) };
+  holder.appendChild = (c) => { holder.child = c; };
+  context.window.loadCardHelpers = () => Promise.resolve({ createCardElement: () => card });
+  panel._drawLive({ security_events: [] });
+  await new Promise((resolve) => setImmediate(resolve));
+  run();
+  assert.doesNotMatch(holder.innerHTML, /<img /);
+  assert.equal(panel._liveCard, card);
+  panel._clearLive();
+});
