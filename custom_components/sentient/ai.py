@@ -249,10 +249,11 @@ class AIGate:
         self.last_error = self.last_error_at = self.last_ok_at = None
         self._save()
 
-    def forget_sent(self, since: str | None = None) -> int:
+    def forget_sent(self, since: str | None = None, until: str | None = None) -> int:
         self.invalidate_requests()
         before = len(self.sent)
-        self.sent = [s for s in self.sent if since is not None and s["time"] < since]
+        self.sent = [s for s in self.sent if since is not None
+                     and (s["time"] < since or (until is not None and s["time"] > until))]
         self._save()
         return before - len(self.sent)
 
