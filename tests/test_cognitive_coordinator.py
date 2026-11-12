@@ -119,3 +119,32 @@ def test_outcome_learning_is_read_only_and_requires_verified_results():
 def test_naive_now_is_rejected_instead_of_guessing_timezone():
     with pytest.raises(ValueError):
         assess_observations([], now=datetime(2026, 11, 12, 20, 0))
+
+
+def test_new_conversation_subject_discards_prior_investigation():
+    from custom_components.sentient.sessions import Sessions
+    from tests.test_voice_sessions_control import request
+
+    sessions = Sessions({"conversation_sessions": True, "conversation_cues": True})
+    session = sessions.get(request("Why did the gate alert?"))
+    sessions.begin(session, "Why did the gate alert?")
+    session.active = True
+    session.investigation = {
+        "subject": "gate", "findings": ["old camera evidence"],
+        "next_question": "Was someone in the garden?",
+    }
+    sessions.begin(session, "On another note, what is the weather?")
+    assert session.investigation is None
+
+
+def test_short_followup_keeps_same_session_investigation_without_reopening_microphone():
+    from custom_components.sentient.sessions import Sessions
+    from tests.test_voice_sessions_control import request
+
+    sessions = Sessions({"conversation_sessions": True, "conversation_cues": True})
+    session = sessions.get(request("Why did the gate alert?"))
+    sessions.begin(session, "Why did the gate alert?")
+    session.investigation = {"subject": "gate", "findings": [], "next_question": "What happened next?"}
+    sessions.begin(session, "What happened next?")
+    assert session.investigation["subject"] == "gate"
+    assert not session.waiting  # a new turn alone must never re-open an Assist mic
