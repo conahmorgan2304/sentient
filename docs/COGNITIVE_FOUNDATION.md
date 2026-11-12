@@ -138,3 +138,50 @@ interpretation of evidence the existing subsystems already filtered:
   investigation sharing, live floorplan replay or the separate 3D head.
 - Rollout is shadow-first. Do not replace existing alerts or guarded control
   solely on these counters, even if CI passes.
+
+
+## Cognitive Core 2.0 — shadow rollout in PR #140
+
+The shared read-only coordinator lives in `cognitive_coordinator.py`. It is
+attached to the existing incident collection and guarded Control outcomes,
+and the world snapshot runs `assess_observations` only on entities already
+filtered for Assist exposure, current Home Assistant user permissions, guest
+mode and private-room restrictions.
+
+- **Observation:** a bounded fresh/old/unknown/future classification; this is
+  data-quality information, not a physical-security verdict.
+- **Investigation:** a candidate incident stage compared with the existing
+  authoritative stage; alerts, suppressions and notifications do not change.
+  A pair of correlated reports cannot establish a person's identity, route,
+  or intrusion. Independent source IDs are required for corroboration.
+- **Guarded tasks:** progress and verified-state feedback are descriptive.
+  No execution, retries, rollback or new permission is granted.
+- **Conversation:** only the existing owner-scoped session can retain a
+  bounded investigation context, and an explicit subject change clears it.
+  Existing one-shot-close and spoken-ending rules remain authoritative.
+- **Evaluation:** the Mind sensor exposes aggregate `cognitive_shadow`
+  metrics. These are in-memory, bounded and reset with a restart, not
+  a persistent learned model. Incident IDs are keyed-digested per runtime.
+  Stage agreement is reported only after ten distinct tracked incidents.
+  A reported device state is not proof of physical completion.
+
+### Before considering any enforcement
+
+1. Compare shadow and existing decisions for enough *distinct* incidents,
+   including false positives and high-priority cases; investigate every
+   disagreement before making the new decision path authoritative.
+2. Verify guest, private-room and non-admin boundaries and run tests with
+   unavailable sensors, changed evidence, restarts and overlapping episodes.
+3. Exercise actual gate, garden, shed and other configured camera paths;
+   never claim a confirmed journey from temporal correlation alone.
+4. Test delayed, partial and failed guarded actions without ever repeating
+   a sensitive action automatically.
+5. Measure cold start, event throughput and latency on the target HA host.
+   Monitor CPU, memory and the AI meter; leave shadow assessment disabled
+   or revert it if there are regressions.
+
+**Not yet provided:** self-authorising autonomous actions, a trustworthy
+multi-person identity verifier, or automatic promotion of inferred routines to
+security policy. The coordinator is intentionally not a replacement for those
+safety boundaries, and a real-home pilot is required before declaring Core
+2.0 production-ready.
