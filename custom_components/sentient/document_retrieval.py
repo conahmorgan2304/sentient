@@ -37,8 +37,20 @@ def best_passage(folder: str, filename: str, question: str, limit: int = 500) ->
             text = handle.read(MAX_BYTES).decode("utf-8", errors="replace")
     except OSError:
         return None
+    return best_in(text, question, limit)
+
+
+def best_in(text: str, question: str, limit: int = 500) -> str | None:
+    """The paragraph of some text (a page, a document) sharing the most words with the question."""
+    query = _terms(question)
+    if not query:
+        return None
+    blocks = re.split(r"\n\s*\n", text)
+    if len(blocks) == 1:  # a PDF page comes as lines: group them a few at a time
+        lines = text.splitlines()
+        blocks = ["\n".join(lines[i:i + 4]) for i in range(0, len(lines), 2)] or [text]
     best, score = None, 0
-    for block in re.split(r"\n\s*\n", text):
+    for block in blocks:
         block = " ".join(block.split())
         hit = len(query & _terms(block))
         if hit > score:

@@ -13,7 +13,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
-from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import llm
 from homeassistant.helpers.service import async_register_admin_service
@@ -753,6 +753,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.runtime_data.inbox.configure(options)
     entry.async_on_unload(entry.runtime_data.inbox.stop)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    from homeassistant.helpers.start import async_at_started
+
+    @callback
+    def _read_manuals(_hass: HomeAssistant) -> None:
+        _manual_pages(hass, entry.runtime_data, entry.runtime_data.options)
+
+    entry.async_on_unload(async_at_started(hass, _read_manuals))
     await _async_register_panel(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.runtime_data.startup = {
@@ -802,6 +809,19 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
     entry.async_on_unload(lambda: frontend.async_remove_panel(hass, PANEL_URL_PATH))
 
 
+def _manual_pages(hass: HomeAssistant, rt: Any, options: dict[str, Any]) -> None:
+    """Manuals read page by page: catch up in the background when on, and clear what was read when off."""
+    brain = getattr(rt, "brain", None)
+    if brain is None or not getattr(brain, "started", False):
+        return
+    from . import manuals, pages
+
+    if options.get("manuals") and options.get(pages.CONF_MANUALS_PAGES, True):
+        hass.async_create_background_task(manuals.async_sync(hass, rt), "sentient manual pages")
+    else:
+        hass.async_add_executor_job(pages.clear, brain.db)
+
+
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
     from .language import clear_translations
@@ -835,6 +855,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._questions.clear()
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
+    _manual_pages(hass, entry.runtime_data, options)
     entry.runtime_data.security_events.configure(options)
     entry.runtime_data.incidents.configure(options)
     entry.runtime_data.house_context.configure()

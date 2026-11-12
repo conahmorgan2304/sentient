@@ -49,8 +49,8 @@ def test_the_stream_watch_speaks_the_pronunciation_and_flushes_at_the_end():
     say = Pronouncer(lambda: {}, lambda: MEMORIES)
     with StreamWatch(log, "conversation.x", say) as watch:
         watch._spy(log, {"role": "assistant"})
-        watch._spy(log, {"content": "Night, Con"})
-        watch._spy(log, {"content": "ah"})
+        watch._spy(log, {"content": "Night, Siob"})
+        watch._spy(log, {"content": "han"})
     assert "".join(heard) == "Night, Shivawn"
 
 

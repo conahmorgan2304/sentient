@@ -814,6 +814,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_MANUALS, **d(CONF_MANUALS, False)): selector.BooleanSelector(),
             vol.Optional(CONF_MANUALS_FOLDER, **d(CONF_MANUALS_FOLDER, DEFAULT_MANUALS_FOLDER)): selector.TextSelector(),
             vol.Required(CONF_MANUALS_LOCAL, **d(CONF_MANUALS_LOCAL, True)): selector.BooleanSelector(),
+            vol.Required("manuals_pages", **d("manuals_pages", True)): selector.BooleanSelector(),
             vol.Required(CONF_GAMES, **d(CONF_GAMES, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID, **d(CONF_VOICE_ID, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID_UNKNOWN, **d(CONF_VOICE_ID_UNKNOWN, False)): selector.BooleanSelector(),

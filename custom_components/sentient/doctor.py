@@ -264,5 +264,21 @@ async def async_check(hass: HomeAssistant, rt: Any) -> dict[str, Any]:
             rows.append(_row("Memory", "Memory database", "ok",
                              f"{size} MB · search: {'full-text' if brain.db.fts else 'word matching'}"
                              + (" · ledger on" if brain.ledger is not None and brain.ledger.enabled else " · ledger off")))
+    from . import manuals, pages
+
+    if brain is not None and brain.started and manuals._index(rt) is not None and rt.options.get("manuals"):
+        try:
+            await manuals.async_sync(hass, rt)
+            seen = await hass.async_add_executor_job(pages.status, brain.db)
+        except Exception:  # noqa: BLE001
+            seen = None
+        if seen is not None and seen["documents"]:
+            whole = seen["whole_only"]
+            rows.append(_row("Manuals", "Manuals page by page", "warn" if whole else "ok",
+                             f"{seen['documents']} documents · {seen['pages']} pages searchable"
+                             + (f" · {', '.join(whole[:3])}{'…' if len(whole) > 3 else ''}: no text in it, so the AI "
+                                "reads the whole document each time" if whole else ""),
+                             "A scanned PDF has pictures of pages, not text: a PDF with text in it (most makers' "
+                             "downloads) can be read page by page." if whole else ""))
     worst = "bad" if any(r["status"] == "bad" for r in rows) else "warn" if any(r["status"] == "warn" for r in rows) else "ok"
     return {"status": worst, "rows": rows}
