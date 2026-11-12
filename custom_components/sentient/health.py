@@ -365,8 +365,9 @@ def duplicates(hass: HomeAssistant, ignore: set[str] | None = None) -> list[dict
     ents = er.async_get(hass)
     devs = dr.async_get(hass)
     named: dict[str, list[Any]] = {}
-    for device in list(devs.devices.values()):
-        if device.disabled_by or device.entry_type is not None:
+    for item in list(devs.devices):  # newer Home Assistant iterates the devices themselves, older ones their ids
+        device = item if hasattr(item, "name_by_user") else devs.async_get(item)
+        if device is None or device.disabled_by or device.entry_type is not None:
             continue
         name = (device.name_by_user or device.name or "").strip()
         if name:
