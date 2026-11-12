@@ -17,7 +17,8 @@ TO_REDACT = {CONF_HOUSE_RULES, CONF_PERSONA, "banned_words", "description", "nam
              "personality_notes", "style_notes", "known_cars", "face_people", "clip_looks",
              CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL, CONF_SEARXNG_URL,  # secrets and addresses on the house's network
              CONF_NOTIFY_TARGETS, CONF_PHONE_APPS, CONF_WELCOME_PEOPLE, CONF_AWAY_PEOPLE, CONF_BRIEFING_CALENDARS,
-             CONF_BINS_CALENDAR, CONF_FACE_SENSOR}  # phones, people and calendars name who lives here
+             CONF_BINS_CALENDAR, CONF_FACE_SENSOR,  # phones, people and calendars name who lives here
+             "pronunciations", "warnings_region", "unexplained_entities"}  # names, where the house is, what's watched
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: SentientConfigEntry) -> dict[str, Any]:
@@ -29,6 +30,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "startup": out_startup,
         "options": async_redact_data({**entry.data, **entry.options}, TO_REDACT),
         "memory": {"count": len(rt.memory.items), "categories": sorted({m.category for m in rt.memory.items})},
+        "brain": await _brain(hass, rt),
         "speech": {"quiet_now": rt.speech.quiet_now(), "speaker_now": rt.speech.pick_speaker()},
         "rooms": rt.tracker.scores(),
         "watches": [
@@ -60,4 +62,22 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "visitors_today": len(rt.visitors.today()),
         "spots": [{"camera": s["camera"]} for s in rt.spots.spots.values()],
         "last_tidy": async_redact_data(rt.upkeep.last_tidy or {}, {"merged"}),
+    }
+
+
+async def _brain(hass: HomeAssistant, rt: Any) -> dict[str, Any] | None:
+    """Counts and switches only: no changes, beliefs, conversations or names."""
+    brain = getattr(rt, "brain", None)
+    if brain is None or not brain.started:
+        return None
+    try:
+        status = await brain.async_status()
+    except Exception as err:  # noqa: BLE001 - diagnostics must download even if the database is unhappy
+        return {"error": str(err)[:200]}
+    return {
+        "ledger_on": status.get("ledger_on"), "ledger_rows": status.get("ledger"), "disk_mb": status.get("disk_mb"),
+        "search": status.get("search"), "recovered_from_damage": bool(brain.db.recovered), "warming": status.get("warming"),
+        "gating": status.get("gating"), "prediction_percent": (status.get("prediction") or {}).get("percent"),
+        "beliefs": len(status.get("beliefs") or []), "memories_copied": status.get("memories"),
+        "case_memory_entries": len(brain.cases),
     }

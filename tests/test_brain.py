@@ -625,3 +625,36 @@ async def test_older_conversations_stay_out_when_memories_are_per_speaker(hass: 
     assert {e["kind"] for e in await recall()} == {"conversation", "timeline"}
     entry.runtime_data.options = {**entry.runtime_data.options, "speaker_memories": True}
     assert {e["kind"] for e in await recall()} == {"timeline"}
+
+
+async def test_diagnostics_and_doctor_show_the_database_without_names(hass: HomeAssistant):
+    from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
+    from custom_components.sentient.doctor import async_check
+
+    entry = await _setup(hass, pronunciations="Conah = Connor", warnings_region="North West England")
+    data = await async_get_config_entry_diagnostics(hass, entry)
+    assert data["brain"]["ledger_on"] is True and "disk_mb" in data["brain"]
+    assert data["options"]["pronunciations"] == "**REDACTED**" and data["options"]["warnings_region"] == "**REDACTED**"
+    rows = (await async_check(hass, entry.runtime_data))["rows"]
+    assert any(r["name"] == "Memory database" and r["status"] == "ok" for r in rows)
+
+
+async def test_warm_up_waits_for_home_assistant_to_finish_starting(hass: HomeAssistant):
+    from homeassistant.core import CoreState
+
+    hass.set_state(CoreState.starting)
+    calls = []
+
+    async def warm(_hass, model):
+        calls.append(len(_hass.states.async_entity_ids()))
+        model.warmed = True
+        return 0
+
+    with patch("custom_components.sentient.brain.async_warm_up", warm):
+        entry = await _setup(hass)
+        hass.states.async_set("light.loaded_later", "off")
+        assert not calls
+        hass.set_state(CoreState.running)
+        hass.bus.async_fire("homeassistant_started")
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert calls and entry.runtime_data.brain.expect.warmed

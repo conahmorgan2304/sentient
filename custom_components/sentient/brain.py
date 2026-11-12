@@ -145,8 +145,18 @@ class Brain:
         elif self.ledger.enabled:
             await self.ledger.async_stop()
         if self.on(CONF_EXPECTATIONS) and not self.expect.warmed and not self.warming:
+            from homeassistant.helpers.start import async_at_started
+
             self.warming = True
-            self._warm_task = self.hass.async_create_background_task(self._warm(self._generation), "sentient expectations warm-up")
+            generation = self._generation
+
+            @callback
+            def _go(_hass: HomeAssistant) -> None:
+                # only once every integration has loaded, or most devices wouldn't exist yet to be learned
+                if generation == self._generation and self.started:
+                    self._warm_task = self.hass.async_create_background_task(self._warm(generation), "sentient expectations warm-up")
+
+            self._unsubs.append(async_at_started(self.hass, _go))
         elif not self.on(CONF_EXPECTATIONS):
             self._cancel_warm()
 
