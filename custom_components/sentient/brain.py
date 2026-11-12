@@ -227,11 +227,11 @@ class Brain:
         self.db.forget_window(start, end)
         return start, end
 
-    def forget_since(self, since: datetime, *, registered: bool = False) -> int:
+    def forget_since(self, since: datetime, *, registered: bool = False, until: float | None = None) -> int:
         """'Forget the last N hours', the part that can't wait: the period is refused by every database write from now
         on, and changes still waiting to be saved are dropped. The database deletion itself is ``async_finish_forget``,
         which the caller awaits before saying it's done. (Expectations keep only counts, not records.)"""
-        start, end = since.timestamp(), dt_util.utcnow().timestamp()
+        start, end = since.timestamp(), until if until is not None else dt_util.utcnow().timestamp()
         if not registered:
             # Legacy in-memory entry point. User-facing forgetting must call
             # async_prepare_forget first to guarantee restart recovery.
