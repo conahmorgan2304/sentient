@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.4": [
+        "Manuals say which page: each PDF is read page by page once, on this machine, and a question sends the AI only the few pages that match instead of the whole document — far cheaper — so the answer can say \"it's on page 14\". A manual is also found by what it says when its name doesn't match, and with the AI down the closest passage is read out with its page. Scanned PDFs are still read whole (the Setup doctor lists them). Switch: Settings → Manuals & documents → Read PDFs page by page.",
+    ],
     "1.5.3": [
         "A device flickering between states (an Echo going playing, idle, paused in a second) counts as one unusual event, not three, on the Mind tab and in what the voice is told.",
         "Fixed: \"Stop flagging\" on a device that shares its name with an empty copy (a plug in Tuya Local and again from Tuya's cloud) said there was nothing to ignore; it now picks the real one.",
@@ -35,7 +38,7 @@ NOTES: dict[str, list[str]] = {
         "Sentient now learns what's usual at each hour and notices what isn't. The Mind tab's HOW I'M LEARNING card shows how much of each day it expected, and that number should rise week on week.",
         "An important device that changes by itself is mentioned once, and repeats are linked: \"the third time this week, always around 11am\".",
         "Memories, conversations and the timeline are kept for a year in Sentient's own database, and recall searches all of it.",
-        "Names are said the way they're pronounced: \"Conah is pronounced Connor\" (a memory, or Settings → Voice → Pronunciations) changes what the speakers say, while the chat and timeline keep the real spelling.",
+        "Names are said the way they're pronounced: \"Siobhan is pronounced Shivawn\" (a memory, or Settings → Voice → Pronunciations) changes what the speakers say, while the chat and timeline keep the real spelling.",
         "New on Settings: Memory & learning, Weather warnings (your own country's service) and Extra skills (read-only email, calendar clashes, a security check and automations from plain English).",
     ],
     "0.88.2": [

@@ -1,15 +1,15 @@
 """Names said the way they're pronounced, not the way they're spelt.
 
-A text-to-speech voice reads a name from its spelling ("Conah" comes out as "Co-nah"). Telling the AI how to say it
+A text-to-speech voice reads a name from its spelling ("Siobhan" comes out as "See-ob-han"). Telling the AI how to say it
 doesn't help: it still writes the name correctly, and the voice still reads the spelling. So the spoken words are
 changed on their way to the voice, and only there; what's written (the chat, the timeline, phones) keeps the real
 spelling.
 
 Pronunciations come from two places:
 
-* Settings → Voice: one per line, "Conah = Connor";
-* memories that say so: "Conah is pronounced Connor", "Conah's name is pronounced Connor",
-  "Always pronounce Conah's name as Connor".
+* Settings → Voice: one per line, "Siobhan = Shivawn";
+* memories that say so: "Siobhan is pronounced Shivawn", "Siobhan's name is pronounced Shivawn",
+  "Always pronounce Siobhan's name as Shivawn".
 
 Used for replies on speakers (streamed or not), announcements, questions and reading. Typed chats keep the
 spelling. Switch: "Say names as they're pronounced" (on by default).

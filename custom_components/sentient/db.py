@@ -10,7 +10,8 @@ What lives here:
 * ``memories`` — facts, conversations and the timeline, copied here as they happen and kept for a year, with
   full-text search (FTS5, ranked by BM25) across all of them;
 * ``beliefs`` — claims it has formed about the house and how well they hold up;
-* ``kv`` — small learned models (expectations, outcomes, cases, scores) saved as JSON.
+* ``kv`` — small learned models (expectations, outcomes, cases, scores) saved as JSON;
+* ``doc_files`` and ``doc_pages`` — the household's manuals read page by page, with their own search (pages.py).
 
 If the Python build has no FTS5, searching falls back to plain word matching.
 """
@@ -132,10 +133,13 @@ class Database:
                 raise sqlite3.DatabaseError("quick_check failed")
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
-            for stmt in SCHEMA:
+            from .pages import FTS as PAGES_FTS, SCHEMA as PAGES
+
+            for stmt in SCHEMA + PAGES:
                 conn.execute(stmt)
             try:
                 conn.execute(FTS)
+                conn.execute(PAGES_FTS)
                 self.fts = True
             except sqlite3.OperationalError:
                 self.fts = False

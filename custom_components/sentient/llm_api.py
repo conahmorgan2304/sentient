@@ -1109,7 +1109,8 @@ class ManualTool(_Tool):
     description = (
         "Answer from the household's own documents (appliance manuals, warranties, receipts) — e.g. 'what filter does "
         "the air purifier need?', 'how do I descale the coffee machine?', 'when does the boiler warranty end?'. "
-        "'question' is what they asked; 'document' the appliance or document name if they said it."
+        "'question' is what they asked; 'document' the appliance or document name if they said it. Say the page "
+        "or section the answer is on when the result gives one."
     )
     parameters = vol.Schema({vol.Required("question"): cv.string, vol.Optional("document"): cv.string})
 
