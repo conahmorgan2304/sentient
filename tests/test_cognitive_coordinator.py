@@ -190,3 +190,19 @@ def test_incident_collection_preserves_legacy_stage_and_counts_one_shadow_revisi
     assert incidents.cognitive.summary()["incidents_compared"] == 1
     incidents.recent()
     assert incidents.cognitive.summary()["incidents_compared"] == 1
+
+
+def test_delayed_verification_revises_one_batch_instead_of_double_counting():
+    core = CognitiveCoordinator()
+    result = {"recorded_at": "2026-11-12T20:00:01+00:00",
+              "assessment": {"state": "unverified"},
+              "actions": [{"entity_id": "switch.kettle", "status": "attempted"}]}
+    core.outcome(result)
+    core.outcome(result)
+    assert core.summary()["outcomes_needing_verification"] == 1
+    result["assessment"] = {"state": "reported_complete"}
+    result["actions"][0]["status"] = "verified"
+    core.outcome(result)
+    assert core.summary()["outcomes_needing_verification"] == 0
+    assert core.summary()["reported_successes"] == 1
+    assert core.summary()["reported_completion_rate"] is None  # 10 samples needed
