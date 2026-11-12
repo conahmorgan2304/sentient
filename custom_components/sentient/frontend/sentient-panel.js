@@ -907,7 +907,8 @@
       if (!g) return;
       const names = g.schema.map((s) => s.name);
       const data = {};
-      for (const n of names) if (this._draft[n] !== undefined && this._draft[n] !== null && this._draft[n] !== "") data[n] = this._draft[n];
+      // every field is sent: an emptied one as "", which clears it (a field left out keeps its saved value)
+      for (const n of names) data[n] = this._draft[n] === undefined || this._draft[n] === null ? "" : this._draft[n];
       this._status("SAVING…");
       try {
         const res = await this._hass.callWS({ type: "sentient/settings/save", group: g.id, data });
@@ -1881,7 +1882,7 @@
     async _saveHeatZones() {
       const g = this._settings.groups.find((x) => x.id === "heating_zones");
       const data = {};
-      for (const n of g.schema.map((x) => x.name)) if (this._heatDraft[n] !== undefined && this._heatDraft[n] !== null && this._heatDraft[n] !== "") data[n] = this._heatDraft[n];
+      for (const n of g.schema.map((x) => x.name)) data[n] = this._heatDraft[n] === undefined || this._heatDraft[n] === null ? "" : this._heatDraft[n];
       const msg = this._$("heatzmsg");
       try {
         const res = await this._hass.callWS({ type: "sentient/settings/save", group: "heating_zones", data });

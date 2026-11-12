@@ -133,3 +133,27 @@ async def test_alarms_speak_and_automated_routines_just_happen(hass: HomeAssista
         assert out["kind"] == "automated routine"
         made = rt.lists["alarms"].find("Blanket on")
         assert made["silent"] and made["actions"][0]["action"] == "switch.turn_on"
+
+
+async def test_saving_part_of_a_group_keeps_the_rest_and_an_empty_value_clears(hass, hass_ws_client) -> None:
+    """A save that sends one setting must not reset the others in its group (it did: security incidents and the
+    left-open settings went back to defaults when only one switch was sent)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova"},
+                            options={"security_incidents": True, "left_open_minutes": 15,
+                                     "left_open_ignore": ["binary_sensor.window"]})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/settings/save", "group": "safety", "data": {"cognitive_shadow": True}})
+    assert (await ws.receive_json())["success"]
+    opts = entry.options
+    assert opts["cognitive_shadow"] is True and opts["security_incidents"] is True
+    assert opts["left_open_minutes"] == 15 and opts["left_open_ignore"] == ["binary_sensor.window"]
+    await ws.send_json({"id": 2, "type": "sentient/settings/save", "group": "safety", "data": {"left_open_ignore": ""}})
+    assert (await ws.receive_json())["success"]
+    assert not entry.options.get("left_open_ignore") and entry.options["left_open_minutes"] == 15

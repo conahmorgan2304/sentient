@@ -271,3 +271,26 @@ async def test_a_device_listed_twice_with_an_empty_copy_is_flagged_and_can_be_di
     assert msg["success"] and msg["result"]["disabled"] == "Bedroom waxmelt"
     assert devs.async_get(empty.id).disabled_by is dr.DeviceEntryDisabler.USER
     assert duplicates(hass) == []
+
+
+async def test_duplicates_work_when_the_registry_iterates_devices_themselves(hass: HomeAssistant) -> None:
+    """Newer Home Assistant iterates the device registry's entries, and warns about mapping use (stops in 2027.9)."""
+    from unittest.mock import patch
+
+    from custom_components.sentient.health import duplicates
+
+    local = MockConfigEntry(domain="tuya_local", title="Tuya Local")
+    cloud = MockConfigEntry(domain="tuya", title="Tuya")
+    local.add_to_hass(hass)
+    cloud.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    real = devs.async_get_or_create(config_entry_id=local.entry_id, identifiers={("tuya_local", "a")}, name="Lamp")
+    empty = devs.async_get_or_create(config_entry_id=cloud.entry_id, identifiers={("tuya", "b")}, name="Lamp")
+    ents.async_get_or_create("switch", "tuya_local", "a1", device_id=real.id, config_entry=local)
+
+    class Entries(list):
+        def values(self):  # the deprecated mapping use must not be needed
+            raise AssertionError("mapping use")
+
+    with patch.object(devs, "devices", Entries([real, empty])):
+        assert [f["device_id"] for f in duplicates(hass)] == [empty.id]

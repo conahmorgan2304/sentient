@@ -1526,8 +1526,9 @@ async def ws_save_settings(hass: HomeAssistant, connection, msg: dict[str, Any])
         clean[CONF_PERSONA] = str(clean[CONF_PERSONA]).strip() or DEFAULT_PERSONA
     options = _current(entry)
     for marker in schema.schema:
-        options.pop(str(marker), None)
-    options.update(clean)
+        if str(marker) in msg["data"]:  # only what was sent: a setting left out keeps its value
+            options.pop(str(marker), None)
+    options.update({k: v for k, v in clean.items() if k in msg["data"]})  # the schema's defaults fill in the rest
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"saved": msg["group"], "data": _with_defaults(options)})
 
