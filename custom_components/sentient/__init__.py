@@ -676,6 +676,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from .household_tasks import HouseholdTasks
 
     control = Control(hass, options, timeline)
+    control.cognitive = incidents.cognitive  # shared, read-only comparisons; never action authority
     entry.runtime_data = SentientRuntime(
         house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, frigate_health=frigate_health, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
