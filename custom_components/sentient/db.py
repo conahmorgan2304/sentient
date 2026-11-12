@@ -62,6 +62,21 @@ def stem(token: str) -> str:
     return token
 
 
+def _epoch(ts: Any) -> float | None:
+    """An ISO time (with or without a zone; no zone is UTC) or a number, as epoch seconds."""
+    if ts is None or ts == "":
+        return None
+    if isinstance(ts, (int, float)):
+        return float(ts)
+    from datetime import datetime, timezone
+
+    try:
+        when = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (when if when.tzinfo else when.replace(tzinfo=timezone.utc)).timestamp()
+
+
 def fts_query(words: list[str]) -> str:
     """An FTS5 query matching any of the words (quoted, so nothing in them is read as syntax)."""
     out = []
@@ -82,6 +97,15 @@ class Database:
         self._lock = threading.Lock()
         self.fts = False
         self.recovered: str | None = None  # where a damaged database was set aside
+        # periods forgotten or cleared (epoch start, end): checked inside every write, so a write queued or already
+        # running when something was forgotten can't bring it back
+        self.forgotten: list[tuple[float, float, str]] = []  # (start, end, "all" or "ledger")
+
+    def forget_window(self, start: float, end: float, scope: str = "all") -> None:
+        self.forgotten = (self.forgotten + [(start, end, scope)])[-50:]
+
+    def is_forgotten(self, ts: float | None, what: str = "memories") -> bool:
+        return ts is not None and any(a <= ts <= b and (scope == "all" or scope == what) for a, b, scope in self.forgotten)
 
     # ----- plumbing ---------------------------------------------------------------------------
     def _open(self) -> sqlite3.Connection:
@@ -155,8 +179,8 @@ class Database:
                 self._conn = None
 
     # ----- the ledger -------------------------------------------------------------------------
-    @staticmethod
-    def add_changes(conn: sqlite3.Connection, rows: list[tuple]) -> None:
+    def add_changes(self, conn: sqlite3.Connection, rows: list[tuple]) -> None:
+        rows = [r for r in rows if not self.is_forgotten(r[0], "ledger")]
         conn.executemany("INSERT INTO ledger (ts, entity, name, domain, area, old, new, cause, who, surprise) "
                          "VALUES (?,?,?,?,?,?,?,?,?,?)", rows)
 
@@ -207,6 +231,8 @@ class Database:
     # ----- memories and search ----------------------------------------------------------------
     def put_memory(self, conn: sqlite3.Connection, kind: str, ref: str, ts: str | None, body: str,
                    data: dict[str, Any] | None = None) -> None:
+        if self.is_forgotten(_epoch(ts)):
+            return
         conn.execute("INSERT OR REPLACE INTO memories (kind, ref, ts, body, data) VALUES (?,?,?,?,?)",
                      (kind, ref, ts, body, json.dumps(data or {}, default=str)))
         if self.fts:
@@ -264,6 +290,19 @@ class Database:
     def set_kv_text(conn: sqlite3.Connection, key: str, text: str) -> None:
         """Already serialised (in the event loop, so nothing changes while it's written)."""
         conn.execute("INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)", (key, text))
+
+    def forget_since(self, conn: sqlite3.Connection, start: float, end: float) -> dict[str, int]:
+        """Everything timestamped in the window: ledger rows, copied conversations and timeline entries (and their
+        search index). Facts are copied from the live store, so a fact forgotten there goes at the next copy."""
+        gone = {"ledger": conn.execute("DELETE FROM ledger WHERE ts >= ? AND ts <= ?", (start, end)).rowcount}
+        for kind in ("conversation", "timeline"):
+            refs = [r[0] for r in conn.execute("SELECT ref, ts FROM memories WHERE kind = ?", (kind,))
+                    if (t := _epoch(r[1])) is not None and start <= t <= end]
+            conn.executemany("DELETE FROM memories WHERE kind = ? AND ref = ?", [(kind, r) for r in refs])
+            if self.fts:
+                conn.executemany("DELETE FROM memories_fts WHERE kind = ? AND ref = ?", [(kind, r) for r in refs])
+            gone[kind] = len(refs)
+        return gone
 
     # ----- clearing ---------------------------------------------------------------------------
     def clear(self, conn: sqlite3.Connection, what: str) -> None:

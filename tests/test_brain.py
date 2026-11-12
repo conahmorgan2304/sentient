@@ -658,3 +658,58 @@ async def test_warm_up_waits_for_home_assistant_to_finish_starting(hass: HomeAss
         hass.bus.async_fire("homeassistant_started")
         await hass.async_block_till_done(wait_background_tasks=True)
     assert calls and entry.runtime_data.brain.expect.warmed
+
+
+async def test_forgetting_the_last_hours_reaches_the_database(hass: HomeAssistant):
+    from custom_components.sentient.privacy import forget_recent
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    brain = rt.brain
+    now = dt_util.utcnow()
+    old, recent = (now - timedelta(days=5)).isoformat(), (now - timedelta(hours=2)).isoformat()
+    await brain.db.call(lambda c: brain.db.put_memory(c, "conversation", "old", old, "They: the old boiler chat"))
+    await brain.db.call(lambda c: brain.db.put_memory(c, "conversation", "new", recent, "They: the secret boiler chat"))
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "t", recent, "Boiler noticed"))
+    await brain.db.call(lambda c: brain.db.add_changes(c, [((now - timedelta(days=5)).timestamp(), "light.a", "A", "light", None, "off", "on", "person", None, None),
+                                                           ((now - timedelta(hours=1)).timestamp(), "light.a", "A", "light", None, "on", "off", "person", None, None)]))
+    hass.states.async_set("light.b", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.b", "on")  # waiting in the buffer, not yet written
+    await hass.async_block_till_done()
+    late = now.isoformat()
+    forget_recent(rt, 48)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    # a copy that was already on its way when the forgetting happened can't bring it back
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "late", late, "Boiler noticed again"))
+    await brain.ledger.async_flush()
+    texts = [r["text"] for r in await brain.async_search(["boiler"])]
+    assert texts == ["They: the old boiler chat"]
+    left = await brain.db.call(lambda c: brain.db.changes(c))
+    assert [r["entity"] for r in left] == ["light.a"] and len(left) == 1
+    # afterwards, new things are kept as normal
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "next", (dt_util.utcnow() + timedelta(minutes=5)).isoformat(), "Boiler fine"))
+    assert "Boiler fine" in [r["text"] for r in await brain.async_search(["boiler"])]
+
+
+async def test_clearing_the_ledger_cant_be_undone_by_a_waiting_write(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    hass.states.async_set("light.c", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.c", "on")
+    await hass.async_block_till_done()
+    taken = list(brain.ledger._buffer)  # a flush that had already taken its batch before the clear
+    assert taken
+    await brain.async_clear("ledger")
+    tuples = [(r["ts"], r["entity"], r.get("name"), r.get("domain"), r.get("area"), r.get("old"), r.get("new"), r.get("cause"), r.get("who"), r.get("surprise")) for r in taken]
+    await brain.db.call(lambda c: brain.db.add_changes(c, tuples))
+    await brain.ledger.async_flush()
+    assert await brain.db.call(lambda c: c.execute("SELECT COUNT(*) FROM ledger").fetchone()[0]) == 0
+    # the timeline isn't touched by clearing the ledger
+    await brain.db.call(lambda c: brain.db.put_memory(c, "timeline", "x", dt_util.utcnow().isoformat(), "Kettle finished"))
+    assert await brain.async_search(["kettle"])
+    hass.states.async_set("light.c", "off")  # and new changes are recorded again
+    await hass.async_block_till_done()
+    await brain.ledger.async_flush()
+    assert await brain.db.call(lambda c: c.execute("SELECT COUNT(*) FROM ledger").fetchone()[0]) == 1

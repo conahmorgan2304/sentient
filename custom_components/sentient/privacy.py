@@ -45,6 +45,9 @@ def forget_recent(rt: Any, hours: float = 48) -> dict[str, int]:
     hours = max(1.0, min(float(hours), MAX_HOURS))
     since = dt_util.utcnow() - timedelta(hours=hours)
     gone: dict[str, int] = {'action_checks': gone_checks}
+    if (brain := getattr(rt, "brain", None)) is not None:
+        # the database's copies (house ledger, conversations, timeline) for the same period, and anything still queued
+        gone['ledger_waiting'] = brain.forget_since(since)
     if cache := getattr(rt, "clip_analysis", None):
         cache.clear()
     if events := getattr(rt, "security_events", None):

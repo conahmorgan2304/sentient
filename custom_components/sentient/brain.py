@@ -200,8 +200,32 @@ class Brain:
                                                           ("cases", self.cases), ("counters", self.counters))}
         await self.db.call(lambda c: [self.db.set_kv_text(c, k, v) for k, v in data.items()])
 
+    def forget_since(self, since: datetime) -> int:
+        """'Forget the last N hours': the ledger, copied conversations and timeline entries from then on. Pending and
+        in-flight writes in that window are refused by the database, so nothing comes back. Returns rows dropped
+        before they were written. (Expectations keep only counts, not records, so nothing in them can be recalled.)"""
+        start, end = since.timestamp(), dt_util.utcnow().timestamp()
+        self.db.forget_window(start, end)
+        dropped = 0
+        if self.ledger is not None:
+            before = len(self.ledger._buffer)
+            self.ledger._buffer = [r for r in self.ledger._buffer if not start <= r["ts"] <= end]
+            dropped = before - len(self.ledger._buffer)
+            for row in [r for r in self.ledger.recent if start <= r["ts"] <= end]:
+                self.ledger.recent.remove(row)
+        self._remarks = [(t, e) for t, e in self._remarks if t < start]
+        if self.started:
+            self.hass.async_create_background_task(self.db.call(lambda c: self.db.forget_since(c, start, end)),
+                                                   "sentient forget recent")
+        return dropped
+
     async def async_clear(self, what: str) -> None:
         """'ledger' (every recorded change) or 'learning' (expectations, beliefs, outcomes, cases)."""
+        if what in ("ledger", "all") and self.ledger is not None:
+            # everything up to now is gone, including what's waiting to be written or being written right now
+            self.db.forget_window(0, dt_util.utcnow().timestamp(), "ledger")
+            self.ledger._buffer = []
+            self.ledger._last_number.clear()
         if what in ("learning", "all"):
             self._cancel_warm()
             self.expect = Expectations()
@@ -537,7 +561,7 @@ class Brain:
                             for t in e.get("turns", []) if isinstance(t, dict))
             episodes.append((str(e.get("id") or e.get("start")), e.get("start"), f"{e.get('room') or ''} {body}".strip(), {"room": e.get("room")}))
 
-        def _sync(conn: Any) -> None:
+        def _sync(conn: Any) -> None:  # forgotten periods are refused inside put_memory
             have = {r[0] for r in conn.execute("SELECT ref FROM memories WHERE kind = 'fact'")}
             keep = set()
             for ref, ts, body, data in facts:
