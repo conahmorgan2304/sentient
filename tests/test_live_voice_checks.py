@@ -211,3 +211,21 @@ async def test_diagnostic_toggles_roundtrip_clear_and_reenable(hass, hass_ws_cli
     assert (await ws.receive_json())['success']
     assert rt.speech.options['speech_delivery_history'] is True
     assert MindSensor(entry).extra_state_attributes['live_voice_check_enabled'] is True
+
+
+async def test_selftest_counts_an_alarm_due_today_as_a_right_answer_about_reminders(hass):
+    """12 Nov: asked "what reminders have I got?", the voice named the Bins alarm at 7pm, and the test said wrong."""
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    from homeassistant.util import dt as dt_util
+
+    soon = (dt_util.utcnow() + timedelta(hours=9)).isoformat()
+    later = (dt_util.utcnow() + timedelta(days=3)).isoformat()
+    rt = SimpleNamespace(watches=SimpleNamespace(watches=[]),
+                         alarms=SimpleNamespace(listing=lambda: [{'name': 'Bins', 'on': True, 'next': soon},
+                                                                 {'name': 'Dentist', 'on': True, 'next': later}]))
+    question = next(q for q in SelfTest(hass, 'test', {}, lambda: rt).questions() if q.key == 'reminders')
+    assert question.check("You've got a reminder set for seven this evening about the bins.")[0]
+    assert question.check("You haven't got any reminders.")[0]
+    assert not question.check("You've got the dentist on Monday.")[0]  # three days away: not what was asked

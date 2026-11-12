@@ -46,3 +46,26 @@ async def test_filter_due_by_use_then_done(hass: HomeAssistant, freezer) -> None
                                                                assistant=None, device_id=None))
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_maintenance", tool_args={"action": "done", "job": "purifier filter"}))
     assert getattr(out, "data", out) == {"done": "Purifier filter"} and not rt.maintenance.due()
+
+
+async def test_a_date_typed_on_the_page_never_crashes_the_check(hass: HomeAssistant, freezer) -> None:
+    """12 Nov: a last-done date with no time zone crashed the minute check ("can't subtract offset-naive and
+    offset-aware datetimes"), so nothing was ever said as due again."""
+    freezer.move_to(dt_util.start_of_local_day() + timedelta(hours=10))
+    hass.states.async_set("assist_satellite.kitchen", "idle", {"friendly_name": "Kitchen"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    rt = entry.runtime_data
+    ten_days_ago = (dt_util.now() - timedelta(days=10)).date()
+    rt.lists["maintenance"].upsert({"name": "Descale kettle", "every_days": 7, "last_done": ten_days_ago.isoformat()})
+    rt.lists["maintenance"].upsert({"name": "Coffee filter", "every_days": 30, "last_done": f"{ten_days_ago.isoformat()}T09:00"})
+    rt.tracker.best_area = lambda: "kitchen"
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    rt.maintenance._tick(dt_util.utcnow())
+    await hass.async_block_till_done()
+    status = {s["name"]: s for s in (rt.maintenance.status(i) for i in rt.lists["maintenance"].enabled())}
+    assert status["Descale kettle"]["days_since"] == 10 and status["Descale kettle"]["due"]
+    assert status["Coffee filter"]["days_since"] in (9, 10) and not status["Coffee filter"]["due"]
+    assert said and "Descale kettle" in said[0].data["message"] or "descale" in said[0].data["message"].lower()

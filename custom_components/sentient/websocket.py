@@ -143,6 +143,7 @@ from .const import (
     CONF_HEATING_SCHEDULE,
     CONF_HEATING_GRAPH,
     CONF_ROOMS_VIEW,
+    CONF_OUTDOOR_AREAS,
     CONF_KNOWLEDGE,
     CONF_DAY_CHART,
     CONF_PREHEAT,
@@ -315,7 +316,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
-        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW,
+        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW, CONF_OUTDOOR_AREAS,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
         CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS,
     ]),
@@ -482,6 +483,37 @@ def page_access(func):
     return wrapper
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/health/ignore", vol.Required("device_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_health_ignore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """"Stop flagging this": the device goes on House health's ignore list (undo in Settings → House health).
+
+    One entity stands for the whole device (House health skips a device when any of its entities is on the list), so
+    the list stays one entry per device and is easy to take off again."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    from .health import PRIMARY_DOMAINS
+
+    entry = _entry(hass)
+    device = dr.async_get(hass).async_get(msg["device_id"])
+    if entry is None or device is None:
+        connection.send_error(msg["id"], "not_found", "That device is no longer in Home Assistant")
+        return
+    ents = [e for e in er.async_entries_for_device(er.async_get(hass), device.id) if not e.disabled_by]
+    if not ents:
+        connection.send_error(msg["id"], "no_entities", "That device has nothing House health can ignore")
+        return
+    current = list(entry.options.get(CONF_HEALTH_IGNORE) or [])
+    if not any(e.entity_id in current for e in ents):
+        # what the device is for (its switch, light…) reads best in the list; otherwise any entity it has
+        pick = min(ents, key=lambda e: (e.entity_category is not None, e.domain not in PRIMARY_DOMAINS, e.entity_id))
+        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options,
+                                                               CONF_HEALTH_IGNORE: current + [pick.entity_id]})
+    ignored = [e.entity_id for e in ents if e.entity_id in (entry.options.get(CONF_HEALTH_IGNORE) or [])]
+    connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": ignored})
+
+
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/heating/programme/save", vol.Optional("programme_id"): str,
     vol.Required("programme"): dict,
@@ -596,7 +628,7 @@ def ws_glance(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         likely = None
     sleep = getattr(rt, "sleep", None)
     restless = {r["entity_id"] for r in sleep.never_rests()} if sleep is not None else set()
-    rows = rooms(hass, likely, restless)
+    rows = rooms(hass, likely, restless, set(rt.options.get(CONF_OUTDOOR_AREAS) or []))
     connection.send_result(msg["id"], {"on": True, "rooms": rows, "summary": summary(rows)})
 
 
@@ -948,6 +980,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_games)
+    websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_games_edit)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)
@@ -1141,6 +1174,7 @@ DEPENDS: dict[str, str] = {
     **{k: "current_house_context" for k in ("house_context_entities", "house_context_updates")},
     **{k: CONF_GUARDED for k in ("voice_unlock", "voice_undo")},
     "follow_minutes": CONF_FOLLOW_YOU,
+    CONF_OUTDOOR_AREAS: CONF_ROOMS_VIEW,
     "conversation_cues": CONF_SESSIONS,
     "manuals_local_text": CONF_MANUALS,
     "security_reasoning": CONF_CAMSEC,

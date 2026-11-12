@@ -29,8 +29,10 @@ def _num(st: State) -> float | None:
         return None
 
 
-def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | None = None) -> list[dict[str, Any]]:
-    """One record per area that has anything worth showing."""
+def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | None = None,
+          outdoor: set[str] | None = None) -> list[dict[str, Any]]:
+    """One record per area that has anything worth showing. Areas in `outdoor` are marked, not dropped."""
+    outdoor = outdoor or set()
     areas, devices, ents, floors = ar.async_get(hass), dr.async_get(hass), er.async_get(hass), fr.async_get(hass)
     restless = restless or set()
     gadgets = {e.device_id for e in ents.entities.values() if e.device_id and e.domain in GADGET_DOMAINS}
@@ -99,6 +101,7 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
             "moved_mins": None if moving or last_move is None else int((now - last_move).total_seconds() // 60),
             "playing": playing,
             "heating": heating,
+            "outdoor": area.id in outdoor,
             "likely": bool(likely) and likely.lower() in (area.name.lower(), area.id.lower()),
         })
     # ground floor first, then up; within a floor the order the areas are in; rooms with no floor last
@@ -107,8 +110,8 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
 
 
 def summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """The overview's AROUND THE HOUSE card in a few numbers."""
-    temps = [(r["temp"], r["name"]) for r in rows if r["temp"] is not None]
+    """The overview's AROUND THE HOUSE card in a few numbers. Outdoor areas are kept out of warmest and coolest."""
+    temps = [(r["temp"], r["name"]) for r in rows if r["temp"] is not None and not r.get("outdoor")]
     return {
         "lights_on": [{"room": r["name"], "area_id": r["area_id"], "count": len(r["lights_on"])} for r in rows if r["lights_on"]],
         "open": [{"room": r["name"], "what": o} for r in rows for o in r["open"]],
@@ -116,6 +119,7 @@ def summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "playing": [p for r in rows for p in r["playing"]],
         "warmest": {"room": max(temps)[1], "temp": max(temps)[0]} if len(temps) > 1 else None,
         "coolest": {"room": min(temps)[1], "temp": min(temps)[0]} if len(temps) > 1 else None,
+        "outside": [{"room": r["name"], "temp": r["temp"]} for r in rows if r.get("outdoor") and r["temp"] is not None],
     }
 
 

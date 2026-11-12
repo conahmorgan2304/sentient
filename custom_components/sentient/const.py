@@ -318,6 +318,7 @@ CONF_HEATING_REVERT_NIGHT = "heating_revert_night_hours"
 CONF_HEATING_SCHEDULE = "heating_schedule"  # optional: heating schedules made on the House tab run
 CONF_HEATING_GRAPH = "heating_graph"  # optional: a graph of the last day's temperatures on the heating card
 CONF_ROOMS_VIEW = "rooms_view"  # optional: the room tiles on the House tab and the around-the-house card
+CONF_OUTDOOR_AREAS = "outdoor_areas"  # areas outside (a hutch, a shed): still shown, but not counted as the house
 CONF_DAY_CHART = "day_chart"  # optional: THE DAY SO FAR chart on the overview
 CONF_KNOWLEDGE = "knowledge_card"  # optional: the WHAT I KNOW card on the Mind tab
 DEFAULT_HEATING_NIGHT_TEMP = 15.0

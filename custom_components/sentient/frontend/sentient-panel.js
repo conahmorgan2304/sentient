@@ -373,12 +373,16 @@
       // house health
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
+      // "Stop flagging": an unplugged or retired device goes on House health's ignore list (undo in Settings)
+      // (not on a hub row: ignoring a hub would list each of its devices on its own instead)
+      const stop = (i) => i.device_id && !i.with && this._hass.user && this._hass.user.is_admin
+        ? `<button class="hx" data-act="hignore" data-id="${esc(i.device_id)}" data-name="${esc(i.device || i.name)}" title="Stop flagging ${esc(i.device || i.name)}" aria-label="Stop flagging ${esc(i.device || i.name)}"><ha-icon icon="mdi:bell-off-outline"></ha-icon></button>` : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u></div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u>${stop(i)}</div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
-        : ["wear", "fight", "frozen", "snapshot_failed"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : ["frozen", "snapshot_failed"].includes(i.kind) ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b></div>`
+        : ["wear", "fight", "frozen", "snapshot_failed"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : ["frozen", "snapshot_failed"].includes(i.kind) ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b>${stop(i)}</div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
@@ -1633,7 +1637,7 @@
           r.moving || r.moved_mins != null ? `<span class="rc${r.moving ? " live" : ""}"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.moving ? "MOVING" : this._ago(r.moved_mins)}</span>` : "",
           r.playing.length ? `<span class="rc live" title="${esc(r.playing.join(", "))}"><ha-icon icon="mdi:music"></ha-icon>${esc(r.playing[0].toUpperCase())}</span>` : "",
         ].join("");
-        return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : ""}</div>`
+        return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : r.outdoor ? "<s>OUTSIDE</s>" : ""}</div>`
           + `<div class="rv"><span class="rtemp">${r.temp != null ? esc(r.temp) + "°" : "–"}</span>${r.humidity != null ? `<span class="rh">${esc(r.humidity)}%</span>` : ""}${r.heating ? `<ha-icon class="fl" icon="mdi:fire" title="${esc(r.heating)} heating"></ha-icon>` : ""}</div>`
           + `<div class="rs">${chips}</div></div>`;
       };
@@ -1653,6 +1657,7 @@
       if (s.moving.length) rows.push(`<div class="r"><ha-icon icon="mdi:motion-sensor"></ha-icon><b class="wrap">Movement now<small>${esc(s.moving.join(" · "))}</small></b></div>`);
       if (s.playing.length) rows.push(`<div class="r"><ha-icon icon="mdi:music"></ha-icon><b class="wrap">Playing<small>${esc(s.playing.join(" · "))}</small></b></div>`);
       if (s.warmest) rows.push(`<div class="r"><ha-icon icon="mdi:thermometer-lines"></ha-icon><b class="wrap">Warmest ${esc(s.warmest.room)} ${esc(s.warmest.temp)}°<small>coolest ${esc(s.coolest.room)} ${esc(s.coolest.temp)}°</small></b></div>`);
+      if ((s.outside || []).length) rows.push(`<div class="r"><ha-icon icon="mdi:tree-outline"></ha-icon><b class="wrap">Outside<small>${s.outside.map((o) => `${esc(o.room)} ${esc(o.temp)}°`).join(" · ")}</small></b></div>`);
       el.innerHTML = this._h("AROUND THE HOUSE", s.open.length ? `${s.open.length} OPEN` : "NONE REPORTED OPEN") + rows.join("");
     }
 
@@ -2486,6 +2491,14 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "hignore") {
+        const name = el.dataset.name || "this device";
+        if (!window.confirm(`Stop flagging ${name}? It goes on House health's ignore list; take it off again in Settings → House health.`)) return;
+        el.disabled = true;
+        this._hass.callWS({ type: "sentient/health/ignore", device_id: id }).then(
+          () => { const row = el.closest(".r"); if (row) row.remove(); },
+          (e) => { el.disabled = false; window.alert(e.message || String(e)); });
+      }
       else if (act === "homemenu") {
         const menu = this._menus(this._pages()).find((m) => m[1] === id);
         const first = menu && menu[4].find((x) => this._pages()[x]);
@@ -3230,6 +3243,8 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .hc:hover{border-color:rgba(0,255,247,.4);background:rgba(0,255,247,.07)} .hc:hover>ha-icon:first-child{color:#00fff7}
 .hc.act{border-color:rgba(0,255,247,.3);background:linear-gradient(160deg,rgba(0,200,255,.09),rgba(0,255,247,.03))}
 @media (max-width: 1100px){ .hrow,.hgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.hx{flex:none;display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:6px;border-radius:8px;color:rgba(150,220,235,.55);border:1px solid rgba(0,255,247,.14);background:transparent}
+.hx ha-icon{--mdc-icon-size:16px} .hx:hover,.hx:focus-visible{color:#00fff7;border-color:rgba(0,255,247,.45);outline:none} .hx:disabled{opacity:.4}
 /* the longest settings pages fold into sections */
 .sec{margin:0 0 10px;border-radius:14px;border:1px solid rgba(0,255,247,.1);background:rgba(0,255,247,.015)}
 .sec[open]{border-color:rgba(0,255,247,.22)}

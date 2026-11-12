@@ -79,10 +79,24 @@ class Maintenance:
             self._since[entity_id] = now
 
     # ----- due --------------------------------------------------------------------------------
+    @staticmethod
+    def _when(value: Any) -> datetime | None:
+        """A stored time, always timezone-aware. A date typed on the Maintenance page ("2026-11-12", or a time with
+        no zone) is read as local time; 12 Nov such a date crashed the check every minute and stopped all reminders."""
+        text = str(value or "").strip()
+        if not text:
+            return None
+        when = dt_util.parse_datetime(text)
+        if when is None and (day := dt_util.parse_date(text)) is not None:
+            when = datetime.combine(day, datetime.min.time())
+        if when is None:
+            return None
+        return dt_util.as_utc(when.replace(tzinfo=dt_util.get_default_time_zone()) if when.tzinfo is None else when)
+
     def status(self, item: dict[str, Any]) -> dict[str, Any]:
         used = float(item.get("used_hours") or 0) + (
             (dt_util.utcnow() - self._since[item["entity"]]).total_seconds() / 3600 if item.get("entity") in self._since else 0)
-        done = dt_util.parse_datetime(str(item.get("last_done") or ""))
+        done = self._when(item.get("last_done"))
         days = (dt_util.utcnow() - done).days if done else None
         every_h, every_d = float(item.get("every_hours") or 0), float(item.get("every_days") or 0)
         due = bool((every_h and used >= every_h) or (every_d and days is not None and days >= every_d))
@@ -107,7 +121,7 @@ class Maintenance:
         if rt is None or (rt.tracker is not None and rt.tracker.best_area() is None):
             return
         for item in self.items.enabled():
-            said = dt_util.parse_datetime(str(item.get("said") or ""))
+            said = self._when(item.get("said"))
             if said and now - said < SAY_AGAIN:
                 continue
             s = self.status(item)

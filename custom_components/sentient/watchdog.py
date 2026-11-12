@@ -267,6 +267,32 @@ class Watchdog:
         return sorted(out, key=lambda b: b["days"])
 
     # ----- what to report -------------------------------------------------------------------
+    def _device_id(self, name: str) -> str | None:
+        from homeassistant.helpers import device_registry as dr
+
+        for device in dr.async_get(self.hass).devices.values():
+            if (device.name_by_user or device.name) == name:
+                return device.id
+        return None
+
+    def _ignored_devices(self) -> set[str]:
+        """Device names with an entity on House health's ignore list (Settings → House health), as House health reads it."""
+        from homeassistant.helpers import entity_registry as er
+
+        from .const import CONF_HEALTH_IGNORE
+
+        ignore = set(self.options.get(CONF_HEALTH_IGNORE) or [])
+        if not ignore:
+            return set()
+        ents = er.async_get(self.hass)
+        out = set()
+        for name in self.drops:
+            device_id = self._device_id(name)
+            entities = [e.entity_id for e in er.async_entries_for_device(ents, device_id)] if device_id else []
+            if device_id in ignore or any(e in ignore for e in entities):
+                out.add(name)
+        return out
+
     def issues(self) -> list[dict[str, Any]]:
         rt = self._rt()
         now = dt_util.utcnow()
@@ -295,10 +321,15 @@ class Watchdog:
             if recent and before and recent >= DRAIN_MIN and recent >= before * DRAIN_FASTER:
                 out.append({"kind": "wear", "entity_id": entity_id, "name": f"{name(entity_id)} draining",
                             "text": f"{name(entity_id)} is running down about {recent / before:.0f}× faster than it used to"})
+        ignored = self._ignored_devices()
+        for dev in [d for d in self.drops if d in ignored]:
+            self.drops.pop(dev, None)  # "stop flagging it": its history goes too, not just the warning
         for dev, times in self.drops.items():
             week = [t for t in times if now - dt_util.parse_datetime(t) < WEEK]
+            if self._offline and dev in self._offline:
+                continue  # offline right now: House health already says so, once
             if len(week) >= DROPS:
-                out.append({"kind": "wear", "name": f"{dev} dropping",
+                out.append({"kind": "wear", "name": f"{dev} dropping", "device": dev, "device_id": self._device_id(dev),
                             "text": f"{dev} has dropped offline {len(week)} times this week"})
         for entity_id, rows in self.heating.items():
             old = [r[1] for r in rows if 28 <= _days_ago(r[0], today) <= 60]
