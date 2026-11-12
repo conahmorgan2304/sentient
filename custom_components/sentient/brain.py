@@ -790,7 +790,8 @@ class Brain:
                 "ledger": conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0],
                 # controlled devices only: a motion sensor or thermometer changes by itself all the time, by design
                 "unexplained_week": conn.execute(
-                    f"SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ? AND domain IN ({','.join('?' * len(CONTROLLED))})",
+                    f"SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ? AND domain IN ({','.join('?' * len(CONTROLLED))}) "
+                    "AND old NOT IN ('unavailable', 'unknown') AND new NOT IN ('unavailable', 'unknown')",  # not restarts
                     (dt_util.utcnow().timestamp() - 7 * 86400, *CONTROLLED)).fetchone()[0],
                 "memories": dict(conn.execute("SELECT kind, COUNT(*) FROM memories GROUP BY kind").fetchall()),
                 "beliefs": self.beliefs.all(conn)[:12],

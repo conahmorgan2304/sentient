@@ -922,3 +922,19 @@ async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant):
     brain.expect.days = [9, 9]
     brain.gate_remark({}, [("switch.kettle", "off")])
     assert (await brain.async_status())["would_skip"] == 1
+
+
+def test_coming_back_after_a_restart_never_forms_a_belief():
+    rows = [{**_row("light.lamp", "on", _at(d, 18, 40), old="unavailable", cause="device")} for d in (5, 4, 3, 2)]
+    assert find_by_itself(rows) == []
+
+
+async def test_restarts_are_not_counted_as_switching_by_themselves(hass: HomeAssistant):
+    entry = await _setup(hass)
+    hass.states.async_set("light.lamp", "unavailable")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.lamp", "on")  # back after a restart
+    await hass.async_block_till_done()
+    hass.states.async_set("light.lamp", "off")  # then really by itself
+    await hass.async_block_till_done()
+    assert (await entry.runtime_data.brain.async_status())["unexplained_week"] == 1

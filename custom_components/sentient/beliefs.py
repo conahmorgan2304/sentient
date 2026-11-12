@@ -20,6 +20,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 CONF_BELIEFS = "beliefs"
+DEAD = ("unavailable", "unknown")
 MIN_DAYS = 3
 HELD = 0.7
 DROPPED = 0.25
@@ -43,6 +44,8 @@ def find_by_itself(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     days: dict[tuple[str, str, int], set[str]] = {}
     names: dict[str, str] = {}
     for r in rows:
+        if r.get("old") in DEAD or r.get("new") in DEAD:
+            continue  # coming back after a restart or dropout isn't something it did by itself
         local = dt_util.as_local(dt_util.utc_from_timestamp(r["ts"]))
         days.setdefault((r["entity"], r["new"], local.hour), set()).add(local.date().isoformat())
         names[r["entity"]] = r.get("name") or r["entity"]
@@ -63,7 +66,7 @@ def held_on(belief: dict[str, Any], rows: list[dict[str, Any]]) -> bool:
     """Did a 'by itself' belief happen in these rows (one day's unexplained changes)?"""
     p = belief["params"]
     for r in rows:
-        if r["entity"] != p["entity"] or r["new"] != p["state"]:
+        if r["entity"] != p["entity"] or r["new"] != p["state"] or r.get("old") in DEAD:
             continue
         hour = dt_util.as_local(dt_util.utc_from_timestamp(r["ts"])).hour
         if min((hour - p["hour"]) % 24, (p["hour"] - hour) % 24) <= WINDOW_HOURS:
