@@ -938,3 +938,25 @@ async def test_restarts_are_not_counted_as_switching_by_themselves(hass: HomeAss
     hass.states.async_set("light.lamp", "off")  # then really by itself
     await hass.async_block_till_done()
     assert (await entry.runtime_data.brain.async_status())["unexplained_week"] == 1
+
+
+def test_a_flickering_device_is_one_surprise():
+    model = Expectations()
+    for day in range(1, 15):
+        model.learn("media_player.boys_echo", "playing", _at(day, 9))
+    model.days = [10, 4]
+    t = _at(0, 19, 27)
+    for i, state in enumerate(("playing", "idle", "paused")):
+        model.observe(_row("media_player.boys_echo", state, t + i * 0.5, old="off"), [])
+    assert [s["new"] for s in model.score()["surprises"]] == ["playing"]
+
+
+async def test_situations_name_a_flickering_device_once(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    now = dt_util.utcnow().timestamp()
+    for i, state in enumerate(("playing", "idle", "paused")):
+        brain.ledger.recent.append({**_row("media_player.boys_echo", state, now - 60 + i, cause="device"),
+                                    "name": "Boys echo", "surprise": 1.0, "area": None})
+    line = next(x for x in brain.situations() if x.startswith("Unusual"))
+    assert line.count("Boys echo") == 1 and "playing" in line

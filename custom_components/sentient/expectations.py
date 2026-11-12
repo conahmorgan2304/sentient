@@ -34,6 +34,7 @@ EXPECTED_RATE = 0.25  # happening on a quarter of days around this hour counts a
 KNOWN_AFTER = 5  # changes seen before an entity is judged at all
 DECAY = 0.98  # per day
 SEQUENCE_SECONDS = 120
+BURST_SECONDS = 120  # quick changes to one device count as one event
 WARMUP_DAYS = 21
 WARMUP_ENTITIES = 400
 MAX_PAIRS = 6000
@@ -169,7 +170,9 @@ class Expectations:
             score["known"] += 1
             if surprise < 0.5:
                 score["expected"] += 1
-            elif surprise >= 0.9 and row.get("cause") not in ("sentient",):
+            elif surprise >= 0.9 and row.get("cause") not in ("sentient",) and not any(
+                    x["entity"] == row["entity"] and 0 <= row["ts"] - x["ts"] <= BURST_SECONDS for x in score["surprises"]):
+                # one surprise per device per burst: an Echo flicking playing/idle/paused in a second is one event
                 score["surprises"] = (score["surprises"] + [{"entity": row["entity"], "name": row.get("name"),
                                                              "new": row["new"], "ts": row["ts"]}])[-10:]
         self.learn(row["entity"], row["new"], row["ts"])

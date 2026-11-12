@@ -32,7 +32,7 @@ from homeassistant.util import dt as dt_util
 
 from .beliefs import CONF_BELIEFS, Beliefs, day_bounds, find_by_itself
 from .db import LEDGER_DAYS, MEMORY_DAYS, Database
-from .expectations import CONF_EXPECTATIONS, Expectations, async_warm_up, information
+from .expectations import BURST_SECONDS, CONF_EXPECTATIONS, Expectations, async_warm_up, information
 from .ledger import CONF_LEDGER, CAUSE_WORDS, Ledger, describe, resolve_entities
 
 _LOGGER = logging.getLogger(__name__)
@@ -677,7 +677,13 @@ class Brain:
                              and st.attributes.get("device_class") in ("motion", "occupancy", "presence")})
             if moving:
                 out.append("Movement in the last 15 minutes: " + ", ".join(moving[:4]) + ".")
-            odd = [r for r in self.ledger.recent_rows(now - 3600) if (r.get("surprise") or 0) >= 0.9 and r["cause"] != "sentient"]
+            odd: list[dict[str, Any]] = []
+            for r in self.ledger.recent_rows(now - 3600):
+                if (r.get("surprise") or 0) < 0.9 or r["cause"] == "sentient":
+                    continue
+                if any(o["entity"] == r["entity"] and 0 <= r["ts"] - o["ts"] <= BURST_SECONDS for o in odd):
+                    continue  # the same device flickering: the first change says what happened
+                odd.append(r)
             if odd:
                 out.append("Unusual for this time in the last hour: " + "; ".join(
                     f"{r.get('name') or r['entity']} {r['new']} at {_clock(r['ts'])}" for r in odd[-3:]) + ".")
