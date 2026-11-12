@@ -227,6 +227,8 @@ class HouseHealth:
         )
         issues = (self._self_check(now, ignore) + sorted(offline, key=lambda i: i["since"])
                   + sorted(low, key=lambda i: (i["level"] is None, i["level"] or 0)))
+        if self.options.get(CONF_DUPLICATES, True):
+            issues += duplicates(self.hass, ignore)
         if issues != self.issues or updates != self.updates:
             self.issues = issues
             self.updates = updates
@@ -325,7 +327,7 @@ class HouseHealth:
         out = []
         now = dt_util.utcnow()
         for i in self.issues:
-            if i["kind"] in ("wear", "fight", "frozen", "snapshot_failed", "selftest"):
+            if i["kind"] in ("wear", "fight", "frozen", "snapshot_failed", "selftest", "duplicate"):
                 out.append(i["text"])
             elif i["kind"] == "ai":
                 out.append("The AI hasn't answered the last few times — plain words for now")
@@ -351,3 +353,40 @@ class HouseHealth:
             else:
                 out.append(f"{i['name']} is low")
         return out
+
+
+CONF_DUPLICATES = "health_duplicates"
+
+
+def duplicates(hass: HomeAssistant, ignore: set[str] | None = None) -> list[dict[str, Any]]:
+    """Devices that appear twice under one name where one copy has nothing in it (a plug added by Tuya Local and
+    again, empty, by Tuya's cloud). The empty copy is what confuses things; disabling it keeps it from coming back."""
+    ignore = ignore or set()
+    ents = er.async_get(hass)
+    devs = dr.async_get(hass)
+    named: dict[str, list[Any]] = {}
+    for device in list(devs.devices.values()):
+        if device.disabled_by or device.entry_type is not None:
+            continue
+        name = (device.name_by_user or device.name or "").strip()
+        if name:
+            named.setdefault(name.casefold(), []).append(device)
+    out = []
+    for group in named.values():
+        if len(group) < 2:
+            continue
+        counts = {d.id: len([e for e in er.async_entries_for_device(ents, d.id) if not e.disabled_by]) for d in group}
+        if not any(counts.values()):
+            continue
+        for d in group:
+            if counts[d.id] or d.id in ignore:
+                continue
+            source = ""
+            for entry_id in d.config_entries:
+                if (entry := hass.config_entries.async_get_entry(entry_id)) is not None:
+                    source = entry.title or entry.domain
+                    break
+            name = d.name_by_user or d.name
+            out.append({"kind": "duplicate", "name": name, "device_id": d.id, "duplicate": True,
+                        "text": f"{name} is listed twice: the copy from {source or 'another integration'} is empty"})
+    return out

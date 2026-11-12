@@ -241,3 +241,33 @@ async def test_working_main_entity_keeps_device_online(hass: HomeAssistant, free
     hass.states.async_set("sensor.boys_air_quality", "unavailable")  # one flaky reading is not an outage
     freezer.tick(timedelta(minutes=11))
     assert health.async_check() == []
+
+
+async def test_a_device_listed_twice_with_an_empty_copy_is_flagged_and_can_be_disabled(hass: HomeAssistant, hass_ws_client) -> None:
+    from custom_components.sentient.health import duplicates
+
+    local = MockConfigEntry(domain="tuya_local", title="Tuya Local")
+    cloud = MockConfigEntry(domain="tuya", title="Tuya")
+    local.add_to_hass(hass)
+    cloud.add_to_hass(hass)
+    devs, ents = dr.async_get(hass), er.async_get(hass)
+    real = devs.async_get_or_create(config_entry_id=local.entry_id, identifiers={("tuya_local", "a")}, name="Bedroom waxmelt")
+    empty = devs.async_get_or_create(config_entry_id=cloud.entry_id, identifiers={("tuya", "b")}, name="Bedroom waxmelt")
+    ents.async_get_or_create("switch", "tuya_local", "a1", device_id=real.id, config_entry=local)
+    found = duplicates(hass)
+    assert [(f["device_id"], f["kind"]) for f in found] == [(empty.id, "duplicate")]
+    assert "from Tuya is empty" in found[0]["text"]
+    assert duplicates(hass, {empty.id}) == []
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "sentient/health/disable_copy", "device_id": real.id})
+    assert not (await client.receive_json())["success"]  # the real one is never disabled
+    await client.send_json({"id": 2, "type": "sentient/health/disable_copy", "device_id": empty.id})
+    msg = await client.receive_json()
+    assert msg["success"] and msg["result"]["disabled"] == "Bedroom waxmelt"
+    assert devs.async_get(empty.id).disabled_by is dr.DeviceEntryDisabler.USER
+    assert duplicates(hass) == []

@@ -421,7 +421,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,
     ]),
     ("health", "House health", "mdi:home-heart", "What counts as a problem.", [
-        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS,
+        CONF_BATTERY_THRESHOLD, CONF_BATTERY_FORECAST, CONF_HEALTH_IGNORE, CONF_HIDE_SUBSTREAMS, CONF_IGNORE_CAMERAS, "health_duplicates",
     ]),
     ("autobackup", "Weekly backup", "mdi:calendar-sync-outline", "Every Sunday night, the same backup as the download button, saved in Home Assistant's config folder (so Home Assistant's own backups have it too). The newest few are kept; restore one from Backup.", [
         CONF_AUTO_BACKUP, CONF_BACKUP_KEEP,
@@ -618,6 +618,29 @@ def ws_today(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     nxt = next_change(progs, dt_util.now()) if sched_on(opts) else None
     out["heating"] = {"zones": zones, "next": {**nxt, "night": night_temp(opts)} if nxt else None}
     connection.send_result(msg["id"], out)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/health/disable_copy", vol.Required("device_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_health_disable_copy(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Disable an empty duplicate device (House health's "listed twice"). Only a device with no entities, so nothing
+    that works can be switched off this way; Home Assistant keeps it disabled, even when its integration reloads."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    devs = dr.async_get(hass)
+    device = devs.async_get(msg["device_id"])
+    if device is None:
+        connection.send_error(msg["id"], "not_found", "No such device")
+        return
+    if [e for e in er.async_entries_for_device(er.async_get(hass), device.id) if not e.disabled_by]:
+        connection.send_error(msg["id"], "has_entities", "That device has entities, so it isn't an empty copy")
+        return
+    devs.async_update_device(device.id, disabled_by=dr.DeviceEntryDisabler.USER)
+    entry = _entry(hass)
+    if entry is not None:
+        entry.runtime_data.health.async_check()
+    connection.send_result(msg["id"], {"disabled": device.name_by_user or device.name})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/brain"})
@@ -1044,6 +1067,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_today)
     websocket_api.async_register_command(hass, ws_glance)
     websocket_api.async_register_command(hass, ws_brain)
+    websocket_api.async_register_command(hass, ws_health_disable_copy)
     websocket_api.async_register_command(hass, ws_brain_clear)
     websocket_api.async_register_command(hass, ws_day)
     websocket_api.async_register_command(hass, ws_heating_programme_save)

@@ -382,3 +382,23 @@ async def test_a_device_offline_right_now_is_not_also_called_dropping(hass: Home
     hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {"offline:Hall plug": "Hall plug is offline"}})
     await hass.async_block_till_done()
     assert not [i for i in dog.issues() if "Hall plug" in i.get("text", "")]  # House health already says "offline"
+
+
+async def test_stop_flagging_picks_the_real_device_when_two_share_a_name(hass):
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova"}, options={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    cloud, local = MockConfigEntry(domain="tuya"), MockConfigEntry(domain="tuya_local")
+    cloud.add_to_hass(hass)
+    local.add_to_hass(hass)
+    devs = dr.async_get(hass)
+    devs.async_get_or_create(config_entry_id=cloud.entry_id, identifiers={("tuya", "x")}, name="bedroom waxmelt")
+    real = devs.async_get_or_create(config_entry_id=local.entry_id, identifiers={("tuya_local", "y")}, name="bedroom waxmelt")
+    er.async_get(hass).async_get_or_create("switch", "tuya_local", "y", device_id=real.id, suggested_object_id="bedroom_waxmelt")
+    assert entry.runtime_data.watchdog._device_id("bedroom waxmelt") == real.id

@@ -383,6 +383,7 @@
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
         : ["wear", "fight", "frozen", "snapshot_failed"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : ["frozen", "snapshot_failed"].includes(i.kind) ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b>${stop(i)}</div>`
+        : i.kind === "duplicate" ? `<div class="r warn"><ha-icon icon="mdi:content-duplicate"></ha-icon><b class="wrap">${esc(i.text)}</b>${this._hass.user && this._hass.user.is_admin ? `<button class="hx" data-act="hdupe" data-id="${esc(i.device_id)}" data-name="${esc(i.name)}" title="Disable the empty copy" aria-label="Disable the empty copy of ${esc(i.name)}"><ha-icon icon="mdi:eye-off-outline"></ha-icon></button>` : ""}</div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
         : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
@@ -1594,6 +1595,7 @@
       rows.push(`<div class="r"><ha-icon icon="mdi:thumbs-up-down-outline"></ha-icon><b class="wrap">Reactions: ${pct(o.percent)} went well<small>${o.good || 0} acted on · ${o.bad || 0} put straight back (30 days)</small></b></div>`);
       rows.push(`<div class="r"><ha-icon icon="mdi:piggy-bank-outline"></ha-icon><b class="wrap">Without the AI: ${pct(ind.percent)}<small>${ind.without_ai || 0} saved today · ${ind.ai_calls == null ? "?" : ind.ai_calls} AI calls${b.gating === "watch" && b.would_skip ? ` · skipping the usual would save ${b.would_skip}` : ""}</small></b></div>`);
       rows.push(`<div class="r"><ha-icon icon="mdi:database-clock-outline"></ha-icon><b class="wrap">House ledger: ${b.ledger_on ? (b.ledger || 0).toLocaleString() + " changes" : "off"}<small>${b.unexplained_week || 0} switched by themselves this week · search: ${esc(b.search)}${b.recall_misses ? ` · ${b.recall_misses} found nothing today` : ""}</small></b></div>`);
+      if ((b.by_themselves || []).length) rows.push(`<div class="r dim"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b class="wrap">Switched by themselves most this week<small>${esc(b.by_themselves.map((x) => `${x.name} ${x.times}×`).join(" · "))}</small></b></div>`);
       (b.beliefs || []).slice(0, 4).forEach((x) => rows.push(`<div class="r${x.status === "held" ? "" : " dim"}"><ha-icon icon="mdi:lightbulb-question-outline"></ha-icon><b class="wrap">${esc(x.claim)}<small>${esc(x.status)} · confidence ${Math.round(x.confidence * 100)}% · ${x.support} held, ${x.against} missed</small></b></div>`));
       (b.voice || []).forEach((v) => rows.push(`<div class="r warn"><ha-icon icon="mdi:microphone-off"></ha-icon><b class="wrap">${esc(v.name)} is slow to hear you<small>${esc(v.samples.map((s) => `${s.seconds}s for ${s.words} words`).join(" · "))}</small></b></div>`));
       (b.trust || []).slice(0, 3).forEach((t) => rows.push(`<div class="r dim"><ha-icon icon="mdi:shield-half-full"></ha-icon><b class="wrap">${esc(t.name)}: trusted ${Math.round(t.trust * 100)}%<small>${esc(t.why)}</small></b></div>`));
@@ -2516,6 +2518,10 @@
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
       else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "hdupe") {
+        if (!window.confirm(`Disable the empty copy of ${el.dataset.name || "this device"}? It has no entities, so nothing stops working, and Home Assistant keeps it disabled even when its integration reloads. Undo from its device page.`)) return;
+        this._hass.callWS({ type: "sentient/health/disable_copy", device_id: id }).then(() => { const row = el.closest(".r"); if (row) row.remove(); }, (e) => window.alert(e.message || String(e)));
+      }
       else if (act === "brainclear") {
         const what = id === "ledger" ? "every recorded change in the house ledger" : "everything it has learned (expectations, beliefs, reactions, saved AI answers)";
         if (!window.confirm(`Clear ${what}? This can't be undone.`)) return;
