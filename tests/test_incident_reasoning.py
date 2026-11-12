@@ -78,3 +78,21 @@ def test_missing_source_never_claims_independent_camera_corroboration():
         {"source": "camera.gate", "kind": "detection", "status": "observed"},
     ]})
     assert result["corroboration"] == "unconfirmed"
+
+
+def test_inferred_and_unknown_incident_reports_remain_mixed():
+    result = assess_incident({"evidence": [
+        {"source": "camera.garden", "kind": "detection", "status": "inferred"},
+        {"source": "camera.shed", "kind": "detection", "status": "unknown"},
+    ]})
+    assert result["status"] == "mixed"
+    assert result["unknown_reports"] == 1
+    assert "unsettled_evidence" in result["decision"]["gaps"]
+
+
+def test_missing_evidence_status_is_counted_as_unknown():
+    result = assess_incident({"evidence": [
+        {"source": "camera.garden", "kind": "detection"},
+    ]})
+    assert result["status"] == "unknown"
+    assert result["unknown_reports"] == 1
