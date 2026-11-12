@@ -393,7 +393,21 @@ class BackedUpAgent(conversation.ConversationEntity):
                     rt.ai.voice_timings.clear()
             if not self._guest() and checks is not None and checks.generation == check_generation:
                 checks.observe(user_input, result)
+            if (say := self._pronouncer(user_input)) is not None:
+                # a reply that wasn't streamed is read from the final text: names as they're said (speakers only)
+                try:
+                    plain = (result.response.speech or {}).get("plain", {}).get("speech")
+                    if plain and (said := say(plain)) != plain:
+                        result.response.async_set_speech(said)
+                except Exception:  # noqa: BLE001 - never stop a reply over a name
+                    pass
             return result
+
+    def _pronouncer(self, user_input):
+        """Names as they're said, for a reply going to a speaker (a typed chat keeps the spelling)."""
+        if not (user_input.satellite_id or user_input.device_id):
+            return None
+        return getattr(self._entry.runtime_data, 'pronouncer', None)
 
     async def _process_streaming_aware(self, user_input):
         """Answer; when the reply is being spoken as it's written, also say whatever Sentient changed afterwards."""
@@ -407,7 +421,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             return await self._async_process_impl(user_input)
         from .voice_stream import StreamWatch
 
-        with StreamWatch(log, self.entity_id) as watch:
+        with StreamWatch(log, self.entity_id, self._pronouncer(user_input)) as watch:
             result = await self._async_process_impl(user_input)
             await watch.finish(spoken_text(result.response))
         return result

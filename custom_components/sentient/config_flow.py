@@ -890,6 +890,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=0, max=500, step=1, mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_ROUTINE_EVIDENCE, **d(CONF_ROUTINE_EVIDENCE, True)): selector.BooleanSelector(),
+            vol.Required("pronounce_names", **d("pronounce_names", True)): selector.BooleanSelector(),
+            vol.Optional("pronunciations", **d("pronunciations", "")): selector.TextSelector(
+                selector.TextSelectorConfig(multiline=True)
+            ),
             # memory and learning (brain.py)
             vol.Required("house_ledger", **d("house_ledger", True)): selector.BooleanSelector(),
             vol.Required("unexplained_changes", **d("unexplained_changes", True)): selector.BooleanSelector(),

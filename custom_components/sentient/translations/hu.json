@@ -561,7 +561,9 @@
           "email_read": "Read-only email",
           "calendar_clashes": "Calendar clashes",
           "security_audit": "Security check",
-          "automation_builder": "Build automations"
+          "automation_builder": "Build automations",
+          "pronounce_names": "Say names as they're pronounced",
+          "pronunciations": "Pronunciations (one per line)"
         },
         "data_description": {
           "motion_window": "Hány percnyi mozgás-előzményt vegyen figyelembe, amikor eldönti, hol vannak az emberek.",
@@ -810,7 +812,9 @@
           "email_read": "On: keeps the sender, subject and a short preview of the last 20 messages Home Assistant's IMAP integration reports, so you can ask \"any new email?\". Read-only, no password, never shared with guests. Off: nothing is kept and what was kept is cleared.",
           "calendar_clashes": "On: \"any clashes tomorrow?\" finds events that overlap, or with under 15 minutes between, in the briefing's calendars (or all calendars). Off: not offered.",
           "security_audit": "On: an admin can ask \"is my setup secure?\" for a read-only check of plain-http remote access, locks and alarms the voice can reach without a confirmation, long-lived tokens and admins without two-factor login. Off: not offered.",
-          "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay."
+          "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
+          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Conah is pronounced Connor\". Off: names are read as spelt.",
+          "pronunciations": "Written = said, one per line, e.g. Conah = Connor. Spell the said version the way the voice should read it."
         }
       },
       "memories": {

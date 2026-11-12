@@ -192,6 +192,7 @@ class SentientRuntime:
     usage: Any = None  # which features are used
     own: Any = None  # what the house itself switched (so nothing mistakes it for a person)
     alarm_confirmations: dict = field(default_factory=dict)
+    pronouncer: Any = None  # names said as they're pronounced, on their way to the voice
     automation_pending: dict = field(default_factory=dict)  # automations read back, waiting for a yes in a later turn
     outside_read: dict = field(default_factory=dict)  # conversation -> the turn outside text was last read in
     dormant: set = field(default_factory=set)  # optional parts not started because they're switched off
@@ -726,6 +727,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     for engine in (offers, announcements, alarms, checks, camsec, autooff, rules):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
+    from .pronounce import Pronouncer
+
+    pronouncer = Pronouncer(lambda: entry.runtime_data.options, lambda: [m.text for m in entry.runtime_data.memory.items])
+    entry.runtime_data.pronouncer = pronouncer
+    entry.runtime_data.speech.pronounce = pronouncer
     from .brain import Brain
     from .skills import Inbox
     from .warnings_feed import Warnings
