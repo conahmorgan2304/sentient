@@ -60,3 +60,21 @@ def test_incident_assessment_uses_shared_non_actuating_decision_record():
     assert decision["ai_used"] is False
     assert result["identity_confirmed"] is False
     assert result["route_confirmed"] is False
+
+
+def test_same_sensor_cannot_corroborate_its_own_contact_and_camera_reports():
+    result = assess_incident({"evidence": [
+        {"source": "binary_sensor.gate", "kind": "contact", "status": "observed"},
+        {"source": "binary_sensor.gate", "kind": "event", "status": "observed"},
+    ]})
+    assert result["corroboration"] == "unconfirmed"
+    assert "contact_and_camera_activity" not in result["reasons"]
+    assert "unconfirmed_cross_sensor_link" in result["decision"]["gaps"]
+
+
+def test_missing_source_never_claims_independent_camera_corroboration():
+    result = assess_incident({"evidence": [
+        {"kind": "contact", "status": "observed"},
+        {"source": "camera.gate", "kind": "detection", "status": "observed"},
+    ]})
+    assert result["corroboration"] == "unconfirmed"
