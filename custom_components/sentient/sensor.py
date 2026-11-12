@@ -360,6 +360,9 @@ class MindSensor(_Base):
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
+            # Aggregate only: no names, camera images, conversation text or
+            # device IDs. Hidden in guest mode and never authorises alerts.
+            "cognitive_shadow": {} if rt.speech.guest_mode else rt.incidents.cognitive.summary(),
             "security_events": rt.security_events.recent(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),
