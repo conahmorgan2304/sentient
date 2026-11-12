@@ -231,6 +231,16 @@ class HouseContext:
         # The derived view only sees readings already filtered by HA permissions,
         # Assist exposure, private rooms and guest mode above.
         snapshot['world_assessment'] = prompt_view(summarise_world(snapshot))
+        # Only use readings already filtered by exposure, permissions and
+        # private-room rules. Shadow feedback describes data quality, never
+        # declares the physical home secure or grants a device action.
+        from .cognitive_coordinator import assess_observations
+        quality = assess_observations(readings, now=now)
+        snapshot['cognitive_quality'] = {
+            'mode': 'shadow', 'coverage': quality['coverage'],
+            'reported': quality['reported'], 'unknown': quality['unknown'],
+            'old_report': quality['old_report'], 'decision': quality['decision'],
+        }
         return snapshot
 
 
