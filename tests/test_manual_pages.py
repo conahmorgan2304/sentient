@@ -163,3 +163,15 @@ async def test_without_the_pdf_reader_manuals_still_work_whole(hass: HomeAssista
     with patch("builtins.__import__", side_effect=lambda n, *a, **k: (_ for _ in ()).throw(ImportError(n)) if n == "pypdf" else real(n, *a, **k)):
         result = await async_answer(hass, rt, "which filter does the air purifier need?")
     assert "attachments" in rt.ai.async_call.call_args.args[0] and result["document"] == "Air purifier"
+
+
+async def test_long_plain_text_manual_keeps_material_after_first_page(tmp_path) -> None:
+    manual = tmp_path / "Boiler.md"
+    manual.write_text("# Troubleshooting\n\n" + ("Ordinary checks and inspections. " * 320)
+                      + "\n\nReplace sensor XZ-907 when the yellow status lamp flashes.",
+                      encoding="utf-8")
+    sections, total = pages.read_text(str(manual))
+    assert total > 1
+    assert all(len(body) <= pages.MAX_PAGE_CHARS for _, _, body in sections)
+    assert any("XZ-907" in body for _, _, body in sections)
+    assert all(label == "Troubleshooting" for _, label, _ in sections)
