@@ -13,11 +13,11 @@ function load() {
   };
   context.window = { loadCardHelpers: () => new Promise(() => {}), matchMedia: () => ({ matches: false }) };
   vm.runInNewContext(fs.readFileSync('custom_components/sentient/frontend/sentient-panel.js', 'utf8'), context);
-  return { Panel, store };
+  return { Panel, store, context };
 }
 
 function setup(features, platform = null) {
-  const { Panel, store } = load();
+  const { Panel, store, context } = load();
   const img = { listeners: {}, addEventListener(n, f) { this.listeners[n] = f; }, removeAttribute() {} };
   const holder = { isConnected: true, innerHTML: '', querySelector: (s) => (s === 'img' ? img : null) };
   const el = { innerHTML: '', querySelector: (s) => (s === '.lvc' ? holder : null) };
@@ -27,7 +27,7 @@ function setup(features, platform = null) {
   panel._hass = { entities: platform ? { 'camera.nest': { platform } } : {}, states: { 'camera.nest': { attributes: { entity_picture: '/api/camera_proxy/camera.nest?token=x', supported_features: features, friendly_name: 'Nest' } } } };
   panel.renders = 0;
   panel._render = () => { panel.renders++; };
-  return { panel, img, holder, store };
+  return { panel, img, holder, store, context };
 }
 
 test('a camera whose picture feed fails is moved to the Home Assistant player once and remembered', () => {
@@ -78,5 +78,15 @@ test('non-Nest cameras preserve the picture-first behaviour', () => {
   const { panel } = setup(2, 'wyzeapi');
   panel._drawLive({ security_events: [] });
   assert.equal(panel._liveCamKey, 'camera.nest|picture');
+  panel._clearLive();
+});
+
+
+test('native video initialisation failure falls back to an image rather than an empty player', async () => {
+  const { panel, holder, context } = setup(2, 'nest');
+  context.window.loadCardHelpers = () => Promise.reject(new Error('player unavailable'));
+  panel._drawLive({ security_events: [] });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(holder.innerHTML, /<img /);
   panel._clearLive();
 });
