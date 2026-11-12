@@ -123,6 +123,7 @@ from .const import (
     CONF_HEATING_SCHEDULE,
     CONF_HEATING_GRAPH,
     CONF_ROOMS_VIEW,
+    CONF_OUTDOOR_AREAS,
     CONF_KNOWLEDGE,
     CONF_DAY_CHART,
     CONF_PREHEAT,
@@ -657,6 +658,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_ROOMS_VIEW, **d(CONF_ROOMS_VIEW, True)): selector.BooleanSelector(),
+            vol.Optional(CONF_OUTDOOR_AREAS, **d(CONF_OUTDOOR_AREAS, [])): selector.AreaSelector(
+                selector.AreaSelectorConfig(multiple=True)
+            ),
             vol.Optional(CONF_PASS_THROUGH_AREAS, **d(CONF_PASS_THROUGH_AREAS, [])): selector.AreaSelector(
                 selector.AreaSelectorConfig(multiple=True)
             ),

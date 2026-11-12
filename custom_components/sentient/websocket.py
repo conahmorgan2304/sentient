@@ -143,6 +143,7 @@ from .const import (
     CONF_HEATING_SCHEDULE,
     CONF_HEATING_GRAPH,
     CONF_ROOMS_VIEW,
+    CONF_OUTDOOR_AREAS,
     CONF_KNOWLEDGE,
     CONF_DAY_CHART,
     CONF_PREHEAT,
@@ -315,7 +316,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
-        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW,
+        CONF_WAKE_ACTIONS, CONF_MOTION_WINDOW, CONF_PASS_THROUGH_AREAS, CONF_ROOMS_VIEW, CONF_OUTDOOR_AREAS,
         CONF_SUPPRESS_ENTITIES, CONF_SUPPRESS_SECONDS,
         CONF_BEDTIME, CONF_BEDTIME_LIGHTS, CONF_BEDTIME_CONTACTS,
     ]),
@@ -627,7 +628,7 @@ def ws_glance(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         likely = None
     sleep = getattr(rt, "sleep", None)
     restless = {r["entity_id"] for r in sleep.never_rests()} if sleep is not None else set()
-    rows = rooms(hass, likely, restless)
+    rows = rooms(hass, likely, restless, set(rt.options.get(CONF_OUTDOOR_AREAS) or []))
     connection.send_result(msg["id"], {"on": True, "rooms": rows, "summary": summary(rows)})
 
 
@@ -1173,6 +1174,7 @@ DEPENDS: dict[str, str] = {
     **{k: "current_house_context" for k in ("house_context_entities", "house_context_updates")},
     **{k: CONF_GUARDED for k in ("voice_unlock", "voice_undo")},
     "follow_minutes": CONF_FOLLOW_YOU,
+    CONF_OUTDOOR_AREAS: CONF_ROOMS_VIEW,
     "conversation_cues": CONF_SESSIONS,
     "manuals_local_text": CONF_MANUALS,
     "security_reasoning": CONF_CAMSEC,

@@ -1637,7 +1637,7 @@
           r.moving || r.moved_mins != null ? `<span class="rc${r.moving ? " live" : ""}"><ha-icon icon="mdi:motion-sensor"></ha-icon>${r.moving ? "MOVING" : this._ago(r.moved_mins)}</span>` : "",
           r.playing.length ? `<span class="rc live" title="${esc(r.playing.join(", "))}"><ha-icon icon="mdi:music"></ha-icon>${esc(r.playing[0].toUpperCase())}</span>` : "",
         ].join("");
-        return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : ""}</div>`
+        return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : r.outdoor ? "<s>OUTSIDE</s>" : ""}</div>`
           + `<div class="rv"><span class="rtemp">${r.temp != null ? esc(r.temp) + "°" : "–"}</span>${r.humidity != null ? `<span class="rh">${esc(r.humidity)}%</span>` : ""}${r.heating ? `<ha-icon class="fl" icon="mdi:fire" title="${esc(r.heating)} heating"></ha-icon>` : ""}</div>`
           + `<div class="rs">${chips}</div></div>`;
       };
@@ -1657,6 +1657,7 @@
       if (s.moving.length) rows.push(`<div class="r"><ha-icon icon="mdi:motion-sensor"></ha-icon><b class="wrap">Movement now<small>${esc(s.moving.join(" · "))}</small></b></div>`);
       if (s.playing.length) rows.push(`<div class="r"><ha-icon icon="mdi:music"></ha-icon><b class="wrap">Playing<small>${esc(s.playing.join(" · "))}</small></b></div>`);
       if (s.warmest) rows.push(`<div class="r"><ha-icon icon="mdi:thermometer-lines"></ha-icon><b class="wrap">Warmest ${esc(s.warmest.room)} ${esc(s.warmest.temp)}°<small>coolest ${esc(s.coolest.room)} ${esc(s.coolest.temp)}°</small></b></div>`);
+      if ((s.outside || []).length) rows.push(`<div class="r"><ha-icon icon="mdi:tree-outline"></ha-icon><b class="wrap">Outside<small>${s.outside.map((o) => `${esc(o.room)} ${esc(o.temp)}°`).join(" · ")}</small></b></div>`);
       el.innerHTML = this._h("AROUND THE HOUSE", s.open.length ? `${s.open.length} OPEN` : "NONE REPORTED OPEN") + rows.join("");
     }
 

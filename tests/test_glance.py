@@ -156,3 +156,17 @@ def test_the_day_so_far():
     d = day(items, dt_util.as_utc(now))
     assert d["totals"] == {"movement": 2, "spoke": 1, "outside": 2, "you": 1}
     assert d["first_move"] == "06:38" and d["busiest"] == "16:00" and d["hours"][16]["outside"] == 2
+
+
+async def test_an_outdoor_area_is_shown_but_not_counted_as_the_house(hass: HomeAssistant):
+    lounge, kitchen = await _house(hass)
+    hutch = ar.async_get(hass).async_create("Rabbit hutch").id
+    _put(hass, "sensor.hutch_temp", "4", {"device_class": "temperature"}, hutch)
+    rows = rooms(hass, outdoor={hutch})
+    tile = next(r for r in rows if r["area_id"] == hutch)
+    assert tile["outdoor"] and tile["temp"] == 4  # still monitored
+    s = summary(rows)
+    assert s["coolest"]["room"] == "Kitchen" and s["warmest"]["room"] == "Lounge"
+    assert s["outside"] == [{"room": "Rabbit hutch", "temp": 4.0}]
+    # left empty, every area counts as the house
+    assert summary(rooms(hass))["coolest"]["room"] == "Rabbit hutch"
