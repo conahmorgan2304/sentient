@@ -327,3 +327,47 @@ async def test_camera_timeouts_and_exclusion_do_not_leave_a_stale_freeze(hass):
         assert not dog.issues()
         await dog.async_check_cameras()
         assert not dog.cams
+
+
+async def _flapping(hass, dog, name="Bedroom wax melt", times=4):
+    dog._offline = set()
+    for _ in range(times):
+        hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {f"offline:{name}": f"{name} is offline"}})
+        await hass.async_block_till_done()
+        hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {}})
+        await hass.async_block_till_done()
+
+
+async def test_stop_flagging_a_device_clears_its_drop_count(hass: HomeAssistant, hass_ws_client) -> None:
+    """12 Nov: the bedroom wax melt was unplugged, but "dropped offline 22 times this week" stayed for days."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    entry = await _setup(hass)
+    plug_entry = MockConfigEntry(domain="tuya_local")
+    plug_entry.add_to_hass(hass)
+    device = dr.async_get(hass).async_get_or_create(config_entry_id=plug_entry.entry_id, identifiers={("tuya_local", "wax")},
+                                                     name="Bedroom wax melt")
+    er.async_get(hass).async_get_or_create("switch", "tuya_local", "wax", device_id=device.id, config_entry=plug_entry,
+                                           suggested_object_id="bedroom_waxmelt")
+    dog = entry.runtime_data.watchdog
+    await _flapping(hass, dog)
+    issue = next(i for i in dog.issues() if i.get("device") == "Bedroom wax melt")
+    assert issue["device_id"] == device.id
+
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "sentient/health/ignore", "device_id": device.id})
+    result = await client.receive_json()
+    assert result["success"] and result["result"]["ignored"] == ["switch.bedroom_waxmelt"]
+    await hass.async_block_till_done()
+    assert "switch.bedroom_waxmelt" in entry.options["health_ignore"]
+    assert not [i for i in entry.runtime_data.watchdog.issues() if "wax melt" in i.get("text", "")]
+    assert "Bedroom wax melt" not in entry.runtime_data.watchdog.drops
+
+
+async def test_a_device_offline_right_now_is_not_also_called_dropping(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    dog = entry.runtime_data.watchdog
+    await _flapping(hass, dog, "Hall plug")
+    hass.bus.async_fire(EVENT_HEALTH_CHANGED, {"problems": {"offline:Hall plug": "Hall plug is offline"}})
+    await hass.async_block_till_done()
+    assert not [i for i in dog.issues() if "Hall plug" in i.get("text", "")]  # House health already says "offline"

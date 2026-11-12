@@ -482,6 +482,26 @@ def page_access(func):
     return wrapper
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/health/ignore", vol.Required("device_id"): str})
+@websocket_api.require_admin
+@callback
+def ws_health_ignore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """"Stop flagging this": every entity of the device goes on House health's ignore list (undo in Settings)."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    entry = _entry(hass)
+    device = dr.async_get(hass).async_get(msg["device_id"])
+    if entry is None or device is None:
+        connection.send_error(msg["id"], "not_found", "That device is no longer in Home Assistant")
+        return
+    entities = [e.entity_id for e in er.async_entries_for_device(er.async_get(hass), device.id)]
+    current = list(entry.options.get(CONF_HEALTH_IGNORE) or [])
+    added = [e for e in entities if e not in current]
+    if added:
+        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_HEALTH_IGNORE: current + added})
+    connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": entities})
+
+
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/heating/programme/save", vol.Optional("programme_id"): str,
     vol.Required("programme"): dict,
@@ -948,6 +968,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_games)
+    websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_games_edit)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)

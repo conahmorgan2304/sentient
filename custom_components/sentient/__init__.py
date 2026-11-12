@@ -824,6 +824,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.visitors.options = options
     entry.runtime_data.spots.options = options
     entry.runtime_data.health.options = options
+    entry.runtime_data.watchdog.options = options
     entry.runtime_data.notifier.options = options
     entry.runtime_data.welcome.options = options
     entry.runtime_data.critical.options = options

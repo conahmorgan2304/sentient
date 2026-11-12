@@ -160,10 +160,17 @@ class SelfTest:
         rt = self._rt()
         if rt is not None:
             reminders = [w for w in rt.watches.watches if w.kind == "reminder"]
+            # an alarm due in the next day is a fair answer to "what reminders have I got?" (the voice tells you about
+            # "Bins at 7" from the alarms); 12 Nov the test marked that right answer wrong because it only knew reminders
+            soon = dt_util.utcnow() + timedelta(hours=24)
+            alarms = [a["name"] for a in (rt.alarms.listing() if getattr(rt, "alarms", None) else [])
+                      if a.get("on") and a.get("next") and (when := dt_util.parse_datetime(a["next"])) and when <= soon]
 
             def reminders_check(answer: str) -> tuple[bool, str]:
                 if not reminders:
-                    return bool(NONE_SAID.search(answer)), "no reminders"
+                    if alarms and any(mentions(answer, name) for name in alarms):
+                        return True, "no reminders; alarms due: " + ", ".join(alarms[:3])
+                    return bool(NONE_SAID.search(answer)), "no reminders" + (f" (alarms due: {', '.join(alarms[:3])})" if alarms else "")
                 return any(mentions(answer, w.what) for w in reminders), "reminders: " + ", ".join(w.what for w in reminders[:3])
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
