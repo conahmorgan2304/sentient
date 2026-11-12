@@ -276,7 +276,7 @@ class Watchdog:
         return None
 
     def _ignored_devices(self) -> set[str]:
-        """Device names whose entities are all on House health's ignore list (Settings → House health)."""
+        """Device names with an entity on House health's ignore list (Settings → House health), as House health reads it."""
         from homeassistant.helpers import entity_registry as er
 
         from .const import CONF_HEALTH_IGNORE
@@ -289,7 +289,7 @@ class Watchdog:
         for name in self.drops:
             device_id = self._device_id(name)
             entities = [e.entity_id for e in er.async_entries_for_device(ents, device_id)] if device_id else []
-            if entities and all(e in ignore for e in entities):
+            if device_id in ignore or any(e in ignore for e in entities):
                 out.add(name)
         return out
 

@@ -347,8 +347,15 @@ async def test_stop_flagging_a_device_clears_its_drop_count(hass: HomeAssistant,
     plug_entry.add_to_hass(hass)
     device = dr.async_get(hass).async_get_or_create(config_entry_id=plug_entry.entry_id, identifiers={("tuya_local", "wax")},
                                                      name="Bedroom wax melt")
-    er.async_get(hass).async_get_or_create("switch", "tuya_local", "wax", device_id=device.id, config_entry=plug_entry,
-                                           suggested_object_id="bedroom_waxmelt")
+    reg = er.async_get(hass)
+    from homeassistant.helpers.entity import EntityCategory
+
+    reg.async_get_or_create("sensor", "tuya_local", "wax_power", device_id=device.id, config_entry=plug_entry,
+                            suggested_object_id="bedroom_waxmelt_power")
+    reg.async_get_or_create("sensor", "tuya_local", "wax_rssi", device_id=device.id, config_entry=plug_entry,
+                            suggested_object_id="bedroom_waxmelt_signal", entity_category=EntityCategory.DIAGNOSTIC)
+    reg.async_get_or_create("switch", "tuya_local", "wax", device_id=device.id, config_entry=plug_entry,
+                            suggested_object_id="bedroom_waxmelt")
     dog = entry.runtime_data.watchdog
     await _flapping(hass, dog)
     issue = next(i for i in dog.issues() if i.get("device") == "Bedroom wax melt")
@@ -359,7 +366,11 @@ async def test_stop_flagging_a_device_clears_its_drop_count(hass: HomeAssistant,
     result = await client.receive_json()
     assert result["success"] and result["result"]["ignored"] == ["switch.bedroom_waxmelt"]
     await hass.async_block_till_done()
-    assert "switch.bedroom_waxmelt" in entry.options["health_ignore"]
+    assert entry.options["health_ignore"] == ["switch.bedroom_waxmelt"]  # one entry for the device, its switch
+    await client.send_json({"id": 2, "type": "sentient/health/ignore", "device_id": device.id})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options["health_ignore"] == ["switch.bedroom_waxmelt"]  # pressed twice: still one entry
     assert not [i for i in entry.runtime_data.watchdog.issues() if "wax melt" in i.get("text", "")]
     assert "Bedroom wax melt" not in entry.runtime_data.watchdog.drops
 

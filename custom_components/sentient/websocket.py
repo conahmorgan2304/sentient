@@ -486,20 +486,31 @@ def page_access(func):
 @websocket_api.require_admin
 @callback
 def ws_health_ignore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
-    """"Stop flagging this": every entity of the device goes on House health's ignore list (undo in Settings)."""
+    """"Stop flagging this": the device goes on House health's ignore list (undo in Settings → House health).
+
+    One entity stands for the whole device (House health skips a device when any of its entities is on the list), so
+    the list stays one entry per device and is easy to take off again."""
     from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    from .health import PRIMARY_DOMAINS
 
     entry = _entry(hass)
     device = dr.async_get(hass).async_get(msg["device_id"])
     if entry is None or device is None:
         connection.send_error(msg["id"], "not_found", "That device is no longer in Home Assistant")
         return
-    entities = [e.entity_id for e in er.async_entries_for_device(er.async_get(hass), device.id)]
+    ents = [e for e in er.async_entries_for_device(er.async_get(hass), device.id) if not e.disabled_by]
+    if not ents:
+        connection.send_error(msg["id"], "no_entities", "That device has nothing House health can ignore")
+        return
     current = list(entry.options.get(CONF_HEALTH_IGNORE) or [])
-    added = [e for e in entities if e not in current]
-    if added:
-        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, CONF_HEALTH_IGNORE: current + added})
-    connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": entities})
+    if not any(e.entity_id in current for e in ents):
+        # what the device is for (its switch, light…) reads best in the list; otherwise any entity it has
+        pick = min(ents, key=lambda e: (e.entity_category is not None, e.domain not in PRIMARY_DOMAINS, e.entity_id))
+        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options,
+                                                               CONF_HEALTH_IGNORE: current + [pick.entity_id]})
+    ignored = [e.entity_id for e in ents if e.entity_id in (entry.options.get(CONF_HEALTH_IGNORE) or [])]
+    connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": ignored})
 
 
 @websocket_api.websocket_command({

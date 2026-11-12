@@ -374,7 +374,8 @@
       const issues = this._attr("health", "issues", []), updates = this._attr("health", "updates", []);
       const ago = (t) => t ? (Date.now() - new Date(t) > 864e5 ? day(t) : hm(t)) : "";
       // "Stop flagging": an unplugged or retired device goes on House health's ignore list (undo in Settings)
-      const stop = (i) => i.device_id && this._hass.user && this._hass.user.is_admin
+      // (not on a hub row: ignoring a hub would list each of its devices on its own instead)
+      const stop = (i) => i.device_id && !i.with && this._hass.user && this._hass.user.is_admin
         ? `<button class="hx" data-act="hignore" data-id="${esc(i.device_id)}" data-name="${esc(i.device || i.name)}" title="Stop flagging ${esc(i.device || i.name)}" aria-label="Stop flagging ${esc(i.device || i.name)}"><ha-icon icon="mdi:bell-off-outline"></ha-icon></button>` : "";
       const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
         ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u>${stop(i)}</div>`
