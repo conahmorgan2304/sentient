@@ -47,6 +47,7 @@ METEOALARM_COUNTRIES = {
     "UA": "ukraine",
 }
 SEVERE = ("amber", "red", "severe", "extreme", "severe flood", "flood warning")
+CRITICAL = ("red", "extreme", "severe flood")  # danger to life: an alert on the phone too
 
 
 def source_for(country: str | None) -> str | None:
@@ -216,7 +217,8 @@ class Warnings:
         if rt is None:
             return
         for w in new:
-            rt.timeline.add("critical" if is_severe(w) else "noticed", f"{w['source']}: {w['title']}", w.get("detail") or None)
+            kind = "critical" if str(w.get("level", "")).lower() in CRITICAL else "noticed"
+            rt.timeline.add(kind, f"{w['source']}: {w['title']}", w.get("detail") or None)
             if is_severe(w) and self.options.get(CONF_WARNINGS_SPEAK, True):
                 from .reasons import because
 

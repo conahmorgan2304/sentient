@@ -429,6 +429,8 @@ class RecallTool(_Tool):
                                                    ["conversation", "timeline"], 6)
             except Exception:  # noqa: BLE001 - older memories are a bonus
                 earlier = []
+        if brain is not None and not found and not earlier:
+            brain.count("recall_miss")  # how often search finds nothing: the case for meaning search
         return {"earlier": earlier, "memories": [
             {"id": m.id, "text": m.text, "category": m.category, "first_saved_at": m.created,
              "source": m.source,

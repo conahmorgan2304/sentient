@@ -50,7 +50,7 @@ DEFAULTS = {CONF_LEDGER: True, CONF_EXPECTATIONS: True, CONF_UNEXPLAINED: True, 
 # devices whose unexplained changes matter by default (when none are chosen in Settings)
 IMPORTANT_DOMAINS = ("climate", "water_heater", "valve")  # locks, doors and gates are used by hand: chosen, not default
 UNEXPLAINED_GAP = 1800  # one mention per device per half hour
-REVERT_SECONDS = 180
+REVERT_SECONDS = 60  # 'straight back': longer is more likely someone leaving the room
 ACTED_SECONDS = 600
 CASE_HOURS = 6
 CASE_MAX = 200
@@ -197,7 +197,7 @@ class Brain:
                 if missing and (rt := self._rt()) is not None:
                     first = missing.split("=")[0]
                     first_name = self.hass.states.get(first).name if self.hass.states.get(first) else first
-                    rt.timeline.add("security", f"{row.get('name')} opened without {first_name} first, which is unusual for this time.",
+                    rt.timeline.add("noticed", f"{row.get('name')} opened without {first_name} first, which is unusual for this time.",
                                     "broken routine", entity_id=row["entity"],
                                     decision={"kind": "broken_sequence", "usual_first": missing, "surprise": row["surprise"], "ai_used": False})
 
@@ -253,7 +253,7 @@ class Brain:
                 self.outcomes["bad"].append(now)
                 rt = self._rt()
                 if rt is not None and getattr(rt, "feedback", None) is not None:
-                    rt.feedback.record(row["entity"], 1.0, "switched straight back after Sentient changed it", kind="offers")
+                    rt.feedback.record(row["entity"], 0.5, "switched straight back after Sentient changed it", kind="offers")
                     rt.timeline.add("mind", f"Noted: {row.get('name') or row['entity']} was put back straight after I changed it.",
                                     "learning from reactions", entity_id=row["entity"])
                 break
@@ -601,6 +601,10 @@ class Brain:
 
         def _night(conn: Any) -> dict[str, Any]:
             out: dict[str, Any] = {"pruned": self.db.prune_ledger(conn, cutoff_ledger)}
+            try:
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")  # the main file complete for the night's backups
+            except Exception:  # noqa: BLE001
+                pass
             for kind in ("conversation", "timeline"):
                 self.db.prune_memories(conn, kind, cutoff_memory)
             if self.on(CONF_BELIEFS):
@@ -671,5 +675,6 @@ class Brain:
             "outcome": {"good": good, "bad": bad, "percent": round(100 * good / (good + bad)) if good + bad else None},
             "independence": {"ai_calls": calls, "without_ai": saved,
                              "percent": round(100 * saved / (saved + calls)) if calls is not None and saved + calls else None},
+            "recall_misses": counts.get("recall_miss", 0),
             "voice": self.voice_issues(), "trust": self.trust(), "situations": self.situations(), **stored,
         }

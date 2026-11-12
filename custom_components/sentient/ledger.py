@@ -35,6 +35,7 @@ DEAD = ("unavailable", "unknown")
 NUMBER_EVERY = 3600  # a number is recorded at most hourly unless it jumps
 NUMBER_JUMP = 0.25  # ...or changes by a quarter or more
 FLUSH_SECONDS = 5
+ASKED_SECONDS = 300  # a device reporting within five minutes of being asked is doing what it was asked
 RECENT = 3000
 CAUSE_WORDS = {
     "sentient": "Sentient", "voice": "a voice request", "person": "someone in Home Assistant",
@@ -74,6 +75,7 @@ class Ledger:
         self._contexts: OrderedDict[str, tuple[str, str | None]] = OrderedDict()  # context id -> (cause, who)
         self._users: dict[str, str] = {}
         self._last_number: dict[str, tuple[float, float]] = {}  # entity -> (ts, value) last recorded
+        self._asked: dict[str, tuple[float, str, str | None]] = {}  # entity -> (when, cause, who) of the last call for it
         self._skip_platforms = {DOMAIN}
 
     # ----- start and stop ---------------------------------------------------------------------
@@ -132,12 +134,25 @@ class Ledger:
     @callback
     def _service(self, event: Event) -> None:
         ctx = event.context
-        if ctx.id in self._contexts or (ctx.parent_id and ctx.parent_id in self._contexts):
-            return
-        if ctx.user_id:
-            self.note_context(ctx, "person", self._users.get(ctx.user_id))
-        else:
-            self.note_context(ctx, "home_assistant", event.data.get("domain"))
+        if not (ctx.id in self._contexts or (ctx.parent_id and ctx.parent_id in self._contexts)):
+            if ctx.user_id:
+                self.note_context(ctx, "person", self._users.get(ctx.user_id))
+            else:
+                self.note_context(ctx, "home_assistant", event.data.get("domain"))
+        # cloud devices often report a change a little later, under a new context: remember who asked for it
+        data = event.data.get("service_data") or {}
+        targets = data.get("entity_id") or (data.get("target") or {}).get("entity_id") or []
+        if isinstance(targets, str):
+            targets = [targets]
+        if targets:
+            cause = self.cause_of(ctx)
+            now = event.time_fired.timestamp()
+            for entity_id in targets[:50]:
+                if isinstance(entity_id, str):
+                    self._asked[entity_id] = (now, *cause)
+            if len(self._asked) > 2000:
+                for key in list(self._asked)[:1000]:
+                    self._asked.pop(key, None)
 
     def cause_of(self, context: Context | None) -> tuple[str, str | None]:
         if context is None:
@@ -197,6 +212,9 @@ class Ledger:
             if (num := _number(new.state)) is not None:
                 self._last_number[new.entity_id] = (new.last_changed.timestamp(), num)
             cause, who = self.cause_of(new.context)
+            asked = self._asked.pop(new.entity_id, None)  # only the first change after a request can be its echo
+            if cause == "device" and asked is not None and 0 <= new.last_changed.timestamp() - asked[0] <= ASKED_SECONDS:
+                cause, who = asked[1], asked[2]  # the device caught up with a request from a few minutes ago
             row = {"ts": new.last_changed.timestamp(), "entity": new.entity_id, "name": new.name,
                    "domain": new.domain, "area": self._area(new.entity_id), "old": old.state, "new": new.state,
                    "cause": cause, "who": who, "surprise": None}

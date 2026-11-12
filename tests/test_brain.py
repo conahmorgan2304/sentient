@@ -217,7 +217,7 @@ async def test_sentients_change_put_straight_back_counts_against_it(hass: HomeAs
     hass.states.async_set("light.hall", "off", context=Context())
     await hass.async_block_till_done()
     assert len(rt.brain.outcomes["bad"]) == 1
-    assert rt.feedback.score("light.hall", "offers") > 0.99
+    assert rt.feedback.score("light.hall", "offers") > 0.49
 
 
 # ----- beliefs ---------------------------------------------------------------------------------
@@ -422,3 +422,36 @@ async def test_case_memory_never_reuses_fresh_jobs_and_privacy_clears_it(hass: H
     assert brain.cases
     forget_recent(entry.runtime_data, 48)
     assert not brain.cases
+
+
+async def test_a_cloud_device_catching_up_is_not_a_mystery(hass: HomeAssistant):
+    from homeassistant.core import ServiceCall
+
+    entry = await _setup(hass)
+    hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})
+    await hass.async_block_till_done()
+
+    async def set_mode(call: ServiceCall) -> None:
+        return None  # a cloud thermostat: nothing changes until its next poll
+
+    hass.services.async_register("climate", "set_hvac_mode", set_mode)
+    auto = Context()
+    hass.bus.async_fire("automation_triggered", {"name": "Heating off at lunch"}, context=auto)
+    await hass.services.async_call("climate", "set_hvac_mode", {"entity_id": "climate.heating", "hvac_mode": "off"},
+                                   blocking=True, context=Context(parent_id=auto.id))
+    hass.states.async_set("climate.heating", "off", {"friendly_name": "Heating"})  # the poll, under a new context
+    await hass.async_block_till_done()
+    hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})  # later, by itself
+    await hass.async_block_till_done()
+    rows = await entry.runtime_data.brain.ledger.async_changes(entities=["climate.heating"], newest_first=False)
+    assert [(r["new"], r["cause"], r["who"]) for r in rows] == [("off", "automation", "Heating off at lunch"), ("heat", "device", None)]
+
+
+async def test_severe_warnings_alert_phones_only_when_dangerous(hass: HomeAssistant):
+    entry = await _setup(hass, weather_warnings=True)
+    w = entry.runtime_data.warnings
+    with patch.object(entry.runtime_data.speech, "async_say", AsyncMock()):
+        await w._announce_new([{"id": "1", "title": "Amber wind", "level": "amber", "source": "Met Office"},
+                               {"id": "2", "title": "Red snow", "level": "red", "source": "Met Office"}])
+    kinds = {i["text"]: i["kind"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Met Office")}
+    assert kinds == {"Met Office: Amber wind": "noticed", "Met Office: Red snow": "critical"}
