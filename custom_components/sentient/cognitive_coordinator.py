@@ -10,7 +10,7 @@ names, identifiers or original event data in its counters.
 """
 from __future__ import annotations
 
-from collections import Counter, deque
+from collections import Counter, OrderedDict, deque
 from datetime import datetime, timezone
 from typing import Any
 
@@ -213,6 +213,7 @@ class CognitiveCoordinator:
         self._recent: deque[str] = deque(maxlen=MAX_TRACKED)
         self.incidents = Counter()
         self.outcomes = Counter()
+        self._outcome_seen = OrderedDict()
 
     def incident(self, item: dict[str, Any], assessment: dict[str, Any],
                  baseline_stage: str, *, now: datetime | None = None) -> dict[str, Any]:
@@ -235,12 +236,24 @@ class CognitiveCoordinator:
     def outcome(self, outcome: dict[str, Any]) -> dict[str, Any]:
         feedback = review_outcome(outcome)
         feedback["task"] = task_progress(outcome)
-        self.outcomes[feedback["lesson"]] += 1
+        key = id(outcome)
+        new = feedback["lesson"]
+        old = self._outcome_seen.get(key)
+        if old != new:
+            if old:
+                self.outcomes[old] = max(0, self.outcomes[old] - 1)
+            self.outcomes[new] += 1
+        self._outcome_seen[key] = new
+        self._outcome_seen.move_to_end(key)
+        while len(self._outcome_seen) > MAX_TRACKED:
+            self._outcome_seen.popitem(last=False)
         return feedback
 
     def summary(self) -> dict[str, Any]:
+        checked = self.outcomes["reported_success"] + self.outcomes["needs_verification"]
         return {
             "mode": "shadow",
+            "reported_completion_rate": round(self.outcomes["reported_success"] / checked, 3) if checked >= 10 else None,
             "incidents_compared": self.incidents["compared"],
             "incidents_agreed": self.incidents["agreed"],
             "incidents_disagreed": self.incidents["disagreed"],
