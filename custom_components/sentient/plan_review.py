@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .cognitive import decision
+
 MAX_STEPS = 20
 # Moving a cover or touching a lock asks first; stopping a cover never waits for a yes.
 SENSITIVE = {"lock", "unlock", "open_cover", "close_cover"}
@@ -26,7 +28,17 @@ class PlanReview:
         return {"status": self.status, "reasons": list(self.reasons),
                 "steps": [dict(step) for step in self.steps],
                 "requires_confirmation": self.requires_confirmation,
-                "execute": False}
+                "execute": False,
+                # A descriptive audit only: Control.validate remains the
+                # authority and the plan itself cannot authorise execution.
+                "decision": decision(
+                    "guarded_plan_preflight",
+                    evidence=[f"{s['entity_id']}:{s['action']}" for s in self.steps],
+                    gaps=["action_permission_requires_revalidation"] if self.status == "reviewed"
+                         else ["plan_not_approved"],
+                    choice=self.status,
+                    reasons=list(self.reasons) + (["sensitive_confirmation"] if self.requires_confirmation else []),
+                )}
 
 
 def review_plan(actions: Any, *, validated: bool = False) -> PlanReview:
