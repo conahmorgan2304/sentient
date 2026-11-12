@@ -283,8 +283,16 @@ class CognitiveCoordinator:
 
     def summary(self) -> dict[str, Any]:
         checked = self.outcomes["reported_success"] + self.outcomes["needs_verification"]
+        # The cumulative revision count includes repeat evidence changes. Use
+        # the latest stage for each tracked incident when estimating agreement,
+        # otherwise one very noisy camera can dominate the comparison.
+        tracked = len(self._seen)
+        current_agreement = sum(signature[3] == signature[4] for signature in self._seen.values())
         return {
             "mode": "shadow",
+            "tracked_incidents": tracked,
+            "latest_stage_agreement_rate": round(current_agreement / tracked, 3) if tracked >= 10 else None,
+            "agreement_sample_minimum": 10,
             "evaluations": self._evaluations,
             "mean_evaluation_ms": round(self._elapsed_ns / self._evaluations / 1_000_000, 3)
                                   if self._evaluations else 0,
