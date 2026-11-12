@@ -143,6 +143,44 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
     }
 
 
+def task_progress(outcome: dict[str, Any]) -> dict[str, Any]:
+    """Read-only progress report for an already attempted guarded action batch.
+
+    No service calls, retries, automatic rollback or inferred physical safety.
+    A failed step stops the existing Control batch; this only describes it.
+    """
+    rows = [row for row in (outcome.get("actions") or [])[:20] if isinstance(row, dict)]
+    counts = Counter(str(row.get("status") or "unknown") for row in rows)
+    if not rows:
+        state = "unknown"
+    elif counts["verified"] == len(rows):
+        state = "reported_complete"
+    elif counts["failed"]:
+        state = "partial_or_failed"
+    elif counts["attempted"] or counts["not_started"] or counts["skipped"]:
+        state = "needs_verification"
+    else:
+        state = "unknown"
+    return {
+        "state": state,
+        "steps": len(rows),
+        "reported_complete": counts["verified"],
+        "attempted_unverified": counts["attempted"],
+        "failed": counts["failed"],
+        "not_started": counts["not_started"] + counts["skipped"],
+        "can_continue_automatically": False,
+        "requires_fresh_state_check": state != "reported_complete",
+        "decision": decision(
+            "guarded_task_progress",
+            evidence=[f"{name}:{counts[name]}" for name in
+                      ("verified", "attempted", "failed", "not_started", "skipped") if counts[name]],
+            gaps=[] if state == "reported_complete" else ["unfinished_or_unverified_steps"],
+            choice=state,
+            reasons=["no_automatic_retry", "reported_state_not_physical_proof"],
+        ),
+    }
+
+
 def review_outcome(outcome: dict[str, Any]) -> dict[str, Any]:
     """Feedback limited to reported action status: never an automatic retry."""
     summary = outcome.get("assessment") or {}
@@ -196,6 +234,7 @@ class CognitiveCoordinator:
 
     def outcome(self, outcome: dict[str, Any]) -> dict[str, Any]:
         feedback = review_outcome(outcome)
+        feedback["task"] = task_progress(outcome)
         self.outcomes[feedback["lesson"]] += 1
         return feedback
 
