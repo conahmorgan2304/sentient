@@ -148,3 +148,21 @@ def test_short_followup_keeps_same_session_investigation_without_reopening_micro
     sessions.begin(session, "What happened next?")
     assert session.investigation["subject"] == "gate"
     assert not session.waiting  # a new turn alone must never re-open an Assist mic
+
+
+def test_multi_step_progress_never_resends_failed_or_unverified_actions():
+    from custom_components.sentient.cognitive_coordinator import task_progress
+
+    report = task_progress({"actions": [
+        {"entity_id": "light.kitchen", "status": "verified"},
+        {"entity_id": "switch.hall", "status": "failed"},
+        {"entity_id": "lock.front", "status": "not_started"},
+    ]})
+    assert report["steps"] == 3
+    assert report["reported_complete"] == 1
+    assert report["failed"] == 1
+    assert report["not_started"] == 1
+    assert report["state"] == "partial_or_failed"
+    assert report["can_continue_automatically"] is False
+    assert report["requires_fresh_state_check"] is True
+    assert "no_automatic_retry" in report["decision"]["reasons"]
