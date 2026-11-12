@@ -87,3 +87,54 @@ Sentient already has per-turn voice recognition with opt-in name sharing and cau
 - **Manuals offline:** the text search only chose a file and still needed the AI. When the AI can't be reached it now quotes the closest passage from a `.txt`/`.md` document (bounded, no symlinks, no parent paths). Both the inside-text search and the quote sit behind a new switch, *Look inside text documents* (on by default; off matches file names only).
 - **Mind sensor:** incident assessments are worked out only for the eight incidents returned, not every stored one.
 - **Outcome wording:** a batch where a step failed and nothing was verified is now reported as `failed`, not `unverified`.
+
+
+## Cognitive Core 2.0 — shadow coordinator (PR #140)
+
+The shared `cognitive_coordinator.py` now provides a **read-only** second
+interpretation of evidence the existing subsystems already filtered:
+
+1. **Observe:** `HouseContext.snapshot` passes only permission-filtered,
+   Assist-exposed readings to `assess_observations`. Unknown, old, undated and
+   future-dated reports are explicitly uncertain. These are state *reports*,
+   never proof that the physical home is safe.
+2. **Investigate:** `Incidents.recent` preserves the existing authoritative
+   `stage()` and adds `cognitive_shadow`. A bounded per-runtime coordinator
+   counts agreement/disagreement only for a changed evidence signature.
+   Independent contact and camera sources support activity, **never** a
+   particular person's identity or route. No alert delivery changes.
+3. **Decide:** Existing camera speech rules, `Control.validate`, user
+   confirmation, never-touch and action permission boundaries retain authority.
+   Shared `decision` records are explanations only, not action approval.
+4. **Verify:** `Control` includes shadow feedback and a step-by-step task
+   progress summary from reported states; attempted or failed steps require a
+   new state check. It never automatically retries a step.
+5. **Learn (watch mode):** Counters distinguish reported-success outcomes from
+   failures and unresolved steps. No learned rule is used to change security
+   escalation, permissions, speech or device control. A verified device state
+   still does not establish a physical outcome.
+6. **Conversation:** A same-session investigation remains available to an
+   ordinary follow-up; an explicit new subject discards the previous
+   investigation. Closing or resuming a topic does not restore authorisation.
+
+### Shadow evaluation and limits
+
+- `Incidents.cognitive.summary()` reports compared/agreed/disagreed incident
+  revisions and aggregate outcome counts. Counters reset at integration restart,
+  have a bounded 128-incident identifier cache and store no raw voice or camera
+  evidence. A Mind-page refresh cannot artificially count the same revision.
+- A shadow disagreement is a **review candidate**, not proof either engine is
+  correct. False-positive rate and prediction calibration need labelled,
+  consented real-home test cases before any automatic decision changes.
+- Latency must be measured on the deployed HA system; the coordinator is pure,
+  bounded and makes no AI/network calls but passing tests is not a hardware
+  performance benchmark.
+- Hardware validation includes Frigate event bursts, gate-to-garden-to-shed
+  uncertainty, missing/unavailable sensors, Alarmo escalation, guest/private
+  room permissions, conversation end phrases, restart/unload and cloud-device
+  verification delays.
+- **Not yet in scope:** autonomous action planning, permissions inferred from
+  speaker identity, automatic promotion of a learned rule, cross-speaker
+  investigation sharing, live floorplan replay or the separate 3D head.
+- Rollout is shadow-first. Do not replace existing alerts or guarded control
+  solely on these counters, even if CI passes.
