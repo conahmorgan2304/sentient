@@ -807,3 +807,32 @@ async def test_simultaneous_forget_requests_keep_both_windows(hass: HomeAssistan
     assert not brain._forget_pending
     assert (await brain._forget_store.async_load()).get("pending") == []
     assert await brain.async_search(["private"]) == []
+
+
+async def test_recovery_finishes_source_conversation_forget_after_early_crash(hass: HomeAssistant):
+    from custom_components.sentient.brain import Brain
+
+    entry = await _setup(hass)
+    rt, brain = entry.runtime_data, entry.runtime_data.brain
+    now = dt_util.utcnow()
+    rt.conversations.episodes = [{
+        "id": "incomplete", "start": (now - timedelta(hours=2)).isoformat(),
+        "last": (now - timedelta(minutes=10)).isoformat(),
+        "turns": [{"who": "them", "text": "private garden camera discussion"}],
+    }]
+    rt.conversations._save()
+    await brain.async_sync_memories()
+    assert await brain.async_search(["garden"])
+
+    # Simulate power loss immediately after writing the durable intent:
+    # original episode is still present and no SQLite deletion was run.
+    await brain.async_prepare_forget(now - timedelta(hours=1))
+    await brain.async_stop()
+    assert rt.conversations.episodes
+    recovered = Brain(hass, entry.entry_id, entry.options, lambda: rt, brain.db.path)
+    rt.brain = recovered
+    await recovered.async_start()
+    assert not rt.conversations.episodes
+    assert not await recovered.async_search(["garden"])
+    assert not recovered._forget_pending
+    await recovered.async_stop()
