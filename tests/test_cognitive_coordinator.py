@@ -206,3 +206,13 @@ def test_delayed_verification_revises_one_batch_instead_of_double_counting():
     assert core.summary()["outcomes_needing_verification"] == 0
     assert core.summary()["reported_successes"] == 1
     assert core.summary()["reported_completion_rate"] is None  # 10 samples needed
+
+
+def test_shadow_comparison_sees_corrected_status_without_event_count_change():
+    item = _episode()
+    core = CognitiveCoordinator()
+    core.incident(item, assess_incident(item), "investigating", now=NOW)
+    assert core.summary()["incidents_compared"] == 1
+    item["evidence"][1]["status"] = "unknown"
+    core.incident(item, assess_incident(item), "investigating", now=NOW)
+    assert core.summary()["incidents_compared"] == 2
