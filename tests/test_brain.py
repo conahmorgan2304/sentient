@@ -859,3 +859,22 @@ async def test_recovery_window_preserves_later_memory_and_security_events(hass: 
     assert "after" in rt.security_events.items
     assert len(rt.ai.sent) == 1
     assert rt.ai.sent[0]["time"] == (now - timedelta(minutes=5)).isoformat()
+
+
+async def test_a_failed_forget_replay_at_start_never_stops_the_brain(hass: HomeAssistant):
+    from custom_components.sentient.brain import Brain
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    brain = rt.brain
+    start = (dt_util.utcnow() - timedelta(hours=1)).timestamp()
+    await brain._forget_store.async_save({"pending": [(start, dt_util.utcnow().timestamp())]})
+    path = brain.db.path
+    await brain.async_stop()
+    again = Brain(hass, entry.entry_id, entry.options, lambda: rt, path)
+    with patch("custom_components.sentient.privacy.forget_recent", side_effect=RuntimeError("store not ready")):
+        await again.async_start()
+    assert again.started and again._forget_pending  # running, and still owed for the next start
+    assert again.db.is_forgotten(start + 60)  # nothing from that period can be saved meanwhile
+    assert any("couldn't be finished yet" in i["text"] for i in rt.timeline.items)
+    await again.async_stop()

@@ -271,3 +271,11 @@ async def test_reload_receipt_is_not_proof_new_automation_is_active(hass: HomeAs
     hass.states.async_set("automation.generated", "on", {"id": "generated-123"})
     active = await async_activate(hass, "generated-123")
     assert active["loaded"] is True and active["active"] is True
+
+
+def test_production_code_never_waits_for_every_task():
+    from pathlib import Path
+
+    for path in (Path(__file__).parents[1] / "custom_components/sentient").glob("*.py"):
+        code = "\n".join(line for line in path.read_text().splitlines() if not line.lstrip().startswith("#"))
+        assert "await hass.async_block_till_done(" not in code and "await self.hass.async_block_till_done(" not in code, path.name

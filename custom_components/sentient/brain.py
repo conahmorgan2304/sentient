@@ -128,11 +128,18 @@ class Brain:
             from .privacy import forget_recent
 
             rt = self._rt()
-            if rt is not None:
-                for start, end in list(self._forget_pending):
-                    forget_recent(rt, (end - start) / 3600, _registered=True,
-                                  _since=dt_util.utc_from_timestamp(start), _until=end)
-            await self.async_finish_forget()
+            try:
+                if rt is not None:
+                    for start, end in list(self._forget_pending):
+                        forget_recent(rt, (end - start) / 3600, _registered=True,
+                                      _since=dt_util.utc_from_timestamp(start), _until=end)
+                await self.async_finish_forget()
+            except Exception:  # noqa: BLE001 - never stop the brain: the period stays blocked and is retried next start
+                _LOGGER.warning("Sentient couldn't finish forgetting an interrupted period yet; it will try again at the "
+                                "next start, and nothing from that period can be saved meanwhile", exc_info=True)
+                if rt is not None and getattr(rt, "timeline", None) is not None:
+                    rt.timeline.add("health", "An interrupted 'forget' couldn't be finished yet; it will finish at the next "
+                                    "restart, and nothing from that period can be saved meanwhile.", "privacy")
         saved = await self.db.call(lambda c: {k: self.db.get_kv(c, k) for k in ("expectations", "outcomes", "cases", "counters")})
         self.expect.load(saved.get("expectations"))
         self.outcomes = saved.get("outcomes") or {"good": [], "bad": []}

@@ -272,8 +272,9 @@ async def async_activate(hass: HomeAssistant, automation_id: str) -> dict[str, A
     error = None
     for _ in range(2):
         try:
+            # blocking: the reload (and the new automation's entity) is finished when this returns. Never
+            # hass.async_block_till_done() here: it waits for every task in Home Assistant with no time limit.
             await hass.services.async_call("automation", "reload", {}, blocking=True)
-            await hass.async_block_till_done()
             # Reload acceptance is not proof that the saved automation loaded.
             matches = [st for st in hass.states.async_all("automation")
                        if st.attributes.get("id") == automation_id]
