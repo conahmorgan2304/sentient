@@ -273,7 +273,17 @@ async def async_activate(hass: HomeAssistant, automation_id: str) -> dict[str, A
     for _ in range(2):
         try:
             await hass.services.async_call("automation", "reload", {}, blocking=True)
-            return {"active": True}
+            await hass.async_block_till_done()
+            # Reload acceptance is not proof that the saved automation loaded.
+            matches = [st for st in hass.states.async_all("automation")
+                       if st.attributes.get("id") == automation_id]
+            if matches:
+                running = any(st.state == "on" for st in matches)
+                return {"active": running, "loaded": True, "reload_accepted": True,
+                        **({} if running else {"note": "Automation loaded but is disabled. Enable it in Home Assistant."})}
+            return {"active": False, "loaded": False, "reload_accepted": True,
+                    "note": ("Home Assistant accepted the automation reload, but the new automation wasn't found. "
+                             "Check Automations and the Home Assistant logs before trying to create it again.")}
         except Exception as err:  # noqa: BLE001
             error = err
     return {"active": False, "id": automation_id,
