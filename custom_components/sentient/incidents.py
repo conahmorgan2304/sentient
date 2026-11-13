@@ -17,7 +17,7 @@ CONF_STAGES = "incident_stages"
 RESOLVED_AFTER = timedelta(minutes=30)
 
 
-def stage(item, assessment=None):
+def stage(item, assessment=None, *, now=None):
     """Where an incident has got to: observed, investigating, likely household, concerning or resolved.
 
     Built only from what was recorded (alert levels, sources, what was kept quiet and why); it never claims who
@@ -27,7 +27,7 @@ def stage(item, assessment=None):
     level = item.get('alert_level') or 0
     end = dt_util.parse_datetime(item.get('end') or '') or dt_util.utcnow()
     household = 'someone from the house' in texts or 'false alarm' in texts or 'household' in texts
-    if dt_util.utcnow() - end > RESOLVED_AFTER:
+    if (now or dt_util.utcnow()) - end > RESOLVED_AFTER:
         if household:
             return 'resolved', 'quiet for half an hour; most likely someone from the house'
         return 'resolved', 'nothing new for half an hour' + (' after an alert' if level else '')
