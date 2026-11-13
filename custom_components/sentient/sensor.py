@@ -372,7 +372,8 @@ class MindSensor(_Base):
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
             "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
-            "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else rt.incidents.authority()),
+            "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else
+                                    {**rt.incidents.authority(), "heads_up": rt.incidents.authority("night_heads_up")}),
             # Aggregate only: no names, camera images, conversation text or
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")

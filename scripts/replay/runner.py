@@ -50,7 +50,7 @@ def record(item: dict[str, Any]) -> dict[str, Any]:
         "reason": item.get("reason") or (item.get("detail") if action == "held" else None),
         "why": item.get("why"), "priority": item.get("priority"), "text": item.get("text"),
         "evidence": list(decision.get("evidence") or [])[:6], "surprise": decision.get("surprise"),
-        "ai_used": decision.get("ai_used"),
+        "ai_used": decision.get("ai_used"), "quietened": item.get("heads_up"),
     }
 
 
@@ -135,6 +135,9 @@ async def async_replay(hass: HomeAssistant, day: dict[str, Any], freezer: Any) -
     with patch.object(ai_module.AIGate, "async_call", _no_ai):
         assert await hass.config_entries.async_setup(entry.entry_id), "Sentient didn't start in the replay"
         await hass.async_block_till_done()
+        incidents = getattr(entry.runtime_data, "incidents", None)
+        if day.get("reviews") and incidents is not None and hasattr(incidents, "reviews"):
+            incidents.reviews = list(day["reviews"])  # the household's verdicts so far (versions without them ignore)
 
         async def _advance(to: datetime) -> None:
             # minute by minute, so a timer fires when it's due, not at the next recorded change

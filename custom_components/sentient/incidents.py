@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 from .sessions import CONF_INCIDENTS
 from .cognitive_coordinator import (
     CONF_COGNITIVE_DECIDES,
+    CONF_COGNITIVE_HEADS_UP,
     CONF_COGNITIVE_SHADOW,
     CognitiveCoordinator,
     authority,
@@ -178,6 +179,7 @@ class Incidents:
                 row['camera_gaps'] = gaps
         item['evidence'].append(row)
         item['evidence'] = item['evidence'][-50:]
+        self._capture_prediction(item)
         self._save()
         return item
 
@@ -201,7 +203,25 @@ class Incidents:
         item = next((i for i in self.items if i['id'] == incident_id), None)
         if accepted and item is not None:
             item['alert_level'] = max(item['alert_level'], level)
+            self._capture_prediction(item)
             self._save()
+
+    def _capture_prediction(self, item: dict) -> None:
+        """Freeze the latest incident prediction when evidence/alert level changes.
+
+        A later household review must never recompute an aged incident as resolved.
+        Earlier rows without this snapshot are retained but cannot earn authority.
+        """
+        from .incident_reasoning import assess_incident
+
+        now = dt_util.utcnow()
+        legacy, _ = stage(item, now=now)
+        core = investigate(item, assess_incident(item), baseline_stage=legacy, now=now)["stage"]
+        item["decision_snapshot"] = {
+            "version": 1, "at": now.isoformat(), "legacy": legacy, "core": core,
+            "evidence_count": len(item.get("evidence") or []),
+            "alert_level": item.get("alert_level", 0),
+        }
 
     def review(self, incident_id: str, outcome: str) -> dict:
         """Attach explicit household review to a retained incident only.
@@ -223,28 +243,57 @@ class Incidents:
         if outcome == "clear":
             row.pop("household_review", None)
         else:
-            from .incident_reasoning import assess_incident
-
-            predicted, _ = stage(row)
-            core = investigate(row, assess_incident(row), baseline_stage=predicted)["stage"]
+            snapshot = row.get("decision_snapshot") or {}
+            verified = snapshot.get("version") == 1 and isinstance(snapshot.get("core"), str) and isinstance(snapshot.get("legacy"), str)
+            predicted = snapshot.get("legacy") if verified else None
+            core = snapshot.get("core") if verified else None
             now = dt_util.utcnow().isoformat()
             row["household_review"] = {"label": outcome, "predicted_stage": predicted, "core_stage": core,
-                                       "at": now, "source": "household_review_not_independent_proof"}
-            self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core})
+                                       "at": now, "source": "household_review_not_independent_proof",
+                                       "prediction_recorded": verified}
+            self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core,
+                                 "prediction_recorded": verified, "prediction_at": snapshot.get("at") if verified else None})
             self.reviews = self.reviews[-MAX_REVIEWS:]
         self._save()
         self._check_authority()
         return {"changed": True, "detector_settings_changed": False, "alert_policy_changed": False}
 
     # ----- the cognitive core deciding ---------------------------------------------------------
-    def authority(self) -> dict:
-        """Whether the cognitive core decides incident stages now: switched on, and earned from the reviews."""
-        status = authority(self.reviews)
-        return {**status, "switched_on": bool(self.options.get(CONF_COGNITIVE_DECIDES)),
-                "deciding": bool(self.options.get(CONF_COGNITIVE_DECIDES)) and status["earned"]}
+    def authority(self, scope: str = "incident_stage") -> dict:
+        """Whether the cognitive core makes a decision now: switched on, and earned from the reviews."""
+        status = authority(self.reviews, scope)
+        on = bool(self.options.get(CONF_COGNITIVE_DECIDES)) and (
+            scope == "incident_stage" or bool(self.options.get(CONF_COGNITIVE_HEADS_UP)))
+        if scope == "night_heads_up":
+            # Evidence-category reviews cannot verify who was at the gate.
+            # Retain the review scores for visibility, but never grant this authority
+            # without a separately tested and verified household identity signal.
+            return {**status, "switched_on": on, "deciding": False,
+                    "why": [*status["why"], "independently verified household identity is not available"]}
+        return {**status, "switched_on": on, "deciding": on and status["earned"]}
+
+    def quiet_heads_up(self, incident_id, reason) -> str | None:
+        """Why the spoken night heads-up for this incident can be left unsaid, or None to say it.
+
+        Only the spoken heads-up for someone seen at night (never away, over the fence or loitering), only when
+        the core has earned this decision and is sure the incident is someone from the house. The alert itself —
+        the timeline, the phones — is untouched."""
+        if reason != "night" or not self.authority("night_heads_up")["deciding"]:
+            return None
+        # Contact timing and camera correlation cannot identify a household member.
+        # Until an independently verified identity signal is supplied and tested here,
+        # do not withhold any spoken security heads-up, even if historic reviews qualify.
+        return None
 
     def _check_authority(self) -> None:
         status = self.authority()
+        heads_up = self.authority("night_heads_up")
+        if heads_up["switched_on"] and heads_up["deciding"] != getattr(self, "_heads_up_earned", None):
+            self._heads_up_earned = heads_up["deciding"]
+            if self.on_authority is not None:
+                self.on_authority("The cognitive core now quietens night heads-ups it's sure are someone from the house."
+                                  if heads_up["deciding"] else "The cognitive core won't quieten night heads-ups: "
+                                  + "; ".join(heads_up["why"]) + ".")
         if status["earned"] == self._earned:
             return
         self._earned = status["earned"]
@@ -277,7 +326,7 @@ class Incidents:
             # Stage at review time is inferred from recorded evidence; stage matching
             # does not prove factual correctness or population detection accuracy.
             predicted = review.get("predicted_stage")
-            if not isinstance(predicted, str):
+            if not isinstance(predicted, str) or review.get("prediction_recorded") is not True:
                 continue
             labelled.append({"human_label": review["label"], "predicted_stage": predicted})
         return {**evaluate(labelled), "reviewed_total": len(labelled),

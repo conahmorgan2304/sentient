@@ -15,11 +15,16 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.8.0": [
+        "The cognitive core now correlates an observed entry opening with a later observed person detection, but does not treat that timing as proof of household identity. A doorbell or doorstep visit remains a caller.",
+        "The Mind tab scores the cognitive core and the usual rules side by side on your reviews: household incidents got right, others wrongly called household, and threats called less serious.",
+        "The experimental night heads-up control remains inactive even if selected: a gate opening and camera sighting cannot verify a household member. Spoken and phone security alerts stay unchanged until independent identity evidence is safely supported.",
+    ],
     "1.7.0": [
         "The Mind tab now shows how conversations go: how many follow-ups carried on from the last thing you asked, how often it had to ask which thing you meant, how often an answer was corrected (\"no, I meant…\"), and how quickly it answers. With \"Show voice timings\" on; no words are kept.",
-        "It also shows how memories are used: whether one on the subject came up and showed in the answer, and how often it had to search or was corrected.",
+        "Memory indicators now show approximate word overlap and search/correction counts; this is not verified answer accuracy.",
         "Every memory now says how it's known — confirmed, told, said, or a guess worked out overnight. Guesses are marked on the Memories page, and the voice is told to check before relying on them.",
-        "HOW I'M LEARNING shows corrections that stuck: after a thumbs down, shush or hush, whether that thing was mentioned again within a fortnight.",
+        "HOW I'M LEARNING shows whether a corrected topic was heard again during a fortnight; no repeats does not prove the situation arose or that learning was correct.",
     ],
     "1.6.0": [
         "The cognitive core can now decide what stage a security incident is at — what the Mind tab and the voice say it is — once your reviews show it gets each kind of incident right (Settings → Safety & security, off by default). It never changes or holds back an alert, never calls an incident less serious than the usual rules' \"concerning\", and stops by itself if later reviews fall short. Review incidents from the Mind tab: REVIEW THIS INCIDENT.",
