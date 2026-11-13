@@ -9,7 +9,7 @@ def report(turns: list[dict[str, Any]], *, min_samples: int = 20) -> dict[str, A
         if not isinstance(t, dict):
             continue
         reason = t.get("reason")
-        if reason in {"matched", "below_threshold", "ambiguous", "no_voice", "error"}:
+        if isinstance(reason, str) and reason in {"matched", "below_threshold", "ambiguous", "no_voice", "error"}:
             counts[reason] += 1
     total = sum(counts.values())
     return {"sample_size": total, "matched_fraction": round(counts["matched"] / total, 3)
