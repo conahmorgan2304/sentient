@@ -132,6 +132,7 @@ class Memory:
     created: str = field(default_factory=lambda: dt_util.now().isoformat())
     source: str | None = None
     origin: str | None = None  # explicit wording or a subsequent edit
+    owner: str | None = None  # explicitly attributed household voice profile, not inferred from text
     hits: int = 0
     pinned: bool = False  # always given to the voice, never tidied away
     used: str | None = None  # last time it was recalled or matched what was asked
@@ -173,7 +174,8 @@ class MemoryStore:
     def items(self) -> list[Memory]:
         return list(self._items)
 
-    def add(self, text: str, category: str = "fact", source: str | None = None, *, origin: str | None = None) -> Memory:
+    def add(self, text: str, category: str = "fact", source: str | None = None, *,
+            origin: str | None = None, owner: str | None = None) -> Memory:
         """Add a memory; reuse only a wording-equivalent item, preserving meaningful differences."""
         text = " ".join(text.split()).strip()
         if not text:
@@ -188,6 +190,12 @@ class MemoryStore:
                     existing.source = source
                     existing.origin = origin
                     self._save()
+                # An identified person can associate their own explicit
+                # statement with a profile, without treating the name in
+                # the text as proof of ownership.
+                if owner and existing.owner != owner:
+                    existing.owner = owner
+                    self._save()
                 return existing
         if len(self._items) >= MEMORY_MAX_ITEMS:
             candidates = [m for m in self._items if not m.pinned]
@@ -195,7 +203,8 @@ class MemoryStore:
                 raise ValueError("Memory is full of pinned items; unpin or forget one before adding another")
             drop = min(candidates, key=lambda m: (m.category != "note", m.hits, m.created))
             self._items.remove(drop)
-        memory = Memory(text=text, category=category, source=source, origin=origin, expires=expiry_for(text), links=self.links_for(text))
+        memory = Memory(text=text, category=category, source=source, origin=origin, owner=owner,
+                        expires=expiry_for(text), links=self.links_for(text))
         # newer replaces older: same wording apart from numbers, on/off or a negation
         subject = _subject(text)
         if len(subject) >= 3:

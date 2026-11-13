@@ -163,3 +163,30 @@ async def test_rules_editor_rejects_unsafe_nested_action(hass, hass_ws_client):
     assert not response['success']
     assert response['error']['code'] == 'invalid'
     assert not entry.runtime_data.lists['rules'].listing()
+
+
+async def test_rule_dispatch_is_visible_to_advisory_intent_monitor(hass):
+    from custom_components.sentient.action_intents import ActionIntentMonitor
+
+    intents = ActionIntentMonitor()
+    rt = SimpleNamespace(timeline=Mock(), intents=intents, speech=Mock())
+    rules = Rules(hass, Mock(), lambda: rt)
+    actions = [{'action': 'light.turn_on', 'target': {'entity_id': 'light.kitchen'}}]
+    with patch('custom_components.sentient.shortcuts.async_run_actions', new_callable=AsyncMock):
+        await rules.async_run({'id': 'turn-on', 'name': 'Kitchen rule', 'actions': actions})
+    assert intents.summary()['intents_seen'] == 1
+    intents.observe('light.kitchen', 'turn_off', 'auto_off')
+    assert intents.summary()['potential_conflicts'] == 1
+
+
+async def test_rule_dispatch_failure_is_not_marked_as_accepted_intent(hass):
+    from custom_components.sentient.action_intents import ActionIntentMonitor
+
+    intents = ActionIntentMonitor()
+    rt = SimpleNamespace(timeline=Mock(), intents=intents, speech=Mock())
+    rules = Rules(hass, Mock(), lambda: rt)
+    actions = [{'action': 'light.turn_on', 'target': {'entity_id': 'light.kitchen'}}]
+    with patch('custom_components.sentient.shortcuts.async_run_actions', new_callable=AsyncMock,
+               side_effect=RuntimeError('service failed')):
+        await rules.async_run({'id': 'broken', 'name': 'Broken rule', 'actions': actions})
+    assert intents.summary()['intents_seen'] == 0

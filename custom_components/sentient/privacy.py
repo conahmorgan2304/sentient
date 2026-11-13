@@ -66,6 +66,9 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
         house_context.clear()
     if control := getattr(rt, "control", None):
         control.clear_recovery()
+    # Ephemeral cross-feature intent history may reflect private activity.
+    if (intents := getattr(rt, "intents", None)) is not None:
+        intents.clear()
     if followthrough := getattr(rt, 'followthrough', None):
         gone_checks = len(followthrough._pending)
         followthrough.clear()

@@ -62,6 +62,8 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "visitors_today": len(rt.visitors.today()),
         "spots": [{"camera": s["camera"]} for s in rt.spots.spots.values()],
         "last_tidy": async_redact_data(rt.upkeep.last_tidy or {}, {"merged"}),
+        "backup_privacy": await rt.autobackup.async_privacy_summary(),
+        "dependency_chains": _dependency_chains(rt, hass),
     }
 
 
@@ -81,3 +83,10 @@ async def _brain(hass: HomeAssistant, rt: Any) -> dict[str, Any] | None:
         "beliefs": len(status.get("beliefs") or []), "memories_copied": status.get("memories"),
         "case_memory_entries": len(brain.cases),
     }
+
+
+def _dependency_chains(rt: Any, hass: HomeAssistant) -> dict[str, Any]:
+    """Aggregate availability without exporting household entity IDs."""
+    from .dependency_health import evaluate, runtime_dependencies
+
+    return evaluate(runtime_dependencies(rt, hass))

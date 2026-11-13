@@ -1,0 +1,53 @@
+[
+  {
+    "incident": {
+      "id": "synthetic-gate-1",
+      "start": "2026-11-13T12:00:00+00:00",
+      "end": "2026-11-13T12:00:25+00:00",
+      "alert_level": 0,
+      "sources": [
+        "binary_sensor.gate",
+        "camera.garden"
+      ],
+      "evidence": [
+        {
+          "source": "binary_sensor.gate",
+          "kind": "contact",
+          "status": "observed",
+          "text": "Gate opened"
+        },
+        {
+          "source": "camera.garden",
+          "kind": "detection",
+          "status": "observed",
+          "text": "Person observed"
+        }
+      ]
+    },
+    "expected_corroboration": "reported_activity"
+  },
+  {
+    "incident": {
+      "id": "synthetic-duplicated-source",
+      "start": "2026-11-13T12:10:00+00:00",
+      "end": "2026-11-13T12:10:25+00:00",
+      "alert_level": 0,
+      "sources": [
+        "camera.gate"
+      ],
+      "evidence": [
+        {
+          "source": "camera.gate",
+          "kind": "contact",
+          "status": "observed"
+        },
+        {
+          "source": "camera.gate",
+          "kind": "detection",
+          "status": "observed"
+        }
+      ]
+    },
+    "expected_corroboration": "unconfirmed"
+  }
+]

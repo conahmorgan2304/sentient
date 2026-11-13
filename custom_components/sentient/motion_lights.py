@@ -437,6 +437,8 @@ class MotionLights:
             ),
             eager_start=True,
         )
+        if (intents := getattr(self, "intents", None)) is not None:
+            intents.observe(rule.light, "turn_on" if on else "turn_off", "motion_lights")
         return True
 
     # ----- for the page ------------------------------------------------------------------

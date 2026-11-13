@@ -484,7 +484,7 @@ class SpeechRouter:
             last = self._remarks.get(_remark_key(text))
             if last is not None and dt_util.utcnow() - last < timedelta(hours=hours):
                 return self._held("said_recently", text, source)  # "The kettle has finished boiling." once is enough
-        if check_duplicate and source != "critical" and (last := self._recent.get(text.lower())) is not None and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
+        if check_duplicate and source != "critical" and (last := self._recent.get(_remark_key(text))) is not None and dt_util.utcnow() - last < _DUPLICATE_WINDOW:
             return self._held("duplicate", text, source)
         return None
 
@@ -495,7 +495,7 @@ class SpeechRouter:
         self._remarks[key] = now
         self.save_remarks()
         self._recent = {k: v for k, v in self._recent.items() if now - v < _DUPLICATE_WINDOW}
-        self._recent[text.lower()] = now
+        self._recent[_remark_key(text)] = now
         self._said.appendleft((now, spoken if spoken is not None else text))
 
     async def async_say(
@@ -537,7 +537,7 @@ class SpeechRouter:
             self._delivered_recent = {k: v for k, v in self._delivered_recent.items() if now - v < _DUPLICATE_WINDOW}
             speakers = list(dict.fromkeys(speakers))
             if source != "critical":
-                speakers = [s for s in speakers if (text.lower(), s) not in self._delivered_recent]
+                speakers = [s for s in speakers if (_remark_key(text), s) not in self._delivered_recent and (text.lower(), s) not in self._delivered_recent]
             if not speakers:
                 return self._held("duplicate", text, source)
             volume = await self._volumes(speakers)
@@ -551,6 +551,8 @@ class SpeechRouter:
             if generation != self._privacy_generation:
                 return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
             for speaker in accepted:
+                self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
+                # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
                 self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
             self._remember_said(text, spoken)
         speakers = accepted

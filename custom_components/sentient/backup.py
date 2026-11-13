@@ -368,6 +368,18 @@ class AutoBackup:
         async with self._save_lock:
             return await self.hass.async_add_executor_job(read)
 
+    async def async_privacy_summary(self) -> dict[str, Any]:
+        """Counts only, never backup contents or filenames."""
+        files = await self.async_list()
+        return {
+            "local_json_backups": len(files),
+            "independently_encrypted_by_sentient": False,
+            "may_contain_saved_memories_and_settings": bool(files),
+            "forget_recent_erases_existing_backups": False,
+            "restore_may_reintroduce_forgotten_facts": bool(files),
+            "note": "Manage access and retention with Home Assistant backup and filesystem policies.",
+        }
+
     async def async_restore(self, name: str, settings: bool = False) -> dict[str, int]:
         before = (deepcopy(dict(self.entry.data)), deepcopy(dict(self.entry.options)))
         path = self.folder / Path(name).name  # never outside the folder

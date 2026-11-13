@@ -323,7 +323,7 @@ class MindSensor(_Base):
     # live detail for the page and the voice; none of it is history, and together it passes the recorder's 16 KB limit
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
-        "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow",
+        "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
@@ -350,6 +350,14 @@ class MindSensor(_Base):
         rt = self._entry.runtime_data
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
+        from .effectiveness import report as learning_report
+
+        cognitive = (rt.incidents.cognitive.summary()
+                     if rt.options.get("cognitive_shadow") and rt.options.get("security_incidents")
+                     else {})
+        intent_metrics = rt.intents.summary() if getattr(rt, "intents", None) else {}
+        timings = (rt.ai.voice_timings.describe()
+                   if rt.options.get("voice_timing_diagnostics") else [])
         return {
             "sentient_updates": rt.updates.status(),
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
@@ -364,6 +372,11 @@ class MindSensor(_Base):
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")
                                  or not getattr(rt.incidents, "cognitive", None) else rt.incidents.cognitive.summary()),
+            "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
+                               else rt.intents.summary()),
+            "learning_effectiveness": ({} if rt.speech.guest_mode else
+                                       learning_report(cognitive=cognitive, intents=intent_metrics,
+                                                       voice_timings=timings)),
             "security_events": rt.security_events.recent(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),

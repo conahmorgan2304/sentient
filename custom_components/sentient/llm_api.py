@@ -209,9 +209,14 @@ class RememberTool(_Tool):
         request = _normalise(" ".join((current_request.get() or "").split())).rstrip(".?!")
         stated = re.fullmatch(r"(?:please )?remember(?: that)? (.+)", request)
         origin = "explicit" if stated and stated[1] == _normalise(" ".join(text.split())).rstrip(".?!") else None
-        text = voice_id.attribute(getattr(rt, "options", {}), voice_id.current_speaker.get(), current_request.get() or "", text)
-        memory = rt.memory.add(text, tool_input.tool_args.get("category", "fact"),
-                               source=llm_context.platform, origin=origin)
+        speaker = voice_id.current_speaker.get()
+        attributed = voice_id.attribute(getattr(rt, "options", {}), speaker,
+                                        current_request.get() or "", text)
+        # Only an actual first-person attribution with name-sharing consent
+        # creates owner metadata; guessing a name from memory text does not.
+        owner = (voice_id.name_of(speaker) or "").casefold() if attributed != text else None
+        memory = rt.memory.add(attributed, tool_input.tool_args.get("category", "fact"),
+                               source=llm_context.platform, origin=origin, owner=owner)
         if tool_input.tool_args.get("pin"):
             rt.memory.pin(memory.id, True)
         return {"saved": memory.text, "id": memory.id, "pinned": memory.pinned}

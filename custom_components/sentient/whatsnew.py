@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.10": [
+        "Forgetting something now removes it from Sentient's searchable copy straight away, not at the next sync ten minutes later.",
+        "The same announcement from two parts of Sentient, worded the same apart from punctuation, is said once. Critical alerts are never held back.",
+        "Asking about something by another name (\"boiler\" when the memory says \"radiator\") now finds it, using your own word list. No AI call.",
+        "Diagnostics now show which parts of Sentient are working, degraded or not yet checked (voice, cameras, heating), what Sentient's own backups contain, and when two parts of Sentient asked for opposite things at once (for example voice on, then motion lights off). Watching only: nothing is blocked or changed.",
+        "Heating: the learned warm-up speed is checked against later warm-ups, and the error is shown only once there's enough history. No saving is claimed and the heating isn't changed.",
+    ],
     "1.5.9": [
         "The morning briefing is given once a day even if Home Assistant or Sentient restarts in the morning. Before, the day it was given was forgotten on a restart, and a motion sensor coming back after the restart counted as someone walking into the room, so the briefing came again.",
     ],

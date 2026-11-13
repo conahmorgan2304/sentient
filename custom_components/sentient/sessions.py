@@ -171,11 +171,13 @@ class VoiceSession:
     follow_up_context: dict | None = None
     correction: dict | None = None
     investigation: dict | None = None
+    working_context: dict | None = None
     resume_choices: list[str] = field(default_factory=list)
     resumed_from: str | None = None
     resume_context: dict | None = None
 
     def describe(self) -> dict:
+        from .working_memory import public_view
         return {'conversation_id': self.id, 'state': 'awaiting_confirmation' if self.pending else
                 'listening' if self.waiting else 'discussion_idle' if self.active else 'wake_word', 'topic': self.topic,
                 'entities': list(self.entities), 'unanswered_question': self.question,
@@ -183,6 +185,7 @@ class VoiceSession:
                 'missing_detail': self.missing_detail, 'listen_reason': self.listen_reason,
                 'clarification': self.clarification, 'clarification_resolution': self.clarification_resolution,
                 'correction': self.correction, 'investigation': self.investigation,
+                'working_context': public_view(self.working_context),
                 **({'follow_up_context': self.follow_up_context} if self.follow_up_context else {}),
                 'resumed_from': self.resumed_from, 'resume_context': self.resume_context,
                 'pending_action': self.pending.get('summary') if self.pending else None,
@@ -296,6 +299,14 @@ class Sessions:
             session.topic = text[:200] if text != change.group(0) else ''
             session.goal = session.topic or session.goal
             session.listen_reason = 'new_subject'
+        # A bounded description of ongoing intent only. Never reuse old
+        # device states or confirmations: each action is freshly validated.
+        from .working_memory import refresh
+
+        session.working_context = refresh(
+            session.working_context, goal=session.goal, topic=session.topic,
+            entities=session.entities, kind=kind, changed=bool(change),
+        )
 
     def finish(self, session, result):
         """Apply one listening policy to the actual final reply, regardless of provider flags."""
@@ -373,6 +384,7 @@ class Sessions:
         session.clarification_resolution = None
         session.recovery_record = None
         session.investigation = None
+        session.working_context = None
 
     def rekey(self, session):
         """Use fresh provider history on resumption, never an old confirmation exchange."""

@@ -180,6 +180,8 @@ class AutoOff:
                 _LOGGER.debug('Auto-off request failed for %s: %s', entity_id, err)
             else:
                 accepted.append(entity_id)
+                if (intents := getattr(self, "intents", None)) is not None:
+                    intents.observe(entity_id, service, "auto_off")
             finally:
                 self._busy.discard(entity_id)
         if not accepted or self._stopped or self.items.items.get(item['id']) is not item:

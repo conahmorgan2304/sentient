@@ -295,6 +295,23 @@ class Database:
         """Already serialised (in the event loop, so nothing changes while it's written)."""
         conn.execute("INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)", (key, text))
 
+    def reconcile_fact_copies(self, conn: sqlite3.Connection, live_refs: set[str]) -> int:
+        """Immediately remove stale copies of facts no longer in live memory.
+
+        The live MemoryStore is the authority. Keep pinned and older facts
+        that still exist there; delete both the SQLite copy and FTS entry in
+        the same database transaction.
+        """
+        stale = [ref for (ref,) in conn.execute("SELECT ref FROM memories WHERE kind = 'fact'")
+                 if ref not in live_refs]
+        if stale:
+            conn.executemany("DELETE FROM memories WHERE kind = 'fact' AND ref = ?",
+                             [(ref,) for ref in stale])
+            if self.fts:
+                conn.executemany("DELETE FROM memories_fts WHERE kind = 'fact' AND ref = ?",
+                                 [(ref,) for ref in stale])
+        return len(stale)
+
     def forget_since(self, conn: sqlite3.Connection, start: float, end: float) -> dict[str, int]:
         """Everything timestamped in the window: ledger rows, copied conversations and timeline entries (and their
         search index). Facts are copied from the live store, so a fact forgotten there goes at the next copy."""
