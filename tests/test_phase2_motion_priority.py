@@ -2,6 +2,7 @@
 from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
+import pytest
 
 from homeassistant.util import dt as dt_util
 from custom_components.sentient.action_intents import ActionIntentMonitor
@@ -29,3 +30,10 @@ def test_expired_voice_intent_is_not_a_reason_to_hold(hass):
     stamp = dt_util.utcnow() - timedelta(minutes=4)
     monitor.observe(light, "turn_off", "guarded_voice", when=stamp)
     assert monitor.preview(light, "turn_on", "motion_lights")["decision"] == "no_conflict"
+
+
+def test_priority_rule_rejects_truthy_string_flag(hass):
+    motion = MotionLights(hass, "test-priority-validation", SimpleNamespace())
+    with pytest.raises(ValueError, match="Protect voice overrides"):
+        motion.upsert({"light": "light.girls_room", "motion": ["binary_sensor.girls_motion"],
+                       "protect_voice_override": "false"})
