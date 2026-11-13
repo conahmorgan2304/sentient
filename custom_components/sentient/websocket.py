@@ -1268,7 +1268,8 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "faces", "face_sensor", "face_people", "face_teach", "face_teach_cameras", "face_cameras", "face_forget_hours"]},
         {"title": "AI looks", "open": False, "names": [
             "ai_task_entity", "second_opinion_ai", "smart_ai_task", "event_clips", "camera_cooldown", "look_cache_minutes",
-            "camera_prefilter"]},
+            "camera_prefilter", "ai_routing_enabled", "ai_routing_alternative",
+            "ai_routing_primary_cost", "ai_routing_alternative_cost", "ai_routing_max_p95_ms"]},
     ],
 }
 
@@ -1297,6 +1298,9 @@ DEPENDS: dict[str, str] = {
     "manuals_local_text": CONF_MANUALS,
     "manuals_pages": CONF_MANUALS,
     "manuals_local_ocr": CONF_MANUALS,
+    **{k: "memory_semantic_enabled" for k in ("memory_semantic_url", "memory_semantic_model")},
+    **{k: "ai_routing_enabled" for k in ("ai_routing_alternative", "ai_routing_primary_cost",
+                                           "ai_routing_alternative_cost", "ai_routing_max_p95_ms")},
     "cognitive_shadow": CONF_INCIDENTS,
     "security_reasoning": CONF_CAMSEC,
     "recheck_unconfirmed": CONF_GUARDED,
