@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.13": [
+        "No edit button on the tabs any more: with \"Rearrange the Sentient page\" on, your layout is always used, and you change it from Settings → This page → EDIT PAGE LAYOUT. The edit toolbar shows only while you're editing, until DONE EDITING.",
+    ],
     "1.5.12": [
         "Rearrange the Sentient page: switch it on in Settings and an EDIT LAYOUT button lets administrators move, hide, show again and reset cards on the Overview, House, Mind and Security tabs. Saved in Sentient, so every screen shows the same. Off by default.",
         "Motion lights: a rule can be set not to switch a light back on for two minutes after you turned it off by voice. Auto-off can likewise wait after a voice \"on\". Both off by default.",

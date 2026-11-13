@@ -31,7 +31,7 @@ test("card drag-and-drop is editor-only and persists through admin websocket", (
 
 test("the layout toolbar only appears once switched on in Settings", () => {
   assert.doesNotMatch(panel, /ENABLE CUSTOM PAGES/);
-  assert.match(panel, /const shown = admin && this\._layoutEnabled;/);
+  assert.match(panel, /const editing = admin && this\._layoutEnabled && this\._layoutEdit/);
   assert.match(panel, /h\.energy_comparison \?/);  // no kWh button without a heating meter chosen
 });
 
@@ -43,4 +43,11 @@ test("AI routing calibration is explicitly approved and visible only to admin", 
   assert.match(panel, /type: "sentient\/ai\/routing\/calibrate"/);
   assert.match(ws, /async def ws_ai_routing_calibrate/);
   assert.match(ws, /@websocket_api\.require_admin/);
+});
+
+test("the tabs show no edit button except while editing, which starts from Settings", () => {
+  assert.doesNotMatch(panel, /"EDIT LAYOUT"/);
+  assert.match(panel, /bar\.hidden = !editing;/);
+  assert.match(panel, /data-act="layoutstart">EDIT PAGE LAYOUT/);
+  assert.match(panel, /g\.id === "page" && this\._hass\.user\?\.is_admin && data\.custom_pages === true/);
 });
