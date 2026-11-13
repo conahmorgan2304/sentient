@@ -284,6 +284,18 @@ class Brain:
         for start, end in pending:
             for key, n in (await self.db.call(lambda c, a=start, b=end: self.db.forget_since(c, a, b))).items():
                 gone[key] = gone.get(key, 0) + n
+        # The live memory store was loaded before Brain started. A forget
+        # request also removes facts from that store, but its SQLite copies
+        # previously survived until the next ten-minute sync. Reconcile
+        # while the durable forget intent is still pending so a failed
+        # database write will be retried after restart.
+        runtime = self._rt()
+        memory = getattr(runtime, "memory", None) if runtime is not None else None
+        if memory is not None:
+            items = memory.items
+            live_refs = {str(m.id) for m in (items() if callable(items) else items)}
+            gone["facts"] = await self.db.call(
+                lambda c: self.db.reconcile_fact_copies(c, live_refs))
         self._forget_pending = [w for w in self._forget_pending if w not in pending]
         await self._forget_store.async_save({"pending": self._forget_pending})
         return gone
