@@ -7,14 +7,14 @@ async def test_admin_layout_get_save_reset(hass, hass_ws_client):
     ws = await hass_ws_client(hass)
     await ws.send_json({"id": 1, "type": "sentient/layout"})
     assert (await ws.receive_json())["result"]["layout"] == {}
-    await ws.send_json({"id": 10, "type": "sentient/layout", "action": "enable", "enabled": True})
+    await ws.send_json({"id": 2, "type": "sentient/layout", "action": "enable", "enabled": True})
     assert (await ws.receive_json())["result"]["enabled"] is True
-    await ws.send_json({"id": 2, "type": "sentient/layout", "action": "save",
+    await ws.send_json({"id": 3, "type": "sentient/layout", "action": "save",
                         "layout": {"mind": [{"id": "thinking", "visible": True}]}})
     res = await ws.receive_json()
     assert res["success"], res
     assert res["result"]["layout"]["mind"][0]["id"] == "thinking"
-    await ws.send_json({"id": 3, "type": "sentient/layout", "action": "reset"})
+    await ws.send_json({"id": 4, "type": "sentient/layout", "action": "reset"})
     assert (await ws.receive_json())["result"]["layout"] == {}
 
 
