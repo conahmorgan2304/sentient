@@ -976,6 +976,29 @@ async def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]
     connection.send_result(msg["id"], {"forgot": await async_forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/security/incident/review",
+    vol.Required("incident_id"): str,
+    vol.Required("outcome"): vol.In(["household", "visitor", "concerning", "false_detection", "unresolved", "clear"]),
+})
+@websocket_api.require_admin
+@callback
+def ws_incident_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if rt.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "Review unavailable in guest mode")
+        return
+    result = rt.incidents.review(msg["incident_id"], msg["outcome"])
+    if result.get("error"):
+        connection.send_error(msg["id"], "invalid", result["error"])
+    else:
+        connection.send_result(msg["id"], result)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
                                   vol.Required("event_id"): str, vol.Required("value"): vol.In(FEEDBACK)})
 @websocket_api.require_admin
@@ -1042,6 +1065,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_incident_review)
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
