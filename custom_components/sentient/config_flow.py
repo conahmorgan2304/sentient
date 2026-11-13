@@ -562,6 +562,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="climate", multiple=True)
             ),
             vol.Required(CONF_PREHEAT, **d(CONF_PREHEAT, False)): selector.BooleanSelector(),
+            vol.Optional("heating_energy_sensor", **d("heating_energy_sensor")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", device_class="energy")),
+            vol.Optional("heating_measurement_date", **d("heating_measurement_date")): selector.DateSelector(),
+            vol.Optional("heating_energy_price_kwh", **d("heating_energy_price_kwh")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=10, step=.001, mode=selector.NumberSelectorMode.BOX)),
             vol.Required(CONF_HEATING_SCHEDULE, **d(CONF_HEATING_SCHEDULE, False)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_GRAPH, **d(CONF_HEATING_GRAPH, True)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_NIGHT_TEMP, **d(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP)): selector.NumberSelector(
