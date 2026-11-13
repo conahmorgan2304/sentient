@@ -645,6 +645,21 @@ def ws_health_disable_copy(hass: HomeAssistant, connection, msg: dict[str, Any])
     connection.send_result(msg["id"], {"disabled": device.name_by_user or device.name})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/heating/energy_comparison"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_heating_energy_comparison(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    if entry.runtime_data.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "Energy comparison is private")
+        return
+    result = await entry.runtime_data.heating.async_energy_comparison()
+    connection.send_result(msg["id"], result)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/brain"})
 @page_access
 @websocket_api.async_response
@@ -1084,6 +1099,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_heating)
+    websocket_api.async_register_command(hass, ws_heating_energy_comparison)
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
