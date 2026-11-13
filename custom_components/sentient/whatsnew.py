@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.14": [
+        "Settings: Doorbell & AI looks and This page open again for administrators (1.5.12 and 1.5.13 broke them).",
+    ],
     "1.5.13": [
         "No edit button on the tabs any more: with \"Rearrange the Sentient page\" on, your layout is always used, and you change it from Settings → This page → EDIT PAGE LAYOUT. The edit toolbar shows only while you're editing, until DONE EDITING.",
     ],
