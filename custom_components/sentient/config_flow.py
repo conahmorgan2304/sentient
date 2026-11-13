@@ -494,6 +494,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("house_context_updates", **d("house_context_updates", False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),
             vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
+            vol.Required("autooff_respect_recent_voice", **d("autooff_respect_recent_voice", False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_UNLOCK, **d(CONF_VOICE_UNLOCK, False)): selector.BooleanSelector(),
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
