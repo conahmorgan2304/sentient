@@ -65,6 +65,34 @@ class ActionIntentMonitor:
         del self._recent[6:]
         return dict(result)
 
+    def preview(self, entity_id: str, action: str, source: str, *,
+                when: datetime | None = None) -> dict:
+        """Preview arbitration against recent observed intent without storing or dispatching it.
+
+        Entity IDs are inputs only; output contains no identifiable device data.
+        This is not a permission check or a substitute for verified device state.
+        """
+        from .action_policy import simulate
+
+        now = when or datetime.now(timezone.utc)
+        if now.tzinfo is None:
+            raise ValueError("Action preview requires an aware timestamp")
+        now = now.astimezone(timezone.utc)
+        digest = blake2s(entity_id.encode(), key=self._secret, digest_size=16).hexdigest()
+        previous = self._last.get(digest)
+        incumbent = None
+        if previous is not None:
+            stamp, side, old_source = previous
+            if not timedelta(0) <= now - stamp <= WINDOW:
+                previous = None
+        if previous is not None:
+            stamp, side, old_source = previous
+            incumbent = {"entity_id": entity_id,
+                         "action": {"on": "turn_on", "off": "turn_off"}.get(side),
+                         "source": old_source, "when": stamp}
+        return simulate({"entity_id": entity_id, "action": action, "source": source},
+                        incumbent, now=now)
+
     def summary(self) -> dict:
         return {"mode": "advisory_only", "intents_seen": self._counts["intents"],
                 "potential_conflicts": self._counts["potential_conflicts"],

@@ -640,7 +640,19 @@ class Brain:
             alternatives = sorted(_expand(direct) - direct)[:12]
             if alternatives:
                 rows = await self.db.call(lambda c: self.db.search(c, alternatives, kinds, limit))
-        return [{"kind": r["kind"], "when": r.get("ts"), "text": r["body"][:400]} for r in rows]
+        # Reorder *only* permitted rows returned by this user's existing search.
+        # Never expand the accessible dataset or send memory text to a model.
+        from .retrieval_quality import rerank
+
+        allowed_rows = [{"kind": r["kind"], "when": r.get("ts"),
+                         "text": r["body"][:400]} for r in rows]
+        ranked = rerank(" ".join(words), allowed_rows, limit=limit)
+        rt = self._rt()
+        if rt is None:
+            return ranked
+        from .semantic_memory import async_rerank
+
+        return await async_rerank(self.hass, rt.options, " ".join(words), ranked)
 
     # ----- copies of facts, conversations and the timeline -------------------------------------
     async def async_sync_memories(self) -> None:

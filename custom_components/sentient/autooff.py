@@ -169,6 +169,12 @@ class AutoOff:
             state = self.hass.states.get(entity_id)
             if entity_id not in eligible or not is_on(state):
                 continue
+            rt = self._rt()
+            intents = getattr(self, "intents", None)
+            if (not force and rt is not None and (getattr(rt, "options", None) or {}).get("autooff_respect_recent_voice") is True
+                    and intents is not None and entity_id.startswith(("light.", "switch."))
+                    and intents.preview(entity_id, "turn_off", "auto_off")["decision"] == "recommend_hold"):
+                continue  # optional: respect a recent guarded voice-on request
             domain = entity_id.split('.', 1)[0]
             service = 'media_stop' if domain == 'media_player' and state.state == 'playing' else 'turn_off'
             ctx = Context(parent_id=self._parent.id)

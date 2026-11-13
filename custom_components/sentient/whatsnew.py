@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.12": [
+        "Rearrange the Sentient page: switch it on in Settings and an EDIT LAYOUT button lets administrators move, hide, show again and reset cards on the Overview, House, Mind and Security tabs. Saved in Sentient, so every screen shows the same. Off by default.",
+        "Motion lights: a rule can be set not to switch a light back on for two minutes after you turned it off by voice. Auto-off can likewise wait after a voice \"on\". Both off by default.",
+        "Security incidents on the Mind page can be marked household, visitor, false detection and so on. This only records your review; no alert settings change.",
+        "Optional, all off by default: local text reading (OCR) for scanned PDF manuals if Tesseract is installed on the Home Assistant host; better memory search through your own local Ollama embedding server; a cheaper second AI for background text jobs once both have a measured track record; and a before/after comparison of a heating kWh meter.",
+    ],
     "1.5.11": [
         "Something switching itself at its usual time (the kettle turning off after it boils) is noted on the timeline, not sent to phones as house health. Changes that are unusual for the time are still said and sent.",
         "The evening \"something I've learned\" no longer reads out notes about how Sentient should talk, and doesn't say \"Something I've learned: I've…\" twice over.",

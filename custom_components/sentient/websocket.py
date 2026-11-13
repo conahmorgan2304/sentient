@@ -340,13 +340,15 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
         CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT,
+        "heating_energy_sensor", "heating_measurement_date", "heating_energy_price_kwh",
     ]),
     ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
         CONF_HEATING_ENTITIES, CONF_HEATING_NIGHT_TEMP, CONF_HEATING_REVERT_DAY, CONF_HEATING_REVERT_NIGHT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_FACE_CAMERAS, CONF_FACE_FORGET_HOURS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS, CONF_ZONE_VISITS, CONF_ZONE_DOOR_SENSORS,
-        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, "ai_routing_enabled", "ai_routing_alternative",
+        "ai_routing_primary_cost", "ai_routing_alternative_cost", "ai_routing_max_p95_ms", CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
     ]),
     ("clips", "Event clips", "mdi:filmstrip-box-multiple", "Watches Frigate's recorded clips from chosen cameras and writes down what happened — on the timeline, the Sentient page and for the voice. Never spoken. The clip is deleted once watched.", [
         CONF_CLIP_WATCH, CONF_CLIP_CAMERAS, CONF_CLIP_SCOPE, CONF_CLIP_WHEN, CONF_CLIP_NOTIFY, CONF_CLIP_SOURCE, CONF_CLIP_WHOSE, CONF_CLIP_LOOKS,
@@ -356,7 +358,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
     ]),
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
-        CONF_INCIDENTS, "cognitive_shadow", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
+        CONF_INCIDENTS, "cognitive_shadow", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
     ]),
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
@@ -406,7 +408,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_ALEXA_SKILL, CONF_ALEXA_WAIT, CONF_ALEXA_LATE,
     ]),
     ("manuals", "Manuals & documents", "mdi:book-open-page-variant-outline", "Answers from your own documents: put appliance manuals, warranties and receipts (PDFs or photos) in a folder of Home Assistant's media, named after what they're for, and ask \u201cwhat filter does the air purifier need?\u201d. One AI call per question: with Read PDFs page by page on, only the few pages that matter are sent, and the answer says which page it's on.", [
-        CONF_MANUALS, CONF_MANUALS_FOLDER, CONF_MANUALS_LOCAL, "manuals_pages",
+        CONF_MANUALS, CONF_MANUALS_FOLDER, CONF_MANUALS_LOCAL, "manuals_pages", "manuals_local_ocr",
     ]),
     ("games", "Story games", "mdi:dice-multiple-outline", "Voice-led story games the whole house can play, such as an escape-the-house adventure with the assistants as game master; start from a ready-made template and fill in your own names and rooms, or write your own. Each game keeps its own saved memory (where the players are, what they carry, what they found and chose) that carries on between sessions and between assistants, and is shown to a voice only while that game is being played. The game master can also read the house's ordinary memory, never change it. Switching this off hides this page and the game tools; your saved games are kept, not cleared, and are there again when you switch it back on.", [
         CONF_GAMES,
@@ -428,7 +430,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("memory", "Memory & learning", "mdi:database-clock-outline", "The house ledger of every change and what caused it, what's usual when, beliefs it tests each night, learning from how people react, and saving AI calls. Kept in Sentient's own database; nothing leaves the house.", [
         "house_ledger", "unexplained_changes", "unexplained_entities", "expectations", "surprise_gating", "situations",
-        "beliefs", "learn_reactions", "ai_case_memory", "voice_speed_watchdog", "voice_speed_restart", "incident_stages",
+        "beliefs", "learn_reactions", "ai_case_memory", "memory_semantic_enabled", "memory_semantic_url", "memory_semantic_model", "voice_speed_watchdog", "voice_speed_restart", "incident_stages",
     ]),
     ("warnings", "Weather warnings", "mdi:weather-lightning-rainy", "Official weather and flood warnings for your country, from its own weather service. Severe ones are said once; the rest go on the timeline.", [
         "weather_warnings", "warnings_country", "warnings_region", "warnings_speak",
@@ -437,7 +439,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         "email_read", "calendar_clashes", "security_audit", "automation_builder",
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, "custom_pages", CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -641,6 +643,93 @@ def ws_health_disable_copy(hass: HomeAssistant, connection, msg: dict[str, Any])
     if entry is not None:
         entry.runtime_data.health.async_check()
     connection.send_result(msg["id"], {"disabled": device.name_by_user or device.name})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/ai/routing/calibrate",
+    vol.Optional("action", default="status"): vol.In(["status", "run"]),
+    vol.Optional("provider", default="alternative"): vol.In(["primary", "alternative"]),
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_ai_routing_calibrate(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """One explicitly requested generic AI Task probe, never household context.
+
+    This generates billable calls, so no automatic looping or background run.
+    Service success alone is not a measure of answer correctness.
+    """
+    from time import monotonic
+    from .const import CONF_AI_TASK_ENTITY
+    from .model_routing import stats
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if rt.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "AI calibration unavailable in guest mode")
+        return
+    ai = rt.ai
+    current = rt.options
+    primary = current.get(CONF_AI_TASK_ENTITY)
+    secondary = current.get("ai_routing_alternative")
+    if (current.get("ai_routing_enabled") is not True
+            or not isinstance(primary, str) or not isinstance(secondary, str)
+            or not primary.startswith("ai_task.") or not secondary.startswith("ai_task.")):
+        connection.send_error(msg["id"], "not_configured", "Set up both AI routing providers first")
+        return
+
+    target = primary if msg["provider"] == "primary" else secondary
+    if msg["action"] == "run":
+        if hass.states.get(target) is None:
+            connection.send_error(msg["id"], "unavailable", "Selected AI Task provider is unavailable")
+            return
+        now = monotonic()
+        if (getattr(ai, "_routing_calibrating", False)
+                or now - getattr(ai, "_last_routing_calibration", -1000) < 30):
+            connection.send_error(msg["id"], "rate_limited", "Only one calibration call every 30 seconds")
+            return
+        if not ai.spend("routing_calibration"):
+            connection.send_error(msg["id"], "budget", "Sentient's daily AI limit is exhausted")
+            return
+        ai._routing_calibrating = True
+        ai._last_routing_calibration = now
+        try:
+            # Fixed harmless text, no user facts, camera footage or history.
+            await ai.async_call({"entity_id": target, "task_name": "Sentient routing calibration",
+                                 "instructions": "Reply with the word READY. This is a harmless service availability check."},
+                                timeout=12)
+        except Exception:
+            # A failed service call is recorded by the normal AI gate.
+            pass
+        finally:
+            ai._routing_calibrating = False
+
+    observed = getattr(ai, "_observed_by_entity", {})
+    connection.send_result(msg["id"], {
+        "primary": stats(list(observed.get(primary) or [])),
+        "alternative": stats(list(observed.get(secondary) or [])),
+        "provider_tested": msg["provider"] if msg["action"] == "run" else None,
+        "manual_calls_only": True,
+        "estimated_prices_only": True,
+        "note": "Tests may be billable. 20 samples per provider are needed; quality and real charges must be reviewed separately.",
+    })
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/heating/energy_comparison"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_heating_energy_comparison(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    if entry.runtime_data.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "Energy comparison is private")
+        return
+    result = await entry.runtime_data.heating.async_energy_comparison()
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/brain"})
@@ -853,6 +942,8 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "ran": dict(getattr(rt.heat_prog, "ran", {}) or {}) if getattr(rt, "heat_prog", None) is not None else {},
         "ticking": getattr(rt.heat_prog, "last_tick", None) if getattr(rt, "heat_prog", None) is not None else None,
         "admin": connection.user.is_admin,
+        # the energy comparison button only once a heating kWh meter and a date are chosen
+        "energy_comparison": bool(rt.options.get("heating_energy_sensor") and rt.options.get("heating_measurement_date")),
     })
 
 
@@ -976,6 +1067,29 @@ async def ws_privacy_forget(hass: HomeAssistant, connection, msg: dict[str, Any]
     connection.send_result(msg["id"], {"forgot": await async_forget_recent(entry.runtime_data, msg["hours"]), "hours": msg["hours"]})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/security/incident/review",
+    vol.Required("incident_id"): str,
+    vol.Required("outcome"): vol.In(["household", "visitor", "concerning", "false_detection", "unresolved", "clear"]),
+})
+@websocket_api.require_admin
+@callback
+def ws_incident_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if rt.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "Review unavailable in guest mode")
+        return
+    result = rt.incidents.review(msg["incident_id"], msg["outcome"])
+    if result.get("error"):
+        connection.send_error(msg["id"], "invalid", result["error"])
+    else:
+        connection.send_result(msg["id"], result)
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
                                   vol.Required("event_id"): str, vol.Required("value"): vol.In(FEEDBACK)})
 @websocket_api.require_admin
@@ -1042,6 +1156,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
+    websocket_api.async_register_command(hass, ws_incident_review)
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
@@ -1058,6 +1173,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_heating)
+    websocket_api.async_register_command(hass, ws_heating_energy_comparison)
+    websocket_api.async_register_command(hass, ws_ai_routing_calibrate)
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
@@ -1084,6 +1201,7 @@ def async_register(hass: HomeAssistant) -> None:
     from .suggestions import async_register as _suggestions
 
     _suggestions(hass)
+    websocket_api.async_register_command(hass, ws_layout)
     websocket_api.async_register_command(hass, ws_save_settings)
     websocket_api.async_register_command(hass, ws_update_memory)
     websocket_api.async_register_command(hass, ws_list_memories)
@@ -1225,7 +1343,8 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "faces", "face_sensor", "face_people", "face_teach", "face_teach_cameras", "face_cameras", "face_forget_hours"]},
         {"title": "AI looks", "open": False, "names": [
             "ai_task_entity", "second_opinion_ai", "smart_ai_task", "event_clips", "camera_cooldown", "look_cache_minutes",
-            "camera_prefilter"]},
+            "camera_prefilter", "ai_routing_enabled", "ai_routing_alternative",
+            "ai_routing_primary_cost", "ai_routing_alternative_cost", "ai_routing_max_p95_ms"]},
     ],
 }
 
@@ -1253,6 +1372,10 @@ DEPENDS: dict[str, str] = {
     "music_alexa_service": "music_alexa",
     "manuals_local_text": CONF_MANUALS,
     "manuals_pages": CONF_MANUALS,
+    "manuals_local_ocr": CONF_MANUALS,
+    **{k: "memory_semantic_enabled" for k in ("memory_semantic_url", "memory_semantic_model")},
+    **{k: "ai_routing_enabled" for k in ("ai_routing_alternative", "ai_routing_primary_cost",
+                                           "ai_routing_alternative_cost", "ai_routing_max_p95_ms")},
     "cognitive_shadow": CONF_INCIDENTS,
     "security_reasoning": CONF_CAMSEC,
     "recheck_unconfirmed": CONF_GUARDED,
@@ -1505,6 +1628,60 @@ async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     connection.send_result(msg["id"], await books.async_silence())
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/layout",
+    vol.Optional("action", default="get"): vol.In(["get", "save", "reset", "enable"]),
+    vol.Optional("layout"): dict,
+    vol.Optional("enabled"): bool,
+})
+@page_access
+@websocket_api.async_response
+async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Admin-only layout storage; no Home Assistant cards executed or rendered."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .custom_layout_store import CustomLayoutStore
+
+    store = getattr(entry.runtime_data, "custom_layout", None)
+    if store is None:
+        store = CustomLayoutStore(hass, entry.entry_id)
+        await store.async_load()
+        entry.runtime_data.custom_layout = store
+    action = msg["action"]
+    if action in ("save", "reset", "enable") and not getattr(connection.user, "is_admin", False):
+        connection.send_error(msg["id"], "unauthorized", "Administrator access is required")
+        return
+    if action == "enable":
+        # the switch is "Rearrange the Sentient page" in Settings; this sets the same option
+        if "enabled" not in msg:
+            connection.send_error(msg["id"], "invalid", "Choose enabled true or false")
+            return
+        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, "custom_pages": msg["enabled"]})
+    on = bool(_current(entry).get("custom_pages"))
+    if store._enabled != on:
+        await store.async_set_enabled(on, user=connection.user if action == "enable" else _SYSTEM)
+    if action == "save":
+        result = await store.async_save(msg.get("layout"), user=connection.user)
+        if not result["accepted"]:
+            connection.send_error(msg["id"], "invalid", result["reason"])
+            return
+    elif action == "reset":
+        result = await store.async_reset(user=connection.user)
+        if not result["accepted"]:
+            connection.send_error(msg["id"], "invalid", result["reason"])
+            return
+    connection.send_result(msg["id"], store.view(enabled=on))
+
+
+class _System:
+    is_admin = True  # the Settings switch, already saved by an administrator
+
+
+_SYSTEM = _System()
+
+
 @websocket_api.websocket_command(
     {vol.Required("type"): "sentient/settings/save", vol.Required("group"): str, vol.Required("data"): dict}
 )
@@ -1708,6 +1885,7 @@ def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
             vol.Required("motion"): vol.All(cv.ensure_list, [cv.entity_id]),
             vol.Optional("enabled"): bool,
             vol.Optional("respect_quiet"): bool,
+            vol.Optional("protect_voice_override"): bool,
             vol.Optional("quiet_start"): vol.Any(None, str),
             vol.Optional("quiet_end"): vol.Any(None, str),
             vol.Optional("only_dark"): bool,

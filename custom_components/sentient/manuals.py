@@ -85,7 +85,8 @@ async def async_sync(hass: HomeAssistant, rt: Any) -> dict[str, Any] | None:
     if where is None:
         return None
     try:
-        return await hass.async_add_executor_job(pages.sync, db, where[0], files)
+        return await hass.async_add_executor_job(
+            lambda: pages.sync(db, where[0], files, local_ocr=rt.options.get("manuals_local_ocr") is True))
     except Exception:  # noqa: BLE001 - the document is still read whole by the AI
         _LOGGER.debug("Reading the manuals page by page failed", exc_info=True)
         return None

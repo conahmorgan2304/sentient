@@ -46,6 +46,7 @@ class MotionRule:
     motion: list[str]
     enabled: bool = True
     respect_quiet: bool = True
+    protect_voice_override: bool = False  # opt in: don't immediately undo a recent guarded voice command
     only_dark: bool = True
     off_after: float = 3  # minutes after the last movement
     brightness: int = 100  # percent; ignored for switches
@@ -141,6 +142,8 @@ class MotionLights:
             if any(r.light == merged["light"] for r in self.rules.values()):
                 raise ValueError("That light already has a motion rule")
         rule = MotionRule.from_dict(merged)
+        if type(rule.protect_voice_override) is not bool:
+            raise ValueError("Protect voice overrides must be on or off")
         window = rule.quiet_window()
         if window:
             start, end = window
@@ -397,8 +400,8 @@ class MotionLights:
             self._note(rule, "stayed off: quiet hours")
             return
         late = self.late_night() and rule.night_brightness > 0
-        self._turn(rule, True, rule.night_brightness if late else rule.brightness)
-        self._note(rule, f"on at {rule.night_brightness}% (late night)" if late else "on with motion")
+        if self._turn(rule, True, rule.night_brightness if late else rule.brightness):
+            self._note(rule, f"on at {rule.night_brightness}% (late night)" if late else "on with motion")
 
     @callback
     def _on_still(self, rule: MotionRule) -> None:
@@ -410,8 +413,8 @@ class MotionLights:
         def _off(_now: datetime) -> None:
             self._timers.pop(rule.light, None)
             if rule.light in self._ours and rule.light not in self.paused and not self._motion_now(rule):
-                self._turn(rule, False)
-                self._note(rule, "off: no movement")
+                if self._turn(rule, False):
+                    self._note(rule, "off: no movement")
 
         self._timers[rule.light] = async_call_later(self.hass, rule.off_after * 60, _off)
 
@@ -421,6 +424,16 @@ class MotionLights:
 
         if blocked(self.hass, rule.light):
             return False  # on the "never touch" list
+        # Per-rule opt-in, reversible actions only. Require fresh, recent
+        # dispatched guarded-voice intent; unsupported/unverified cases
+        # behave exactly as before. This path never changes alarms or locks.
+        intents = getattr(self, "intents", None)
+        if on and rule.protect_voice_override and intents is not None:
+            advisory = intents.preview(rule.light, "turn_on",
+                                      "motion_lights")
+            if advisory["decision"] == "recommend_hold" and rule.light.startswith(("light.", "switch.")):
+                self._note(rule, "held: recent higher-priority command")
+                return False
         from .own import own_context
 
         context = own_context(self.hass, "motion lights")

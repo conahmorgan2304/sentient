@@ -10,7 +10,10 @@ from typing import Any
 
 def report(*, cognitive: dict[str, Any] | None = None,
            intents: dict[str, Any] | None = None,
-           voice_timings: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+           voice_timings: list[dict[str, Any]] | None = None,
+           before: dict[str, Any] | None = None,
+           after: dict[str, Any] | None = None,
+           metric: str = "completion_rate") -> dict[str, Any]:
     cognitive = cognitive or {}
     intents = intents or {}
     successful = sum(1 for item in (voice_timings or [])[-20:]
@@ -21,7 +24,11 @@ def report(*, cognitive: dict[str, Any] | None = None,
     checked = int(cognitive.get("tracked_incidents") or 0)
     intents_seen = int(intents.get("intents_seen") or 0)
     conflict_count = int(intents.get("potential_conflicts") or 0)
+    from .learning_effectiveness import compare
+
+    observed_comparison = compare(before or {}, after or {}, metric=metric)
     return {
+        "before_after_comparison": observed_comparison,
         "mode": "evidence_only",
         "labelled_incident_accuracy": None,
         "improvement_over_baseline": None,

@@ -9,12 +9,14 @@ on:
 jobs:
   hassfest:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: hacs/action@main
         with:
@@ -22,6 +24,8 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    # a hung test fails the run instead of holding a runner for GitHub's six-hour default
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

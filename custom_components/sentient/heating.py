@@ -399,6 +399,43 @@ class Heating:
                 out["minutes_to_warm"] = minutes
         return out
 
+    async def async_energy_comparison(self) -> dict[str, Any]:
+        """On-demand, read-only energy comparison; never touches climate."""
+        from datetime import date
+        from .heating_energy import compare_cumulative
+
+        entity_id = self.options.get("heating_energy_sensor")
+        day = self.options.get("heating_measurement_date")
+        if not isinstance(entity_id, str) or not entity_id.startswith("sensor.") or not day:
+            return {"status": "not_configured",
+                    "note": "Choose a cumulative heating kWh sensor and a comparison date."}
+        try:
+            changed = date.fromisoformat(str(day))
+        except ValueError:
+            return {"status": "invalid_start_date"}
+        if changed > dt_util.utcnow().date() - timedelta(days=5):
+            return {"status": "insufficient_comparable_days", "matched_days": 0,
+                    "note": "Allow enough recorded days after the comparison date."}
+        if "recorder" not in self.hass.config.components:
+            return {"status": "recorder_unavailable"}
+        from homeassistant.components.recorder import get_instance, history
+
+        start = dt_util.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        start = start.replace(year=changed.year, month=changed.month, day=changed.day) - timedelta(days=14)
+        end = start + timedelta(days=28)
+        end = min(end, dt_util.utcnow())
+        try:
+            data = await get_instance(self.hass).async_add_executor_job(
+                lambda: history.get_significant_states(
+                    self.hass, start, end, [entity_id],
+                    significant_changes_only=False, minimal_response=False)
+            )
+            source = data.get(entity_id, [])
+        except Exception:  # noqa: BLE001 - missing Recorder data is not an energy saving
+            return {"status": "recorder_history_unavailable"}
+        tariff = _num(self.options.get("heating_energy_price_kwh"))
+        return compare_cumulative(source, changed, tariff_per_kwh=tariff)
+
     def report(self) -> dict[str, Any]:
         return {
             "preheat": bool(self.options.get(CONF_PREHEAT)),

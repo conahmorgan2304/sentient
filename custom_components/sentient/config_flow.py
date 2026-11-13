@@ -380,6 +380,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
             vol.Required(CONF_PAGE_ADMIN_ONLY, **d(CONF_PAGE_ADMIN_ONLY, False)): selector.BooleanSelector(),
+            vol.Required("custom_pages", **d("custom_pages", False)): selector.BooleanSelector(),
             vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WHATS_NEW, **d(CONF_WHATS_NEW, True)): selector.BooleanSelector(),
             vol.Required(CONF_SIMPLE, **d(CONF_SIMPLE, False)): selector.BooleanSelector(),
@@ -494,6 +495,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("house_context_updates", **d("house_context_updates", False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),
             vol.Required(CONF_GUARDED, **d(CONF_GUARDED, False)): selector.BooleanSelector(),
+            vol.Required("autooff_respect_recent_voice", **d("autooff_respect_recent_voice", False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_UNLOCK, **d(CONF_VOICE_UNLOCK, False)): selector.BooleanSelector(),
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
@@ -562,6 +564,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="climate", multiple=True)
             ),
             vol.Required(CONF_PREHEAT, **d(CONF_PREHEAT, False)): selector.BooleanSelector(),
+            vol.Optional("heating_energy_sensor", **d("heating_energy_sensor")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", device_class="energy")),
+            vol.Optional("heating_measurement_date", **d("heating_measurement_date")): selector.DateSelector(),
+            vol.Optional("heating_energy_price_kwh", **d("heating_energy_price_kwh")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=10, step=.001, mode=selector.NumberSelectorMode.BOX)),
             vol.Required(CONF_HEATING_SCHEDULE, **d(CONF_HEATING_SCHEDULE, False)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_GRAPH, **d(CONF_HEATING_GRAPH, True)): selector.BooleanSelector(),
             vol.Required(CONF_HEATING_NIGHT_TEMP, **d(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP)): selector.NumberSelector(
@@ -822,6 +829,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_MANUALS_FOLDER, **d(CONF_MANUALS_FOLDER, DEFAULT_MANUALS_FOLDER)): selector.TextSelector(),
             vol.Required(CONF_MANUALS_LOCAL, **d(CONF_MANUALS_LOCAL, True)): selector.BooleanSelector(),
             vol.Required("manuals_pages", **d("manuals_pages", True)): selector.BooleanSelector(),
+            vol.Required("manuals_local_ocr", **d("manuals_local_ocr", False)): selector.BooleanSelector(),
             vol.Required(CONF_GAMES, **d(CONF_GAMES, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID, **d(CONF_VOICE_ID, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_ID_UNKNOWN, **d(CONF_VOICE_ID_UNKNOWN, False)): selector.BooleanSelector(),
@@ -864,6 +872,16 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SECOND_OPINION, **d(CONF_SECOND_OPINION)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
+            vol.Required("ai_routing_enabled", **d("ai_routing_enabled", False)): selector.BooleanSelector(),
+            vol.Optional("ai_routing_alternative", **d("ai_routing_alternative")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="ai_task")),
+            vol.Optional("ai_routing_primary_cost", **d("ai_routing_primary_cost")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=0.001, mode=selector.NumberSelectorMode.BOX)),
+            vol.Optional("ai_routing_alternative_cost", **d("ai_routing_alternative_cost")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=0.001, mode=selector.NumberSelectorMode.BOX)),
+            vol.Optional("ai_routing_max_p95_ms", **d("ai_routing_max_p95_ms", 4000)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=500, max=30000, step=500, mode=selector.NumberSelectorMode.BOX)),
+
             vol.Optional(CONF_SMART_AI, **d(CONF_SMART_AI)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
@@ -917,6 +935,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("beliefs", **d("beliefs", True)): selector.BooleanSelector(),
             vol.Required("learn_reactions", **d("learn_reactions", True)): selector.BooleanSelector(),
             vol.Required("ai_case_memory", **d("ai_case_memory", True)): selector.BooleanSelector(),
+            vol.Required("memory_semantic_enabled", **d("memory_semantic_enabled", False)): selector.BooleanSelector(),
+            vol.Optional("memory_semantic_url", **d("memory_semantic_url", "")): selector.TextSelector(),
+            vol.Optional("memory_semantic_model", **d("memory_semantic_model", "")): selector.TextSelector(),
             vol.Required("voice_speed_watchdog", **d("voice_speed_watchdog", True)): selector.BooleanSelector(),
             vol.Required("voice_speed_restart", **d("voice_speed_restart", False)): selector.BooleanSelector(),
             vol.Required("incident_stages", **d("incident_stages", True)): selector.BooleanSelector(),

@@ -324,6 +324,7 @@ class MindSensor(_Base):
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
+        "incident_review_quality", "security_review_quality",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
@@ -368,6 +369,7 @@ class MindSensor(_Base):
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
+            "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
             # Aggregate only: no names, camera images, conversation text or
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")
@@ -380,6 +382,8 @@ class MindSensor(_Base):
             "security_events": rt.security_events.recent(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),
+            "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
+                                        else _security_review_quality(rt)),
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
             "last_reflection": last.get("time"),
@@ -474,3 +478,9 @@ class ScreenSensor(_Base):
     def extra_state_attributes(self) -> dict[str, Any]:
         d = self._entry.runtime_data.screen.describe()
         return {"cards": d["cards"], "morning": d["morning"], "coming_up": d["coming_up"]}
+
+def _security_review_quality(rt) -> dict[str, Any]:
+    """Only aggregate private correction samples; never export event IDs."""
+    from .outcome_learning import reviewed_feedback
+
+    return reviewed_feedback(list(rt.security_events.items.values()))

@@ -65,6 +65,7 @@
     set hass(hass) {
       this._hass = hass;
       if (!this.shadowRoot) this._build();
+      if (!this._layoutFetched) this._loadLayouts();
       if (!this._wizChecked && hass.user && hass.user.is_admin) {
         this._wizChecked = true;
         hass.callWS({ type: "sentient/wizard", language: hass.language }).then((w) => { if (w.show) this._openWizard(w); }, () => {});
@@ -166,6 +167,7 @@
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
         <div class="wiz sheet" id="sheet" hidden><div class="card sheetc" role="dialog" aria-modal="true"><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="sheetb" class="body"></div></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
+      this._initLayouts();
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
       this._$("menu").appendChild(menu);
@@ -180,6 +182,10 @@
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => this._show(b.dataset.view, true)));
       this._$("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
+      this.shadowRoot.addEventListener("dragstart", (ev) => this._layoutDragStart(ev));
+      this.shadowRoot.addEventListener("dragover", (ev) => this._layoutDragOver(ev));
+      this.shadowRoot.addEventListener("drop", (ev) => this._layoutDrop(ev));
+      this.shadowRoot.addEventListener("dragend", () => { this._dragCard = null; });
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
       this._$("sheet").addEventListener("click", (ev) => {
         if (ev.target !== this._$("sheet")) return;
@@ -212,6 +218,7 @@
       if (view === "settings" && (TAB_OF[this._group] || view !== this._view)) this._group = "home";  // Settings opens on its front page
       this._view = view;
       this.setAttribute("view", view);
+      if (this._layoutRoots && this._layoutRoots[view]) { this._layoutFetched = false; this._loadLayouts(); }
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
       this._$("ov").hidden = view !== "overview";
       this._$("set").hidden = view !== "settings";
@@ -226,6 +233,238 @@
       if (view === "settings") this._openSettings();
       else if (view === "timeline") this._openTimeline();
       else this._render();
+    }
+
+    // ---------- optional saved card arrangements ----------
+    _initLayouts() {
+      this._layoutDefaults = {};
+      this._layoutData = {};
+      this._layoutEnabled = false;
+      this._layoutEdit = false;
+      this._layoutRoots = { overview: "ov", house: "hp", mind: "mp", security: "scp" };
+      for (const [page, id] of Object.entries(this._layoutRoots)) {
+        const root = this._$(id);
+        if (!root) continue;
+        const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+        this._layoutDefaults[page] = lanes.flatMap((lane, index) =>
+          [...lane.querySelectorAll(":scope > .card")].filter((card) => card.id)
+            .map((card) => ({ id: card.id, visible: true, lane: index })));
+        const bar = document.createElement("div");
+        bar.className = "layout-toolbar";
+        bar.hidden = true;
+        bar.style.cssText = "padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap";
+        // switched on in Settings ("Rearrange the Sentient page"); off, there's no toolbar at all
+        bar.innerHTML = '<button class="btn sm ghost" data-act="layouttoggle">EDIT LAYOUT</button>' +
+          '<button class="btn sm ghost" data-act="layoutshowall" hidden>SHOW ALL</button>' +
+          '<button class="btn sm ghost" data-act="layoutreset" hidden>RESET PAGE</button>' +
+          '<span class="dim" data-layout-msg></span>';
+        root.insertBefore(bar, root.firstChild);
+      }
+    }
+
+    async _loadLayouts() {
+      if (!this._hass || this._layoutFetched) return;
+      this._layoutFetched = true;
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout" });
+        this._layoutEnabled = response.enabled === true;
+        this._layoutData = response.layout || {};
+        this._applyLayouts(true);
+      } catch (_) {
+        // Older installations may lack the optional API; normal cards remain unchanged.
+        this._layoutData = {};
+        this._layoutEnabled = false;
+      }
+    }
+
+    _layoutCurrent() {
+      return this._layoutRoots && this._layoutRoots[this._view] ? this._view : null;
+    }
+
+    _layoutRows(page) {
+      const root = this._$(this._layoutRoots[page]);
+      const lanes = root ? [...root.querySelectorAll(".lanes > section.lane")] : [];
+      return lanes.flatMap((lane, index) =>
+        [...lane.querySelectorAll(":scope > .card")].filter((c) => c.id)
+          .map((c) => ({ id: c.id, visible: c.style.display !== "none", lane: index })));
+    }
+
+    _applyLayouts(force = false) {
+      if (!this._layoutRoots) return;
+      const admin = !!(this._hass && this._hass.user && this._hass.user.is_admin);
+      for (const [page, id] of Object.entries(this._layoutRoots)) {
+        const root = this._$(id);
+        if (!root) continue;
+        const bar = root.querySelector(".layout-toolbar");
+        if (bar) {
+          const shown = admin && this._layoutEnabled;
+          bar.hidden = !shown;
+          bar.style.display = shown ? "flex" : "none";
+          const editing = admin && this._layoutEnabled && this._layoutEdit && page === this._view;
+          const toggle = bar.querySelector('[data-act="layouttoggle"]');
+          if (toggle) toggle.textContent = editing ? "DONE EDITING" : "EDIT LAYOUT";
+          for (const action of ["layoutshowall", "layoutreset"]) {
+            const button = bar.querySelector('[data-act="' + action + '"]');
+            if (button) button.hidden = !editing;
+          }
+        }
+        const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+        const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
+        const saved = this._layoutEnabled ? (this._layoutData && this._layoutData[page] || []) : (this._layoutDefaults[page] || []);
+        const key = JSON.stringify(saved);
+        if (force || root.dataset.layoutApplied !== key) {
+          for (const item of saved) {
+            if (!item || typeof item.id !== "string" || !lanes[item.lane]) continue;
+            const card = cards.find((c) => c.id === item.id);
+            if (card && card.parentElement !== lanes[item.lane]) lanes[item.lane].appendChild(card);
+          }
+          // Apply saved ordering within each lane exactly once per changed layout.
+          for (const item of saved) {
+            if (!item || !lanes[item.lane]) continue;
+            const card = cards.find((c) => c.id === item.id);
+            if (card && card.parentElement === lanes[item.lane]) lanes[item.lane].appendChild(card);
+          }
+          root.dataset.layoutApplied = key;
+        }
+        const visibility = new Map(saved.map((x) => [x.id, x.visible]));
+        if (page === "security" && visibility.get("live") === false && this._liveCamKey) this._clearLive();
+        for (const card of cards) {
+          card.style.display = visibility.get(card.id) === false ? "none" : "";
+          card.draggable = !!(admin && this._layoutEnabled && this._layoutEdit && this._view === page && card.style.display !== "none");
+          card.querySelectorAll(":scope > .layout-card-tools").forEach((e) => e.remove());
+          if (!admin || !this._layoutEnabled || !this._layoutEdit || this._view !== page || card.style.display === "none") continue;
+          const tools = document.createElement("div");
+          tools.className = "layout-card-tools";
+          tools.style.cssText = "display:flex;gap:4px;justify-content:flex-end;padding:4px;background:rgba(0,0,0,.35);border-radius:8px";
+          for (const [dir, label] of [["up", "↑"], ["down", "↓"], ["left", "←"], ["right", "→"]]) {
+            const button = document.createElement("button");
+            button.className = "btn sm ghost";
+            button.dataset.act = "layoutmove";
+            button.dataset.id = card.id;
+            button.dataset.dir = dir;
+            button.textContent = label;
+            button.title = "Move card " + dir;
+            tools.appendChild(button);
+          }
+          const hide = document.createElement("button");
+          hide.className = "btn sm ghost";
+          hide.dataset.act = "layouthide";
+          hide.dataset.id = card.id;
+          hide.textContent = "HIDE";
+          tools.appendChild(hide);
+          card.prepend(tools);
+        }
+      }
+    }
+
+    _layoutDragStart(event) {
+      const page = this._layoutCurrent();
+      if (!this._layoutEnabled || !this._layoutEdit || !this._hass.user?.is_admin || !page) return;
+      const card = event.target.closest(".lanes > section.lane > .card");
+      const root = this._$(this._layoutRoots[page]);
+      if (!card || !root.contains(card) || !card.id) return;
+      this._dragCard = { page, id: card.id };
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", card.id);
+      }
+    }
+
+    _layoutDragOver(event) {
+      if (!this._dragCard || this._dragCard.page !== this._layoutCurrent()) return;
+      const lane = event.target.closest(".lanes > section.lane");
+      if (!lane || !this._$(this._layoutRoots[this._dragCard.page]).contains(lane)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    }
+
+    async _layoutDrop(event) {
+      const drag = this._dragCard;
+      this._dragCard = null;
+      if (!drag || !this._layoutEnabled || !this._layoutEdit
+          || !this._hass.user?.is_admin || drag.page !== this._layoutCurrent()) return;
+      const root = this._$(this._layoutRoots[drag.page]);
+      const lane = event.target.closest(".lanes > section.lane");
+      if (!lane || !root.contains(lane)) return;
+      const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
+      const source = cards.find((c) => c.id === drag.id);
+      if (!source) return;
+      event.preventDefault();
+      const before = event.target.closest(".card");
+      if (before && before !== source && before.parentElement === lane) before.before(source);
+      else lane.appendChild(source);
+      const snapshot = this._layoutData[drag.page];
+      this._layoutData[drag.page] = this._layoutRows(drag.page);
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout", action: "save", layout: this._layoutData });
+        this._layoutData = response.layout || this._layoutData;
+      } catch (error) {
+        this._layoutData[drag.page] = snapshot;
+        const message = root.querySelector("[data-layout-msg]");
+        if (message) message.textContent = "SAVE FAILED · " + String(error.message || error);
+      }
+      this._applyLayouts(true);
+    }
+
+    async _layoutAction(act, id, direction) {
+      const page = this._layoutCurrent();
+      if (!page || !this._hass || !this._hass.user?.is_admin) return;
+      if (act === "layoutenable") {
+        const enabled = !this._layoutEnabled;
+        try {
+          const response = await this._hass.callWS({ type: "sentient/layout", action: "enable", enabled });
+          this._layoutEnabled = response.enabled === true;
+          this._layoutData = response.layout || {};
+          this._layoutEdit = false;
+          this._applyLayouts(true);
+        } catch (error) {
+          const root = this._$(this._layoutRoots[page]);
+          const message = root && root.querySelector("[data-layout-msg]");
+          if (message) message.textContent = "CHANGE FAILED — " + String(error.message || error);
+        }
+        return;
+      }
+      if (act === "layouttoggle") {
+        if (!this._layoutEnabled) return;
+        this._layoutEdit = !this._layoutEdit;
+        this._applyLayouts();
+        return;
+      }
+      if (!this._layoutEnabled || !this._layoutEdit) return;
+      const root = this._$(this._layoutRoots[page]);
+      const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+      const card = [...root.querySelectorAll(".lanes > section.lane > .card")].find((c) => c.id === id);
+      if (act === "layoutreset") {
+        const available = [...root.querySelectorAll(".lanes > section.lane > .card")];
+        for (const item of this._layoutDefaults[page] || []) {
+          const cardToRestore = available.find((c) => c.id === item.id);
+          if (cardToRestore && lanes[item.lane]) lanes[item.lane].appendChild(cardToRestore);
+        }
+        delete this._layoutData[page];
+        root.dataset.layoutApplied = "";
+      } else if (act === "layoutshowall") {
+        this._layoutData[page] = this._layoutRows(page).map((x) => ({ ...x, visible: true }));
+      } else if (act === "layouthide" && card) {
+        card.style.display = "none";
+        this._layoutData[page] = this._layoutRows(page);
+      } else if (act === "layoutmove" && card) {
+        const lane = lanes.indexOf(card.parentElement);
+        if (direction === "left" && lane > 0) lanes[lane - 1].appendChild(card);
+        else if (direction === "right" && lane < lanes.length - 1) lanes[lane + 1].appendChild(card);
+        else if (direction === "up" && card.previousElementSibling && card.previousElementSibling.classList.contains("card"))
+          card.previousElementSibling.before(card);
+        else if (direction === "down" && card.nextElementSibling && card.nextElementSibling.classList.contains("card"))
+          card.nextElementSibling.after(card);
+        this._layoutData[page] = this._layoutRows(page);
+      } else return;
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout", action: "save", layout: this._layoutData });
+        this._layoutData = response.layout || this._layoutData;
+      } catch (error) {
+        const bar = root.querySelector("[data-layout-msg]");
+        if (bar) bar.textContent = "SAVE FAILED — " + String(error.message || error);
+      }
+      this._applyLayouts(true);
     }
 
     // ---------- overview ----------
@@ -402,7 +641,15 @@
         ...(mind.voice_sessions || []).map((s) => `<div class="r"><ha-icon icon="mdi:account-voice"></ha-icon><b class="wrap">${esc(s.pending_action || s.goal || s.topic || "Voice session")}${s.unanswered_question ? " · " + esc(s.unanswered_question) : ""}<small>${esc((s.listen_reason || "").replaceAll("_", " "))}${s.missing_detail ? " · " + esc(s.missing_detail) : ""}</small></b><u>${esc(s.state.replaceAll("_", " "))}${s.undo_available ? " · UNDO AVAILABLE" : ""}</u></div>`),
         ...(mind.conversation_diagnostics || []).slice(0, 8).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
       ].join("");
-      const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small></b><u>${hm(i.start)}</u></div>`).join("") + this._securityEventRows(mind);
+      const reviewControls = !!(this._hass.user?.is_admin && !this._st("guest_mode")?.state?.includes("on"));
+      const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => {
+        const actions = reviewControls ? `<details><summary>REVIEW INCIDENT (ADVISORY ONLY)</summary>${[
+          ["household", "HOUSEHOLD"], ["visitor", "VISITOR"], ["false_detection", "FALSE DETECTION"],
+          ["concerning", "CONCERNING"], ["unresolved", "UNRESOLVED"], ["clear", "CLEAR REVIEW"]
+        ].map(([value, label]) => `<button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</details>` : "";
+        const status = this._incidentReviewReply?.id === i.id ? `<small role="status">${esc(this._incidentReviewReply.message)}</small>` : "";
+        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
+      }).join("") + this._securityEventRows(mind);
       const thinkList = [
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
@@ -475,6 +722,7 @@
       const noticed = fold(this._attr("last_spoken", "noticed", []), (d) => (d.changes || []).join("; ").replace(/^\d\d:\d\d /, "") + "|" + d.result).slice(0, 6).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}${d.n > 1 ? ` · ×${d.n}` : ""}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
+      this._applyLayouts();
     }
 
     // ---------- settings ----------
@@ -724,6 +972,12 @@
           <div class="vids" id="vidsay" role="status"></div>
           <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        ${g.id === "door" && this._hass.user?.is_admin && data.ai_routing_enabled === true ? `<div class="vidcard"><div class="vidt">AI ROUTING CALIBRATION</div>
+          <div class="vids">Only an administrator can send one generic, potentially billable test at a time. No household information is included. Save routing options before testing. Twenty measured calls per provider are needed, and service availability does not verify answer accuracy.</div>
+          <div class="row"><button class="btn sm ghost" data-act="routecalstatus">CHECK COUNTS</button>
+          <button class="btn sm ghost" data-act="routecal" data-provider="alternative">TEST ALTERNATIVE ONCE</button>
+          <button class="btn sm ghost" data-act="routecal" data-provider="primary">TEST PRIMARY ONCE</button></div>
+          <div class="vids" id="routingcalstatus" role="status">Calibration is off until requested.</div></div>` : ""}
         ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
@@ -1790,7 +2044,14 @@
       }
       const up = [h.usually_up && h.usually_up.weekdays && `UP ${h.usually_up.weekdays} WEEKDAYS`, h.warm_by && h.warm_by.weekdays && `WARM BY ${h.warm_by.weekdays}`].filter(Boolean).join(" · ");
       if (up) html += `<div class="hint">${esc(up)}</div>`;
-      if (h.admin) html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button></div><div id="heatzones"></div>`;
+      if (h.admin) {
+        const energy = this._heatEnergy;
+        const observed = energy?.status === "measured"
+          ? `OBSERVED ${esc(energy.observed_change_kwh_per_day)} KWH/DAY (${esc(energy.matched_days)} MATCHED DAYS) · NOT PROOF OF SAVINGS`
+          : energy ? `ENERGY COMPARISON: ${esc(String(energy.status || "UNKNOWN").replaceAll("_", " ").toUpperCase())}` : "";
+        html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button>${h.energy_comparison ? '<button class="btn sm ghost" data-act="heatenergy">COMPARE RECORDED KWH</button>' : ""}</div><div id="heatzones"></div>`
+          + (observed ? `<div class="hint">${observed}<small>Recorded before/after energy use; weather, occupancy and price can change independently.</small></div>` : "");
+      }
       el.innerHTML = html;
       if (this._heatZonesOpen) this._openHeatZones(true);
     }
@@ -1927,6 +2188,10 @@
     }
 
     _drawLive(mind) {
+      if ((this._layoutData?.security || []).some((row) => row.id === "live" && row.visible === false)) {
+        if (this._liveCamKey) this._clearLive();
+        return;  // do not create/refresh a hidden live player
+      }
       const el = this._$("live");
       if (!el) return;
       const cams = ((this._cams || {}).cameras || []).map((c) => c.entity_id);
@@ -2230,7 +2495,7 @@
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
-        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
+        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours", protect_voice_override: "Keep motion from undoing voice-off",
         only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
         brightness: "Brightness", night_brightness: "Late-night brightness",
         lux_sensor: "Light sensor (optional)", lux_below: "Dark below",
@@ -2238,6 +2503,7 @@
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
         respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
+        protect_voice_override: "Optional: for two minutes after a guarded voice-off request, motion will not turn this light back on. Off by default.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
@@ -2246,6 +2512,7 @@
         { name: "motion", required: true, selector: { entity: { domain: "binary_sensor", multiple: true } } },
         { name: "enabled", selector: { boolean: {} } },
         { name: "respect_quiet", selector: { boolean: {} } },
+        { name: "protect_voice_override", selector: { boolean: {} } },
         { name: "only_dark", selector: { boolean: {} } },
         { name: "off_after", selector: { number: { min: 0.5, max: 60, step: 0.5, unit_of_measurement: "min", mode: "box" } } },
         { name: "brightness", selector: { number: { min: 1, max: 100, unit_of_measurement: "%", mode: "slider" } } },
@@ -2442,6 +2709,40 @@
       }).join("") + summaries;
     }
 
+    async _routeCalibration(action, provider) {
+      if (!this._hass.user?.is_admin || this._routingCalBusy) return;
+      if (action === "run" && !window.confirm("Run ONE potentially billable, privacy-safe AI Task calibration request?")) return;
+      const target = this._$("routingcalstatus");
+      if (!target) return;
+      this._routingCalBusy = true;
+      target.textContent = "CHECKING AI PROVIDERS…";
+      try {
+        const status = await this._hass.callWS({ type: "sentient/ai/routing/calibrate", action, provider });
+        const detail = (label, value) => label + " " + value.samples + "/20 sampled" +
+          (value.success_rate == null ? " · NOT ENOUGH DATA" : " · " + Math.round(value.success_rate * 100) + "% service success · p95 " + value.p95_ms + " ms");
+        target.textContent = detail("PRIMARY", status.primary) + " | " + detail("ALTERNATIVE", status.alternative) +
+          " · Pricing and answer quality require separate verification.";
+      } catch (error) {
+        target.textContent = "CALIBRATION FAILED · " + String(error.message || error);
+      } finally {
+        this._routingCalBusy = false;
+      }
+    }
+
+    async _incidentReview(id, outcome) {
+      if (!this._hass.user?.is_admin || !id || this._incidentReviewSaving) return;
+      this._incidentReviewSaving = id;
+      try {
+        await this._hass.callWS({ type: "sentient/security/incident/review", incident_id: id, outcome });
+        this._incidentReviewReply = { id, message: "REVIEW RECORDED · NO ALERT RULES CHANGED" };
+      } catch (error) {
+        this._incidentReviewReply = { id, message: "REVIEW FAILED · " + String(error.message || error) };
+      } finally {
+        this._incidentReviewSaving = null;
+        this._render();
+      }
+    }
+
     async _securityFeedback(id, value) {
       if (this._securityFeedbackSaving || !this._hass.user?.is_admin || !this._st("mind")?.attributes?.security_event_feedback_enabled) return;
       this._securityFeedbackSaving = id;
@@ -2465,8 +2766,11 @@
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
+      if (act.startsWith("layout")) { this._layoutAction(act, id, el.dataset.dir); return; }
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
+      else if (act === "incidentreview") this._incidentReview(id, el.dataset.value);
+      else if (act === "routecal" || act === "routecalstatus") this._routeCalibration(act === "routecal" ? "run" : "status", el.dataset.provider || "alternative");
       else if (act === "refreshpanel") window.location.reload();
       else if (act === "voicecheck") {
         this._voiceCheckAction(id, el.dataset.run);
@@ -2496,6 +2800,11 @@
       else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
+      else if (act === "heatenergy") {
+        this._hass.callWS({ type: "sentient/heating/energy_comparison" }).then(
+          (value) => { this._heatEnergy = value; this._drawHeat(); },
+          (err) => { this._heatEnergy = { status: err.message || String(err) }; this._drawHeat(); });
+      }
       else if (act === "prognew") this._editProg(null);
       else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "progsugedit") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._editProg({ ...p, name: p.name.replace(" (suggested)", ""), id: undefined }); }
@@ -2756,14 +3065,14 @@
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
-        this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
+        this._mlDraft = { enabled: true, respect_quiet: true, protect_voice_override: false, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
         this._openMotionForm({});
       } else if (act === "mledit") {
         const r = (this._ml.rules || []).find((x) => x.id === id);
         if (r) { this._mlDraft = { ...r }; this._openMotionForm(r); }
       } else if (act === "mlcancel") { this._mlEdit = null; this._form = null; this._drawMotion(); }
       else if (act === "mlsave") {
-        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "only_dark", "off_after", "brightness", "night_brightness", "lux_sensor", "lux_below"];
+        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "protect_voice_override", "only_dark", "off_after", "brightness", "night_brightness", "lux_sensor", "lux_below"];
         const rule = {};
         keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
         if (!rule.lux_sensor) rule.lux_sensor = null;
