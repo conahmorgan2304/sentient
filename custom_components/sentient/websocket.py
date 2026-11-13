@@ -1084,6 +1084,7 @@ def async_register(hass: HomeAssistant) -> None:
     from .suggestions import async_register as _suggestions
 
     _suggestions(hass)
+    websocket_api.async_register_command(hass, ws_layout)
     websocket_api.async_register_command(hass, ws_save_settings)
     websocket_api.async_register_command(hass, ws_update_memory)
     websocket_api.async_register_command(hass, ws_list_memories)
@@ -1503,6 +1504,40 @@ async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
     connection.send_result(msg["id"], await books.async_silence())
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/layout",
+    vol.Optional("action", default="get"): vol.In(["get", "save", "reset"]),
+    vol.Optional("layout"): dict,
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Admin-only layout storage; no Home Assistant cards executed or rendered."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .custom_layout_store import CustomLayoutStore
+
+    store = getattr(entry.runtime_data, "custom_layout", None)
+    if store is None:
+        store = CustomLayoutStore(hass, entry.entry_id)
+        await store.async_load()
+        entry.runtime_data.custom_layout = store
+    action = msg["action"]
+    if action == "save":
+        result = await store.async_save(msg.get("layout"), user=connection.user)
+        if not result["accepted"]:
+            connection.send_error(msg["id"], "invalid", result["reason"])
+            return
+    elif action == "reset":
+        result = await store.async_reset(user=connection.user)
+        if not result["accepted"]:
+            connection.send_error(msg["id"], "invalid", result["reason"])
+            return
+    connection.send_result(msg["id"], store.view(enabled=True))
 
 
 @websocket_api.websocket_command(
