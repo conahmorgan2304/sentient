@@ -6,6 +6,8 @@ def recommend(candidates: list[dict[str, Any]], *, max_cost: float | None = None
               max_p95_ms: float | None = None, min_samples: int = 20) -> dict[str, Any]:
     qualified = []
     for row in candidates[:40]:
+        if not isinstance(row, dict):
+            continue
         try:
             n = int(row.get("samples") or 0)
             success = float(row.get("success_rate"))
