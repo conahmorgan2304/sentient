@@ -81,6 +81,8 @@ class AIGate:
         self.cases = None  # case memory (the brain), when switched on
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
         self._observed_calls = deque(maxlen=100)  # volatile timing/outcome only; no inputs or model IDs
+        self._observed_by_entity: dict[str, deque] = {}  # volatile service outcomes for opted-in routing
+        self._last_route = {"switched": False, "reason": "default_provider"}
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -277,7 +279,16 @@ class AIGate:
                 "This applies only to user-facing prose, not classification labels or tool arguments."
             )
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
-            data["entity_id"] = ai
+            from .model_routing import choose
+
+            proposal = choose(self.options, data, dict(self._observed_by_entity), default_entity=ai)
+            target = proposal.get("entity_id") or ai
+            if proposal.get("switched") and self.hass.states.get(target) is None:
+                target = ai  # never route to an absent AI Task provider
+                proposal = {"switched": False, "reason": "alternative_unavailable"}
+            self._last_route = {"switched": bool(proposal.get("switched")),
+                                "reason": str(proposal.get("reason") or "")[:100]}
+            data["entity_id"] = target
         cases = self.cases
         if cases is not None and (remembered := cases.case_get(data)) is not None:
             return remembered  # the same job, asked moments ago: case memory answers without another call
@@ -312,11 +323,11 @@ class AIGate:
         except Exception as err:  # noqa: BLE001 - every failure means "use the plain version"
             if current():
                 self.failed(err)
-                self._observed_calls.append((False, round((monotonic() - started_at) * 1000)))
+                self._record_outcome(data, False, round((monotonic() - started_at) * 1000))
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
         if current():
             self.ok()
-            self._observed_calls.append((True, round((monotonic() - started_at) * 1000)))
+            self._record_outcome(data, True, round((monotonic() - started_at) * 1000))
             if cases is not None:
                 cases.case_put(data, response)
         return response or {}
@@ -335,6 +346,15 @@ class AIGate:
         self.last_ok_at = dt_util.utcnow().isoformat()
         self._save()
 
+    def _record_outcome(self, data: dict[str, Any], success: bool, elapsed_ms: int) -> None:
+        """Outcome labels and timing only; no prompts, images or personal history."""
+        self._observed_calls.append((success, elapsed_ms))
+        entity = data.get("entity_id")
+        if isinstance(entity, str) and entity.startswith("ai_task."):
+            if len(self._observed_by_entity) >= 8 and entity not in self._observed_by_entity:
+                return
+            self._observed_by_entity.setdefault(entity, deque(maxlen=100)).append((success, elapsed_ms))
+
     def observed_performance(self) -> dict[str, Any]:
         """Volatile samples only; never infer billed cost or model accuracy."""
         calls = list(self._observed_calls)
@@ -351,6 +371,9 @@ class AIGate:
         week = [self.history[d] for d in days]
         return {
             "observed_performance": self.observed_performance(),
+            "routing": {"enabled": self.options.get("ai_routing_enabled") is True,
+                        "providers_observed": len(self._observed_by_entity), **self._last_route,
+                        "real_prices_verified": False},
             "today": self.used,
             "service_attempts_today": self.service_attempts,
             "retry_attempts_today": self.retry_attempts,
