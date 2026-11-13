@@ -65,6 +65,7 @@
     set hass(hass) {
       this._hass = hass;
       if (!this.shadowRoot) this._build();
+      if (!this._layoutFetched) this._loadLayouts();
       if (!this._wizChecked && hass.user && hass.user.is_admin) {
         this._wizChecked = true;
         hass.callWS({ type: "sentient/wizard", language: hass.language }).then((w) => { if (w.show) this._openWizard(w); }, () => {});
@@ -166,6 +167,7 @@
         <div class="page set" id="set" hidden><nav class="card side" id="side"></nav><div class="card body" id="body"></div></div>
         <div class="wiz sheet" id="sheet" hidden><div class="card sheetc" role="dialog" aria-modal="true"><button class="wsx" data-act="tabpageclose" title="Close" aria-label="Close"><ha-icon icon="mdi:close"></ha-icon></button><div id="sheetb" class="body"></div></div></div>
         <div class="wiz" id="wiz" hidden><div class="card wizc" id="wizc"></div></div>`;
+      this._initLayouts();
       const menu = document.createElement("ha-menu-button");
       menu.hass = this._hass; menu.narrow = this._narrow;
       this._$("menu").appendChild(menu);
@@ -226,6 +228,162 @@
       if (view === "settings") this._openSettings();
       else if (view === "timeline") this._openTimeline();
       else this._render();
+    }
+
+    // ---------- optional saved card arrangements ----------
+    _initLayouts() {
+      this._layoutDefaults = {};
+      this._layoutData = {};
+      this._layoutEdit = false;
+      this._layoutRoots = { overview: "ov", house: "hp", mind: "mp", security: "scp" };
+      for (const [page, id] of Object.entries(this._layoutRoots)) {
+        const root = this._$(id);
+        if (!root) continue;
+        const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+        this._layoutDefaults[page] = lanes.flatMap((lane, index) =>
+          [...lane.querySelectorAll(":scope > .card")].filter((card) => card.id)
+            .map((card) => ({ id: card.id, visible: true, lane: index })));
+        const bar = document.createElement("div");
+        bar.className = "layout-toolbar";
+        bar.hidden = true;
+        bar.style.cssText = "padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap";
+        bar.innerHTML = '<button class="btn sm ghost" data-act="layouttoggle">EDIT LAYOUT</button>' +
+          '<button class="btn sm ghost" data-act="layoutshowall" hidden>SHOW ALL</button>' +
+          '<button class="btn sm ghost" data-act="layoutreset" hidden>RESET PAGE</button>' +
+          '<span class="dim" data-layout-msg></span>';
+        root.insertBefore(bar, root.firstChild);
+      }
+    }
+
+    async _loadLayouts() {
+      if (!this._hass || this._layoutFetched) return;
+      this._layoutFetched = true;
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout" });
+        this._layoutData = response.layout || {};
+        this._applyLayouts(true);
+      } catch (_) {
+        // Older installations may lack the optional API; normal cards remain unchanged.
+        this._layoutData = {};
+      }
+    }
+
+    _layoutCurrent() {
+      return this._layoutRoots && this._layoutRoots[this._view] ? this._view : null;
+    }
+
+    _layoutRows(page) {
+      const root = this._$(this._layoutRoots[page]);
+      const lanes = root ? [...root.querySelectorAll(".lanes > section.lane")] : [];
+      return lanes.flatMap((lane, index) =>
+        [...lane.querySelectorAll(":scope > .card")].filter((c) => c.id)
+          .map((c) => ({ id: c.id, visible: c.style.display !== "none", lane: index })));
+    }
+
+    _applyLayouts(force = false) {
+      if (!this._layoutRoots) return;
+      const admin = !!(this._hass && this._hass.user && this._hass.user.is_admin);
+      for (const [page, id] of Object.entries(this._layoutRoots)) {
+        const root = this._$(id);
+        if (!root) continue;
+        const bar = root.querySelector(".layout-toolbar");
+        if (bar) {
+          bar.hidden = !admin;
+          bar.style.display = admin ? "flex" : "none";
+          const editing = admin && this._layoutEdit && page === this._view;
+          const toggle = bar.querySelector('[data-act="layouttoggle"]');
+          if (toggle) toggle.textContent = editing ? "DONE EDITING" : "EDIT LAYOUT";
+          for (const action of ["layoutshowall", "layoutreset"]) {
+            const button = bar.querySelector('[data-act="' + action + '"]');
+            if (button) button.hidden = !editing;
+          }
+        }
+        const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+        const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
+        const saved = this._layoutData && this._layoutData[page] || [];
+        const key = JSON.stringify(saved);
+        if (force || root.dataset.layoutApplied !== key) {
+          for (const item of saved) {
+            if (!item || typeof item.id !== "string" || !lanes[item.lane]) continue;
+            const card = cards.find((c) => c.id === item.id);
+            if (card && card.parentElement !== lanes[item.lane]) lanes[item.lane].appendChild(card);
+          }
+          // Apply saved ordering within each lane exactly once per changed layout.
+          for (const item of saved) {
+            if (!item || !lanes[item.lane]) continue;
+            const card = cards.find((c) => c.id === item.id);
+            if (card && card.parentElement === lanes[item.lane]) lanes[item.lane].appendChild(card);
+          }
+          root.dataset.layoutApplied = key;
+        }
+        const visibility = new Map(saved.map((x) => [x.id, x.visible]));
+        for (const card of cards) {
+          card.style.display = visibility.get(card.id) === false ? "none" : "";
+          card.querySelectorAll(":scope > .layout-card-tools").forEach((e) => e.remove());
+          if (!admin || !this._layoutEdit || this._view !== page || card.style.display === "none") continue;
+          const tools = document.createElement("div");
+          tools.className = "layout-card-tools";
+          tools.style.cssText = "display:flex;gap:4px;justify-content:flex-end;padding:4px;background:rgba(0,0,0,.35);border-radius:8px";
+          for (const [dir, label] of [["up", "↑"], ["down", "↓"], ["left", "←"], ["right", "→"]]) {
+            const button = document.createElement("button");
+            button.className = "btn sm ghost";
+            button.dataset.act = "layoutmove";
+            button.dataset.id = card.id;
+            button.dataset.dir = dir;
+            button.textContent = label;
+            button.title = "Move card " + dir;
+            tools.appendChild(button);
+          }
+          const hide = document.createElement("button");
+          hide.className = "btn sm ghost";
+          hide.dataset.act = "layouthide";
+          hide.dataset.id = card.id;
+          hide.textContent = "HIDE";
+          tools.appendChild(hide);
+          card.prepend(tools);
+        }
+      }
+    }
+
+    async _layoutAction(act, id, direction) {
+      const page = this._layoutCurrent();
+      if (!page || !this._hass || !this._hass.user?.is_admin) return;
+      if (act === "layouttoggle") {
+        this._layoutEdit = !this._layoutEdit;
+        this._applyLayouts();
+        return;
+      }
+      if (!this._layoutEdit) return;
+      const root = this._$(this._layoutRoots[page]);
+      const lanes = [...root.querySelectorAll(".lanes > section.lane")];
+      const card = [...root.querySelectorAll(".lanes > section.lane > .card")].find((c) => c.id === id);
+      if (act === "layoutreset") {
+        this._layoutData[page] = this._layoutDefaults[page] || [];
+        root.dataset.layoutApplied = "";
+      } else if (act === "layoutshowall") {
+        for (const item of this._layoutRows(page)) item.visible = true;
+        this._layoutData[page] = this._layoutRows(page).map((x) => ({ ...x, visible: true }));
+      } else if (act === "layouthide" && card) {
+        card.style.display = "none";
+        this._layoutData[page] = this._layoutRows(page);
+      } else if (act === "layoutmove" && card) {
+        const lane = lanes.indexOf(card.parentElement);
+        if (direction === "left" && lane > 0) lanes[lane - 1].appendChild(card);
+        else if (direction === "right" && lane < lanes.length - 1) lanes[lane + 1].appendChild(card);
+        else if (direction === "up" && card.previousElementSibling && card.previousElementSibling.classList.contains("card"))
+          card.previousElementSibling.before(card);
+        else if (direction === "down" && card.nextElementSibling && card.nextElementSibling.classList.contains("card"))
+          card.nextElementSibling.after(card);
+        this._layoutData[page] = this._layoutRows(page);
+      } else return;
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout", action: "save", layout: this._layoutData });
+        this._layoutData = response.layout || this._layoutData;
+      } catch (error) {
+        const bar = root.querySelector("[data-layout-msg]");
+        if (bar) bar.textContent = "SAVE FAILED — " + String(error.message || error);
+      }
+      this._applyLayouts(true);
     }
 
     // ---------- overview ----------
@@ -475,6 +633,7 @@
       const noticed = fold(this._attr("last_spoken", "noticed", []), (d) => (d.changes || []).join("; ").replace(/^\d\d:\d\d /, "") + "|" + d.result).slice(0, 6).map((d) =>
         `<div class="r dim"><ha-icon icon="mdi:radar"></ha-icon><b>${esc((d.changes || []).join("; "))}</b><u>${esc(d.result).toUpperCase()}${d.n > 1 ? ` · ×${d.n}` : ""}</u></div>`).join("");
       R("said").innerHTML = this._h("SAID &amp; NOTICED", "") + (log + noticed || '<div class="e">QUIET SO FAR</div>');
+      this._applyLayouts();
     }
 
     // ---------- settings ----------
@@ -2465,6 +2624,7 @@
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
+      if (act.startsWith("layout")) { this._layoutAction(act, id, el.dataset.dir); return; }
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
       else if (act === "refreshpanel") window.location.reload();
