@@ -20,7 +20,7 @@ new service-call authority, model subscriptions, and alert suppression rules.
 
 ### Decision and action coordination
 - A single bounded `ActionIntentMonitor` observes guarded voice,
-  motion-light and auto-off requests. Opposite requests for the same
+  motion-light, auto-off and direct Rule dispatch requests. Opposite requests for the same
   target within two minutes from different subsystems are logged as
   **potential** conflicts. Same-source toggles and expired intents do
   not count. Targets are keyed-digested per runtime; summaries contain no
@@ -49,6 +49,12 @@ new service-call authority, model subscriptions, and alert suppression rules.
   should avoid treating this memory scope as a secrets vault.
 
 ### Evaluation and replay
+- To inspect synthetic examples without touching real Home Assistant devices, run
+  `python -m custom_components.sentient.cognitive_replay_cli tests/fixtures/cognitive_scenarios.json --at 2026-11-13T12:15:00+00:00`
+  from an environment with Sentient's test dependencies installed. This
+  requires no camera, network, account or active Home Assistant connection;
+  results contain aggregate counts only. Supply only synthetic or explicitly
+  redacted fixtures. It is not the rejected floorplan replay UI.
 - A pure offline `cognitive_replay.evaluate_scenarios` compares legacy and
   proposed incident stages with **independently supplied** labels. It uses one
   synthetic clock, reports unknown accuracy when no labels are present,
