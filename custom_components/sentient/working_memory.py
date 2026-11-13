@@ -45,10 +45,10 @@ def public_view(context: dict[str, Any] | None) -> dict[str, Any] | None:
     """Keep only bounded owner-local context for a model or session screen."""
     if not context:
         return None
-    # Entity candidates have *not* yet passed the user/Assist visibility
-    # checks performed at the conversation boundary. Never put them in an
-    # LLM/session public description, even when the current user mentioned
-    # the entity previously.
-    return {k: context[k] for k in ("goal", "topic", "followup_kind",
-                                    "evidence_is_stale", "requires_fresh_permission_check",
+    # This description appears in Home Assistant's Mind diagnostics, not
+    # exclusively in the user's private model context. The free-form goal
+    # and topic can themselves contain private names, rooms or entity IDs.
+    # Keep them only on the session object; publish status flags, not text.
+    return {k: context[k] for k in ("followup_kind", "evidence_is_stale",
+                                    "requires_fresh_permission_check",
                                     "can_authorise_actions") if k in context}
