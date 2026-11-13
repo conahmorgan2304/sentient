@@ -77,6 +77,13 @@ def read_pdf(path: str) -> tuple[list[tuple[int, str, str]], int]:
     return out, total
 
 
+def quality_report(pages: list[tuple[int, str, str]]) -> dict[str, Any]:
+    """Inspect text extraction only; never imply OCR or page-level proof."""
+    from .document_quality import assess
+
+    return assess([text for _, _, text in pages], min_chars=MIN_TEXT)
+
+
 def read_text(path: str) -> tuple[list[tuple[int, str, str]], int]:
     """A text document as sections of a few paragraphs, each labelled by its heading if it has one."""
     with open(path, "rb") as handle:
