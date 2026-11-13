@@ -1530,7 +1530,8 @@
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:stethoscope"></ha-icon><div><div class="bt">SETUP DOCTOR</div>
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
         <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
-        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
+        <div class="hint">DOWNLOAD THE LAST DAY saves a file of what happened in the house over the last 24 hours (from the house ledger) and what Sentient decided, for checking a new version against your own days. It stays on your device; nothing is sent.</div>
+        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="replayexport">DOWNLOAD THE LAST DAY</button><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
     }
 
     // ---------- how it's used ----------
@@ -3053,6 +3054,19 @@
           .then(() => { m.pinned = !m.pinned; this._drawMemories(); }, (e) => window.alert(e.message || e));
       }
       else if (act === "docrun") this._drawDoctor(true);
+      else if (act === "replayexport") {
+        const msg = this._$("docmsg");
+        if (msg) msg.textContent = "GATHERING THE DAY…";
+        this._hass.callWS({ type: "sentient/replay/export", hours: 24 }).then((r) => {
+          if (r.error) { if (msg) msg.textContent = r.error; return; }
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([JSON.stringify(r)], { type: "application/json" }));
+          a.download = `sentient-day-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+          if (msg) msg.textContent = `SAVED · ${r.changes.length} CHANGES · ${r.decisions.length} DECISIONS`;
+        }, (e) => { if (msg) msg.textContent = e.message || String(e); });
+      }
       else if (act === "privrun") this._drawPrivacy(true);
       else if (act === "userun") this._drawUsage(true);
       else if (act === "showall" || act === "showless") { this._showAll = act === "showall"; this._drawSide(); }

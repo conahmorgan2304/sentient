@@ -1175,6 +1175,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_heating)
     websocket_api.async_register_command(hass, ws_heating_energy_comparison)
     websocket_api.async_register_command(hass, ws_ai_routing_calibrate)
+    websocket_api.async_register_command(hass, ws_replay_export)
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
@@ -1424,6 +1425,21 @@ async def ws_doctor(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     from .doctor import async_check
 
     connection.send_result(msg["id"], await async_check(hass, entry.runtime_data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/replay/export",
+                                   vol.Optional("hours", default=24): vol.All(vol.Coerce(float), vol.Range(min=1, max=48))})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_replay_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """A recorded day of this house for the replay benchmark (scripts/replay.py). Read-only, no AI."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .replay import async_export_day
+
+    connection.send_result(msg["id"], await async_export_day(hass, entry.runtime_data, msg["hours"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id"})
