@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 
 from custom_components.sentient.action_policy import simulate
-from custom_components.sentient.outcome_learning import evaluate
+from custom_components.sentient.outcome_learning import evaluate, reviewed_feedback
 from custom_components.sentient.retrieval_quality import rerank, benchmark
 from custom_components.sentient.model_advisor import recommend
 from custom_components.sentient.document_quality import assess, citation_confidence
@@ -72,3 +72,12 @@ def test_improvement_is_not_claimed_causal():
     assert result["difference"] == .2
     assert result["causal_improvement"] is None
     assert compare(old, {"samples": 2, "completion_rate": 1}, metric="completion_rate")["measured"] is False
+
+
+def test_existing_frigrate_feedback_is_not_falsely_reported_as_accuracy():
+    rows = [{"feedback": {"value": "false_positive"}}] * 4 + [{"feedback": {"value": "useful"}}] * 8
+    result = reviewed_feedback(rows)
+    assert result["reviewed_samples"] == 12
+    assert result["reviewed_correction_fraction"] == .333
+    assert result["confirmed_population_error_rate"] is None
+    assert result["changes_to_frigate_settings"] == 0
