@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.6.0": [
+        "The cognitive core can now decide what stage a security incident is at — what the Mind tab and the voice say it is — once your reviews show it gets each kind of incident right (Settings → Safety & security, off by default). It never changes or holds back an alert, never calls an incident less serious than the usual rules' \"concerning\", and stops by itself if later reviews fall short. Review incidents from the Mind tab: REVIEW THIS INCIDENT.",
+        "Settings → Setup doctor → DOWNLOAD THE LAST DAY saves what happened in the house over the last 24 hours and what Sentient decided, so a new version can be checked against your own days before you install it. Nothing is sent anywhere.",
+        "Fixed: the Mind tab's \"How I'm learning\" card, which hadn't drawn since 1.5.0, and a link from another tab to a Settings page (such as \"turn it on in Settings\" on the House tab) opening the Settings front page instead.",
+    ],
     "1.5.14": [
         "Settings: Doorbell & AI looks and This page open again for administrators (1.5.12 and 1.5.13 broke them).",
     ],

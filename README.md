@@ -164,6 +164,14 @@ For a local reply to **"Who's speaking?"**, set up the separate [Sentient Voice 
 
 Every service is also listed, with its fields, under Developer tools → Actions.
 
+## Checking a new version against your own house
+
+Every change is checked in three ways before it's released:
+
+- **Page checks.** Every tab, Settings page and editor of the Sentient page is opened in a browser against answers recorded from the real integration; any error fails the build.
+- **Integration audit.** A module nothing loads, a setting nothing reads or a button calling a command that doesn't exist fails the build.
+- **Replay.** Settings → Setup doctor → **DOWNLOAD THE LAST DAY** saves the last 24 hours of your house (every change and its cause, from the house ledger) and what Sentient decided. `python scripts/replay.py bench sentient-day-*.json --old v1.5.14` runs that day through two versions on a simulated clock — nothing spoken, no device touched, no AI — and compares what they would have said, sent to phones, held back and switched. Bugs found in a real house become regression days in `tests/fixtures/replay/` (made-up houses), replayed on every build.
+
 ## Roadmap and release notes
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what has landed and what's planned, and the GitHub releases for each version.
