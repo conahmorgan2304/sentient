@@ -324,6 +324,7 @@ class MindSensor(_Base):
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
+        "incident_review_quality", "security_review_quality",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
