@@ -32,7 +32,7 @@ def evaluate_scenarios(scenarios: list[dict[str, Any]], *,
             continue
         incident = scenario["incident"]
         assessment = assess_incident(incident)
-        old, _ = stage(incident, assessment)
+        old, _ = stage(incident, assessment, now=clock)
         proposed = investigate(incident, assessment, baseline_stage=old, now=clock)
         compared += 1
         results["stage_agreement" if proposed["stage"] == old else "stage_disagreement"] += 1
