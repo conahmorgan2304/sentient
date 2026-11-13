@@ -312,7 +312,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, "pronounce_names", "pronunciations", CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, "music_alexa", "music_alexa_service", CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, "routine_verify", CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -647,7 +647,7 @@ def ws_health_disable_copy(hass: HomeAssistant, connection, msg: dict[str, Any])
 
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/ai/routing/calibrate",
-    vol.Optional("action", default="status"): vol.In(["status", "run"]),
+    vol.Optional("action", default="status"): vol.In(["status", "run", "reset_jobs"]),
     vol.Optional("provider", default="alternative"): vol.In(["primary", "alternative"]),
 })
 @websocket_api.require_admin
@@ -681,6 +681,14 @@ async def ws_ai_routing_calibrate(hass: HomeAssistant, connection, msg: dict[str
         return
 
     target = primary if msg["provider"] == "primary" else secondary
+    if msg["action"] == "reset_jobs":
+        if msg["provider"] != "alternative":
+            connection.send_error(msg["id"], "invalid_target", "Only alternative job penalties can be reset")
+            return
+        # Explicit administrator-initiated recovery only: no background billable calls.
+        # The alternative must still satisfy normal overall reliability and budget guards.
+        ai._observed_by_family = {key: rows for key, rows in ai._observed_by_family.items()
+                                  if key[0] != secondary}
     if msg["action"] == "run":
         if hass.states.get(target) is None:
             connection.send_error(msg["id"], "unavailable", "Selected AI Task provider is unavailable")
@@ -711,7 +719,9 @@ async def ws_ai_routing_calibrate(hass: HomeAssistant, connection, msg: dict[str
         "primary": stats(list(observed.get(primary) or [])),
         "alternative": stats(list(observed.get(secondary) or [])),
         "provider_tested": msg["provider"] if msg["action"] == "run" else None,
+        "by_kind_of_job": ai._family_report() if hasattr(ai, "_family_report") else [],
         "manual_calls_only": True,
+        "job_penalties_reset": msg["action"] == "reset_jobs",
         "estimated_prices_only": True,
         "note": "Tests may be billable. 20 samples per provider are needed; quality and real charges must be reviewed separately.",
     })
@@ -1320,7 +1330,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
             "contextual_followups", "recent_followup_context", "conversation_cues", "specific_clarification",
             "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates",
-            "conversation_recovery", "focused_tools", "ask_later", "put_right", "music", "music_alexa", "music_alexa_service"]},
+            "conversation_recovery", "focused_tools", "ask_later", "put_right", "routine_verify", "music", "music_alexa", "music_alexa_service"]},
         {"title": "Guarded device control", "open": False, "names": [
             "guarded_control", "voice_unlock", "voice_undo", "evidence_awareness", "action_recovery", "recheck_unconfirmed"]},
         {"title": "Language", "open": False, "names": [

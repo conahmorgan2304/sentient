@@ -75,8 +75,8 @@ The aim isn't more features. It's showing, with numbers from a real house, that 
 - [x] A second decision (1.8.0, `cognitive_quiet_heads_up`, off by default): experimental authority scoring is available, but spoken heads-up suppression remains inactive until independent, tested household identity evidence is available; gate/contact timing alone never silences a security alert. Review thresholds include independently captured decision-time predictions and concerning examples. Replay day `home_late` keeps both gate and camera heads-ups spoken.
 
 ### Phase 4 — Controlled autonomy
-- [ ] Guarded multi-step plans (bedtime and the like): plan, permission check, conflict check, carry out approved steps, verify, report what didn't happen.
-- [ ] Wider model routing only on measured quality, reliability, latency and cost.
+- [x] Guarded multi-step plans (bedtime and the like): plan, permission check, conflict check, carry out approved steps, verify, report what didn't happen. (1.9.0, `plans.py`, setting "Check routines worked", on: a voice routine is read into what each device should end up as, checked for never-touch and unavailable devices, run, then each device checked; the answer says what didn't happen and steps it can't check are reported as such. Its changes are registered with the action-intent monitor as a person's request, so opted-in motion lights and auto-off give them two minutes.)
+- [x] Wider model routing only on measured quality, reliability, latency and cost. (1.9.0: routing measured per provider and kind of job; a cheaper AI worse at one kind of job stops getting that kind, and is only retried after an administrator explicitly resets alternative job penalties from the calibration panel. No automatic paid probes; still opt-in, text jobs only.)
 
 GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.
 
@@ -294,3 +294,4 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] 1.6.0 — Sentient 2.0 Phase 1 (PR #151): page checks in Chromium against answers recorded from the real integration; integration audit (unreachable modules, unread settings, unregistered commands; removed stream_health, speaker_evaluation and model_advisor, which nothing fed); decision record, day export and the replay benchmark with regression days; the cognitive core deciding incident stages once earned. Found by the page checks: the Mind tab's "How I'm learning" card never drew since 1.5.0 (a second `_drawBrain` replaced it), and a link to a Settings page from another tab opened the Settings front page.
 - [x] 1.7.0 — Sentient 2.0 Phase 2: conversations, memory and learning measured (see the Phase 2 items above).
 - [x] 1.8.0 — Sentient 2.0 Phase 3: the cognitive core reasons about the order of events, is scored against the usual rules per kind of incident, and can earn a second decision (night heads-ups for people coming home).
+- [x] 1.9.0 — Sentient 2.0 Phase 4: guarded, verified voice routines and model routing measured per kind of job.

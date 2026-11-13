@@ -63,6 +63,9 @@ class Shortcut:
 
 
 class Shortcuts:
+    verify = None  # () -> bool: check the routine worked (setting "Check routines worked")
+    intents = None  # the action-intent monitor, so motion lights and auto-off give a routine's changes time
+
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self.hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.shortcuts")
@@ -122,7 +125,7 @@ class Shortcuts:
         return [asdict(s) for s in self.items.values()]
 
     # ----- running ----------------------------------------------------------------
-    def checks(self, item: Shortcut) -> list[str]:
+    def checks(self, item: Shortcut, exclude: set[str] | None = None) -> list[str]:
         notes: list[str] = []
         if item.check_open:
             open_now = [
@@ -139,14 +142,17 @@ class Shortcuts:
                 names = [u["name"] for u in unlocked]
                 notes.append(_join(names) + (" is" if len(names) == 1 else " are") + " unlocked")
         if item.check_lights:
-            lit = [st.name for st in self.hass.states.async_all("light") if st.state == "on"]
+            # lights the routine itself switches are reported by its check afterwards, not here
+            lit = [st.name for st in self.hass.states.async_all("light") if st.state == "on"
+                   and st.entity_id not in (exclude or set())]
             if lit:
                 shown = lit[:4] + ([f"{len(lit) - 4} more"] if len(lit) > 4 else [])
                 notes.append(_join(shown) + (" is" if len(lit) == 1 else " are") + " still on")
         return notes
 
     async def async_run(
-        self, name: str, context: Context | None = None, details: dict[str, Any] | None = None
+        self, name: str, context: Context | None = None, details: dict[str, Any] | None = None,
+        *, requested_by_person: bool = False,
     ) -> dict[str, Any]:
         from homeassistant.util import dt as dt_util
 
@@ -163,7 +169,12 @@ class Shortcuts:
         if missing:
             return {"routine": item.name, "error": "It needs to know: " + "; ".join(f"{k} ({wanted[k]})" for k in missing),
                     "needs": {k: wanted[k] for k in missing}}
-        notes = self.checks(item)  # before the actions, so "still on" means before it ran
+        from .plans import async_verify, describe, plan
+
+        verify = bool(self.verify()) if self.verify is not None else False
+        planned = plan(self.hass, item.actions) if verify else None
+        # before the actions, so "still on" means before it ran
+        notes = self.checks(item, {s["entity_id"] for s in planned["steps"]} if planned else None)
         from .never import names, touches
 
         if hit := touches(self.hass, item.actions):
@@ -180,12 +191,33 @@ class Shortcuts:
         if self.on_run is not None:
             self.on_run(item.name)
         self._save()
+        checked = None
+        if planned is not None:
+            checked = await async_verify(self.hass, planned)
+            if self.intents is not None and requested_by_person:
+                # Only devices that actually reached a newly requested state get manual-like
+                # protection. Scheduled/automatic routines never impersonate a person's request.
+                done = set(checked["done"])
+                for step in planned["steps"]:
+                    action = {"on": "turn_on", "off": "turn_off"}.get(step["expect"])
+                    if action and step["entity_id"] in done:
+                        self.intents.observe(step["entity_id"], action, "routine")
         said = item.say.strip()
         for k, v in variables.items():
             said = said.replace("{" + k + "}", _join([str(x) for x in v]) if isinstance(v, list) and v else str(v))
         parts = [said] if said else []
+        if checked and (missed := describe(self.hass, checked)):
+            parts.append(missed)
         parts += [n[0].upper() + n[1:] + "." for n in notes]
-        return {"routine": item.name, "steps": len(item.actions), "said": " ".join(parts), "notes": notes}
+        result = {"routine": item.name, "steps": len(item.actions), "said": " ".join(parts), "notes": notes}
+        if checked is not None:
+            result["checked"] = checked
+            result["decision"] = {"kind": "routine_plan", "evidence": [
+                f"planned:{len(planned['steps'])}", f"done:{len(checked['done'])}",
+                f"not_done:{len(checked['not_done'])}", f"not_checked:{checked['unchecked']}",
+                f"already_satisfied:{len(checked['already_satisfied'])}",
+                *[f"unavailable_before:{e}" for e in planned["unavailable"][:4]]], "ai_used": False}
+        return result
 
 
 async def async_run_actions(hass: HomeAssistant, actions: list[dict[str, Any]], name: str, context: Context | None = None,

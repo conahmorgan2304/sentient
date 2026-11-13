@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.9.0": [
+        "Voice routines now check requested final device states and report failures. Already-satisfied states are distinguished from changes; unsupported or conditional steps cannot be proven executed from a matching state alone.",
+        "Only successfully changed lights and switches in explicitly voice-requested routines get temporary person-request priority. Automated routines and unchanged devices do not.",
+        "Optional text-only AI routing reports service reliability per job kind and demotes weak alternatives. An administrator can explicitly reset job penalties from calibration; no background paid probes or claim of answer-quality validation.",
+    ],
     "1.8.0": [
         "The cognitive core now correlates an observed entry opening with a later observed person detection, but does not treat that timing as proof of household identity. A doorbell or doorstep visit remains a caller.",
         "The Mind tab scores the cognitive core and the usual rules side by side on your reviews: household incidents got right, others wrongly called household, and threats called less serious.",

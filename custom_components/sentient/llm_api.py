@@ -2022,10 +2022,12 @@ class RunRoutineTool(_Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         result = await rt.shortcuts.async_run(
-            tool_input.tool_args["name"], llm_context.context, tool_input.tool_args.get("details")
+            tool_input.tool_args["name"], llm_context.context, tool_input.tool_args.get("details"),
+            requested_by_person=True,
         )
         if not result.get("error"):
-            rt.timeline.add("mode", f"Ran {result['routine']} (by voice)", result.get("said") or None)
+            rt.timeline.add("mode", f"Ran {result['routine']} (by voice)", result.get("said") or None,
+                            decision=result.get("decision"))
         return result
 
 
@@ -2116,7 +2118,7 @@ class ScenesTool(_Tool):
                                            context=llm_context.context)
             return {"scene_on": match.name}
         if rt and rt.shortcuts.find(name):
-            return await rt.shortcuts.async_run(name, llm_context.context)
+            return await rt.shortcuts.async_run(name, llm_context.context, requested_by_person=True)
         return {"error": f"No scene or routine called {name}"}
 
 
