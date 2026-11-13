@@ -2393,7 +2393,7 @@
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
-        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours",
+        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours", protect_voice_override: "Respect recent voice commands",
         only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
         brightness: "Brightness", night_brightness: "Late-night brightness",
         lux_sensor: "Light sensor (optional)", lux_below: "Dark below",
@@ -2401,6 +2401,7 @@
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
         respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
+        protect_voice_override: "Optional: for two minutes, motion will not reverse a recently dispatched higher-priority voice command. Off by default.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
@@ -2409,6 +2410,7 @@
         { name: "motion", required: true, selector: { entity: { domain: "binary_sensor", multiple: true } } },
         { name: "enabled", selector: { boolean: {} } },
         { name: "respect_quiet", selector: { boolean: {} } },
+        { name: "protect_voice_override", selector: { boolean: {} } },
         { name: "only_dark", selector: { boolean: {} } },
         { name: "off_after", selector: { number: { min: 0.5, max: 60, step: 0.5, unit_of_measurement: "min", mode: "box" } } },
         { name: "brightness", selector: { number: { min: 1, max: 100, unit_of_measurement: "%", mode: "slider" } } },
@@ -2920,14 +2922,14 @@
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
-        this._mlDraft = { enabled: true, respect_quiet: true, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
+        this._mlDraft = { enabled: true, respect_quiet: true, protect_voice_override: false, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
         this._openMotionForm({});
       } else if (act === "mledit") {
         const r = (this._ml.rules || []).find((x) => x.id === id);
         if (r) { this._mlDraft = { ...r }; this._openMotionForm(r); }
       } else if (act === "mlcancel") { this._mlEdit = null; this._form = null; this._drawMotion(); }
       else if (act === "mlsave") {
-        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "only_dark", "off_after", "brightness", "night_brightness", "lux_sensor", "lux_below"];
+        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "protect_voice_override", "only_dark", "off_after", "brightness", "night_brightness", "lux_sensor", "lux_below"];
         const rule = {};
         keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
         if (!rule.lux_sensor) rule.lux_sensor = null;
