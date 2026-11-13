@@ -1002,3 +1002,42 @@ async def test_too_little_saving_or_too_short_a_watch_suggests_nothing(hass: Hom
     rt.brain.counters = {today.isoformat(): {"would_gate": 50}}
     rt.brain._suggest_gating(rt)
     assert not [e for e in rt.timeline.items if "would have saved" in (e.get("text") or "")]
+
+
+async def test_privacy_forget_removes_copied_facts_immediately_but_preserves_pinned(hass: HomeAssistant):
+    """The awaited forget must also clear FTS, without deleting pinned facts."""
+    from custom_components.sentient.privacy import async_forget_recent
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    brain = rt.brain
+    assert brain is not None and brain.started
+    removed = rt.memory.add("Private whistling spaceship password")
+    pinned = rt.memory.add("Pinned whistling spaceship reminder")
+    rt.memory.pin(pinned.id, True)
+    await brain.async_sync_memories()
+    assert len(await brain.async_search(["whistling"], ["fact"])) == 2
+
+    result = await async_forget_recent(rt, 48)
+    assert "database_error" not in result
+    assert result["database_facts"] >= 1
+    found = await brain.async_search(["whistling"], ["fact"])
+    assert len(found) == 1
+    assert "Pinned" in found[0]["text"]
+    assert {m.id for m in rt.memory.items} == {pinned.id}
+    await brain.async_sync_memories()
+    assert len(await brain.async_search(["whistling"], ["fact"])) == 1
+
+
+async def test_reconcile_facts_deletes_stale_fts_entries_and_keeps_live_ones(hass: HomeAssistant, tmp_path):
+    db = Database(hass, "reconcile", str(tmp_path / "facts.db"))
+    await db.async_open()
+    await db.call(lambda c: db.put_memory(c, "fact", "forgotten", "2026-11-01T00:00:00+00:00",
+                                          "The secret spaceship ignition code"))
+    await db.call(lambda c: db.put_memory(c, "fact", "pinned", "2026-11-01T00:00:00+00:00",
+                                          "The spaceship garage reminder"))
+    assert len(await db.call(lambda c: db.search(c, ["spaceship"], ["fact"]))) == 2
+    assert await db.call(lambda c: db.reconcile_fact_copies(c, {"pinned"})) == 1
+    found = await db.call(lambda c: db.search(c, ["spaceship"], ["fact"]))
+    assert len(found) == 1 and found[0]["ref"] == "pinned"
+    db.close()
