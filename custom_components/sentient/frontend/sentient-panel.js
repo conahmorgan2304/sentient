@@ -307,7 +307,7 @@
         }
         const lanes = [...root.querySelectorAll(".lanes > section.lane")];
         const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
-        const saved = this._layoutEnabled && this._layoutData && this._layoutData[page] || [];
+        const saved = this._layoutEnabled ? (this._layoutData && this._layoutData[page] || []) : (this._layoutDefaults[page] || []);
         const key = JSON.stringify(saved);
         if (force || root.dataset.layoutApplied !== key) {
           for (const item of saved) {
