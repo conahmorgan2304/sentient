@@ -12,10 +12,12 @@ class CustomLayoutStore:
     def __init__(self, hass: Any, entry_id: str) -> None:
         self._store = Store(hass, 1, f"sentient.{entry_id}.custom_layout")
         self._layout: dict[str, list[dict[str, Any]]] = {}
+        self._enabled = False
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
         proposed = data.get("layout") if isinstance(data, dict) else None
+        self._enabled = data.get("enabled") is True if isinstance(data, dict) else False
         if isinstance(proposed, dict) and validate(proposed, admin=True)["accepted"]:
             self._layout = proposed
         else:
@@ -23,8 +25,9 @@ class CustomLayoutStore:
 
     def view(self, *, enabled: bool) -> dict[str, Any]:
         """Switching off restores default UI without deleting saved layout."""
-        return {"enabled": bool(enabled), "layout": {page: list(cards) for page, cards in self._layout.items()}
-                if enabled else {}, "saved_layout_present": bool(self._layout)}
+        effective = bool(enabled) and self._enabled
+        return {"enabled": effective, "layout": {page: [dict(c) for c in cards] for page, cards in self._layout.items()}
+                if effective else {}, "saved_layout_present": bool(self._layout)}
 
     async def async_save(self, proposed: dict[str, Any], *, user: Any) -> dict[str, Any]:
         if not getattr(user, "is_admin", False):
@@ -32,13 +35,23 @@ class CustomLayoutStore:
         result = validate(proposed, admin=True)
         if not result["accepted"]:
             return result
-        await self._store.async_save({"layout": proposed})
+        await self._store.async_save({"enabled": self._enabled, "layout": proposed})
         self._layout = {page: [dict(card) for card in cards] for page, cards in proposed.items()}
         return {"accepted": True, "saved": True}
 
     async def async_reset(self, *, user: Any) -> dict[str, Any]:
         if not getattr(user, "is_admin", False):
             return {"accepted": False, "reason": "administrator_required"}
-        await self._store.async_save({"layout": {}})
+        await self._store.async_save({"enabled": self._enabled, "layout": {}})
         self._layout = {}
         return {"accepted": True, "saved": True}
+
+    async def async_set_enabled(self, enabled: bool, *, user: Any) -> dict[str, Any]:
+        """Explicit administrator opt-in; disabling retains layout for later."""
+        if not getattr(user, "is_admin", False):
+            return {"accepted": False, "reason": "administrator_required"}
+        if type(enabled) is not bool:
+            return {"accepted": False, "reason": "invalid_enabled"}
+        await self._store.async_save({"enabled": enabled, "layout": self._layout})
+        self._enabled = enabled
+        return {"accepted": True, "enabled": enabled}
