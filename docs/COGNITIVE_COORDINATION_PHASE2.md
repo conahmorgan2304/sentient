@@ -38,3 +38,20 @@ This PR collects the remaining audit work in **one review branch**. Safety-criti
 9. Run restart, privacy-forget, permission and p95 performance regression tests on the user's HA OS host.
 
 **Still requires external prerequisites and live evidence:** real Nest stream troubleshooting, real multi-speaker test, local Tesseract/Ollama installation, real provider bills, representative incident labels, sufficient energy history and tablet testing. Full autonomy and arbitrary HACS-card embedding remain intentionally out of scope until their permission/safety model is demonstrated. This PR is for code review, not automatic deployment.
+
+## PR #148 review follow-up: fixes before merging
+
+### OCR indexing recovery
+Changing local OCR mode now builds the replacement index in SQLite TEMP staging tables and publishes files, pages, FTS rows and the mode marker atomically. A failed read or database write returns `reindex_completed: false` and leaves the previous usable index unchanged. Successful completion removes obsolete pages and updates the mode marker together. Regression tests simulate an extraction failure, successful scan migration and SQL rollback. If disabling OCR fails to rebuild, the earlier index remains in storage; investigate the error and retry rather than assuming OCR-derived data has been erased.
+
+### AI routing calibration
+**No automatic probing** is performed. Settings → Doorbell & AI looks has one-at-a-time administrator calibration controls. Each click requires a cost confirmation, counts against the normal AI call budget and is rate limited to one per 30 seconds. It sends a fixed generic prompt to the selected `ai_task` entity, with no voice, memories, images or live household state. Primary provider calls are also observed during normal operation. The UI displays completed samples and service metrics; 20+ samples per entity are required. These are service-call checks, not independent answer-quality measurements or real billing comparisons. Real token prices must be reviewed separately.
+
+### Local semantic memory privacy
+Only explicit numeric loopback, RFC1918 or IPv6 ULA URLs with HTTP and an explicit port are accepted; arbitrary hostnames, public ranges, link-local addresses and redirects are refused. The local model receives the query plus at most eight **already permission-filtered** snippets when the feature is explicitly enabled. This is still a data transfer to that LAN host: configure only a service you control, and do not enable it for a shared/untrusted server. Failed responses fall back to lexical search.
+
+### Layout regression coverage
+Node tests now exercise drag/drop lane ordering, server save payload, non-admin rejection and disabled-mode rejection. Python storage/WebSocket tests cover admin permissions and persistence. Real mobile browsers, touch interactions and accessibility still need manual smoke testing; no test claims to be a full browser simulation.
+
+### Nest
+The streaming evaluator remains diagnostics only. Record a failed Nest session with initial frame, errors and stream expiry, compare against a working Wyze stream, and validate changes on Home Assistant. Do not claim to have resolved an external Nest stream failure without that evidence.
