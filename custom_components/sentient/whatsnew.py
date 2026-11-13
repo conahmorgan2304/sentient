@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.9": [
+        "The morning briefing is given once a day even if Home Assistant or Sentient restarts in the morning. Before, the day it was given was forgotten on a restart, and a motion sensor coming back after the restart counted as someone walking into the room, so the briefing came again.",
+    ],
     "1.5.8": [
         "Music through Alexa: without Music Assistant, \"play something calm in the kitchen\" can ask that room's Echo to play it from Spotify (or Amazon Music, Apple Music, Deezer, TuneIn, iHeartRadio) — by name, a playlist, artist, song or mood. At the night volume in quiet hours; \"stop the music\" pauses it. Off until switched on: Settings → Voice → Music through Alexa. When it's on it's used even with Music Assistant installed, which can't play Spotify without Premium.",
     ],
