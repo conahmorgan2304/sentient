@@ -137,8 +137,9 @@ async def test_websocket_crud(hass: HomeAssistant, hass_ws_client) -> None:
     assert (await ws.receive_json())["result"]["night_start"] == "23:30"
     await ws.send_json({"id": 4, "type": "sentient/motion_lights/save",
                         "rule": {"id": rule_id, "light": "light.landing", "motion": ["binary_sensor.landing_motion"],
-                                 "quiet_start": None, "quiet_end": None}})
-    assert (await ws.receive_json())["result"]["rules"][0]["quiet_start"] is None
+                                 "quiet_start": None, "quiet_end": None, "protect_voice_override": True}})
+    revised = (await ws.receive_json())["result"]["rules"][0]
+    assert revised["quiet_start"] is None and revised["protect_voice_override"] is True
     await ws.send_json({"id": 5, "type": "sentient/motion_lights/delete", "rule_id": rule_id})
     assert (await ws.receive_json())["result"]["rules"] == []
     assert entry.runtime_data.motion_lights.managed_lights == set()
