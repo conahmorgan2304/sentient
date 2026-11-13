@@ -46,6 +46,7 @@ class MotionRule:
     motion: list[str]
     enabled: bool = True
     respect_quiet: bool = True
+    protect_voice_override: bool = False  # opt in: don't immediately undo a recent guarded voice command
     only_dark: bool = True
     off_after: float = 3  # minutes after the last movement
     brightness: int = 100  # percent; ignored for switches
@@ -421,6 +422,16 @@ class MotionLights:
 
         if blocked(self.hass, rule.light):
             return False  # on the "never touch" list
+        # Per-rule opt-in, reversible actions only. Require fresh, recent
+        # dispatched guarded-voice intent; unsupported/unverified cases
+        # behave exactly as before. This path never changes alarms or locks.
+        intents = getattr(self, "intents", None)
+        if rule.protect_voice_override and intents is not None:
+            advisory = intents.preview(rule.light, "turn_on" if on else "turn_off",
+                                      "motion_lights")
+            if advisory["decision"] == "recommend_hold" and rule.light.startswith(("light.", "switch.")):
+                self._note(rule, "held: recent higher-priority command")
+                return False
         from .own import own_context
 
         context = own_context(self.hass, "motion lights")
