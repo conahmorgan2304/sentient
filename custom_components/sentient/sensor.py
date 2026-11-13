@@ -380,6 +380,8 @@ class MindSensor(_Base):
             "security_events": rt.security_events.recent(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),
+            "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
+                                        else _security_review_quality(rt)),
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
             "last_reflection": last.get("time"),
@@ -474,3 +476,9 @@ class ScreenSensor(_Base):
     def extra_state_attributes(self) -> dict[str, Any]:
         d = self._entry.runtime_data.screen.describe()
         return {"cards": d["cards"], "morning": d["morning"], "coming_up": d["coming_up"]}
+
+def _security_review_quality(rt) -> dict[str, Any]:
+    """Only aggregate private correction samples; never export event IDs."""
+    from .outcome_learning import reviewed_feedback
+
+    return reviewed_feedback(list(rt.security_events.items.values()))
