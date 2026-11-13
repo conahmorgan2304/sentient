@@ -9,7 +9,7 @@ import re
 
 PAGES = frozenset({"overview", "house", "mind", "security"})
 MAX_CARDS = 50
-_CARD_ID = re.compile(r"[a-z][a-z0-9_-]{0,79}\\Z")
+_CARD_ID = re.compile(r"[a-z][a-z0-9_-]{0,79}\Z")
 
 def validate(layout: dict[str, Any], *, admin: bool) -> dict[str, Any]:
     if not admin:
