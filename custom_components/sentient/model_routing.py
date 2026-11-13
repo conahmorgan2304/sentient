@@ -50,8 +50,14 @@ def choose(options: dict[str, Any], data: dict[str, Any], observations: dict[str
     alt = stats(observations.get(secondary) or [])
     if main["success_rate"] is None or alt["success_rate"] is None:
         return {**result, "reason": "insufficient_measured_service_calls"}
+    try:
+        max_latency = float(options.get("ai_routing_max_p95_ms") or 4000)
+    except (TypeError, ValueError, OverflowError):
+        return {**result, "reason": "invalid_latency_limit"}
+    if (not math.isfinite(max_latency) or not 500 <= max_latency <= 30000):
+        return {**result, "reason": "invalid_latency_limit"}
     if (alt["success_rate"] < max(.95, main["success_rate"] - .02)
-            or alt["p95_ms"] > max(500, float(options.get("ai_routing_max_p95_ms") or 4000))):
+            or alt["p95_ms"] > max_latency):
         return {**result, "reason": "reliability_or_latency_limit"}
     return {"entity_id": secondary, "switched": True,
             "reason": "cheaper_estimated_cost_with_measured_service_reliability",
