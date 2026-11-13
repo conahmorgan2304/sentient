@@ -245,7 +245,12 @@ def status(db: Any) -> dict[str, Any]:
     """What has been read: documents, searchable pages, and which can't be read page by page."""
     def _status(conn: sqlite3.Connection) -> dict[str, Any]:
         rows = [dict(r) for r in conn.execute("SELECT file, pages, read_pages, unit, error FROM doc_files ORDER BY file")]
-        return {"documents": len(rows), "pages": sum(r["read_pages"] or 0 for r in rows),
+        mode = conn.execute("SELECT value FROM doc_index_meta WHERE key = 'local_ocr'").fetchone()
+        from .local_ocr import available as ocr_available
+
+        return {"local_ocr_available": ocr_available(),
+                "local_ocr_indexed": bool(mode and mode["value"] == "1"),
+                "documents": len(rows), "pages": sum(r["read_pages"] or 0 for r in rows),
                 "whole_only": [os.path.splitext(r["file"])[0] for r in rows
                                if r["unit"] == "page" and not r["read_pages"]],
                 "files": rows}
