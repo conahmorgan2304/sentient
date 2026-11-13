@@ -537,7 +537,7 @@ class SpeechRouter:
             self._delivered_recent = {k: v for k, v in self._delivered_recent.items() if now - v < _DUPLICATE_WINDOW}
             speakers = list(dict.fromkeys(speakers))
             if source != "critical":
-                speakers = [s for s in speakers if (_remark_key(text), s) not in self._delivered_recent]
+                speakers = [s for s in speakers if (_remark_key(text), s) not in self._delivered_recent and (text.lower(), s) not in self._delivered_recent]
             if not speakers:
                 return self._held("duplicate", text, source)
             volume = await self._volumes(speakers)
@@ -552,6 +552,8 @@ class SpeechRouter:
                 return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
+                # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
+                self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
             self._remember_said(text, spoken)
         speakers = accepted
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
