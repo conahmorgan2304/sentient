@@ -31,9 +31,21 @@ def evaluate_scenarios(scenarios: list[dict[str, Any]], *,
             results["invalid_scenario"] += 1
             continue
         incident = scenario["incident"]
-        assessment = assess_incident(incident)
-        old, _ = stage(incident, assessment, now=clock)
-        proposed = investigate(incident, assessment, baseline_stage=old, now=clock)
+        # Scenarios may be imported from hand-edited JSON. One malformed
+        # example must not abort the entire offline validation batch.
+        evidence = incident.get("evidence")
+        if (not isinstance(evidence, list) or len(evidence) > 200
+                or any(not isinstance(row, dict) for row in evidence)
+                or not isinstance(incident.get("alert_level", 0), int)):
+            results["invalid_scenario"] += 1
+            continue
+        try:
+            assessment = assess_incident(incident)
+            old, _ = stage(incident, assessment, now=clock)
+            proposed = investigate(incident, assessment, baseline_stage=old, now=clock)
+        except (TypeError, ValueError, KeyError, AttributeError, OverflowError):
+            results["invalid_scenario"] += 1
+            continue
         compared += 1
         results["stage_agreement" if proposed["stage"] == old else "stage_disagreement"] += 1
         if "expected_corroboration" in scenario:
