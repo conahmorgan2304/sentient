@@ -37,6 +37,43 @@ from .speaker_identity import VOICE_RECOGNITION_DOMAIN
 DOWN = ("unavailable", "unknown")
 
 
+def whole_camera_sensors(hass: HomeAssistant, sensors: list[str]) -> list[tuple[str, list[str]]]:
+    """Frigate occupancy sensors chosen for camera security that cover a whole camera, when that camera has
+    zones with the same kind of sensor: live 13 Nov, binary_sensor.gate_person_occupancy (the gate camera,
+    street included) phoned four times before dawn about people walking past, while the gate zone's own
+    sensor stayed off. [(sensor, [its zone sensors])]"""
+    from homeassistant.helpers import entity_registry as er
+
+    reg = er.async_get(hass)
+    out = []
+    for sensor in sensors:
+        entry = reg.async_get(sensor)
+        if entry is None or entry.platform != "frigate" or not entry.device_id or ":occupancy_sensor:" not in str(entry.unique_id):
+            continue
+        name = str(entry.unique_id).rsplit(":occupancy_sensor:", 1)[1]
+        base, _, label = name.rpartition("_")
+        siblings = [e for e in er.async_entries_for_device(reg, entry.device_id)
+                    if e.platform == "frigate" and ":camera:" in str(e.unique_id)]
+        cameras = {str(e.unique_id).rsplit(":camera:", 1)[1] for e in siblings}
+        if base not in cameras:
+            continue  # already a zone's sensor
+        # the camera's zones, from Frigate's own config where the integration keeps it; otherwise zones that
+        # Home Assistant put on the camera's device
+        config = ((hass.data.get("frigate") or {}).get(entry.config_entry_id) or {}).get("config") or {}
+        zone_names = set(((config.get("cameras") or {}).get(base) or {}).get("zones") or {})
+        zones = []
+        for e in reg.entities.get_entries_for_config_entry_id(entry.config_entry_id):
+            uid = str(e.unique_id)
+            if e.domain != "binary_sensor" or ":occupancy_sensor:" not in uid or e.entity_id == sensor or e.disabled_by:
+                continue
+            zone, _, kind = uid.rsplit(":occupancy_sensor:", 1)[1].rpartition("_")
+            if kind == label and zone not in cameras and (zone in zone_names or e.device_id == entry.device_id):
+                zones.append(e.entity_id)
+        if zones:
+            out.append((sensor, sorted(zones)))
+    return out
+
+
 def _row(area: str, name: str, status: str, detail: str, fix: str = "") -> dict[str, str]:
     return {"area": area, "name": name, "status": status, "detail": detail, "fix": fix}
 
@@ -228,6 +265,13 @@ def check(hass: HomeAssistant, rt: Any, found: dict[str, bool] | None = None) ->
                             "If it's a battery camera, add a wake action under Sleepy cameras."))
         else:
             out.append(_row("Cameras", st.name, "ok", "Live."))
+
+    if opts.get("camera_security"):
+        for sensor, zones in whole_camera_sensors(hass, opts.get("camera_security_sensors") or []):
+            out.append(_row("Cameras", _name(hass, sensor), "warn",
+                            "This sensor counts anyone the whole camera sees, so people passing in the street set off "
+                            "camera security too.",
+                            f"Settings → Cameras → Camera security: choose its zone sensor instead ({', '.join(zones[:2])})."))
 
     # --- Alexa -----------------------------------------------------------------------------------
     if opts.get(CONF_ALEXA_SKILL):

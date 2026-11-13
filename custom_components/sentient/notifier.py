@@ -54,6 +54,8 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
         if "unheard" in kinds and reason == "no_speaker":
             return "Nobody heard this"
     if kind == "visitor" and "visitors" in kinds:
+        if item.get("detail") == "nobody" and not item.get("parcel"):
+            return None  # the doorbell camera looked and saw no one ("empty street view"): nothing to tell a phone
         return "Parcel left" if item.get("parcel") else "At the door"
     if kind == "watch" and "watches" in kinds:
         return "Watch"

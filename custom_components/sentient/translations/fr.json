@@ -879,7 +879,8 @@
           "briefing_time": "Daily briefing at",
           "digest_time": "Daily digest at",
           "morning_briefing": "Briefing when someone's first up",
-          "morning_briefing_areas": "Morning briefing rooms"
+          "morning_briefing_areas": "Morning briefing rooms",
+          "morning_briefing_quiet": "Briefing du matin pendant les heures calmes"
         },
         "data_description": {
           "briefings": "Off turns off the button, the voice tool and the service.",
@@ -888,7 +889,8 @@
           "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
           "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
           "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
-          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are."
+          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are.",
+          "morning_briefing_quiet": "Désactivé : quelqu’un de levé avant la fin des heures calmes reçoit le briefing une fois celles-ci passées, dès qu’on le voit bouger (dans les pièces choisies pour le briefing du matin, s’il y en a), et ce qui a été gardé pendant la nuit y est intégré. Activé : il est donné dès qu’on le voit levé, même pendant les heures calmes, sur le seul haut-parleur de cette pièce."
         }
       }
     }

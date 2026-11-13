@@ -24,6 +24,7 @@ CONF_NOTIFY_TARGETS = "notify_targets"
 CONF_CHIME = "chime"
 CONF_DIGEST_TIME = "digest_time"
 CONF_MORNING_BRIEFING = "morning_briefing"
+CONF_MORNING_BRIEFING_QUIET = "morning_briefing_quiet"  # off: someone up in quiet hours waits for them to end
 CONF_MORNING_BRIEFING_AREAS = "morning_briefing_areas"  # only when someone first comes into one of these rooms
 CONF_WELCOME = "welcome_home"
 CONF_SPEAK_VOLUME = "speak_volume"

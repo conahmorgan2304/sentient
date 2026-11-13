@@ -34,6 +34,9 @@ from .const import (
     CONF_DIGEST_TIME,
     CONF_MORNING_BRIEFING,
     CONF_MORNING_BRIEFING_AREAS,
+    CONF_MORNING_BRIEFING_QUIET,
+    CONF_QUIET_END,
+    DEFAULT_QUIET_END,
     CONF_BRIEFING_TODO,
     CONF_BRIEFING_WEATHER,
     CONF_BRIEFINGS,
@@ -293,7 +296,22 @@ class Upkeep:
         local = dt_util.now()
         return bool(rt.options.get(CONF_BRIEFINGS, True) and rt.options.get(CONF_MORNING_BRIEFING)
                     and getattr(self, "_morning_day", None) != local.date().isoformat() and 5 <= local.hour < 12
-                    and not rt.speech.hushed() and not rt.speech.guest_mode)
+                    and not rt.speech.hushed() and not rt.speech.guest_mode
+                    # someone up early in quiet hours waits for the end of them, unless that's been allowed
+                    and (rt.options.get(CONF_MORNING_BRIEFING_QUIET, False) or not rt.speech.quiet_hours_now()))
+
+    def morning_coming(self, rt) -> bool:
+        """The morning briefing hasn't been given yet and quiet hours ended under half an hour ago: anything
+        held overnight waits for it, so the first thing someone hears is one briefing, not two announcements."""
+        if not (rt.options.get(CONF_BRIEFINGS, True) and rt.options.get(CONF_MORNING_BRIEFING)):
+            return False
+        local = dt_util.now()
+        if getattr(self, "_morning_day", None) == local.date().isoformat() or rt.speech.quiet_hours_now():
+            return False
+        from .followyou import next_quiet_end
+
+        ended = next_quiet_end(local, str(rt.options.get(CONF_QUIET_END) or DEFAULT_QUIET_END)) - timedelta(days=1)
+        return timedelta(0) <= local - ended < timedelta(minutes=30)
 
     @callback
     def _room_entered(self, event) -> None:
@@ -320,7 +338,8 @@ class Upkeep:
     @callback
     def _woke(self, event) -> None:
         """Someone's up (Asleep or awake saw movement in two rooms): the morning briefing, in their room,
-        straight away — even if quiet hours haven't ended, since only that room hears it."""
+        straight away. In quiet hours only with "Morning briefing in quiet hours" on; otherwise the first sign
+        of someone about after they end gives it."""
         rt = self._rt()
         if event.data.get("asleep") or rt is None:
             return
@@ -524,6 +543,9 @@ class Upkeep:
         result = await rt.speech.async_say(message, priority, targets, source=source)
         if not current():
             return {**changed, 'spoken': result.spoken}  # dispatched speech cannot be recalled; do not return old content
+        if result.spoken and facts.get("animals_outside"):
+            # the briefing said how the animals' place is; what was kept about it overnight needn't be said again
+            thought_ids |= {q['id'] for q in rt.followyou.queue if q.get('source') == 'animals'}
         if result.spoken and thought_ids:
             rt.followyou.queue = [q for q in rt.followyou.queue if q['id'] not in thought_ids]
             rt.followyou._save()

@@ -31,3 +31,24 @@ async def test_doctor_finds_what_to_fix(hass: HomeAssistant, hass_ws_client, tmp
     await ws.send_json({"id": 2, "type": "sentient/doctor"})
     by = {r["name"]: r for r in (await ws.receive_json())["result"]["rows"]}
     assert by["Books folder"]["status"] == "ok"
+
+
+async def test_a_whole_camera_sensor_for_camera_security_is_flagged(hass: HomeAssistant) -> None:
+    """Live 13 Nov: the gate camera's own person sensor (street in view) phoned about passers-by; the gate zone's
+    sensor stayed off. The doctor names the zone sensor to use instead."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    from custom_components.sentient.doctor import whole_camera_sensors
+
+    frigate = MockConfigEntry(domain="frigate", entry_id="FRIG")
+    frigate.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(config_entry_id="FRIG", identifiers={("frigate", "gate")}, name="Gate")
+    reg = er.async_get(hass)
+    reg.async_get_or_create("camera", "frigate", "FRIG:camera:gate", device_id=dev.id, config_entry=frigate)
+    whole = reg.async_get_or_create("binary_sensor", "frigate", "FRIG:occupancy_sensor:gate_person", device_id=dev.id,
+                                    config_entry=frigate).entity_id
+    zone = reg.async_get_or_create("binary_sensor", "frigate", "FRIG:occupancy_sensor:Gate_person", device_id=dev.id,
+                                   config_entry=frigate).entity_id
+    reg.async_get_or_create("binary_sensor", "frigate", "FRIG:occupancy_sensor:Gate_car", device_id=dev.id, config_entry=frigate)
+    assert whole_camera_sensors(hass, [whole]) == [(whole, [zone])]
+    assert whole_camera_sensors(hass, [zone]) == []  # a zone's own sensor is what's wanted

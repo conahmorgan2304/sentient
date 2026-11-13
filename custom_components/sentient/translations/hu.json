@@ -857,7 +857,8 @@
           "briefing_time": "Napi összefoglaló ideje",
           "digest_time": "Napi összesítő ideje",
           "morning_briefing": "Összefoglaló, amikor valaki először felkel",
-          "morning_briefing_areas": "Reggeli összefoglaló szobái"
+          "morning_briefing_areas": "Reggeli összefoglaló szobái",
+          "morning_briefing_quiet": "Reggeli összefoglaló csendes órákban"
         },
         "data_description": {
           "briefings": "Kikapcsolva a gomb, a hangeszköz és a szolgáltatás is kikapcsol.",
@@ -868,7 +869,8 @@
           "briefing_time": "Opcionális. Csak akkor mondja el, ha valaki otthon van, és nem csendes idő van.",
           "digest_time": "Opcionális: naponta egyszer az AI néhány mondatban összefoglalja az idővonalat. Az idővonalra kerül (és ha kiválasztottad, a telefonokra). Nem mondja ki.",
           "morning_briefing": "Naponta egyszer délelőtt, abban a szobában, ahol valaki van, amint a ház látja, hogy felkelt (vagy ennek hiányában az első mozgáskor a csendes idő vége után).",
-          "morning_briefing_areas": "Opcionális: csak akkor mondja el, amikor reggel valaki először belép valamelyik ilyen szobába, annak a szobának a hangszóróján – felkelés, mosakodás, öltözés, aztán a konyhában vagy a nappaliban hallod. Üresen: bárhol, ahol épp vannak."
+          "morning_briefing_areas": "Opcionális: csak akkor mondja el, amikor reggel valaki először belép valamelyik ilyen szobába, annak a szobának a hangszóróján – felkelés, mosakodás, öltözés, aztán a konyhában vagy a nappaliban hallod. Üresen: bárhol, ahol épp vannak.",
+          "morning_briefing_quiet": "Kikapcsolva: aki a csendes órák vége előtt már fent van, az összefoglalót azok után kapja, amikor először mozogni látja (a kiválasztott reggeli szobákban, ha vannak), és az éjszaka félretett üzenetek is belekerülnek. Bekapcsolva: rögtön elmondja, amint fent látja, csendes órákban is, csak annak a szobának a hangszóróján."
         }
       }
     }
