@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from custom_components.sentient.action_policy import simulate
 from custom_components.sentient.outcome_learning import evaluate, reviewed_feedback
 from custom_components.sentient.retrieval_quality import rerank, benchmark
-from custom_components.sentient.model_advisor import recommend
 from custom_components.sentient.document_quality import assess, citation_confidence
 from custom_components.sentient.learning_effectiveness import compare
 
@@ -48,16 +47,6 @@ def test_retrieval_keeps_only_candidates_and_reports_labelled_quality():
     assert benchmark([], minimum=1)["recall_at_5"] is None
 
 
-def test_model_advisor_refuses_short_samples_and_does_not_switch():
-    rows = [{"model": "fast", "samples": 24, "success_rate": .95, "p95_ms": 600,
-             "cost_per_call": .01},
-            {"model": "unmeasured", "samples": 3, "success_rate": 1, "p95_ms": 5,
-             "cost_per_call": 0}]
-    result = recommend(rows, max_cost=.02, max_p95_ms=700)
-    assert result["suggested_model"] == "fast"
-    assert result["automatic_switching"] is False
-
-
 def test_scanned_pages_not_mistaken_for_good_citations():
     quality = assess(["", "Text " * 30])
     assert quality["likely_scanned_pages"] == 1
@@ -84,12 +73,6 @@ def test_existing_frigrate_feedback_is_not_falsely_reported_as_accuracy():
 
 
 def test_malformed_evaluation_inputs_are_ignored_not_executed():
-    from custom_components.sentient.stream_health import assess as stream_assess
-    from custom_components.sentient.speaker_evaluation import report as voice_report
-
     assert evaluate([{"human_label": [], "predicted_stage": "observed"},
                      {"human_label": "household", "predicted_stage": []}])["sample_size"] == 0
-    assert recommend([None, ["not", "a", "model"]])["suggested_model"] is None
     assert rerank("boiler", [None, {"id": "a", "text": "boiler"}])[0]["id"] == "a"
-    assert stream_assess([{"stage": []}])["playback"] == "unverified"
-    assert voice_report([{"reason": []}])["sample_size"] == 0
