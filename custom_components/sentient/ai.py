@@ -16,6 +16,8 @@ Questions people ask a voice agent go through that agent, not through here, and 
 from __future__ import annotations
 
 import asyncio
+from collections import deque
+from time import monotonic
 from datetime import timedelta
 import logging
 from typing import Any
@@ -78,6 +80,7 @@ class AIGate:
         self.voice_timings = VoiceTimings(hass)
         self.cases = None  # case memory (the brain), when switched on
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
+        self._observed_calls = deque(maxlen=100)  # volatile timing/outcome only; no inputs or model IDs
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -261,6 +264,7 @@ class AIGate:
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
         """ai_task.generate_data with a time limit; failures are noted and raised as AIUnavailable."""
         generation, options = self._generation, self.options
+        started_at = monotonic()
         data = dict(data)
         if (self.options.get('automatic_language') and self.options.get('speak_house_language')
                 and isinstance(data.get('instructions'), str)
@@ -308,9 +312,11 @@ class AIGate:
         except Exception as err:  # noqa: BLE001 - every failure means "use the plain version"
             if current():
                 self.failed(err)
+                self._observed_calls.append((False, round((monotonic() - started_at) * 1000)))
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
         if current():
             self.ok()
+            self._observed_calls.append((True, round((monotonic() - started_at) * 1000)))
             if cases is not None:
                 cases.case_put(data, response)
         return response or {}
@@ -329,11 +335,22 @@ class AIGate:
         self.last_ok_at = dt_util.utcnow().isoformat()
         self._save()
 
+    def observed_performance(self) -> dict[str, Any]:
+        """Volatile samples only; never infer billed cost or model accuracy."""
+        calls = list(self._observed_calls)
+        times = sorted(ms for _, ms in calls)
+        return {"sample_size": len(calls),
+                "completion_rate": round(sum(ok for ok, _ in calls) / len(calls), 3) if len(calls) >= 10 else None,
+                "p95_ms": times[min(len(times) - 1, max(0, int(len(times) * .95)))] if len(times) >= 10 else None,
+                "billed_cost": None, "model_quality": None,
+                "note": "Service-level completion and latency, not speech quality, paid usage or provider billing."}
+
     def describe(self) -> dict[str, Any]:
         self._roll()
         days = sorted(self.history)[-7:]
         week = [self.history[d] for d in days]
         return {
+            "observed_performance": self.observed_performance(),
             "today": self.used,
             "service_attempts_today": self.service_attempts,
             "retry_attempts_today": self.retry_attempts,
