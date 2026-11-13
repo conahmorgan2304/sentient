@@ -19,3 +19,12 @@ test("layout saves require authenticated administrators at server boundary", () 
   assert.match(ws, /getattr\(connection\.user, "is_admin", False\)/);
   assert.match(ws, /"unauthorized", "Administrator access is required"/);
 });
+
+
+test("card drag-and-drop is editor-only and persists through admin websocket", () => {
+  assert.match(panel, /_layoutDragStart\(event\)/);
+  assert.match(panel, /_layoutDragOver\(event\)/);
+  assert.match(panel, /_layoutDrop\(event\)/);
+  assert.match(panel, /this\._layoutEnabled && this\._layoutEdit/);
+  assert.match(panel, /action: "save", layout: this\._layoutData/);
+});
