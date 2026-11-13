@@ -323,7 +323,7 @@ class MindSensor(_Base):
     # live detail for the page and the voice; none of it is history, and together it passes the recorder's 16 KB limit
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
-        "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow",
+        "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
@@ -364,6 +364,8 @@ class MindSensor(_Base):
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")
                                  or not getattr(rt.incidents, "cognitive", None) else rt.incidents.cognitive.summary()),
+            "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
+                               else rt.intents.summary()),
             "security_events": rt.security_events.recent(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),
