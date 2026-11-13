@@ -1508,8 +1508,9 @@ async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) 
 
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/layout",
-    vol.Optional("action", default="get"): vol.In(["get", "save", "reset"]),
+    vol.Optional("action", default="get"): vol.In(["get", "save", "reset", "enable"]),
     vol.Optional("layout"): dict,
+    vol.Optional("enabled"): bool,
 })
 @websocket_api.async_response
 async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
@@ -1526,10 +1527,18 @@ async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         await store.async_load()
         entry.runtime_data.custom_layout = store
     action = msg["action"]
-    if action in ("save", "reset") and not getattr(connection.user, "is_admin", False):
+    if action in ("save", "reset", "enable") and not getattr(connection.user, "is_admin", False):
         connection.send_error(msg["id"], "unauthorized", "Administrator access is required")
         return
-    if action == "save":
+    if action == "enable":
+        if "enabled" not in msg:
+            connection.send_error(msg["id"], "invalid", "Choose enabled true or false")
+            return
+        result = await store.async_set_enabled(msg["enabled"], user=connection.user)
+        if not result["accepted"]:
+            connection.send_error(msg["id"], "invalid", result["reason"])
+            return
+    elif action == "save":
         result = await store.async_save(msg.get("layout"), user=connection.user)
         if not result["accepted"]:
             connection.send_error(msg["id"], "invalid", result["reason"])
