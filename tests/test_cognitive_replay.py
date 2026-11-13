@@ -44,3 +44,17 @@ def test_replay_bounded_and_malformed_scenarios_never_crash():
     assert result["invalid_label_count"] == 1
     assert result["scenarios_compared"] == 1
     assert result["automatic_actions"] == 0
+
+
+def test_replay_skips_malformed_imported_scenarios_without_hiding_valid_results():
+    valid = {"incident": _incident(), "expected_corroboration": "reported_activity"}
+    cases = [
+        {"incident": {"evidence": ["malformed event"], "alert_level": 0}},
+        {"incident": {"evidence": [], "alert_level": "loud"}},
+        {"incident": {"evidence": [], "alert_level": 0, "end": ["invalid date"]}},
+        valid,
+    ]
+    report = evaluate_scenarios(cases, now=NOW)
+    assert report["invalid_scenario_count"] == 3
+    assert report["scenarios_compared"] == 1
+    assert report["corroboration_correct"] == 1
