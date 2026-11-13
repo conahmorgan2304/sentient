@@ -646,7 +646,13 @@ class Brain:
 
         allowed_rows = [{"kind": r["kind"], "when": r.get("ts"),
                          "text": r["body"][:400]} for r in rows]
-        return rerank(" ".join(words), allowed_rows, limit=limit)
+        ranked = rerank(" ".join(words), allowed_rows, limit=limit)
+        rt = self._rt()
+        if rt is None:
+            return ranked
+        from .semantic_memory import async_rerank
+
+        return await async_rerank(self.hass, rt.options, " ".join(words), ranked)
 
     # ----- copies of facts, conversations and the timeline -------------------------------------
     async def async_sync_memories(self) -> None:
