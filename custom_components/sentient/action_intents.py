@@ -80,6 +80,10 @@ class ActionIntentMonitor:
         incumbent = None
         if previous is not None:
             stamp, side, old_source = previous
+            if not timedelta(0) <= now - stamp <= WINDOW:
+                previous = None
+        if previous is not None:
+            stamp, side, old_source = previous
             incumbent = {"entity_id": entity_id,
                          "action": {"on": "turn_on", "off": "turn_off"}.get(side),
                          "source": old_source, "when": stamp}
