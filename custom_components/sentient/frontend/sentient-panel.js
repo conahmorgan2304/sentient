@@ -358,10 +358,14 @@
       const lanes = [...root.querySelectorAll(".lanes > section.lane")];
       const card = [...root.querySelectorAll(".lanes > section.lane > .card")].find((c) => c.id === id);
       if (act === "layoutreset") {
-        this._layoutData[page] = this._layoutDefaults[page] || [];
+        const available = [...root.querySelectorAll(".lanes > section.lane > .card")];
+        for (const item of this._layoutDefaults[page] || []) {
+          const cardToRestore = available.find((c) => c.id === item.id);
+          if (cardToRestore && lanes[item.lane]) lanes[item.lane].appendChild(cardToRestore);
+        }
+        delete this._layoutData[page];
         root.dataset.layoutApplied = "";
       } else if (act === "layoutshowall") {
-        for (const item of this._layoutRows(page)) item.visible = true;
         this._layoutData[page] = this._layoutRows(page).map((x) => ({ ...x, visible: true }));
       } else if (act === "layouthide" && card) {
         card.style.display = "none";
