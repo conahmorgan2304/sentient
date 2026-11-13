@@ -52,3 +52,8 @@ async def test_a_whole_camera_sensor_for_camera_security_is_flagged(hass: HomeAs
     reg.async_get_or_create("binary_sensor", "frigate", "FRIG:occupancy_sensor:Gate_car", device_id=dev.id, config_entry=frigate)
     assert whole_camera_sensors(hass, [whole]) == [(whole, [zone])]
     assert whole_camera_sensors(hass, [zone]) == []  # a zone's own sensor is what's wanted
+    from custom_components.sentient.doctor import street_facing_whole_camera
+
+    # live 13 Nov (1.5.10): the garden and shed cameras were flagged, but they're behind the fence
+    assert street_facing_whole_camera(hass, {"camera_security_sensors": [whole]}) == [(whole, [zone])]
+    assert street_facing_whole_camera(hass, {"camera_security_sensors": [whole], "camera_security_inside": [whole]}) == []

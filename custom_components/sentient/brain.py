@@ -372,7 +372,9 @@ class Brain:
         rt = self._rt()
         if rt is None:
             return
-        rt.timeline.add("health", text, "unexplained change", entity_id=row["entity"],
+        # said (unusual for the time) it's house health and reaches phones; a repeat that's becoming usual (a kettle
+        # switching itself off around the same time each day) is only noted on the timeline
+        rt.timeline.add("health" if speak else "noticed", text, "unexplained change", entity_id=row["entity"],
                         decision={"kind": "unexplained_change", "evidence": [describe(row)],
                                   "surprise": surprise, "repeats": len(same), "ai_used": False})
         if not speak:

@@ -74,6 +74,13 @@ def whole_camera_sensors(hass: HomeAssistant, sensors: list[str]) -> list[tuple[
     return out
 
 
+def street_facing_whole_camera(hass: HomeAssistant, opts: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    """whole_camera_sensors for the camera security sensors, leaving out those marked inside the boundary: a
+    camera behind the fence (the garden, the shed) only sees the property, so its whole-camera sensor is right."""
+    inside = set(opts.get("camera_security_inside") or [])
+    return whole_camera_sensors(hass, [s for s in opts.get("camera_security_sensors") or [] if s not in inside])
+
+
 def _row(area: str, name: str, status: str, detail: str, fix: str = "") -> dict[str, str]:
     return {"area": area, "name": name, "status": status, "detail": detail, "fix": fix}
 
@@ -267,7 +274,7 @@ def check(hass: HomeAssistant, rt: Any, found: dict[str, bool] | None = None) ->
             out.append(_row("Cameras", st.name, "ok", "Live."))
 
     if opts.get("camera_security"):
-        for sensor, zones in whole_camera_sensors(hass, opts.get("camera_security_sensors") or []):
+        for sensor, zones in street_facing_whole_camera(hass, opts):
             out.append(_row("Cameras", _name(hass, sensor), "warn",
                             "This sensor counts anyone the whole camera sees, so people passing in the street set off "
                             "camera security too.",

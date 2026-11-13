@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+import re
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_ON
@@ -50,6 +51,17 @@ LATE_AFTER = 90  # minutes past the usual getting-up time before "nobody's up" i
 LATE_UNTIL = 300
 THOUGHTS_KEPT = 40
 THOUGHT_DAYS = 7
+
+
+_TOLD = re.compile(
+    r"^(?:(?:when|if|whenever)\b[^,]*,\s*)?(?:always|never|don't|do not|please|acknowledge|respond|reply|answer|say|"
+    r"avoid|use|keep|stop|tell|mention|refer)\b|\b(?:the assistant|you should|you must)\b", re.I)
+
+
+def about_itself(text: str) -> bool:
+    """A memory that's an instruction about how to talk or behave ("When asked about voice ID, acknowledge it"),
+    not something about the house. Those guide the voice but aren't worth announcing as something learned."""
+    return bool(_TOLD.search(text.strip()))
 
 
 def bucket(when: datetime) -> str:
@@ -274,7 +286,8 @@ class InnerLife:
         memory = getattr(rt, "memory", None) if rt is not None else None
         for c in (getattr(memory, "changed", None) or []):
             when = dt_util.parse_datetime(c.get("time") or "")
-            if c.get("kind") == "replaced" and when and when.timestamp() >= since and f"mem:{c['time']}" not in self.shared:
+            if (c.get("kind") == "replaced" and when and when.timestamp() >= since and f"mem:{c['time']}" not in self.shared
+                    and not about_itself(c.get("new") or "")):
                 fresh.append({"key": f"mem:{c['time']}", "t": when.timestamp(), "text": f"I've updated what I know: {c['new'].rstrip('.')}."})
         learner = getattr(rt, "learner", None) if rt is not None else None
         for r in (learner.all() if learner is not None else []):
@@ -292,7 +305,8 @@ class InnerLife:
         if rt is None:
             return False
         try:
-            result = await rt.speech.async_say(f"Something I've learned: {pick['text']}", "normal", source="learning")
+            text = pick["text"] if pick["text"].startswith("I") else f"Something I've learned: {pick['text']}"
+            result = await rt.speech.async_say(text, "normal", source="learning")
         except Exception as err:  # noqa: BLE001 - no speaker answered: try again later this evening
             _LOGGER.debug("Couldn't say what it learned: %s", err)
             return False

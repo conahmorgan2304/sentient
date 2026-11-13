@@ -175,6 +175,7 @@ async def test_an_unexplained_heating_change_is_linked_then_said_when_unusual(ha
     item = next(i for i in rt.timeline.items if i.get("detail") == "unexplained change")
     assert "nothing in Home Assistant did it" in item["text"] and "third time this week" in item["text"]
     say.assert_not_called()  # still learning the heating: on the timeline, not said
+    assert item["kind"] == "noticed"  # and not phoned as house health (live 13 Nov: the kettle switching itself off)
     # once it knows the heating is never switched off around now, the next one is said
     for day in range(3, 13):
         rt.brain.expect.learn("climate.heating", "off", (now - timedelta(days=day, hours=8)).timestamp())
