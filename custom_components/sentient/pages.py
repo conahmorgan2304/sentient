@@ -35,6 +35,7 @@ SCHEMA = [
         read_pages INTEGER, unit TEXT, error TEXT)""",
     """CREATE TABLE IF NOT EXISTS doc_pages (file TEXT NOT NULL, page INTEGER NOT NULL, label TEXT, body TEXT,
         PRIMARY KEY (file, page))""",
+    """CREATE TABLE IF NOT EXISTS doc_index_meta (key TEXT PRIMARY KEY, value TEXT)""",
 ]
 FTS = "CREATE VIRTUAL TABLE IF NOT EXISTS doc_pages_fts USING fts5(file UNINDEXED, page UNINDEXED, body)"
 _SPACE = re.compile(r"[ \t\r\f\v]+")
@@ -57,7 +58,7 @@ def _labels(reader: Any, count: int) -> list[str]:
     return [str(i + 1) for i in range(count)]
 
 
-def read_pdf(path: str) -> tuple[list[tuple[int, str, str]], int]:
+def read_pdf(path: str, *, local_ocr: bool = False) -> tuple[list[tuple[int, str, str]], int]:
     """([(page number, printed label, text)], total pages). Raises if it can't be read at all."""
     from pypdf import PdfReader
 
@@ -68,11 +69,16 @@ def read_pdf(path: str) -> tuple[list[tuple[int, str, str]], int]:
     count = min(total, MAX_PAGES)
     labels = _labels(reader, count)
     out = []
+    ocr_pages = 0
     for i in range(count):
         try:
             text = _tidy(reader.pages[i].extract_text() or "")
         except Exception:  # noqa: BLE001 - one bad page doesn't lose the rest
             text = ""
+        if local_ocr and len(text) < MIN_TEXT and ocr_pages < 20:
+            from .local_ocr import extract_page
+            text = _tidy(extract_page(reader.pages[i])) or text
+            ocr_pages += 1
         out.append((i + 1, labels[i], text))
     return out, total
 
@@ -129,11 +135,26 @@ def read_text(path: str) -> tuple[list[tuple[int, str, str]], int]:
     return out, len(sections)
 
 
-def sync(db: Any, folder: str, files: list[str]) -> dict[str, Any]:
+def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> dict[str, Any]:
     """Read new or changed documents into the database and drop ones that have gone. Runs in the executor."""
     wanted = {f for f in files if os.path.splitext(f)[1].lower() in READ and f == os.path.basename(f)
               and not f.startswith(".")}
-    known = db.run(lambda c: {r["file"]: (r["mtime"], r["size"]) for r in c.execute("SELECT file, mtime, size FROM doc_files")})
+    from .local_ocr import available as ocr_available
+
+    actual_ocr = bool(local_ocr and ocr_available())
+    mode = "1" if actual_ocr else "0"
+    def known_files(conn: sqlite3.Connection) -> dict[str, tuple[float, int]]:
+        previous = conn.execute("SELECT value FROM doc_index_meta WHERE key = ?", ("local_ocr",)).fetchone()
+        if previous is None or previous["value"] != mode:
+            # Reindex once when OCR is switched on/off or becomes installed.
+            # Never retain OCR text after disabling the feature.
+            conn.execute("DELETE FROM doc_pages")
+            conn.execute("DELETE FROM doc_files")
+            if db.fts:
+                conn.execute("DELETE FROM doc_pages_fts")
+            conn.execute("INSERT OR REPLACE INTO doc_index_meta(key, value) VALUES(?,?)", ("local_ocr", mode))
+        return {r["file"]: (r["mtime"], r["size"]) for r in conn.execute("SELECT file, mtime, size FROM doc_files")}
+    known = db.run(known_files)
     read = 0
     for name in sorted(wanted):
         path = os.path.join(folder, name)
@@ -151,7 +172,7 @@ def sync(db: Any, folder: str, files: list[str]) -> dict[str, Any]:
             error = "too large to read page by page"
         else:
             try:
-                pages, total = (read_pdf if name.lower().endswith(".pdf") else read_text)(path)
+                pages, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf") else read_text(path))
             except ImportError:
                 return {"error": "pypdf is not installed"}
             except Exception as err:  # noqa: BLE001 - a damaged PDF is still read whole by the AI
@@ -163,7 +184,8 @@ def sync(db: Any, folder: str, files: list[str]) -> dict[str, Any]:
     gone = [f for f in known if f not in wanted]
     if gone:
         db.run(lambda c: [_drop(db, c, f) for f in gone])
-    return {"read": read, "removed": len(gone)}
+    return {"read": read, "removed": len(gone), "local_ocr_available": ocr_available(),
+            "local_ocr_active": actual_ocr}
 
 
 def _drop(db: Any, conn: sqlite3.Connection, name: str) -> None:
