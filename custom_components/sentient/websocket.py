@@ -428,7 +428,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("memory", "Memory & learning", "mdi:database-clock-outline", "The house ledger of every change and what caused it, what's usual when, beliefs it tests each night, learning from how people react, and saving AI calls. Kept in Sentient's own database; nothing leaves the house.", [
         "house_ledger", "unexplained_changes", "unexplained_entities", "expectations", "surprise_gating", "situations",
-        "beliefs", "learn_reactions", "ai_case_memory", "voice_speed_watchdog", "voice_speed_restart", "incident_stages",
+        "beliefs", "learn_reactions", "ai_case_memory", "memory_semantic_enabled", "memory_semantic_url", "memory_semantic_model", "voice_speed_watchdog", "voice_speed_restart", "incident_stages",
     ]),
     ("warnings", "Weather warnings", "mdi:weather-lightning-rainy", "Official weather and flood warnings for your country, from its own weather service. Severe ones are said once; the rest go on the timeline.", [
         "weather_warnings", "warnings_country", "warnings_region", "warnings_speak",
