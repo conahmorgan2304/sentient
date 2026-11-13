@@ -266,6 +266,7 @@ async def test_local_only_speaker_stays_out_of_ai_prompt_and_memory_attribution(
         assert shared["saved"] == "Alex: I like tea"
         memory = next(item for item in entry.runtime_data.memory.items if item.id == shared["id"])
         assert memory.origin == "explicit"
+        assert memory.owner == "alex"
     finally:
         current_request.reset(request_token)
         voice_id.current_speaker.reset(token)
@@ -431,3 +432,20 @@ def test_voice_match_advice_refuses_invalid_and_ambiguous_scores():
     assert advice({"threshold": 0.70}, invalid) is None
     ambiguous = [{"reason": "below_threshold", "similarity": 0.67, "gap": 0.02}] * 3
     assert advice({"threshold": 0.70}, ambiguous) is None
+
+
+async def test_explicit_memory_owner_takes_precedence_over_name_prefix(hass: HomeAssistant):
+    from custom_components.sentient.memory import Memory
+
+    _install(hass)
+    opts = {"voice_id": True, "speaker_memories": True}
+    owner = SimpleNamespace(display_name="Alex", share_name=True)
+    other = SimpleNamespace(display_name="Sam", share_name=True)
+    personal = Memory(text="Quietly prefers tea", owner="alex")
+    shared = Memory(text="The rubbish goes out Friday")
+    legacy = Memory(text="Sam: likes hot chocolate")
+    stored = [personal, shared, legacy]
+    alex_memories = voice_id.speaker_scope(hass, opts, stored, owner)
+    assert personal in alex_memories and shared in alex_memories and legacy not in alex_memories
+    sam_memories = voice_id.speaker_scope(hass, opts, stored, other)
+    assert personal not in sam_memories and legacy in sam_memories
