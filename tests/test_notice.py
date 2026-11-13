@@ -223,3 +223,20 @@ async def test_the_same_news_in_different_words_is_said_once_per_window(hass: Ho
     await hass.async_block_till_done()
     await _settle(hass, freezer)
     assert len(said) == 2  # after the window it's news again
+
+
+def test_a_remark_about_another_room_is_held() -> None:
+    """Live 13 Nov: the bathroom window opening became "the air quality in the living room is poor"."""
+    from datetime import datetime, timezone
+
+    from custom_components.sentient.notice import Change, wrong_room
+
+    change = Change("binary_sensor.bathroom_window", "bathroom window", "Bathroom", "off", "on", "",
+                    datetime(2026, 11, 13, 8, 30, tzinfo=timezone.utc))
+    areas = ["Bathroom", "Living room", "Kitchen"]
+    assert wrong_room("The air quality in the living room is rather poor, shall I switch on the purifier?",
+                      [change], areas) == "Living room"
+    assert wrong_room("The bathroom window's open and it's cold out.", [change], areas) is None
+    assert wrong_room("It's got chilly, shall I put the heating on?", [change], areas) is None  # no room named
+    nowhere = Change("sensor.weather", "Weather", None, "cloudy", "rain", "", change.when)
+    assert wrong_room("It's raining in the kitchen garden.", [nowhere], areas) is None  # change has no room

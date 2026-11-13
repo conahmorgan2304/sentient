@@ -19,6 +19,9 @@ NOTES: dict[str, list[str]] = {
         "Someone up early no longer gets the morning briefing during quiet hours: it waits until they end, then comes the first time they're seen moving (in the morning briefing rooms, if chosen). The old way is a switch: Settings → Briefings → Morning briefing in quiet hours.",
         "Things held back for quiet hours are passed on as \"Overnight: …\", never \"While you were away\" — nobody had gone out. Something nobody heard is \"Earlier: …\".",
         "A newer reading of the same thing (the hutch at 0°, then -1°) replaces the older one instead of both being said, and in the half hour after quiet hours the morning briefing goes first, so what it covers isn't said again.",
+        "A remark that talks about a different room from the one where something changed (the bathroom window opening, then \"the air quality in the living room is poor\") is held back instead of said.",
+        "When the doorbell camera looks and sees nobody (\"empty street view\"), no \"At the door\" notification is sent to phones.",
+        "The Setup doctor warns when camera security uses a sensor that covers a whole Frigate camera while that camera has zones: people walking past in the street set it off. It names the zone sensor to use instead.",
     ],
     "1.5.6": [
         "Fixed: saving one setting through Sentient's settings commands no longer resets the other settings on that page to their defaults (the Settings page itself was never affected).",

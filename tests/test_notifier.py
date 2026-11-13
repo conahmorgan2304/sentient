@@ -29,3 +29,12 @@ async def test_chosen_kinds_go_to_phones(hass: HomeAssistant) -> None:
         ("Nova · Nobody heard this", "Gate left open."),
     ]
     assert sent[0].data["entity_id"] == ["notify.phone"]
+
+
+def test_nobody_at_the_door_is_not_sent_to_phones() -> None:
+    """Live 13 Nov: "empty street view" and "nobody at the door" were sent as At the door."""
+    from custom_components.sentient.notifier import wanted
+
+    assert wanted({"kind": "visitor", "detail": "nobody", "text": "empty street view"}, {"visitors"}) is None
+    assert wanted({"kind": "visitor", "detail": "delivery", "text": "a driver"}, {"visitors"}) == "At the door"
+    assert wanted({"kind": "visitor", "detail": "nobody", "parcel": True}, {"visitors"}) == "Parcel left"

@@ -107,6 +107,22 @@ def contradicts(message: str, changes: list[Change]) -> bool:
     return any(n in _STARTED_STATES for n in news) or not news
 
 
+def wrong_room(message: str, changes: list[Change], areas: list[str]) -> str | None:
+    """A remark about a room none of the changes were in: live 13 Nov, the bathroom window opening was turned
+    into "the air quality in the living room is poor". Only rooms named by the house count, so a remark that
+    names no room (the usual case) is never held."""
+    rooms = {str(c.area).casefold() for c in changes if getattr(c, "area", None)}
+    if not rooms or any(isinstance(c, Told) for c in changes):
+        return None
+    text = f" {re.sub(r'[^a-z0-9 ]+', ' ', (message or '').casefold())} "
+    for area in sorted(areas, key=len, reverse=True):
+        name = area.casefold().strip()
+        if name and name not in rooms and f" {re.sub(r'[^a-z0-9 ]+', ' ', name)} " in text:
+            if not any(name in r or r in name for r in rooms):
+                return area
+    return None
+
+
 def _number(value: str | None) -> float | None:
     from .numeric import finite_float
 
@@ -320,6 +336,10 @@ class Noticer:
         if speak and contradicts(message, changes):
             record["result"] = "held: said something had finished, but it had only just started"
             record["message"] = decision.get("message")
+            return record
+        if speak and (other := wrong_room(message, changes, [a.name for a in ar.async_get(self.hass).async_list_areas()])):
+            record["result"] = f"held: talked about the {other}, but nothing changed there"
+            record["message"] = message
             return record
         record["result"] = "spoke" if speak else "stayed quiet"
         record["message"] = message
