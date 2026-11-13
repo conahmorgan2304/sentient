@@ -228,7 +228,7 @@ async def test_every_new_setting_has_a_page_and_words(hass: HomeAssistant):
     strings = json.loads((Path(__file__).parents[1] / "custom_components/sentient/strings.json").read_text())
     data = strings["options"]["step"]["settings"]
     keys = [k for g in GROUPS if g[0] in ("memory", "warnings", "skills") for k in g[4]]
-    assert len(keys) == 20
+    assert len(keys) == 23  # three optional local semantic-memory settings added in 1.5.12
     for key in keys:
         assert key in data["data"] and key in data["data_description"], key
 
