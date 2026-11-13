@@ -34,3 +34,13 @@ test("the layout toolbar only appears once switched on in Settings", () => {
   assert.match(panel, /const shown = admin && this\._layoutEnabled;/);
   assert.match(panel, /h\.energy_comparison \?/);  // no kWh button without a heating meter chosen
 });
+
+
+test("AI routing calibration is explicitly approved and visible only to admin", () => {
+  assert.match(panel, /data-act="routecal"/);
+  assert.match(panel, /g\.id === "door" && this\._hass\.user\?\.is_admin/);
+  assert.match(panel, /window\.confirm\("Run ONE potentially billable/);
+  assert.match(panel, /type: "sentient\/ai\/routing\/calibrate"/);
+  assert.match(ws, /async def ws_ai_routing_calibrate/);
+  assert.match(ws, /@websocket_api\.require_admin/);
+});
