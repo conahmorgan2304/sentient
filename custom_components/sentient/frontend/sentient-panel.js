@@ -2393,7 +2393,7 @@
         <div class="row end"><span class="spmsg" id="mlmsg"></span><button class="btn ghost sm" data-act="mlcancel">CANCEL</button><button class="btn sm" data-act="mlsave">SAVE</button></div></div>`;
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
-        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours", protect_voice_override: "Respect recent voice commands",
+        light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours", protect_voice_override: "Keep motion from undoing voice-off",
         only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
         brightness: "Brightness", night_brightness: "Late-night brightness",
         lux_sensor: "Light sensor (optional)", lux_below: "Dark below",
@@ -2401,7 +2401,7 @@
       const HELP = {
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
         respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
-        protect_voice_override: "Optional: for two minutes, motion will not reverse a recently dispatched higher-priority voice command. Off by default.",
+        protect_voice_override: "Optional: for two minutes after a guarded voice-off request, motion will not turn this light back on. Off by default.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
