@@ -746,7 +746,9 @@ async def ws_brain(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
     if entry.runtime_data.speech.guest_mode:
         status = {k: v for k, v in status.items() if k not in ("situations", "beliefs", "voice")}
     warnings = getattr(entry.runtime_data, "warnings", None)
-    connection.send_result(msg["id"], {"on": True, **status, "warnings": warnings.listing() if warnings is not None else None})
+    feedback = getattr(entry.runtime_data, "feedback", None)
+    connection.send_result(msg["id"], {"on": True, **status, "warnings": warnings.listing() if warnings is not None else None,
+                                       "corrections": feedback.stuck() if feedback is not None else None})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/brain/clear",

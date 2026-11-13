@@ -18,6 +18,10 @@ nothing is held against it for ever. Unshushing takes the score back down.
 * offers: two declines or deletions for a thing, and no more are offered for it.
 
 Everything learned is listed, and can be reset, on the Shushed settings page.
+
+Whether a correction stuck is measured too (Sentient 2.0, "learning"): each thumbs down, shush or hush starts a
+fortnight's watch on that thing, and anything said about it in that time is counted against the correction.
+Shown on the Mind tab's HOW I'M LEARNING card.
 """
 
 from __future__ import annotations
@@ -38,6 +42,8 @@ IMPORTANT_ONLY = 2.0
 QUIET = 3.0
 NO_MORE_OFFERS = 2.0
 HUSH_AFTER_REMARK = timedelta(minutes=2)
+WATCH_DAYS = timedelta(days=14)  # a correction "sticks" when the thing isn't said again in this time
+WATCH_MAX = 200
 
 SHUSHED = 1.5
 THUMB = 1.0
@@ -60,15 +66,29 @@ class Feedback:
         self.last_remark: tuple[datetime, list[str]] | None = None
         self.about: dict[str, list[str]] = {}  # recent remark text -> what it was about
         self.liked: list[str] = []  # remarks given a thumbs up
+        self.watches: list[dict[str, Any]] = []  # corrections being watched: {thing, at, said_again}
+        self._unsub_timeline = None
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
         self.items = data.get("items", {})
         self.liked = list(data.get("liked") or [])
+        self.watches = list(data.get("watches") or [])[-WATCH_MAX:]
+        from .timeline import EVENT_TIMELINE
+
+        if self._unsub_timeline is None:
+            self._unsub_timeline = self.hass.bus.async_listen(EVENT_TIMELINE, self._timeline)
+
+    @callback
+    def async_stop(self) -> None:
+        if self._unsub_timeline is not None:
+            self._unsub_timeline()
+            self._unsub_timeline = None
 
     @callback
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"items": self.items, "liked": self.liked}, 2)
+        self._store.async_delay_save(lambda: {"items": self.items, "liked": self.liked,
+                                              "watches": self.watches[-WATCH_MAX:]}, 2)
 
     @staticmethod
     def _faded(item: dict[str, Any], now: datetime) -> float:
@@ -91,8 +111,45 @@ class Feedback:
         else:
             whys = ([why] + [w for w in item.get("why", []) if w != why])[:4] if weight > 0 else item.get("why", [])
             self.items[key] = {"score": round(score, 2), "updated": now.isoformat(), "why": whys}
+        if weight > 0 and kind == "remarks":
+            self.watches = [w for w in self.watches if w["thing"] != entity_id]
+            self.watches.append({"thing": entity_id, "at": now.isoformat(), "said_again": 0})
+            self.watches = self.watches[-WATCH_MAX:]
+        elif weight < 0:
+            self.watches = [w for w in self.watches if w["thing"] != entity_id]  # unshushed or liked: not a correction
         self._save()
         return score
+
+    # ----- did it stick? ----------------------------------------------------------------
+    def _said_again(self, things: list[str]) -> None:
+        now = dt_util.utcnow()
+        hit = False
+        for w in self.watches:
+            started = dt_util.parse_datetime(w["at"]) or now
+            if w["thing"] in things and timedelta(0) <= now - started <= WATCH_DAYS:
+                w["said_again"] += 1
+                hit = True
+        if hit:
+            self._save()
+
+    @callback
+    def _timeline(self, event) -> None:
+        item = event.data
+        if item.get("kind") == "said" and item.get("source"):
+            source = str(item["source"])
+            self._said_again([f"source:{source}", f"source:{source.split(':', 1)[0]}"])
+
+    def stuck(self) -> dict[str, Any]:
+        """Corrections over the last month and whether they stuck: nothing said about that thing again within a
+        fortnight. Only corrections whose fortnight is over are judged."""
+        now = dt_util.utcnow()
+        recent = [w for w in self.watches if (at := dt_util.parse_datetime(w["at"])) and now - at <= timedelta(days=30)]
+        judged = [w for w in recent if now - dt_util.parse_datetime(w["at"]) > WATCH_DAYS]
+        stuck = sum(w["said_again"] == 0 for w in judged)
+        return {"corrections": len(recent), "judged": len(judged), "stuck": stuck,
+                "said_again": sum(w["said_again"] > 0 for w in recent),
+                "stuck_rate": round(stuck / len(judged), 3) if len(judged) >= 5 else None,
+                "note": "A correction sticks when the thing isn't mentioned again within a fortnight."}
 
     # ----- what it means -------------------------------------------------------
     def remark_level(self, entity_id: str) -> str | None:
@@ -106,6 +163,7 @@ class Feedback:
     @callback
     def remarked(self, entity_ids: list[str], text: str | None = None) -> None:
         self.last_remark = (dt_util.utcnow(), entity_ids)
+        self._said_again(list(entity_ids))
         if text:
             self.about[" ".join(text.split())] = list(entity_ids)
             while len(self.about) > 40:
@@ -191,6 +249,7 @@ class Feedback:
         if key is None:
             n = len(self.items)
             self.items = {}
+            self.watches = []
         else:
             hits = [k for k in self.items if k == key or k.split("|", 1)[1] == key]
             for k in hits:

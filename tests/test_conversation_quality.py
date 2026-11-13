@@ -58,3 +58,24 @@ def test_every_memory_says_how_it_is_known() -> None:
     assert Memory("x", source="conversation").basis == "said"
     assert Memory("x", source="reflection", origin="edited").basis == "confirmed"  # put right on the Memories page
     assert Memory("x").as_dict()["basis"] == "said"
+
+
+async def test_a_correction_sticks_when_the_thing_isnt_said_again(hass: HomeAssistant, freezer) -> None:
+    """Phase 2, learning: a thumbs down or shush starts a fortnight's watch; anything said about it counts against it."""
+    from datetime import timedelta
+
+    from custom_components.sentient.feedback import Feedback
+    from custom_components.sentient.timeline import EVENT_TIMELINE
+
+    fb = Feedback(hass, "t")
+    await fb.async_load()
+    fb.record("source:appliance", 1.0, "thumbs down")
+    fb.record("sensor.kettle", 1.0, "thumbs down")
+    hass.bus.async_fire(EVENT_TIMELINE, {"kind": "said", "source": "appliance", "text": "The washer's done."})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(days=15))
+    s = fb.stuck()
+    assert s == {**s, "corrections": 2, "judged": 2, "stuck": 1, "said_again": 1}
+    fb.record("sensor.kettle", -1.0, "thumbs up")  # liked after all: not a correction any more
+    assert fb.stuck()["corrections"] == 1
+    fb.async_stop()
