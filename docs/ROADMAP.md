@@ -43,6 +43,40 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Weekly report: what it learned and noticed this week (0.34.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
 
+## Sentient 2.0 — proven, connected intelligence
+The aim isn't more features. It's showing, with numbers from a real house, that each release decides better than the last, and that memory, reasoning, conversation and security actually work together. Four things are measured:
+
+| Area | What has to be shown |
+| --- | --- |
+| Reliability | An update doesn't break existing features or any page of the panel |
+| Intelligence | Given the same evidence, the new version decides better (including staying silent) |
+| Learning | A correction changes what it does next time |
+| Integration | Memory, reasoning, conversation and security are connected on the real execution path |
+
+**The rule for every pull request:** no new intelligence component is complete until it receives real inputs, produces a measurable result, is wired into the running integration and passes regression tests. A module nothing feeds isn't a feature.
+
+### Phase 1 — Foundations: proof, not behaviour *(no new autonomous behaviour)*
+- [ ] Page checks: every tab, every Settings group and the main dialogs opened in a browser against a fake Home Assistant whose answers were recorded from the real integration; any page error fails the build.
+- [ ] Integration audit: a test lists modules the running integration never loads, settings nothing reads, and parallel decision paths. The list of known gaps can only shrink.
+- [ ] Shared decision record: built on the timeline's existing `decision` field (kind, evidence, surprise, AI used, outcome), not a new database.
+- [ ] Replay engine: recorded state changes run through the real decision code of two versions on a simulated clock, with nothing spoken and no device touched, so their decisions (including silences) can be compared.
+- [ ] Benchmark report: decisions, alert quality, repeats, false claims, AI calls and response time, old version against new; a release that's worse on any of them isn't shipped.
+- [ ] End-to-end integration test: gate contact and camera event → incident evidence → cognitive assessment → household context and memory → notification decision → recorded outcome. A broken link fails the test.
+
+### Phase 2 — Conversation, memory and awareness
+- [ ] Remember the active conversation separately from keeping the microphone open; topic and speaker continuity; follow-ups measured with the existing voice timings.
+- [ ] Memory recall measured (did the right memory come up, did it change the answer); observations, preferences, assumptions and verified facts kept apart.
+
+### Phase 3 — Cognitive Core and security, measured
+- [ ] Incident reviews scored per category (household, visitor, concerning), with false alerts and missed threats counted separately. Enough reviewed cases in each category before anything is promoted; a high overall score is never enough on its own.
+- [ ] One narrowly scoped decision promoted out of shadow mode only after that, with automatic demotion if agreement drops. Critical alerts are never held back by a model's assessment.
+
+### Phase 4 — Controlled autonomy
+- [ ] Guarded multi-step plans (bedtime and the like): plan, permission check, conflict check, carry out approved steps, verify, report what didn't happen.
+- [ ] Wider model routing only on measured quality, reliability, latency and cost.
+
+GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.
+
 ## Next integration work (separate from the completed release checklist)
 - [ ] Cognitive Core 2.0: pilot a shared, read-only evidence-to-decision envelope across security, incident and action outcomes; compare with existing behaviour before modifying alerts or device control.
 - [ ] Voice Recognition: verify multiple consenting household voices, noise and ambiguous speaker matches on real ESPHome satellites; no identity-based permission elevation.

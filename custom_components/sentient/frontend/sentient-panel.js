@@ -687,7 +687,7 @@
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
       if (this._view === "mind") this._loadInner();
-      this._drawBrain(mind, ai);
+      this._drawBrainStrip(mind, ai);
       this._drawAppliances(mind.appliances || []);
 
       // visitors
@@ -2863,7 +2863,15 @@
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
-      else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "goto") {
+        if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); }
+        else {
+          // the page is chosen after switching tabs: coming from another tab, _show opens Settings on its front page
+          this._show("settings", true);
+          this._group = id;
+          if (this._settings) { this._drawSide(); this._drawBody(); }
+        }
+      }
       else if (act === "hdupe") {
         if (!window.confirm(`Disable the empty copy of ${el.dataset.name || "this device"}? It has no entities, so nothing stops working, and Home Assistant keeps it disabled even when its integration reloads. Undo from its device page.`)) return;
         this._hass.callWS({ type: "sentient/health/disable_copy", device_id: id }).then(() => { const row = el.closest(".r"); if (row) row.remove(); }, (e) => window.alert(e.message || String(e)));
@@ -3208,7 +3216,7 @@
     }
 
     // the Mind page's top strip: how much it's thought today, the last week, and how it talks
-    _drawBrain(mind, ai) {
+    _drawBrainStrip(mind, ai) {
       const R = (id) => this._$(id);
       const tk = mind.talking || {};
       const days = Object.entries(ai.last_7_days || {});

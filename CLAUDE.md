@@ -14,6 +14,11 @@ Home Assistant custom integration (domain `sentient`). An evolving AI "brain" sh
 - `tests/` — pytest with `pytest-homeassistant-custom-component`; run `pytest -q`
 - `docs/ROADMAP.md` — stages; tick items off as they land
 
+## Proving it works (Sentient 2.0)
+- No new intelligence component is complete until it receives real inputs, produces a measurable result, is wired into the running integration and passes regression tests. A module nothing feeds isn't a feature; don't add one.
+- A change to what Sentient says or does should be checked with the replay benchmark (`scripts/replay.py`) against recorded days, old version against new, including decisions to stay silent.
+- Every panel change must pass the page checks (every tab and Settings group opened in a browser).
+
 ## Optional features
 - Every new optional user-facing feature must have an enable/disable control in Settings, with runtime enforcement and clear descriptions. Disabling it stops its optional work and hides its UI; document whether retained data is cleared. Reliability fixes remain active.
 
