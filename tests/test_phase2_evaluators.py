@@ -81,3 +81,15 @@ def test_existing_frigrate_feedback_is_not_falsely_reported_as_accuracy():
     assert result["reviewed_correction_fraction"] == .333
     assert result["confirmed_population_error_rate"] is None
     assert result["changes_to_frigate_settings"] == 0
+
+
+def test_malformed_evaluation_inputs_are_ignored_not_executed():
+    from custom_components.sentient.stream_health import assess as stream_assess
+    from custom_components.sentient.speaker_evaluation import report as voice_report
+
+    assert evaluate([{"human_label": [], "predicted_stage": "observed"},
+                     {"human_label": "household", "predicted_stage": []}])["sample_size"] == 0
+    assert recommend([None, ["not", "a", "model"]])["suggested_model"] is None
+    assert rerank("boiler", [None, {"id": "a", "text": "boiler"}])[0]["id"] == "a"
+    assert stream_assess([{"stage": []}])["playback"] == "unverified"
+    assert voice_report([{"reason": []}])["sample_size"] == 0
