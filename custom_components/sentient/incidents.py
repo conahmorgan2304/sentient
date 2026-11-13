@@ -189,6 +189,49 @@ class Incidents:
             item['alert_level'] = max(item['alert_level'], level)
             self._save()
 
+    def review(self, incident_id: str, outcome: str) -> dict:
+        """Attach explicit household review to a retained incident only.
+
+        Human review is not independent ground truth. Never adjust alarms,
+        detector thresholds, routes or downstream permissions.
+        """
+        from .outcome_learning import LABELS
+
+        if not self.enabled:
+            return {"error": "Incident review is disabled"}
+        self._prune()
+        if outcome not in LABELS and outcome != "clear":
+            return {"error": "Unsupported incident review outcome"}
+        row = next((i for i in self.items if i.get("id") == incident_id), None)
+        if row is None:
+            return {"error": "Incident is not retained"}
+        if outcome == "clear":
+            row.pop("household_review", None)
+        else:
+            row["household_review"] = {"label": outcome, "at": dt_util.utcnow().isoformat(),
+                                       "source": "household_review_not_independent_proof"}
+        self._save()
+        return {"changed": True, "detector_settings_changed": False, "alert_policy_changed": False}
+
+    def reviewed_outcomes(self) -> dict:
+        """Evaluate labelled episodes without exporting source, faces or IDs."""
+        from .outcome_learning import evaluate
+
+        if not self.enabled:
+            return {"enabled": False}
+        self._prune()
+        labelled = []
+        for row in self.items:
+            review = row.get("household_review")
+            if not isinstance(review, dict) or review.get("label") is None:
+                continue
+            # Stage at review time is inferred from recorded evidence; stage matching
+            # does not prove factual correctness or population detection accuracy.
+            predicted, _ = stage(row)
+            labelled.append({"human_label": review["label"], "predicted_stage": predicted})
+        return {**evaluate(labelled), "reviewed_total": len(labelled),
+                "labels_independent_ground_truth": False}
+
     def recent(self, query=''):
         if not self.enabled:
             return []
@@ -202,6 +245,7 @@ class Incidents:
         out = []
         for i in chosen:
             row = dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i))
+            row.pop("household_review", None)  # private labels are shown only in aggregate
             # The original stage remains authoritative; the new coordinator
             # only compares decisions and tracks disagreement for later review.
             legacy_stage, legacy_reason = stage(i, row['assessment'])
