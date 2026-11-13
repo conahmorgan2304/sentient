@@ -18,20 +18,32 @@ MAX_CANDIDATES = 8
 MAX_VECTOR_SIZE = 4096
 
 
+_ALLOWED_NETWORKS = tuple(ipaddress.ip_network(net) for net in (
+    "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+    "::1/128", "fc00::/7",
+))
+
+
 def allowed_endpoint(url: str) -> bool:
+    """Only explicit numeric loopback/RFC1918/ULA addresses; never resolve hostnames.
+
+    Refusing DNS names also prevents DNS rebinding of a previously allowed host.
+    Redirects remain disabled on the outgoing request.
+    """
     if not isinstance(url, str) or len(url) > 160:
         return False
     try:
         parsed = urlsplit(url)
-        host = parsed.hostname
         if (parsed.scheme != "http" or parsed.username or parsed.password
                 or parsed.query or parsed.fragment or parsed.path not in ("", "/api/embed")
-                or not host or parsed.port is None or not 1 <= parsed.port <= 65535):
+                or parsed.port is None or not 1 <= parsed.port <= 65535):
             return False
-        if host == "localhost":
-            return True
-        address = ipaddress.ip_address(host)
-        return address.is_private and not (address.is_link_local or address.is_multicast)
+        address = ipaddress.ip_address(parsed.hostname or "")
+        if address.is_unspecified or address.is_multicast or address.is_link_local:
+            return False
+        if getattr(address, "ipv4_mapped", None) is not None:
+            return False
+        return any(address in network for network in _ALLOWED_NETWORKS)
     except (ValueError, TypeError):
         return False
 
