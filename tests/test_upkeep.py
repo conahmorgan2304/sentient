@@ -1,4 +1,5 @@
 """Briefings and the weekly memory tidy."""
+from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import llm
@@ -195,6 +196,7 @@ async def test_morning_briefing_waits_for_a_chosen_room(hass: HomeAssistant, fre
     hass.bus.async_fire(EVENT_SLEEP, {"asleep": False})
     await hass.async_block_till_done()
     assert not said  # up, but not in a morning room yet
+    hass.states.async_set("binary_sensor.lounge_motion", "off", {"device_class": "motion"})
     hass.states.async_set("binary_sensor.lounge_motion", "on", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert said and said[-1].data["entity_id"] == ["assist_satellite.lounge"]
@@ -225,6 +227,7 @@ async def test_up_early_in_quiet_hours_waits_for_them_to_end(hass: HomeAssistant
     said = async_mock_service(hass, "assist_satellite", "announce")
     _ai(hass, "Morning. It's raining.")
     hass.bus.async_fire(EVENT_SLEEP, {"asleep": False, "why": "moving about in two rooms"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert not said  # 06:50: quiet hours
@@ -233,6 +236,53 @@ async def test_up_early_in_quiet_hours_waits_for_them_to_end(hass: HomeAssistant
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert said and said[-1].data["message"] == "Morning. It's raining."
+
+
+async def test_a_restart_mid_morning_doesnt_give_the_briefing_again(hass: HomeAssistant, freezer, hass_storage) -> None:
+    """Live 13 Nov: the kitchen briefing at 09:25, then again at 10:49 after Sentient restarted. The day it was
+    given is saved, and a motion sensor coming back after the restart doesn't count as someone walking in."""
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+    from homeassistant.util import dt as dt_util
+
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=9, minute=25)))
+    kitchen = ar.async_get(hass).async_create("Kitchen")
+    reg = er.async_get(hass)
+    reg.async_get_or_create("assist_satellite", "test", "k_sat", suggested_object_id="kitchen")
+    reg.async_update_entity("assist_satellite.kitchen", area_id=kitchen.id)
+    reg.async_get_or_create("binary_sensor", "test", "k_motion", suggested_object_id="kitchen_motion")
+    reg.async_update_entity("binary_sensor.kitchen_motion", area_id=kitchen.id)
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        **OPTIONS, "quiet_start": "21:00:00", "quiet_end": "08:00:00", "morning_briefing": True,
+        "morning_briefing_areas": [kitchen.id]})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, "Morning. It's raining.")
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert not said  # nothing to something: a sensor coming back, not someone walking in
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    freezer.tick(timedelta(seconds=5))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass_storage["sentient.morning_briefing"]["data"]["day"] == dt_util.now().date().isoformat()
+
+    assert await hass.config_entries.async_reload(entry.entry_id)  # the restart
+    await hass.async_block_till_done()
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=10, minute=49)))
+    hass.states.async_set("binary_sensor.kitchen_motion", "unavailable")
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert len(said) == 1  # given once today, restart or not
 
 
 async def test_tidy_never_drops_pinned_and_says_what_changed(hass: HomeAssistant) -> None:

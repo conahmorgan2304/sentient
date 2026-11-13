@@ -271,11 +271,35 @@ class Upkeep:
         self.last_tidy: dict[str, Any] | None = None
         self._tidying = False
         self._stopped = False
+        self._morning: str | None = None
+        from homeassistant.helpers.storage import Store
+
+        self._store = Store(hass, 1, "sentient.morning_briefing")
+
+    @property
+    def _morning_day(self) -> str | None:
+        """The day the morning briefing was last given. Saved, so a restart mid-morning doesn't give it again."""
+        return self._morning
+
+    @_morning_day.setter
+    def _morning_day(self, day: str | None) -> None:
+        self._morning = day
+        self._store.async_delay_save(lambda: {"day": self._morning}, 1)
+
+    async def _async_load_morning(self) -> None:
+        try:
+            saved = await self._store.async_load()
+        except Exception:  # noqa: BLE001 - a lost marker only risks one repeat
+            _LOGGER.debug("Could not read the morning briefing marker", exc_info=True)
+            return
+        if isinstance(saved, dict) and self._morning is None:
+            self._morning = saved.get("day")
 
     @callback
     def async_start(self) -> None:
         self._stopped = False
         self._started = dt_util.utcnow()
+        self.hass.async_create_task(self._async_load_morning(), "sentient_morning_marker", eager_start=True)
         # Sundays at 03:45
         self._unsubs = [
             async_track_time_change(self.hass, self._weekly, hour=3, minute=45, second=0),
@@ -320,7 +344,8 @@ class Upkeep:
         rt = self._rt()
         areas = set((rt.options.get(CONF_MORNING_BRIEFING_AREAS) or []) if rt else [])
         new, old = event.data.get("new_state"), event.data.get("old_state")
-        if (not areas or new is None or new.state != "on" or (old is not None and old.state == "on")
+        # a sensor coming back after a restart (from nothing or unavailable) isn't someone walking in
+        if (not areas or new is None or new.state != "on" or old is None or old.state in ("on", "unavailable", "unknown")
                 or new.attributes.get("device_class") not in ("motion", "occupancy", "presence") or not self._morning_due(rt)):
             return
         from .presence import area_of
