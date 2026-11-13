@@ -690,7 +690,7 @@ async def ws_ai_routing_calibrate(hass: HomeAssistant, connection, msg: dict[str
                 or now - getattr(ai, "_last_routing_calibration", -1000) < 30):
             connection.send_error(msg["id"], "rate_limited", "Only one calibration call every 30 seconds")
             return
-        if not ai.spend("drive"):
+        if not ai.spend("routing_calibration"):
             connection.send_error(msg["id"], "budget", "Sentient's daily AI limit is exhausted")
             return
         ai._routing_calibrating = True

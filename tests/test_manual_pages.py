@@ -175,3 +175,21 @@ async def test_long_plain_text_manual_keeps_material_after_first_page(tmp_path) 
     assert all(len(body) <= pages.MAX_PAGE_CHARS for _, _, body in sections)
     assert any("XZ-907" in body for _, _, body in sections)
     assert all(label == "Troubleshooting" for _, label, _ in sections)
+
+
+async def test_a_damaged_pdf_is_noted_once_not_retried_or_logged_every_time(hass: HomeAssistant, tmp_path, caplog) -> None:
+    """A damaged PDF gets a row saying why (so it isn't read again until it changes, and is still read whole by
+    the AI); a later problem with a file that was readable keeps its pages."""
+    folder = _folder(hass, tmp_path)
+    (folder / "Broken.pdf").write_bytes(b"%PDF-1.4 not really a pdf")
+    db = _rt(hass, tmp_path).brain.db
+    files = ["Air purifier.pdf", "Broken.pdf"]
+    assert (await hass.async_add_executor_job(pages.sync, db, str(folder), files))["read"] == 2
+    status = await hass.async_add_executor_job(pages.status, db)
+    assert "Broken" in status["whole_only"] and status["pages"] == 4
+    assert (await hass.async_add_executor_job(pages.sync, db, str(folder), files))["read"] == 0
+    assert "Could not index" not in caplog.text
+    (folder / "Air purifier.pdf").write_bytes(b"%PDF-1.4 half-copied")
+    os.utime(folder / "Air purifier.pdf", (2, 2))
+    await hass.async_add_executor_job(pages.sync, db, str(folder), files)
+    assert (await hass.async_add_executor_job(pages.search, db, "HEPA filter AP-200"))[0]["page"] == 3

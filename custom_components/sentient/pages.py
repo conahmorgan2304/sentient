@@ -163,16 +163,24 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
     known, changing_mode = db.run(_known)
 
     def _read(name: str) -> tuple[float, int, int, str, str | None, list[tuple[int, str, str]]] | None:
+        """The file's pages, or a row recording why it can't be read page by page (a damaged or very large
+        PDF is still read whole by the AI, and isn't tried again until the file changes)."""
         path = os.path.join(folder, name)
         if os.path.islink(path) or not os.path.isfile(path):
             return None
         stat = os.stat(path)
+        unit = "page" if name.lower().endswith(".pdf") else "section"
         if stat.st_size > MAX_FILE_BYTES:
-            raise ValueError(f"{name}: too large to read page by page")
-        data, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf")
-                       else read_text(path))
-        return stat.st_mtime, stat.st_size, total, ("page" if name.lower().endswith(".pdf")
-                                                 else "section"), None, data
+            return stat.st_mtime, stat.st_size, 0, unit, "too large to read page by page", []
+        try:
+            data, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf")
+                           else read_text(path))
+        except ImportError:
+            raise
+        except Exception as err:  # noqa: BLE001 - one damaged document doesn't stop the rest
+            _LOGGER.debug("Could not read %s page by page", name, exc_info=True)
+            return stat.st_mtime, stat.st_size, 0, unit, str(err)[:200] or type(err).__name__, []
+        return stat.st_mtime, stat.st_size, total, unit, None, data
 
     if changing_mode:
         # TEMP tables are connection-local and are dropped automatically after
@@ -190,6 +198,14 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
                 if result is None:
                     continue
                 mtime, size, total, unit, error, data = result
+                if error and name in known:
+                    # can't be read again now: carry its old pages over, so one damaged file doesn't stop
+                    # the rest being re-read or lose what was searchable
+                    db.run(lambda c, n=name: (
+                        c.execute("INSERT INTO doc_files_stage SELECT * FROM doc_files WHERE file = ?", (n,)),
+                        c.execute("INSERT INTO doc_pages_stage SELECT * FROM doc_pages WHERE file = ?", (n,))))
+                    count += 1
+                    continue
                 kept = [(n, label, body) for n, label, body in data if len(body) >= MIN_TEXT]
                 def _stage(conn: sqlite3.Connection) -> None:
                     conn.execute("INSERT INTO doc_files_stage VALUES (?,?,?,?,?,?,?)",
@@ -214,6 +230,8 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
                 conn.execute("DROP TABLE doc_files_stage")
                 conn.execute("DROP TABLE doc_pages_stage")
             db.run(_publish)
+        except ImportError:
+            return {"error": "pypdf is not installed"}
         except Exception as err:  # noqa: BLE001 - never destroy a prior searchable index
             _LOGGER.warning("Document OCR reindex failed; retaining the last working index: %s", err)
             return {"error": "OCR reindex could not complete; previous index was kept",
@@ -236,10 +254,14 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
             if result is None:
                 continue
             mtime, size, total, unit, error, data = result
+            if error and name in known:
+                continue  # it was readable before: keep its pages rather than replace them with nothing
             _store(db, name, mtime, size, total, unit, error, data)
             read += 1
-        except Exception as err:  # noqa: BLE001 - preserve existing index of broken files
-            _LOGGER.warning("Could not index %s; retaining its prior pages: %s", name, err)
+        except ImportError:
+            return {"error": "pypdf is not installed"}
+        except OSError as err:
+            _LOGGER.debug("Could not index %s: %s", name, err)
     gone = [f for f in known if f not in wanted]
     if gone:
         db.run(lambda c: [_drop(db, c, f) for f in gone])
