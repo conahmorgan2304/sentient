@@ -438,6 +438,9 @@ async def test_explicit_memory_owner_takes_precedence_over_name_prefix(hass: Hom
     from custom_components.sentient.memory import Memory
 
     _install(hass)
+    # Legacy "Sam: ..." attribution only counts when Sam is a known
+    # household person; unknown name-like prefixes remain ordinary text.
+    hass.states.async_set("person.sam", "home", {"friendly_name": "Sam"})
     opts = {"voice_id": True, "speaker_memories": True}
     owner = SimpleNamespace(display_name="Alex", share_name=True)
     other = SimpleNamespace(display_name="Sam", share_name=True)
