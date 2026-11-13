@@ -6,7 +6,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 
 | Workstream | Added | Still required before activation |
 | --- | --- | --- |
-| Action coordination | Pure priority/expiry policy and ActionIntentMonitor.preview; optional per-motion-rule protection of recent higher-priority guarded voice commands for light/switch targets, off by default; alarms, locks and heating unchanged | Full cross-feature arbitration beyond motion lights, independent confirmation of device outcomes and replay of real competing automations |
+| Action coordination | Pure priority/expiry policy and ActionIntentMonitor.preview; optional per-motion-rule protection from motion-on immediately reversing a recent guarded voice-off request for light/switch targets, off by default; alarms, locks and heating unchanged | Full cross-feature arbitration beyond motion lights, independent confirmation of device outcomes and replay of real competing automations |
 | Security outcomes | Independently labelled scenario aggregate scorer with sample limits; unresolved outcomes excluded | Consent-gated UI for verified labels, ground-truth review and longitudinal reliability measurement. Existing Frigate feedback is not independent verification |
 | Memory | Read-only lexical candidate reranking and labelled recall@5 benchmark | Benchmark true semantic embeddings locally against private examples; never expand permission scope |
 | Learning effectiveness | Bounded comparison of observed before/after completion metrics | Establish trustworthy baselines and account for changes in sensors/occupancy; no causal improvement claims |
@@ -17,7 +17,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 | Custom pages | Admin-only layout save/reset backend and optional in-panel edit controls for moving cards between lanes, hiding/restoring and reset. Saved in HA storage and read on other devices | Live tablet testing, accessibility review, hide-to-stop-fetch and unrestricted Home Assistant/HACS card rendering (not yet implemented) |
 
 ### Security invariants
-- Do not authorise actions from a recommendation, voice match, replay stage, learned outcome or stale context. Opted-in motion rules may *hold their own* conflicting action; they never grant authority to execute another action.
+- Do not authorise actions from a recommendation, voice match, replay stage, learned outcome or stale context. Opted-in motion rules may *hold their own turn-on request* after voice-off; they never grant authority to execute another action.
 - Alarm panels, locks, doors and climate are excluded from simulated reversible-action arbitration.
 - Historical labels and data cannot change Frigate thresholds or disable alerts.
 - Personal data must be permission-filtered *before* retrieval reranking.
@@ -29,7 +29,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 ## Review and live validation gates
 1. CI: Python pytest, HACS, Hassfest and JavaScript tests pass on final HEAD.
 2. Frigate: label camera+contact events independently, test false detections and outages; count unknown outcomes as unknown.
-3. Home Assistant: leave the new Protect voice overrides setting disabled until tested; then ensure no false motion-on/off during the 120-second override window and confirm normal operation after expiry.
+3. Home Assistant: leave the new Protect voice overrides setting disabled until tested; then ensure no unexpected motion-on after voice-off during the 120-second override window and confirm normal operation after expiry.
 4. Voice: multiple enrolled household voices, ambiguous matches and guest mode on physical ESPHome speakers.
 5. Nest: capture real stream frame/error/timing events and check fallback for expired and stalled streams.
 6. Documents: benchmark text PDFs and scans; OCR is still not installed, and citation support is not correctness proof.
