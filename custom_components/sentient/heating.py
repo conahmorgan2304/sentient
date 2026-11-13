@@ -105,6 +105,11 @@ def warmup_validation(states: list[State]) -> dict[str, Any]:
         return {"status": "insufficient_data", "training_episodes": 0, "test_episodes": 0,
                 "absolute_error_degrees_per_hour": None}
     split = int(len(states) * 0.7)
+    # move the split to the next time the heating was off, so a warm-up isn't cut in two and lost
+    for i in range(split, len(states)):
+        if states[i].state in ("off", "unavailable", "unknown"):
+            split = i + 1
+            break
     train_rate, train_n = warmup_rate(states[:split])
     observed_rate, test_n = warmup_rate(states[split:])
     measured = train_n >= 2 and test_n >= 1 and train_rate is not None and observed_rate is not None

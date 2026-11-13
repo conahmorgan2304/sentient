@@ -1,7 +1,9 @@
 """Run synthetic/redacted security scenarios without Home Assistant actions.
 
-Usage (in the Sentient test environment):
-  python -m custom_components.sentient.cognitive_replay_cli tests/fixtures/cognitive_scenarios.json
+A developer tool, kept out of the integration so it is not installed in Home Assistant.
+
+Usage (from the repository root, in the test environment):
+  python scripts/cognitive_replay.py tests/fixtures/cognitive_scenarios.json
 
 Input JSON is a list of {"incident": {...}, "expected_stage": "..."}.
 Output contains aggregate accuracy only, never incident text or identifiers.
@@ -14,7 +16,11 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from .cognitive_replay import evaluate_scenarios
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from custom_components.sentient.cognitive_replay import evaluate_scenarios  # noqa: E402
 
 MAX_BYTES = 1024 * 1024
 

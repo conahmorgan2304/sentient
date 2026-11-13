@@ -34,10 +34,19 @@ def test_no_household_names_in_public_health_output():
     assert deps["recorder"] is True
 
 
-def test_no_false_claim_of_fridget_or_climate_availability():
+def test_no_false_claim_of_frigate_or_climate_availability():
     rt = SimpleNamespace()
     hass = SimpleNamespace(config=SimpleNamespace(components=set()),
                            states=SimpleNamespace(async_all=lambda domain: []))
     result = evaluate(runtime_dependencies(rt, hass))
     assert result["features"]["learned_heating"]["status"] == "degraded"
     assert result["features"]["voice_conversation"]["status"] == "unknown"
+
+
+def test_frigate_loaded_but_offline_is_not_called_available():
+    hass = SimpleNamespace(config=SimpleNamespace(components={"frigate", "recorder"}),
+                           states=SimpleNamespace(async_all=lambda domain: []))
+    for said, expected in (("online", True), ("offline", False), ("stopped", False), (None, None)):
+        rt = SimpleNamespace(frigate_health=SimpleNamespace(availability=said))
+        assert runtime_dependencies(rt, hass)["frigate"] is expected
+    assert runtime_dependencies(SimpleNamespace(), hass)["frigate"] is None  # loaded, never checked

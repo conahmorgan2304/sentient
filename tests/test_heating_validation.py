@@ -41,3 +41,14 @@ def test_unfinished_episode_does_not_produce_accuracy():
     result = warmup_validation(states)
     assert result["status"] == "insufficient_data"
     assert result["absolute_error_degrees_per_hour"] is None
+
+
+def test_a_warm_up_across_the_split_is_not_cut_in_two():
+    """4 off readings then 10 warm-ups: the 70% point (state 23) is between the start and end of the 7th warm-up.
+    The split moves to the next off, so all 10 are counted."""
+    start = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    states = [SimpleNamespace(state="off", attributes={}, last_updated=start - timedelta(hours=4 - h)) for h in range(4)]
+    for i in range(10):
+        states.extend(_episode(start + timedelta(days=i)))
+    result = warmup_validation(states)
+    assert result["training_episodes"] + result["test_episodes"] == 10

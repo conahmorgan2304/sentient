@@ -62,7 +62,7 @@ new service-call authority, model subscriptions, and alert suppression rules.
 
 ### Evaluation and replay
 - To inspect synthetic examples without touching real Home Assistant devices, run
-  `python -m custom_components.sentient.cognitive_replay_cli tests/fixtures/cognitive_scenarios.json --at 2026-11-13T12:15:00+00:00`
+  `python scripts/cognitive_replay.py tests/fixtures/cognitive_scenarios.json --at 2026-11-13T12:15:00+00:00`
   from an environment with Sentient's test dependencies installed. This
   requires no camera, network, account or active Home Assistant connection;
   results contain aggregate counts only. Supply only synthetic or explicitly

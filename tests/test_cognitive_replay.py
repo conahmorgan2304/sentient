@@ -60,8 +60,19 @@ def test_replay_skips_malformed_imported_scenarios_without_hiding_valid_results(
     assert report["corroboration_correct"] == 1
 
 
+def _cli():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "cognitive_replay.py"
+    spec = importlib.util.spec_from_file_location("sentient_cognitive_replay", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.main
+
+
 def test_replay_command_outputs_only_aggregates(tmp_path, capsys):
-    from custom_components.sentient.cognitive_replay_cli import main
+    main = _cli()
     import json
 
     secret = "private-family-room-data"
@@ -79,7 +90,7 @@ def test_replay_command_outputs_only_aggregates(tmp_path, capsys):
 
 
 def test_replay_command_rejects_malformed_input_without_echoing_data(tmp_path, capsys):
-    from custom_components.sentient.cognitive_replay_cli import main
+    main = _cli()
     import pytest
 
     path = tmp_path / "private-word.json"

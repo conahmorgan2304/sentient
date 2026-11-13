@@ -52,6 +52,18 @@ def runtime_dependencies(rt: Any, hass: Any) -> dict[str, bool | None]:
         stopped = getattr(instance, "_stopped", None)
         return None if stopped is None else not bool(stopped)
 
+    def frigate() -> bool | None:
+        # Loaded isn't the same as up: Frigate can drop out while its integration stays loaded. Only what
+        # Frigate last reported over MQTT counts; without that it's unchecked.
+        if "frigate" not in components:
+            return None
+        said = getattr(getattr(rt, "frigate_health", None), "availability", None)
+        if said == "online":
+            return True
+        if said in ("offline", "stopped"):
+            return False
+        return None
+
     climate_states = getattr(getattr(hass, "states", None), "async_all", None)
     climate = None
     if callable(climate_states):
@@ -64,7 +76,7 @@ def runtime_dependencies(rt: Any, hass: Any) -> dict[str, bool | None]:
         "voice_pipeline": None,  # Requires an actual recent end-to-end test
         "tts": None,  # Configuration alone does not prove TTS playback
         "speaker_recognition": None,  # Matching must be proven by actual turns
-        "frigate": True if "frigate" in components else None,
+        "frigate": frigate(),
         "camera_evidence": running("security_events"),
         "recorder": True if "recorder" in components else False,
         "climate": climate,
