@@ -107,6 +107,16 @@ def contradicts(message: str, changes: list[Change]) -> bool:
     return any(n in _STARTED_STATES for n in news) or not news
 
 
+_DID = re.compile(r"\bi(?:'ve| have)\s+(?:just\s+|now\s+|already\s+)?(?:switched|turned|put|set|started|opened|"
+                  r"closed|popped|got)\b|\bi\s+(?:just\s+)?(?:switched|turned|started|opened|closed)\b", re.I)
+
+
+def claims_it_acted(message: str) -> bool:
+    """A remark can only speak: live 12 Nov, the purifier came on by itself and the remark said "so I have
+    switched on the air purifier". Saying the house did something it didn't is worse than saying nothing."""
+    return bool(_DID.search(message or ""))
+
+
 def wrong_room(message: str, changes: list[Change], areas: list[str]) -> str | None:
     """A remark about a room none of the changes were in: live 13 Nov, the bathroom window opening was turned
     into "the air quality in the living room is poor". Only rooms named by the house count, so a remark that
@@ -337,6 +347,10 @@ class Noticer:
             record["result"] = "held: said something had finished, but it had only just started"
             record["message"] = decision.get("message")
             return record
+        if speak and claims_it_acted(message):
+            record["result"] = "held: said it had done something itself, but a remark can't switch anything"
+            record["message"] = message
+            return record
         if speak and (other := wrong_room(message, changes, [a.name for a in ar.async_get(self.hass).async_list_areas()])):
             record["result"] = f"held: talked about the {other}, but nothing changed there"
             record["message"] = message
@@ -425,6 +439,8 @@ class Noticer:
             "the air purifier, heating, media. Never offer to open or close doors or windows, make or prepare "
             "drinks or food, or anything else that needs hands — just say what happened. Don't offer to do "
             "something with a device that's offline. "
+            "You can't switch anything from here: never say you have done something (\"I've switched on the "
+            "purifier\") — if a device changed by itself or someone changed it, just say what happened. "
             "If you speak, write one short, natural sentence in British English, no IDs or entity names "
             "in code form, no forms of address. Set question to true only if you're offering to do "
             "something and need a yes or no (e.g. 'It's got chilly, shall I put the heating on?')."

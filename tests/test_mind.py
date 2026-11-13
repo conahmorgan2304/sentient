@@ -628,3 +628,11 @@ async def test_held_news_waits_for_the_morning_briefing(hass: HomeAssistant, fre
     rt.upkeep._morning_day = dt_util.now().date().isoformat()  # the briefing's been given
     assert not rt.upkeep.morning_coming(rt)
     assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is True
+
+
+def test_a_thought_on_its_own_is_passed_on() -> None:
+    """Only an overnight thought held: compose must not trip over the empty list of other things."""
+    from custom_components.sentient.followyou import compose
+
+    assert compose([{"text": "The gate was left open twice yesterday.", "source": "thought"}]) == \
+        "A thought from overnight: The gate was left open twice yesterday."

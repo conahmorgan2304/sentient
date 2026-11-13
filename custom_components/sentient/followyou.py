@@ -85,7 +85,7 @@ def compose(items: list[dict[str, Any]]) -> str:
         lead = "Overnight: " if quiet else "Earlier: "
         out.append(lead + " ".join(said))
     if thoughts:
-        out.append(("A thought from overnight: " if not said else "And a thought from overnight: ") + " ".join(thoughts))
+        out.append(("A thought from overnight: " if not told else "And a thought from overnight: ") + " ".join(thoughts))
     return " ".join(out)
 
 

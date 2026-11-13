@@ -240,3 +240,16 @@ def test_a_remark_about_another_room_is_held() -> None:
     assert wrong_room("It's got chilly, shall I put the heating on?", [change], areas) is None  # no room named
     nowhere = Change("sensor.weather", "Weather", None, "cloudy", "rain", "", change.when)
     assert wrong_room("It's raining in the kitchen garden.", [nowhere], areas) is None  # change has no room
+
+
+def test_a_remark_never_claims_the_house_did_something() -> None:
+    """Live 12 Nov: the purifier came on by itself and the remark said "so I have switched on the air purifier"."""
+    from custom_components.sentient.notice import claims_it_acted
+
+    assert claims_it_acted("The air quality has risen, so I have switched on the air purifier.")
+    assert claims_it_acted("I've turned the heating up a little.")
+    assert not claims_it_acted("The purifier has switched itself on as the air got worse.")
+    assert not claims_it_acted("It's got chilly, shall I switch the heating on?")
+    assert not claims_it_acted("I've noticed the kettle has boiled.")
+    assert not claims_it_acted("It's turned chilly. Shall I put the heating on?")
+    assert claims_it_acted("I just switched the lamp off.")

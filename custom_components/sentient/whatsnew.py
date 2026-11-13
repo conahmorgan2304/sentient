@@ -20,6 +20,7 @@ NOTES: dict[str, list[str]] = {
         "Things held back for quiet hours are passed on as \"Overnight: …\", never \"While you were away\" — nobody had gone out. Something nobody heard is \"Earlier: …\".",
         "A newer reading of the same thing (the hutch at 0°, then -1°) replaces the older one instead of both being said, and in the half hour after quiet hours the morning briefing goes first, so what it covers isn't said again.",
         "A remark that talks about a different room from the one where something changed (the bathroom window opening, then \"the air quality in the living room is poor\") is held back instead of said.",
+        "A remark never claims the house did something itself (\"so I have switched on the air purifier\" when it had come on by itself): a remark can only speak, so one that says otherwise is held back.",
         "When the doorbell camera looks and sees nobody (\"empty street view\"), no \"At the door\" notification is sent to phones.",
         "The Setup doctor warns when camera security uses a sensor that covers a whole Frigate camera while that camera has zones: people walking past in the street set it off. It names the zone sensor to use instead.",
     ],
