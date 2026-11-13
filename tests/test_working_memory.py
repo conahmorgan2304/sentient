@@ -52,3 +52,15 @@ def test_working_context_never_exposes_unchecked_entity_candidates_to_model():
     assert "entities" not in visible
     assert "climate.private" not in str(visible)
     assert "lock.hidden" not in str(visible)
+
+
+def test_public_diagnostics_never_show_private_free_text_goal_or_topic():
+    record = refresh(None, goal="What did climate.private do near Mary's bedroom?",
+                     topic="Private: lock.hidden alarm PIN",
+                     entities=["climate.private"], kind="follow_up",
+                     changed=False, now=NOW)
+    visible = public_view(record)
+    assert record["goal"].startswith("What did")
+    assert "goal" not in visible and "topic" not in visible
+    assert "private" not in str(visible)
+    assert visible["can_authorise_actions"] is False
