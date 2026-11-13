@@ -253,8 +253,9 @@
         bar.className = "layout-toolbar";
         bar.hidden = true;
         bar.style.cssText = "padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap";
-        // switched on in Settings ("Rearrange the Sentient page"); off, there's no toolbar at all
-        bar.innerHTML = '<button class="btn sm ghost" data-act="layouttoggle">EDIT LAYOUT</button>' +
+        // only while editing, which is started from Settings → This page → EDIT PAGE LAYOUT; otherwise the tabs
+        // show just their cards (in the saved layout when "Rearrange the Sentient page" is on)
+        bar.innerHTML = '<button class="btn sm" data-act="layouttoggle">DONE EDITING</button>' +
           '<button class="btn sm ghost" data-act="layoutshowall" hidden>SHOW ALL</button>' +
           '<button class="btn sm ghost" data-act="layoutreset" hidden>RESET PAGE</button>' +
           '<span class="dim" data-layout-msg></span>';
@@ -297,12 +298,9 @@
         if (!root) continue;
         const bar = root.querySelector(".layout-toolbar");
         if (bar) {
-          const shown = admin && this._layoutEnabled;
-          bar.hidden = !shown;
-          bar.style.display = shown ? "flex" : "none";
           const editing = admin && this._layoutEnabled && this._layoutEdit && page === this._view;
-          const toggle = bar.querySelector('[data-act="layouttoggle"]');
-          if (toggle) toggle.textContent = editing ? "DONE EDITING" : "EDIT LAYOUT";
+          bar.hidden = !editing;
+          bar.style.display = editing ? "flex" : "none";
           for (const action of ["layoutshowall", "layoutreset"]) {
             const button = bar.querySelector('[data-act="' + action + '"]');
             if (button) button.hidden = !editing;
@@ -424,9 +422,8 @@
         }
         return;
       }
-      if (act === "layouttoggle") {
-        if (!this._layoutEnabled) return;
-        this._layoutEdit = !this._layoutEdit;
+      if (act === "layouttoggle") {  // DONE EDITING: the toolbar and card tools go away, the layout stays
+        this._layoutEdit = false;
         this._applyLayouts();
         return;
       }
@@ -972,6 +969,9 @@
           <div class="vids" id="vidsay" role="status"></div>
           <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        ${g.id === "page" && this._hass.user?.is_admin && data.custom_pages === true ? `<div class="vidcard"><div class="vidt">PAGE LAYOUT</div>
+          <div class="vids">Opens the Overview ready to edit: move, hide or show cards on any tab, then DONE EDITING. No edit button is shown on the tabs the rest of the time.</div>
+          <div class="row"><button class="btn sm" data-act="layoutstart">EDIT PAGE LAYOUT</button></div></div>` : ""}
         ${g.id === "door" && this._hass.user?.is_admin && data.ai_routing_enabled === true ? `<div class="vidcard"><div class="vidt">AI ROUTING CALIBRATION</div>
           <div class="vids">Only an administrator can send one generic, potentially billable test at a time. No household information is included. Save routing options before testing. Twenty measured calls per provider are needed, and service availability does not verify answer accuracy.</div>
           <div class="row"><button class="btn sm ghost" data-act="routecalstatus">CHECK COUNTS</button>
@@ -2766,6 +2766,12 @@
       const el = ev.target.closest("[data-act]");
       if (!el) return;
       const { act, id, text } = el.dataset;
+      if (act === "layoutstart") {  // from Settings → This page
+        if (!this._hass.user?.is_admin) return;
+        this._layoutEdit = true;
+        this._show("overview", true);
+        return;
+      }
       if (act.startsWith("layout")) { this._layoutAction(act, id, el.dataset.dir); return; }
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
