@@ -677,6 +677,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     control = Control(hass, options, timeline)
     control.cognitive = incidents.cognitive  # shared, read-only comparisons; never action authority
+    from .action_intents import ActionIntentMonitor
+
+    intents = ActionIntentMonitor()
+    control.intents = intents
+    motion_lights.intents = intents
+    autooff.intents = intents
     entry.runtime_data = SentientRuntime(
         house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, frigate_health=frigate_health, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
@@ -690,6 +696,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
         threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, heat_prog=heat_prog, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, games=games, recipes=recipes,
     )
+    entry.runtime_data.intents = intents
     house_context.configure()
     await security_events.async_start()
     entry.async_on_unload(security_events.async_stop)
