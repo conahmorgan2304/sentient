@@ -71,6 +71,8 @@ def arrival(incident: dict[str, Any]) -> tuple[bool, bool]:
               and str(r.get("text", "")).rsplit(":", 1)[-1].strip().lower() in ("on", "open", "opened")
               and (t := _time(r.get("time"))) is not None]
     seen = [(t, r.get("source")) for r in rows if r.get("kind") in ("detection", "event")
+            and r.get("status") == "observed" and "person" in str(r.get("text", "")).lower()
+            and isinstance(r.get("source"), str) and r.get("source")
             and (t := _time(r.get("time"))) is not None]
     came_in = any(0 <= (camera - entry).total_seconds() <= ENTRY_FIRST_SECONDS and source != where
                   for entry, source in opened for camera, where in seen)
@@ -107,10 +109,8 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
         # Reads the same household marks as the existing stages, so a household episode can agree with them.
         candidate = "likely household"
     elif came_in and not rang and level < 2:
-        # Its own reasoning, beyond the rules: an entry (the gate, a door) opened first and a camera then saw
-        # someone just inside it — the way people who live here come and go, not the way a stranger arrives.
-        # Not proof of who: the household's reviews decide whether this holds in this house.
-        candidate = "likely household"
+        # A visitor or intruder can open the same gate; activity is not household identity.
+        candidate = "investigating"
         gaps.append("identity_unconfirmed")
     elif rang and level < 2:
         candidate = "observed"  # the doorbell or the doorstep: a caller, not someone from the house
@@ -149,10 +149,10 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
 
 # What each decision needs before the core makes it. Quietening a spoken heads-up asks more than naming a stage.
 SCOPES = {
-    AUTHORITY_SCOPE: {"household": MIN_HOUSEHOLD, "others": MIN_OTHERS, "agreement": HOUSEHOLD_AGREEMENT,
+    AUTHORITY_SCOPE: {"household": MIN_HOUSEHOLD, "others": MIN_OTHERS, "concerning": 3, "agreement": HOUSEHOLD_AGREEMENT,
                       "false_household": FALSE_HOUSEHOLD_MAX,
                       "never": ["changes or holds back an alert", "calls an incident less serious than the rules' concerning"]},
-    "night_heads_up": {"household": 20, "others": 10, "agreement": 0.95, "false_household": 0.0,
+    "night_heads_up": {"household": 20, "others": 10, "concerning": 5, "agreement": 0.95, "false_household": 0.0,
                        "never": ["holds back a phone alert or anything at the away, fence or loitering levels",
                                  "quietens a heads-up it isn't sure is someone from the house"]},
 }
@@ -162,7 +162,7 @@ def _score(rows: list[dict[str, Any]], who: str) -> dict[str, Any]:
     """How a judge ("core" or "legacy", the usual rules) did on each kind of reviewed incident."""
     household = [r for r in rows if r["label"] == "household"]
     others = [r for r in rows if r["label"] != "household"]
-    agreed = sum(r.get(who) in ("likely household", "resolved") for r in household)
+    agreed = sum(r.get(who) == "likely household" for r in household)
     false_household = sum(r.get(who) == "likely household" for r in others)
     missed = sum(r["label"] == "concerning" and SEVERITY.get(r.get(who), 0) < SEVERITY["investigating"] for r in others)
     return {"household": len(household), "agreed": agreed, "others": len(others),
@@ -180,7 +180,8 @@ def authority(reviews: list[dict[str, Any]], scope: str = AUTHORITY_SCOPE) -> di
     """
     need = SCOPES[scope]
     rows = [r for r in reviews if isinstance(r, dict) and r.get("label") in
-            ("household", "visitor", "false_detection", "concerning") and isinstance(r.get("core"), str)][-AUTHORITY_WINDOW:]
+            ("household", "visitor", "false_detection", "concerning") and isinstance(r.get("core"), str)
+            and r.get("prediction_recorded") is True][-AUTHORITY_WINDOW:]
     core = _score(rows, "core")
     progress = {
         "household_reviewed": core["household"], "household_needed": need["household"],
@@ -188,6 +189,7 @@ def authority(reviews: list[dict[str, Any]], scope: str = AUTHORITY_SCOPE) -> di
         "others_reviewed": core["others"], "others_needed": need["others"],
         "wrongly_called_household": core["wrongly_called_household"],
         "missed_threats": core["missed"], "concerning_reviewed": sum(r["label"] == "concerning" for r in rows),
+        "concerning_needed": need["concerning"],
     }
     why = []
     if core["household"] < need["household"]:
@@ -198,6 +200,8 @@ def authority(reviews: list[dict[str, Any]], scope: str = AUTHORITY_SCOPE) -> di
         why.append(f"needs {need['others'] - core['others']} more reviewed visitor, false-alarm or concerning incidents")
     elif core["false_household"] / core["others"] > need["false_household"]:
         why.append(f"called {core['false_household']} of {core['others']} other incidents household")
+    if progress["concerning_reviewed"] < need["concerning"]:
+        why.append(f"needs {need['concerning'] - progress['concerning_reviewed']} more reviewed concerning incidents")
     if core["missed"]:
         why.append(f"called {core['missed']} concerning incident{'s' if core['missed'] > 1 else ''} less serious")
     rules_rows = [r for r in rows if isinstance(r.get("legacy"), str)]
