@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.5.11": [
+        "Something switching itself at its usual time (the kettle turning off after it boils) is noted on the timeline, not sent to phones as house health. Changes that are unusual for the time are still said and sent.",
+        "The evening \"something I've learned\" no longer reads out notes about how Sentient should talk, and doesn't say \"Something I've learned: I've…\" twice over.",
+        "The doctor no longer warns about the person sensors of cameras behind the fence (the ones under \"Inside the boundary\"): they only see your own property, so the whole camera is right for them.",
+    ],
     "1.5.10": [
         "Forgetting something now removes it from Sentient's searchable copy straight away, not at the next sync ten minutes later.",
         "The same announcement from two parts of Sentient, worded the same apart from punctuation, is said once. Critical alerts are never held back.",

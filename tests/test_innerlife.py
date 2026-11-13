@@ -183,10 +183,31 @@ async def test_shares_one_learning_an_evening(hass):
     evening = dt_util.now().replace(hour=18, minute=0)
     pick = inner.to_share(evening)
     assert pick and await inner.async_share(pick, evening)
-    assert said == ["Something I've learned: I've stopped doing this one: the landing light at 18:00."]
+    assert said == ["I've stopped doing this one: the landing light at 18:00."]  # no "Something I've learned: I've…"
     assert inner.to_share(evening) is None  # once an evening
     inner.shared_day = None
     assert inner.to_share(evening) is None  # and never the same thing twice
+
+
+async def test_a_note_about_how_to_talk_isnt_announced_as_learned(hass):
+    """Live 13 Nov: "Something I've learned: I've updated what I know: When a voice ID integration is active,
+    acknowledge it directly…" was said in the kitchen. Instructions to the voice guide it; they aren't news."""
+    from types import SimpleNamespace as NS
+
+    from custom_components.sentient.innerlife import about_itself
+
+    now = dt_util.now().isoformat()
+    memory = NS(changed=[{"kind": "replaced", "old": "a", "time": now,
+                          "new": "When a voice ID integration is active, acknowledge it directly rather than denying it."}])
+    rt = NS(memory=memory, learner=None, timeline=FakeTimeline())
+    inner = _inner(hass, rt)
+    assert inner.to_share(dt_util.now().replace(hour=18, minute=0)) is None
+    memory.changed.append({"kind": "replaced", "old": "b", "time": now, "new": "The bins go out on Thursday now."})
+    pick = inner.to_share(dt_util.now().replace(hour=18, minute=0))
+    assert pick and "Thursday" in pick["text"]
+    assert about_itself("Never offer to disarm the alarm") and about_itself("Always reply in British English")
+    assert not about_itself("The boiler pressure should be around 1.5 bar")
+    assert not about_itself("When the bins are collected, the street is closed until noon")
 
 
 async def test_bedroom_sensors_stirring_dont_wake_the_house(hass, freezer):
