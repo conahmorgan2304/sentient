@@ -264,6 +264,12 @@ class Incidents:
         status = authority(self.reviews, scope)
         on = bool(self.options.get(CONF_COGNITIVE_DECIDES)) and (
             scope == "incident_stage" or bool(self.options.get(CONF_COGNITIVE_HEADS_UP)))
+        if scope == "night_heads_up":
+            # Evidence-category reviews cannot verify who was at the gate.
+            # Retain the review scores for visibility, but never grant this authority
+            # without a separately tested and verified household identity signal.
+            return {**status, "switched_on": on, "deciding": False,
+                    "why": [*status["why"], "independently verified household identity is not available"]}
         return {**status, "switched_on": on, "deciding": on and status["earned"]}
 
     def quiet_heads_up(self, incident_id, reason) -> str | None:
@@ -282,11 +288,11 @@ class Incidents:
     def _check_authority(self) -> None:
         status = self.authority()
         heads_up = self.authority("night_heads_up")
-        if heads_up["switched_on"] and heads_up["earned"] != getattr(self, "_heads_up_earned", None):
-            self._heads_up_earned = heads_up["earned"]
+        if heads_up["switched_on"] and heads_up["deciding"] != getattr(self, "_heads_up_earned", None):
+            self._heads_up_earned = heads_up["deciding"]
             if self.on_authority is not None:
                 self.on_authority("The cognitive core now quietens night heads-ups it's sure are someone from the house."
-                                  if heads_up["earned"] else "The cognitive core won't quieten night heads-ups: "
+                                  if heads_up["deciding"] else "The cognitive core won't quieten night heads-ups: "
                                   + "; ".join(heads_up["why"]) + ".")
         if status["earned"] == self._earned:
             return
@@ -320,7 +326,7 @@ class Incidents:
             # Stage at review time is inferred from recorded evidence; stage matching
             # does not prove factual correctness or population detection accuracy.
             predicted = review.get("predicted_stage")
-            if not isinstance(predicted, str):
+            if not isinstance(predicted, str) or review.get("prediction_recorded") is not True:
                 continue
             labelled.append({"human_label": review["label"], "predicted_stage": predicted})
         return {**evaluate(labelled), "reviewed_total": len(labelled),
