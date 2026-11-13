@@ -645,6 +645,78 @@ def ws_health_disable_copy(hass: HomeAssistant, connection, msg: dict[str, Any])
     connection.send_result(msg["id"], {"disabled": device.name_by_user or device.name})
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/ai/routing/calibrate",
+    vol.Optional("action", default="status"): vol.In(["status", "run"]),
+    vol.Optional("provider", default="alternative"): vol.In(["primary", "alternative"]),
+})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_ai_routing_calibrate(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """One explicitly requested generic AI Task probe, never household context.
+
+    This generates billable calls, so no automatic looping or background run.
+    Service success alone is not a measure of answer correctness.
+    """
+    from time import monotonic
+    from .const import CONF_AI_TASK_ENTITY
+    from .model_routing import stats
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    rt = entry.runtime_data
+    if rt.speech.guest_mode:
+        connection.send_error(msg["id"], "private", "AI calibration unavailable in guest mode")
+        return
+    ai = rt.ai
+    current = rt.options
+    primary = current.get(CONF_AI_TASK_ENTITY)
+    secondary = current.get("ai_routing_alternative")
+    if (current.get("ai_routing_enabled") is not True
+            or not isinstance(primary, str) or not isinstance(secondary, str)
+            or not primary.startswith("ai_task.") or not secondary.startswith("ai_task.")):
+        connection.send_error(msg["id"], "not_configured", "Set up both AI routing providers first")
+        return
+
+    target = primary if msg["provider"] == "primary" else secondary
+    if msg["action"] == "run":
+        if hass.states.get(target) is None:
+            connection.send_error(msg["id"], "unavailable", "Selected AI Task provider is unavailable")
+            return
+        now = monotonic()
+        if (getattr(ai, "_routing_calibrating", False)
+                or now - getattr(ai, "_last_routing_calibration", -1000) < 30):
+            connection.send_error(msg["id"], "rate_limited", "Only one calibration call every 30 seconds")
+            return
+        if not ai.spend("drive"):
+            connection.send_error(msg["id"], "budget", "Sentient's daily AI limit is exhausted")
+            return
+        ai._routing_calibrating = True
+        ai._last_routing_calibration = now
+        try:
+            # Fixed harmless text, no user facts, camera footage or history.
+            await ai.async_call({"entity_id": target, "task_name": "Sentient routing calibration",
+                                 "instructions": "Reply with the word READY. This is a harmless service availability check."},
+                                timeout=12)
+        except Exception:
+            # A failed service call is recorded by the normal AI gate.
+            pass
+        finally:
+            ai._routing_calibrating = False
+
+    observed = getattr(ai, "_observed_by_entity", {})
+    connection.send_result(msg["id"], {
+        "primary": stats(list(observed.get(primary) or [])),
+        "alternative": stats(list(observed.get(secondary) or [])),
+        "provider_tested": msg["provider"] if msg["action"] == "run" else None,
+        "manual_calls_only": True,
+        "estimated_prices_only": True,
+        "note": "Tests may be billable. 20 samples per provider are needed; quality and real charges must be reviewed separately.",
+    })
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/heating/energy_comparison"})
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -1102,6 +1174,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_clips)
     websocket_api.async_register_command(hass, ws_heating)
     websocket_api.async_register_command(hass, ws_heating_energy_comparison)
+    websocket_api.async_register_command(hass, ws_ai_routing_calibrate)
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
