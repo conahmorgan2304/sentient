@@ -184,6 +184,20 @@ class Rules:
 
                 await async_run_actions(self.hass, rule["actions"], f"rule: {rule.get('name')}",
                                         Context(parent_id=self.context.id))  # the house did it, not a person
+                # Compare only directly specified, completed dispatch requests.
+                # Nested/templated actions are intentionally excluded because
+                # their actual target cannot be safely inferred from the plan.
+                if rt is not None and (intents := getattr(rt, "intents", None)) is not None:
+                    for step in rule["actions"]:
+                        action = step.get("action") or step.get("service")
+                        target = step.get("target")
+                        if not isinstance(action, str) or not isinstance(target, dict):
+                            continue
+                        entity = target.get("entity_id")
+                        candidates = [entity] if isinstance(entity, str) else entity if isinstance(entity, list) else []
+                        for entity_id in candidates[:20]:
+                            if isinstance(entity_id, str):
+                                intents.observe(entity_id, action.rsplit(".", 1)[-1], "rules")
             if rule.get("say") and rt is not None:
                 await rt.speech.async_say(rule["say"], "normal", None, source=f"rule:{rule.get('name')}")
         except Exception as err:  # noqa: BLE001
