@@ -208,7 +208,9 @@ class Incidents:
         if outcome == "clear":
             row.pop("household_review", None)
         else:
-            row["household_review"] = {"label": outcome, "at": dt_util.utcnow().isoformat(),
+            predicted, _ = stage(row)
+            row["household_review"] = {"label": outcome, "predicted_stage": predicted,
+                                       "at": dt_util.utcnow().isoformat(),
                                        "source": "household_review_not_independent_proof"}
         self._save()
         return {"changed": True, "detector_settings_changed": False, "alert_policy_changed": False}
@@ -227,7 +229,9 @@ class Incidents:
                 continue
             # Stage at review time is inferred from recorded evidence; stage matching
             # does not prove factual correctness or population detection accuracy.
-            predicted, _ = stage(row)
+            predicted = review.get("predicted_stage")
+            if not isinstance(predicted, str):
+                continue
             labelled.append({"human_label": review["label"], "predicted_stage": predicted})
         return {**evaluate(labelled), "reviewed_total": len(labelled),
                 "labels_independent_ground_truth": False}
