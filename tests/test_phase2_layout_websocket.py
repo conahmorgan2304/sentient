@@ -16,10 +16,10 @@ async def test_admin_layout_get_save_reset(hass, hass_ws_client):
     assert (await ws.receive_json())["result"]["layout"] == {}
 
 
-async def test_read_only_user_cannot_read_or_change_layout(hass, hass_ws_client, hass_read_only_access_token):
+async def test_read_only_user_can_read_but_cannot_change_layout(hass, hass_ws_client, hass_read_only_access_token):
     await _setup(hass)
     ws = await hass_ws_client(hass, hass_read_only_access_token)
     await ws.send_json({"id": 1, "type": "sentient/layout"})
-    assert (await ws.receive_json())["error"]["code"] == "unauthorized"
+    assert (await ws.receive_json())["result"]["layout"] == {}
     await ws.send_json({"id": 2, "type": "sentient/layout", "action": "save", "layout": {}})
     assert (await ws.receive_json())["error"]["code"] == "unauthorized"
