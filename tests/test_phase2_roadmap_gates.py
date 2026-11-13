@@ -10,6 +10,7 @@ def test_stream_needs_actual_frame_not_just_connected():
     assert assess([{"stage": "connected", "elapsed_ms": 10}])["playback"] == "unverified"
     assert assess([{"stage": "buffering"}, {"stage": "expired"}])["fallback_recommended"]
     assert assess([{"stage": "frame", "elapsed_ms": 17000}])["fallback_recommended"]
+    assert assess([{"stage": "frame", "elapsed_ms": 500}, {"stage": "stalled"}])["playback"] == "failed"
 
 
 def test_voice_metrics_do_not_grant_identity_access():
