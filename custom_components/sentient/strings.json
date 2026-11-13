@@ -684,7 +684,8 @@
           "ai_routing_max_p95_ms": "Maximum alternative AI response time (ms)",
           "heating_energy_sensor": "Heating energy meter (kWh)",
           "heating_measurement_date": "Date to compare heating energy use",
-          "heating_energy_price_kwh": "Heating price per kWh"
+          "heating_energy_price_kwh": "Heating price per kWh",
+          "autooff_respect_recent_voice": "Let auto-off respect recent voice-on commands"
         },
         "data_description": {
           "motion_window": "How many minutes of motion history to weigh up when deciding where people are.",
@@ -994,7 +995,8 @@
           "ai_routing_max_p95_ms": "Only consider the secondary provider when its measured 95th-percentile service time is within this limit. Defaults to 4000 ms. Voice replies continue through their existing pipeline.",
           "heating_energy_sensor": "A cumulative kWh energy sensor measuring the heating system, not the whole house. Use a sensor retained by Recorder with long-enough history.",
           "heating_measurement_date": "The date of the change you want to examine. Sentient compares up to 14 days before and after with the same weekdays; it cannot prove Sentient caused the difference.",
-          "heating_energy_price_kwh": "Optional estimate used only to translate observed kWh differences into approximate daily currency changes, not actual bills or proven savings."
+          "heating_energy_price_kwh": "Optional estimate used only to translate observed kWh differences into approximate daily currency changes, not actual bills or proven savings.",
+          "autooff_respect_recent_voice": "Off by default. When enabled, an automatic turn-off of a light or switch is held for up to two minutes after a higher-priority guarded voice-on command. Does not apply to manual stop requests, heating, locks or alarms."
         }
       },
       "memories": {
