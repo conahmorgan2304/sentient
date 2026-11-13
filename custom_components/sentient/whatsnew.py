@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.8.0": [
+        "The cognitive core now reasons about the order things happened in: the gate or a door opening, then a camera seeing someone just inside, is how people who live here come home — a doorbell is a caller. Your incident reviews decide whether that holds in your house.",
+        "The Mind tab scores the cognitive core and the usual rules side by side on your reviews: household incidents got right, others wrongly called household, and threats called less serious.",
+        "New, off by default (Settings → Safety & security): let it leave a camera's spoken \"Heads up\" at night unsaid when it's sure it's someone from the house coming in. It has to earn this separately, more strictly; the alert still goes on the timeline and to the phones, and nothing is quietened when everyone's out, over the fence or someone lingers.",
+    ],
     "1.7.0": [
         "The Mind tab now shows how conversations go: how many follow-ups carried on from the last thing you asked, how often it had to ask which thing you meant, how often an answer was corrected (\"no, I meant…\"), and how quickly it answers. With \"Show voice timings\" on; no words are kept.",
         "It also shows how memories are used: whether one on the subject came up and showed in the answer, and how often it had to search or was corrected.",

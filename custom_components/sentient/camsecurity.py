@@ -317,7 +317,11 @@ class CameraSecurity:
                                    why=f"{weighed['verdict']} ({weighed['explanation']})" if weighed else None)
             accepted = True
             speech = None
-            if rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE) and (weighed is None or weighed["announce"]):
+            quiet = (incidents.quiet_heads_up(incident_id, reason) if incidents is not None and incident_id is not None
+                     and hasattr(incidents, "quiet_heads_up") else None)
+            if quiet and item is not None:
+                rt.timeline.mark(item, heads_up=quiet)
+            if quiet is None and rt.speech.quiet_hours_now() and self.options.get(CONF_NIGHT_WATCH_ANNOUNCE) and (weighed is None or weighed["announce"]):
                 self._said.setdefault(sensor, []).append(when or dt_util.utcnow())
                 speakers = [s for s in self.options.get(CONF_NIGHT_WATCH_SPEAKERS) or [] if self.hass.states.get(s)] or None
                 speech = rt.speech.async_say(f"Heads up: {text[0].lower()}{text[1:]}.",

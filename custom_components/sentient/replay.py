@@ -51,7 +51,7 @@ def decision_record(item: dict[str, Any]) -> dict[str, Any]:
         "text": item.get("text"),
         "evidence": list(decision.get("evidence") or [])[:6],
         "surprise": decision.get("surprise"),
-        "ai_used": decision.get("ai_used"),
+        "ai_used": decision.get("ai_used"), "quietened": item.get("heads_up"),
     }
 
 

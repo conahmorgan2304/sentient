@@ -655,9 +655,13 @@
       }).join("");
       // whether the cognitive core decides incident stages yet, and what it still needs (Settings → Safety)
       const auth = mind.cognitive_authority || {};
+      const judged = (who) => who ? `${who.agreed}/${who.household} household right, ${who.false_household}/${who.others} others wrongly household, ${who.missed} threats called less serious` : "";
+      const authScores = auth.compared && auth.compared.core && (auth.compared.core.household || auth.compared.core.others)
+        ? `<small>CORE: ${esc(judged(auth.compared.core))}${auth.compared.rules ? ` · RULES: ${esc(judged(auth.compared.rules))}` : ""}</small>` : "";
+      const hu = auth.heads_up || {};
       const authRow = auth.switched_on && incidentRows ? `<div class="r"><ha-icon icon="mdi:head-cog-outline"></ha-icon><b class="wrap">${auth.deciding
         ? "The cognitive core decides incident stages"
-        : "The cognitive core isn't deciding yet"}<small>${esc(auth.deciding ? "Your reviews show it gets each kind of incident right. It never changes an alert." : (auth.why || []).join(" · "))}</small></b><u>${auth.deciding ? "DECIDING" : "LEARNING"}</u></div>` : "";
+        : "The cognitive core isn't deciding yet"}<small>${esc(auth.deciding ? "Your reviews show it gets each kind of incident right. It never changes an alert." : (auth.why || []).join(" · "))}</small>${authScores}${hu.switched_on ? `<small>NIGHT HEADS-UPS: ${esc(hu.deciding ? "left unsaid when it's sure it's someone from the house" : "said as usual — " + (hu.why || []).join(" · "))}</small>` : ""}</b><u>${auth.deciding ? "DECIDING" : "LEARNING"}</u></div>` : "";
       const incidentList = incidentRows ? authRow + incidentRows + this._securityEventRows(mind) : this._securityEventRows(mind);
       const thinkList = [
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),

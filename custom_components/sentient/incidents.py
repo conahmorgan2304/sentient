@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 from .sessions import CONF_INCIDENTS
 from .cognitive_coordinator import (
     CONF_COGNITIVE_DECIDES,
+    CONF_COGNITIVE_HEADS_UP,
     CONF_COGNITIVE_SHADOW,
     CognitiveCoordinator,
     authority,
@@ -237,14 +238,41 @@ class Incidents:
         return {"changed": True, "detector_settings_changed": False, "alert_policy_changed": False}
 
     # ----- the cognitive core deciding ---------------------------------------------------------
-    def authority(self) -> dict:
-        """Whether the cognitive core decides incident stages now: switched on, and earned from the reviews."""
-        status = authority(self.reviews)
-        return {**status, "switched_on": bool(self.options.get(CONF_COGNITIVE_DECIDES)),
-                "deciding": bool(self.options.get(CONF_COGNITIVE_DECIDES)) and status["earned"]}
+    def authority(self, scope: str = "incident_stage") -> dict:
+        """Whether the cognitive core makes a decision now: switched on, and earned from the reviews."""
+        status = authority(self.reviews, scope)
+        on = bool(self.options.get(CONF_COGNITIVE_DECIDES)) and (
+            scope == "incident_stage" or bool(self.options.get(CONF_COGNITIVE_HEADS_UP)))
+        return {**status, "switched_on": on, "deciding": on and status["earned"]}
+
+    def quiet_heads_up(self, incident_id, reason) -> str | None:
+        """Why the spoken night heads-up for this incident can be left unsaid, or None to say it.
+
+        Only the spoken heads-up for someone seen at night (never away, over the fence or loitering), only when
+        the core has earned this decision and is sure the incident is someone from the house. The alert itself —
+        the timeline, the phones — is untouched."""
+        if reason != "night" or not self.authority("night_heads_up")["deciding"]:
+            return None
+        item = next((i for i in self.items if i.get("id") == incident_id), None)
+        if item is None or (item.get("alert_level") or 0) >= 2:
+            return None
+        from .incident_reasoning import assess_incident
+
+        legacy, _ = stage(item)
+        core = investigate(item, assess_incident(item), baseline_stage=legacy)["stage"]
+        if core != "likely household":
+            return None
+        return "not said out loud: the cognitive core is sure it's someone from the house coming in (the gate or a door opened first)"
 
     def _check_authority(self) -> None:
         status = self.authority()
+        heads_up = self.authority("night_heads_up")
+        if heads_up["switched_on"] and heads_up["earned"] != getattr(self, "_heads_up_earned", None):
+            self._heads_up_earned = heads_up["earned"]
+            if self.on_authority is not None:
+                self.on_authority("The cognitive core now quietens night heads-ups it's sure are someone from the house."
+                                  if heads_up["earned"] else "The cognitive core won't quieten night heads-ups: "
+                                  + "; ".join(heads_up["why"]) + ".")
         if status["earned"] == self._earned:
             return
         self._earned = status["earned"]
