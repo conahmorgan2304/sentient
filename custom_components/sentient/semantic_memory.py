@@ -82,15 +82,22 @@ async def async_rerank(hass: Any, options: dict[str, Any], query: str,
         ) as response:
             if response.status != 200 or int(response.headers.get("Content-Length", "0")) > 1_000_000:
                 return allowed_rows
-            body = await response.content.read(1_000_001)
-            if len(body) > 1_000_000:
-                return allowed_rows
+            chunks = []
+            total = 0
+            while True:
+                chunk = await response.content.read(65536)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > 1_000_000:
+                    return allowed_rows
+                chunks.append(chunk)
             import json
 
-            payload = json.loads(body)
+            payload = json.loads(b"".join(chunks))
             vectors = payload.get("embeddings") if isinstance(payload, dict) else None
             if not isinstance(vectors, list):
                 return allowed_rows
             return rank_vectors(selected, vectors) + allowed_rows[MAX_CANDIDATES:]
-    except (Exception):  # noqa: BLE001 - degraded local embeddings must never break voice
+    except Exception:  # noqa: BLE001 - degraded local embeddings must never break voice
         return allowed_rows
