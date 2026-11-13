@@ -49,6 +49,9 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [ ] Camera streaming: test Nest/Home Assistant stream lifecycle and failover using actual Nest diagnostics; keep manual picture/video selection.
 - [ ] Document retrieval: validate the existing v1.5.4 PDF page index and page citations against text and scanned PDFs before adding another retrieval engine.
 - [ ] 3D talking head: separate prototype, explicitly excluded from this integration work.
+- [ ] Customisable pages (Overview, House, Mind, Security): an optional "Edit layout" mode, off by default. With it off, pages look as they do now.
+  - Step 1: move cards up/down and between lanes (drag, plus arrows for wall tablets), hide and restore cards, reset a page. The layout is saved in Sentient, so every device shows the same one. Cards added by a later release appear in their default place.
+  - Step 2: add cards. Any of Sentient's own cards can go on any page, and any Home Assistant dashboard card (HACS cards included) can be embedded in Sentient's style.
 
 ## Stage 5 — Its own page
 - [x] Built-in sidebar panel, not an editable dashboard (0.13.0)
