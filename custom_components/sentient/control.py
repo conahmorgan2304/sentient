@@ -314,6 +314,10 @@ class Control:
                 async with asyncio.timeout(10):
                     await self.hass.services.async_call(eid.split('.')[0], a['action'], {'entity_id': eid, **data}, blocking=True,
                                                         context=context or Context())
+                # Advisory only: a later motion/auto-off intent may oppose
+                # this request. Monitoring never blocks or retries either.
+                if (intents := getattr(self, "intents", None)) is not None:
+                    intents.observe(eid, a["action"], "guarded_voice")
                 # Service completion is not physical confirmation. Allow normal state propagation briefly.
                 for _ in range(10):
                     if target_reached(self.hass.states.get(eid), a):
