@@ -25,3 +25,24 @@ async def test_optional_custom_layout_saved_only_by_admin(hass):
     assert not (await restored.async_reset(user=SimpleNamespace(is_admin=False)))["accepted"]
     assert (await restored.async_reset(user=SimpleNamespace(is_admin=True)))["saved"]
     assert restored.view(enabled=True)["layout"] == {}
+
+
+async def test_saved_layout_stays_inactive_across_restart_until_admin_enables(hass):
+    key = "phase2-disabled-after-restart"
+    store = CustomLayoutStore(hass, key)
+    await store.async_load()
+    layout = {"security": [{"id": "live", "visible": False, "lane": 0}]}
+    admin = SimpleNamespace(is_admin=True)
+    assert (await store.async_save(layout, user=admin))["saved"]
+    assert store.view(enabled=True)["enabled"] is False
+    reloaded = CustomLayoutStore(hass, key)
+    await reloaded.async_load()
+    assert reloaded.view(enabled=True)["layout"] == {}
+    assert reloaded.view(enabled=True)["saved_layout_present"]
+    assert (await reloaded.async_set_enabled(True, user=admin))["accepted"]
+    assert reloaded.view(enabled=True)["layout"] == layout
+    assert not (await reloaded.async_set_enabled("false", user=admin))["accepted"]
+    assert (await reloaded.async_set_enabled(False, user=admin))["accepted"]
+    another = CustomLayoutStore(hass, key)
+    await another.async_load()
+    assert another.view(enabled=True)["layout"] == {}
