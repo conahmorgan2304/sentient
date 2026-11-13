@@ -942,6 +942,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("voice_speed_restart", **d("voice_speed_restart", False)): selector.BooleanSelector(),
             vol.Required("incident_stages", **d("incident_stages", True)): selector.BooleanSelector(),
             vol.Required("cognitive_shadow", **d("cognitive_shadow", False)): selector.BooleanSelector(),
+            vol.Required("cognitive_decides", **d("cognitive_decides", False)): selector.BooleanSelector(),
             # weather and flood warnings (warnings_feed.py)
             vol.Required("weather_warnings", **d("weather_warnings", False)): selector.BooleanSelector(),
             vol.Optional("warnings_country", **d("warnings_country")): selector.SelectSelector(

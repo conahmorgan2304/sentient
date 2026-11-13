@@ -324,7 +324,7 @@ class MindSensor(_Base):
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
-        "incident_review_quality", "security_review_quality",
+        "incident_review_quality", "security_review_quality", "cognitive_authority",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
@@ -370,6 +370,7 @@ class MindSensor(_Base):
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
             "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
+            "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else rt.incidents.authority()),
             # Aggregate only: no names, camera images, conversation text or
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")

@@ -640,13 +640,20 @@
       ].join("");
       const reviewControls = !!(this._hass.user?.is_admin && !this._st("guest_mode")?.state?.includes("on"));
       const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => {
-        const actions = reviewControls ? `<details><summary>REVIEW INCIDENT (ADVISORY ONLY)</summary>${[
+        const actions = reviewControls ? `<details><summary>REVIEW THIS INCIDENT</summary>${[
           ["household", "HOUSEHOLD"], ["visitor", "VISITOR"], ["false_detection", "FALSE DETECTION"],
           ["concerning", "CONCERNING"], ["unresolved", "UNRESOLVED"], ["clear", "CLEAR REVIEW"]
         ].map(([value, label]) => `<button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</details>` : "";
         const status = this._incidentReviewReply?.id === i.id ? `<small role="status">${esc(this._incidentReviewReply.message)}</small>` : "";
-        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
-      }).join("") + this._securityEventRows(mind);
+        const stage = i.stage ? `<small>${esc(i.stage.toUpperCase())}${i.stage_by && i.stage_by !== "rules" ? " · DECIDED BY THE COGNITIVE CORE" : ""}${i.rules_stage && i.rules_stage !== i.stage ? " · RULES SAID " + esc(i.rules_stage.toUpperCase()) : ""}</small>` : "";
+        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}${stage}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
+      }).join("");
+      // whether the cognitive core decides incident stages yet, and what it still needs (Settings → Safety)
+      const auth = mind.cognitive_authority || {};
+      const authRow = auth.switched_on && incidentRows ? `<div class="r"><ha-icon icon="mdi:head-cog-outline"></ha-icon><b class="wrap">${auth.deciding
+        ? "The cognitive core decides incident stages"
+        : "The cognitive core isn't deciding yet"}<small>${esc(auth.deciding ? "Your reviews show it gets each kind of incident right. It never changes an alert." : (auth.why || []).join(" · "))}</small></b><u>${auth.deciding ? "DECIDING" : "LEARNING"}</u></div>` : "";
+      const incidentList = incidentRows ? authRow + incidentRows + this._securityEventRows(mind) : this._securityEventRows(mind);
       const thinkList = [
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
@@ -678,8 +685,8 @@
         + (voiceRows || '<div class="e">NO RECENT VOICE CONVERSATIONS · TURN ON CONVERSATION SESSIONS IN SETTINGS → VOICE TO SEE THEM HERE</div>');
       R("mdeliv").innerHTML = this._h("SPEAKER DELIVERIES", (mind.speech_deliveries || []).length ? `${mind.speech_deliveries.length} RECENT` : "")
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
-      R("minc").hidden = !incidentRows;
-      R("minc").innerHTML = incidentRows ? this._h("EVENT DETAILS", "") + incidentRows : "";
+      R("minc").hidden = !incidentList;
+      R("minc").innerHTML = incidentList ? this._h("EVENT DETAILS", "") + incidentList : "";
       if (this._view === "security") {
         this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind);
         if (Date.now() - (this._frigateHealthAt || 0) > 15000) this._loadFrigateHealth();

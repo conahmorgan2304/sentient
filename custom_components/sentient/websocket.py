@@ -358,7 +358,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
     ]),
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
-        CONF_INCIDENTS, "cognitive_shadow", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
+        CONF_INCIDENTS, "cognitive_shadow", "cognitive_decides", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
     ]),
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
@@ -1378,6 +1378,7 @@ DEPENDS: dict[str, str] = {
     **{k: "ai_routing_enabled" for k in ("ai_routing_alternative", "ai_routing_primary_cost",
                                            "ai_routing_alternative_cost", "ai_routing_max_p95_ms")},
     "cognitive_shadow": CONF_INCIDENTS,
+    "cognitive_decides": CONF_INCIDENTS,
     "security_reasoning": CONF_CAMSEC,
     "recheck_unconfirmed": CONF_GUARDED,
     CONF_ROOM_HANDOFF: CONF_SESSIONS,
