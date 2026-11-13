@@ -23,6 +23,9 @@ new service-call authority, model subscriptions, and alert suppression rules.
   independently encrypted; Home Assistant backup/storage access policies
   remain important.
 
+### Heating validation (follow-up)
+- After each normal heating history refresh, learned warm-up rates are checked against later held-out thermostat episodes. The zone report exposes the absolute warm-up-rate error only when there are at least two earlier training episodes and one later test episode. Insufficient history reports unknown rather than fabricated accuracy. This is rate validation, **not** proof of reduced bills, better comfort, or improved preheat timing. Thermostat actions, schedules and opt-in settings remain unchanged.
+
 ### Decision and action coordination
 - A single bounded `ActionIntentMonitor` observes guarded voice,
   motion-light, auto-off and direct Rule dispatch requests. Opposite requests for the same
