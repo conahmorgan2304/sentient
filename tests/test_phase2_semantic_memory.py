@@ -8,12 +8,19 @@ from custom_components.sentient.semantic_memory import (
 
 def test_embedding_endpoint_is_explicitly_local_and_non_redirecting():
     assert allowed_endpoint("http://127.0.0.1:11434")
+    assert allowed_endpoint("http://10.0.0.2:11434")
+    assert allowed_endpoint("http://[::1]:11434")
     assert allowed_endpoint("http://192.168.1.15:11434/api/embed")
     assert not allowed_endpoint("https://api.openai.com:443")
     assert not allowed_endpoint("http://169.254.169.254:80")
     assert not allowed_endpoint("http://example.com:11434")
     assert not allowed_endpoint("http://127.0.0.1:11434/redirect")
     assert not allowed_endpoint("http://localhost:11434/?token=abc")
+    assert not allowed_endpoint("http://localhost:11434")
+    assert not allowed_endpoint("http://100.64.0.1:11434")
+    assert not allowed_endpoint("http://192.0.0.1:11434")
+    assert not allowed_endpoint("http://0.0.0.0:11434")
+    assert not allowed_endpoint("http://[::ffff:192.168.1.1]:11434")
 
 
 def test_semantic_ranking_remains_within_preapproved_candidates():
