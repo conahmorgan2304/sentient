@@ -50,7 +50,7 @@ def test_successful_ocr_rebuild_swaps_documents_and_fts_together(tmp_path, monke
     db = Database()
     file = _one_file(tmp_path, monkeypatch)
     pages._store(db, "guide.pdf", file.stat().st_mtime, file.stat().st_size, 1, "page", None,
-                 [(1, "1", "Boiler pressure from prior index")])
+                 [(1, "1", "Boiler pressure instructions preserved from the prior original index")])
     db.run(lambda c: c.execute("INSERT INTO doc_index_meta VALUES ('local_ocr','0')"))
     monkeypatch.setattr("custom_components.sentient.local_ocr.available", lambda: True)
     monkeypatch.setattr(pages, "read_pdf", lambda *a, **kw:
@@ -66,7 +66,7 @@ def test_ocr_reindex_publish_failure_rolls_back_prior_pages(tmp_path, monkeypatc
     db = Database()
     file = _one_file(tmp_path, monkeypatch)
     pages._store(db, "guide.pdf", file.stat().st_mtime, file.stat().st_size, 1, "page", None,
-                 [(1, "1", "Original boiler reference text")])
+                 [(1, "1", "Original boiler maintenance reference text before reindex")])
     db.run(lambda c: c.execute("INSERT INTO doc_index_meta VALUES ('local_ocr','0')"))
     monkeypatch.setattr("custom_components.sentient.local_ocr.available", lambda: True)
     monkeypatch.setattr(pages, "read_pdf", lambda *a, **kw:
