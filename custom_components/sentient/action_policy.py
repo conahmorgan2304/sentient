@@ -10,7 +10,7 @@ from typing import Any
 REVERSIBLE = frozenset({"light", "switch", "fan"})
 ACTIONS = frozenset({"turn_on", "turn_off"})
 MAX_AGE = timedelta(minutes=30)
-SOURCE_PRIORITY = {"manual": 40, "guarded_voice": 40, "scheduled_routine": 20,
+SOURCE_PRIORITY = {"manual": 40, "guarded_voice": 40, "routine": 40, "scheduled_routine": 20,
                    "rules": 15, "motion_lights": 10, "auto_off": 10}
 
 def simulate(candidate: dict[str, Any], incumbent: dict[str, Any] | None = None,

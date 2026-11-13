@@ -82,6 +82,7 @@ class AIGate:
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
         self._observed_calls = deque(maxlen=100)  # volatile timing/outcome only; no inputs or model IDs
         self._observed_by_entity: dict[str, deque] = {}  # volatile service outcomes for opted-in routing
+        self._observed_by_family: dict[tuple[str, str], deque] = {}  # the same, per provider and kind of job
         self._last_route = {"switched": False, "reason": "default_provider"}
 
     async def async_start(self) -> None:
@@ -281,7 +282,8 @@ class AIGate:
         if "entity_id" not in data and (ai := self.options.get(CONF_AI_TASK_ENTITY)):
             from .model_routing import choose
 
-            proposal = choose(self.options, data, dict(self._observed_by_entity), default_entity=ai)
+            proposal = choose(self.options, data, dict(self._observed_by_entity), default_entity=ai,
+                              by_family=self._observed_by_family)
             target = proposal.get("entity_id") or ai
             if proposal.get("switched") and self.hass.states.get(target) is None:
                 target = ai  # never route to an absent AI Task provider
@@ -354,6 +356,23 @@ class AIGate:
             if len(self._observed_by_entity) >= 8 and entity not in self._observed_by_entity:
                 return
             self._observed_by_entity.setdefault(entity, deque(maxlen=100)).append((success, elapsed_ms))
+            from .model_routing import family
+
+            key = (entity, family(data))
+            if key in self._observed_by_family or len(self._observed_by_family) < 64:
+                self._observed_by_family.setdefault(key, deque(maxlen=50)).append((success, elapsed_ms))
+
+    def _family_report(self) -> list[dict[str, Any]]:
+        """Measured completion per provider and kind of job (only those with enough calls)."""
+        from .model_routing import FAMILY_MINIMUM, stats
+
+        out = []
+        for (entity, kind), rows in sorted(self._observed_by_family.items()):
+            s = stats(list(rows), minimum=FAMILY_MINIMUM)
+            if s["success_rate"] is not None:
+                out.append({"provider": entity, "job": kind, "calls": s["samples"], "completed": s["success_rate"],
+                            "p95_ms": s["p95_ms"]})
+        return out[:20]
 
     def observed_performance(self) -> dict[str, Any]:
         """Volatile samples only; never infer billed cost or model accuracy."""
@@ -373,6 +392,7 @@ class AIGate:
             "observed_performance": self.observed_performance(),
             "routing": {"enabled": self.options.get("ai_routing_enabled") is True,
                         "providers_observed": len(self._observed_by_entity), **self._last_route,
+                        "by_kind_of_job": self._family_report(),
                         "real_prices_verified": False},
             "today": self.used,
             "service_attempts_today": self.service_attempts,

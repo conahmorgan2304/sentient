@@ -19,7 +19,10 @@ async def _setup(hass):
     return entry
 
 
-async def test_goodnight(hass: HomeAssistant, hass_ws_client) -> None:
+async def test_goodnight(hass: HomeAssistant, hass_ws_client, monkeypatch) -> None:
+    import custom_components.sentient.plans as plans
+
+    monkeypatch.setattr(plans, "VERIFY_SECONDS", 0.2)
     entry = await _setup(hass)
     off = async_mock_service(hass, "light", "turn_off")
     said = async_mock_service(hass, "assist_satellite", "announce")
@@ -36,7 +39,8 @@ async def test_goodnight(hass: HomeAssistant, hass_ws_client) -> None:
 
     out = await hass.services.async_call(DOMAIN, "run_routine", {"name": "bedtime"}, blocking=True, return_response=True)
     assert len(off) == 1
-    assert out["said"] == "Goodnight. Back door is still open. Landing is still on."
+    # the light service here is a stand-in that switches nothing, so the routine's own check says so (1.9.0)
+    assert out["said"] == "Goodnight. Done, except the landing is still on. Back door is still open."
     assert said[-1].data["message"] == out["said"]  # spoken even in quiet hours: someone asked
 
     api = await llm.async_get_api(hass, "sentient", llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))

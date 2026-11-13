@@ -685,6 +685,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     control.intents = intents
     motion_lights.intents = intents
     autooff.intents = intents
+    shortcuts.intents = intents
+    shortcuts.verify = lambda: bool(entry.runtime_data.options.get("routine_verify", True))
     entry.runtime_data = SentientRuntime(
         house_context=house_context, evidence=evidence, sessions=sessions, updates=updates, voice_checks=voice_checks, control=control, household_tasks=HouseholdTasks(hass, control), incidents=incidents, security_events=security_events, frigate_health=frigate_health, clip_analysis=clip_analysis,
         options=options, memory=memory, speech=speech, tracker=tracker, watches=watches,
@@ -1235,7 +1237,7 @@ def _register_services(hass: HomeAssistant) -> None:
         if result.get("said") and call.data.get("speak", True):
             await rt.speech.async_say(result["said"], "urgent", source="routine")
         if not result.get("error"):
-            rt.timeline.add("mode", f"Ran {result['routine']}", result.get("said") or None)
+            rt.timeline.add("mode", f"Ran {result['routine']}", result.get("said") or None, decision=result.get("decision"))
         return result
 
     hass.services.async_register(

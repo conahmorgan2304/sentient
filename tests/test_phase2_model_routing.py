@@ -48,3 +48,35 @@ def test_routing_rejects_unreliable_or_invalid_cost_samples():
                       {"task_name": "Sentient: summary"}, _observations(),
                       default_entity="ai_task.main")["switched"]
     assert stats([(True, 10)] * 4)["success_rate"] is None
+
+
+def test_a_cheaper_ai_that_keeps_failing_one_kind_of_job_stops_getting_it() -> None:
+    """Phase 4: routing measured per kind of job, with the cheaper AI demoted for a kind it's worse at."""
+    from custom_components.sentient.model_routing import family
+
+    summary = {"task_name": "Sentient: evening summary", "instructions": "Summarise"}
+    worth = {"task_name": "Sentient: worth saying?", "instructions": "Decide"}
+    assert family(summary) == "evening summary"
+    by_family = {("ai_task.fast", "evening summary"): [(True, 400)] * 5 + [(False, 400)] * 7,
+                 ("ai_task.main", "evening summary"): [(True, 1300)] * 12,
+                 ("ai_task.fast", "worth saying?"): [(True, 400)] * 12}
+    demoted = choose(_options(), summary, _observations(), default_entity="ai_task.main", by_family=by_family)
+    assert not demoted["switched"] and demoted["reason"] == "worse_at_evening summary"
+    assert choose(_options(), worth, _observations(), default_entity="ai_task.main", by_family=by_family)["switched"]
+    few = {("ai_task.fast", "evening summary"): [(False, 400)] * 3}  # too few of that kind to judge yet
+    assert choose(_options(), summary, _observations(), default_entity="ai_task.main", by_family=few)["switched"]
+
+
+async def test_every_call_is_measured_per_provider_and_kind_of_job(hass) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.sentient.ai import AIGate
+
+    gate = AIGate(hass, "t", {"ai_task_entity": "ai_task.main"})
+    hass.states.async_set("ai_task.main", "unknown")
+    with patch("homeassistant.core.ServiceRegistry.async_call", AsyncMock(return_value={"data": "ok"})):
+        for _ in range(10):
+            await gate.async_call({"task_name": "Sentient: evening summary", "instructions": "x"})
+    report = gate.describe()["routing"]["by_kind_of_job"]
+    assert report == [{"provider": "ai_task.main", "job": "evening summary", "calls": 10, "completed": 1.0,
+                       "p95_ms": report[0]["p95_ms"]}]

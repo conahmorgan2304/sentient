@@ -22,8 +22,17 @@ def stats(rows: list[tuple[bool, int]], *, minimum: int = 20) -> dict[str, Any]:
             "p95_ms": round(times[min(n-1, int(n*.95))])}
 
 
+def family(data: dict[str, Any]) -> str:
+    """The kind of job, from its task name: "Sentient: worth saying?" → "worth saying?"."""
+    name = str(data.get("task_name") or "")
+    return (name.split(":", 1)[1] if ":" in name else name).strip()[:40] or "other"
+
+
+FAMILY_MINIMUM = 10  # measured calls of one kind of job before its own record can stop the switch
+
+
 def choose(options: dict[str, Any], data: dict[str, Any], observations: dict[str, list],
-           *, default_entity: str | None) -> dict[str, Any]:
+           *, default_entity: str | None, by_family: dict[tuple[str, str], list] | None = None) -> dict[str, Any]:
     result = {"entity_id": default_entity, "switched": False,
               "reason": "default_provider", "estimate_only": True}
     if options.get("ai_routing_enabled") is not True:
@@ -59,6 +68,14 @@ def choose(options: dict[str, Any], data: dict[str, Any], observations: dict[str
     if (alt["success_rate"] < max(.95, main["success_rate"] - .02)
             or alt["p95_ms"] > max_latency):
         return {**result, "reason": "reliability_or_latency_limit"}
+    # measured per kind of job as well: a cheaper AI that's fine overall but keeps failing at one kind of job
+    # stops getting that kind (and gets it back when its record recovers)
+    kind = family(data)
+    alt_kind = stats((by_family or {}).get((secondary, kind)) or [], minimum=FAMILY_MINIMUM)
+    main_kind = stats((by_family or {}).get((default_entity, kind)) or [], minimum=FAMILY_MINIMUM)
+    if alt_kind["success_rate"] is not None and alt_kind["success_rate"] < max(
+            .9, (main_kind["success_rate"] if main_kind["success_rate"] is not None else 1.0) - .05):
+        return {**result, "reason": f"worse_at_{kind}"[:60]}
     return {"entity_id": secondary, "switched": True,
             "reason": "cheaper_estimated_cost_with_measured_service_reliability",
             "estimate_only": True, "billed_cost_known": False}

@@ -37,7 +37,7 @@ class ActionIntentMonitor:
         if not isinstance(entity_id, str) or "." not in entity_id:
             return None
         side = _SIDES.get(action)
-        if side is None or source not in {"guarded_voice", "motion_lights", "auto_off", "rules", "heating"}:
+        if side is None or source not in {"guarded_voice", "motion_lights", "auto_off", "rules", "heating", "routine"}:
             return None
         now = when or datetime.now(timezone.utc)
         if now.tzinfo is None:

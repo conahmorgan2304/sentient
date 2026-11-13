@@ -52,3 +52,25 @@ async def test_ai_calibration_one_generic_call_only_with_budget_and_cooldown(has
         assert retry["success"] is False
         assert retry["error"]["code"] == "rate_limited"
         call.assert_awaited_once()
+
+
+async def test_demoted_job_recovers_only_after_explicit_admin_reset(hass, hass_ws_client):
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.options.update({"ai_routing_enabled": True, "ai_task_entity": "ai_task.main",
+                       "ai_routing_alternative": "ai_task.alternative"})
+    rt.ai._observed_by_family[("ai_task.alternative", "evening summary")] = [(False, 500)] * 12
+    rt.ai._observed_by_family[("ai_task.main", "evening summary")] = [(True, 500)] * 12
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/ai/routing/calibrate",
+                        "action": "status", "provider": "alternative"})
+    result = await ws.receive_json()
+    assert result["success"] and len(rt.ai._observed_by_family) == 2
+    with patch.object(rt.ai, "async_call", new_callable=AsyncMock) as paid:
+        await ws.send_json({"id": 2, "type": "sentient/ai/routing/calibrate",
+                            "action": "reset_jobs", "provider": "alternative"})
+        result = await ws.receive_json()
+        assert result["success"] and result["result"]["job_penalties_reset"] is True
+        assert ("ai_task.main", "evening summary") in rt.ai._observed_by_family
+        assert ("ai_task.alternative", "evening summary") not in rt.ai._observed_by_family
+        paid.assert_not_called()
