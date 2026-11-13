@@ -640,13 +640,20 @@
       ].join("");
       const reviewControls = !!(this._hass.user?.is_admin && !this._st("guest_mode")?.state?.includes("on"));
       const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => {
-        const actions = reviewControls ? `<details><summary>REVIEW INCIDENT (ADVISORY ONLY)</summary>${[
+        const actions = reviewControls ? `<details><summary>REVIEW THIS INCIDENT</summary>${[
           ["household", "HOUSEHOLD"], ["visitor", "VISITOR"], ["false_detection", "FALSE DETECTION"],
           ["concerning", "CONCERNING"], ["unresolved", "UNRESOLVED"], ["clear", "CLEAR REVIEW"]
         ].map(([value, label]) => `<button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</details>` : "";
         const status = this._incidentReviewReply?.id === i.id ? `<small role="status">${esc(this._incidentReviewReply.message)}</small>` : "";
-        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
-      }).join("") + this._securityEventRows(mind);
+        const stage = i.stage ? `<small>${esc(i.stage.toUpperCase())}${i.stage_by && i.stage_by !== "rules" ? " · DECIDED BY THE COGNITIVE CORE" : ""}${i.rules_stage && i.rules_stage !== i.stage ? " · RULES SAID " + esc(i.rules_stage.toUpperCase()) : ""}</small>` : "";
+        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}${stage}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
+      }).join("");
+      // whether the cognitive core decides incident stages yet, and what it still needs (Settings → Safety)
+      const auth = mind.cognitive_authority || {};
+      const authRow = auth.switched_on && incidentRows ? `<div class="r"><ha-icon icon="mdi:head-cog-outline"></ha-icon><b class="wrap">${auth.deciding
+        ? "The cognitive core decides incident stages"
+        : "The cognitive core isn't deciding yet"}<small>${esc(auth.deciding ? "Your reviews show it gets each kind of incident right. It never changes an alert." : (auth.why || []).join(" · "))}</small></b><u>${auth.deciding ? "DECIDING" : "LEARNING"}</u></div>` : "";
+      const incidentList = incidentRows ? authRow + incidentRows + this._securityEventRows(mind) : this._securityEventRows(mind);
       const thinkList = [
         ...(fresh ? (mind.thoughts || []) : []).map((t) => `<div class="r"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><b>${esc(t)}</b><u>OVERNIGHT</u></div>`),
         ...(mind.wondering || []).map((q) => `<div class="r"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b>${esc(q)}</b>
@@ -678,8 +685,8 @@
         + (voiceRows || '<div class="e">NO RECENT VOICE CONVERSATIONS · TURN ON CONVERSATION SESSIONS IN SETTINGS → VOICE TO SEE THEM HERE</div>');
       R("mdeliv").innerHTML = this._h("SPEAKER DELIVERIES", (mind.speech_deliveries || []).length ? `${mind.speech_deliveries.length} RECENT` : "")
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
-      R("minc").hidden = !incidentRows;
-      R("minc").innerHTML = incidentRows ? this._h("EVENT DETAILS", "") + incidentRows : "";
+      R("minc").hidden = !incidentList;
+      R("minc").innerHTML = incidentList ? this._h("EVENT DETAILS", "") + incidentList : "";
       if (this._view === "security") {
         this._drawLive(mind); this._drawSecTimeline(mind); this._drawSnaps(mind);
         if (Date.now() - (this._frigateHealthAt || 0) > 15000) this._loadFrigateHealth();
@@ -687,7 +694,7 @@
       R("mupd").hidden = !updateRow;
       R("mupd").innerHTML = updateRow ? this._h("UPDATES", "") + updateRow : "";
       if (this._view === "mind") this._loadInner();
-      this._drawBrain(mind, ai);
+      this._drawBrainStrip(mind, ai);
       this._drawAppliances(mind.appliances || []);
 
       // visitors
@@ -1530,7 +1537,8 @@
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:stethoscope"></ha-icon><div><div class="bt">SETUP DOCTOR</div>
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
         <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
-        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
+        <div class="hint">DOWNLOAD THE LAST DAY saves a file of what happened in the house over the last 24 hours (from the house ledger) and what Sentient decided, for checking a new version against your own days. It stays on your device; nothing is sent.</div>
+        <div class="bar"><span id="status"></span><button class="btn ghost" data-act="replayexport">DOWNLOAD THE LAST DAY</button><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
     }
 
     // ---------- how it's used ----------
@@ -2863,7 +2871,15 @@
       else if (act === "unlearnq") this._loadMutes(false, { unlearn: id });
       else if (act === "unlearn") this._call("forget_routine", { routine: id }, `Delete this for good? It won't be learned or offered again.\n\n${text}`);
       else if (act === "unforget") this._call("forget_routine", { restore: true }, text);
-      else if (act === "goto") { if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); } else { this._group = id; this._show("settings", true); } }
+      else if (act === "goto") {
+        if (TAB_OF[id]) { this._show(TAB_OF[id], true); this._openTabPage(id); }
+        else {
+          // the page is chosen after switching tabs: coming from another tab, _show opens Settings on its front page
+          this._show("settings", true);
+          this._group = id;
+          if (this._settings) { this._drawSide(); this._drawBody(); }
+        }
+      }
       else if (act === "hdupe") {
         if (!window.confirm(`Disable the empty copy of ${el.dataset.name || "this device"}? It has no entities, so nothing stops working, and Home Assistant keeps it disabled even when its integration reloads. Undo from its device page.`)) return;
         this._hass.callWS({ type: "sentient/health/disable_copy", device_id: id }).then(() => { const row = el.closest(".r"); if (row) row.remove(); }, (e) => window.alert(e.message || String(e)));
@@ -3045,6 +3061,19 @@
           .then(() => { m.pinned = !m.pinned; this._drawMemories(); }, (e) => window.alert(e.message || e));
       }
       else if (act === "docrun") this._drawDoctor(true);
+      else if (act === "replayexport") {
+        const msg = this._$("docmsg");
+        if (msg) msg.textContent = "GATHERING THE DAY…";
+        this._hass.callWS({ type: "sentient/replay/export", hours: 24 }).then((r) => {
+          if (r.error) { if (msg) msg.textContent = r.error; return; }
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([JSON.stringify(r)], { type: "application/json" }));
+          a.download = `sentient-day-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+          if (msg) msg.textContent = `SAVED · ${r.changes.length} CHANGES · ${r.decisions.length} DECISIONS`;
+        }, (e) => { if (msg) msg.textContent = e.message || String(e); });
+      }
       else if (act === "privrun") this._drawPrivacy(true);
       else if (act === "userun") this._drawUsage(true);
       else if (act === "showall" || act === "showless") { this._showAll = act === "showall"; this._drawSide(); }
@@ -3208,7 +3237,7 @@
     }
 
     // the Mind page's top strip: how much it's thought today, the last week, and how it talks
-    _drawBrain(mind, ai) {
+    _drawBrainStrip(mind, ai) {
       const R = (id) => this._$(id);
       const tk = mind.talking || {};
       const days = Object.entries(ai.last_7_days || {});

@@ -10,7 +10,16 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .sessions import CONF_INCIDENTS
-from .cognitive_coordinator import CONF_COGNITIVE_SHADOW, CognitiveCoordinator
+from .cognitive_coordinator import (
+    CONF_COGNITIVE_DECIDES,
+    CONF_COGNITIVE_SHADOW,
+    CognitiveCoordinator,
+    authority,
+    decided_stage,
+    investigate,
+)
+
+MAX_REVIEWS = 300
 
 CONF_COVERAGE = "security_coverage"
 CONF_STAGES = "incident_stages"
@@ -64,6 +73,9 @@ class Incidents:
         self.hass, self.options = hass, options
         self._store = Store(hass, 1, f'sentient.{entry_id}.incidents')
         self.items = []
+        self.reviews = []  # the household's verdicts, kept after the incident itself is gone (no evidence, no names)
+        self.on_authority = None  # called with a line for the timeline when the core starts or stops deciding
+        self._earned = None
         self._pending_alerts = {}
         self.cognitive = CognitiveCoordinator()  # bounded, read-only shadow comparisons
         self._unsub = None
@@ -75,6 +87,8 @@ class Incidents:
     async def async_start(self):
         data = await self._store.async_load() or {}
         self.items = data.get('items', [])
+        self.reviews = data.get('reviews', [])[-MAX_REVIEWS:]
+        self._earned = authority(self.reviews)["earned"]
         self._prune()
         self.configure(self.options)
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed)
@@ -94,7 +108,7 @@ class Incidents:
 
     def _save(self):
         self._prune()
-        self._store.async_delay_save(lambda: {'items': self.items}, 5)
+        self._store.async_delay_save(lambda: {'items': self.items, 'reviews': self.reviews[-MAX_REVIEWS:]}, 5)
 
     @callback
     def _changed(self, event):
@@ -205,15 +219,48 @@ class Incidents:
         row = next((i for i in self.items if i.get("id") == incident_id), None)
         if row is None:
             return {"error": "Incident is not retained"}
+        self.reviews = [r for r in self.reviews if r.get("id") != incident_id]
         if outcome == "clear":
             row.pop("household_review", None)
         else:
+            from .incident_reasoning import assess_incident
+
             predicted, _ = stage(row)
-            row["household_review"] = {"label": outcome, "predicted_stage": predicted,
-                                       "at": dt_util.utcnow().isoformat(),
-                                       "source": "household_review_not_independent_proof"}
+            core = investigate(row, assess_incident(row), baseline_stage=predicted)["stage"]
+            now = dt_util.utcnow().isoformat()
+            row["household_review"] = {"label": outcome, "predicted_stage": predicted, "core_stage": core,
+                                       "at": now, "source": "household_review_not_independent_proof"}
+            self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core})
+            self.reviews = self.reviews[-MAX_REVIEWS:]
         self._save()
+        self._check_authority()
         return {"changed": True, "detector_settings_changed": False, "alert_policy_changed": False}
+
+    # ----- the cognitive core deciding ---------------------------------------------------------
+    def authority(self) -> dict:
+        """Whether the cognitive core decides incident stages now: switched on, and earned from the reviews."""
+        status = authority(self.reviews)
+        return {**status, "switched_on": bool(self.options.get(CONF_COGNITIVE_DECIDES)),
+                "deciding": bool(self.options.get(CONF_COGNITIVE_DECIDES)) and status["earned"]}
+
+    def _check_authority(self) -> None:
+        status = self.authority()
+        if status["earned"] == self._earned:
+            return
+        self._earned = status["earned"]
+        if status["switched_on"] and self.on_authority is not None:
+            self.on_authority("The cognitive core now decides the stage of security incidents: your reviews show it gets "
+                              "each kind right." if status["earned"] else
+                              "The cognitive core has stopped deciding incident stages: " + "; ".join(status["why"]) + ".")
+
+    def stage_for(self, item, assessment):
+        """(stage, why, decided by, the rules' stage) for an incident: the core's when it decides, else the rules'."""
+        legacy, legacy_why = stage(item, assessment)
+        if not self.authority()["deciding"]:
+            return legacy, legacy_why, "rules", legacy
+        core = investigate(item, assessment, baseline_stage=legacy)["stage"]
+        final, by = decided_stage(legacy, core, True)
+        return final, (legacy_why if final == legacy else "the cognitive core's assessment"), by, legacy
 
     def reviewed_outcomes(self) -> dict:
         """Evaluate labelled episodes without exporting source, faces or IDs."""
@@ -252,11 +299,13 @@ class Incidents:
             row.pop("household_review", None)  # private labels are shown only in aggregate
             # The original stage remains authoritative; the new coordinator
             # only compares decisions and tracks disagreement for later review.
-            legacy_stage, legacy_reason = stage(i, row['assessment'])
+            final, reason, by, legacy_stage = self.stage_for(i, row['assessment'])
             if self.options.get(CONF_COGNITIVE_SHADOW):
                 row['cognitive_shadow'] = self.cognitive.incident(i, row['assessment'], legacy_stage)
             if self.options.get(CONF_STAGES, True):
-                row['stage'], row['stage_why'] = legacy_stage, legacy_reason
+                row['stage'], row['stage_why'], row['stage_by'] = final, reason, by
+                if by != "rules":
+                    row['rules_stage'] = legacy_stage
             out.append(row)
         return out
 
@@ -269,7 +318,13 @@ class Incidents:
         enabled = bool(options.get(CONF_COGNITIVE_SHADOW) and options.get(CONF_INCIDENTS))
         if was_enabled and not enabled:
             self.cognitive.reset()
+        switched = bool(options.get(CONF_COGNITIVE_DECIDES)) != bool(self.options.get(CONF_COGNITIVE_DECIDES))
         self.options = options
+        if switched and options.get(CONF_COGNITIVE_DECIDES) and self.on_authority is not None:
+            status = self.authority()
+            self.on_authority("The cognitive core now decides the stage of security incidents." if status["earned"] else
+                              "The cognitive core will decide incident stages once it has earned it: "
+                              + "; ".join(status["why"]) + ".")
         if not options.get(CONF_COVERAGE):
             had_gaps = False
             for item in self.items:

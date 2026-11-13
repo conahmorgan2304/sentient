@@ -1,0 +1,201 @@
+{
+ "format": 1,
+ "from": "2026-11-10T06:00:00+00:00",
+ "to": "2026-11-10T23:30:00+00:00",
+ "time_zone": "Europe/London",
+ "about": "Made-up house. Regression day for 1.5.9 (morning briefing given again after a restart), plus a window left open and something in quiet hours.",
+ "options": {
+  "persona": "Nova",
+  "speakers": [
+   "assist_satellite.kitchen"
+  ],
+  "default_speaker": "assist_satellite.kitchen",
+  "quiet_start": "21:00:00",
+  "quiet_end": "07:00:00",
+  "morning_briefing": true,
+  "morning_briefing_areas": [
+   "AREA_KITCHEN"
+  ],
+  "briefings": true,
+  "left_open_minutes": 15,
+  "house_ledger": true
+ },
+ "areas": {
+  "AREA_KITCHEN": {
+   "name": "Kitchen",
+   "floor": "ground"
+  },
+  "AREA_HALL": {
+   "name": "Hallway",
+   "floor": "ground"
+  }
+ },
+ "entities": {
+  "assist_satellite.kitchen": {
+   "area": "AREA_KITCHEN"
+  },
+  "binary_sensor.kitchen_motion": {
+   "area": "AREA_KITCHEN"
+  },
+  "binary_sensor.kitchen_window": {
+   "area": "AREA_KITCHEN"
+  },
+  "binary_sensor.back_door": {
+   "area": "AREA_HALL"
+  },
+  "binary_sensor.hall_motion": {
+   "area": "AREA_HALL"
+  }
+ },
+ "states": {
+  "assist_satellite.kitchen": {
+   "state": "idle",
+   "attributes": {
+    "friendly_name": "Kitchen speaker",
+    "supported_features": 3
+   }
+  },
+  "binary_sensor.kitchen_motion": {
+   "state": "off",
+   "attributes": {
+    "friendly_name": "Kitchen motion",
+    "device_class": "motion"
+   }
+  },
+  "binary_sensor.kitchen_window": {
+   "state": "off",
+   "attributes": {
+    "friendly_name": "Kitchen window",
+    "device_class": "window"
+   }
+  },
+  "binary_sensor.back_door": {
+   "state": "off",
+   "attributes": {
+    "friendly_name": "Back door",
+    "device_class": "door"
+   }
+  },
+  "binary_sensor.hall_motion": {
+   "state": "off",
+   "attributes": {
+    "friendly_name": "Hall motion",
+    "device_class": "motion"
+   }
+  }
+ },
+ "changes": [
+  {
+   "ts": "2026-11-10T07:29:00+00:00",
+   "entity": "binary_sensor.hall_motion",
+   "old": "off",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T07:31:00+00:00",
+   "entity": "binary_sensor.hall_motion",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T07:30:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "off",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T07:33:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T08:40:00+00:00",
+   "reload": true,
+   "entity": null
+  },
+  {
+   "ts": "2026-11-10T08:41:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "off",
+   "new": "unavailable",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T08:41:30+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "unavailable",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T08:45:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T09:10:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "off",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T09:12:00+00:00",
+   "entity": "binary_sensor.kitchen_motion",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T10:00:00+00:00",
+   "entity": "binary_sensor.kitchen_window",
+   "old": "off",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T11:00:00+00:00",
+   "entity": "binary_sensor.kitchen_window",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T22:30:00+00:00",
+   "entity": "binary_sensor.back_door",
+   "old": "off",
+   "new": "on",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T23:10:00+00:00",
+   "entity": "binary_sensor.back_door",
+   "old": "on",
+   "new": "off",
+   "cause": "device"
+  }
+ ],
+ "expect": {
+  "spoken": {
+   "briefing:up": 1,
+   "left_open": 2
+  },
+  "held": {
+   "left_open": 1
+  },
+  "ai_requests_at_most": 5
+ },
+ "floors": {
+  "ground": {
+   "name": "Ground floor",
+   "level": 0
+  }
+ }
+}

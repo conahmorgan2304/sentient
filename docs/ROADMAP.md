@@ -43,6 +43,40 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] Weekly report: what it learned and noticed this week (0.34.0)
 - [x] Weekly memory tidy: merge duplicates, drop nonsense, never more than a third at once (0.8.0)
 
+## Sentient 2.0 — proven, connected intelligence
+The aim isn't more features. It's showing, with numbers from a real house, that each release decides better than the last, and that memory, reasoning, conversation and security actually work together. Four things are measured:
+
+| Area | What has to be shown |
+| --- | --- |
+| Reliability | An update doesn't break existing features or any page of the panel |
+| Intelligence | Given the same evidence, the new version decides better (including staying silent) |
+| Learning | A correction changes what it does next time |
+| Integration | Memory, reasoning, conversation and security are connected on the real execution path |
+
+**The rule for every pull request:** no new intelligence component is complete until it receives real inputs, produces a measurable result, is wired into the running integration and passes regression tests. A module nothing feeds isn't a feature.
+
+### Phase 1 — Foundations: proof, not behaviour *(no new autonomous behaviour)*
+- [x] Page checks (1.6.0): every tab, every Settings group and the main dialogs opened in a browser against a fake Home Assistant whose answers were recorded from the real integration; any page error fails the build.
+- [x] Integration audit (1.6.0): a test lists modules the running integration never loads, settings nothing reads, and parallel decision paths. The list of known gaps can only shrink.
+- [x] Shared decision record (1.6.0, `replay.decision_record`): built on the timeline's existing `decision` field (kind, evidence, surprise, AI used, outcome), not a new database.
+- [x] Replay engine (1.6.0, `scripts/replay.py`; a day downloads from Settings → Setup doctor): recorded state changes run through the real decision code of two versions on a simulated clock, with nothing spoken and no device touched, so their decisions (including silences) can be compared.
+- [x] Benchmark report (1.6.0, `scripts/replay.py bench`): decisions, alert quality, repeats, false claims, AI calls and response time, old version against new; a release that's worse on any of them isn't shipped.
+- [x] End-to-end integration test (1.6.0, `tests/test_cognitive_decides.py`): gate contact and camera event → incident evidence → cognitive assessment → household context and memory → notification decision → recorded outcome. A broken link fails the test.
+
+### Phase 2 — Conversation, memory and awareness
+- [ ] Remember the active conversation separately from keeping the microphone open; topic and speaker continuity; follow-ups measured with the existing voice timings.
+- [ ] Memory recall measured (did the right memory come up, did it change the answer); observations, preferences, assumptions and verified facts kept apart.
+
+### Phase 3 — Cognitive Core and security, measured
+- [ ] Incident reviews scored per category (household, visitor, concerning), with false alerts and missed threats counted separately. Enough reviewed cases in each category before anything is promoted; a high overall score is never enough on its own.
+- [x] One narrowly scoped decision promoted out of shadow mode only after that (1.6.0: the incident stage, Settings → Safety, off by default; earned per category from reviews, never lowers "concerning", never touches an alert), with automatic demotion if agreement drops. Critical alerts are never held back by a model's assessment.
+
+### Phase 4 — Controlled autonomy
+- [ ] Guarded multi-step plans (bedtime and the like): plan, permission check, conflict check, carry out approved steps, verify, report what didn't happen.
+- [ ] Wider model routing only on measured quality, reliability, latency and cost.
+
+GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.
+
 ## Next integration work (separate from the completed release checklist)
 - [ ] Cognitive Core 2.0: pilot a shared, read-only evidence-to-decision envelope across security, incident and action outcomes; compare with existing behaviour before modifying alerts or device control.
 - [ ] Voice Recognition: verify multiple consenting household voices, noise and ambiguous speaker matches on real ESPHome satellites; no identity-based permission elevation.
@@ -251,6 +285,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [x] 1.5.9 — Live 13 Nov: the kitchen morning briefing at 09:25 came again at 10:49 after an update restart. The day it was given is now saved (`sentient.morning_briefing` store), and a morning-room sensor going from nothing/unavailable/unknown to on (restored after a restart) no longer counts as someone walking in.
 - [x] 1.5.10 — Audit follow-up (PR #145, see docs/SYSTEM_COORDINATION_145.md): forget reconciles fact copies in SQLite/FTS before the durable intent clears; advisory `ActionIntentMonitor` (guarded voice, motion lights, auto-off, rules; keyed digests, cleared on forget, hidden in guest mode); session working context (status flags only in Mind); speech duplicates keyed punctuation-neutral; synonym fallback for history search; offline replay (`scripts/cognitive_replay.py`, not shipped in the integration); dependency-chain and backup-privacy diagnostics (Frigate counts as up only when it reports online); held-out heating warm-up validation split at an episode boundary; optional speaker `owner` on memories.
 - [x] 1.5.11 — Live 13 Nov after 1.5.10: an unexplained change that isn't said (a repeat becoming usual, surprise below 0.6) is a `noticed` timeline item, not `health`, so it isn't phoned (the kettle going off after boiling, at 17:11). Evening learning share skips memory replacements that are instructions to the voice (`innerlife.about_itself`) and drops the doubled "Something I've learned: I've…". Doctor `street_facing_whole_camera` leaves out `camera_security_inside` sensors (garden, shed).
-- [x] 1.5.12 — Coordination and evidence upgrades (PR #148): opt-in shared custom layouts (Settings switch `custom_pages`, off by default; toolbar hidden when off) with admin-only drag/drop, move/hide/reset and original-layout restoration; optional guard for motion-on after guarded voice-off and auto-off after voice-on; reviewed security incident labels and aggregate stage agreement with no change to alert rules; bounded AI latency/completion readings, opt-in measured-cost-estimate text-only provider routing; lexical retrieval improvements plus optional LAN-only local embedding model reranking; local Tesseract PDF OCR when already installed on the HA host, off by default; actual cumulative heating kWh before/after comparisons with explicit noncausal limits; stream first-frame, voice-match ambiguity and model-suitability evaluator functions (tested, not yet connected to live streams, voice ID or the AI settings). **Hardware validation still required:** Nest playback, multiple voices, actual OCR and embedding installation, real AI billing, representative security outcomes and heating Recorder data. Full autonomous control, arbitrary HACS-card execution and claims of causally proven savings remain excluded.
+- [x] 1.5.12 — Coordination and evidence upgrades (PR #148): opt-in shared custom layouts (Settings switch `custom_pages`, off by default; toolbar hidden when off) with admin-only drag/drop, move/hide/reset and original-layout restoration; optional guard for motion-on after guarded voice-off and auto-off after voice-on; reviewed security incident labels and aggregate stage agreement with no change to alert rules; bounded AI latency/completion readings, opt-in measured-cost-estimate text-only provider routing; lexical retrieval improvements plus optional LAN-only local embedding model reranking; local Tesseract PDF OCR when already installed on the HA host, off by default; actual cumulative heating kWh before/after comparisons with explicit noncausal limits; stream first-frame, voice-match ambiguity and model-suitability evaluator functions (nothing fed them; removed in 2.0 Phase 1 under the rule that a module nothing feeds isn't a feature). **Hardware validation still required:** Nest playback, multiple voices, actual OCR and embedding installation, real AI billing, representative security outcomes and heating Recorder data. Full autonomous control, arbitrary HACS-card execution and claims of causally proven savings remain excluded.
 - [x] 1.5.13 — Layout editing starts from Settings → This page (EDIT PAGE LAYOUT, admins, when `custom_pages` is on); the tab toolbar appears only while editing and DONE EDITING hides it. The saved layout applies whenever `custom_pages` is on.
 - [x] 1.5.14 — Settings groups "Doorbell & AI looks" and "This page" threw a ReferenceError for admins (`data` undefined in `_drawBody`, from the 1.5.12 calibration card and 1.5.13 layout card). Fixed, with a panel test and an ESLint `no-undef` step in CI.
+- [x] 1.6.0 — Sentient 2.0 Phase 1 (PR #151): page checks in Chromium against answers recorded from the real integration; integration audit (unreachable modules, unread settings, unregistered commands; removed stream_health, speaker_evaluation and model_advisor, which nothing fed); decision record, day export and the replay benchmark with regression days; the cognitive core deciding incident stages once earned. Found by the page checks: the Mind tab's "How I'm learning" card never drew since 1.5.0 (a second `_drawBrain` replaced it), and a link to a Settings page from another tab opened the Settings front page.

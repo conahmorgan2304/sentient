@@ -21,6 +21,17 @@ from typing import Any
 from .cognitive import decision
 
 CONF_COGNITIVE_SHADOW = "cognitive_shadow"  # off by default: a second opinion, measured, never acted on
+CONF_COGNITIVE_DECIDES = "cognitive_decides"  # off by default: let it decide incident stages once it has earned it
+
+# Earning the incident stage. Each kind of incident is judged on its own, from the household's reviews: a high
+# overall score can't hide a kind it gets wrong. Missed threats are counted on their own and any one stops it.
+AUTHORITY_SCOPE = "incident_stage"
+AUTHORITY_WINDOW = 60  # the most recent reviews that count, so a change in the house shows up
+MIN_HOUSEHOLD = 10  # reviewed household incidents
+MIN_OTHERS = 10  # reviewed visitor, false-detection and concerning incidents together
+HOUSEHOLD_AGREEMENT = 0.9  # household incidents it called likely household (or resolved)
+FALSE_HOUSEHOLD_MAX = 0.05  # other incidents it wrongly called likely household
+SEVERITY = {"resolved": 0, "unknown": 0, "observed": 1, "likely household": 1, "investigating": 2, "concerning": 3}
 MAX_TRACKED = 128
 PROPOSED = frozenset({"observed", "investigating", "likely household", "concerning", "resolved", "unknown"})
 HOUSEHOLD_WORDS = ("someone from the house", "false alarm", "household")
@@ -101,6 +112,52 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
             reasons=["evidence_only", "no_alert_changes"],
         ),
     }
+
+
+def authority(reviews: list[dict[str, Any]]) -> dict[str, Any]:
+    """Whether the cognitive core has earned the incident stage, from the household's reviews.
+
+    reviews: [{"label": household|visitor|false_detection|concerning|unresolved, "core": the core's stage then}].
+    Its stage is only ever used with a floor: it can't call an incident less serious than "concerning" when the
+    rules do, and it never changes an alert. This decides what the house is told an incident is.
+    """
+    rows = [r for r in reviews if isinstance(r, dict) and r.get("label") in
+            ("household", "visitor", "false_detection", "concerning") and isinstance(r.get("core"), str)][-AUTHORITY_WINDOW:]
+    household = [r for r in rows if r["label"] == "household"]
+    others = [r for r in rows if r["label"] != "household"]
+    agreed = sum(r["core"] in ("likely household", "resolved") for r in household)
+    false_household = sum(r["core"] == "likely household" for r in others)
+    missed = sum(r["label"] == "concerning" and SEVERITY.get(r["core"], 0) < SEVERITY["investigating"] for r in others)
+    progress = {
+        "household_reviewed": len(household), "household_needed": MIN_HOUSEHOLD,
+        "household_agreement": round(agreed / len(household), 3) if household else None,
+        "others_reviewed": len(others), "others_needed": MIN_OTHERS,
+        "wrongly_called_household": round(false_household / len(others), 3) if others else None,
+        "missed_threats": missed, "concerning_reviewed": sum(r["label"] == "concerning" for r in others),
+    }
+    why = []
+    if len(household) < MIN_HOUSEHOLD:
+        why.append(f"needs {MIN_HOUSEHOLD - len(household)} more reviewed household incidents")
+    elif agreed / len(household) < HOUSEHOLD_AGREEMENT:
+        why.append(f"agreed on {agreed} of {len(household)} household incidents (needs {round(HOUSEHOLD_AGREEMENT * 100)}%)")
+    if len(others) < MIN_OTHERS:
+        why.append(f"needs {MIN_OTHERS - len(others)} more reviewed visitor, false-alarm or concerning incidents")
+    elif false_household / len(others) > FALSE_HOUSEHOLD_MAX:
+        why.append(f"called {false_household} of {len(others)} other incidents household")
+    if missed:
+        why.append(f"called {missed} concerning incident{'s' if missed > 1 else ''} less serious")
+    return {"scope": AUTHORITY_SCOPE, "earned": not why, "why": why, "progress": progress,
+            "never": ["changes or holds back an alert", "calls an incident less serious than the rules' concerning"]}
+
+
+def decided_stage(legacy: str, core: str | None, earned: bool) -> tuple[str, str]:
+    """The incident stage the house is told, and who decided it: the core when it has earned it, never less
+    serious than the rules' "concerning"."""
+    if not earned or not core or core not in SEVERITY:
+        return legacy, "rules"
+    if legacy == "concerning" and SEVERITY[core] < SEVERITY["concerning"]:
+        return legacy, "rules (the core can't lower a concerning incident)"
+    return core, "cognitive core"
 
 
 def task_progress(outcome: dict[str, Any]) -> dict[str, Any]:

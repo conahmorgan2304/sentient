@@ -1,0 +1,123 @@
+{
+ "format": 1,
+ "from": "2026-11-10T12:00:00+00:00",
+ "to": "2026-11-12T18:00:00+00:00",
+ "time_zone": "Europe/London",
+ "about": "Made-up house. Regression for 1.5.11: a kettle switching itself on and off at the same time each day was sent to the phone as house health.",
+ "options": {
+  "persona": "Nova",
+  "speakers": [
+   "assist_satellite.kitchen"
+  ],
+  "default_speaker": "assist_satellite.kitchen",
+  "house_ledger": true,
+  "unexplained_changes": true,
+  "expectations": true,
+  "notify_targets": [
+   "notify.phone"
+  ],
+  "notify_when": [
+   "health",
+   "critical",
+   "security"
+  ]
+ },
+ "floors": {
+  "ground": {
+   "name": "Ground floor",
+   "level": 0
+  }
+ },
+ "areas": {
+  "AREA_KITCHEN": {
+   "name": "Kitchen",
+   "floor": "ground"
+  }
+ },
+ "entities": {
+  "assist_satellite.kitchen": {
+   "area": "AREA_KITCHEN"
+  },
+  "water_heater.kettle": {
+   "area": "AREA_KITCHEN"
+  },
+  "notify.phone": {
+   "area": null
+  }
+ },
+ "states": {
+  "assist_satellite.kitchen": {
+   "state": "idle",
+   "attributes": {
+    "friendly_name": "Kitchen speaker",
+    "supported_features": 3
+   }
+  },
+  "water_heater.kettle": {
+   "state": "off",
+   "attributes": {
+    "friendly_name": "Kettle",
+    "operation_list": [
+     "off",
+     "electric"
+    ]
+   }
+  },
+  "notify.phone": {
+   "state": "unknown",
+   "attributes": {
+    "friendly_name": "Phone"
+   }
+  }
+ },
+ "changes": [
+  {
+   "ts": "2026-11-10T17:05:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "off",
+   "new": "electric",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-10T17:10:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "electric",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-11T17:05:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "off",
+   "new": "electric",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-11T17:10:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "electric",
+   "new": "off",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-12T17:05:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "off",
+   "new": "electric",
+   "cause": "device"
+  },
+  {
+   "ts": "2026-11-12T17:10:00+00:00",
+   "entity": "water_heater.kettle",
+   "old": "electric",
+   "new": "off",
+   "cause": "device"
+  }
+ ],
+ "expect": {
+  "phoned_sources_at_most": {
+   "unexplained_change": 0
+  },
+  "ai_requests_at_most": 20
+ }
+}

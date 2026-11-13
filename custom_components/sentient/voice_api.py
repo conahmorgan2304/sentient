@@ -177,6 +177,10 @@ class IncidentsTool(_Tool):
                       'evidence': sequence, 'link': item['link'],
                       # Assess only the evidence authorised for this voice request.
                       'assessment': assess_incident({'evidence': evidence})}
+            # the stage the house is told: the cognitive core's when it has earned it, else the usual rules'
+            stage_item = {'alert_level': item.get('alert_level'), 'end': item.get('end'),
+                          'sources': report['sources'], 'evidence': evidence}
+            report['stage'], _, report['stage_decided_by'], _ = incidents.stage_for(stage_item, report['assessment'])
             coverage = await describe_coverage(hass, options, llm_context, evidence)
             if coverage:
                 report['coverage'] = coverage

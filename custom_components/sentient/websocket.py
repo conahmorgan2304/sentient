@@ -358,7 +358,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
     ]),
     ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
-        CONF_INCIDENTS, "cognitive_shadow", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
+        CONF_INCIDENTS, "cognitive_shadow", "cognitive_decides", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
     ]),
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
@@ -1175,6 +1175,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_heating)
     websocket_api.async_register_command(hass, ws_heating_energy_comparison)
     websocket_api.async_register_command(hass, ws_ai_routing_calibrate)
+    websocket_api.async_register_command(hass, ws_replay_export)
     websocket_api.async_register_command(hass, ws_heating_save)
     websocket_api.async_register_command(hass, ws_cameras)
     websocket_api.async_register_command(hass, ws_inner)
@@ -1377,6 +1378,7 @@ DEPENDS: dict[str, str] = {
     **{k: "ai_routing_enabled" for k in ("ai_routing_alternative", "ai_routing_primary_cost",
                                            "ai_routing_alternative_cost", "ai_routing_max_p95_ms")},
     "cognitive_shadow": CONF_INCIDENTS,
+    "cognitive_decides": CONF_INCIDENTS,
     "security_reasoning": CONF_CAMSEC,
     "recheck_unconfirmed": CONF_GUARDED,
     CONF_ROOM_HANDOFF: CONF_SESSIONS,
@@ -1424,6 +1426,21 @@ async def ws_doctor(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
     from .doctor import async_check
 
     connection.send_result(msg["id"], await async_check(hass, entry.runtime_data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/replay/export",
+                                   vol.Optional("hours", default=24): vol.All(vol.Coerce(float), vol.Range(min=1, max=48))})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_replay_export(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """A recorded day of this house for the replay benchmark (scripts/replay.py). Read-only, no AI."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    from .replay import async_export_day
+
+    connection.send_result(msg["id"], await async_export_day(hass, entry.runtime_data, msg["hours"]))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/voice_id"})
