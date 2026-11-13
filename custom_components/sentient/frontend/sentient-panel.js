@@ -182,6 +182,10 @@
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => this._show(b.dataset.view, true)));
       this._$("askf").addEventListener("submit", (ev) => { ev.preventDefault(); this._ask(); });
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
+      this.shadowRoot.addEventListener("dragstart", (ev) => this._layoutDragStart(ev));
+      this.shadowRoot.addEventListener("dragover", (ev) => this._layoutDragOver(ev));
+      this.shadowRoot.addEventListener("drop", (ev) => this._layoutDrop(ev));
+      this.shadowRoot.addEventListener("dragend", () => { this._dragCard = null; });
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
       this._$("sheet").addEventListener("click", (ev) => {
         if (ev.target !== this._$("sheet")) return;
@@ -327,6 +331,7 @@
         if (page === "security" && visibility.get("live") === false && this._liveCamKey) this._clearLive();
         for (const card of cards) {
           card.style.display = visibility.get(card.id) === false ? "none" : "";
+          card.draggable = !!(admin && this._layoutEnabled && this._layoutEdit && this._view === page && card.style.display !== "none");
           card.querySelectorAll(":scope > .layout-card-tools").forEach((e) => e.remove());
           if (!admin || !this._layoutEnabled || !this._layoutEdit || this._view !== page || card.style.display === "none") continue;
           const tools = document.createElement("div");
@@ -351,6 +356,55 @@
           card.prepend(tools);
         }
       }
+    }
+
+    _layoutDragStart(event) {
+      const page = this._layoutCurrent();
+      if (!this._layoutEnabled || !this._layoutEdit || !this._hass.user?.is_admin || !page) return;
+      const card = event.target.closest(".lanes > section.lane > .card");
+      const root = this._$(this._layoutRoots[page]);
+      if (!card || !root.contains(card) || !card.id) return;
+      this._dragCard = { page, id: card.id };
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", card.id);
+      }
+    }
+
+    _layoutDragOver(event) {
+      if (!this._dragCard || this._dragCard.page !== this._layoutCurrent()) return;
+      const lane = event.target.closest(".lanes > section.lane");
+      if (!lane || !this._$(this._layoutRoots[this._dragCard.page]).contains(lane)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    }
+
+    async _layoutDrop(event) {
+      const drag = this._dragCard;
+      this._dragCard = null;
+      if (!drag || !this._layoutEnabled || !this._layoutEdit
+          || !this._hass.user?.is_admin || drag.page !== this._layoutCurrent()) return;
+      const root = this._$(this._layoutRoots[drag.page]);
+      const lane = event.target.closest(".lanes > section.lane");
+      if (!lane || !root.contains(lane)) return;
+      const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
+      const source = cards.find((c) => c.id === drag.id);
+      if (!source) return;
+      event.preventDefault();
+      const before = event.target.closest(".card");
+      if (before && before !== source && before.parentElement === lane) before.before(source);
+      else lane.appendChild(source);
+      const snapshot = this._layoutData[drag.page];
+      this._layoutData[drag.page] = this._layoutRows(drag.page);
+      try {
+        const response = await this._hass.callWS({ type: "sentient/layout", action: "save", layout: this._layoutData });
+        this._layoutData = response.layout || this._layoutData;
+      } catch (error) {
+        this._layoutData[drag.page] = snapshot;
+        const message = root.querySelector("[data-layout-msg]");
+        if (message) message.textContent = "SAVE FAILED · " + String(error.message || error);
+      }
+      this._applyLayouts(true);
     }
 
     async _layoutAction(act, id, direction) {
