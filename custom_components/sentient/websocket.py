@@ -346,7 +346,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("door", "Doorbell & AI looks", "mdi:doorbell-video", "Doorbell log, parcels, faces, and which AI looks at pictures.", [
         CONF_DOOR_CAMERA, CONF_DOOR_TRIGGERS, CONF_FACE_SENSOR, CONF_FACES, CONF_FACE_PEOPLE, CONF_FACE_TEACH, CONF_FACE_TEACH_CAMERAS, CONF_FACE_CAMERAS, CONF_FACE_FORGET_HOURS, CONF_ANNOUNCE_VISITORS, CONF_PARCEL_ALERTS, CONF_DOORSTEP_SENSORS, CONF_ZONE_VISITS, CONF_ZONE_DOOR_SENSORS,
-        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
+        CONF_AI_TASK_ENTITY, CONF_SECOND_OPINION, CONF_SMART_AI, "ai_routing_enabled", "ai_routing_alternative",
+        "ai_routing_primary_cost", "ai_routing_alternative_cost", "ai_routing_max_p95_ms", CONF_EVENT_CLIPS, CONF_CAMERA_COOLDOWN, CONF_LOOK_CACHE, CONF_CAMERA_PREFILTER,
     ]),
     ("clips", "Event clips", "mdi:filmstrip-box-multiple", "Watches Frigate's recorded clips from chosen cameras and writes down what happened — on the timeline, the Sentient page and for the voice. Never spoken. The clip is deleted once watched.", [
         CONF_CLIP_WATCH, CONF_CLIP_CAMERAS, CONF_CLIP_SCOPE, CONF_CLIP_WHEN, CONF_CLIP_NOTIFY, CONF_CLIP_SOURCE, CONF_CLIP_WHOSE, CONF_CLIP_LOOKS,
