@@ -1199,7 +1199,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
             "contextual_followups", "recent_followup_context", "conversation_cues", "specific_clarification",
             "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates",
-            "conversation_recovery", "focused_tools", "ask_later", "put_right", "music"]},
+            "conversation_recovery", "focused_tools", "ask_later", "put_right", "music", "music_alexa", "music_alexa_service"]},
         {"title": "Guarded device control", "open": False, "names": [
             "guarded_control", "voice_unlock", "voice_undo", "evidence_awareness", "action_recovery", "recheck_unconfirmed"]},
         {"title": "Language", "open": False, "names": [
