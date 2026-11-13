@@ -1801,6 +1801,7 @@ def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
             vol.Required("motion"): vol.All(cv.ensure_list, [cv.entity_id]),
             vol.Optional("enabled"): bool,
             vol.Optional("respect_quiet"): bool,
+            vol.Optional("protect_voice_override"): bool,
             vol.Optional("quiet_start"): vol.Any(None, str),
             vol.Optional("quiet_end"): vol.Any(None, str),
             vol.Optional("only_dark"): bool,
