@@ -586,3 +586,45 @@ def test_a_habit_the_houses_own_alarm_does_is_not_offered() -> None:
     assert not scheduled_by_alarm(alarms, "switch.bedroom_heated_blanket_outlet", "on", 22 * 60 + 55)
     assert not scheduled_by_alarm(alarms, "switch.bedroom_heated_blanket_outlet", "off", 7 * 60)
     assert not scheduled_by_alarm([{**alarms[0], "enabled": False}], "switch.bedroom_heated_blanket_outlet", "off", 1380)
+
+
+def test_held_overnight_is_said_as_overnight_never_while_you_were_away() -> None:
+    """Live 13 Nov: things held for quiet hours came out as "While you were away: …" to someone who never went out,
+    with the hutch reading twice (0 then -1 degrees)."""
+    from custom_components.sentient.followyou import compose, same_news
+
+    held = [{"text": "Overnight, it's down to -1 degrees in the rabbit hutch and freezing.", "source": "animals", "quiet": True},
+            {"text": "Someone walked past the gate at 05:42.", "source": "security", "quiet": True}]
+    said = compose(held)
+    assert said.startswith("Overnight: It's down to -1 degrees") and "were away" not in said
+    assert "Overnight: Overnight" not in said
+    unheard = [{"text": "The parcel has arrived.", "source": "parcel"}, {"text": "The washer is done.", "source": "watch"}]
+    assert compose(unheard).startswith("Earlier: ") and "were away" not in compose(unheard)
+    assert same_news("down to 0 degrees in the hutch", "down to -1 degrees in the hutch")
+    assert not same_news("the hutch is cold", "the gate is open")
+
+
+async def test_a_newer_reading_replaces_the_old_one_in_the_queue(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    fy = entry.runtime_data.followyou
+    morning = dt_util.now() + timedelta(hours=2)
+    fy.keep("Overnight, it's down to 0 degrees in the rabbit hutch.", source="animals", not_before=morning, hours=4)
+    fy.keep("Overnight, it's down to -1 degrees in the rabbit hutch.", source="animals", not_before=morning, hours=4)
+    assert [q["text"] for q in fy.queue] == ["Overnight, it's down to -1 degrees in the rabbit hutch."]
+    assert fy.queue[0]["quiet"] is True
+
+
+async def test_held_news_waits_for_the_morning_briefing(hass: HomeAssistant, freezer) -> None:
+    """Just after quiet hours, with the morning briefing not given yet, the briefing goes first; what it covers
+    (the overnight thought, the animals) isn't said again."""
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=8, minute=5)))
+    entry = await _setup(hass, quiet_start="20:30:00", quiet_end="08:00:00", morning_briefing=True)
+    rt = entry.runtime_data
+    rt.followyou.keep("Overnight, it's down to -1 degrees in the rabbit hutch.", source="animals", hours=4)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    assert rt.upkeep.morning_coming(rt)
+    assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is False and not said
+    rt.upkeep._morning_day = dt_util.now().date().isoformat()  # the briefing's been given
+    assert not rt.upkeep.morning_coming(rt)
+    assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is True

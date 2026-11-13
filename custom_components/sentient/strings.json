@@ -997,7 +997,8 @@
           "briefing_time": "Daily briefing at",
           "digest_time": "Daily digest at",
           "morning_briefing": "Briefing when someone's first up",
-          "morning_briefing_areas": "Morning briefing rooms"
+          "morning_briefing_areas": "Morning briefing rooms",
+          "morning_briefing_quiet": "Morning briefing in quiet hours"
         },
         "data_description": {
           "briefings": "Off turns off the button, the voice tool and the service.",
@@ -1008,7 +1009,8 @@
           "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
           "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
           "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
-          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are."
+          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are.",
+          "morning_briefing_quiet": "Off: someone up and about before quiet hours end gets the briefing once they're over, the first time they're seen moving (in the morning briefing rooms, if chosen), and anything kept overnight is folded into it. On: it's given as soon as they're seen up, even in quiet hours, on just that room's speaker."
         }
       }
     }

@@ -325,7 +325,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("briefing", "Briefings", "mdi:text-box-outline", "What a briefing covers and when.", [
         CONF_BRIEFINGS, CONF_BRIEFING_SECTIONS, CONF_BRIEFING_WEATHER, CONF_BRIEFING_TODO,
-        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_OUTSIDE_INFO, CONF_PARCEL_TRACKERS, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, CONF_DIGEST_TIME,
+        CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_OUTSIDE_INFO, CONF_PARCEL_TRACKERS, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, "morning_briefing_quiet", CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
         CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LEARN_ANCHORS, CONF_OFFER_TOGETHER, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_UNTIL,
@@ -1265,6 +1265,7 @@ DEPENDS: dict[str, str] = {
     "foresight_time": "foresight", "reflection_time": "reflection",
     **{k: "welcome_home" for k in ("welcome_people", "welcome_min_away", "welcome_until")},
     "morning_briefing_areas": "morning_briefing",
+    "morning_briefing_quiet": "morning_briefing",
     **{k: "night_watch" for k in ("night_watch_entities", "night_watch_announce", "night_watch_speakers")},
     "hutch_spot": "hutch_check", **{k: "cat_watch" for k in ("cat_sensors", "cat_loud")},
     **{k: "screen" for k in ("screen_actions", "screen_clear_actions")},

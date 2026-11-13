@@ -147,7 +147,8 @@ async def test_morning_briefing_when_someone_gets_up_even_in_quiet_hours(hass: H
 
     freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=7, minute=10)))
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
-        **OPTIONS, "quiet_start": "21:00:00", "quiet_end": "09:30:00", "morning_briefing": True})
+        **OPTIONS, "quiet_start": "21:00:00", "quiet_end": "09:30:00", "morning_briefing": True,
+        "morning_briefing_quiet": True})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -182,7 +183,8 @@ async def test_morning_briefing_waits_for_a_chosen_room(hass: HomeAssistant, fre
     reg.async_update_entity("binary_sensor.lounge_motion", area_id=lounge.id)
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
         **OPTIONS, "speakers": ["assist_satellite.kitchen", "assist_satellite.lounge"], "quiet_start": "21:00:00",
-        "quiet_end": "09:30:00", "morning_briefing": True, "morning_briefing_areas": [lounge.id]})
+        "quiet_end": "09:30:00", "morning_briefing": True, "morning_briefing_areas": [lounge.id],
+        "morning_briefing_quiet": True})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -198,6 +200,41 @@ async def test_morning_briefing_waits_for_a_chosen_room(hass: HomeAssistant, fre
     assert said and said[-1].data["entity_id"] == ["assist_satellite.lounge"]
 
 
+async def test_up_early_in_quiet_hours_waits_for_them_to_end(hass: HomeAssistant, freezer) -> None:
+    """Live 13 Nov: someone in the kitchen at 06:50 got the briefing, with quiet hours until 08:00. By default
+    it now waits, and walking into the room after quiet hours gives it."""
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.sleep import EVENT_SLEEP
+
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=6, minute=50)))
+    kitchen = ar.async_get(hass).async_create("Kitchen")
+    reg = er.async_get(hass)
+    reg.async_get_or_create("assist_satellite", "test", "k_sat", suggested_object_id="kitchen")
+    reg.async_update_entity("assist_satellite.kitchen", area_id=kitchen.id)
+    reg.async_get_or_create("binary_sensor", "test", "k_motion", suggested_object_id="kitchen_motion")
+    reg.async_update_entity("binary_sensor.kitchen_motion", area_id=kitchen.id)
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        **OPTIONS, "quiet_start": "20:30:00", "quiet_end": "08:00:00", "morning_briefing": True,
+        "morning_briefing_areas": [kitchen.id]})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("assist_satellite.kitchen", "idle")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, "Morning. It's raining.")
+    hass.bus.async_fire(EVENT_SLEEP, {"asleep": False, "why": "moving about in two rooms"})
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert not said  # 06:50: quiet hours
+    hass.states.async_set("binary_sensor.kitchen_motion", "off", {"device_class": "motion"})
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=8, minute=5)))
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    await hass.async_block_till_done()
+    assert said and said[-1].data["message"] == "Morning. It's raining."
+
+
 async def test_tidy_never_drops_pinned_and_says_what_changed(hass: HomeAssistant) -> None:
     entry = await _setup(hass)
     mem = entry.runtime_data.memory
@@ -209,3 +246,18 @@ async def test_tidy_never_drops_pinned_and_says_what_changed(hass: HomeAssistant
     assert mem.get(ids[0]) is not None and mem.get(ids[1]) is None
     note = entry.runtime_data.timeline.since(1, ["learned"], 10)[0]
     assert note["text"].startswith("Tidied memories") and "boats" in note["detail"]
+
+
+async def test_a_briefing_that_mentions_the_animals_takes_what_was_kept_about_them(hass: HomeAssistant) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.followyou.keep("Overnight, it's down to -1 degrees in the rabbit hutch.", source="animals", hours=4)
+    rt.followyou.keep("The parcel has arrived.", source="parcel", hours=4)
+    async_mock_service(hass, "assist_satellite", "announce")
+    _ai(hass, "Morning. The hutch is at minus one.")
+    with patch("custom_components.sentient.upkeep.gather_briefing",
+               AsyncMock(return_value={"animals_outside": ["the rabbit hutch is at -1 degrees"]})):
+        await rt.upkeep.async_speak_briefing()
+    assert [q["source"] for q in rt.followyou.queue] == ["parcel"]

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import logging
+import re
 from typing import Any, Callable
 import uuid
 
@@ -57,13 +58,32 @@ def next_quiet_end(now: datetime, quiet_end: str) -> datetime:
     return end if end > now else end + timedelta(days=1)
 
 
+_NUMBER = re.compile(r"[-−]?\d+(?:[.,]\d+)?")
+
+
+def same_news(a: str, b: str) -> bool:
+    """'down to 0 degrees' and 'down to -1 degrees' are the same news with a newer number."""
+    return _NUMBER.sub("#", a.lower()).strip() == _NUMBER.sub("#", b.lower()).strip()
+
+
+def _unoverlap(text: str) -> str:
+    """'Overnight, it's down to 0…' said under an 'Overnight:' heading loses its own 'Overnight,'."""
+    return re.sub(r"^(overnight|earlier),\s*", "", text, flags=re.I).strip()
+
+
 def compose(items: list[dict[str, Any]]) -> str:
-    """'Earlier: …' for things nobody heard; overnight thoughts said as they are."""
-    said = [q["text"].rstrip(".!? ") + "." for q in items if q.get("source") != "thought"]
+    """'Earlier: …' for things nobody heard, 'Overnight: …' for things held for quiet hours (nobody was away:
+    it was just too early to say them); overnight thoughts said as they are."""
+    told = [q for q in items if q.get("source") != "thought"]
     thoughts = [q["text"].rstrip(".!? ") + "." for q in items if q.get("source") == "thought"]
     out = []
-    if said:
-        out.append(("Earlier: " if len(said) == 1 else "While you were away: ") + " ".join(said))
+    if told:
+        quiet = all(q.get("quiet") for q in told)
+        said = [(_unoverlap(q["text"]) if quiet else q["text"]).rstrip(".!? ") + "." for q in told]
+        said = [s[:1].upper() + s[1:] for s in said]
+        # never "while you were away": nobody heard it because nobody was by a speaker, not because they'd gone out
+        lead = "Overnight: " if quiet else "Earlier: "
+        out.append(lead + " ".join(said))
     if thoughts:
         out.append(("A thought from overnight: " if not said else "And a thought from overnight: ") + " ".join(thoughts))
     return " ".join(out)
@@ -125,9 +145,12 @@ class FollowYou:
             start = max(start, next_quiet_end(now, self.options.get(CONF_QUIET_END) or DEFAULT_QUIET_END))
         minutes = float(self.options.get(CONF_FOLLOW_MINUTES, DEFAULT_FOLLOW_MINUTES))
         expires = start + (timedelta(hours=hours) if hours else timedelta(minutes=minutes))
-        self.queue = [q for q in self.queue if q["text"].lower() != text.lower()]
+        # the same news again (a newer reading, a repeat) replaces the old one rather than being said twice
+        self.queue = [q for q in self.queue if not (q.get("source") == source and same_news(q["text"], text))
+                      and q["text"].lower() != text.lower()]
+        quiet = after_quiet or (not_before is not None and not_before > now)
         self.queue.append({
-            "id": uuid.uuid4().hex[:8], "text": text, "source": source,
+            "id": uuid.uuid4().hex[:8], "text": text, "source": source, "quiet": quiet,
             "from": dt_util.as_utc(start).isoformat(), "expires": dt_util.as_utc(expires).isoformat(),
             "kept": dt_util.utcnow().isoformat(),
         })
@@ -184,6 +207,9 @@ class FollowYou:
         rt = self._rt()
         if rt is None or rt.speech.quiet_now() or rt.speech.guest_mode:
             return False
+        upkeep = getattr(rt, "upkeep", None)
+        if upkeep is not None and upkeep.morning_coming(rt):
+            return False  # the morning briefing is about to cover the night; what it doesn't is passed on after
         live = self._live()[:SAY_AT_ONCE]
         if not live:
             return False
