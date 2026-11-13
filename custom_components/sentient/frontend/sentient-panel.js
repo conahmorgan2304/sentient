@@ -1985,7 +1985,14 @@
       }
       const up = [h.usually_up && h.usually_up.weekdays && `UP ${h.usually_up.weekdays} WEEKDAYS`, h.warm_by && h.warm_by.weekdays && `WARM BY ${h.warm_by.weekdays}`].filter(Boolean).join(" · ");
       if (up) html += `<div class="hint">${esc(up)}</div>`;
-      if (h.admin) html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button></div><div id="heatzones"></div>`;
+      if (h.admin) {
+        const energy = this._heatEnergy;
+        const observed = energy?.status === "measured"
+          ? `OBSERVED ${esc(energy.observed_change_kwh_per_day)} KWH/DAY (${esc(energy.matched_days)} MATCHED DAYS) · NOT PROOF OF SAVINGS`
+          : energy ? `ENERGY COMPARISON: ${esc(String(energy.status || "UNKNOWN").replaceAll("_", " ").toUpperCase())}` : "";
+        html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button><button class="btn sm ghost" data-act="heatenergy">COMPARE RECORDED KWH</button></div><div id="heatzones"></div>`
+          + (observed ? `<div class="hint">${observed}<small>Recorded before/after energy use; weather, occupancy and price can change independently.</small></div>` : "");
+      }
       el.innerHTML = html;
       if (this._heatZonesOpen) this._openHeatZones(true);
     }
@@ -2713,6 +2720,11 @@
       else if (act === "livefollow") { this._liveFollow = this._liveFollow === false ? true : false; this._render(); }
       else if (act === "sectlh") { this._tlHours = +id; this._render(); }
       else if (act === "secsnap") { this._secSnap = id || null; this._render(); }
+      else if (act === "heatenergy") {
+        this._hass.callWS({ type: "sentient/heating/energy_comparison" }).then(
+          (value) => { this._heatEnergy = value; this._drawHeat(); },
+          (err) => { this._heatEnergy = { status: err.message || String(err) }; this._drawHeat(); });
+      }
       else if (act === "prognew") this._editProg(null);
       else if (act === "progsug") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme: { ...p, name: p.name.replace(" (suggested)", "") } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "progsugedit") { const p = ((this._heat || {}).suggested || [])[+id]; if (p) this._editProg({ ...p, name: p.name.replace(" (suggested)", ""), id: undefined }); }
