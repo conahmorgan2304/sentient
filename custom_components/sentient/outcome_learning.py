@@ -20,7 +20,7 @@ def evaluate(rows: list[dict[str, Any]], *, minimum: int = 10, limit: int = 500)
         if not isinstance(item, dict):
             continue
         label, predicted = item.get("human_label"), item.get("predicted_stage")
-        if label not in LABELS or predicted not in PREDICTIONS:
+        if not isinstance(label, str) or not isinstance(predicted, str) or label not in LABELS or predicted not in PREDICTIONS:
             continue
         counts[label] += 1
         if label == "unresolved":
