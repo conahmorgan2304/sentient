@@ -133,7 +133,11 @@ def speaker_scope(hass: HomeAssistant, options: dict[str, Any], memories: list[A
         people.add(me)
     own, shared = [], []
     for m in memories:
-        whose = owner_of(getattr(m, "text", ""), people)
+        # New memories use durable owner metadata. Legacy memories retain
+        # their historical "Name: ..." attribution until migrated.
+        explicit_owner = getattr(m, "owner", None)
+        whose = (str(explicit_owner).strip().casefold() if explicit_owner
+                 else owner_of(getattr(m, "text", ""), people))
         if whose is None:
             shared.append(m)
         elif me and whose == me:
