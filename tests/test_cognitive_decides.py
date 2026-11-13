@@ -157,9 +157,9 @@ def test_the_core_reads_the_order_things_happened_in() -> None:
 
 
 def test_the_rules_are_scored_the_same_way_so_its_clear_which_judges_better() -> None:
-    rows = [{"label": "household", "core": "likely household", "legacy": "investigating"}] * 10
-    rows += [{"label": "visitor", "core": "observed", "legacy": "observed"}] * 10
-    rows += [{"label": "concerning", "core": "concerning", "legacy": "concerning"}] * 5
+    rows = [{"label": "household", "core": "likely household", "legacy": "investigating", "prediction_recorded": True}] * 10
+    rows += [{"label": "visitor", "core": "observed", "legacy": "observed", "prediction_recorded": True}] * 10
+    rows += [{"label": "concerning", "core": "concerning", "legacy": "concerning", "prediction_recorded": True}] * 5
     status = authority(rows)
     assert status["compared"]["core"]["agreed"] == 10 and status["compared"]["rules"]["agreed"] == 0
     assert status["earned"] and not authority(rows, "night_heads_up")["earned"]  # asks for 20 household
@@ -170,9 +170,9 @@ async def test_a_night_heads_up_is_left_unsaid_only_when_it_has_earned_it_and_is
     freezer.move_to(dt_util.as_utc(datetime(2026, 11, 10, 2, 0, tzinfo=dt_util.get_default_time_zone())))
     entry = await _setup(hass, cognitive_decides=True, cognitive_quiet_heads_up=True)
     rt = entry.runtime_data
-    rt.incidents.reviews = ([{"label": "household", "core": "likely household", "legacy": "investigating"}] * 20
-                            + [{"label": "visitor", "core": "observed", "legacy": "observed"}] * 10)
-    assert rt.incidents.authority("night_heads_up")["deciding"]
+    rt.incidents.reviews = ([{"label": "household", "core": "likely household", "legacy": "investigating", "prediction_recorded": True}] * 20
+                            + [{"label": "visitor", "core": "observed", "legacy": "observed", "prediction_recorded": True}] * 10)
+    assert not rt.incidents.authority("night_heads_up")["deciding"]  # no concerning reviews: never earned
     said = async_mock_service(hass, "assist_satellite", "announce")
     freezer.tick(timedelta(minutes=20))
     # someone coming in: the gate opens, then the gate camera sees them
