@@ -12,6 +12,8 @@ def assess(events: list[dict[str, Any]], *, first_frame_deadline_ms: int = 12000
         if not isinstance(row, dict):
             continue
         stage = row.get("stage")
+        if not isinstance(stage, str):
+            continue
         elapsed = row.get("elapsed_ms")
         if stage == "frame" and isinstance(elapsed, (int, float)) and 0 <= elapsed <= 600000:
             first_frame = elapsed if first_frame is None else min(first_frame, elapsed)
