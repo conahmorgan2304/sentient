@@ -75,6 +75,9 @@ class ActionIntentMonitor:
         from .action_policy import simulate
 
         now = when or datetime.now(timezone.utc)
+        if now.tzinfo is None:
+            raise ValueError("Action preview requires an aware timestamp")
+        now = now.astimezone(timezone.utc)
         digest = blake2s(entity_id.encode(), key=self._secret, digest_size=16).hexdigest()
         previous = self._last.get(digest)
         incumbent = None
