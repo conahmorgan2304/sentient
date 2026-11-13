@@ -1511,7 +1511,6 @@ async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     vol.Optional("action", default="get"): vol.In(["get", "save", "reset"]),
     vol.Optional("layout"): dict,
 })
-@websocket_api.require_admin
 @websocket_api.async_response
 async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Admin-only layout storage; no Home Assistant cards executed or rendered."""
@@ -1527,6 +1526,9 @@ async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         await store.async_load()
         entry.runtime_data.custom_layout = store
     action = msg["action"]
+    if action in ("save", "reset") and not getattr(connection.user, "is_admin", False):
+        connection.send_error(msg["id"], "unauthorized", "Administrator access is required")
+        return
     if action == "save":
         result = await store.async_save(msg.get("layout"), user=connection.user)
         if not result["accepted"]:
