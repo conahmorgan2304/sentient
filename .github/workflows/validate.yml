@@ -37,3 +37,4 @@ jobs:
         with:
           node-version: "22"
       - run: node --test tests/*.test.cjs
+      - run: npm install --no-save eslint@9.14.0 globals@15.12.0 && npx eslint custom_components/sentient/frontend

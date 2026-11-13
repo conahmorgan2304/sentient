@@ -49,5 +49,16 @@ test("the tabs show no edit button except while editing, which starts from Setti
   assert.doesNotMatch(panel, /"EDIT LAYOUT"/);
   assert.match(panel, /bar\.hidden = !editing;/);
   assert.match(panel, /data-act="layoutstart">EDIT PAGE LAYOUT/);
-  assert.match(panel, /g\.id === "page" && this\._hass\.user\?\.is_admin && data\.custom_pages === true/);
+  assert.match(panel, /g\.id === "page" && this\._hass\.user\?\.is_admin && this\._settings\.data\.custom_pages === true/);
+});
+
+
+test("a Settings group page only uses names that exist where it's drawn", () => {
+  // 1.5.12/1.5.13: the Doorbell & AI looks and This page groups wouldn't open for admins, because their extra
+  // cards read `data`, which isn't defined in _drawBody (ReferenceError).
+  const start = panel.indexOf("    _drawBody() {");
+  const end = panel.indexOf("\n    _", start + 20);
+  const body = panel.slice(start, end);
+  const declared = /\b(?:const|let|var)\s+(?:[^;=]*[,{\s])?data\b/.test(body);
+  if (!declared) assert.doesNotMatch(body, /[^.\w]data\.\w/);
 });

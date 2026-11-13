@@ -969,10 +969,10 @@
           <div class="vids" id="vidsay" role="status"></div>
           <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
-        ${g.id === "page" && this._hass.user?.is_admin && data.custom_pages === true ? `<div class="vidcard"><div class="vidt">PAGE LAYOUT</div>
+        ${g.id === "page" && this._hass.user?.is_admin && this._settings.data.custom_pages === true ? `<div class="vidcard"><div class="vidt">PAGE LAYOUT</div>
           <div class="vids">Opens the Overview ready to edit: move, hide or show cards on any tab, then DONE EDITING. No edit button is shown on the tabs the rest of the time.</div>
           <div class="row"><button class="btn sm" data-act="layoutstart">EDIT PAGE LAYOUT</button></div></div>` : ""}
-        ${g.id === "door" && this._hass.user?.is_admin && data.ai_routing_enabled === true ? `<div class="vidcard"><div class="vidt">AI ROUTING CALIBRATION</div>
+        ${g.id === "door" && this._hass.user?.is_admin && this._settings.data.ai_routing_enabled === true ? `<div class="vidcard"><div class="vidt">AI ROUTING CALIBRATION</div>
           <div class="vids">Only an administrator can send one generic, potentially billable test at a time. No household information is included. Save routing options before testing. Twenty measured calls per provider are needed, and service availability does not verify answer accuracy.</div>
           <div class="row"><button class="btn sm ghost" data-act="routecalstatus">CHECK COUNTS</button>
           <button class="btn sm ghost" data-act="routecal" data-provider="alternative">TEST ALTERNATIVE ONCE</button>
