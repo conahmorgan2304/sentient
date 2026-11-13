@@ -255,21 +255,21 @@ class UndoLastTool(_Tool):
 
 
 def _music_on(hass: HomeAssistant) -> bool:
-    from .music import ma_entry
+    from .music import backend
 
     rt = _runtime(hass)
-    return rt is not None and bool(rt.options.get(CONF_MUSIC, True)) and ma_entry(hass) is not None
+    return rt is not None and bool(rt.options.get(CONF_MUSIC, True)) and backend(hass, rt.options) is not None
 
 
 class MusicTool(_Tool):
     acts = True
     name = "sentient_music"
     description = (
-        "Music from the household's own Music Assistant library — 'play something calm in the kitchen', 'put the "
-        "radio on', 'stop the music'. action 'choices' lists their playlists and radio stations (favourites marked) "
-        "and the players; pick the one whose name best fits what they asked for, then action 'play' with 'media' "
-        "set to its uri (or a name, artist or song they said) and 'media_type' (playlist, radio, artist, album, "
-        "track). 'room' is where to play it; leave it out for the room they're in. radio_mode true plays more like "
+        "Music by asking — 'play something calm in the kitchen', 'put some Coldplay on', 'stop the music'. action "
+        "'choices' says how music plays here: with Music Assistant it lists their playlists and radio stations "
+        "(favourites marked) — pick the one whose name best fits and pass its uri; through the Echos it says "
+        "which service plays it — pass what they asked for in their words (a playlist name, an artist, a song or a "
+        "mood). Then action 'play' with 'media' and 'media_type' (playlist, radio, artist, album, track). 'room' is where to play it; leave it out for the room they're in. radio_mode true plays more like "
         "it. action 'stop' stops it in that room. Quiet hours and room quiet times are applied for you."
     )
     parameters = vol.Schema({
@@ -283,8 +283,9 @@ class MusicTool(_Tool):
     ) -> JsonObjectType:
         rt = _runtime(hass)
         if rt is None or not _music_on(hass):
-            return {"error": "Music by asking isn't available (Music Assistant isn't set up, or it's off in Settings)"}
-        from .music import Music, player_in
+            return {"error": "Music by asking isn't available (no Music Assistant, Music through Alexa is off, or "
+                             "music is off in Settings)"}
+        from .music import Music
 
         music = getattr(rt, "music", None) or Music(hass, rt)
         rt.music = music
@@ -292,16 +293,7 @@ class MusicTool(_Tool):
         if a["action"] == "choices":
             return await music.async_choices()
         if a["action"] == "stop":
-            player = player_in(hass, a.get("room")) if a.get("room") else None
-            if player is None and llm_context.device_id:
-                from homeassistant.helpers import device_registry as dr
-
-                device = dr.async_get(hass).async_get(llm_context.device_id)
-                player = player_in(hass, area_id=device.area_id if device else None)
-            if player is None:
-                return {"error": "Which room?"}
-            await hass.services.async_call("media_player", "media_stop", {"entity_id": player}, blocking=True)
-            return {"stopped": player}
+            return await music.async_stop(a.get("room"), llm_context.device_id)
         if not a.get("media"):
             return {"error": "Say what to play (call with action 'choices' to see their playlists and stations)"}
         return await music.async_play(a["media"], a.get("media_type"), a.get("room"), llm_context.device_id, a["radio_mode"])

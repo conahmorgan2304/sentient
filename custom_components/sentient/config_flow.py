@@ -706,6 +706,13 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_ASK_LATER, **d(CONF_ASK_LATER, False)): selector.BooleanSelector(),
             vol.Required(CONF_PUT_RIGHT, **d(CONF_PUT_RIGHT, True)): selector.BooleanSelector(),
             vol.Required(CONF_MUSIC, **d(CONF_MUSIC, True)): selector.BooleanSelector(),
+            vol.Required("music_alexa", **d("music_alexa", False)): selector.BooleanSelector(),
+            vol.Required("music_alexa_service", **d("music_alexa_service", "SPOTIFY")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=[
+                    {"value": "SPOTIFY", "label": "Spotify"}, {"value": "AMAZON_MUSIC", "label": "Amazon Music"},
+                    {"value": "APPLE_MUSIC", "label": "Apple Music"}, {"value": "DEEZER", "label": "Deezer"},
+                    {"value": "TUNEIN", "label": "TuneIn"}, {"value": "IHEARTRADIO", "label": "iHeartRadio"}],
+                    mode=selector.SelectSelectorMode.DROPDOWN)),
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),

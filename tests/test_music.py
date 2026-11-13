@@ -84,3 +84,61 @@ async def test_room_with_several_players_picks_the_right_one(hass: HomeAssistant
     assert await play("kitchen") == "Kitchen radio"  # no house speaker there: a speaker rather than a TV
     assert await play("den") == "Den TV"  # the only player there is still used, even off
     assert len(played) == 4
+
+
+async def _alexa(hass: HomeAssistant, monkeypatch, on: bool = True, service: str | None = None):
+    """No Music Assistant; two Echos through Alexa Media Player and a 'This Device' entry that can't play."""
+    alexa = MockConfigEntry(domain="alexa_media", title="Alexa")
+    alexa.add_to_hass(hass)
+    monkeypatch.setattr(hass.config_entries, "async_loaded_entries",
+                        lambda domain, _real=hass.config_entries.async_loaded_entries:
+                        [alexa] if domain == "alexa_media" else _real(domain))
+    reg, areas = er.async_get(hass), ar.async_get(hass)
+    lounge, kitchen = areas.async_create("Living Room"), areas.async_create("Kitchen")
+    for uid, oid, area, name in (("e1", "livingroom", lounge.id, "livingroom echo"), ("e2", "kitchen_echo", kitchen.id, "kitchen echo"),
+                                 ("e3", "this_device_2", None, "This Device")):
+        reg.async_get_or_create("media_player", "alexa_media", uid, suggested_object_id=oid)
+        reg.async_update_entity(f"media_player.{oid}", area_id=area)
+        hass.states.async_set(f"media_player.{oid}", "idle", {"friendly_name": name})
+    extra = {"music_alexa": on, **({"music_alexa_service": service} if service else {})}
+    return await _setup(hass, monkeypatch, with_ma=False, extra=extra)
+
+
+async def test_spotify_through_the_living_room_echo(hass: HomeAssistant, monkeypatch) -> None:
+    """Tested live 13 Nov: play_media with type SPOTIFY on the living room Echo played it."""
+    api = await _alexa(hass, monkeypatch)
+    played = async_mock_service(hass, "media_player", "play_media")
+    choices = await api.async_call_tool(llm.ToolInput(tool_name="sentient_music", tool_args={"action": "choices"}))
+    choices = getattr(choices, "data", choices)
+    assert choices["service"] == "Spotify" and "This Device" not in choices["players"]
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_music", tool_args={
+        "action": "play", "media": "Chill Vibes", "media_type": "playlist", "room": "living room"}))
+    out = getattr(out, "data", out)
+    assert out["on"] == "livingroom echo"
+    assert played[-1].data == {"entity_id": "media_player.livingroom", "media_content_type": "SPOTIFY",
+                               "media_content_id": "playlist Chill Vibes"}
+
+
+async def test_the_chosen_service_and_stopping_pauses_the_echo(hass: HomeAssistant, monkeypatch) -> None:
+    api = await _alexa(hass, monkeypatch, service="AMAZON_MUSIC")
+    played = async_mock_service(hass, "media_player", "play_media")
+    paused = async_mock_service(hass, "media_player", "media_pause")
+    await api.async_call_tool(llm.ToolInput(tool_name="sentient_music", tool_args={
+        "action": "play", "media": "Coldplay", "media_type": "artist", "room": "kitchen"}))
+    assert played[-1].data["media_content_type"] == "AMAZON_MUSIC"
+    assert played[-1].data["media_content_id"] == "songs by Coldplay"
+    await api.async_call_tool(llm.ToolInput(tool_name="sentient_music", tool_args={"action": "stop", "room": "kitchen"}))
+    assert paused[-1].data["entity_id"] == "media_player.kitchen_echo"
+
+
+async def test_music_through_alexa_is_off_until_switched_on(hass: HomeAssistant, monkeypatch) -> None:
+    api = await _alexa(hass, monkeypatch, on=False)
+    assert "sentient_music" not in [t.name for t in api.tools]
+
+
+def test_what_the_echo_is_asked_for() -> None:
+    from custom_components.sentient.music import ask_alexa_for
+
+    assert ask_alexa_for("relaxing acoustic", None) == "relaxing acoustic"
+    assert ask_alexa_for("my Discover Weekly playlist", "playlist") == "my Discover Weekly playlist"
+    assert ask_alexa_for("Abbey Road", "album") == "the album Abbey Road"
