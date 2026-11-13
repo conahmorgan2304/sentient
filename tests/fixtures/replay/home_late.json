@@ -1,268 +1,268 @@
 {
- "format": 1,
- "from": "2026-11-10T01:00:00+00:00",
- "to": "2026-11-10T03:00:00+00:00",
- "time_zone": "Europe/London",
- "about": "Made-up house. Phase 3: someone from the house coming home at night through the gate. With the cognitive core's night heads-up decision earned, the camera's heads-up is left unsaid; the gate's own heads-up is still said.",
- "options": {
-  "persona": "Nova",
-  "speakers": [
-   "assist_satellite.bedroom"
+  "format": 1,
+  "from": "2026-11-10T01:00:00+00:00",
+  "to": "2026-11-10T03:00:00+00:00",
+  "time_zone": "Europe/London",
+  "about": "Made-up house. Security regression: gate contact followed by a person report does not prove household identity. The camera's night heads-up and the gate's separate heads-up both remain spoken.",
+  "options": {
+    "persona": "Nova",
+    "speakers": [
+      "assist_satellite.bedroom"
+    ],
+    "default_speaker": "assist_satellite.bedroom",
+    "house_ledger": true,
+    "quiet_start": "21:00:00",
+    "quiet_end": "07:00:00",
+    "camera_security": true,
+    "security_incidents": true,
+    "camera_security_sensors": [
+      "binary_sensor.gate_person"
+    ],
+    "camera_security_entries": [
+      "binary_sensor.back_gate"
+    ],
+    "camera_security_describe": false,
+    "night_watch_announce": true,
+    "inside_sensors": [],
+    "cognitive_decides": true,
+    "cognitive_quiet_heads_up": true
+  },
+  "floors": {
+    "ground": {
+      "name": "Ground floor",
+      "level": 0
+    }
+  },
+  "areas": {
+    "AREA_BED": {
+      "name": "Bedroom",
+      "floor": "ground"
+    },
+    "AREA_GARDEN": {
+      "name": "Garden",
+      "floor": null
+    }
+  },
+  "entities": {
+    "assist_satellite.bedroom": {
+      "area": "AREA_BED"
+    },
+    "binary_sensor.back_gate": {
+      "area": "AREA_GARDEN"
+    },
+    "binary_sensor.gate_person": {
+      "area": "AREA_GARDEN"
+    }
+  },
+  "states": {
+    "assist_satellite.bedroom": {
+      "state": "idle",
+      "attributes": {
+        "friendly_name": "Bedroom speaker",
+        "supported_features": 3
+      }
+    },
+    "binary_sensor.back_gate": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Back gate",
+        "device_class": "door"
+      }
+    },
+    "binary_sensor.gate_person": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Gate Person occupancy"
+      }
+    }
+  },
+  "changes": [
+    {
+      "ts": "2026-11-10T02:20:00+00:00",
+      "entity": "binary_sensor.back_gate",
+      "old": "off",
+      "new": "on",
+      "cause": "device"
+    },
+    {
+      "ts": "2026-11-10T02:20:20+00:00",
+      "entity": "binary_sensor.gate_person",
+      "old": "off",
+      "new": "on",
+      "cause": "device"
+    },
+    {
+      "ts": "2026-11-10T02:21:00+00:00",
+      "entity": "binary_sensor.back_gate",
+      "old": "on",
+      "new": "off",
+      "cause": "device"
+    },
+    {
+      "ts": "2026-11-10T02:22:00+00:00",
+      "entity": "binary_sensor.gate_person",
+      "old": "on",
+      "new": "off",
+      "cause": "device"
+    }
   ],
-  "default_speaker": "assist_satellite.bedroom",
-  "house_ledger": true,
-  "quiet_start": "21:00:00",
-  "quiet_end": "07:00:00",
-  "camera_security": true,
-  "security_incidents": true,
-  "camera_security_sensors": [
-   "binary_sensor.gate_person"
+  "reviews": [
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "household",
+      "core": "likely household",
+      "legacy": "investigating"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    },
+    {
+      "label": "visitor",
+      "core": "observed",
+      "legacy": "observed"
+    }
   ],
-  "camera_security_entries": [
-   "binary_sensor.back_gate"
-  ],
-  "camera_security_describe": false,
-  "night_watch_announce": true,
-  "inside_sensors": [],
-  "cognitive_decides": true,
-  "cognitive_quiet_heads_up": true
- },
- "floors": {
-  "ground": {
-   "name": "Ground floor",
-   "level": 0
+  "expect": {
+    "spoken": {
+      "camera security": 1,
+      "night_watch": 1
+    },
+    "ai_requests_at_most": 5
   }
- },
- "areas": {
-  "AREA_BED": {
-   "name": "Bedroom",
-   "floor": "ground"
-  },
-  "AREA_GARDEN": {
-   "name": "Garden",
-   "floor": null
-  }
- },
- "entities": {
-  "assist_satellite.bedroom": {
-   "area": "AREA_BED"
-  },
-  "binary_sensor.back_gate": {
-   "area": "AREA_GARDEN"
-  },
-  "binary_sensor.gate_person": {
-   "area": "AREA_GARDEN"
-  }
- },
- "states": {
-  "assist_satellite.bedroom": {
-   "state": "idle",
-   "attributes": {
-    "friendly_name": "Bedroom speaker",
-    "supported_features": 3
-   }
-  },
-  "binary_sensor.back_gate": {
-   "state": "off",
-   "attributes": {
-    "friendly_name": "Back gate",
-    "device_class": "door"
-   }
-  },
-  "binary_sensor.gate_person": {
-   "state": "off",
-   "attributes": {
-    "friendly_name": "Gate Person occupancy"
-   }
-  }
- },
- "changes": [
-  {
-   "ts": "2026-11-10T02:20:00+00:00",
-   "entity": "binary_sensor.back_gate",
-   "old": "off",
-   "new": "on",
-   "cause": "device"
-  },
-  {
-   "ts": "2026-11-10T02:20:20+00:00",
-   "entity": "binary_sensor.gate_person",
-   "old": "off",
-   "new": "on",
-   "cause": "device"
-  },
-  {
-   "ts": "2026-11-10T02:21:00+00:00",
-   "entity": "binary_sensor.back_gate",
-   "old": "on",
-   "new": "off",
-   "cause": "device"
-  },
-  {
-   "ts": "2026-11-10T02:22:00+00:00",
-   "entity": "binary_sensor.gate_person",
-   "old": "on",
-   "new": "off",
-   "cause": "device"
-  }
- ],
- "reviews": [
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "household",
-   "core": "likely household",
-   "legacy": "investigating"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  },
-  {
-   "label": "visitor",
-   "core": "observed",
-   "legacy": "observed"
-  }
- ],
- "expect": {
-  "spoken": {
-   "camera security": 0,
-   "night_watch": 1
-  },
-  "ai_requests_at_most": 5
- }
 }
