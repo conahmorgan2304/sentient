@@ -384,6 +384,10 @@ class CorrectionTool(_Tool):
             return {"error": "Sentient is not loaded"}
         memory = rt.memory.add(tool_input.tool_args["lesson"], "correction", source=llm_context.platform)
         rt.timeline.add("learned", f"Corrected: {memory.text}", "from a conversation")
+        from .conversation_quality import TURN
+
+        if (meta := TURN.get(None)) is not None:
+            meta["corrected"] = True
         return {"learned": memory.text}
 
 
@@ -411,6 +415,10 @@ class RecallTool(_Tool):
         if cautious_turn(getattr(rt, "options", {})):
             return {"memories": []}
         found = rt.memory.search(tool_input.tool_args["query"])
+        from .conversation_quality import TURN
+
+        if (meta := TURN.get(None)) is not None:
+            meta["recalled"] = True
         for other in tool_input.tool_args.get("also", [])[:4]:
             found += [m for m in rt.memory.search(other) if m.id not in {f.id for f in found}]
         from .voice_id import speaker_scope
@@ -2501,9 +2509,14 @@ class SentientAPI(llm.API):
                                                       bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
         memories = voice_id.speaker_scope(self.hass, opts, memories)
         if memories:
-            lines.append("Things you know about this household:")
-            lines.extend(f"- {m.text}" for m in memories)
+            lines.append("Things you know about this household (marked: a guess worked out from what happened, "
+                         "not something a person told you — say so, or check, before relying on it):")
+            lines.extend(f"- {m.text}" + (" (a guess)" if getattr(m, "basis", "said") == "guess" else "") for m in memories)
             lines.append("Use sentient_recall for anything not listed here.")
+            from .conversation_quality import TURN
+
+            if (meta := TURN.get(None)) is not None:
+                meta["memories"] = [m.text for m in memories]  # for this turn's recall measure; not kept
         if not rt.speech.guest_mode and not private and (talk := rt.conversations.prompt_lines(exclude=conversation_id)):
             lines.append(
                 "Recent conversations on the house's speakers (any room) — pick up where they left off if it's "

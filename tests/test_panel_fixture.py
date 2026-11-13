@@ -132,5 +132,21 @@ async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client,
         assert (await ws.receive_json())["success"], group["id"]
         await hass.async_block_till_done()
     ws = await hass_ws_client(hass)  # the entry reloaded; a fresh connection sees the new runtime
+    from custom_components.sentient.conversation_quality import of
+
+    quality = of(entry.runtime_data)  # some measured turns, so those Mind rows are drawn too
+    quality.record(text="when do the bins go out?", reply="The bins go out on Thursday.", carried=False,
+                   asked_back=False, error=False, ms=900, memories=["The bins go out on Thursday"])
+    quality.record(text="what about the recycling?", reply="Which bin?", carried=True, asked_back=True, error=False)
+    rt = entry.runtime_data
+    item = rt.incidents.add("camera.gate", "Person reported at Gate", "detection")
+    if item is not None:
+        rt.incidents.review(item["id"], "visitor")
+    from homeassistant.helpers.entity_component import DATA_INSTANCES
+
+    for entity in hass.data[DATA_INSTANCES]["sensor"].entities:  # the Mind sensor shows them now, not in a minute
+        if entity.platform.platform_name == DOMAIN:
+            entity.async_write_ha_state()
+    await hass.async_block_till_done()
     await _record(hass, ws, "all_on")
     assert (OUT / "defaults.json").exists() and (OUT / "all_on.json").exists()

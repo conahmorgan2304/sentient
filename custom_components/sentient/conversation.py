@@ -380,10 +380,18 @@ class BackedUpAgent(conversation.ConversationEntity):
             manager = rt.ai.voice_timings.turn(allowed=lambda: bool(self._options().get('voice_timing_diagnostics')) and not self._guest())
         else:
             manager = nullcontext(None)
+        from time import monotonic
+
+        from .conversation_quality import TURN
+
+        turn_meta: dict = {}
+        turn_token = TURN.set(turn_meta)
+        started = monotonic()
         with manager as trace:
             try:
                 result = await self._process_streaming_aware(user_input)
             finally:
+                TURN.reset(turn_token)
                 if self._guest():
                     rt.control.clear_recovery()
             if trace is not None:
@@ -393,6 +401,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     rt.ai.voice_timings.clear()
             if not self._guest() and checks is not None and checks.generation == check_generation:
                 checks.observe(user_input, result)
+            self._note_quality(user_input, result, turn_meta, round((monotonic() - started) * 1000))
             if (say := self._pronouncer(user_input)) is not None:
                 # a reply that wasn't streamed is read from the final text: names as they're said (speakers only)
                 try:
@@ -402,6 +411,23 @@ class BackedUpAgent(conversation.ConversationEntity):
                 except Exception:  # noqa: BLE001 - never stop a reply over a name
                     pass
             return result
+
+    def _note_quality(self, user_input, result, meta: dict, ms: int) -> None:
+        """Count how the turn went (Phase 2 measures): never the words, never in guest mode."""
+        if self._guest() or not self._options().get('voice_timing_diagnostics'):
+            return
+        try:
+            from .conversation_quality import of
+            from .sessions import is_follow_up
+
+            reply = (spoken_text(result.response) or "").strip()
+            of(self._entry.runtime_data).record(
+                text=user_input.text or "", reply=reply, carried=bool(meta.get("carried")),
+                asked_back=bool(result.continue_conversation and reply.endswith("?") and not is_follow_up(reply)),
+                error=result.response.response_type == intent.IntentResponseType.ERROR, ms=ms,
+                memories=meta.get("memories"), recalled=bool(meta.get("recalled")), corrected=bool(meta.get("corrected")))
+        except Exception:  # noqa: BLE001 - measuring must never get in the way of an answer
+            pass
 
     def _pronouncer(self, user_input):
         """Names as they're said, for a reply going to a speaker (a typed chat keeps the spelling)."""
@@ -476,6 +502,10 @@ class BackedUpAgent(conversation.ConversationEntity):
             self._carry.pop(owner, None)
         elif minutes and speaker and previous_key not in self._ours and last:
             user_input = replace(user_input, conversation_id=last[0])
+            from .conversation_quality import TURN
+
+            if (meta := TURN.get(None)) is not None:
+                meta["carried"] = True
 
         if cautious or changed_speaker:
             # A new or unverified speaker cannot reuse another person's conversation or confirmation.

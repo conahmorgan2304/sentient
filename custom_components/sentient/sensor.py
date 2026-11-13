@@ -324,7 +324,7 @@ class MindSensor(_Base):
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
-        "incident_review_quality", "security_review_quality", "cognitive_authority",
+        "incident_review_quality", "security_review_quality", "cognitive_authority", "conversation_quality",
     })
 
     def __init__(self, entry: SentientConfigEntry) -> None:
@@ -366,6 +366,8 @@ class MindSensor(_Base):
             "speech_deliveries": [] if rt.speech.guest_mode or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else list(rt.speech.deliveries)[:5],
             "voice_timings": rt.ai.voice_timings.describe() if rt.options.get("voice_timing_diagnostics") and not rt.speech.guest_mode else [],
             "voice_timing_enabled": bool(rt.options.get("voice_timing_diagnostics")) and not rt.speech.guest_mode,
+            "conversation_quality": (_conversation_quality(rt) if rt.options.get("voice_timing_diagnostics")
+                                     and not rt.speech.guest_mode else {}),
             "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
             "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "security_incidents": rt.incidents.recent(),
@@ -485,3 +487,9 @@ def _security_review_quality(rt) -> dict[str, Any]:
     from .outcome_learning import reviewed_feedback
 
     return reviewed_feedback(list(rt.security_events.items.values()))
+
+
+def _conversation_quality(rt) -> dict[str, Any]:
+    from .conversation_quality import of
+
+    return of(rt).summary()
