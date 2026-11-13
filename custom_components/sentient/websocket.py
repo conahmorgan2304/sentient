@@ -340,6 +340,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
         CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT,
+        "heating_energy_sensor", "heating_measurement_date", "heating_energy_price_kwh",
     ]),
     ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
         CONF_HEATING_ENTITIES, CONF_HEATING_NIGHT_TEMP, CONF_HEATING_REVERT_DAY, CONF_HEATING_REVERT_NIGHT, CONF_HEATING_LIMIT, CONF_COMFORT_TEMP, CONF_WARM_BY_WEEKDAYS, CONF_WARM_BY_WEEKENDS,
