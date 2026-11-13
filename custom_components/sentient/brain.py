@@ -627,6 +627,17 @@ class Brain:
 
     async def async_search(self, words: list[str], kinds: list[str] | None = None, limit: int = 8) -> list[dict[str, Any]]:
         rows = await self.db.call(lambda c: self.db.search(c, words, kinds, limit))
+        if not rows:
+            # Low-cost lexical/meaning fallback: the household's existing
+            # synonym groups help find "radiator" when asked about "boiler".
+            # Search only the same permitted kinds, and only after a direct
+            # search miss. No network, embedding model or AI request.
+            from .memory import _words, _expand
+
+            direct = _words(" ".join(words))
+            alternatives = sorted(_expand(direct) - direct)[:12]
+            if alternatives:
+                rows = await self.db.call(lambda c: self.db.search(c, alternatives, kinds, limit))
         return [{"kind": r["kind"], "when": r.get("ts"), "text": r["body"][:400]} for r in rows]
 
     # ----- copies of facts, conversations and the timeline -------------------------------------
