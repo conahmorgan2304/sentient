@@ -95,6 +95,27 @@ def warmup_rate(states: list[State]) -> tuple[float | None, int]:
     return round(median(rates), 1), len(rates)
 
 
+def warmup_validation(states: list[State]) -> dict[str, Any]:
+    """Out-of-sample warmup-rate check, not a claim about energy savings.
+
+    Train on older chronological states; test on the later portion. Reject
+    insufficient episodes rather than publishing a misleading accuracy.
+    """
+    if len(states) < 10:
+        return {"status": "insufficient_data", "training_episodes": 0, "test_episodes": 0,
+                "absolute_error_degrees_per_hour": None}
+    split = int(len(states) * 0.7)
+    train_rate, train_n = warmup_rate(states[:split])
+    observed_rate, test_n = warmup_rate(states[split:])
+    measured = train_n >= 2 and test_n >= 1 and train_rate is not None and observed_rate is not None
+    return {
+        "status": "measured" if measured else "insufficient_data",
+        "training_episodes": train_n,
+        "test_episodes": test_n,
+        "absolute_error_degrees_per_hour": round(abs(train_rate - observed_rate), 2) if measured else None,
+    }
+
+
 def comfort_target(states: list[State]) -> float | None:
     """The daytime target it spends longest at."""
     held: dict[float, float] = {}
@@ -323,6 +344,7 @@ class Heating:
                 "rate": rate if rate is not None else old.get("rate"),
                 "episodes": episodes or old.get("episodes", 0),
                 "comfort": comfort_target(states) or old.get("comfort"),
+                "validation": warmup_validation(states),
             }
         # a sensor that is on most of the time (one that never rests) can't say when anyone got up
         now = dt_util.utcnow()
@@ -357,6 +379,7 @@ class Heating:
             "warms_per_hour": rate,
             "comfortable_at": comfort,
             "learned_from": zone.get("episodes", 0),
+            "rate_validation": zone.get("validation", {"status": "not_measured"}),
         }
         cur = _num(st.attributes.get("current_temperature")) if st else None
         if cur is not None:
