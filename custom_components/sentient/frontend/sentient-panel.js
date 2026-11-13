@@ -234,6 +234,7 @@
     _initLayouts() {
       this._layoutDefaults = {};
       this._layoutData = {};
+      this._layoutEnabled = false;
       this._layoutEdit = false;
       this._layoutRoots = { overview: "ov", house: "hp", mind: "mp", security: "scp" };
       for (const [page, id] of Object.entries(this._layoutRoots)) {
@@ -247,7 +248,8 @@
         bar.className = "layout-toolbar";
         bar.hidden = true;
         bar.style.cssText = "padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap";
-        bar.innerHTML = '<button class="btn sm ghost" data-act="layouttoggle">EDIT LAYOUT</button>' +
+        bar.innerHTML = '<button class="btn sm ghost" data-act="layoutenable">ENABLE CUSTOM PAGES</button>' +
+          '<button class="btn sm ghost" data-act="layouttoggle" hidden>EDIT LAYOUT</button>' +
           '<button class="btn sm ghost" data-act="layoutshowall" hidden>SHOW ALL</button>' +
           '<button class="btn sm ghost" data-act="layoutreset" hidden>RESET PAGE</button>' +
           '<span class="dim" data-layout-msg></span>';
@@ -260,11 +262,13 @@
       this._layoutFetched = true;
       try {
         const response = await this._hass.callWS({ type: "sentient/layout" });
+        this._layoutEnabled = response.enabled === true;
         this._layoutData = response.layout || {};
         this._applyLayouts(true);
       } catch (_) {
         // Older installations may lack the optional API; normal cards remain unchanged.
         this._layoutData = {};
+        this._layoutEnabled = false;
       }
     }
 
@@ -290,8 +294,11 @@
         if (bar) {
           bar.hidden = !admin;
           bar.style.display = admin ? "flex" : "none";
-          const editing = admin && this._layoutEdit && page === this._view;
+          const editing = admin && this._layoutEnabled && this._layoutEdit && page === this._view;
+          const enable = bar.querySelector('[data-act="layoutenable"]');
+          if (enable) enable.textContent = this._layoutEnabled ? "DISABLE CUSTOM PAGES" : "ENABLE CUSTOM PAGES";
           const toggle = bar.querySelector('[data-act="layouttoggle"]');
+          if (toggle) toggle.hidden = !this._layoutEnabled;
           if (toggle) toggle.textContent = editing ? "DONE EDITING" : "EDIT LAYOUT";
           for (const action of ["layoutshowall", "layoutreset"]) {
             const button = bar.querySelector('[data-act="' + action + '"]');
@@ -300,7 +307,7 @@
         }
         const lanes = [...root.querySelectorAll(".lanes > section.lane")];
         const cards = [...root.querySelectorAll(".lanes > section.lane > .card")];
-        const saved = this._layoutData && this._layoutData[page] || [];
+        const saved = this._layoutEnabled && this._layoutData && this._layoutData[page] || [];
         const key = JSON.stringify(saved);
         if (force || root.dataset.layoutApplied !== key) {
           for (const item of saved) {
@@ -321,7 +328,7 @@
         for (const card of cards) {
           card.style.display = visibility.get(card.id) === false ? "none" : "";
           card.querySelectorAll(":scope > .layout-card-tools").forEach((e) => e.remove());
-          if (!admin || !this._layoutEdit || this._view !== page || card.style.display === "none") continue;
+          if (!admin || !this._layoutEnabled || !this._layoutEdit || this._view !== page || card.style.display === "none") continue;
           const tools = document.createElement("div");
           tools.className = "layout-card-tools";
           tools.style.cssText = "display:flex;gap:4px;justify-content:flex-end;padding:4px;background:rgba(0,0,0,.35);border-radius:8px";
@@ -349,12 +356,28 @@
     async _layoutAction(act, id, direction) {
       const page = this._layoutCurrent();
       if (!page || !this._hass || !this._hass.user?.is_admin) return;
+      if (act === "layoutenable") {
+        const enabled = !this._layoutEnabled;
+        try {
+          const response = await this._hass.callWS({ type: "sentient/layout", action: "enable", enabled });
+          this._layoutEnabled = response.enabled === true;
+          this._layoutData = response.layout || {};
+          this._layoutEdit = false;
+          this._applyLayouts(true);
+        } catch (error) {
+          const root = this._$(this._layoutRoots[page]);
+          const message = root && root.querySelector("[data-layout-msg]");
+          if (message) message.textContent = "CHANGE FAILED — " + String(error.message || error);
+        }
+        return;
+      }
       if (act === "layouttoggle") {
+        if (!this._layoutEnabled) return;
         this._layoutEdit = !this._layoutEdit;
         this._applyLayouts();
         return;
       }
-      if (!this._layoutEdit) return;
+      if (!this._layoutEnabled || !this._layoutEdit) return;
       const root = this._$(this._layoutRoots[page]);
       const lanes = [...root.querySelectorAll(".lanes > section.lane")];
       const card = [...root.querySelectorAll(".lanes > section.lane > .card")].find((c) => c.id === id);
