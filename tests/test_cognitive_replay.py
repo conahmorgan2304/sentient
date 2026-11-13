@@ -58,3 +58,35 @@ def test_replay_skips_malformed_imported_scenarios_without_hiding_valid_results(
     assert report["invalid_scenario_count"] == 3
     assert report["scenarios_compared"] == 1
     assert report["corroboration_correct"] == 1
+
+
+def test_replay_command_outputs_only_aggregates(tmp_path, capsys):
+    from custom_components.sentient.cognitive_replay_cli import main
+    import json
+
+    secret = "private-family-room-data"
+    path = tmp_path / "cases.json"
+    data = [{"incident": {**_incident(), "id": secret},
+             "expected_corroboration": "reported_activity"}]
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert main([str(path), "--at", NOW.isoformat()]) == 0
+    output = capsys.readouterr().out
+    summary = json.loads(output)
+    assert summary["scenarios_compared"] == 1
+    assert summary["automatic_actions"] == 0
+    assert secret not in output
+    assert "camera.garden" not in output
+
+
+def test_replay_command_rejects_malformed_input_without_echoing_data(tmp_path, capsys):
+    from custom_components.sentient.cognitive_replay_cli import main
+    import pytest
+
+    path = tmp_path / "private-word.json"
+    path.write_text('not valid JSON with private detail', encoding="utf-8")
+    with pytest.raises(SystemExit) as result:
+        main([str(path)])
+    assert result.value.code == 2
+    output = capsys.readouterr().err
+    assert "private detail" not in output
+    assert "private-word" not in output
