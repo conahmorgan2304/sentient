@@ -398,8 +398,8 @@ class MotionLights:
             self._note(rule, "stayed off: quiet hours")
             return
         late = self.late_night() and rule.night_brightness > 0
-        self._turn(rule, True, rule.night_brightness if late else rule.brightness)
-        self._note(rule, f"on at {rule.night_brightness}% (late night)" if late else "on with motion")
+        if self._turn(rule, True, rule.night_brightness if late else rule.brightness):
+            self._note(rule, f"on at {rule.night_brightness}% (late night)" if late else "on with motion")
 
     @callback
     def _on_still(self, rule: MotionRule) -> None:
@@ -411,8 +411,8 @@ class MotionLights:
         def _off(_now: datetime) -> None:
             self._timers.pop(rule.light, None)
             if rule.light in self._ours and rule.light not in self.paused and not self._motion_now(rule):
-                self._turn(rule, False)
-                self._note(rule, "off: no movement")
+                if self._turn(rule, False):
+                    self._note(rule, "off: no movement")
 
         self._timers[rule.light] = async_call_later(self.hass, rule.off_after * 60, _off)
 
