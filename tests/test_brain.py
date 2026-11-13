@@ -1041,3 +1041,15 @@ async def test_reconcile_facts_deletes_stale_fts_entries_and_keeps_live_ones(has
     found = await db.call(lambda c: db.search(c, ["spaceship"], ["fact"]))
     assert len(found) == 1 and found[0]["ref"] == "pinned"
     db.close()
+
+
+async def test_history_search_uses_local_household_synonyms_only_after_direct_miss(hass: HomeAssistant):
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    await brain.db.call(lambda c: brain.db.put_memory(
+        c, "conversation", "synonym-test", "2026-11-01T10:00:00+00:00",
+        "The radiator needs servicing next month"))
+    found = await brain.async_search(["boiler"], ["conversation"])
+    assert any("radiator" in row["text"] for row in found)
+    # The alternative words never bypass the requested history kind.
+    assert await brain.async_search(["boiler"], ["timeline"]) == []
