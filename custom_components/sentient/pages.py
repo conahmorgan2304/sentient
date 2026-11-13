@@ -136,56 +136,119 @@ def read_text(path: str) -> tuple[list[tuple[int, str, str]], int]:
 
 
 def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> dict[str, Any]:
-    """Read new or changed documents into the database and drop ones that have gone. Runs in the executor."""
+    """Read changed pages without clearing the previous index before successful extraction.
+
+    When OCR changes, rebuild into SQLite TEMP staging tables. Only a complete
+    extraction swaps the index and its mode marker inside one transaction.
+    Crashes, unavailable PDFs or disk errors leave the old index usable.
+    """
     wanted = {f for f in files if os.path.splitext(f)[1].lower() in READ and f == os.path.basename(f)
               and not f.startswith(".")}
     from .local_ocr import available as ocr_available
 
-    actual_ocr = bool(local_ocr and ocr_available())
+    ocr_installed = ocr_available()
+    actual_ocr = bool(local_ocr and ocr_installed)
     mode = "1" if actual_ocr else "0"
-    def known_files(conn: sqlite3.Connection) -> dict[str, tuple[float, int]]:
+
+    def _known(conn: sqlite3.Connection) -> tuple[dict[str, tuple[float, int]], bool]:
         previous = conn.execute("SELECT value FROM doc_index_meta WHERE key = ?", ("local_ocr",)).fetchone()
-        if previous is None or previous["value"] != mode:
-            # Reindex once when OCR is switched on/off or becomes installed.
-            # Never retain OCR text after disabling the feature.
-            conn.execute("DELETE FROM doc_pages")
-            conn.execute("DELETE FROM doc_files")
-            if db.fts:
-                conn.execute("DELETE FROM doc_pages_fts")
-            conn.execute("INSERT OR REPLACE INTO doc_index_meta(key, value) VALUES(?,?)", ("local_ocr", mode))
-        return {r["file"]: (r["mtime"], r["size"]) for r in conn.execute("SELECT file, mtime, size FROM doc_files")}
-    known = db.run(known_files)
+        changed = previous is not None and previous["value"] != mode
+        # Existing installations without a marker need their first OCR-enabled pass.
+        if previous is None and actual_ocr:
+            changed = True
+        known = {r["file"]: (r["mtime"], r["size"]) for r in
+                 conn.execute("SELECT file, mtime, size FROM doc_files")}
+        return known, changed
+
+    known, changing_mode = db.run(_known)
+
+    def _read(name: str) -> tuple[float, int, int, str, str | None, list[tuple[int, str, str]]] | None:
+        path = os.path.join(folder, name)
+        if os.path.islink(path) or not os.path.isfile(path):
+            return None
+        stat = os.stat(path)
+        if stat.st_size > MAX_FILE_BYTES:
+            raise ValueError(f"{name}: too large to read page by page")
+        data, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf")
+                       else read_text(path))
+        return stat.st_mtime, stat.st_size, total, ("page" if name.lower().endswith(".pdf")
+                                                 else "section"), None, data
+
+    if changing_mode:
+        # TEMP tables are connection-local and are dropped automatically after
+        # interruption; the live index is never emptied during extraction.
+        def _prepare(conn: sqlite3.Connection) -> None:
+            conn.execute("DROP TABLE IF EXISTS temp.doc_files_stage")
+            conn.execute("DROP TABLE IF EXISTS temp.doc_pages_stage")
+            conn.execute("CREATE TEMP TABLE doc_files_stage AS SELECT * FROM doc_files WHERE 0")
+            conn.execute("CREATE TEMP TABLE doc_pages_stage AS SELECT * FROM doc_pages WHERE 0")
+        db.run(_prepare)
+        count = 0
+        try:
+            for name in sorted(wanted):
+                result = _read(name)
+                if result is None:
+                    continue
+                mtime, size, total, unit, error, data = result
+                kept = [(n, label, body) for n, label, body in data if len(body) >= MIN_TEXT]
+                def _stage(conn: sqlite3.Connection) -> None:
+                    conn.execute("INSERT INTO doc_files_stage VALUES (?,?,?,?,?,?,?)",
+                                 (name, mtime, size, total, len(kept), unit, error))
+                    conn.executemany("INSERT INTO doc_pages_stage VALUES (?,?,?,?)",
+                                     [(name, n, label, body) for n, label, body in kept])
+                db.run(_stage)
+                count += 1
+
+            def _publish(conn: sqlite3.Connection) -> None:
+                conn.execute("DELETE FROM doc_pages")
+                conn.execute("DELETE FROM doc_files")
+                if db.fts:
+                    conn.execute("DELETE FROM doc_pages_fts")
+                conn.execute("INSERT INTO doc_files SELECT * FROM doc_files_stage")
+                conn.execute("INSERT INTO doc_pages SELECT * FROM doc_pages_stage")
+                if db.fts:
+                    conn.execute("INSERT INTO doc_pages_fts (file, page, body) "
+                                 "SELECT file, page, body FROM doc_pages_stage")
+                conn.execute("INSERT OR REPLACE INTO doc_index_meta (key,value) VALUES (?,?)",
+                             ("local_ocr", mode))
+                conn.execute("DROP TABLE doc_files_stage")
+                conn.execute("DROP TABLE doc_pages_stage")
+            db.run(_publish)
+        except Exception as err:  # noqa: BLE001 - never destroy a prior searchable index
+            _LOGGER.warning("Document OCR reindex failed; retaining the last working index: %s", err)
+            return {"error": "OCR reindex could not complete; previous index was kept",
+                    "read": 0, "removed": 0, "local_ocr_available": ocr_installed,
+                    "local_ocr_active": actual_ocr, "reindex_completed": False}
+        return {"read": count, "removed": len(set(known) - wanted),
+                "local_ocr_available": ocr_installed, "local_ocr_active": actual_ocr,
+                "reindex_completed": True}
+
     read = 0
     for name in sorted(wanted):
-        path = os.path.join(folder, name)
         try:
-            if os.path.islink(path) or not os.path.isfile(path):
+            result = _read(name) if name not in known else None
+            if result is None and name in known:
+                path = os.path.join(folder, name)
+                if not os.path.islink(path) and os.path.isfile(path):
+                    st = os.stat(path)
+                    if known.get(name) != (st.st_mtime, st.st_size):
+                        result = _read(name)
+            if result is None:
                 continue
-            stat = os.stat(path)
-        except OSError:
-            continue
-        if known.get(name) == (stat.st_mtime, stat.st_size):
-            continue
-        pages: list[tuple[int, str, str]] = []
-        total, error = 0, None
-        if stat.st_size > MAX_FILE_BYTES:
-            error = "too large to read page by page"
-        else:
-            try:
-                pages, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf") else read_text(path))
-            except ImportError:
-                return {"error": "pypdf is not installed"}
-            except Exception as err:  # noqa: BLE001 - a damaged PDF is still read whole by the AI
-                error = str(err)[:200] or type(err).__name__
-                _LOGGER.debug("Could not read %s page by page", name, exc_info=True)
-        unit = "page" if name.lower().endswith(".pdf") else "section"
-        _store(db, name, stat.st_mtime, stat.st_size, total, unit, error, pages)
-        read += 1
+            mtime, size, total, unit, error, data = result
+            _store(db, name, mtime, size, total, unit, error, data)
+            read += 1
+        except Exception as err:  # noqa: BLE001 - preserve existing index of broken files
+            _LOGGER.warning("Could not index %s; retaining its prior pages: %s", name, err)
     gone = [f for f in known if f not in wanted]
     if gone:
         db.run(lambda c: [_drop(db, c, f) for f in gone])
-    return {"read": read, "removed": len(gone), "local_ocr_available": ocr_available(),
-            "local_ocr_active": actual_ocr}
+    # Mark initial text-only indexing after success; do not clear prior pages.
+    if not actual_ocr:
+        db.run(lambda c: c.execute("INSERT OR IGNORE INTO doc_index_meta (key,value) VALUES (?,?)",
+                                   ("local_ocr", mode)))
+    return {"read": read, "removed": len(gone), "local_ocr_available": ocr_installed,
+            "local_ocr_active": actual_ocr, "reindex_completed": True}
 
 
 def _drop(db: Any, conn: sqlite3.Connection, name: str) -> None:
