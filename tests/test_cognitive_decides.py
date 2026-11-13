@@ -16,11 +16,12 @@ from custom_components.sentient.const import DOMAIN
 
 
 def _reviews(household_right=10, household_wrong=0, visitors=10, called_household=0, missed=0):
-    rows = [{"label": "household", "core": "likely household"}] * household_right
-    rows += [{"label": "household", "core": "observed"}] * household_wrong
-    rows += [{"label": "visitor", "core": "observed"}] * (visitors - called_household)
-    rows += [{"label": "visitor", "core": "likely household"}] * called_household
-    rows += [{"label": "concerning", "core": "observed"}] * missed
+    rows = [{"label": "household", "core": "likely household", "prediction_recorded": True}] * household_right
+    rows += [{"label": "household", "core": "observed", "prediction_recorded": True}] * household_wrong
+    rows += [{"label": "visitor", "core": "observed", "prediction_recorded": True}] * (visitors - called_household)
+    rows += [{"label": "visitor", "core": "likely household", "prediction_recorded": True}] * called_household
+    rows += [{"label": "concerning", "core": "concerning", "prediction_recorded": True}] * 3
+    rows += [{"label": "concerning", "core": "observed", "prediction_recorded": True}] * missed
     return rows
 
 
@@ -71,6 +72,11 @@ async def test_reviews_earn_it_the_stage_and_the_timeline_says_so(hass: HomeAssi
         item = incidents.add("camera.gate", "Person reported at Gate" + (" — someone from the house" if household else ""),
                              "detection")
         assert incidents.review(item["id"], "household" if household else "visitor")["changed"]
+    for n in range(3):
+        freezer.tick(timedelta(minutes=10))
+        item = incidents.add("camera.gate", "Person reported at Gate", "detection")
+        incidents.finish_alert(item["id"], 2, True)
+        incidents.review(item["id"], "concerning")
     status = incidents.authority()
     assert status["deciding"], status["why"]
     assert any("now decides the stage" in i["text"] for i in entry.runtime_data.timeline.items)
@@ -145,7 +151,7 @@ def test_the_core_reads_the_order_things_happened_in() -> None:
     assert arrival(rang) == (False, True)
     now = datetime(2026, 11, 10, 23, 5, tzinfo=dt_util.UTC)
     end = {"end": (now - timedelta(minutes=1)).isoformat()}
-    assert investigate({**gate_then_camera, **end, "alert_level": 1}, {}, baseline_stage="investigating", now=now)["stage"] == "likely household"
+    assert investigate({**gate_then_camera, **end, "alert_level": 1}, {}, baseline_stage="investigating", now=now)["stage"] == "investigating"
     assert investigate({**gate_then_camera, **end, "alert_level": 2}, {}, baseline_stage="concerning", now=now)["stage"] == "concerning"
     assert investigate({**rang, **end}, {}, baseline_stage="observed", now=now)["stage"] == "observed"
 
@@ -153,6 +159,7 @@ def test_the_core_reads_the_order_things_happened_in() -> None:
 def test_the_rules_are_scored_the_same_way_so_its_clear_which_judges_better() -> None:
     rows = [{"label": "household", "core": "likely household", "legacy": "investigating"}] * 10
     rows += [{"label": "visitor", "core": "observed", "legacy": "observed"}] * 10
+    rows += [{"label": "concerning", "core": "concerning", "legacy": "concerning"}] * 5
     status = authority(rows)
     assert status["compared"]["core"]["agreed"] == 10 and status["compared"]["rules"]["agreed"] == 0
     assert status["earned"] and not authority(rows, "night_heads_up")["earned"]  # asks for 20 household
@@ -176,7 +183,7 @@ async def test_a_night_heads_up_is_left_unsaid_only_when_it_has_earned_it_and_is
     await hass.async_block_till_done(wait_background_tasks=True)
     [alert] = [i for i in rt.timeline.items if i.get("alert") and i.get("incident_id")]  # the camera's
     camera_heads_up = [c for c in said if "reported by the gate" in c.data["message"]]
-    assert not camera_heads_up and "someone from the house" in alert["heads_up"]  # on the timeline, not said
+    assert camera_heads_up  # gate + camera proves activity, not household identity: never suppress
     # (the night watch's own "the back gate has just opened" is a separate heads-up and is unchanged)
     # someone seen with nothing opening first: said as always
     hass.states.async_set("binary_sensor.gate_person", "off", {"friendly_name": "Gate Person occupancy"})
@@ -192,7 +199,7 @@ async def test_switched_off_every_heads_up_is_said(hass: HomeAssistant, freezer)
     freezer.move_to(dt_util.as_utc(datetime(2026, 11, 10, 2, 0, tzinfo=dt_util.get_default_time_zone())))
     entry = await _setup(hass, cognitive_decides=True)
     rt = entry.runtime_data
-    rt.incidents.reviews = [{"label": "household", "core": "likely household"}] * 20 + [{"label": "visitor", "core": "observed"}] * 10
+    rt.incidents.reviews = [{"label": "household", "core": "likely household", "prediction_recorded": True}] * 20 + [{"label": "visitor", "core": "observed", "prediction_recorded": True}] * 10
     said = async_mock_service(hass, "assist_satellite", "announce")
     freezer.tick(timedelta(minutes=20))
     hass.states.async_set("binary_sensor.back_gate", "on", {"friendly_name": "Back gate", "device_class": "door"})
@@ -201,3 +208,36 @@ async def test_switched_off_every_heads_up_is_said(hass: HomeAssistant, freezer)
     hass.states.async_set("binary_sensor.gate_person", "on", {"friendly_name": "Gate Person occupancy"})
     await hass.async_block_till_done(wait_background_tasks=True)
     assert any("reported by the gate" in c.data["message"] for c in said)
+
+def test_historic_reviews_without_prediction_snapshots_cannot_earn_authority() -> None:
+    # Prior versions recalculated old incidents when reviewed; those labels must remain
+    # visible but cannot be counted as evidence for the cognitive core's promotion.
+    bad = [{"label": "household", "core": "resolved"}] * 30
+    bad += [{"label": "visitor", "core": "observed"}] * 20
+    bad += [{"label": "concerning", "core": "concerning"}] * 10
+    assert not authority(bad)["earned"]
+    assert authority(bad)["progress"]["household_reviewed"] == 0
+
+
+async def test_delayed_review_uses_event_time_snapshot(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(datetime(2026, 11, 10, 12, 0, tzinfo=dt_util.UTC))
+    entry = await _setup(hass)
+    incidents = entry.runtime_data.incidents
+    item = incidents.add("camera.gate", "Person reported at Gate", "detection")
+    expected = dict(item["decision_snapshot"])
+    assert expected["core"] != "resolved"
+    freezer.tick(timedelta(hours=10))
+    assert incidents.review(item["id"], "visitor")["changed"]
+    review = incidents.reviews[-1]
+    assert review["core"] == expected["core"]
+    assert review["legacy"] == expected["legacy"]
+    assert review["prediction_at"] == expected["at"]
+
+
+def test_unobserved_or_animal_reports_are_not_person_arrivals() -> None:
+    from custom_components.sentient.cognitive_coordinator import arrival
+    contact = _row("contact", "binary_sensor.gate", 0, "Gate: open")
+    unknown = _row("detection", "camera.gate", 10, "Person", status="unknown")
+    animal = _row("event", "camera.gate", 10, "Cat detected")
+    assert not arrival({"evidence": [contact, unknown]})[0]
+    assert not arrival({"evidence": [contact, animal]})[0]
