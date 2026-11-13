@@ -6,6 +6,11 @@ new service-call authority, model subscriptions, and alert suppression rules.
 
 ## Implemented
 
+### Cross-feature dependency-chain diagnostics (follow-up)
+- Config-entry diagnostics now include a fixed-category dependency-chain summary showing degraded versus unverified voice, camera, and heating feature prerequisites. It does **not** include camera names, room identifiers or user content. Availability is not a live end-to-end functionality check, and unmeasured voice/TTS/speaker services remain explicitly unknown.
+- Regression tests cover unavailable, unknown and available prerequisite states.
+
+
 ### Privacy and memory consistency
 - An awaited forget now removes stale copied facts from SQLite and its full-text
   index, **before** clearing its durable deletion intent. Previously fact
