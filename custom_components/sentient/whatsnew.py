@@ -16,7 +16,7 @@ from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
     "1.5.8": [
-        "Music through Alexa: without Music Assistant, \"play something calm in the kitchen\" can ask that room's Echo to play it from Spotify (or Amazon Music, Apple Music, Deezer, TuneIn, iHeartRadio) — by name, a playlist, artist, song or mood. At the night volume in quiet hours; \"stop the music\" pauses it. Off until switched on: Settings → Voice → Music through Alexa. Music Assistant is still used first when it's set up.",
+        "Music through Alexa: without Music Assistant, \"play something calm in the kitchen\" can ask that room's Echo to play it from Spotify (or Amazon Music, Apple Music, Deezer, TuneIn, iHeartRadio) — by name, a playlist, artist, song or mood. At the night volume in quiet hours; \"stop the music\" pauses it. Off until switched on: Settings → Voice → Music through Alexa. When it's on it's used even with Music Assistant installed, which can't play Spotify without Premium.",
     ],
     "1.5.7": [
         "Someone up early no longer gets the morning briefing during quiet hours: it waits until they end, then comes the first time they're seen moving (in the morning briefing rooms, if chosen). The old way is a switch: Settings → Briefings → Morning briefing in quiet hours.",

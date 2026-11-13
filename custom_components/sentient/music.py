@@ -2,7 +2,7 @@
 
 "Play something calm in the kitchen": with Music Assistant, the voice gets the household's own playlists and
 radio stations (favourites first) with sentient_music, picks the one that fits, and Sentient plays it on the
-Music Assistant player in that room. Without it, and with "Music through Alexa" on, the Echo in that room is
+Music Assistant player in that room. With "Music through Alexa" on (it wins over Music Assistant), the Echo in that room is
 asked to play it from the chosen service (Spotify, Amazon Music…) — by name, as if someone had asked the Echo,
 since Alexa can't list a library. No AI call either way beyond the voice's own. The same rules as speaking apply: in quiet hours it plays at the night
 volume, a room in its own quiet time is only used if the person asking is in it, and Sentient's
@@ -53,11 +53,14 @@ def alexa_players(hass: HomeAssistant) -> list[str]:
 
 
 def backend(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
-    """'ma' (Music Assistant, first choice), 'alexa' (the Echos, when switched on), or None."""
-    if ma_entry(hass) is not None:
-        return "ma"
+    """'alexa' (the Echos) when "Music through Alexa" is switched on, else 'ma' (Music Assistant), else None.
+
+    Switching it on is the choice: Music Assistant being installed as well (for radio, say) mustn't quietly take
+    over, since without Spotify Premium it can't play Spotify at all and the Echos can."""
     if options.get(CONF_MUSIC_ALEXA) and hass.config_entries.async_loaded_entries(DOMAIN_ALEXA) and alexa_players(hass):
         return "alexa"
+    if ma_entry(hass) is not None:
+        return "ma"
     return None
 
 

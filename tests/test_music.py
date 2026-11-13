@@ -142,3 +142,16 @@ def test_what_the_echo_is_asked_for() -> None:
     assert ask_alexa_for("relaxing acoustic", None) == "relaxing acoustic"
     assert ask_alexa_for("my Discover Weekly playlist", "playlist") == "my Discover Weekly playlist"
     assert ask_alexa_for("Abbey Road", "album") == "the album Abbey Road"
+
+
+async def test_music_through_alexa_wins_over_music_assistant(hass: HomeAssistant, monkeypatch) -> None:
+    """Live 13 Nov: no Spotify Premium, so Music Assistant can't play Spotify; with Music through Alexa on, the
+    Echos are used even with Music Assistant installed."""
+    import custom_components.sentient.music as music
+
+    api = await _alexa(hass, monkeypatch)
+    monkeypatch.setattr(music, "ma_entry", lambda hass: "ma1")
+    played = async_mock_service(hass, "media_player", "play_media")
+    await api.async_call_tool(llm.ToolInput(tool_name="sentient_music", tool_args={
+        "action": "play", "media": "relaxing acoustic", "room": "living room"}))
+    assert played[-1].data["media_content_type"] == "SPOTIFY"
