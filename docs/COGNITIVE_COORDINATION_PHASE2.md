@@ -14,7 +14,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 | Documents | Scanned-page extraction coverage and lexical citation-support diagnostics, accessible via pages.quality_report | Test OCR engines locally and build evidence-linked citations; nothing sends scanned documents to cloud OCR |
 | Nest/streaming | Pure lifecycle evaluator requiring a first video frame, not merely a connected player | Real Nest stream traces, token refresh and stream-provider fallback testing |
 | Speaker recognition | Aggregate matched/ambiguous/no-voice report with minimum sample thresholds | Collect consenting multiple-speaker ESPHome test traces; no identity-based authorisation |
-| Custom pages | Admin-only layout payload validator with strict bounds and duplicate-card detection | Actual saved per-user/per-home layout, panel edit UI, entity permissions and HA-card rendering |
+| Custom pages | Admin-only layout save/reset backend and optional in-panel edit controls for moving cards between lanes, hiding/restoring and reset. Saved in HA storage and read on other devices | Live tablet testing, accessibility review, hide-to-stop-fetch and unrestricted Home Assistant/HACS card rendering (not yet implemented) |
 
 ### Security invariants
 - Do not authorise actions from a recommendation, voice match, replay stage, learned outcome or stale context.
@@ -22,6 +22,8 @@ This PR collects the next audit work in **one draft**. These foundations are del
 - Historical labels and data cannot change Frigate thresholds or disable alerts.
 - Personal data must be permission-filtered *before* retrieval reranking.
 - No cloud services, model downloads or external dependencies were added.
+- Shared layouts contain built-in card IDs only; external HA card configuration is not executed.
+- Existing cards remain in their normal layout until a saved layout is applied.
 - The separate 3D talking-head prototype and unwanted floorplan incident replay are excluded.
 
 ## Review and live validation gates
@@ -32,7 +34,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 5. Nest: capture real stream frame/error/timing events and check fallback for expired and stalled streams.
 6. Documents: benchmark text PDFs and scans; OCR is still not installed, and citation support is not correctness proof.
 7. Model/provider: collect real costs, latency and task accuracy before enabling any automatic choice.
-8. UI: implement and test customisable pages separately inside this same PR before describing them as complete.
+8. UI: test moving/hiding/reset on desktop and wall tablet, confirm browser restart persistence, guest/read-only access and no layout regressions. Drag-and-drop and arbitrary HACS-card embedding remain unimplemented.
 9. Run restart, privacy-forget, permission and p95 performance regression tests on the user's HA OS host.
 
-**Not yet done:** live device test, safe arbitration activation, semantic embeddings, OCR implementation, actual cost-based model switching and the full custom-pages UI. They must remain disabled / unfinished until explicitly validated. This PR is for code review, not automatic deployment.
+**Not yet done:** live device test, safe arbitration activation, semantic embeddings, OCR implementation, actual cost-based model switching, drag-and-drop, custom HA-card embedding, and full dashboard editor validation. They must remain disabled / unfinished until explicitly validated. This PR is for code review, not automatic deployment.
