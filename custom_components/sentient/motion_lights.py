@@ -142,6 +142,8 @@ class MotionLights:
             if any(r.light == merged["light"] for r in self.rules.values()):
                 raise ValueError("That light already has a motion rule")
         rule = MotionRule.from_dict(merged)
+        if type(rule.protect_voice_override) is not bool:
+            raise ValueError("Protect voice overrides must be on or off")
         window = rule.quiet_window()
         if window:
             start, end = window
@@ -426,8 +428,8 @@ class MotionLights:
         # dispatched guarded-voice intent; unsupported/unverified cases
         # behave exactly as before. This path never changes alarms or locks.
         intents = getattr(self, "intents", None)
-        if rule.protect_voice_override and intents is not None:
-            advisory = intents.preview(rule.light, "turn_on" if on else "turn_off",
+        if on and rule.protect_voice_override and intents is not None:
+            advisory = intents.preview(rule.light, "turn_on",
                                       "motion_lights")
             if advisory["decision"] == "recommend_hold" and rule.light.startswith(("light.", "switch.")):
                 self._note(rule, "held: recent higher-priority command")
