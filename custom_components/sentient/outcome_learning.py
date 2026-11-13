@@ -31,7 +31,8 @@ def evaluate(rows: list[dict[str, Any]], *, minimum: int = 10, limit: int = 500)
             "unresolved_count": counts["unresolved"],
             "label_counts": {key: counts[key] for key in sorted(LABELS)},
             "stage_match_rate": round(sum(valid) / n, 3) if n >= minimum else None,
-            "accuracy_established": n >= minimum,
+            "accuracy_established": False,  # Household review is not independent verification
+            "reviewed_stage_agreement_available": n >= minimum,
             "policy_changes": 0,
             "limitations": "Stage matching is not person identification or proof of incident truth."}
 
