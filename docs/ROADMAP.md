@@ -51,6 +51,7 @@ Sentient is built in stages. Each stage is used in a real house before the next 
 - [ ] 3D talking head: separate prototype, explicitly excluded from this integration work.
 - [ ] Customisable pages (Overview, House, Mind, Security): an optional "Edit layout" mode, off by default. With it off, pages look as they do now.
   - Step 1: move cards up/down and between lanes (drag, plus arrows for wall tablets), hide and restore cards, reset a page. The layout is saved in Sentient, so every device shows the same one. Cards added by a later release appear in their default place.
+  - Rules for both steps: the switch is in Settings. Switching it off brings back the default pages and keeps the saved layout for when it's switched on again; "Reset" deletes it. Only admins can edit, so a wall tablet can't be rearranged by accident. A hidden card stops fetching its data. A saved card whose entity has gone shows a small "not found" note rather than breaking the page.
   - Step 2: add cards. Any of Sentient's own cards can go on any page, and any Home Assistant dashboard card (HACS cards included) can be embedded in Sentient's style.
 
 ## Stage 5 — Its own page
