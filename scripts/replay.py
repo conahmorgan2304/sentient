@@ -132,6 +132,16 @@ def compare(old: dict, new: dict, live: dict | None = None) -> tuple[str, list[s
         lines.append(f"| held: {r} | {mo['held, by reason'].get(r, 0)} | {mn['held, by reason'].get(r, 0)} |" + (" |" if ml else ""))
     said = lambda r: [x for x in r["decisions"] if x["action"] == "spoke" or x["phoned"]]  # noqa: E731
     gone, added = _match(said(old), said(new))
+    # A missing critical/security alert is a regression, not a noise reduction win.
+    # Noncritical removals stay visible for human review rather than automatically failing.
+    def protected(x: dict) -> bool:
+        source = str(x.get("source") or "").lower().replace("_", " ")
+        return (x.get("kind") == "critical" or x.get("priority") in ("critical", "urgent")
+                or source in {"camera security", "night watch", "security", "alarm", "critical"})
+    missing_important, _ = _match([x for x in said(old) if protected(x)],
+                                  [x for x in said(new) if protected(x)])
+    if missing_important:
+        worse.append(f"{len(missing_important)} protected security/urgent alert(s) disappeared")
     if gone or added:
         lines += ["", "**Announcements that changed** (for a person to judge):"]
         lines += [f"- only {old.get('ref')}: {x['time'][11:16]} [{x['source']}] {x['text']}" for x in gone]
