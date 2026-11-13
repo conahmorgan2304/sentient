@@ -179,6 +179,7 @@ class Incidents:
                 row['camera_gaps'] = gaps
         item['evidence'].append(row)
         item['evidence'] = item['evidence'][-50:]
+        self._capture_prediction(item)
         self._save()
         return item
 
@@ -202,7 +203,25 @@ class Incidents:
         item = next((i for i in self.items if i['id'] == incident_id), None)
         if accepted and item is not None:
             item['alert_level'] = max(item['alert_level'], level)
+            self._capture_prediction(item)
             self._save()
+
+    def _capture_prediction(self, item: dict) -> None:
+        """Freeze the latest incident prediction when evidence/alert level changes.
+
+        A later household review must never recompute an aged incident as resolved.
+        Earlier rows without this snapshot are retained but cannot earn authority.
+        """
+        from .incident_reasoning import assess_incident
+
+        now = dt_util.utcnow()
+        legacy, _ = stage(item, now=now)
+        core = investigate(item, assess_incident(item), baseline_stage=legacy, now=now)["stage"]
+        item["decision_snapshot"] = {
+            "version": 1, "at": now.isoformat(), "legacy": legacy, "core": core,
+            "evidence_count": len(item.get("evidence") or []),
+            "alert_level": item.get("alert_level", 0),
+        }
 
     def review(self, incident_id: str, outcome: str) -> dict:
         """Attach explicit household review to a retained incident only.
@@ -224,14 +243,16 @@ class Incidents:
         if outcome == "clear":
             row.pop("household_review", None)
         else:
-            from .incident_reasoning import assess_incident
-
-            predicted, _ = stage(row)
-            core = investigate(row, assess_incident(row), baseline_stage=predicted)["stage"]
+            snapshot = row.get("decision_snapshot") or {}
+            verified = snapshot.get("version") == 1 and isinstance(snapshot.get("core"), str) and isinstance(snapshot.get("legacy"), str)
+            predicted = snapshot.get("legacy") if verified else None
+            core = snapshot.get("core") if verified else None
             now = dt_util.utcnow().isoformat()
             row["household_review"] = {"label": outcome, "predicted_stage": predicted, "core_stage": core,
-                                       "at": now, "source": "household_review_not_independent_proof"}
-            self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core})
+                                       "at": now, "source": "household_review_not_independent_proof",
+                                       "prediction_recorded": verified}
+            self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core,
+                                 "prediction_recorded": verified, "prediction_at": snapshot.get("at") if verified else None})
             self.reviews = self.reviews[-MAX_REVIEWS:]
         self._save()
         self._check_authority()
@@ -253,16 +274,10 @@ class Incidents:
         the timeline, the phones — is untouched."""
         if reason != "night" or not self.authority("night_heads_up")["deciding"]:
             return None
-        item = next((i for i in self.items if i.get("id") == incident_id), None)
-        if item is None or (item.get("alert_level") or 0) >= 2:
-            return None
-        from .incident_reasoning import assess_incident
-
-        legacy, _ = stage(item)
-        core = investigate(item, assess_incident(item), baseline_stage=legacy)["stage"]
-        if core != "likely household":
-            return None
-        return "not said out loud: the cognitive core is sure it's someone from the house coming in (the gate or a door opened first)"
+        # Contact timing and camera correlation cannot identify a household member.
+        # Until an independently verified identity signal is supplied and tested here,
+        # do not withhold any spoken security heads-up, even if historic reviews qualify.
+        return None
 
     def _check_authority(self) -> None:
         status = self.authority()
