@@ -42,3 +42,13 @@ def test_working_context_only_keeps_bounded_safe_fields():
     assert "updated_at" not in public_view(record)
     assert not public_view(record)["can_authorise_actions"]
     assert public_view(None) is None
+
+
+def test_working_context_never_exposes_unchecked_entity_candidates_to_model():
+    record = refresh(None, goal="Why?", topic="Heating",
+                     entities=["climate.private", "lock.hidden"], kind="explanation",
+                     changed=False, now=NOW)
+    visible = public_view(record)
+    assert "entities" not in visible
+    assert "climate.private" not in str(visible)
+    assert "lock.hidden" not in str(visible)
