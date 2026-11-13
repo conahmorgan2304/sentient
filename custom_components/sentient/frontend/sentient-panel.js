@@ -972,6 +972,12 @@
           <div class="vids" id="vidsay" role="status"></div>
           <div class="vids" id="viddetail"></div>` : '<div class="vids">Switch on "Use who is speaking" below to see recent voices and record from a speaker.</div>'}</div>` : ""}
         <div id="formwrap" class="formwrap"><div class="e">LOADING…</div></div>
+        ${g.id === "door" && this._hass.user?.is_admin ? `<div class="vidcard"><div class="vidt">AI ROUTING CALIBRATION</div>
+          <div class="vids">Only an administrator can send one generic, potentially billable test at a time. No household information is included. Save routing options before testing. Twenty measured calls per provider are needed, and service availability does not verify answer accuracy.</div>
+          <div class="row"><button class="btn sm ghost" data-act="routecalstatus">CHECK COUNTS</button>
+          <button class="btn sm ghost" data-act="routecal" data-provider="alternative">TEST ALTERNATIVE ONCE</button>
+          <button class="btn sm ghost" data-act="routecal" data-provider="primary">TEST PRIMARY ONCE</button></div>
+          <div class="vids" id="routingcalstatus" role="status">Calibration is off until requested.</div></div>` : ""}
         ${g.id === "games" ? '<div id="gamewrap" class="gamewrap"></div>' : ""}
         <div class="bar"><span id="status"></span>${g.id === "safety" ? '<button class="btn ghost" data-act="critest">TEST ALERT</button>' : ""}${g.id === "reading" ? '<button class="btn ghost" data-act="stopread">STOP READING</button><button class="btn ghost" data-act="trytts">TRY THE VOICE</button>' : ""}<button class="btn ghost" data-act="reset">UNDO CHANGES</button><button class="btn" data-act="save">SAVE</button></div>`;
       this._draft = { ...this._settings.data };
@@ -2703,6 +2709,26 @@
       }).join("") + summaries;
     }
 
+    async _routeCalibration(action, provider) {
+      if (!this._hass.user?.is_admin || this._routingCalBusy) return;
+      if (action === "run" && !window.confirm("Run ONE potentially billable, privacy-safe AI Task calibration request?")) return;
+      const target = this._$("routingcalstatus");
+      if (!target) return;
+      this._routingCalBusy = true;
+      target.textContent = "CHECKING AI PROVIDERS…";
+      try {
+        const status = await this._hass.callWS({ type: "sentient/ai/routing/calibrate", action, provider });
+        const detail = (label, value) => label + " " + value.samples + "/20 sampled" +
+          (value.success_rate == null ? " · NOT ENOUGH DATA" : " · " + Math.round(value.success_rate * 100) + "% service success · p95 " + value.p95_ms + " ms");
+        target.textContent = detail("PRIMARY", status.primary) + " | " + detail("ALTERNATIVE", status.alternative) +
+          " · Pricing and answer quality require separate verification.";
+      } catch (error) {
+        target.textContent = "CALIBRATION FAILED · " + String(error.message || error);
+      } finally {
+        this._routingCalBusy = false;
+      }
+    }
+
     async _incidentReview(id, outcome) {
       if (!this._hass.user?.is_admin || !id || this._incidentReviewSaving) return;
       this._incidentReviewSaving = id;
@@ -2744,6 +2770,7 @@
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
       else if (act === "incidentreview") this._incidentReview(id, el.dataset.value);
+      else if (act === "routecal" || act === "routecalstatus") this._routeCalibration(act === "routecal" ? "run" : "status", el.dataset.provider || "alternative");
       else if (act === "refreshpanel") window.location.reload();
       else if (act === "voicecheck") {
         this._voiceCheckAction(id, el.dataset.run);
