@@ -317,6 +317,7 @@
           root.dataset.layoutApplied = key;
         }
         const visibility = new Map(saved.map((x) => [x.id, x.visible]));
+        if (page === "security" && visibility.get("live") === false && this._liveCamKey) this._clearLive();
         for (const card of cards) {
           card.style.display = visibility.get(card.id) === false ? "none" : "";
           card.querySelectorAll(":scope > .layout-card-tools").forEach((e) => e.remove());
@@ -2090,6 +2091,10 @@
     }
 
     _drawLive(mind) {
+      if ((this._layoutData?.security || []).some((row) => row.id === "live" && row.visible === false)) {
+        if (this._liveCamKey) this._clearLive();
+        return;  // do not create/refresh a hidden live player
+      }
       const el = this._$("live");
       if (!el) return;
       const cams = ((this._cams || {}).cameras || []).map((c) => c.entity_id);
