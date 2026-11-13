@@ -9,7 +9,7 @@ def _episode(start, delta=1.5, hours=1):
     return [
         SimpleNamespace(state="heat", attributes={"current_temperature": 18.0, "temperature": 20.0},
                         last_updated=start),
-        SimpleNamespace(state="heat", attributes={"current_temperature": 19.5, "temperature": 20.0},
+        SimpleNamespace(state="heat", attributes={"current_temperature": 19.9, "temperature": 20.0},
                         last_updated=start + timedelta(hours=hours)),
         SimpleNamespace(state="off", attributes={}, last_updated=start + timedelta(hours=hours, minutes=1)),
     ]
