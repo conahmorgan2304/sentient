@@ -16,7 +16,7 @@ def rerank(query: str, rows: list[dict[str, Any]], *, limit: int = 8) -> list[di
         words = tokens(str(row.get("text") or row.get("body") or ""))
         overlap = len(words & needed)
         return ((overlap / len(needed)) if needed else 0, overlap)
-    return sorted(rows[:100], key=key, reverse=True)[:max(0, min(limit, 30))]
+    return sorted((r for r in rows[:100] if isinstance(r, dict)), key=key, reverse=True)[:max(0, min(limit, 30))]
 
 def benchmark(cases: list[dict[str, Any]], *, minimum: int = 5) -> dict[str, Any]:
     """Evaluate recall only where a provided document ID is known correct."""
