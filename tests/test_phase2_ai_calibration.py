@@ -24,3 +24,31 @@ async def test_ai_calibration_needs_explicit_enabled_route(hass, hass_ws_client)
         assert not result["success"]
         assert result["error"]["code"] == "not_configured"
         ai.assert_not_called()
+
+
+async def test_ai_calibration_one_generic_call_only_with_budget_and_cooldown(hass, hass_ws_client):
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.options.update({"ai_routing_enabled": True, "ai_task_entity": "ai_task.main",
+                       "ai_routing_alternative": "ai_task.alternative"})
+    hass.states.async_set("ai_task.main", "idle")
+    hass.states.async_set("ai_task.alternative", "idle")
+    ws = await hass_ws_client(hass)
+    with patch.object(rt.ai, "spend", return_value=True), patch.object(
+        rt.ai, "async_call", new_callable=AsyncMock
+    ) as call:
+        call.return_value = {"data": "READY"}
+        await ws.send_json({"id": 1, "type": "sentient/ai/routing/calibrate",
+                            "action": "run", "provider": "alternative"})
+        response = await ws.receive_json()
+        assert response["success"], response
+        sent = call.call_args.args[0]
+        assert sent["entity_id"] == "ai_task.alternative"
+        assert "household" not in sent["instructions"].lower()
+        assert "READY" in sent["instructions"]
+        await ws.send_json({"id": 2, "type": "sentient/ai/routing/calibrate",
+                            "action": "run", "provider": "alternative"})
+        retry = await ws.receive_json()
+        assert retry["success"] is False
+        assert retry["error"]["code"] == "rate_limited"
+        call.assert_awaited_once()
