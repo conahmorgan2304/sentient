@@ -14,7 +14,7 @@ This PR collects the next audit work in **one draft**. These foundations are del
 | Documents | Scanned-page extraction coverage and lexical citation-support diagnostics, accessible via pages.quality_report | Test OCR engines locally and build evidence-linked citations; nothing sends scanned documents to cloud OCR |
 | Nest/streaming | Pure lifecycle evaluator requiring a first video frame, not merely a connected player | Real Nest stream traces, token refresh and stream-provider fallback testing |
 | Speaker recognition | Aggregate matched/ambiguous/no-voice report with minimum sample thresholds | Collect consenting multiple-speaker ESPHome test traces; no identity-based authorisation |
-| Custom pages | Admin-only layout save/reset backend and optional in-panel edit controls for moving cards between lanes, hiding/restoring and reset. Saved in HA storage and read on other devices | Live tablet testing, accessibility review, hide-to-stop-fetch and unrestricted Home Assistant/HACS card rendering (not yet implemented) |
+| Custom pages | Explicit admin-controlled enable/disable with saved layout retention and original default restored when off; admin-only move/hide/restore/reset controls. Saved in HA storage and read on other devices | Live tablet testing, accessibility review, hide-to-stop-fetch and unrestricted Home Assistant/HACS card rendering (not yet implemented) |
 
 ### Security invariants
 - Do not authorise actions from a recommendation, voice match, replay stage, learned outcome or stale context. Opted-in motion rules may *hold their own turn-on request* after voice-off; they never grant authority to execute another action.
@@ -23,11 +23,11 @@ This PR collects the next audit work in **one draft**. These foundations are del
 - Personal data must be permission-filtered *before* retrieval reranking.
 - No cloud services, model downloads or external dependencies were added.
 - Shared layouts contain built-in card IDs only; external HA card configuration is not executed.
-- Existing cards remain in their normal layout until a saved layout is applied.
+- Existing cards remain in their normal layout until an administrator explicitly enables the feature. Turning it off restores original lane order and visibility without erasing the saved layout.
 - The separate 3D talking-head prototype and unwanted floorplan incident replay are excluded.
 
 ## Review and live validation gates
-1. CI: Python pytest, HACS, Hassfest and JavaScript tests pass on final HEAD.
+1. CI: Python pytest, HACS, Hassfest and JavaScript tests pass on final HEAD, including ordered websocket access checks and persistence across restart.
 2. Frigate: label camera+contact events independently, test false detections and outages; count unknown outcomes as unknown.
 3. Home Assistant: leave the new Protect voice overrides setting disabled until tested; then ensure no unexpected motion-on after voice-off during the 120-second override window and confirm normal operation after expiry.
 4. Voice: multiple enrolled household voices, ambiguous matches and guest mode on physical ESPHome speakers.
