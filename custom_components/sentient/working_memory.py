@@ -45,6 +45,10 @@ def public_view(context: dict[str, Any] | None) -> dict[str, Any] | None:
     """Keep only bounded owner-local context for a model or session screen."""
     if not context:
         return None
-    return {k: context[k] for k in ("goal", "topic", "entities", "followup_kind",
+    # Entity candidates have *not* yet passed the user/Assist visibility
+    # checks performed at the conversation boundary. Never put them in an
+    # LLM/session public description, even when the current user mentioned
+    # the entity previously.
+    return {k: context[k] for k in ("goal", "topic", "followup_kind",
                                     "evidence_is_stale", "requires_fresh_permission_check",
                                     "can_authorise_actions") if k in context}
