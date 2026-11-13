@@ -474,6 +474,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(watches.async_stop)
     feedback = Feedback(hass, entry.entry_id)
     await feedback.async_load()
+    entry.async_on_unload(feedback.async_stop)
     from .suggestions import Suggestions
 
     suggestions = Suggestions(hass, entry.entry_id)

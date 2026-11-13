@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.7.0": [
+        "The Mind tab now shows how conversations go: how many follow-ups carried on from the last thing you asked, how often it had to ask which thing you meant, how often an answer was corrected (\"no, I meant…\"), and how quickly it answers. With \"Show voice timings\" on; no words are kept.",
+        "It also shows how memories are used: whether one on the subject came up and showed in the answer, and how often it had to search or was corrected.",
+        "Every memory now says how it's known — confirmed, told, said, or a guess worked out overnight. Guesses are marked on the Memories page, and the voice is told to check before relying on them.",
+        "HOW I'M LEARNING shows corrections that stuck: after a thumbs down, shush or hush, whether that thing was mentioned again within a fortnight.",
+    ],
     "1.6.0": [
         "The cognitive core can now decide what stage a security incident is at — what the Mind tab and the voice say it is — once your reviews show it gets each kind of incident right (Settings → Safety & security, off by default). It never changes or holds back an alert, never calls an incident less serious than the usual rules' \"concerning\", and stops by itself if later reviews fall short. Review incidents from the Mind tab: REVIEW THIS INCIDENT.",
         "Settings → Setup doctor → DOWNLOAD THE LAST DAY saves what happened in the house over the last 24 hours and what Sentient decided, so a new version can be checked against your own days before you install it. Nothing is sent anywhere.",

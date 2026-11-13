@@ -64,8 +64,9 @@ The aim isn't more features. It's showing, with numbers from a real house, that 
 - [x] End-to-end integration test (1.6.0, `tests/test_cognitive_decides.py`): gate contact and camera event → incident evidence → cognitive assessment → household context and memory → notification decision → recorded outcome. A broken link fails the test.
 
 ### Phase 2 — Conversation, memory and awareness
-- [ ] Remember the active conversation separately from keeping the microphone open; topic and speaker continuity; follow-ups measured with the existing voice timings.
-- [ ] Memory recall measured (did the right memory come up, did it change the answer); observations, preferences, assumptions and verified facts kept apart.
+- [x] Remember the active conversation separately from keeping the microphone open; topic and speaker continuity; follow-ups measured with the existing voice timings. (Carrying on across wake words and rooms already worked — `carry_on_minutes`, room handoff; 1.7.0 measures it: `conversation_quality` counts carried-on turns, follow-up kinds, asking which, corrections, errors and time, shown on the Mind tab.)
+- [x] Memory recall measured (did the right memory come up, did it change the answer); observations, preferences, assumptions and verified facts kept apart. (1.7.0: per turn — memories given, one on the subject, one in the answer, had to search, corrected; every memory has a basis — confirmed, told, said or a guess — and guesses are marked to the voice.)
+- [x] Learning measured (1.7.0): each thumbs down, shush or hush is watched for a fortnight; "corrections that stuck" on the Mind tab's HOW I'M LEARNING card.
 
 ### Phase 3 — Cognitive Core and security, measured
 - [ ] Incident reviews scored per category (household, visitor, concerning), with false alerts and missed threats counted separately. Enough reviewed cases in each category before anything is promoted; a high overall score is never enough on its own.
@@ -289,3 +290,4 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] 1.5.13 — Layout editing starts from Settings → This page (EDIT PAGE LAYOUT, admins, when `custom_pages` is on); the tab toolbar appears only while editing and DONE EDITING hides it. The saved layout applies whenever `custom_pages` is on.
 - [x] 1.5.14 — Settings groups "Doorbell & AI looks" and "This page" threw a ReferenceError for admins (`data` undefined in `_drawBody`, from the 1.5.12 calibration card and 1.5.13 layout card). Fixed, with a panel test and an ESLint `no-undef` step in CI.
 - [x] 1.6.0 — Sentient 2.0 Phase 1 (PR #151): page checks in Chromium against answers recorded from the real integration; integration audit (unreachable modules, unread settings, unregistered commands; removed stream_health, speaker_evaluation and model_advisor, which nothing fed); decision record, day export and the replay benchmark with regression days; the cognitive core deciding incident stages once earned. Found by the page checks: the Mind tab's "How I'm learning" card never drew since 1.5.0 (a second `_drawBrain` replaced it), and a link to a Settings page from another tab opened the Settings front page.
+- [x] 1.7.0 — Sentient 2.0 Phase 2: conversations, memory and learning measured (see the Phase 2 items above).

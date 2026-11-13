@@ -139,8 +139,21 @@ class Memory:
     expires: str | None = None  # a date (the day after the one it's about); gone after that unless pinned
     links: list[str] = field(default_factory=list)  # entities, rooms (area:...) and people it names
 
+    @property
+    def basis(self) -> str:
+        """How it's known: "confirmed" (pinned, or put right by a person), "told" (typed into Sentient), "said" (a
+        person said it in a conversation) or "guess" (worked out overnight from what happened — check before
+        relying on it)."""
+        if self.pinned or self.origin in ("edit", "edited"):
+            return "confirmed"
+        if self.source == "reflection":
+            return "guess"
+        if self.source in ("service", "settings"):
+            return "told"
+        return "said"
+
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {**asdict(self), "basis": self.basis}
 
 
 class MemoryStore:
