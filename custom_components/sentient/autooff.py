@@ -171,7 +171,7 @@ class AutoOff:
                 continue
             rt = self._rt()
             intents = getattr(self, "intents", None)
-            if (not force and rt is not None and rt.options.get("autooff_respect_recent_voice") is True
+            if (not force and rt is not None and (getattr(rt, "options", None) or {}).get("autooff_respect_recent_voice") is True
                     and intents is not None and entity_id.startswith(("light.", "switch."))
                     and intents.preview(entity_id, "turn_off", "auto_off")["decision"] == "recommend_hold"):
                 continue  # optional: respect a recent guarded voice-on request

@@ -439,7 +439,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         "email_read", "calendar_clashes", "security_audit", "automation_builder",
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
-        CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
+        CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, "custom_pages", CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
     ]),
 ]
 
@@ -870,6 +870,8 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         "ran": dict(getattr(rt.heat_prog, "ran", {}) or {}) if getattr(rt, "heat_prog", None) is not None else {},
         "ticking": getattr(rt.heat_prog, "last_tick", None) if getattr(rt, "heat_prog", None) is not None else None,
         "admin": connection.user.is_admin,
+        # the energy comparison button only once a heating kWh meter and a date are chosen
+        "energy_comparison": bool(rt.options.get("heating_energy_sensor") and rt.options.get("heating_measurement_date")),
     })
 
 
@@ -1559,6 +1561,7 @@ async def ws_reading_stop(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     vol.Optional("layout"): dict,
     vol.Optional("enabled"): bool,
 })
+@page_access
 @websocket_api.async_response
 async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Admin-only layout storage; no Home Assistant cards executed or rendered."""
@@ -1578,14 +1581,15 @@ async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         connection.send_error(msg["id"], "unauthorized", "Administrator access is required")
         return
     if action == "enable":
+        # the switch is "Rearrange the Sentient page" in Settings; this sets the same option
         if "enabled" not in msg:
             connection.send_error(msg["id"], "invalid", "Choose enabled true or false")
             return
-        result = await store.async_set_enabled(msg["enabled"], user=connection.user)
-        if not result["accepted"]:
-            connection.send_error(msg["id"], "invalid", result["reason"])
-            return
-    elif action == "save":
+        hass.config_entries.async_update_entry(entry, options={**entry.data, **entry.options, "custom_pages": msg["enabled"]})
+    on = bool(_current(entry).get("custom_pages"))
+    if store._enabled != on:
+        await store.async_set_enabled(on, user=connection.user if action == "enable" else _SYSTEM)
+    if action == "save":
         result = await store.async_save(msg.get("layout"), user=connection.user)
         if not result["accepted"]:
             connection.send_error(msg["id"], "invalid", result["reason"])
@@ -1595,7 +1599,14 @@ async def ws_layout(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         if not result["accepted"]:
             connection.send_error(msg["id"], "invalid", result["reason"])
             return
-    connection.send_result(msg["id"], store.view(enabled=True))
+    connection.send_result(msg["id"], store.view(enabled=on))
+
+
+class _System:
+    is_admin = True  # the Settings switch, already saved by an administrator
+
+
+_SYSTEM = _System()
 
 
 @websocket_api.websocket_command(

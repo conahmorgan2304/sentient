@@ -28,3 +28,9 @@ test("card drag-and-drop is editor-only and persists through admin websocket", (
   assert.match(panel, /this\._layoutEnabled && this\._layoutEdit/);
   assert.match(panel, /action: "save", layout: this\._layoutData/);
 });
+
+test("the layout toolbar only appears once switched on in Settings", () => {
+  assert.doesNotMatch(panel, /ENABLE CUSTOM PAGES/);
+  assert.match(panel, /const shown = admin && this\._layoutEnabled;/);
+  assert.match(panel, /h\.energy_comparison \?/);  // no kWh button without a heating meter chosen
+});

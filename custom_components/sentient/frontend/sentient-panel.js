@@ -218,6 +218,7 @@
       if (view === "settings" && (TAB_OF[this._group] || view !== this._view)) this._group = "home";  // Settings opens on its front page
       this._view = view;
       this.setAttribute("view", view);
+      if (this._layoutRoots && this._layoutRoots[view]) { this._layoutFetched = false; this._loadLayouts(); }
       this.shadowRoot.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
       this._$("ov").hidden = view !== "overview";
       this._$("set").hidden = view !== "settings";
@@ -252,8 +253,8 @@
         bar.className = "layout-toolbar";
         bar.hidden = true;
         bar.style.cssText = "padding:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap";
-        bar.innerHTML = '<button class="btn sm ghost" data-act="layoutenable">ENABLE CUSTOM PAGES</button>' +
-          '<button class="btn sm ghost" data-act="layouttoggle" hidden>EDIT LAYOUT</button>' +
+        // switched on in Settings ("Rearrange the Sentient page"); off, there's no toolbar at all
+        bar.innerHTML = '<button class="btn sm ghost" data-act="layouttoggle">EDIT LAYOUT</button>' +
           '<button class="btn sm ghost" data-act="layoutshowall" hidden>SHOW ALL</button>' +
           '<button class="btn sm ghost" data-act="layoutreset" hidden>RESET PAGE</button>' +
           '<span class="dim" data-layout-msg></span>';
@@ -296,13 +297,11 @@
         if (!root) continue;
         const bar = root.querySelector(".layout-toolbar");
         if (bar) {
-          bar.hidden = !admin;
-          bar.style.display = admin ? "flex" : "none";
+          const shown = admin && this._layoutEnabled;
+          bar.hidden = !shown;
+          bar.style.display = shown ? "flex" : "none";
           const editing = admin && this._layoutEnabled && this._layoutEdit && page === this._view;
-          const enable = bar.querySelector('[data-act="layoutenable"]');
-          if (enable) enable.textContent = this._layoutEnabled ? "DISABLE CUSTOM PAGES" : "ENABLE CUSTOM PAGES";
           const toggle = bar.querySelector('[data-act="layouttoggle"]');
-          if (toggle) toggle.hidden = !this._layoutEnabled;
           if (toggle) toggle.textContent = editing ? "DONE EDITING" : "EDIT LAYOUT";
           for (const action of ["layoutshowall", "layoutreset"]) {
             const button = bar.querySelector('[data-act="' + action + '"]');
@@ -2044,7 +2043,7 @@
         const observed = energy?.status === "measured"
           ? `OBSERVED ${esc(energy.observed_change_kwh_per_day)} KWH/DAY (${esc(energy.matched_days)} MATCHED DAYS) · NOT PROOF OF SAVINGS`
           : energy ? `ENERGY COMPARISON: ${esc(String(energy.status || "UNKNOWN").replaceAll("_", " ").toUpperCase())}` : "";
-        html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button><button class="btn sm ghost" data-act="heatenergy">COMPARE RECORDED KWH</button></div><div id="heatzones"></div>`
+        html += `<div class="row"><button class="btn sm ghost" data-act="heatzones">ZONE SETTINGS</button>${h.energy_comparison ? '<button class="btn sm ghost" data-act="heatenergy">COMPARE RECORDED KWH</button>' : ""}</div><div id="heatzones"></div>`
           + (observed ? `<div class="hint">${observed}<small>Recorded before/after energy use; weather, occupancy and price can change independently.</small></div>` : "");
       }
       el.innerHTML = html;

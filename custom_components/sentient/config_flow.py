@@ -380,6 +380,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_FALLBACK_SPEAKERS, **d(CONF_FALLBACK_SPEAKERS, [])): _SPEAKER,
             vol.Required(CONF_SIDEBAR, **d(CONF_SIDEBAR, DEFAULT_SIDEBAR)): selector.BooleanSelector(),
             vol.Required(CONF_PAGE_ADMIN_ONLY, **d(CONF_PAGE_ADMIN_ONLY, False)): selector.BooleanSelector(),
+            vol.Required("custom_pages", **d("custom_pages", False)): selector.BooleanSelector(),
             vol.Required(CONF_SUGGESTIONS, **d(CONF_SUGGESTIONS, True)): selector.BooleanSelector(),
             vol.Required(CONF_WHATS_NEW, **d(CONF_WHATS_NEW, True)): selector.BooleanSelector(),
             vol.Required(CONF_SIMPLE, **d(CONF_SIMPLE, False)): selector.BooleanSelector(),
