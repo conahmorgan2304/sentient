@@ -62,6 +62,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "visitors_today": len(rt.visitors.today()),
         "spots": [{"camera": s["camera"]} for s in rt.spots.spots.values()],
         "last_tidy": async_redact_data(rt.upkeep.last_tidy or {}, {"merged"}),
+        "backup_privacy": await rt.autobackup.async_privacy_summary(),
     }
 
 
