@@ -37,6 +37,10 @@ new service-call authority, model subscriptions, and alert suppression rules.
   intent changes, *not* whether a device actually changed state. Private
   history is erased on a privacy-forget operation and withheld in guest mode.
 
+### Shared speech duplicate identity (follow-up)
+- Repeated equivalent wording differing only in punctuation is now suppressed across speech sources and addressed speakers within the existing duplicate window. Urgent/critical exemptions remain unchanged. Legacy exact-text delivery receipts are retained for compatibility.
+- This is shared **text** identity, not event-level semantic deduplication; two differently phrased descriptions of the same incident may still be announced separately.
+
 ### Conversational working memory
 - Bounded owner-local session working context retains the relevant goal/topic
   across a related follow-up, expires older context, and clears on subject
