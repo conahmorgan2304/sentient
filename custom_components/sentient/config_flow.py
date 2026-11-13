@@ -865,6 +865,16 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SECOND_OPINION, **d(CONF_SECOND_OPINION)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
+            vol.Required("ai_routing_enabled", **d("ai_routing_enabled", False)): selector.BooleanSelector(),
+            vol.Optional("ai_routing_alternative", **d("ai_routing_alternative")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="ai_task")),
+            vol.Optional("ai_routing_primary_cost", **d("ai_routing_primary_cost")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=0.001, mode=selector.NumberSelectorMode.BOX)),
+            vol.Optional("ai_routing_alternative_cost", **d("ai_routing_alternative_cost")): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=0.001, mode=selector.NumberSelectorMode.BOX)),
+            vol.Optional("ai_routing_max_p95_ms", **d("ai_routing_max_p95_ms", 4000)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=500, max=30000, step=500, mode=selector.NumberSelectorMode.BOX)),
+
             vol.Optional(CONF_SMART_AI, **d(CONF_SMART_AI)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="ai_task")
             ),
