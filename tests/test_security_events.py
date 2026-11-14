@@ -542,9 +542,12 @@ async def test_disabling_settings_clears_shared_answers_focus_and_tools(hass):
 async def test_event_and_cache_storage_are_bounded(hass):
     obj, cache, _ = setup(hass)
     now = dt_util.utcnow().timestamp()
-    for i in range(205):
-        obj.ingest(event(id=f"event-{i}", start_time=now - 300 + i))
-    assert len(obj.items) == 200 and "event-0" not in obj.items and "event-204" in obj.items
+    from custom_components.sentient.security_events import MAX_EVENTS
+
+    assert MAX_EVENTS >= 2800  # a week of a busy house's cameras
+    for i in range(MAX_EVENTS + 5):
+        obj.ingest(event(id=f"event-{i}", start_time=now - 4000 + i))
+    assert len(obj.items) == MAX_EVENTS and "event-0" not in obj.items and f"event-{MAX_EVENTS + 4}" in obj.items
     producer = AsyncMock(return_value={"summary": "A visitor arrived", "worth": False, "kind": "visitor"})
     for i in range(105):
         await cache.analyse("garden", f"event-{i}", 1, 20, None, "neutral", producer)

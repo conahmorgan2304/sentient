@@ -76,3 +76,10 @@ async def test_ask_later_off_and_cleared(hass: HomeAssistant) -> None:
 def test_plain_command_gets_only_the_essentials() -> None:
     tools = Focus().tools_for("turn the kitchen light off")
     assert tools is not None and "sentient_remember" in tools and "sentient_look" not in tools
+
+
+async def test_the_voice_knows_it_cant_do_physical_things(hass: HomeAssistant) -> None:
+    """14 Nov 13:09: "Shall I pop out and feed them now?" about the rabbits."""
+    await _setup(hass)
+    prompt = (await _api(hass, "have the rabbits been fed?")).api_prompt
+    assert "You have no body" in prompt and "Never offer to do anything physical yourself" in prompt

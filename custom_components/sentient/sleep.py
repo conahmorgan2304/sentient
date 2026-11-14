@@ -48,6 +48,10 @@ MIN_SAMPLES = 360
 # back in bed within this long of getting up is the same night (up for the loo, a cat setting off the hall at 5am):
 # one bedtime and one getting-up time, not a 5am "bedtime" (live 14 Nov: usual bedtime learned as 06:15)
 BACK_TO_BED = timedelta(hours=3)
+# well before the usual getting-up time, two rooms isn't enough: the cats crossing the hall and kitchen at 5am did
+# that three times on 14 Nov, switching the Echos back on each time. A person comes down through more rooms.
+EARLY_MARGIN = timedelta(minutes=90)
+EARLY_ROOMS = 3
 
 
 def one_per_night(history: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -207,8 +211,24 @@ class Sleep:
         area = area_of(self.hass, new.entity_id) or new.entity_id
         cutoff = now - UP_WINDOW
         self._moves = [(t, a) for t, a in self._moves if t > cutoff] + [(now, area)]
-        if len({a for _, a in self._moves}) >= 2:
-            self.hass.async_create_task(self.async_set(False, "moving about in two rooms"), eager_start=False)
+        if by_hand:
+            self._by_hand = now
+        rooms = len({a for _, a in self._moves})
+        # a cat can't switch a light on: with one by hand, two rooms will do even early
+        person = getattr(self, "_by_hand", None) is not None and self._by_hand > cutoff
+        needed = EARLY_ROOMS if self._early(now) and not person else 2
+        if rooms >= needed:
+            why = f"moving about in {rooms} rooms" + (", well before the usual time" if needed == EARLY_ROOMS else "")
+            self.hass.async_create_task(self.async_set(False, why), eager_start=False)
+
+    def _early(self, now: datetime) -> bool:
+        """Well before the usual getting-up time (once it's known)."""
+        up = self.usual().get("up")
+        if not up:
+            return False
+        hour, minute = (int(x) for x in up.split(":"))
+        usual = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        return now < usual - EARLY_MARGIN
 
     # ----- changing --------------------------------------------------------------------
     async def async_set(self, asleep: bool, why: str = "") -> dict[str, Any]:

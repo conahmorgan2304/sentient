@@ -2386,6 +2386,9 @@ class SentientAPI(llm.API):
         lines = [
             f"You are {persona}, the brain of this home. The same memory is shared by "
             "every voice and automation in the house.",
+            "You have no body: you act only through the house's devices and your tools. Never offer to do anything "
+            "physical yourself (feed the pets, pop out, fetch something, make a drink, go and check). Offer what you "
+            "can do instead: a reminder, a watch, a look on a camera, or switching something on.",
             personality_line(opts),
             language_prompt(self.hass, opts),
             *([talk] if (talk := talk_line(opts)) else []),

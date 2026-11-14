@@ -30,6 +30,9 @@ ZONE_MODES = ("zones", "all")
 VISIT_GAP = 60  # seconds between events on one camera that still count as the same visit
 HIDE_ZONE_AFTER = 3  # "not a person" corrections in one zone before suggesting it's hidden
 NOT_PERSON = ("false_positive", "cat")
+# a week of every camera: a busy house logs 300-400 detections a day (live 14 Nov: 57 by 11am), and the voice
+# answers "has anyone been in the garden on Monday?" from these. 200 covered only two or three days.
+MAX_EVENTS = 3000
 FEEDBACK = ("useful", "not_useful", "false_positive", "cat", "clear")
 SAFE_ID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,159}\Z")
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +84,7 @@ class SecurityEvents:
         self._subscribing = None
         self._retention_unsub = None
         self._zoned = set()  # cameras Frigate says have zones
+        self._zoned_seen = set()  # cameras with a retained event that entered a zone (kept as events arrive)
 
     def on(self, key):
         return (not self._stopped and bool(self.options.get(key))
@@ -126,6 +130,8 @@ class SecurityEvents:
                             and (key != "feedback" or value[field] in FEEDBACK)):
                         event[key] = deepcopy(value)
                 self.items[event["id"]] = event
+                if event["zones"]:
+                    self._zoned_seen.add(event["camera"])
         if self._prune():
             self._save()
         self.configure(self.options)
@@ -153,7 +159,7 @@ class SecurityEvents:
                 if isinstance(z, str) and "/" in z and z.split("/", 1)[0] == camera}
 
     def zoned(self, camera):
-        return camera in self._zoned or any(r["camera"] == camera and r.get("zones") for r in self.items.values())
+        return camera in self._zoned or camera in self._zoned_seen
 
     def in_scope(self, row):
         """Whether an event belongs on the list: in a zone that isn't hidden, unless the camera has no zones."""
@@ -211,7 +217,7 @@ class SecurityEvents:
     def _prune(self):
         before = len(self.items)
         cutoff = (dt_util.utcnow() - timedelta(days=7)).timestamp()
-        rows = sorted((r for r in self.items.values() if r["start"] >= cutoff), key=lambda r: r["start"], reverse=True)[:200]
+        rows = sorted((r for r in self.items.values() if r["start"] >= cutoff), key=lambda r: r["start"], reverse=True)[:MAX_EVENTS]
         self.items = {r["id"]: r for r in rows}
         return len(self.items) != before
 
@@ -224,7 +230,7 @@ class SecurityEvents:
 
     def _save(self):
         self._prune()
-        self._store.async_delay_save(lambda: {"items": list(self.items.values())}, 5)
+        self._store.async_delay_save(lambda: {"items": list(self.items.values())}, 30)  # Home Assistant writes pending saves at shutdown
 
     @callback
     def _message(self, message):
@@ -269,6 +275,8 @@ class SecurityEvents:
                 event.update(parked=True, parked_confirmed=True)
 
         self.items[event["id"]] = event
+        if event["zones"]:
+            self._zoned_seen.add(event["camera"])
         self._save()
         rt = self.runtime()
         # A parked vehicle can appear as a new object before Frigate has enough samples.
