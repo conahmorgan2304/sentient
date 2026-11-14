@@ -105,8 +105,8 @@ async def test_a_hand_made_change_goes_back_to_the_schedule_after_the_hours(hass
     entry = await _setup(hass)
     hp = entry.runtime_data.heat_prog
     saved = await _saved(hass, entry, periods=[{"on": "06:00", "off": "12:00", "temp": 21}])
-    # 06:30 in the period: someone turns it up to 24 by hand
-    hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 24})
+    # 06:30 in the period: someone turns it up to 24 by hand (in its hold; "auto" is the app's own programme)
+    hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 24})
     _tick_at(hass, freezer, at(0, 6, 30))
     assert hp.reconcile(at(0, 6, 30)) == []
     _tick_at(hass, freezer, at(0, 9, 29))
@@ -188,9 +188,10 @@ async def test_a_thermostat_left_on_its_own_app_schedule_is_put_back_in_a_hold(h
     hp = entry.runtime_data.heat_prog
     saved = await _saved(hass, entry)
     hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 20})  # the right temperature, but in the app's schedule
-    assert hp.reconcile(at(0, 6, 30)) == []
-    assert hp.reconcile(at(0, 9, 29)) == []
-    assert hp.reconcile(at(0, 9, 31)) == [(LOUNGE, "off", None, saved["id"])]  # 3 hours by day
+    assert hp.reconcile(at(0, 10, 0)) == []
+    assert hp.reconcile(at(0, 10, 9)) == []
+    # the thermostat did it, not a person: back in a hold after minutes, not the 3 hours a change by hand gets
+    assert hp.reconcile(at(0, 10, 11)) == [(LOUNGE, "off", None, saved["id"])]
 
 
 async def test_it_isnt_put_back_to_the_night_temperature_just_before_a_period(hass: HomeAssistant, freezer) -> None:
