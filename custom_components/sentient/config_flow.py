@@ -90,6 +90,7 @@ from .const import (
     CONF_BACKUP_KEEP,
     DEFAULT_BACKUP_KEEP,
     CONF_SELF_TEST,
+    CONF_SELF_TEST_HOUSEHOLD,
     SELF_TEST_MODES,
     CONF_RAIN,
     CONF_RAIN_ENTITIES,
@@ -264,6 +265,7 @@ from .const import (
     CONF_SPECIFIC_CLARIFICATION,
     CONF_STREAM_VOICE,
     CONF_VOICE_TIMING_DIAGNOSTICS,
+    CONF_RELIABILITY_LOG,
     CONF_AUTOMATIC_LANGUAGE,
     CONF_VOICE_LANGUAGE,
     CONF_SPEAK_HOUSE_LANGUAGE,
@@ -423,6 +425,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_SELF_TEST, **d(CONF_SELF_TEST, "off")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=SELF_TEST_MODES, translation_key="self_test")
             ),
+            vol.Required(CONF_SELF_TEST_HOUSEHOLD, **d(CONF_SELF_TEST_HOUSEHOLD, True)): selector.BooleanSelector(),
             vol.Required(CONF_AWAY_LIGHTS_ON, **d(CONF_AWAY_LIGHTS_ON, False)): selector.BooleanSelector(),
             vol.Optional(CONF_AWAY_PEOPLE, **d(CONF_AWAY_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)
@@ -465,6 +468,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_REMEMBER_LANGUAGE_PHRASES, **d(CONF_REMEMBER_LANGUAGE_PHRASES, False)): selector.BooleanSelector(),
             vol.Required(CONF_STREAM_VOICE, **d(CONF_STREAM_VOICE, False)): selector.BooleanSelector(),
             vol.Required(CONF_VOICE_TIMING_DIAGNOSTICS, **d(CONF_VOICE_TIMING_DIAGNOSTICS, False)): selector.BooleanSelector(),
+            vol.Required(CONF_RELIABILITY_LOG, **d(CONF_RELIABILITY_LOG, True)): selector.BooleanSelector(),
             vol.Required(CONF_SPECIFIC_CLARIFICATION, **d(CONF_SPECIFIC_CLARIFICATION, False)): selector.BooleanSelector(),
             vol.Required(CONF_ACTION_RECOVERY, **d(CONF_ACTION_RECOVERY, False)): selector.BooleanSelector(),
             vol.Required("recheck_unconfirmed", **d("recheck_unconfirmed", True)): selector.BooleanSelector(),

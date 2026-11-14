@@ -212,6 +212,7 @@ CONFIRM_KINDS = {
     "appliances": "start an appliance (washing machine, dishwasher, dryer, vacuum)",
 }
 CONF_SELF_TEST = "self_test"  # off / nightly / weekly
+CONF_SELF_TEST_HOUSEHOLD = "self_test_household"  # the wider household question set
 SELF_TEST_MODES = ["off", "nightly", "weekly"]
 CLIP_SCOPES = ["alerts", "zones", "all"]
 CLIP_WHENS = ["always", "quiet", "away", "quiet_or_away"]
@@ -458,6 +459,7 @@ CONF_VOICE_LANGUAGE = "voice_language"
 
 CONF_REMEMBER_LANGUAGE_PHRASES = "remember_language_phrases"
 CONF_VOICE_TIMING_DIAGNOSTICS = "voice_timing_diagnostics"
+CONF_RELIABILITY_LOG = "reliability_log"
 CONF_STREAM_VOICE = "stream_voice_replies"  # speak long voice replies as they are written, even with conversation sessions on
 
 CONF_SPECIFIC_CLARIFICATION = "specific_clarification"

@@ -78,6 +78,15 @@ The aim isn't more features. It's showing, with numbers from a real house, that 
 - [x] Guarded multi-step plans (bedtime and the like): plan, permission check, conflict check, carry out approved steps, verify, report what didn't happen. (1.9.0, `plans.py`, setting "Check routines worked", on: a voice routine is read into what each device should end up as, checked for never-touch and unavailable devices, run, then each device checked; the answer says what didn't happen and steps it can't check are reported as such. Its changes are registered with the action-intent monitor as a person's request, so opted-in motion lights and auto-off give them two minutes.)
 - [x] Wider model routing only on measured quality, reliability, latency and cost. (1.9.0: routing measured per provider and kind of job; a cheaper AI worse at one kind of job stops getting that kind, and is only retried after an administrator explicitly resets alternative job penalties from the calibration panel. No automatic paid probes; still opt-in, text jobs only.)
 
+### Phase 5 — Using what it already knows *(instead of a second "brain" service)*
+Sentient doesn't need another engine beside it; it needs to use its own tools and evidence better, and show that it does.
+- [x] Where the voice went wrong (1.11.0, `reliability.py`, Mind page, on by default): every voice turn checked with plain rules — failed tools (and whether a retry fixed it), devices that didn't do it, "done" with nothing done, offers no device can do, couldn't answer, answering about the past without looking. Counts and the share of turns without a problem over 7 days; 14 days kept, clearable; switching it off clears it.
+- [x] A household question set (1.11.0, `selftest.py`, "Household questions in the self-test", on with the self-test): built from the house's own devices — last closed, a light's state, a camera's last two hours, the door today, something it can't know, something no device can do, a vague question. An invented answer fails, however convincing; switching anything while only asked fails; time per question kept. Score and recent runs on the Mind page.
+- [ ] More of the set: multi-step requests (checked by what would have changed, run without acting), heating and energy questions, and questions taken from what the reliability log catches.
+- [ ] One read-only evidence tool (recorder history, ledger, timeline, camera events, logs in one call), so an investigation doesn't depend on choosing among 60 tools. Judged on the question set.
+- [ ] Capability awareness: the voice knows what the house can and can't do before offering, judged by the "offered something no device can do" count.
+- [ ] External tools only where they add something new, through Home Assistant's own MCP client, not an adapter of Sentient's.
+
 GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.
 
 ## Next integration work (separate from the completed release checklist)

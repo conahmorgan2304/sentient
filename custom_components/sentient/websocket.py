@@ -110,6 +110,7 @@ from .const import (
     CONF_TANDOOR_TOKEN,
     CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
+    CONF_SELF_TEST_HOUSEHOLD,
     CONF_RAIN,
     CONF_RAIN_ENTITIES,
     CONF_HUTCH_CHECK,
@@ -168,6 +169,7 @@ from .const import (
     CONF_SPECIFIC_CLARIFICATION,
     CONF_STREAM_VOICE,
     CONF_VOICE_TIMING_DIAGNOSTICS,
+    CONF_RELIABILITY_LOG,
     CONF_AUTOMATIC_LANGUAGE,
     CONF_VOICE_LANGUAGE,
     CONF_SPEAK_HOUSE_LANGUAGE,
@@ -311,7 +313,7 @@ _LOGGER = logging.getLogger(__name__)
 GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("voice", "Voice", "mdi:account-voice", "Name, speakers and how it talks.", [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
-        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
+        CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_RELIABILITY_LOG, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED,
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, "pronounce_names", "pronunciations", CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, "music_alexa", "music_alexa_service", CONF_BANNED_WORDS, CONF_HOUSE_RULES, CONF_CONFIRM,
         CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, "routine_verify", CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
@@ -368,7 +370,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
-        CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
+        CONF_SELF_TEST, CONF_SELF_TEST_HOUSEHOLD, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
         CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_KNOWLEDGE, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
@@ -1124,6 +1126,19 @@ def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, A
         connection.send_result(msg["id"], result)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/reliability/clear"})
+@websocket_api.require_admin
+@callback
+def ws_reliability_clear(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Forget the voice's noted mistakes (the reliability log on the Mind page)."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "reliability", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    entry.runtime_data.reliability.clear()
+    connection.send_result(msg["id"], {"cleared": True})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/zone/hide",
                                   vol.Required("camera"): vol.All(str, vol.Length(min=1, max=160)),
                                   vol.Required("zone"): vol.All(str, vol.Length(min=1, max=100)),
@@ -1201,6 +1216,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_incident_review)
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_security_zone_hide)
+    websocket_api.async_register_command(hass, ws_reliability_clear)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_games_edit)
@@ -1367,7 +1383,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
         {"title": "Language", "open": False, "names": [
             "voice_language", "speak_house_language", "automatic_language", "remember_language_phrases"]},
         {"title": "Checks & diagnostics", "open": False, "names": [
-            "live_voice_check", "speech_delivery_history", "speech_failure_notification", "voice_timing_diagnostics"]},
+            "live_voice_check", "speech_delivery_history", "speech_failure_notification", "voice_timing_diagnostics", "reliability_log"]},
     ],
     "mind": [
         {"title": "Thinking", "open": True, "names": [
@@ -1377,7 +1393,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "learn_corrections", "share_learning", "proposals", "self_adjust", "rules"]},
         {"title": "AI budget", "open": False, "names": [
             "daily_ai_limit", "budget_drive", "budget_noticing", "budget_cameras", "prompt_recent"]},
-        {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "privacy_log"]},
+        {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "self_test_household", "privacy_log"]},
     ],
     "door": [
         {"title": "Doorbell & visitors", "open": True, "names": [

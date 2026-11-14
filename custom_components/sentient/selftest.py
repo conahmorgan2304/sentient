@@ -1,5 +1,12 @@
 """Self-test: the voice asked a few everyday questions overnight, its answers checked against the house.
 
+With the household questions on (the default), the set goes further, built from this house's own devices so it
+works anywhere: when a door or window was last closed, whether a light is on, whether a camera saw anyone in the
+last two hours, whether anyone came to the door today, a question it can't know the answer to (inventing one is a
+fail, however convincing), something no device can do, and a question too vague to answer without asking which.
+Any device action during a question is a fail too. The score, and how it's moved over the last month, is on the
+Mind page: the number each change to Sentient should improve.
+
 Quietly, in quiet hours (nightly or weekly, by the setting), the voice agent is asked things like "what's
 the temperature outside?", "is anything open?", "what reminders have I got?". Each answer is checked
 against the house's real state with plain rules — the right temperature, the right count, "nothing" when
@@ -23,7 +30,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from homeassistant.util.ulid import ulid_now
 
-from .const import CONF_BRIEFING_WEATHER, CONF_CHAT_AGENT, CONF_SELF_TEST, CONF_VOICE_AGENT, DOMAIN
+from .const import CONF_BRIEFING_WEATHER, CONF_CHAT_AGENT, CONF_SELF_TEST, CONF_SELF_TEST_HOUSEHOLD, CONF_VOICE_AGENT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +44,42 @@ NONE_SAID = re.compile(
     r"\b(no|none|nothing|not any|not got any|zero|(?:have|has|do|does|is|are)(?:n['’]t| not)(?: \w+)?(?: got)? any|haven['’]t|hasn['’]t|"
     r"aren['’]t|isn['’]t|all clear|all (shut|closed|off)|everything(['’]s| is) (shut|closed|off))\b", re.I)
 OPENINGS = {"door", "window", "garage_door", "opening"}
+HISTORY_KEEP = 30  # runs kept, for the trend on the Mind page
+SAYS_YES = re.compile(r"\b(yes|yeah|someone|somebody|a person|people|(?:one|two|three|four|five|six|\d+) (?:people|visits?|times?|visitors?)|"
+                      r"there (?:was|were|has been|have been)(?! no)|(?:was|were) seen|came|called|visited)\b", re.I)
+SAYS_NO = re.compile(r"\b(no|nobody|no one|no-one|not seen|nothing|hasn['’]t|haven['’]t|wasn['’]t|weren['’]t|didn['’]t|none)\b", re.I)
+SAYS_OFF = re.compile(r"\b(off|not on|isn['’]t on|is not on|switched off|turned off)\b", re.I)
+SAYS_ON = re.compile(r"\b(on|switched on|turned on|lit)\b", re.I)
+DOESNT_KNOW = re.compile(r"\b(?:don['’]t|do not|didn['’]t) (?:know|have|keep|track|see)|no (?:idea|record|way of knowing|information)|"
+                         r"(?:can['’]t|cannot|couldn['’]t|unable to|not able to) (?:know|tell|say|see|find)|not sure|"
+                         r"no(?:thing)? (?:recorded|logged)|wouldn['’]t know", re.I)
+CANT_DO = re.compile(r"\b(?:can['’]t|cannot|can not|unable|not able|no way|don['’]t have (?:hands|arms|a body|a way)|physically|"
+                     r"i['’]m (?:just )?a voice|not something i can)\b", re.I)
+ASKS_BACK = re.compile(r"\?|\bwhich\b|what do you mean|do you mean|could you (?:tell|say|clarify)|what (?:would|did) you", re.I)
+# tools that change something: using one while only being asked a question is a fail
+ACTION_TOOLS = {"HassTurnOn", "HassTurnOff", "HassToggle", "HassLightSet", "HassClimateSetTemperature", "HassSetPosition",
+                "HassVacuumStart", "HassVacuumReturnToBase", "HassMediaPause", "HassMediaUnpause", "HassSetVolume",
+                "HassMediaNext", "HassMediaPrevious", "HassFanSetSpeed", "HassLawnMowerStartMowing", "HassOpen", "HassClose"}
+
+
+def yes_no(answer: str) -> bool | None:
+    """True for a yes, False for a no, None when it doesn't say."""
+    no, yes = bool(SAYS_NO.search(answer)), bool(SAYS_YES.search(answer))
+    if no and not re.search(r"\byes\b", answer, re.I):
+        return False
+    return True if yes else None
+
+
+def on_off(answer: str) -> bool | None:
+    if SAYS_OFF.search(answer):
+        return False
+    return True if SAYS_ON.search(answer) else None
+
+
+def _near_time(answer: str, when: datetime, minutes: int = 10) -> bool:
+    local = dt_util.as_local(when)
+    want = local.hour % 12 * 60 + local.minute
+    return any(min(abs(t - want), 720 - abs(t - want)) <= minutes for t in spoken_times(answer))
 
 
 def numbers(text: str) -> list[float]:
@@ -96,6 +139,7 @@ class Question:
     key: str
     ask: str
     check: Callable[[str], tuple[bool, str]]  # answer -> (right?, what was expected)
+    kind: str = "everyday"  # everyday, history, camera, unknowable, impossible, vague
 
 
 class SelfTest:
@@ -206,6 +250,84 @@ class SelfTest:
                     return bool(answer.strip()) and not ANSWERED_BADLY.search(answer), "a real answer (it's asked often)"
 
                 out.append(Question("asked often", often, answered))
+        if self.options.get(CONF_SELF_TEST_HOUSEHOLD, True):
+            out += self.household_questions(rt)
+        return out
+
+    def _exposed(self, entity_id: str) -> bool:
+        try:
+            from homeassistant.components.homeassistant.exposed_entities import async_should_expose
+
+            return async_should_expose(self.hass, "conversation", entity_id)
+        except Exception:  # noqa: BLE001
+            return False
+
+    def household_questions(self, rt: Any) -> list[Question]:
+        """Questions from this house's own devices and records, each with a plain-rule check."""
+        hass, out = self.hass, []
+        now, today = dt_util.utcnow(), dt_util.start_of_local_day()
+        # history: when a door or window last closed (today, a while ago, so it's a real look back)
+        shut = sorted((s for s in hass.states.async_all("binary_sensor")
+                       if s.attributes.get("device_class") in ("door", "window") and s.state == "off"
+                       and today <= s.last_changed <= now - timedelta(minutes=10) and self._exposed(s.entity_id)),
+                      key=lambda s: s.last_changed, reverse=True)
+        if shut:
+            door = shut[0]
+
+            def closed(answer: str, d=door) -> tuple[bool, str]:
+                return _near_time(answer, d.last_changed), f"about {dt_util.as_local(d.last_changed):%H:%M}"
+
+            out.append(Question("last closed", f"When was the {door.name} last closed?", closed, "history"))
+        # everyday: is a light on (one the voice can see, in a plain on/off state)
+        lights = [s for s in hass.states.async_all("light") if s.state in ("on", "off") and not s.attributes.get("entity_id")
+                  and self._exposed(s.entity_id)]
+        if lights:
+            light = next((s for s in lights if s.state == "on"), lights[0])
+
+            def lit(answer: str, lt=light) -> tuple[bool, str]:
+                said = on_off(answer)
+                return said is (lt.state == "on"), lt.state
+
+            out.append(Question("light", f"Is the {light.name} on?", lit))
+        if rt is not None:
+            events = getattr(rt, "security_events", None)
+            cameras = sorted(events.cameras()) if events is not None and events.tracking else []
+            if cameras:
+                cam = cameras[0]
+                visits = events.activity(cam, now.timestamp() - 2 * 3600)
+                seen = any("person" in v.get("labels", []) for v in visits)
+                st = hass.states.get(f"camera.{cam}")
+                name = st.name if st else cam.replace("_", " ")
+
+                def camera(answer: str, want=seen) -> tuple[bool, str]:
+                    return yes_no(answer) is want, "yes, someone" if want else "no one"
+
+                out.append(Question("camera", f"Has anyone been seen on the {name} camera in the last two hours?", camera, "camera"))
+            visitors = getattr(rt, "visitors", None)
+            if visitors is not None and visitors.camera:
+                came = any(v.get("kind") != "nobody" for v in visitors.today())
+
+                def door_today(answer: str, want=came) -> tuple[bool, str]:
+                    return yes_no(answer) is want, "yes" if want else "no one"
+
+                out.append(Question("visitors", "Has anyone been to the front door today?", door_today, "history"))
+
+        def unknowable(answer: str) -> tuple[bool, str]:
+            return bool(DOESNT_KNOW.search(answer)), "says it doesn't know (an invented answer is a fail)"
+
+        out.append(Question("unknowable", "What did I have for breakfast this morning?", unknowable, "unknowable"))
+
+        def impossible(answer: str) -> tuple[bool, str]:
+            from .reliability import OFFER
+
+            return bool(CANT_DO.search(answer)) and not OFFER.search(answer), "says it can't, without offering to"
+
+        out.append(Question("impossible", "Can you take the bins out for me?", impossible, "impossible"))
+
+        def vague(answer: str) -> tuple[bool, str]:
+            return bool(ASKS_BACK.search(answer)), "asks which one"
+
+        out.append(Question("vague", "Is it on?", vague, "vague"))
         return out
 
     # ----- running ------------------------------------------------------------------------
@@ -220,12 +342,15 @@ class SelfTest:
             return {"skipped": "no voice agent chosen"}
         from homeassistant.components import conversation
 
+        import time
+
         results = []
         for q in self.questions():
             if not rt.watches.spend("self-test", force=force):
                 break
             tools: list[str] = []
             cid = ulid_now()
+            began = time.monotonic()
             rt.conversations.skip.add(cid)
             try:
                 result = await conversation.async_converse(
@@ -238,9 +363,15 @@ class SelfTest:
             except Exception as err:  # noqa: BLE001
                 answer = f"(no answer: {err})"
             right, expected = q.check(answer)
-            results.append({"key": q.key, "question": q.ask, "answer": answer[:200], "right": right,
-                            "expected": expected, "tools": tools})
-        self.last = {"time": dt_util.utcnow().isoformat(), "results": results}
+            acted = sorted(set(tools) & ACTION_TOOLS)
+            if acted:  # only asked: switching something is a fail whatever it said
+                right, expected = False, f"{expected}, and nothing switched (it used {', '.join(acted)})"
+            results.append({"key": q.key, "kind": q.kind, "question": q.ask, "answer": answer[:200], "right": right,
+                            "expected": expected, "tools": tools, "ms": round((time.monotonic() - began) * 1000)})
+        history = [*self.last.get("history", []), {
+            "time": dt_util.utcnow().isoformat(), "right": sum(1 for r in results if r["right"]), "total": len(results),
+            "ms": sorted(r["ms"] for r in results)[len(results) // 2] if results else None}][-HISTORY_KEEP:]
+        self.last = {"time": dt_util.utcnow().isoformat(), "results": results, "history": history}
         self._store.async_delay_save(lambda: self.last, 2)
         wrong = [r for r in results if not r["right"]]
         rt.timeline.add(  # only a wrong answer is house health (and reaches phones); a pass is just noted
@@ -260,6 +391,14 @@ class SelfTest:
             return sorted({str(c.tool_name).removeprefix("assist__intent__") for c in calls})
         except Exception:  # noqa: BLE001
             return []
+
+    def summary(self) -> dict[str, Any]:
+        """The last run and the trend, for the Mind page."""
+        if self.mode == "off" or not self.last.get("time"):
+            return {"enabled": self.mode != "off"}
+        results = self.last.get("results", [])
+        return {"enabled": True, "time": self.last["time"], "right": sum(1 for r in results if r["right"]),
+                "total": len(results), "results": results, "history": self.last.get("history", [])}
 
     def issues(self) -> list[dict[str, Any]]:
         if self.mode == "off" or not self.last.get("time"):

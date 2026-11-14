@@ -102,7 +102,7 @@ async def test_delivery_timeout_does_not_hide_other_destinations(hass):
 @pytest.mark.parametrize('value', ['nonsense', None, 'nan', 'inf'])
 async def test_selftest_skips_unreliable_weather_and_absent_openings(hass, value):
     hass.states.async_set('weather.home', 'sunny', {'temperature': value})
-    runner = SelfTest(hass, 'test', {}, lambda: None)
+    runner = SelfTest(hass, 'test', {'self_test_household': False}, lambda: None)
     assert [q.key for q in runner.questions()] == ['time']
 
 
@@ -110,7 +110,7 @@ async def test_selftest_skips_unreliable_weather_and_absent_openings(hass, value
 async def test_selftest_does_not_expect_disarmed_from_unsettled_alarm(hass, state):
     hass.states.async_set('alarm_control_panel.home', state)
     hass.states.async_set('binary_sensor.door', 'unavailable', {'device_class': 'door'})
-    runner = SelfTest(hass, 'test', {}, lambda: None)
+    runner = SelfTest(hass, 'test', {'self_test_household': False}, lambda: None)
     assert [q.key for q in runner.questions()] == ['time']
 
 
