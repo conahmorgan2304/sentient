@@ -19,6 +19,7 @@ import asyncio
 from collections import deque
 from datetime import datetime, timedelta
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
@@ -60,7 +61,7 @@ KEEP = 30
 DOORSTEP_SETTLE = 10  # seconds after a doorstep visit ends, so the visitor has stepped away
 DOORSTEP_COOLDOWN = timedelta(minutes=2)
 ZONE_DOOR_WINDOW = timedelta(seconds=90)  # the front door opened this recently: the zone is someone coming or going
-ZONE_SETTLE = 4  # seconds after someone enters the zone, so the picture has them at the door, not the gate
+GRAB_WITHIN = 5  # seconds to get the door camera's picture the moment the visit starts
 RANG_RECENTLY = timedelta(minutes=5)  # a doorbell visit already does its own parcel check
 FACE_FRESH = timedelta(minutes=2)
 _NO_NAME = {"", "none", "unknown", "unavailable", "no face", "no_face", "nobody", "null"}
@@ -270,13 +271,37 @@ class Visitors:
         return there
 
     # ----- looking ---------------------------------------------------------------
-    async def _look(self, task: str, instructions: str, structure: dict) -> dict[str, Any]:
+    async def _grab(self) -> tuple[str, Path] | None:
+        """The door camera's picture right now, saved for the AI: by the time the AI fetched the live camera itself,
+        a quick caller had often gone (live 14 Nov: "nobody at the door" for someone the announcement caught)."""
+        from homeassistant.components.camera import async_get_image
+
+        local = (self.hass.config.media_dirs or {}).get("local")
+        if not local or not self.camera:
+            return None
+        try:
+            async with asyncio.timeout(GRAB_WITHIN):
+                image = await async_get_image(self.hass, self.camera)
+        except Exception:  # noqa: BLE001 - the AI can still look at the live camera
+            return None
+        if not image.content:
+            return None
+        path = Path(local) / "sentient" / f"visitor_{dt_util.utcnow().strftime('%Y%m%d%H%M%S%f')}.jpg"
+
+        def write() -> None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(image.content)
+
+        await self.hass.async_add_executor_job(write)
+        return f"media-source://media_source/local/sentient/{path.name}", path
+
+    async def _look(self, task: str, instructions: str, structure: dict, picture: str | None = None) -> dict[str, Any]:
         data: dict[str, Any] = {
             "task_name": task,
             "instructions": instructions,
             "structure": structure,
             "attachments": [
-                {"media_content_id": f"media-source://camera/{self.camera}", "media_content_type": "image/jpeg"}
+                {"media_content_id": picture or f"media-source://camera/{self.camera}", "media_content_type": "image/jpeg"}
             ],
         }
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
@@ -290,8 +315,9 @@ class Visitors:
             return None
         look = self.watches.spend("doorbell")  # today's limit used up: still logged and said, in plain words
         self._busy = True
+        shot = None
         try:
-            await asyncio.sleep(ZONE_SETTLE if via_zone else 1)
+            shot = await self._grab() if look else None  # straight away, before a quick caller has gone
             result = {} if not look else await self._look(
                 "Sentient: who's at the door",
                 ("This is a doorbell camera picture taken as someone reached the front door. " if via_zone else "This is a doorbell camera picture taken as the bell rang. ") + "Describe who is at the door "
@@ -306,12 +332,15 @@ class Visitors:
                     "parcel": {"description": "Carrying or put down a parcel", "required": False,
                                "selector": {"boolean": {}}},
                 },
+                shot[0] if shot else None,
             )
         except HomeAssistantError as err:
             _LOGGER.info("Sentient couldn't look at the door, so it's plain: %s", err)
             result = {}
         finally:
             self._busy = False
+            if shot:
+                await self.hass.async_add_executor_job(lambda: shot[1].unlink(missing_ok=True))
         kind = result.get("kind") if result.get("kind") in KINDS else "unknown"
         name = self.recognised_name()
         visit = {
