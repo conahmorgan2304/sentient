@@ -800,8 +800,9 @@
       const menus = [
         ["essentials", "voice", "mdi:account-voice", "Voice", ["voice", "voicebackup", "voiceid", "alexa", "search"]],
         ["essentials", "speaking", "mdi:bullhorn-outline", "Speaking", ["quiet", "rooms", "announce", "offers", "briefing", "phone", "screen"]],
-        ["essentials", "system", "mdi:cog-outline", "System", ["doctor", "health", "page", "updates", "backup", "autobackup"]],
-        ["extras", "cameras", "mdi:cctv", "Cameras", ["camsec", "nightwatch", "door", "clips", "drive", "camwake", "safety", "never"]],
+        ["essentials", "system", "mdi:cog-outline", "System", ["doctor", "health", "never", "page", "updates", "backup", "autobackup"]],
+        ["extras", "safety", "mdi:shield-home-outline", "Safety", ["safety", "nightwatch"]],
+        ["extras", "cameras", "mdi:cctv", "Cameras", ["camsec", "door", "clips", "drive", "camwake"]],
         ["extras", "lights", "mdi:lightbulb-auto-outline", "Routines", ["rules", "trust", "away", "party"]],
         ["extras", "heat", "mdi:radiator", "Heating", ["heating", "heating_zones", "energy", "appliances"]],
         ["extras", "outdoors", "mdi:pine-tree", "Outdoors", ["animals", "rain", "warnings", "bins"]],

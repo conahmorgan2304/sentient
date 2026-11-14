@@ -513,10 +513,13 @@ class HeatingProgrammes:
         """Some thermostats take the temperature and ignore the mode sent with it, and stay off (06:00 on
         10 November). One that is still off is told its mode on its own, trying each way of being on, and
         if it still won't start that is said plainly instead of logging a success."""
-        if self._is_on(heater):
-            return True
         state = self.hass.states.get(heater)
-        for mode in [m for m in ON_MODES if m in (state.attributes.get("hvac_modes") or [])]:  # the one the first request used, then the rest
+        own = on_own_schedule(state)
+        if self._is_on(heater) and not own:
+            return True
+        # Off, or still running its own programme: some thermostats (a Smart Life one, 14 Nov) ignore a mode sent
+        # with the temperature and only take it on its own. Its own programme ("auto") is never tried here.
+        for mode in [m for m in ON_MODES if m in (state.attributes.get("hvac_modes") or []) and not (own and m == "auto")]:
             try:
                 async with asyncio.timeout(30):
                     await self.hass.services.async_call(
@@ -524,11 +527,14 @@ class HeatingProgrammes:
             except Exception as err:  # noqa: BLE001 - try the next way of being on
                 _LOGGER.debug("Sentient could not set %s to %s: %s", heater, mode, err)
                 continue
+            def held() -> bool:
+                return self._is_on(heater) and not on_own_schedule(self.hass.states.get(heater))
+
             for _ in range(VERIFY_WAIT // 3):
-                if self._is_on(heater):
+                if held():
                     break
                 await asyncio.sleep(3)
-            if self._is_on(heater):
+            if held():
                 state = self.hass.states.get(heater)
                 try:
                     have = float(state.attributes.get("temperature")) if state is not None else None
@@ -541,6 +547,13 @@ class HeatingProgrammes:
                     except Exception:  # noqa: BLE001 - it is on; the next pass checks the temperature
                         pass
                 return True
+        if own and self._is_on(heater):
+            msg = f"{label} stayed on its own programme"
+            rt = self._rt()
+            if rt is not None:
+                rt.timeline.add("health", f"{label} stayed on its own programme",
+                                "It was asked to hold the schedule's temperature and went back to its own programme.")
+            return False
         msg = f"{label} stayed off after being asked to heat"
         _LOGGER.warning("Sentient heating schedule %s: %s", name, msg)
         rt = self._rt()

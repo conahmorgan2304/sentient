@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.10.1": [
+        "Heating schedule: a thermostat running its own built-in programme (a Smart Life one can't have it switched off in the app) is now put into its manual hold by sending the mode on its own, which it accepts, rather than with the temperature, which it ignored. If it still won't hold, the timeline says so.",
+        "Settings: Never touch is under System, and Safety & security has its own Safety section with Night watch, instead of both sitting under Cameras.",
+    ],
     "1.10.0": [
         "Security page: camera events now follow your Frigate zones. On a camera with zones, only something that entered one is listed or starts a security incident; walking past outside every zone no longer does. Settings → Camera security → Which camera events are listed.",
         "Events on one camera within a minute of each other are one visit: one card with the time, what was seen, the zones it went through and a thumbnail.",

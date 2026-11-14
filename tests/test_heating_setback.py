@@ -221,3 +221,38 @@ async def test_it_isnt_put_back_to_the_night_temperature_just_before_a_period(ha
     hp.reconcile(sunday(5, 30))
     _tick_at(hass, freezer, sunday(6, 40))
     assert hp.reconcile(sunday(6, 40)) == []  # its hour is up, but the 07:00 period is 20 minutes away
+
+
+async def test_a_thermostat_on_its_own_programme_is_put_into_a_hold_with_the_mode_on_its_own(hass: HomeAssistant) -> None:
+    """14 Nov: a Smart Life thermostat ignored heat_cool sent with the temperature and stayed on its own programme;
+    sent on its own, the mode took. Its own programme ("auto") is never tried as the fix."""
+    entry = await _setup(hass)
+    hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 18})
+    saved = await _saved(hass, entry)
+    async_mock_service(hass, "climate", "set_temperature")  # takes the temperature, keeps its own programme
+    real_sleep = asyncio.sleep
+    modes: list[str] = []
+
+    async def set_mode(call):
+        modes.append(call.data["hvac_mode"])
+        hass.states.async_set(LOUNGE, call.data["hvac_mode"], {**MODES, "temperature": 18})
+
+    hass.services.async_register("climate", "set_hvac_mode", set_mode)
+    hp = entry.runtime_data.heat_prog
+    with patch("custom_components.sentient.heating_schedule.asyncio.sleep", lambda _s: real_sleep(0)):
+        assert await hp.async_verify(LOUNGE, 18.0, None, saved["id"], "Lounge", "Weekdays")
+    assert modes == ["heat_cool"] and hass.states.get(LOUNGE).state == "heat_cool"
+
+
+async def test_a_thermostat_that_wont_leave_its_own_programme_is_reported(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    hass.states.async_set(LOUNGE, "auto", {**MODES, "temperature": 18})
+    saved = await _saved(hass, entry)
+    async_mock_service(hass, "climate", "set_temperature")
+    tried = async_mock_service(hass, "climate", "set_hvac_mode")  # accepted, but it stays on its programme
+    real_sleep = asyncio.sleep
+    hp = entry.runtime_data.heat_prog
+    with patch("custom_components.sentient.heating_schedule.asyncio.sleep", lambda _s: real_sleep(0)):
+        assert not await hp.async_verify(LOUNGE, 18.0, None, saved["id"], "Lounge", "Weekdays")
+    assert "auto" not in [c.data["hvac_mode"] for c in tried]
+    assert any(i["text"] == "Lounge stayed on its own programme" for i in entry.runtime_data.timeline.items)
