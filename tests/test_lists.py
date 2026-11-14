@@ -94,6 +94,38 @@ async def test_gate_announcement_through_quiet_hours_but_not_after_the_back_door
     assert len(said) == 1
 
 
+async def test_gate_not_announced_while_the_back_door_stands_open(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 15, 0)))
+    hass.states.async_set("binary_sensor.gate", "off")
+    hass.states.async_set("binary_sensor.back_door", "on")  # left open: someone in and out of the garden
+    entry = await _setup(hass)
+    lists = entry.runtime_data.lists["announce"]
+    item = lists.upsert({
+        "name": "Gate", "entity": "binary_sensor.gate", "messages": "The back gate has opened.",
+        "skip_entity": "binary_sensor.back_door", "skip_seconds": 30,
+    })
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    freezer.tick(timedelta(minutes=20))
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    assert not said
+    assert any("is open" in (i.get("detail") or "") for i in entry.runtime_data.timeline.since(1))
+    hass.states.async_set("binary_sensor.gate", "off")
+    hass.states.async_set("binary_sensor.back_door", "off")  # shut
+    freezer.tick(timedelta(minutes=5))
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    # switched off: only a door opened just before counts, as before
+    lists.update(item["id"], skip_while_open=False)
+    hass.states.async_set("binary_sensor.gate", "off")
+    hass.states.async_set("binary_sensor.back_door", "on")
+    freezer.tick(timedelta(minutes=5))
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    assert len(said) == 2
+
+
 async def test_alarm_rings_runs_actions_then_room_actions(hass: HomeAssistant, freezer) -> None:
     freezer.move_to(dt_util.as_utc(_t(21, 5, 40)))  # a Wednesday, in quiet hours
     entry = await _setup(hass)

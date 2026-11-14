@@ -173,7 +173,7 @@ async def test_an_unexplained_heating_change_is_linked_then_said_when_unusual(ha
         hass.states.async_set("climate.heating", "off", {"friendly_name": "Heating"})
         await hass.async_block_till_done(wait_background_tasks=True)
     item = next(i for i in rt.timeline.items if i.get("detail") == "unexplained change")
-    assert "nothing in Home Assistant did it" in item["text"] and "third time this week" in item["text"]
+    assert "nothing in Home Assistant did it" in item["text"] and "third day this week" in item["text"]
     say.assert_not_called()  # still learning the heating: on the timeline, not said
     assert item["kind"] == "noticed"  # and not phoned as house health (live 13 Nov: the kettle switching itself off)
     # once it knows the heating is never switched off around now, the next one is said
@@ -187,6 +187,28 @@ async def test_an_unexplained_heating_change_is_linked_then_said_when_unusual(ha
         hass.states.async_set("climate.heating", "off", {"friendly_name": "Heating"})
         await hass.async_block_till_done(wait_background_tasks=True)
     say.assert_called_once()
+
+
+async def test_an_unsaid_repeat_is_noted_once_a_day(hass: HomeAssistant, freezer):
+    """14 Nov: the kettle, boiled by hand all afternoon, was noted as unexplained four times."""
+    freezer.move_to("2026-06-15 13:00:00+00:00")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    now = dt_util.now()
+    earlier = [((now - timedelta(days=d)).timestamp(), "water_heater.kettle", "Kettle", "water_heater", None, "electric", "off",
+                "device", None, None) for d in (2, 1)]
+    await rt.brain.db.call(lambda c: rt.brain.db.add_changes(c, earlier))
+    hass.states.async_set("water_heater.kettle", "off", {"friendly_name": "Kettle"})
+    await hass.async_block_till_done()
+    for _ in range(3):
+        hass.states.async_set("water_heater.kettle", "electric", {"friendly_name": "Kettle"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+        freezer.tick(timedelta(minutes=5))
+        hass.states.async_set("water_heater.kettle", "off", {"friendly_name": "Kettle"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+        freezer.tick(timedelta(minutes=35))
+    noted = [i for i in rt.timeline.items if i.get("detail") == "unexplained change" and "to off" in i["text"]]
+    assert len(noted) == 1 and "third day this week" in noted[0]["text"]
 
 
 async def test_an_unusual_change_while_someone_is_up_is_noted_not_said(hass: HomeAssistant, freezer):

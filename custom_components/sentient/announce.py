@@ -2,7 +2,8 @@
 
 Set up on the Settings page: what to watch, what to say (a few ways, picked at random), on which
 speakers, whether it gets through quiet hours, and a door that means "someone's just going out"
-(the gate opening within half a minute of the back door isn't news). Afterwards the house keeps
+(the gate opening within half a minute of the back door, or while it's still standing open, isn't news:
+someone's going in and out of the garden). Afterwards the house keeps
 other chatter back for a minute so nothing talks over it.
 """
 
@@ -24,6 +25,7 @@ from .shortcuts import async_run_actions
 _LOGGER = logging.getLogger(__name__)
 _EVENTISH = ("event", "input_button", "button", "scene")
 HOLD_AFTER = 60  # seconds of quiet after an announcement
+OPEN_STATES = ("on", "open", "opening", "unlocked")
 
 
 def fired(new, old, to_state: str | None) -> bool:
@@ -92,8 +94,14 @@ class Announcements:
             return
         if skip := item.get("skip_entity"):
             st = self.hass.states.get(skip)
+            why = None
             if st is not None and now - st.last_changed <= timedelta(seconds=float(item.get("skip_seconds") or 0)):
-                rt.timeline.add("noticed", f"{item['name']}: not announced", f"{st.name} had just changed — someone going out")
+                why = f"{st.name} had just changed — someone going out"
+            elif st is not None and item.get("skip_while_open", True) and st.state in OPEN_STATES:
+                # live 14 Nov: five gate announcements in an hour, all while the back door stood open
+                why = f"{st.name} is open — someone's in and out"
+            if why:
+                rt.timeline.add("noticed", f"{item['name']}: not announced", why)
                 self.items.update(item["id"], last=now.isoformat())
                 return
         self.items.update(item["id"], last=now.isoformat())

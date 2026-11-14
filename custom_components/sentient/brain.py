@@ -5,7 +5,8 @@ It owns the database (``db.py``) and runs:
 * the **house ledger** — every change and its cause (``ledger.py``);
 * **expectations** — what's usual when, and how surprising each change is (``expectations.py``);
 * **unexplained changes** — an important device changing with nothing in Home Assistant behind it, said once
-  and linked when it keeps happening ("the third time this week, always around 11am");
+  and linked when it keeps happening ("the third day this week, always around 11am"); a repeat that isn't said is
+  noted on the timeline once a day, not every time it's used;
 * **reactions** — Sentient's own changes switched straight back count against it, remarks acted on count for it;
 * **beliefs** — claims formed from the ledger and tested every night (``beliefs.py``);
 * **case memory** — an AI job identical to a recent one reuses its answer instead of another call;
@@ -98,6 +99,7 @@ class Brain:
         self.counters: dict[str, dict[str, int]] = {}  # day -> {ai_saved, gated, local}
         self.voice: dict[str, dict[str, Any]] = {}  # satellite -> {listening_since, samples[], warned}
         self._said_unexplained: dict[str, float] = {}
+        self._noted_day: dict[str, Any] = {}  # entity -> the day an unsaid repeat was last noted
         self._remarks: list[tuple[float, list[str]]] = []
         self._unsubs: list[Callable[[], None]] = []
         self.started = False
@@ -369,7 +371,7 @@ class Brain:
         text = (f"{row.get('name') or row['entity']} went from {row['old']} to {row['new']} at {_clock(row['ts'])}, "
                 "and nothing in Home Assistant did it — the device itself, its app, or someone at it.")
         if len(same) >= 2:
-            text += f" That's the {ordinal(len(same))} time this week, always around {_hour_words(hour)}."
+            text += f" That's the {ordinal(len(same))} day this week, always around {_hour_words(hour)}."
         rt = self._rt()
         if rt is None:
             return
@@ -381,6 +383,10 @@ class Brain:
             evidence.append(f"someone was moving about in the house in the {UP_MINUTES} minutes before")
         # said (unusual for the time) it's house health and reaches phones; a repeat that's becoming usual (a kettle
         # switching itself off around the same time each day) is only noted on the timeline
+        today = _local(row["ts"]).date()
+        if not speak and self._noted_day.get(row["entity"]) == today:
+            return  # already noted today (live 14 Nov: the kettle noted four times in an afternoon of tea)
+        self._noted_day[row["entity"]] = today
         rt.timeline.add("health" if speak else "noticed", text, "unexplained change", entity_id=row["entity"],
                         decision={"kind": "unexplained_change", "evidence": evidence,
                                   "surprise": surprise, "repeats": len(same), "ai_used": False})

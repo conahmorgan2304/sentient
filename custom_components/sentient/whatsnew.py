@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.10.4": [
+        "Announcements: one that's skipped when a door opened just before (the gate after the back door) is now also skipped while that door is still standing open, since someone's in and out of the garden. It's on for existing announcements; switch it off per announcement with \"…or while it's still open\".",
+        "Motion lights: if movement turns a light back on within five minutes of it going off, someone was sitting still, so it waits twice as long next time, then four times, until it's been off for half an hour. On for every light; switch it off per light with \"Wait longer if it comes straight back on\".",
+        "A device used by hand all day (the kettle) is noted on the timeline as an unexplained change once a day, not every half hour, and the count says what it means: \"the third day this week\".",
+    ],
     "1.10.3": [
         "Fixed: a motion sensor that's fine by day but never rests at night (a cat asleep in its view) kept the house \"up\" until it went quiet near dawn, so the usual bedtime was learned as 05:25. It's now set aside at night while its room is dark and quiet; with a light on or something playing in there, it still counts as someone up. What it learns about the night is kept across restarts.",
     ],
@@ -140,7 +145,7 @@ NOTES: dict[str, list[str]] = {
     "1.5.0": [
         "The house ledger: every change to every device is now recorded with what caused it — a person, a voice request, an automation, Sentient, or nothing in Home Assistant (the device itself or its app). Ask \"when did the heating go off, and why?\".",
         "Sentient now learns what's usual at each hour and notices what isn't. The Mind tab's HOW I'M LEARNING card shows how much of each day it expected, and that number should rise week on week.",
-        "An important device that changes by itself is mentioned once, and repeats are linked: \"the third time this week, always around 11am\".",
+        "An important device that changes by itself is mentioned once, and repeats are linked: \"the third day this week, always around 11am\".",
         "Memories, conversations and the timeline are kept for a year in Sentient's own database, and recall searches all of it.",
         "Names are said the way they're pronounced: \"Siobhan is pronounced Shivawn\" (a memory, or Settings → Voice → Pronunciations) changes what the speakers say, while the chat and timeline keep the real spelling.",
         "New on Settings: Memory & learning, Weather warnings (your own country's service) and Extra skills (read-only email, calendar clashes, a security check and automations from plain English).",
