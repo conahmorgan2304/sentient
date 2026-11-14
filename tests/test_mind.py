@@ -597,6 +597,43 @@ async def test_well_before_the_usual_time_two_rooms_is_the_cats_not_someone_up(h
     unsub()
 
 
+async def test_a_sensor_that_never_rests_at_night_doesnt_keep_the_house_up_but_the_tv_does(hass: HomeAssistant, freezer) -> None:
+    """14 Nov: the living room sensor was "on" 98% of 01:00-06:06 (a cat), so the house was only marked asleep at
+    05:25 and the usual bedtime became 05:25. Fine by day, so the whole-day check never set it aside."""
+    from datetime import datetime as D
+    from types import SimpleNamespace as NS
+
+    from custom_components.sentient.sleep import MIN_NIGHT_SAMPLES, Sleep
+
+    tz = dt_util.get_default_time_zone()
+    freezer.move_to(D(2026, 11, 14, 0, 40, tzinfo=tz))
+    hass.states.async_set("binary_sensor.lounge", "on", {"device_class": "motion"})
+    hass.states.async_set("binary_sensor.hall", "off", {"device_class": "motion"})
+    hass.states.async_set("media_player.tv", "idle", {})  # this TV says "idle" on and in standby alike
+    hass.states.async_set("light.lamp", "on", {})
+    rt = NS(timeline=Mock(), speech=NS(quiet_hours_now=lambda: True))
+    s = Sleep(hass, "t", {"inside_sensors": ["binary_sensor.lounge", "binary_sensor.hall"]}, lambda: rt)
+    s._store = Mock()
+    areas = {"binary_sensor.lounge": "lounge", "binary_sensor.hall": "hall", "media_player.tv": "lounge", "light.lamp": "lounge"}
+    with patch("custom_components.sentient.sleep.area_of", lambda _h, e: areas.get(e)):
+        freezer.move_to(D(2026, 11, 14, 1, 0, tzinfo=tz))
+        for _ in range(MIN_NIGHT_SAMPLES):  # two hours of the lounge sensor on all night
+            s._tick(dt_util.now())
+        assert [r["entity_id"] for r in s.restless_at_night()] == ["binary_sensor.lounge"]
+        assert not s.never_rests()  # too few samples for the whole-day check: that's what missed it
+        freezer.tick(timedelta(minutes=30))
+        s._tick(dt_util.now())
+        await hass.async_block_till_done()
+        assert not s.asleep  # the lamp's on in there: people, whatever the sensor
+        hass.states.async_set("light.lamp", "off", {})
+        s._tick(dt_util.now())
+        await hass.async_block_till_done()
+        assert s.asleep  # lamp off, TV only "idle", hall quiet: the lounge sensor is set aside at night
+        # what's learned about the night is kept for after a restart
+        saved = s._store.async_delay_save.call_args[0][0]()
+        assert saved["night"]["binary_sensor.lounge"].count("1") >= MIN_NIGHT_SAMPLES
+
+
 def test_card_addresses_follow_the_files() -> None:
     from custom_components.sentient import CARDS, _card_tags
 

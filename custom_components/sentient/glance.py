@@ -140,6 +140,11 @@ def knows(rt: Any) -> list[dict[str, Any]]:
         for r in sleep.never_rests():
             add("mdi:motion-sensor-off", f"I'm setting aside the {r['name']} at night: it's on {round(r['on_share'] * 100)}% of the time.",
                 "a sensor that never rests can't say whether anyone's up — it may be too sensitive or pointing at something that moves", True)
+        day = {r["entity_id"] for r in sleep.never_rests()}
+        for r in sleep.restless_at_night():
+            if r["entity_id"] not in day:
+                add("mdi:motion-sensor-off", f"I'm setting aside the {r['name']} at night: at night it's on {round(r['on_share'] * 100)}% of the time.",
+                    "fine by day but never resting at night (a pet asleep in its view, or a heater): it's set aside only while its room is dark and quiet; with a light on or something playing there, it still counts", True)
     heating = getattr(rt, "heating", None)
     for line in (heating.describe() if heating is not None else []):
         add("mdi:radiator", line, "learned from the heating's history each night")
