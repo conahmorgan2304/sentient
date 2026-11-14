@@ -270,7 +270,8 @@ async def test_the_same_ai_job_twice_is_answered_from_case_memory(hass: HomeAssi
     assert len(calls) == 3 and not entry.runtime_data.brain.cases
 
 
-async def test_surprise_gating_watches_before_it_skips(hass: HomeAssistant):
+async def test_surprise_gating_watches_before_it_skips(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-06-15 20:00:00+00:00")  # midday in the test time zone, outside quiet hours
     entry = await _setup(hass)
     brain = entry.runtime_data.brain
     for day in range(1, 10):
@@ -915,7 +916,8 @@ async def test_answers_from_the_house_count_as_without_the_ai(hass: HomeAssistan
     assert (await rt.brain.async_status())["independence"]["without_ai"] == 1
 
 
-async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant):
+async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-06-15 20:00:00+00:00")  # midday in the test time zone, outside quiet hours
     entry = await _setup(hass)
     brain = entry.runtime_data.brain
     for day in range(1, 10):
