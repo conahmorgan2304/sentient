@@ -38,6 +38,7 @@ from .ledger import CONF_LEDGER, CAUSE_WORDS, Ledger, describe, resolve_entities
 _LOGGER = logging.getLogger(__name__)
 
 CONF_UNEXPLAINED = "unexplained_changes"
+UP_MINUTES = 10  # someone moved inside this recently: a device changed "by itself" was most likely changed by them
 CONF_UNEXPLAINED_ENTITIES = "unexplained_entities"
 CONF_SURPRISE_GATING = "surprise_gating"  # off / watch / on
 CONF_REACTIONS = "learn_reactions"
@@ -372,10 +373,16 @@ class Brain:
         rt = self._rt()
         if rt is None:
             return
+        evidence = [describe(row)]
+        if speak and self._someone_up(rt):
+            # someone was up and moving a few minutes ago: almost certainly a person at the heater or the kettle,
+            # who doesn't need telling (live 13 Nov: three phone alerts for things done by hand in the evening)
+            speak = False
+            evidence.append(f"someone was moving about in the house in the {UP_MINUTES} minutes before")
         # said (unusual for the time) it's house health and reaches phones; a repeat that's becoming usual (a kettle
         # switching itself off around the same time each day) is only noted on the timeline
         rt.timeline.add("health" if speak else "noticed", text, "unexplained change", entity_id=row["entity"],
-                        decision={"kind": "unexplained_change", "evidence": [describe(row)],
+                        decision={"kind": "unexplained_change", "evidence": evidence,
                                   "surprise": surprise, "repeats": len(same), "ai_used": False})
         if not speak:
             return  # a repeat that's becoming usual: on the timeline, not said
@@ -383,6 +390,14 @@ class Brain:
 
         with because("it changed with nothing in Home Assistant behind it"):
             await rt.speech.async_say(text, "normal", None, source="unexplained")
+
+    def _someone_up(self, rt: Any) -> bool:
+        """The house isn't asleep and someone moved inside it in the last few minutes."""
+        from .presence import moved_recently
+
+        if getattr(getattr(rt, "sleep", None), "asleep", False):
+            return False
+        return moved_recently(self.hass, getattr(rt, "options", None) or self.options, UP_MINUTES)
 
     def _reaction(self, row: dict[str, Any]) -> None:
         """Sentient's change switched straight back = bad; a remark followed by a person acting = good."""

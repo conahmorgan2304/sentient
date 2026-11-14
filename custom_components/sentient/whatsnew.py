@@ -21,6 +21,9 @@ NOTES: dict[str, list[str]] = {
         "Three buttons per visit: GOOD CATCH, NOT A PERSON and IGNORE. A reviewed visit folds away into REVIEWED, and so does a reviewed incident. NOT A PERSON also counts as a reviewed false detection for an incident made only of that visit; a review you gave yourself is never replaced.",
         "After three NOT A PERSON in one zone, the Security page offers HIDE THIS ZONE: movement only in that zone stops being listed. Frigate isn't changed, and the zone can be listed again in Settings.",
         "The setup doctor is tidier: a one-line verdict at the top, anything to fix first with what to do, then each area as its own section of small tiles, with a detail they all share said once.",
+        "A heater or kettle changed at the device while someone is up and moving about is noted on the timeline, not said or sent to phones as house health. Overnight, or with nobody moving, it's said as before.",
+        "A self-test that gets every answer right is noted on the Mind tab instead of being sent to phones; a wrong answer still is.",
+        "Heating schedule: a thermostat found away from the schedule (for example running its own built-in programme) is no longer put back to the night temperature when a period starts within half an hour, and the timeline names today's programme rather than the first one saved.",
     ],
     "1.9.0": [
         "Voice routines now check requested final device states and report failures. Already-satisfied states are distinguished from changes; unsupported or conditional steps cannot be proven executed from a matching state alone.",

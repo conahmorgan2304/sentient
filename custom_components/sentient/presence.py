@@ -257,6 +257,22 @@ class ActivityTracker:
         return area if score >= MIN_SCORE else None
 
 
+def moved_recently(hass: HomeAssistant, options: dict[str, Any], minutes: float = 10) -> bool:
+    """Someone moving inside the house now or in the last few minutes (the inside motion sensors)."""
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    since = dt_util.utcnow() - timedelta(minutes=minutes)
+    for entity_id in inside_sensors(hass, options):
+        state = hass.states.get(entity_id)
+        if state is None or state.state in ("unavailable", "unknown"):
+            continue
+        if state.state == "on" or state.last_changed >= since:
+            return True
+    return False
+
+
 def inside_sensors(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
     """Motion/occupancy sensors inside the house.
 
