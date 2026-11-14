@@ -17,6 +17,7 @@ from .const import CONF_WHATS_NEW, DOMAIN
 NOTES: dict[str, list[str]] = {
     "1.10.5": [
         "Heating: a thermostat that drops back to its own app schedule by itself is put back in its hold after ten minutes, not the hour or three a change by hand gets, so its own programme can't undo the morning warm-up.",
+        "Visitor log: the door camera's picture is taken the moment someone reaches the doorstep or rings, not a few seconds later, so quick callers aren't logged as \"nobody at the door\".",
     ],
     "1.10.4": [
         "Announcements: one that's skipped when a door opened just before (the gate after the back door) is now also skipped while that door is still standing open, since someone's in and out of the garden. It's on for existing announcements; switch it off per announcement with \"…or while it's still open\".",
