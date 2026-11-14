@@ -44,7 +44,7 @@ def test_numbers_in_words_and_digits() -> None:
 async def test_self_test_finds_a_wrong_answer(hass: HomeAssistant) -> None:
     hass.states.async_set("binary_sensor.door", "off", {"device_class": "door"})
     hass.states.async_set("weather.home", "rainy", {"temperature": 12.4})
-    entry = await _setup(hass, self_test="nightly")
+    entry = await _setup(hass, self_test="nightly", self_test_household=False)  # the basic set
     replies = {
         "What's the temperature outside right now?": "It's about nineteen degrees outside.",
         "Is anything open?": "No, everything's shut.",

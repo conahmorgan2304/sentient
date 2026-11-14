@@ -90,6 +90,7 @@ from .const import (
     CONF_BACKUP_KEEP,
     DEFAULT_BACKUP_KEEP,
     CONF_SELF_TEST,
+    CONF_SELF_TEST_HOUSEHOLD,
     SELF_TEST_MODES,
     CONF_RAIN,
     CONF_RAIN_ENTITIES,
@@ -424,6 +425,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_SELF_TEST, **d(CONF_SELF_TEST, "off")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=SELF_TEST_MODES, translation_key="self_test")
             ),
+            vol.Required(CONF_SELF_TEST_HOUSEHOLD, **d(CONF_SELF_TEST_HOUSEHOLD, True)): selector.BooleanSelector(),
             vol.Required(CONF_AWAY_LIGHTS_ON, **d(CONF_AWAY_LIGHTS_ON, False)): selector.BooleanSelector(),
             vol.Optional(CONF_AWAY_PEOPLE, **d(CONF_AWAY_PEOPLE, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["person", "device_tracker"], multiple=True)

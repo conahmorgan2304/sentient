@@ -110,6 +110,7 @@ from .const import (
     CONF_TANDOOR_TOKEN,
     CONF_BACKUP_KEEP,
     CONF_SELF_TEST,
+    CONF_SELF_TEST_HOUSEHOLD,
     CONF_RAIN,
     CONF_RAIN_ENTITIES,
     CONF_HUTCH_CHECK,
@@ -369,7 +370,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("mind", "Mind", "mdi:head-lightbulb-outline", "Remembering conversations, checking back on things, asking about what it can't explain, thinking over the day each night, a look at tomorrow each evening — and how many AI calls it may make a day.", [
         CONF_CONVERSATIONS, CONF_FOLLOW_UPS, CONF_CURIOSITY, CONF_REFLECTION, CONF_REFLECTION_TIME, CONF_FORESIGHT, CONF_FORESIGHT_TIME,
-        CONF_SELF_TEST, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
+        CONF_SELF_TEST, CONF_SELF_TEST_HOUSEHOLD, CONF_DAILY_AI_LIMIT, CONF_BUDGET_DRIVE, CONF_BUDGET_NOTICING, CONF_BUDGET_CAMERAS, CONF_PROMPT_RECENT, CONF_RULES,
         CONF_SELF_CHECK, CONF_SELF_ADJUST, CONF_LEARN_CORRECTIONS, CONF_NORMAL_DAY, CONF_THOUGHTS, CONF_SHARE_LEARNING, CONF_KNOWLEDGE, CONF_PROPOSALS, CONF_PRIVACY_LOG, CONF_GOALS,
     ]),
     ("updates", "Updates", "mdi:update", "Check for Sentient releases; installation stays under your control.", [CONF_UPDATE_CHECKER]),
@@ -1392,7 +1393,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "learn_corrections", "share_learning", "proposals", "self_adjust", "rules"]},
         {"title": "AI budget", "open": False, "names": [
             "daily_ai_limit", "budget_drive", "budget_noticing", "budget_cameras", "prompt_recent"]},
-        {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "privacy_log"]},
+        {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "self_test_household", "privacy_log"]},
     ],
     "door": [
         {"title": "Doorbell & visitors", "open": True, "names": [

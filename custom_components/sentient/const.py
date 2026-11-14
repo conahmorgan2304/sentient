@@ -212,6 +212,7 @@ CONFIRM_KINDS = {
     "appliances": "start an appliance (washing machine, dishwasher, dryer, vacuum)",
 }
 CONF_SELF_TEST = "self_test"  # off / nightly / weekly
+CONF_SELF_TEST_HOUSEHOLD = "self_test_household"  # the wider household question set
 SELF_TEST_MODES = ["off", "nightly", "weekly"]
 CLIP_SCOPES = ["alerts", "zones", "all"]
 CLIP_WHENS = ["always", "quiet", "away", "quiet_or_away"]
