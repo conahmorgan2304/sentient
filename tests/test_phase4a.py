@@ -62,6 +62,13 @@ async def test_self_test_finds_a_wrong_answer(hass: HomeAssistant) -> None:
     issues = entry.runtime_data.health.async_check()
     assert any(i["kind"] == "selftest" and "nineteen" in i["text"] for i in issues)
     assert not entry.runtime_data.conversations.recent()  # not remembered as a conversation
+    item = next(i for i in entry.runtime_data.timeline.items if i["text"].startswith("Self-test:"))
+    assert item["kind"] == "health"  # a wrong answer is house health, so it reaches the phones
+    replies["What's the temperature outside right now?"] = "It's about twelve degrees outside."
+    with patch("homeassistant.components.conversation.async_converse", converse):
+        await entry.runtime_data.selftest.async_run()
+    item = next(i for i in entry.runtime_data.timeline.items if i["text"].startswith("Self-test:"))
+    assert item["text"] == "Self-test: 4 of 4 answers right" and item["kind"] == "mind"  # a pass isn't sent to phones
 
 
 async def test_self_test_off(hass: HomeAssistant) -> None:

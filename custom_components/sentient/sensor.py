@@ -384,6 +384,7 @@ class MindSensor(_Base):
                                        learning_report(cognitive=cognitive, intents=intent_metrics,
                                                        voice_timings=timings)),
             "security_events": rt.security_events.recent(),
+            "security_visits": rt.security_events.visits(),
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_event_feedback_summary": rt.security_events.feedback_summary(),
             "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")

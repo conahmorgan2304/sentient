@@ -24,6 +24,12 @@ from .numeric import finite_float
 CONF_EVENT_EVIDENCE = "security_event_evidence"
 CONF_EVENT_CONTEXT = "security_conversation_context"
 CONF_EVENT_FEEDBACK = "security_event_feedback"
+CONF_EVENT_ZONES = "security_event_zones"  # "zones": only what entered a zone on a camera that has zones; "all"
+CONF_HIDDEN_ZONES = "security_event_hidden_zones"  # "camera/zone": movement only there isn't listed
+ZONE_MODES = ("zones", "all")
+VISIT_GAP = 60  # seconds between events on one camera that still count as the same visit
+HIDE_ZONE_AFTER = 3  # "not a person" corrections in one zone before suggesting it's hidden
+NOT_PERSON = ("false_positive", "cat")
 FEEDBACK = ("useful", "not_useful", "false_positive", "cat", "clear")
 SAFE_ID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,159}\Z")
 _LOGGER = logging.getLogger(__name__)
@@ -74,6 +80,7 @@ class SecurityEvents:
         self._unsub = None
         self._subscribing = None
         self._retention_unsub = None
+        self._zoned = set()  # cameras Frigate says have zones
 
     def on(self, key):
         return (not self._stopped and bool(self.options.get(key))
@@ -122,6 +129,41 @@ class SecurityEvents:
         if self._prune():
             self._save()
         self.configure(self.options)
+        if self.tracking:
+            self.hass.async_create_background_task(self._async_zoned(), "sentient frigate zones", eager_start=False)
+
+    async def _async_zoned(self):
+        """Which cameras have zones in Frigate's own settings; unknown leaves every event listed."""
+        url = frigate_url(self.hass)
+        if not url or self._stopped:
+            return
+        try:
+            async with asyncio.timeout(5):
+                response = await async_get_clientsession(self.hass).get(f"{url}/api/config")
+                config = await response.json() if response.status == 200 else None
+        except Exception:  # noqa: BLE001 - without it, a camera counts as zoned once an event enters a zone
+            return
+        cameras = config.get("cameras") if isinstance(config, dict) else None
+        if isinstance(cameras, dict):
+            self._zoned = {name for name, cam in cameras.items()
+                           if isinstance(cam, dict) and isinstance(cam.get("zones"), dict) and cam["zones"]}
+
+    def hidden_zones(self, camera):
+        return {z.split("/", 1)[1] for z in self.options.get(CONF_HIDDEN_ZONES) or []
+                if isinstance(z, str) and "/" in z and z.split("/", 1)[0] == camera}
+
+    def zoned(self, camera):
+        return camera in self._zoned or any(r["camera"] == camera and r.get("zones") for r in self.items.values())
+
+    def in_scope(self, row):
+        """Whether an event belongs on the list: in a zone that isn't hidden, unless the camera has no zones."""
+        hidden = self.hidden_zones(row["camera"])
+        zones = [z for z in row.get("zones") or [] if z not in hidden]
+        if row.get("zones") and not zones:
+            return False  # only ever in zones the household hid
+        if self.options.get(CONF_EVENT_ZONES, "zones") == "all":
+            return True
+        return bool(zones) or not self.zoned(row["camera"])
 
     def configure(self, options):
         self.options = options
@@ -177,6 +219,8 @@ class SecurityEvents:
     def _expire(self, _now):
         if self._prune():
             self._save()
+        if self.tracking:
+            self.hass.async_create_background_task(self._async_zoned(), "sentient frigate zones", eager_start=False)
 
     def _save(self):
         self._prune()
@@ -229,7 +273,7 @@ class SecurityEvents:
         rt = self.runtime()
         # A parked vehicle can appear as a new object before Frigate has enough samples.
         ready = event["label"] not in PARKABLE or event.get("vehicle_moved") or event["end"] is not None
-        if ready and not event.get("parked") and self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
+        if ready and not event.get("parked") and self.in_scope(event) and self.on(CONF_EVENT_EVIDENCE) and getattr(rt, "incidents", None) is not None:
             rt.incidents.add(f"camera.{event['camera']}", f"Frigate reported {event['label']}", "event",
                              when=dt_util.utc_from_timestamp(event["start"]), event_id=event["id"])
         return deepcopy(event)
@@ -341,18 +385,50 @@ class SecurityEvents:
                            "at": dt_util.utcnow().isoformat()}
         self._save()
 
-    def feedback(self, event_id, value):
+    def feedback(self, event_id, value, also=()):
+        """A correction on one event, or on every event of a visit (``also``)."""
         if not self.on(CONF_EVENT_FEEDBACK):
             return {"error": "Security event feedback is disabled"}
         self._prune()
         if value not in FEEDBACK or (row := self.items.get(event_id)) is None or row["camera"] not in self.cameras():
             return {"error": "Choose a retained event and a supported correction"}
-        if value == "clear":
-            row.pop("feedback", None)
-        else:
-            row["feedback"] = {"value": value, "at": dt_util.utcnow().isoformat(), "source": "household correction; not independent verification"}
+        ids = [event_id] + [i for i in dict.fromkeys(also or ()) if i != event_id
+                            and (other := self.items.get(i)) is not None and other["camera"] == row["camera"]]
+        for i in ids:
+            if value == "clear":
+                self.items[i].pop("feedback", None)
+            else:
+                self.items[i]["feedback"] = {"value": value, "at": dt_util.utcnow().isoformat(),
+                                             "source": "household correction; not independent verification"}
         self._save()
-        return {"event_id": event_id, "feedback": row.get("feedback"), "changed_detector_settings": False}
+        reviewed = self._review_incidents(ids, value)
+        return {"event_id": event_id, "event_ids": ids, "feedback": row.get("feedback"),
+                "incidents_reviewed": reviewed, "changed_detector_settings": False}
+
+    def _review_incidents(self, ids, value):
+        """"Not a person" is a reviewed false detection for an incident made only of these events.
+
+        An incident with anything else in it (a door, another camera's sensor) isn't reviewed from here, and a
+        review someone gave on the Mind tab is never replaced. Changing the answer takes back only reviews made here."""
+        incidents = getattr(self.runtime(), "incidents", None)
+        if incidents is None or not getattr(incidents, "enabled", False):
+            return 0
+        wanted = set(ids)
+        done = 0
+        for item in list(getattr(incidents, "items", None) or []):
+            evidence = item.get("evidence") or []
+            if not evidence or not all(e.get("event_id") in wanted for e in evidence):
+                continue
+            review = item.get("household_review")
+            if review and review.get("via") != "event_feedback":
+                continue
+            if value in NOT_PERSON:
+                if not (review and review.get("label") == "false_detection"):
+                    incidents.review(item["id"], "false_detection", via="event_feedback")
+                done += 1
+            elif review:
+                incidents.review(item["id"], "clear")
+        return done
 
     def correction(self, event_id):
         row = self.items.get(event_id)
@@ -364,10 +440,48 @@ class SecurityEvents:
         if not self.tracking:
             return []
         self._prune()
-        rows = [row for row in self.items.values() if row["camera"] in self.cameras()]
+        rows = [row for row in self.items.values() if row["camera"] in self.cameras() and self.in_scope(row)]
         # a parked bike re-found all day mustn't push real sightings off the list
         rows = [r for r in rows if not r.get("parked")] + [r for r in rows if r.get("parked")]
         return [self.describe(row) for row in rows[:12]]
+
+    def visits(self, limit=12):
+        """Events on one camera within a minute of each other, as one visit: what was seen, where, and when."""
+        if not self.tracking:
+            return []
+        self._prune()
+        cameras = self.cameras()
+        rows = sorted((r for r in self.items.values() if r["camera"] in cameras and not r.get("parked")
+                       and self.in_scope(r)), key=lambda r: (r["camera"], r["start"]))
+        groups = []
+        for row in rows:
+            last = groups[-1] if groups else None
+            if last and last[0]["camera"] == row["camera"] and row["start"] <= max(
+                    (r["end"] or r["start"]) for r in last) + VISIT_GAP:
+                last.append(row)
+            else:
+                groups.append([row])
+        groups.sort(key=lambda g: g[0]["start"], reverse=True)
+        return [self._visit(g) for g in groups[:limit]]
+
+    def _visit(self, rows):
+        hidden = self.hidden_zones(rows[0]["camera"])
+        best = next((r for r in rows if r["label"] == "person" and r.get("has_snapshot")), None) or next(
+            (r for r in rows if r.get("has_snapshot")), rows[0])
+        shown = self.describe(best)
+        ends = [r["end"] for r in rows]
+        given = [r["feedback"] for r in rows if r.get("feedback")] if self.on(CONF_EVENT_FEEDBACK) else []
+        return {
+            "id": rows[0]["id"], "ids": [r["id"] for r in rows], "camera": rows[0]["camera"],
+            "start": rows[0]["start"], "end": None if None in ends else max(ends),
+            "labels": list(dict.fromkeys(r["label"] for r in rows)),
+            "zones": list(dict.fromkeys(z for r in rows for z in r.get("zones") or [] if z not in hidden)),
+            "snapshot": shown["snapshot"], "clip": shown["clip"],
+            "analysis": next((r["analysis"] for r in rows if r.get("analysis")), None),
+            "alerts": [a for r in rows for a in r.get("alerts") or []][-10:],
+            "feedback": max(given, key=lambda f: f.get("at", "")) if given else None,
+            "limits": "Events close together on one camera are shown as one visit; that doesn't prove it was one person.",
+        }
 
     def feedback_summary(self):
         if not self.on(CONF_EVENT_FEEDBACK):
@@ -384,10 +498,19 @@ class SecurityEvents:
             counts["reviewed"] += 1
             if row["label"] == "person" and feedback in ("cat", "false_positive"):
                 counts["person_corrections"] += 1
+        zones = {}
+        for row in self.items.values():
+            if (row.get("feedback") or {}).get("value") in NOT_PERSON and row["label"] == "person" and row["camera"] in self.cameras():
+                hidden = self.hidden_zones(row["camera"])
+                for zone in row.get("zones") or []:
+                    if zone not in hidden:
+                        zones[(row["camera"], zone)] = zones.get((row["camera"], zone), 0) + 1
         for counts in cameras.values():
             counts["suggestion"] = ("Review person-detection zones and confidence for this camera. No detector settings have been changed."
                                     if counts["person_corrections"] >= 3 else None)
             counts["limits"] = "Only reviewed events are counted; this is not a measured false-positive rate."
+            counts["zones"] = [{"zone": zone, "not_a_person": n} for (camera, zone), n in sorted(zones.items())
+                               if camera == counts["camera"] and n >= HIDE_ZONE_AFTER]
         return list(cameras.values())
 
     def describe(self, row):

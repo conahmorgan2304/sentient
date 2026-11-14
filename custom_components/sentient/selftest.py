@@ -243,8 +243,8 @@ class SelfTest:
         self.last = {"time": dt_util.utcnow().isoformat(), "results": results}
         self._store.async_delay_save(lambda: self.last, 2)
         wrong = [r for r in results if not r["right"]]
-        rt.timeline.add(
-            "health", f"Self-test: {len(results) - len(wrong)} of {len(results)} answers right",
+        rt.timeline.add(  # only a wrong answer is house health (and reaches phones); a pass is just noted
+            "health" if wrong else "mind", f"Self-test: {len(results) - len(wrong)} of {len(results)} answers right",
             "; ".join(f"{r['question']} — said “{r['answer'][:60]}”, expected {r['expected']}" for r in wrong) or None,
         )
         rt.health.async_check()

@@ -181,6 +181,8 @@
           "house_context_entities": "Additional context entities",
           "house_context_updates": "Tell me when requested heating is reached",
           "security_event_evidence": "Link security alerts to Frigate events",
+          "security_event_zones": "Which camera events are listed",
+          "security_event_hidden_zones": "Zones whose events aren't listed",
           "security_coverage": "Explain camera coverage gaps",
           "frigate_pipeline_health": "Show Frigate pipeline health",
           "security_conversation_context": "Keep the security event in the conversation",
@@ -345,10 +347,12 @@
           "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
           "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates.",
           "security_event_evidence": "Use Frigate event IDs, snapshots and clips on configured cameras. A unique camera/time match is a candidate link, not proof that a sensor identified that event. Keep up to 200 event records for seven days locally. Off by default. Disabling hides links and stops matching; retained records expire or can be forgotten.",
+          "security_event_zones": "Only what enters a zone: on a camera with Frigate zones, an event is listed (and can start a security incident) only once the object has entered one of them, the same rule Frigate uses for its alerts. A camera without zones lists everything. Anything detected: every object Frigate tracks on the chosen cameras. Frigate's own settings are never changed.",
+          "security_event_hidden_zones": "One per line as camera/zone, for example gate/driveway. Events that are only ever in these zones aren't listed and don't start security incidents. Use HIDE THIS ZONE on the Security page after a few 'not a person' corrections there, or remove a line to list that zone again. Frigate isn't changed.",
           "security_coverage": "Show which configured cameras contributed retained evidence and any unavailable reports recorded alongside live incidents. Current camera reports are shown separately. Turning this off clears retained coverage gaps.",
           "frigate_pipeline_health": "Read Frigate MQTT availability, per-camera processing rates and when Sentient last received an event. Missing data is shown as unknown. No camera settings are changed.",
           "security_conversation_context": "Remember the selected event for up to five minutes within the same conversation, device and user. Follow-up questions use that event and fresh occupancy reports; no identity or continued presence is assumed. Tracks configured camera events. Off by default. Disabling clears conversation references; event records retain their normal expiry.",
-          "security_event_feedback": "Admins can mark a specific event useful, not useful, a false positive or a cat. Corrections stay with that event for seven days and help reveal repeated camera problems. No automatic detector, alarm or notification-rule changes. Tracks configured camera events. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
+          "security_event_feedback": "Admins can mark a visit a good catch, not a person, or one to ignore. Reviewed visits move into a folded Reviewed list, and 'not a person' also counts as a reviewed false detection for a security incident made only of that visit. Corrections stay for seven days. No automatic detector, alarm or notification-rule changes. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
           "share_clip_analysis": "Share compatible generic analyses of the same finished Frigate event across automatic clip watching and event-clip questions. Provider, footage coverage and identity settings must match. Custom questions are analysed separately. Keep at most 100 results in memory for six hours. Off by default. Disabling, changing settings or forgetting clears the cache."
         }
       }
@@ -644,6 +648,8 @@
           "house_context_entities": "Additional context entities",
           "house_context_updates": "Tell me when requested heating is reached",
           "security_event_evidence": "Link security alerts to Frigate events",
+          "security_event_zones": "Which camera events are listed",
+          "security_event_hidden_zones": "Zones whose events aren't listed",
           "security_coverage": "Explain camera coverage gaps",
           "frigate_pipeline_health": "Show Frigate pipeline health",
           "security_conversation_context": "Keep the security event in the conversation",
@@ -958,10 +964,12 @@
           "house_context_entities": "Devices to include in general house summaries, alongside automatic climate and opening/presence reports. Only currently exposed and accessible devices are shared; at most eight relevant readings per request.",
           "house_context_updates": "Requires current house context. After a verified guarded heating request, optionally say once when that thermostat reports the requested temperature. Expires after one hour, cancels if its target changes, at most one update per 15 minutes. Respects normal speech rules and guest mode. Off by default. Turning off clears pending updates.",
           "security_event_evidence": "Use Frigate event IDs, snapshots and clips on configured cameras. A unique camera/time match is a candidate link, not proof that a sensor identified that event. Keep up to 200 event records for seven days locally. Off by default. Disabling hides links and stops matching; retained records expire or can be forgotten.",
+          "security_event_zones": "Only what enters a zone: on a camera with Frigate zones, an event is listed (and can start a security incident) only once the object has entered one of them, the same rule Frigate uses for its alerts. A camera without zones lists everything. Anything detected: every object Frigate tracks on the chosen cameras. Frigate's own settings are never changed.",
+          "security_event_hidden_zones": "One per line as camera/zone, for example gate/driveway. Events that are only ever in these zones aren't listed and don't start security incidents. Use HIDE THIS ZONE on the Security page after a few 'not a person' corrections there, or remove a line to list that zone again. Frigate isn't changed.",
           "security_coverage": "Show which configured cameras contributed retained evidence and any unavailable reports recorded alongside live incidents. Current camera reports are shown separately. Turning this off clears retained coverage gaps.",
           "frigate_pipeline_health": "Read Frigate MQTT availability, per-camera processing rates and when Sentient last received an event. Missing data is shown as unknown. No camera settings are changed.",
           "security_conversation_context": "Remember the selected event for up to five minutes within the same conversation, device and user. Follow-up questions use that event and fresh occupancy reports; no identity or continued presence is assumed. Tracks configured camera events. Off by default. Disabling clears conversation references; event records retain their normal expiry.",
-          "security_event_feedback": "Admins can mark a specific event useful, not useful, a false positive or a cat. Corrections stay with that event for seven days and help reveal repeated camera problems. No automatic detector, alarm or notification-rule changes. Tracks configured camera events. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
+          "security_event_feedback": "Admins can mark a visit a good catch, not a person, or one to ignore. Reviewed visits move into a folded Reviewed list, and 'not a person' also counts as a reviewed false detection for a security incident made only of that visit. Corrections stay for seven days. No automatic detector, alarm or notification-rule changes. Disabling hides feedback and stops new corrections; use Forget recent data to erase retained records.",
           "share_clip_analysis": "Share compatible generic analyses of the same finished Frigate event across automatic clip watching and event-clip questions. Provider, footage coverage and identity settings must match. Custom questions are analysed separately. Keep at most 100 results in memory for six hours. Off by default. Disabling, changing settings or forgetting clears the cache.",
           "sleep_ignore_sensors": "Motion sensors that fire while people are asleep, such as one in a bedroom. Going to sleep waits for nothing to move for the time above; a bedroom sensor that triggers as someone turns over would keep the house \"awake\" all night, so list it here. They still count for everything else.",
           "heating_graph": "On: the heating card on the House tab shows the last 24 hours of each thermostat's temperature against what it was set to, with the scheduled times shaded. Read from Home Assistant's history; nothing extra is stored. Off: the graph is hidden.",
@@ -1302,6 +1310,12 @@
         "off": "Off",
         "watch": "Watch only",
         "on": "On"
+      }
+    },
+    "security_event_zones": {
+      "options": {
+        "zones": "Only what enters a zone",
+        "all": "Anything detected"
       }
     }
   },

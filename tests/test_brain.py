@@ -189,6 +189,39 @@ async def test_an_unexplained_heating_change_is_linked_then_said_when_unusual(ha
     say.assert_called_once()
 
 
+async def test_an_unusual_change_while_someone_is_up_is_noted_not_said(hass: HomeAssistant, freezer):
+    """13 Nov: the living room heater (twice) and the kettle went to the phones while people were moving about."""
+    freezer.move_to("2026-06-15 20:00:00+00:00")
+    entry = await _setup(hass, inside_sensors=["binary_sensor.hall_motion"])
+    rt = entry.runtime_data
+    now = dt_util.now()
+    for day in range(3, 13):
+        rt.brain.expect.learn("climate.heating", "off", (now - timedelta(days=day, hours=8)).timestamp())
+    rt.brain.expect.days = [10, 10]
+    hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})
+    hass.states.async_set("binary_sensor.hall_motion", "on")
+    await hass.async_block_till_done(wait_background_tasks=True)
+    hass.states.async_set("binary_sensor.hall_motion", "off")  # moved a minute ago
+    freezer.tick(timedelta(minutes=1))
+    with patch.object(rt.speech, "async_say", AsyncMock()) as say:
+        hass.states.async_set("climate.heating", "off", {"friendly_name": "Heating"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+    say.assert_not_called()
+    item = next(i for i in rt.timeline.items if i.get("detail") == "unexplained change")
+    assert item["kind"] == "noticed" and "moving about" in item["decision"]["evidence"][-1]
+    # nobody has moved for a while: the same unusual change is said, and is house health again
+    freezer.tick(timedelta(minutes=30))
+    rt.brain._said_unexplained.clear()
+    hass.states.async_set("climate.heating", "heat", {"friendly_name": "Heating"})
+    await hass.async_block_till_done(wait_background_tasks=True)
+    rt.brain._said_unexplained.clear()
+    with patch.object(rt.speech, "async_say", AsyncMock()) as say:
+        hass.states.async_set("climate.heating", "off", {"friendly_name": "Heating"})
+        await hass.async_block_till_done(wait_background_tasks=True)
+    say.assert_called_once()
+    assert next(i for i in rt.timeline.items if i.get("detail") == "unexplained change")["kind"] == "health"
+
+
 async def test_locks_are_not_watched_unless_chosen(hass: HomeAssistant):
     entry = await _setup(hass)
     assert not entry.runtime_data.brain._important("lock.front")
@@ -270,7 +303,8 @@ async def test_the_same_ai_job_twice_is_answered_from_case_memory(hass: HomeAssi
     assert len(calls) == 3 and not entry.runtime_data.brain.cases
 
 
-async def test_surprise_gating_watches_before_it_skips(hass: HomeAssistant):
+async def test_surprise_gating_watches_before_it_skips(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-06-15 20:00:00+00:00")  # midday in the test time zone, outside quiet hours
     entry = await _setup(hass)
     brain = entry.runtime_data.brain
     for day in range(1, 10):
@@ -915,7 +949,8 @@ async def test_answers_from_the_house_count_as_without_the_ai(hass: HomeAssistan
     assert (await rt.brain.async_status())["independence"]["without_ai"] == 1
 
 
-async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant):
+async def test_watch_mode_counts_what_it_would_have_saved(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-06-15 20:00:00+00:00")  # midday in the test time zone, outside quiet hours
     entry = await _setup(hass)
     brain = entry.runtime_data.brain
     for day in range(1, 10):

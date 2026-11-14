@@ -236,6 +236,17 @@ def _active_period(programmes, heater, when):
     return best
 
 
+SOON_MINUTES = 30  # a period starting this soon: a thermostat found away from the schedule is left for it
+
+
+def _starts_within(programmes, heater, when, minutes) -> bool:
+    """Does one of this thermostat's periods start in the next few minutes?"""
+    now = _week_minute(when)
+    return any(0 < (start - now) % WEEK_MINUTES <= minutes
+               for p in programmes if p.get("enabled", True) and heater in p["heaters"]
+               for start, _end, _period in _weekly_periods(p))
+
+
 def wanted_on(programmes: list[dict[str, Any]], heater: str, when: datetime) -> dict[str, Any] | None:
     """The same winning period used to plan thermostat commands."""
     active = _active_period(programmes, heater, when)
@@ -451,7 +462,10 @@ class HeatingProgrammes:
                 programme, period, _ = active
                 want = float(period["temp"])
             else:
-                programme = next(p for p in programmes if p.get("enabled", True) and heater in p["heaters"])
+                mine = [p for p in programmes if p.get("enabled", True) and heater in p["heaters"]]
+                today = DAYS[local.weekday()]
+                # named after today's programme, not whichever was saved first ("Weekdays" on a Saturday)
+                programme = next((p for p in mine if today in p["days"]), mine[0])
                 want = night
             try:
                 have = float(state.attributes.get("temperature"))
@@ -463,6 +477,8 @@ class HeatingProgrammes:
             record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": not self._night(rt.options, local)})
             since = dt_util.parse_datetime(record["since"]) or now
             hours = revert_hours(rt.options, bool(record["day"]))
+            if not active and _starts_within(programmes, heater, local, SOON_MINUTES):
+                continue  # a period starts in a few minutes: putting it back to the night temperature first is pointless
             if hours > 0 and now - since >= timedelta(hours=hours):
                 self._manual.pop(heater, None)
                 out.append((heater, "on" if active else "off", want if active else None, programme.get("id", programme["name"])))

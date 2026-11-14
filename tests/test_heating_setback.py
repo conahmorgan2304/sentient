@@ -191,3 +191,33 @@ async def test_a_thermostat_left_on_its_own_app_schedule_is_put_back_in_a_hold(h
     assert hp.reconcile(at(0, 6, 30)) == []
     assert hp.reconcile(at(0, 9, 29)) == []
     assert hp.reconcile(at(0, 9, 31)) == [(LOUNGE, "off", None, saved["id"])]  # 3 hours by day
+
+
+async def test_it_isnt_put_back_to_the_night_temperature_just_before_a_period(hass: HomeAssistant, freezer) -> None:
+    """14 Nov 06:57: put back to 15° three minutes before the 07:00 period, labelled "Weekdays" on a Saturday."""
+    entry = await _setup(hass)
+    rt0 = entry.runtime_data
+    rt0.options = {**rt0.options, "quiet_start": "21:00:00", "quiet_end": "08:00:00"}
+    hp = entry.runtime_data.heat_prog
+    await _saved(hass, entry)  # Weekdays: 06:00-09:00 on weekdays
+    weekend = await _saved(hass, entry, name="Weekend", days=["sat", "sun"],
+                           periods=[{"on": "07:00", "off": "10:00", "temp": 20}])
+    hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 18})  # its own programme set 18°
+    saturday = lambda hh, mm: at(5, hh, mm)  # noqa: E731
+    _tick_at(hass, freezer, saturday(5, 0))
+    assert hp.reconcile(saturday(5, 0)) == []
+    _tick_at(hass, freezer, saturday(6, 10))
+    assert hp.reconcile(saturday(6, 10)) == [(LOUNGE, "off", None, weekend["id"])]  # named after today's programme
+    hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 18.5})
+    _tick_at(hass, freezer, saturday(6, 20))
+    hp.reconcile(saturday(6, 20))
+    _tick_at(hass, freezer, saturday(6, 45))
+    assert hp.reconcile(saturday(6, 45)) == []  # an hour wouldn't be up yet anyway
+    _tick_at(hass, freezer, saturday(7, 25))
+    assert hp.reconcile(saturday(7, 25)) == [(LOUNGE, "on", 20.0, weekend["id"])]  # the period's own temperature
+    hp._manual.clear()
+    hass.states.async_set(LOUNGE, "heat_cool", {**MODES, "temperature": 18})
+    sunday = lambda hh, mm: at(6, hh, mm)  # noqa: E731
+    hp.reconcile(sunday(5, 30))
+    _tick_at(hass, freezer, sunday(6, 40))
+    assert hp.reconcile(sunday(6, 40)) == []  # its hour is up, but the 07:00 period is 20 minutes away

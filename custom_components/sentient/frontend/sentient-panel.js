@@ -644,15 +644,20 @@
         ...(mind.conversation_diagnostics || []).slice(0, 8).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
       ].join("");
       const reviewControls = !!(this._hass.user?.is_admin && !this._st("guest_mode")?.state?.includes("on"));
-      const incidentRows = (mind.security_incidents || []).slice(0, 6).map((i) => {
+      const incidentRow = (i) => {
         const actions = reviewControls ? `<details><summary>REVIEW THIS INCIDENT</summary>${[
           ["household", "HOUSEHOLD"], ["visitor", "VISITOR"], ["false_detection", "FALSE DETECTION"],
           ["concerning", "CONCERNING"], ["unresolved", "UNRESOLVED"], ["clear", "CLEAR REVIEW"]
         ].map(([value, label]) => `<button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</details>` : "";
         const status = this._incidentReviewReply?.id === i.id ? `<small role="status">${esc(this._incidentReviewReply.message)}</small>` : "";
         const stage = i.stage ? `<small>${esc(i.stage.toUpperCase())}${i.stage_by && i.stage_by !== "rules" ? " · DECIDED BY THE COGNITIVE CORE" : ""}${i.rules_stage && i.rules_stage !== i.stage ? " · RULES SAID " + esc(i.rules_stage.toUpperCase()) : ""}</small>` : "";
-        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}${stage}<small>${esc(i.link)}</small>${actions}${status}</b><u>${hm(i.start)}</u></div>`;
-      }).join("");
+        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}${stage}<small>${esc(i.link)}</small>${i.reviewed ? "<small>REVIEWED</small>" : ""}${actions}${status}</b><u>${hm(i.start)}</u></div>`;
+      };
+      // reviewed incidents fold away, so what's left is what still needs a look
+      const incidents = (mind.security_incidents || []).slice(0, 6);
+      const reviewedIncidents = incidents.filter((i) => i.reviewed);
+      const incidentRows = incidents.filter((i) => !i.reviewed).map(incidentRow).join("")
+        + (reviewedIncidents.length ? this._fold("incidents", `REVIEWED INCIDENTS (${reviewedIncidents.length})`, reviewedIncidents.map(incidentRow).join("")) : "");
       // whether the cognitive core decides incident stages yet, and what it still needs (Settings → Safety)
       const auth = mind.cognitive_authority || {};
       const judged = (who) => who ? `${who.agreed}/${who.household} household right, ${who.false_household}/${who.others} others wrongly household, ${who.missed} threats called less serious` : "";
@@ -1540,13 +1545,33 @@
       }
       if (this._group !== "doctor") return;
       const ic = { ok: "mdi:check-circle-outline", warn: "mdi:alert-outline", bad: "mdi:close-circle-outline" };
-      const areas = [...new Set(this._doc.rows.map((r) => r.area))];
-      const rows = areas.map((a) => `<div class="h" style="margin-top:12px"><span class="t">${esc(a).toUpperCase()}</span><i></i></div>`
-        + this._doc.rows.filter((r) => r.area === a).map((r) => `<div class="card ml doc ${esc(r.status)}"><div class="r"><ha-icon icon="${esc(ic[r.status] || ic.warn)}"></ha-icon><b>${esc(r.name)}</b><u>${esc(r.status === "ok" ? "OK" : r.status === "bad" ? "FIX" : "CHECK")}</u></div>
-          <div class="mlsub">${esc(r.detail)}</div>${r.fix ? `<div class="hint">${esc(r.fix)}</div>` : ""}</div>`).join("")).join("");
+      // Home Assistant names voice satellites "<room> Assist satellite"; the section already says what they are
+      const short = (name) => { const n = String(name).replace(/\s*assist satellite/ig, "").trim() || String(name); return n.charAt(0).toUpperCase() + n.slice(1); };
+      const all = this._doc.rows || [];
+      const problems = all.filter((r) => r.status !== "ok");
+      // problems first, in full, with what to do
+      const problemCards = problems.map((r) => `<div class="card doc ${esc(r.status)} docprob"><div class="r"><ha-icon icon="${esc(ic[r.status] || ic.warn)}"></ha-icon><b class="wrap">${esc(short(r.name))}<small>${esc(r.area)}</small></b><u>${r.status === "bad" ? "FIX" : "CHECK"}</u></div>
+          <div class="mlsub">${esc(r.detail)}</div>${r.fix ? `<div class="docfix">${esc(r.fix)}</div>` : ""}</div>`).join("");
+      // then every area as its own section of small tiles; a detail every tile shares is said once
+      const areas = [...new Set(all.map((r) => r.area))];
+      const sections = areas.map((a) => {
+        const ok = all.filter((r) => r.area === a && r.status === "ok");
+        if (!ok.length) return "";
+        const counts = new Map();
+        for (const r of ok) counts.set(r.detail, (counts.get(r.detail) || 0) + 1);
+        const [common, times] = [...counts].sort((x, y) => y[1] - x[1])[0];
+        const shared = times > 1 ? common : "";
+        const tiles = ok.map((r) => `<div class="doctile"><ha-icon icon="${ic.ok}"></ha-icon><span><b>${esc(short(r.name))}</b>${shared && r.detail === shared ? "" : `<i>${esc(r.detail)}</i>`}</span></div>`).join("");
+        const bad = all.filter((r) => r.area === a && r.status !== "ok").length;
+        return `<section class="docarea">${this._h(esc(a.toUpperCase()), bad ? `${ok.length} OK · ${bad} TO LOOK AT` : `${ok.length} OK`)}${shared ? `<div class="docshared">${esc(shared)}</div>` : ""}<div class="docgrid">${tiles}</div></section>`;
+      }).join("");
+      const summary = problems.length
+        ? `<div class="docsum warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${problems.length} to look at</b><span>${all.length - problems.length} of ${all.length} checks passed</span></div>`
+        : `<div class="docsum"><ha-icon icon="mdi:check-decagram-outline"></ha-icon><b>Everything checks out</b><span>All ${all.length} checks passed</span></div>`;
+      const rows = summary + (problemCards ? `<div class="docprobs">${problemCards}</div>` : "") + sections;
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:stethoscope"></ha-icon><div><div class="bt">SETUP DOCTOR</div>
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
-        <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
+        <div class="doclist">${rows}</div><div class="spmsg" id="docmsg"></div>
         <div class="hint">DOWNLOAD THE LAST DAY saves a file of what happened in the house over the last 24 hours (from the house ledger) and what Sentient decided, for checking a new version against your own days. It stays on your device; nothing is sent.</div>
         <div class="bar"><span id="status"></span><button class="btn ghost" data-act="replayexport">DOWNLOAD THE LAST DAY</button><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
     }
@@ -2711,22 +2736,48 @@
     }
 
     _securityEventRows(mind) {
-      const events = (mind.security_events || []).slice(0, 8);
+      // one card per visit: events on a camera within a minute of each other (from the integration)
+      const visits = (mind.security_visits || []).slice(0, 12);
       const feedbackOn = !!mind.security_event_feedback_enabled && !!this._hass.user?.is_admin;
       this._securityFeedbackReplies ||= new Map();
       for (const key of this._securityFeedbackReplies.keys()) {
-        if (!events.some(e => e.id === key) || !feedbackOn) this._securityFeedbackReplies.delete(key);
+        if (!visits.some(v => v.id === key) || !feedbackOn) this._securityFeedbackReplies.delete(key);
       }
-      const summaries = (mind.security_event_feedback_summary || []).map(c => `<div class="r dim"><b class="wrap">${esc(c.camera)} · ${esc(c.reviewed)} EVENTS REVIEWED<small>Useful: ${esc(c.useful)} · Not useful: ${esc(c.not_useful)} · False positives: ${esc(c.false_positive)} · Cats: ${esc(c.cat)}</small>${c.suggestion ? `<small>${esc(c.suggestion)}</small>` : ""}<small>${esc(c.limits)}</small></b></div>`).join("");
-      return events.map(e => {
-        const ack = this._securityFeedbackReplies.get(e.id);
-        const feedback = ack && ack.sensor === e.feedback ? ack.value : e.feedback;
-        if (ack && ack.sensor !== e.feedback) this._securityFeedbackReplies.delete(e.id);
-        const pending = this._securityFeedbackSaving === e.id;
-        const error = feedbackOn && this._securityFeedbackError?.id === e.id ? this._securityFeedbackError.message : "";
-        const action = (value, label) => `<button class="btn sm ghost" ${pending ? "disabled" : ""} data-act="securityfeedback" data-id="${esc(e.id)}" data-value="${value}">${label}</button>`;
-        return `<div class="r"><ha-icon icon="mdi:cctv"></ha-icon><b class="wrap">${esc(e.camera)} · FRIGATE REPORTED ${esc(e.label)}<small>EVENT · ${esc(e.id)}</small>${e.analysis ? `<small>AI INFERENCE · ${esc(e.analysis.summary)}</small>` : ""}<details><summary>Evidence and alert reasons</summary>${(e.alerts || []).map(a => `<small>${esc(a.reason)} · ${esc(a.text)}<br>${esc(a.link)}</small>`).join("")}<small>${esc(e.limits)}</small></details>${feedback ? `<small role="status">Saved feedback: ${esc(feedback.value.replaceAll("_", " "))} · household correction</small>` : ""}${e.snapshot ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg" target="_blank" rel="noopener">SNAPSHOT</a>` : ""}${e.clip ? `<a class="btn sm ghost" href="/api/frigate/notifications/${encodeURIComponent(e.id)}/clip.mp4" target="_blank" rel="noopener">CLIP</a>` : ""}${feedbackOn ? `<div>${action("useful", "USEFUL")}${action("not_useful", "NOT USEFUL")}${action("false_positive", "FALSE POSITIVE")}${action("cat", "CAT")}${feedback ? action("clear", "CLEAR") : ""}</div>` : ""}${pending ? '<small role="status">Saving event feedback…</small>' : ""}${error ? `<small role="alert">${esc(error)}</small>` : ""}</b></div>`;
-      }).join("") + summaries;
+      const said = { useful: "good catch", not_useful: "ignored", false_positive: "not a person", cat: "a cat" };
+      const zoneName = (z) => String(z).replace(/_/g, " ");
+      const time = (t) => t ? new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      const zoneReply = this._securityZoneReply;
+      const summaries = (mind.security_event_feedback_summary || []).map(c => `<div class="r dim"><b class="wrap">${esc(c.camera)} · ${esc(c.reviewed)} EVENTS REVIEWED<small>Good catch: ${esc(c.useful)} · Ignored: ${esc(c.not_useful)} · Not a person: ${esc(c.false_positive + c.cat)}</small>${c.suggestion ? `<small>${esc(c.suggestion)}</small>` : ""}${(c.zones || []).map(z => `<small>${esc(zoneName(z.zone))}: ${esc(z.not_a_person)} marked not a person. Stop listing movement that's only in this zone? Frigate isn't changed.</small>${feedbackOn ? `<button class="btn sm ghost" data-act="securityzonehide" data-id="${esc(c.camera)}" data-text="${esc(z.zone)}">HIDE THIS ZONE</button>` : ""}`).join("")}${zoneReply && zoneReply.camera === c.camera ? `<small role="${zoneReply.error ? "alert" : "status"}">${esc(zoneReply.message)}</small>` : ""}<small>${esc(c.limits)}</small></b></div>`).join("");
+      const card = (v) => {
+        const ack = this._securityFeedbackReplies.get(v.id);
+        const sensor = v.feedback?.value || null;
+        const feedback = ack && ack.sensor === sensor ? ack.value : v.feedback;
+        if (ack && ack.sensor !== sensor) this._securityFeedbackReplies.delete(v.id);
+        const pending = this._securityFeedbackSaving === v.id;
+        const error = feedbackOn && this._securityFeedbackError?.id === v.id ? this._securityFeedbackError.message : "";
+        const action = (value, label) => `<button class="btn sm ghost" ${pending ? "disabled" : ""} data-act="securityfeedback" data-id="${esc(v.id)}" data-value="${value}">${label}</button>`;
+        const when = time(v.start) + (v.end && time(v.end) !== time(v.start) ? "–" + time(v.end) : v.end ? "" : " · NOW");
+        const where = (v.zones || []).length ? `In ${v.zones.map(zoneName).join(", ")}` : "Not in a zone";
+        const count = (v.ids || []).length > 1 ? ` · ${v.ids.length} events` : "";
+        const pic = v.snapshot ? `<a class="evthumb" href="${esc(v.snapshot)}" target="_blank" rel="noopener"><img loading="lazy" alt="" src="${esc(v.snapshot)}"></a>` : '<ha-icon icon="mdi:cctv"></ha-icon>';
+        const buttons = !feedbackOn ? "" : feedback
+          ? `<div>${action("clear", "UNDO")}</div>`
+          : `<div>${action("useful", "GOOD CATCH")}${action("false_positive", "NOT A PERSON")}${action("not_useful", "IGNORE")}</div>`;
+        return `<div class="r ev">${pic}<b class="wrap">${esc(v.camera.replace(/_/g, " ").toUpperCase())} · ${esc(when)} · ${esc((v.labels || []).join(", ").toUpperCase())}<small>${esc(where)}${esc(count)}</small>${v.analysis ? `<small>AI INFERENCE · ${esc(v.analysis.summary)}</small>` : ""}<details><summary>Evidence and alert reasons</summary>${(v.alerts || []).map(a => `<small>${esc(a.reason)} · ${esc(a.text)}<br>${esc(a.link)}</small>`).join("")}<small>${esc(v.limits)}</small></details>${feedback ? `<small role="status">Marked ${esc(said[feedback.value] || feedback.value)}${ack?.incidents ? " · counted as a reviewed false detection" : ""}</small>` : ""}${v.clip ? `<a class="btn sm ghost" href="${esc(v.clip)}" target="_blank" rel="noopener">CLIP</a>` : ""}${buttons}${pending ? '<small role="status">Saving event feedback…</small>' : ""}${error ? `<small role="alert">${esc(error)}</small>` : ""}</b></div>`;
+      };
+      const marked = (v) => {
+        const ack = this._securityFeedbackReplies.get(v.id);
+        return ack && ack.sensor === (v.feedback?.value || null) ? !!ack.value : !!v.feedback;
+      };
+      const open = feedbackOn ? visits.filter(v => !marked(v)) : visits;
+      const done = feedbackOn ? visits.filter(marked) : [];
+      return open.map(card).join("") + (done.length ? this._fold("visits", `REVIEWED (${done.length})`, done.map(card).join("")) : "") + summaries;
+    }
+
+    _fold(key, title, body) {
+      // a folded list that stays open or shut when the page redraws
+      const open = (this._foldOpen ||= new Set()).has(key);
+      return `<details class="evdone"${open ? " open" : ""}><summary data-act="evdone" data-id="${key}">${esc(title)}</summary>${body}</details>`;
     }
 
     async _routeCalibration(action, provider) {
@@ -2773,14 +2824,30 @@
       this._securityFeedbackError = null;
       this._render();
       try {
-        const result = await this._hass.callWS({ type: "sentient/security/event/feedback", event_id: id, value });
-        const source = this._st("mind")?.attributes?.security_events?.find(e => e.id === id)?.feedback;
+        const visit = (this._st("mind")?.attributes?.security_visits || []).find(v => v.id === id);
+        const result = await this._hass.callWS({ type: "sentient/security/event/feedback", event_id: id, value,
+          event_ids: (visit?.ids || [id]).slice(0, 50) });
         this._securityFeedbackReplies ||= new Map();
-        this._securityFeedbackReplies.set(id, { value: result.feedback, sensor: source });
+        this._securityFeedbackReplies.set(id, { value: result.feedback, sensor: visit?.feedback?.value || null,
+          incidents: result.incidents_reviewed || 0 });
       } catch (error) {
         this._securityFeedbackError = { id, message: error.message || String(error) };
       } finally {
         this._securityFeedbackSaving = null;
+        this._render();
+      }
+    }
+
+    async _securityZoneHide(camera, zone) {
+      if (!this._hass.user?.is_admin || !camera || !zone || this._securityZoneSaving) return;
+      this._securityZoneSaving = true;
+      try {
+        await this._hass.callWS({ type: "sentient/security/zone/hide", camera, zone, hide: true });
+        this._securityZoneReply = { camera, message: `${zone.replace(/_/g, " ")} hidden. List it again from Settings → Camera security.` };
+      } catch (error) {
+        this._securityZoneReply = { camera, error: true, message: "COULDN'T HIDE THE ZONE · " + String(error.message || error) };
+      } finally {
+        this._securityZoneSaving = false;
         this._render();
       }
     }
@@ -2799,6 +2866,11 @@
       if (act.startsWith("layout")) { this._layoutAction(act, id, el.dataset.dir); return; }
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
+      else if (act === "securityzonehide") this._securityZoneHide(id, text);
+      else if (act === "evdone") {  // the click comes before the toggle
+        const open = (this._foldOpen ||= new Set());
+        if (el.parentElement?.open) open.delete(id); else open.add(id);
+      }
       else if (act === "incidentreview") this._incidentReview(id, el.dataset.value);
       else if (act === "routecal" || act === "routecalstatus" || act === "routecalreset")
         this._routeCalibration(act === "routecal" ? "run" : act === "routecalreset" ? "reset_jobs" : "status", el.dataset.provider || "alternative");
@@ -3594,6 +3666,10 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap} .row select{flex:1;min-width:0}
 .snap{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,247,.3);background:#000;aspect-ratio:16/9;user-select:none;touch-action:none}
 .snap img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.r.ev{align-items:flex-start}
+.evthumb{flex:0 0 auto;width:96px;aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:rgba(127,127,127,.15)}
+.evthumb img{display:block;width:100%;height:100%;object-fit:cover}
+.evdone>summary{cursor:pointer;padding:6px 0;opacity:.75;font-size:.8em;letter-spacing:.08em}
 .snap.drawing{cursor:crosshair;border-color:#00fff7;box-shadow:0 0 16px rgba(0,255,247,.35)}
 .box{position:absolute;border:2px solid #00fff7;border-radius:6px;box-shadow:0 0 10px rgba(0,255,247,.6), inset 0 0 18px rgba(0,255,247,.15);pointer-events:none}
 .box span{position:absolute;left:-2px;top:-22px;font-size:10px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:6px;background:#00fff7;color:#041016;white-space:nowrap;text-transform:uppercase}
@@ -3613,6 +3689,17 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55} .doc.bad{border-left:3px solid var(--bad,#ff6b80)} .doc.warn{border-left:3px solid var(--warn,#ffbe55)} .doc.ok ha-icon{color:var(--ok,#3dffa8)} .x.pin ha-icon{color:var(--accent,#00fff7)} .x ha-icon{--mdc-icon-size:16px}
 .r ha-icon.lit,.ml ha-icon.lit{color:#ffd76a;filter:drop-shadow(0 0 6px rgba(255,215,106,.7))}
 .mlsub{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(150,220,235,.75);margin:2px 0 8px} .mlsub ha-icon{--mdc-icon-size:14px;color:#5fd8e6}
+.doclist{display:flex;flex-direction:column;gap:18px;margin-top:6px}
+.docsum{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(61,255,168,.35);border-radius:14px;background:rgba(61,255,168,.06)}
+.docsum ha-icon{color:var(--ok,#3dffa8)} .docsum b{font-size:14px} .docsum span{margin-left:auto;font-size:11px;letter-spacing:.08em;color:rgba(150,220,235,.7)}
+.docsum.warn{border-color:rgba(255,190,85,.45);background:rgba(255,190,85,.07)} .docsum.warn ha-icon{color:var(--warn,#ffbe55)}
+.docprobs{display:grid;gap:10px} .docprob{padding:12px 14px} .docprob .r{margin:0;background:none;border:none;padding:0 0 6px}
+.docfix{font-size:12px;color:#e6f7fa;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04)}
+.docarea .h{margin-top:0} .docshared{font-size:11.5px;color:rgba(150,220,235,.7);margin:-2px 2px 8px}
+.docgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:8px}
+.doctile{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border:1px solid rgba(0,255,247,.14);border-radius:10px;background:rgba(0,255,247,.03);min-width:0}
+.doctile ha-icon{--mdc-icon-size:16px;color:var(--ok,#3dffa8);flex:0 0 auto;margin-top:1px}
+.doctile span{display:flex;flex-direction:column;gap:2px;min-width:0} .doctile b{font-size:12.5px;font-weight:500;overflow-wrap:anywhere} .doctile i{font-style:normal;font-size:11px;color:rgba(150,220,235,.65);overflow-wrap:anywhere}
 .chips.left{justify-content:flex-start}
 .mlform{margin-top:14px;border-color:rgba(0,255,247,.55)} .row.end{justify-content:flex-end;margin-top:10px} .row.end .spmsg{flex:1;color:#ff7088}
 .tg{position:relative;flex:none;width:34px;height:18px;cursor:pointer} .tg input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
