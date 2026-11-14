@@ -367,7 +367,13 @@ class Loops:
         what = (event.data.get("what") or "").strip().rstrip(".")
         if not what:
             return
-        text = f"No sign of {what} — I've stopped keeping an eye out." if len(what) < 60 else f"Nothing came of watching for {what}."
+        # the watch is often the request itself ("Watch the rabbit pen for an hour"): don't say "watching for Watch…"
+        bare = re.sub(r"^(please\s+)?(watch|keep an eye on|keep an eye out for|keep watch on|look out for|check)\s+(for\s+)?",
+                      "", what, flags=re.I)
+        if bare != what:
+            text = f"Nothing came of watching {bare}."
+        else:
+            text = f"No sign of {what} — I've stopped keeping an eye out." if len(what) < 60 else f"Nothing came of watching for {what}."
         rt = self._rt()
         if rt is not None:
             rt.timeline.add("loop", text, "watch ended")

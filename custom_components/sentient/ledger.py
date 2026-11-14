@@ -21,7 +21,7 @@ from collections import OrderedDict, deque
 import logging
 from typing import Any, Callable
 
-from homeassistant.const import EVENT_CALL_SERVICE, EVENT_STATE_CHANGED
+from homeassistant.const import EVENT_CALL_SERVICE, EVENT_HOMEASSISTANT_FINAL_WRITE, EVENT_STATE_CHANGED
 from homeassistant.core import Context, Event, HomeAssistant, State, callback
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 from homeassistant.helpers.event import async_call_later
@@ -92,9 +92,18 @@ class Ledger:
             bus.async_listen(EVENT_AUTOMATION_TRIGGERED, self._automation),
             bus.async_listen(EVENT_SCRIPT_STARTED, self._script),
             bus.async_listen(EVENT_CALL_SERVICE, self._service),
+            # save what's waiting while Home Assistant can still write: later in shutdown it can't (live 14 Nov:
+            # "could not save 235 house changes" at a restart)
+            bus.async_listen(EVENT_HOMEASSISTANT_FINAL_WRITE, self._final_write),
             bus.async_listen("user_added", self._users_changed),
             bus.async_listen("user_updated", self._users_changed),
         ]
+
+    async def _final_write(self, _event: Event) -> None:
+        if self._flush_unsub:
+            self._flush_unsub()
+            self._flush_unsub = None
+        await self.async_flush()
 
     @callback
     def _users_changed(self, _event: Event) -> None:
@@ -253,7 +262,7 @@ class Ledger:
         except Exception:  # noqa: BLE001 - kept (oldest first) and tried again with the next flush
             _LOGGER.warning("Sentient could not save %s house changes; trying again shortly", len(rows), exc_info=True)
             self._buffer = (rows + self._buffer)[-MAX_BUFFER:]
-            if self.enabled and self._flush_unsub is None:
+            if self.enabled and self._flush_unsub is None and not self.hass.is_stopping:
                 self._flush_unsub = async_call_later(self.hass, FLUSH_SECONDS * 6, self._flush_later)
 
     # ----- reading ----------------------------------------------------------------------------

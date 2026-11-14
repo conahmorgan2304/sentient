@@ -685,6 +685,8 @@ class Heating:
             state_before = self.hass.states.get(entity_id)
             old = previous if (previous and previous.get('status') == 'active' and state_before is not None
                                and previous.get('owned') == self._controls(state_before)) else None
+            if previous and previous.get('origin') == 'limit' and previous.get('status') == 'pending':
+                old = previous  # tapped up again before the thermostat answered: the same adjustment, the same baseline
             if service in ('set_temperature', 'set_preset_mode', 'set_hvac_mode', 'turn_off', 'turn_on', 'toggle') and previous is not None:
                 self._drop(entity_id, previous)
             if hours <= 0 or event.context.parent_id or entity_id not in chosen:

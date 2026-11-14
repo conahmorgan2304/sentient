@@ -1100,8 +1100,11 @@ def ws_incident_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> 
     result = rt.incidents.review(msg["incident_id"], msg["outcome"])
     if result.get("error"):
         connection.send_error(msg["id"], "invalid", result["error"])
-    else:
-        connection.send_result(msg["id"], result)
+        return
+    events = getattr(rt, "security_events", None)
+    if events is not None:
+        result = {**result, "events_marked": events.from_incident_review(rt.incidents, msg["incident_id"], msg["outcome"])}
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",

@@ -126,6 +126,13 @@ async def test_watch_that_runs_out_is_closed_off(hass: HomeAssistant, freezer) -
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert said[-1].data["message"] == "No sign of the post — I've stopped keeping an eye out."
+    # 14 Nov: a watch named by the request itself isn't said back as "watching for Watch the rabbit pen…"
+    await hass.services.async_call(DOMAIN, "watch", {"what": "Watch the rabbit pen for an hour", "entity": "binary_sensor.letterbox",
+                                                     "to_state": "on", "minutes": 30}, blocking=True)
+    freezer.tick(timedelta(minutes=32))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert said[-1].data["message"] == "Nothing came of watching the rabbit pen for an hour."
 
 
 async def test_conversations_are_remembered_across_speakers(hass: HomeAssistant, freezer) -> None:

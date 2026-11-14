@@ -138,3 +138,36 @@ async def test_the_zone_settings_are_in_camera_security(hass, hass_ws_client):
     assert result["data"]["security_event_zones"] == "zones" and result["data"]["security_event_hidden_zones"] == []
     camsec = next(g for g in result["groups"] if g["id"] == "camsec")
     assert {"security_event_zones", "security_event_hidden_zones"} <= {f["name"] for f in camsec["schema"]}
+
+
+async def test_an_incident_reviewed_as_nothing_marks_its_camera_events_not_a_person(hass):
+    events, _cache, rt = setup(hass, security_incidents=True)
+    rt.incidents = Incidents(hass, "visits", rt.options)
+    for i in ("a", "b"):
+        events.ingest(at(300, id=i, zones=["path"]))
+    item = next(i for i in rt.incidents.items if any(e["event_id"] == "a" for e in i["evidence"]))
+    events.feedback("b", "useful")  # one the household already answered isn't overwritten
+    rt.incidents.review(item["id"], "false_detection")
+    assert events.from_incident_review(rt.incidents, item["id"], "false_detection") == 1
+    assert events.items["a"]["feedback"]["value"] == "false_positive" and events.items["b"]["feedback"]["value"] == "useful"
+    rt.incidents.review(item["id"], "household")
+    assert events.from_incident_review(rt.incidents, item["id"], "household") == 1  # takes back only its own mark
+    assert "feedback" not in events.items["a"] and events.items["b"]["feedback"]["value"] == "useful"
+    events.configure({**events.options, "security_event_feedback": False})
+    assert events.from_incident_review(rt.incidents, item["id"], "false_detection") == 0
+
+
+async def test_reviewing_an_incident_on_the_page_reports_the_events_it_marked(hass, hass_ws_client):
+    from tests.test_phase3 import _setup
+
+    entry = await _setup(hass, security_incidents=True, security_event_evidence=True, security_event_feedback=True,
+                         clip_cameras=["camera.garden"])
+    hass.states.async_set("camera.garden", "idle", {"friendly_name": "Garden"})
+    rt = entry.runtime_data
+    rt.security_events.ingest(at(120, id="ev.ws", zones=["lawn"]))
+    item = next(i for i in rt.incidents.items if any(e["event_id"] == "ev.ws" for e in i["evidence"]))
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/security/incident/review", "incident_id": item["id"], "outcome": "false_detection"})
+    reply = await ws.receive_json()
+    assert reply["success"] and reply["result"]["events_marked"] == 1
+    assert rt.security_events.items["ev.ws"]["feedback"]["value"] == "false_positive"

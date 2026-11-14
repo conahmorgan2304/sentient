@@ -15,6 +15,14 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.10.2": [
+        "Security page: each incident card shows its camera picture, the camera, what was seen and the zones, says in plain words what its stage means (\"Observed · one report so far\"), and asks \"What was it?\" — one of us, a visitor, nothing or an animal, worrying, or not sure. A camera visit that's part of an incident is shown on that card, not twice.",
+        "Marking an incident \"nothing / an animal\" also marks its camera events \"not a person\", so the HIDE THIS ZONE suggestion learns from the incident cards too.",
+        "Fixed: house changes waiting to be saved could be lost when Home Assistant restarted; they're now saved while it can still write.",
+        "Fixed: tapping the heating up several times in a row is one adjustment with one time limit, not one per tap, and it goes back to where it was before the first tap.",
+        "Fixed: a watch that ends with nothing seen says \"Nothing came of watching the rabbit pen for an hour\", not \"watching for Watch the rabbit pen…\".",
+        "Fixed: the Mind sensor's camera lists no longer go into Home Assistant's history (it was over the 16 KB limit and logged a warning every minute).",
+    ],
     "1.10.1": [
         "Heating schedule: a thermostat running its own built-in programme (a Smart Life one can't have it switched off in the app) is now put into its manual hold by sending the mode on its own, which it accepts, rather than with the temperature, which it ignored. If it still won't hold, the timeline says so.",
         "Settings: Never touch is under System, and Safety & security has its own Safety section with Night watch, instead of both sitting under Cameras.",

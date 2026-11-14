@@ -405,6 +405,28 @@ class SecurityEvents:
         return {"event_id": event_id, "event_ids": ids, "feedback": row.get("feedback"),
                 "incidents_reviewed": reviewed, "changed_detector_settings": False}
 
+    def from_incident_review(self, incidents, incident_id, outcome):
+        """An incident reviewed as nothing (or an animal) marks its camera events "not a person", so the zone
+        suggestions learn from the incident cards too. Taking the review back takes back only those marks."""
+        if not self.on(CONF_EVENT_FEEDBACK):
+            return 0
+        item = next((i for i in getattr(incidents, "items", []) if i.get("id") == incident_id), None)
+        ids = [e["event_id"] for e in (item or {}).get("evidence") or [] if e.get("event_id") in self.items]
+        marked = 0
+        for event_id in dict.fromkeys(ids):
+            row = self.items[event_id]
+            given = row.get("feedback") or {}
+            if outcome == "false_detection" and not given:
+                row["feedback"] = {"value": "false_positive", "at": dt_util.utcnow().isoformat(), "via": "incident",
+                                   "source": "household correction; not independent verification"}
+                marked += 1
+            elif outcome != "false_detection" and given.get("via") == "incident":
+                row.pop("feedback", None)
+                marked += 1
+        if marked:
+            self._save()
+        return marked
+
     def _review_incidents(self, ids, value):
         """"Not a person" is a reviewed false detection for an incident made only of these events.
 

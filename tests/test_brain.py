@@ -1089,3 +1089,20 @@ async def test_history_search_uses_local_household_synonyms_only_after_direct_mi
     assert any("radiator" in row["text"] for row in found)
     # The alternative words never bypass the requested history kind.
     assert await brain.async_search(["boiler"], ["timeline"]) == []
+
+
+async def test_changes_waiting_to_be_saved_are_saved_at_home_assistants_final_write(hass: HomeAssistant):
+    """14 Nov: "could not save 235 house changes" at a restart, saving after Home Assistant had stopped writing."""
+    from homeassistant.const import EVENT_HOMEASSISTANT_FINAL_WRITE
+
+    entry = await _setup(hass)
+    ledger = entry.runtime_data.brain.ledger
+    hass.states.async_set("light.hall", "off")
+    await hass.async_block_till_done()
+    hass.states.async_set("light.hall", "on")
+    await hass.async_block_till_done()
+    assert ledger.enabled and ledger._buffer  # waiting for the next save
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_FINAL_WRITE)
+    await hass.async_block_till_done()
+    assert not ledger._buffer and ledger._flush_unsub is None
+    assert await ledger.async_changes(entities=["light.hall"])

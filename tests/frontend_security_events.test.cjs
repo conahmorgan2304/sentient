@@ -152,3 +152,25 @@ test('camera pipeline health remains visible on the Security page', () => {
   panel._drawFrigateHealth({ enabled: true, availability: "unknown", last_reported_availability: "online", stats_fresh: false, cameras: [] });
   assert.match(el.innerHTML, /UNKNOWN \(LAST REPORT ONLINE\).*NO FRESH STATS/);
 });
+
+test('an incident card shows its camera picture, says what its stage means and asks what it was in plain words', () => {
+  const panel = new Panel();
+  panel._hass = { user: { is_admin: true }, states: { 'camera.gate': { attributes: { friendly_name: 'Gate Camera' } } } };
+  panel._st = () => null;
+  panel._fold = (key, title, body) => `<fold ${key}>${title}${body}</fold>`;
+  const mind = {
+    security_incidents: [{ id: 'inc1', start: '2026-11-14T10:40:00Z', sources: ['camera.gate'], link: 'Not proof of one person.',
+      stage: 'resolved', stage_why: 'nothing new', evidence: [{ time: '2026-11-14T10:40:00Z', text: 'Frigate reported person', event_id: 'ev1' }] }],
+    security_visits: [{ id: 'ev1', ids: ['ev1'], camera: 'gate', labels: ['person'], zones: ['Zone2'], snapshot: '/snap/ev1.jpg', start: 1, end: 2 },
+                      { id: 'ev9', ids: ['ev9'], camera: 'gate', labels: ['cat'], zones: ['Zone1'], snapshot: null, start: 3, end: 4 }],
+    security_event_feedback_enabled: true,
+  };
+  // the same code path the Mind/Security drawing uses: incident cards first, then the visits not on one
+  const src = Panel.toString();
+  assert.match(src, /What was it\?/);
+  assert.match(src, /NOTHING \/ AN ANIMAL/);
+  panel._incidentEvents = new Set(['ev1']);
+  const visits = panel._securityEventRows(mind);
+  assert.doesNotMatch(visits, /ev1/);  // shown on the incident's card instead
+  assert.match(visits, /ev9/);
+});
