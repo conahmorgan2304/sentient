@@ -139,6 +139,15 @@ class Sleep:
 
         return {"bedtime": fmt(mins("slept", 1)), "up": fmt(mins("woke", 0))}
 
+    def forget_nights(self) -> int:
+        """Forget the learned bedtimes and getting-up times (nights recorded wrongly, say by a sensor that never
+        rested); tonight starts learning again. Whether the house is asleep now, and which sensors are restless at
+        night, are kept."""
+        dropped = len(self.history)
+        self.history = []
+        self._save()
+        return dropped
+
     def describe(self) -> dict[str, Any]:
         since = dt_util.parse_datetime(self.since or "")
         return {"asleep": self.asleep, "since": dt_util.as_local(since).strftime("%H:%M") if since else None,

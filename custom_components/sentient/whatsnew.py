@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.1": [
+        "Learned bedtimes can be forgotten (admin command sentient/sleep/forget), for when nights were recorded wrongly — say by a motion sensor that flickered all night — and the usual bedtime came out at 05:25. It starts learning again that night; which sensors are restless at night is kept.",
+    ],
     "1.11.0": [
         "New on the Mind page: \"Where the voice went wrong\". Every voice turn is checked with plain rules, no AI: a tool that failed (and whether a retry fixed it), a device that didn't do it, saying something was done when nothing was, offering something no device can do, not being able to answer, or answering about the past without looking anything up. It shows how many turns this week went without a problem, so each update can be judged by whether that number goes up. Settings → Voice → Checks & diagnostics; on by default; switching it off clears what was kept.",
         "The overnight self-test now asks household questions too, built from your own devices: when a door or window last closed, whether a light is on, whether a camera saw anyone, whether anyone came to the door today, something it can't know (an invented answer fails), something no device can do, and a question too vague to answer without asking which. Switching anything while only being asked is a fail. The score and recent runs are on the Mind page (\"Household questions\"). Settings → Mind → Self-checks & privacy; on whenever the self-test is.",

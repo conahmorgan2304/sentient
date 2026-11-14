@@ -1126,6 +1126,20 @@ def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, A
         connection.send_result(msg["id"], result)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/sleep/forget"})
+@websocket_api.require_admin
+@callback
+def ws_sleep_forget(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Forget the learned bedtimes and getting-up times; it starts learning again tonight."""
+    entry = _entry(hass)
+    if entry is None or getattr(entry.runtime_data, "sleep", None) is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    dropped = entry.runtime_data.sleep.forget_nights()
+    entry.runtime_data.timeline.add("mind", "Forgot the learned bedtimes", f"{dropped} nights; learning again from tonight")
+    connection.send_result(msg["id"], {"forgotten": dropped})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/reliability/clear"})
 @websocket_api.require_admin
 @callback
@@ -1217,6 +1231,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_security_event_feedback)
     websocket_api.async_register_command(hass, ws_security_zone_hide)
     websocket_api.async_register_command(hass, ws_reliability_clear)
+    websocket_api.async_register_command(hass, ws_sleep_forget)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_games_edit)

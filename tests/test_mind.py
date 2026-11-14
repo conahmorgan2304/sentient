@@ -774,3 +774,17 @@ def test_a_thought_on_its_own_is_passed_on() -> None:
 
     assert compose([{"text": "The gate was left open twice yesterday.", "source": "thought"}]) == \
         "A thought from overnight: The gate was left open twice yesterday."
+
+
+async def test_learned_bedtimes_can_be_forgotten(hass: HomeAssistant, hass_ws_client) -> None:
+    """14 Nov: a sensor that flickered all night left nights recorded at 05:25, so the "usual bedtime" said 05:25."""
+    entry = await _setup(hass)
+    sleep = entry.runtime_data.sleep
+    sleep.history = [{"slept": f"2026-11-{d:02d}T05:25:00+00:00", "woke": f"2026-11-{d:02d}T07:00:00+00:00"} for d in (10, 11, 12)]
+    assert sleep.usual()["bedtime"] is not None
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/sleep/forget"})
+    reply = await ws.receive_json()
+    assert reply["success"] and reply["result"]["forgotten"] == 3
+    assert sleep.history == [] and sleep.usual() == {"bedtime": None, "up": None}
+    assert any(i["text"] == "Forgot the learned bedtimes" for i in entry.runtime_data.timeline.items)
