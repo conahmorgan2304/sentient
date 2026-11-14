@@ -90,6 +90,7 @@ class Conversations:
         self._unsubs: list = []
         self.timeline: Any = None  # set by the runtime: where voice actions are logged
         self.guard: Any = None  # set by the runtime: puts back what a voice switched by mistake
+        self.reliability: Any = None  # set by the runtime: checks each voice turn for mistakes
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -144,7 +145,11 @@ class Conversations:
         kind = str(event_type)
         if kind.endswith("deleted"):
             self._finish(conversation_id)
+            if self.reliability is not None:
+                self.reliability.forget(conversation_id)
             return
+        if kind.endswith("content_added") and self.reliability is not None:
+            self._check(conversation_id, data.get("content") or {})
         if not kind.endswith("content_added") or not self.enabled:
             return
         content = data.get("content") or {}
@@ -164,6 +169,20 @@ class Conversations:
         ep["turns"].append({"who": "them" if role == "user" else "me", "text": _short(text, 400)})
         ep["last"] = dt_util.utcnow().isoformat()
         del ep["turns"][:-12]
+
+    @callback
+    def _check(self, conversation_id: str, content: dict[str, Any]) -> None:
+        """Hand each voice turn to the reliability check: the question, the tools' results, the answer."""
+        role, text = content.get("role"), content.get("content")
+        if role == "user" and isinstance(text, str) and text:
+            self.reliability.asked(conversation_id, text)
+        elif role == "tool_result":
+            self.reliability.tool(conversation_id, content)
+        elif role == "assistant" and isinstance(text, str) and text and not content.get("tool_calls"):
+            if conversation_id in self._ours:  # a conversation using Sentient, not a background AI job
+                self.reliability.answered(conversation_id, text, (self._ours.get(conversation_id) or {}).get("room"))
+            else:
+                self.reliability.forget(conversation_id)
 
     @callback
     def _tool_result(self, content: dict[str, Any], conversation_id: str | None = None) -> None:

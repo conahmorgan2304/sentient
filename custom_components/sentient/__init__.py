@@ -181,6 +181,7 @@ class SentientRuntime:
     heat_prog: Any = None  # the heating schedule: programmes of on/off periods for chosen heaters
     inner: Any = None  # corrections it learns from, an unusual day, next-room guesses and its thoughts
     proposals: Any = None  # settings changes it would make, waiting for a yes
+    reliability: Any = None  # where the voice went wrong, turn by turn (Mind page)
     holiday: Any = None  # holiday mode
     trust: Any = None  # do, say-then-do or ask first, by kind of device
     profiles: Any = None  # room profiles
@@ -540,6 +541,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     followyou = FollowYou(hass, entry.entry_id, options, get_rt)
     loops = Loops(hass, entry.entry_id, options, get_rt)
     conversations = Conversations(hass, entry.entry_id, options)
+    from .conversations import SENTIENT_ACTIONS
+    from .reliability import Reliability
+
+    reliability = Reliability(hass, entry.entry_id, options)
+    reliability.actions = frozenset(SENTIENT_ACTIONS)
+    conversations.reliability = reliability
     curiosity = Curiosity(hass, entry.entry_id, options, get_rt)
     reflection = Reflection(hass, entry.entry_id, options, get_rt)
     drive = Drive(hass, entry.entry_id, options, get_rt)
@@ -699,6 +706,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
         ai=ai, appliances=appliances, animals=animals, watchdog=watchdog, screen=screen, away=away, suggestions=suggestions,
         selftest=selftest, rain=rain, pets=pets, autobackup=autobackup, bins=bins, faces=faces, rules=rules, clips=clips, clipwatch=clipwatch,
         threads=threads, focus=Focus(), selfaware=selfaware, inner=inner, heat_prog=heat_prog, proposals=proposals, holiday=holiday, trust=trust, profiles=profiles, parcels=parcels, maintenance=maintenance, cheap_power=cheap_power, whats_new=whats_new, usage=usage, own=own, goals=goals, books=books, games=games, recipes=recipes,
+        reliability=reliability,
     )
     entry.runtime_data.intents = intents
     house_context.configure()
@@ -717,7 +725,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from . import voice_id as _voice_id
 
     entry.async_on_unload(hass.bus.async_listen(_voice_id.EVENT_TURN, lambda event: _voice_id.record_turn(hass, event, {**entry.data, **entry.options})))
-    engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "curiosity": curiosity,
+    engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "reliability": reliability, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
                "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
@@ -896,6 +904,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.night_watch.options = options
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
+    entry.runtime_data.reliability.update_options(options)
     for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed

@@ -148,7 +148,7 @@
           <div class="lanes ov3">
             <section class="lane" aria-label="Thinking"><div class="lt">THINKING</div><div id="mthink" class="card"></div><div id="mmg" class="card mg" hidden></div><div id="mlater" class="card" hidden></div></section>
             <section class="lane" aria-label="Learning"><div class="lt">LEARNING</div><div id="minner" class="card" hidden></div><div id="mlearn" class="card" hidden></div><div id="mknow" class="card" hidden></div><div id="mcheck" class="card" hidden></div><div id="mgoals" class="card" hidden></div></section>
-            <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
+            <section class="lane" aria-label="How it's doing"><div class="lt">HOW IT'S DOING</div><div id="mself" class="card" hidden></div><div id="mvoice" class="card"></div><div id="mrel" class="card" hidden></div><div id="mupd" class="card" hidden></div><div id="mdeliv" class="card"></div></section>
           </div></div>
         <div class="page" id="hp" hidden><div id="rooms" class="card rooms" hidden></div>
           <div class="lanes ov3">
@@ -716,6 +716,9 @@
         + lastHour + meter(12);
       R("mvoice").innerHTML = this._h("VOICE", (mind.voice_sessions || []).length ? `${mind.voice_sessions.length} TALKING` : "")
         + (voiceRows || '<div class="e">NO RECENT VOICE CONVERSATIONS · TURN ON CONVERSATION SESSIONS IN SETTINGS → VOICE TO SEE THEM HERE</div>');
+      const rel = mind.reliability || {};
+      R("mrel").hidden = !rel.enabled;
+      R("mrel").innerHTML = rel.enabled ? this._reliabilityCard(rel) : "";
       R("mdeliv").innerHTML = this._h("SPEAKER DELIVERIES", (mind.speech_deliveries || []).length ? `${mind.speech_deliveries.length} RECENT` : "")
         + (deliveryRows || '<div class="e">NO RECENT ANNOUNCEMENTS · OR DELIVERY HISTORY IS OFF IN SETTINGS → VOICE</div>');
       R("minc").hidden = !incidentList;
@@ -2861,6 +2864,25 @@
       }
     }
 
+    // where the voice went wrong this week, by plain rules: the measure a change to Sentient should improve
+    _reliabilityCard(rel) {
+      const when = (t) => t ? new Date(t).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
+      const rate = rel.clean_rate == null ? "" : `${Math.round(rel.clean_rate * 100)}% WITHOUT A PROBLEM`;
+      const counts = (rel.counts || []).map((c) => `${esc(c.label)} (${esc(c.count)})`).join(" · ");
+      const head = rel.turns
+        ? `<div class="r"><ha-icon icon="mdi:check-decagram-outline"></ha-icon><b class="wrap">${esc(rel.turns)} voice turn${rel.turns === 1 ? "" : "s"} in ${esc(rel.days)} days · ${esc(rel.clean_turns)} without a problem${counts ? `<small>${counts}</small>` : ""}</b><u>${rate}</u></div>`
+        : '<div class="e">NO VOICE TURNS CHECKED YET · ASK SENTIENT SOMETHING</div>';
+      const rows = (rel.recent || []).map((r) => `<div class="r warn"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><b class="wrap">${esc(r.asked)}<small>${esc(r.problems.map((p) => p.label).join(" · "))}</small><details><summary>What happened</summary><small>SAID · ${esc(r.said)}</small><small>TOOLS · ${esc((r.tools || []).join(", ") || "none")}</small>${r.problems.map((p) => `<small>${esc(p.label)} · ${esc(p.detail)}</small>`).join("")}</details></b><u>${when(r.time)}${r.room ? " · " + esc(r.room).toUpperCase() : ""}</u></div>`).join("");
+      const clear = this._hass.user?.is_admin && (rel.recent || []).length ? `<div class="row lh"><button class="btn sm ghost" data-act="reliabilityclear"><ha-icon icon="mdi:delete-outline"></ha-icon> CLEAR</button></div>` : "";
+      return this._h("WHERE THE VOICE WENT WRONG", (rel.recent || []).length ? String(rel.recent.length) : "") + head + rows + clear;
+    }
+
+    async _reliabilityClear() {
+      if (!this._hass.user?.is_admin) return;
+      try { await this._hass.callWS({ type: "sentient/reliability/clear" }); } catch (_err) { /* shown on the next refresh */ }
+      this._render();
+    }
+
     async _securityZoneHide(camera, zone) {
       if (!this._hass.user?.is_admin || !camera || !zone || this._securityZoneSaving) return;
       this._securityZoneSaving = true;
@@ -2890,6 +2912,7 @@
       if (act === "checkupdates") this._checkUpdates();
       else if (act === "securityfeedback") this._securityFeedback(id, el.dataset.value);
       else if (act === "securityzonehide") this._securityZoneHide(id, text);
+      else if (act === "reliabilityclear") this._reliabilityClear();
       else if (act === "evdone") {  // the click comes before the toggle
         const open = (this._foldOpen ||= new Set());
         if (el.parentElement?.open) open.delete(id); else open.add(id);

@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.0": [
+        "New on the Mind page: \"Where the voice went wrong\". Every voice turn is checked with plain rules, no AI: a tool that failed (and whether a retry fixed it), a device that didn't do it, saying something was done when nothing was, offering something no device can do, not being able to answer, or answering about the past without looking anything up. It shows how many turns this week went without a problem, so each update can be judged by whether that number goes up. Settings → Voice → Checks & diagnostics; on by default; switching it off clears what was kept.",
+    ],
     "1.10.5": [
         "Heating: a thermostat that drops back to its own app schedule by itself is put back in its hold after ten minutes, not the hour or three a change by hand gets, so its own programme can't undo the morning warm-up.",
         "Visitor log: the door camera's picture is taken the moment someone reaches the doorstep or rings, not a few seconds later, so quick callers aren't logged as \"nobody at the door\".",
