@@ -45,6 +45,25 @@ UP_WINDOW = timedelta(minutes=10)
 NEVER_RESTS = 0.8
 SAMPLES = 1440
 MIN_SAMPLES = 360
+# back in bed within this long of getting up is the same night (up for the loo, a cat setting off the hall at 5am):
+# one bedtime and one getting-up time, not a 5am "bedtime" (live 14 Nov: usual bedtime learned as 06:15)
+BACK_TO_BED = timedelta(hours=3)
+
+
+def one_per_night(history: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Join a night's going back to bed onto the night it belongs to: first bedtime, last getting up."""
+    out: list[dict[str, str]] = []
+    for row in history:
+        slept = dt_util.parse_datetime(row.get("slept") or "")
+        woke = dt_util.parse_datetime(out[-1].get("woke") or "") if out else None
+        if out and slept is not None and woke is not None and timedelta(0) <= slept - woke < BACK_TO_BED:
+            merged = {"slept": out[-1]["slept"]}
+            if row.get("woke"):
+                merged["woke"] = row["woke"]
+            out[-1] = merged
+        else:
+            out.append(dict(row))
+    return out
 
 
 class Sleep:
@@ -65,7 +84,7 @@ class Sleep:
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
         self.asleep, self.since = bool(data.get("asleep")), data.get("since")
-        self.history: list[dict[str, str]] = data.get("history", [])  # [{"slept": iso, "woke": iso}]
+        self.history: list[dict[str, str]] = one_per_night(data.get("history", []))  # [{"slept": iso, "woke": iso}]
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
 
@@ -199,7 +218,12 @@ class Sleep:
         self.since = dt_util.utcnow().isoformat()
         self._moves = []
         if asleep:
-            self.history.append({"slept": self.since})
+            last = self.history[-1] if self.history else {}
+            woke = dt_util.parse_datetime(last.get("woke") or "")
+            if woke is not None and dt_util.utcnow() - woke < BACK_TO_BED:
+                last.pop("woke")  # back to bed: the same night carries on
+            else:
+                self.history.append({"slept": self.since})
         elif self.history and "woke" not in self.history[-1]:
             self.history[-1]["woke"] = self.since
         del self.history[:-21]

@@ -2,6 +2,8 @@
 overnight reflection and the drive."""
 
 from datetime import timedelta
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er, llm
@@ -501,6 +503,53 @@ def test_usual_bedtime_and_getting_up() -> None:
     ] + [{"slept": D(2026, 10, 5, 0, 30, tzinfo=tz).isoformat(), "woke": D(2026, 10, 5, 7, 0, tzinfo=tz).isoformat()}]
     usual = s.usual()
     assert usual["up"] in ("06:40", "06:50") and usual["bedtime"] in ("23:10", "23:50")
+
+
+def test_going_back_to_bed_is_the_same_night_not_a_5am_bedtime() -> None:
+    """14 Nov: getting up at 5:30 and going back to bed was a new "bedtime" each time; the usual bedtime became 06:15."""
+    from datetime import datetime as D
+
+    from custom_components.sentient.sleep import one_per_night
+
+    tz = dt_util.get_default_time_zone()
+
+    def at(d, h, m):
+        return D(2026, 11, d, h, m, tzinfo=tz).isoformat()
+
+    stored = []
+    for d in (11, 12, 13):  # in bed around 00:30, up and back to bed twice before getting up properly
+        stored += [{"slept": at(d, 0, 30), "woke": at(d, 5, 31)}, {"slept": at(d, 5, 53), "woke": at(d, 6, 36)},
+                   {"slept": at(d, 7, 1), "woke": at(d, 7, 39)}]
+    nights = one_per_night(stored)
+    assert nights == [{"slept": at(d, 0, 30), "woke": at(d, 7, 39)} for d in (11, 12, 13)]
+    from custom_components.sentient.sleep import Sleep
+
+    s = Sleep.__new__(Sleep)
+    s.history = nights
+    assert s.usual() == {"bedtime": "00:30", "up": "07:39"}
+    s.history = stored  # what it worked out before
+    assert s.usual()["bedtime"] == "05:53"
+
+
+async def test_back_in_bed_soon_after_getting_up_carries_the_night_on(hass: HomeAssistant, freezer) -> None:
+    from custom_components.sentient.sleep import Sleep
+
+    rt = SimpleNamespace(timeline=Mock())
+    s = Sleep(hass, "t", {}, lambda: rt)
+    s._store = Mock()
+    freezer.move_to("2026-11-14 00:30:00+00:00")
+    await s.async_set(True)
+    freezer.move_to("2026-11-14 05:31:00+00:00")
+    await s.async_set(False)
+    freezer.move_to("2026-11-14 05:53:00+00:00")
+    await s.async_set(True)  # back to bed 22 minutes later
+    assert len(s.history) == 1 and "woke" not in s.history[0]
+    freezer.move_to("2026-11-14 07:39:00+00:00")
+    await s.async_set(False)
+    assert s.history == [{"slept": "2026-11-14T00:30:00+00:00", "woke": "2026-11-14T07:39:00+00:00"}]
+    freezer.move_to("2026-11-14 23:45:00+00:00")
+    await s.async_set(True)  # the next night is a new one
+    assert len(s.history) == 2
 
 
 def test_card_addresses_follow_the_files() -> None:

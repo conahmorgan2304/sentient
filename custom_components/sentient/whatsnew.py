@@ -20,6 +20,7 @@ NOTES: dict[str, list[str]] = {
         "Marking an incident \"nothing / an animal\" also marks its camera events \"not a person\", so the HIDE THIS ZONE suggestion learns from the incident cards too.",
         "Fixed: house changes waiting to be saved could be lost when Home Assistant restarted; they're now saved while it can still write.",
         "Fixed: tapping the heating up several times in a row is one adjustment with one time limit, not one per tap, and it goes back to where it was before the first tap.",
+        "Fixed: going back to bed soon after getting up (within three hours) is the same night, not a new bedtime. Up at 5:30 and back to bed was being learned as a 5am bedtime, so the usual bedtime read \"06:15\". Nights already saved are joined up the same way when it starts.",
         "The overnight learning note no longer says \"tested beliefs: 0 held, 0 missed\" on nights there was nothing to test.",
         "Fixed: a watch that ends with nothing seen says \"Nothing came of watching the rabbit pen for an hour\", not \"watching for Watch the rabbit pen…\".",
         "Fixed: the Mind sensor's camera lists no longer go into Home Assistant's history (it was over the 16 KB limit and logged a warning every minute).",
