@@ -152,3 +152,25 @@ async def test_doorstep_check_skipped_after_a_ring_and_when_parcels_off(hass: Ho
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert len(ai) == 1  # only the doorbell look
+
+
+async def test_the_picture_is_taken_the_moment_the_visit_starts(hass: HomeAssistant, tmp_path) -> None:
+    """14 Nov: the AI fetched the live camera seconds later and logged "nobody" for a quick caller."""
+    from homeassistant.components.camera import Image
+
+    hass.config.media_dirs = {"local": str(tmp_path)}
+    await _setup(hass)
+    seen: list[bool] = []
+
+    async def generate(call: ServiceCall):
+        media = call.data["attachments"][0]["media_content_id"]
+        seen.append(media.startswith("media-source://media_source/local/sentient/visitor_")
+                    and (tmp_path / "sentient" / media.rsplit("/", 1)[1]).read_bytes() == b"\xff\xd8caller")
+        return {"conversation_id": "x", "data": {"kind": "visitor", "description": "a man in a red coat"}}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    with patch("homeassistant.components.camera.async_get_image", return_value=Image("image/jpeg", b"\xff\xd8caller")) as grab:
+        hass.states.async_set("binary_sensor.doorbell", "on")
+        await hass.async_block_till_done()
+    assert grab.called and seen == [True]
+    assert not list((tmp_path / "sentient").iterdir())  # tidied away once looked at

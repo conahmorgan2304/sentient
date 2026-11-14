@@ -47,7 +47,8 @@ ON_MODES = ("heat_cool", "heat", "auto")  # what to wake an 'off' thermostat int
 
 def on_own_schedule(state: Any) -> bool:
     """In 'auto' on a thermostat that also offers a hold: the app's own schedule is in charge there, and that cannot be
-    switched off in the app, so Sentient puts it back in a hold (after the same wait as any other change by hand)."""
+    switched off in the app, so Sentient puts it back in a hold after a few minutes (live 14 Nov: it left the hold by
+    itself at 04:54 and its own programme undid the morning warm-up)."""
     return state is not None and state.state == "auto" and wake_mode(state) not in (None, "auto")
 
 
@@ -236,6 +237,7 @@ def _active_period(programmes, heater, when):
     return best
 
 
+OWN_SCHEDULE_WAIT = timedelta(minutes=10)  # the thermostat itself went back to its app schedule: not a person, so no long wait
 SOON_MINUTES = 30  # a period starting this soon: a thermostat found away from the schedule is left for it
 
 
@@ -477,9 +479,10 @@ class HeatingProgrammes:
             record = self._manual.setdefault(heater, {"since": now.isoformat(), "day": not self._night(rt.options, local)})
             since = dt_util.parse_datetime(record["since"]) or now
             hours = revert_hours(rt.options, bool(record["day"]))
+            wait = OWN_SCHEDULE_WAIT if on_own_schedule(state) else timedelta(hours=hours)
             if not active and _starts_within(programmes, heater, local, SOON_MINUTES):
                 continue  # a period starts in a few minutes: putting it back to the night temperature first is pointless
-            if hours > 0 and now - since >= timedelta(hours=hours):
+            if hours > 0 and now - since >= wait:
                 self._manual.pop(heater, None)
                 out.append((heater, "on" if active else "off", want if active else None, programme.get("id", programme["name"])))
         return out
