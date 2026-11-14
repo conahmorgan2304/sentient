@@ -18,6 +18,7 @@ NOTES: dict[str, list[str]] = {
     "1.10.4": [
         "Announcements: one that's skipped when a door opened just before (the gate after the back door) is now also skipped while that door is still standing open, since someone's in and out of the garden. It's on for existing announcements; switch it off per announcement with \"…or while it's still open\".",
         "Motion lights: if movement turns a light back on within five minutes of it going off, someone was sitting still, so it waits twice as long next time, then four times, until it's been off for half an hour. On for every light; switch it off per light with \"Wait longer if it comes straight back on\".",
+        "Announcements can have other triggers that mean the same thing: \"…or when any of these turn on\". Add the doorstep camera zone to the Doorbell announcement and whichever comes first, the bell or someone reaching the doorstep, is announced; the other within \"Ignore repeats for\" is the same visit and stays quiet.",
         "A device used by hand all day (the kettle) is noted on the timeline as an unexplained change once a day, not every half hour, and the count says what it means: \"the third day this week\".",
     ],
     "1.10.3": [

@@ -126,6 +126,35 @@ async def test_gate_not_announced_while_the_back_door_stands_open(hass: HomeAssi
     assert len(said) == 2
 
 
+async def test_doorbell_or_doorstep_whichever_comes_first(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(_t(21, 15, 0)))
+    hass.states.async_set("binary_sensor.doorstep_person", "off")
+    entry = await _setup(hass)
+    entry.runtime_data.lists["announce"].upsert({
+        "name": "Doorbell", "event_type": "doorbell_pressed", "messages": "Someone is at the front door.",
+        "also_entities": ["binary_sensor.doorstep_person"], "cooldown_seconds": 300,
+    })
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    # walks up without ringing: said once, then ringing a minute later is the same visit
+    hass.states.async_set("binary_sensor.doorstep_person", "on")
+    await hass.async_block_till_done()
+    assert [c.data["message"] for c in said] == ["Someone is at the front door."]
+    freezer.tick(timedelta(minutes=1))
+    hass.bus.async_fire("doorbell_pressed")
+    hass.states.async_set("binary_sensor.doorstep_person", "off")
+    hass.states.async_set("binary_sensor.doorstep_person", "on")
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    # the next visit rings first: said once, the doorstep sensor straight after is ignored
+    freezer.tick(timedelta(minutes=10))
+    hass.states.async_set("binary_sensor.doorstep_person", "off")
+    hass.bus.async_fire("doorbell_pressed")
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.doorstep_person", "on")
+    await hass.async_block_till_done()
+    assert len(said) == 2
+
+
 async def test_alarm_rings_runs_actions_then_room_actions(hass: HomeAssistant, freezer) -> None:
     freezer.move_to(dt_util.as_utc(_t(21, 5, 40)))  # a Wednesday, in quiet hours
     entry = await _setup(hass)
