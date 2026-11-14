@@ -1106,3 +1106,13 @@ async def test_changes_waiting_to_be_saved_are_saved_at_home_assistants_final_wr
     await hass.async_block_till_done()
     assert not ledger._buffer and ledger._flush_unsub is None
     assert await ledger.async_changes(entities=["light.hall"])
+
+
+async def test_overnight_doesnt_report_testing_beliefs_when_there_were_none(hass: HomeAssistant):
+    """14 Nov: "tested beliefs: 0 held, 0 missed" every night while it hasn't formed any yet."""
+    entry = await _setup(hass)
+    brain = entry.runtime_data.brain
+    with patch.object(brain.expect, "score", return_value={"percent": 94, "judged": 100}):
+        await brain.async_think_overnight()
+    line = next(i["text"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Overnight:"))
+    assert line == "Overnight: I expected 94% of yesterday's 100 changes." and "tested beliefs" not in line
