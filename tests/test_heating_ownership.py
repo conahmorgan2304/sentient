@@ -336,3 +336,13 @@ async def test_preheat_yes_after_warm_by_time_does_not_start_late(heating, freez
     freezer.tick(timedelta(seconds=90))  # inside consent expiry, but after the 05:01 warm-by deadline
     assert 'No action was taken' in await answer('yes')
     assert not calls and not heating._boosted
+
+
+async def test_tapping_the_heating_up_several_times_is_one_adjustment(heating):
+    """14 Nov 11:21: four taps up on a thermostat card made four "temporary limit" lines on the timeline."""
+    heating.timeline = Mock()
+    for degrees in (16.5, 17, 17.5, 18):  # each before the thermostat has answered
+        manual(heating, data={'temperature': degrees})
+    assert heating.timeline.add.call_count == 1
+    boost = heating._boosted[EID]
+    assert boost['temperature'] == 16 and boost['status'] == 'pending'  # put back to where it was before the first tap

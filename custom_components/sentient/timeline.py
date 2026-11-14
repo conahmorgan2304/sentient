@@ -212,7 +212,7 @@ class Timeline:
                     "frozen": f"{name.removesuffix(' frozen')}'s picture is moving again",
                 }.get(kind, f"{name} is fine again")
                 if back:
-                    self.add("health", back)
+                    self.add("health", back, recovered=True)  # on the timeline; good news doesn't buzz a phone
 
     def _starting(self, _event: Event) -> bool:
         return dt_util.utcnow() - self._started < timedelta(minutes=12)

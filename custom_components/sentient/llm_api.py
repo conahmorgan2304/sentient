@@ -2322,7 +2322,7 @@ class SentientAPI(llm.API):
         if conversation_id and (rt := _runtime(self.hass)) is not None and not private_history(rt, llm_context.device_id):
             rt.conversations.attach(conversation_id, llm_context.device_id, llm_context.platform)
         from .voice_api import SessionTool, IncidentsTool, ClarifyTool
-        from .security_voice import SecurityEventTool, SecurityFeedbackTool
+        from .security_voice import CameraActivityTool, SecurityEventTool, SecurityFeedbackTool
 
         rt0 = _runtime(self.hass)
         tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
@@ -2342,6 +2342,7 @@ class SentientAPI(llm.API):
                  *([CreateAutomationTool()] if rt0 is not None and rt0.options.get("automation_builder") else [])]
         if rt0 is not None and getattr(rt0, "security_events", None) is not None and rt0.security_events.tracking:
             tools.append(SecurityEventTool())
+            tools.append(CameraActivityTool())
             if rt0.security_events.on("security_event_feedback"):
                 tools.append(SecurityFeedbackTool())
         rt = _runtime(self.hass)
@@ -2385,6 +2386,9 @@ class SentientAPI(llm.API):
         lines = [
             f"You are {persona}, the brain of this home. The same memory is shared by "
             "every voice and automation in the house.",
+            "You have no body: you act only through the house's devices and your tools. Never offer to do anything "
+            "physical yourself (feed the pets, pop out, fetch something, make a drink, go and check). Offer what you "
+            "can do instead: a reminder, a watch, a look on a camera, or switching something on.",
             personality_line(opts),
             language_prompt(self.hass, opts),
             *([talk] if (talk := talk_line(opts)) else []),
@@ -2536,9 +2540,12 @@ class SentientAPI(llm.API):
         if rt.loops.items:
             lines.append("Follow-ups you've set: " + "; ".join(f"{i['about']} at {i['at']}" for i in rt.loops.listing()[:6]) + ".")
         if spots := rt.spots.describe():
+            past = (" For who's been there earlier (today, this morning, since…), call sentient_camera_activity with "
+                    "the spot instead: a picture now can't show what happened before."
+                    if getattr(getattr(rt, "security_events", None), "tracking", False) else "")
             lines.append(
-                "Named camera spots — for questions about these, call sentient_look with the spot; it picks "
-                "the camera that can see it: " + "; ".join(spots[:15]) + "."
+                "Named camera spots — for what's there right now, call sentient_look with the spot; it picks "
+                "the camera that can see it." + past + " Spots: " + "; ".join(spots[:15]) + "."
             )
         offline = [i["name"] for i in rt.health.issues if i.get("kind") == "offline"]
         if offline:

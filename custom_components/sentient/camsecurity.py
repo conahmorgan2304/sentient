@@ -399,6 +399,10 @@ class CameraSecurity:
                           "No person was visible in the later snapshot; the earlier sensor detection is unverified.")
             if detail and self._valid(stamp, sensor):
                 rt.timeline.mark(item, analysis=detail)
+                notifier = getattr(rt, "notifier", None)
+                if notifier is not None and hasattr(notifier, "follow_up"):
+                    notifier.follow_up(item, ("Checked the picture: no one visible, so possibly a false alarm "
+                                              "(a picture can miss someone)." if seen is False else f"Checked the picture: {detail}"))
                 if event and event.get("_snapshot_used") and seen is True:
                     events.analysis(event["id"], camera, {"summary": detail})
 

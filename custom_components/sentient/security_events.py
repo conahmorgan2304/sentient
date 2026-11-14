@@ -30,6 +30,9 @@ ZONE_MODES = ("zones", "all")
 VISIT_GAP = 60  # seconds between events on one camera that still count as the same visit
 HIDE_ZONE_AFTER = 3  # "not a person" corrections in one zone before suggesting it's hidden
 NOT_PERSON = ("false_positive", "cat")
+# a week of every camera: a busy house logs 300-400 detections a day (live 14 Nov: 57 by 11am), and the voice
+# answers "has anyone been in the garden on Monday?" from these. 200 covered only two or three days.
+MAX_EVENTS = 3000
 FEEDBACK = ("useful", "not_useful", "false_positive", "cat", "clear")
 SAFE_ID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,159}\Z")
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +84,7 @@ class SecurityEvents:
         self._subscribing = None
         self._retention_unsub = None
         self._zoned = set()  # cameras Frigate says have zones
+        self._zoned_seen = set()  # cameras with a retained event that entered a zone (kept as events arrive)
 
     def on(self, key):
         return (not self._stopped and bool(self.options.get(key))
@@ -126,6 +130,8 @@ class SecurityEvents:
                             and (key != "feedback" or value[field] in FEEDBACK)):
                         event[key] = deepcopy(value)
                 self.items[event["id"]] = event
+                if event["zones"]:
+                    self._zoned_seen.add(event["camera"])
         if self._prune():
             self._save()
         self.configure(self.options)
@@ -153,7 +159,7 @@ class SecurityEvents:
                 if isinstance(z, str) and "/" in z and z.split("/", 1)[0] == camera}
 
     def zoned(self, camera):
-        return camera in self._zoned or any(r["camera"] == camera and r.get("zones") for r in self.items.values())
+        return camera in self._zoned or camera in self._zoned_seen
 
     def in_scope(self, row):
         """Whether an event belongs on the list: in a zone that isn't hidden, unless the camera has no zones."""
@@ -211,7 +217,7 @@ class SecurityEvents:
     def _prune(self):
         before = len(self.items)
         cutoff = (dt_util.utcnow() - timedelta(days=7)).timestamp()
-        rows = sorted((r for r in self.items.values() if r["start"] >= cutoff), key=lambda r: r["start"], reverse=True)[:200]
+        rows = sorted((r for r in self.items.values() if r["start"] >= cutoff), key=lambda r: r["start"], reverse=True)[:MAX_EVENTS]
         self.items = {r["id"]: r for r in rows}
         return len(self.items) != before
 
@@ -224,7 +230,7 @@ class SecurityEvents:
 
     def _save(self):
         self._prune()
-        self._store.async_delay_save(lambda: {"items": list(self.items.values())}, 5)
+        self._store.async_delay_save(lambda: {"items": list(self.items.values())}, 30)  # Home Assistant writes pending saves at shutdown
 
     @callback
     def _message(self, message):
@@ -269,6 +275,8 @@ class SecurityEvents:
                 event.update(parked=True, parked_confirmed=True)
 
         self.items[event["id"]] = event
+        if event["zones"]:
+            self._zoned_seen.add(event["camera"])
         self._save()
         rt = self.runtime()
         # A parked vehicle can appear as a new object before Frigate has enough samples.
@@ -405,6 +413,28 @@ class SecurityEvents:
         return {"event_id": event_id, "event_ids": ids, "feedback": row.get("feedback"),
                 "incidents_reviewed": reviewed, "changed_detector_settings": False}
 
+    def from_incident_review(self, incidents, incident_id, outcome):
+        """An incident reviewed as nothing (or an animal) marks its camera events "not a person", so the zone
+        suggestions learn from the incident cards too. Taking the review back takes back only those marks."""
+        if not self.on(CONF_EVENT_FEEDBACK):
+            return 0
+        item = next((i for i in getattr(incidents, "items", []) if i.get("id") == incident_id), None)
+        ids = [e["event_id"] for e in (item or {}).get("evidence") or [] if e.get("event_id") in self.items]
+        marked = 0
+        for event_id in dict.fromkeys(ids):
+            row = self.items[event_id]
+            given = row.get("feedback") or {}
+            if outcome == "false_detection" and not given:
+                row["feedback"] = {"value": "false_positive", "at": dt_util.utcnow().isoformat(), "via": "incident",
+                                   "source": "household correction; not independent verification"}
+                marked += 1
+            elif outcome != "false_detection" and given.get("via") == "incident":
+                row.pop("feedback", None)
+                marked += 1
+        if marked:
+            self._save()
+        return marked
+
     def _review_incidents(self, ids, value):
         """"Not a person" is a reviewed false detection for an incident made only of these events.
 
@@ -463,6 +493,20 @@ class SecurityEvents:
                 groups.append([row])
         groups.sort(key=lambda g: g[0]["start"], reverse=True)
         return [self._visit(g) for g in groups[:limit]]
+
+    def activity(self, camera, since, limit=20):
+        """Every detection on one camera since a time, as visits (newest first), zones or not: what the house
+        actually saw, for "has anyone been in the garden today?". Parked vehicles are left out."""
+        self._prune()
+        rows = sorted((r for r in self.items.values() if r["camera"] == camera and not r.get("parked")
+                       and (r["end"] or r["start"]) >= since), key=lambda r: r["start"])
+        groups = []
+        for row in rows:
+            if groups and row["start"] <= max((r["end"] or r["start"]) for r in groups[-1]) + VISIT_GAP:
+                groups[-1].append(row)
+            else:
+                groups.append([row])
+        return [self._visit(g) for g in reversed(groups)][:limit]
 
     def _visit(self, rows):
         hidden = self.hidden_zones(rows[0]["camera"])

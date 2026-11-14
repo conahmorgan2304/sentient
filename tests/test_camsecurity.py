@@ -122,10 +122,14 @@ async def test_empty_later_snapshot_preserves_sensor_alert(hass: HomeAssistant, 
     async def fake(_hass, _data):
         return next(replies)
 
+    updates = []
+    entry.runtime_data.notifier.follow_up = lambda item, line: updates.append((item.get("text"), line))
     with patch("custom_components.sentient.camsecurity.async_generate", fake), \
             patch("custom_components.sentient.camsecurity.camera_for", lambda *_: "camera.shed"):
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
         assert said and any(i.get("alert") for i in entry.runtime_data.timeline.items)
+        # the phone alert is told what the picture showed, never withdrawn
+        assert updates and updates[0][1].startswith("Checked the picture: no one visible")
         assert "No person was visible in the later snapshot" in next(
             i["analysis"] for i in entry.runtime_data.timeline.items if i.get("analysis")
         )
@@ -133,6 +137,7 @@ async def test_empty_later_snapshot_preserves_sensor_alert(hass: HomeAssistant, 
         await sec._async_alert("binary_sensor.shed_person", "Someone is in the shed")
     assert len(said) == 1
     assert any(i.get("analysis") == "A man is at the shed door." for i in entry.runtime_data.timeline.items)
+    assert updates[-1][1] == "Checked the picture: A man is at the shed door."
 
 
 async def test_in_the_garden_while_everyone_is_out_is_an_alert_by_day(hass: HomeAssistant, freezer) -> None:

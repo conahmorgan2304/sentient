@@ -823,6 +823,8 @@ class Brain:
         self._suggest_gating(rt)
         score = self.expect.score(yesterday.date().isoformat())
         tested = report.get("tested") or {}
+        if not (tested.get("held") or tested.get("missed")):
+            tested = {}  # no patterns to test yet: "0 held, 0 missed" every night says nothing
         if rt is not None and (tested or score.get("judged")):
             parts = []
             if score.get("percent") is not None:

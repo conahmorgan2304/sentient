@@ -502,6 +502,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_UNDO, **d(CONF_UNDO, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_INCIDENTS, **d(CONF_INCIDENTS, False)): selector.BooleanSelector(),
+            vol.Optional("incident_front", **d("incident_front", [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["camera", "binary_sensor"], multiple=True)
+            ),
             vol.Required(CONF_EVENT_EVIDENCE, **d(CONF_EVENT_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_ZONES, **d(CONF_EVENT_ZONES, "zones")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=list(ZONE_MODES), translation_key="security_event_zones")

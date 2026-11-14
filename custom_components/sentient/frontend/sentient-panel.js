@@ -644,14 +644,33 @@
         ...(mind.conversation_diagnostics || []).slice(0, 8).map((d) => `<div class="r"><ha-icon icon="mdi:message-text-clock"></ha-icon><b class="wrap">${esc(d.request)}<details><summary>Exchange details</summary><small>REPLY · ${esc(d.reply)}</small></details><small>GOAL · ${esc(d.goal || "Unspecified")} · DEVICES · ${esc((d.entities || []).join(", ") || "None selected")}</small><small>${esc((d.reason || "").replaceAll("_", " "))}</small></b><u>${d.listen ? "LISTEN" : "STOP"} · ${hm(d.time)}</u></div>`),
       ].join("");
       const reviewControls = !!(this._hass.user?.is_admin && !this._st("guest_mode")?.state?.includes("on"));
+      // the camera events behind each incident, so its card can show the picture, the camera and what was seen
+      const seen = new Map();
+      for (const v of mind.security_visits || []) for (const id of v.ids || []) seen.set(id, v);
+      for (const e of mind.security_events || []) if (!seen.has(e.id)) seen.set(e.id, { ...e, labels: [e.label], ids: [e.id] });
+      const camName = (src) => this._hass.states?.[src]?.attributes?.friendly_name || String(src).replace(/^[a-z_]+\./, "").replace(/_/g, " ");
+      const meaning = { observed: "One report so far", investigating: "More than one camera or sensor, or at night",
+        "likely household": "Probably someone from the house", concerning: "Worth a look: an alert while you were out or the alarm was set, or someone stayed a while",
+        resolved: "Nothing new for half an hour" };
+      this._incidentEvents = new Set();
       const incidentRow = (i) => {
-        const actions = reviewControls ? `<details><summary>REVIEW THIS INCIDENT</summary>${[
-          ["household", "HOUSEHOLD"], ["visitor", "VISITOR"], ["false_detection", "FALSE DETECTION"],
-          ["concerning", "CONCERNING"], ["unresolved", "UNRESOLVED"], ["clear", "CLEAR REVIEW"]
-        ].map(([value, label]) => `<button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</details>` : "";
-        const status = this._incidentReviewReply?.id === i.id ? `<small role="status">${esc(this._incidentReviewReply.message)}</small>` : "";
-        const stage = i.stage ? `<small>${esc(i.stage.toUpperCase())}${i.stage_by && i.stage_by !== "rules" ? " · DECIDED BY THE COGNITIVE CORE" : ""}${i.rules_stage && i.rules_stage !== i.stage ? " · RULES SAID " + esc(i.rules_stage.toUpperCase()) : ""}</small>` : "";
-        return `<div class="r"><ha-icon icon="mdi:shield-search"></ha-icon><b class="wrap">${esc(i.evidence.slice(-3).map((e) => e.text).join(" · "))}${stage}<small>${esc(i.link)}</small>${i.reviewed ? "<small>REVIEWED</small>" : ""}${actions}${status}</b><u>${hm(i.start)}</u></div>`;
+        const ids = i.evidence.map((e) => e.event_id).filter(Boolean);
+        ids.forEach((id) => this._incidentEvents.add(id));
+        const linked = ids.map((id) => seen.get(id)).filter(Boolean);
+        const pic = linked.find((v) => v.snapshot)?.snapshot;
+        const labels = [...new Set(linked.flatMap((v) => v.labels || []))];
+        const zones = [...new Set(linked.flatMap((v) => v.zones || []))].map((z) => String(z).replace(/_/g, " "));
+        const others = i.evidence.filter((e) => !e.event_id).map((e) => e.text);
+        const title = [i.sources.map(camName).join(" + "), labels.join(", ")].filter(Boolean).join(" · ") || i.evidence.slice(-1)[0]?.text || "Security incident";
+        const answer = this._incidentReviewReply?.id === i.id ? this._incidentReviewReply : null;
+        const buttons = !reviewControls ? "" : i.reviewed
+          ? `<div><button class="btn sm ghost" data-act="incidentreview" data-id="${esc(i.id)}" data-value="clear">UNDO</button></div>`
+          : `<small>What was it?</small><div>${[["household", "ONE OF US"], ["visitor", "A VISITOR"], ["false_detection", "NOTHING / AN ANIMAL"],
+              ["concerning", "WORRYING"], ["unresolved", "NOT SURE"]].map(([value, label]) =>
+              `<button class="btn sm ghost" ${this._incidentReviewSaving === i.id ? "disabled" : ""} data-act="incidentreview" data-id="${esc(i.id)}" data-value="${value}">${label}</button>`).join("")}</div>`;
+        const stage = i.stage ? `<small>${esc(i.stage.toUpperCase())} · ${esc(meaning[i.stage] || i.stage_why || "")}${i.stage_by && i.stage_by !== "rules" ? " · DECIDED BY THE COGNITIVE CORE" : ""}${i.rules_stage && i.rules_stage !== i.stage ? " · RULES SAID " + esc(i.rules_stage.toUpperCase()) : ""}</small>` : "";
+        const picture = pic ? `<a class="evthumb" href="${esc(pic)}" target="_blank" rel="noopener"><img loading="lazy" alt="" src="${esc(pic)}"></a>` : '<ha-icon icon="mdi:shield-search"></ha-icon>';
+        return `<div class="r ev">${picture}<b class="wrap">${esc(title.toUpperCase())}${zones.length ? `<small>In ${esc(zones.join(", "))}</small>` : ""}${others.length ? `<small>${esc(others.slice(-2).join(" · "))}</small>` : ""}${stage}${i.reviewed ? '<small role="status">Reviewed</small>' : ""}<details><summary>What was recorded</summary>${i.evidence.map((e) => `<small>${esc(hm(e.time))} · ${esc(e.text)}</small>`).join("")}<small>${esc(i.link)}</small></details>${buttons}${answer ? `<small role="status">${esc(answer.message)}</small>` : ""}</b><u>${hm(i.start)}</u></div>`;
       };
       // reviewed incidents fold away, so what's left is what still needs a look
       const incidents = (mind.security_incidents || []).slice(0, 6);
@@ -2738,7 +2757,8 @@
 
     _securityEventRows(mind) {
       // one card per visit: events on a camera within a minute of each other (from the integration)
-      const visits = (mind.security_visits || []).slice(0, 12);
+      const covered = this._incidentEvents || new Set();  // already on an incident's card (drawn first)
+      const visits = (mind.security_visits || []).filter((v) => !(v.ids || []).some((id) => covered.has(id))).slice(0, 12);
       const feedbackOn = !!mind.security_event_feedback_enabled && !!this._hass.user?.is_admin;
       this._securityFeedbackReplies ||= new Map();
       for (const key of this._securityFeedbackReplies.keys()) {
@@ -2810,7 +2830,7 @@
       this._incidentReviewSaving = id;
       try {
         await this._hass.callWS({ type: "sentient/security/incident/review", incident_id: id, outcome });
-        this._incidentReviewReply = { id, message: "REVIEW RECORDED · NO ALERT RULES CHANGED" };
+        this._incidentReviewReply = { id, message: outcome === "clear" ? "REVIEW TAKEN BACK" : "THANKS · THIS HELPS IT LEARN · NO ALERT RULES CHANGED" };
       } catch (error) {
         this._incidentReviewReply = { id, message: "REVIEW FAILED · " + String(error.message || error) };
       } finally {

@@ -2,6 +2,8 @@
 overnight reflection and the drive."""
 
 from datetime import timedelta
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er, llm
@@ -126,6 +128,13 @@ async def test_watch_that_runs_out_is_closed_off(hass: HomeAssistant, freezer) -
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert said[-1].data["message"] == "No sign of the post — I've stopped keeping an eye out."
+    # 14 Nov: a watch named by the request itself isn't said back as "watching for Watch the rabbit pen…"
+    await hass.services.async_call(DOMAIN, "watch", {"what": "Watch the rabbit pen for an hour", "entity": "binary_sensor.letterbox",
+                                                     "to_state": "on", "minutes": 30}, blocking=True)
+    freezer.tick(timedelta(minutes=32))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert said[-1].data["message"] == "Nothing came of watching the rabbit pen for an hour."
 
 
 async def test_conversations_are_remembered_across_speakers(hass: HomeAssistant, freezer) -> None:
@@ -494,6 +503,98 @@ def test_usual_bedtime_and_getting_up() -> None:
     ] + [{"slept": D(2026, 10, 5, 0, 30, tzinfo=tz).isoformat(), "woke": D(2026, 10, 5, 7, 0, tzinfo=tz).isoformat()}]
     usual = s.usual()
     assert usual["up"] in ("06:40", "06:50") and usual["bedtime"] in ("23:10", "23:50")
+
+
+def test_going_back_to_bed_is_the_same_night_not_a_5am_bedtime() -> None:
+    """14 Nov: getting up at 5:30 and going back to bed was a new "bedtime" each time; the usual bedtime became 06:15."""
+    from datetime import datetime as D
+
+    from custom_components.sentient.sleep import one_per_night
+
+    tz = dt_util.get_default_time_zone()
+
+    def at(d, h, m):
+        return D(2026, 11, d, h, m, tzinfo=tz).isoformat()
+
+    stored = []
+    for d in (11, 12, 13):  # in bed around 00:30, up and back to bed twice before getting up properly
+        stored += [{"slept": at(d, 0, 30), "woke": at(d, 5, 31)}, {"slept": at(d, 5, 53), "woke": at(d, 6, 36)},
+                   {"slept": at(d, 7, 1), "woke": at(d, 7, 39)}]
+    nights = one_per_night(stored)
+    assert nights == [{"slept": at(d, 0, 30), "woke": at(d, 7, 39)} for d in (11, 12, 13)]
+    from custom_components.sentient.sleep import Sleep
+
+    s = Sleep.__new__(Sleep)
+    s.history = nights
+    assert s.usual() == {"bedtime": "00:30", "up": "07:39"}
+    s.history = stored  # what it worked out before
+    assert s.usual()["bedtime"] == "05:53"
+
+
+async def test_back_in_bed_soon_after_getting_up_carries_the_night_on(hass: HomeAssistant, freezer) -> None:
+    from custom_components.sentient.sleep import Sleep
+
+    rt = SimpleNamespace(timeline=Mock())
+    s = Sleep(hass, "t", {}, lambda: rt)
+    s._store = Mock()
+    freezer.move_to("2026-11-14 00:30:00+00:00")
+    await s.async_set(True)
+    freezer.move_to("2026-11-14 05:31:00+00:00")
+    await s.async_set(False)
+    freezer.move_to("2026-11-14 05:53:00+00:00")
+    await s.async_set(True)  # back to bed 22 minutes later
+    assert len(s.history) == 1 and "woke" not in s.history[0]
+    freezer.move_to("2026-11-14 07:39:00+00:00")
+    await s.async_set(False)
+    assert s.history == [{"slept": "2026-11-14T00:30:00+00:00", "woke": "2026-11-14T07:39:00+00:00"}]
+    freezer.move_to("2026-11-14 23:45:00+00:00")
+    await s.async_set(True)  # the next night is a new one
+    assert len(s.history) == 2
+
+
+async def test_well_before_the_usual_time_two_rooms_is_the_cats_not_someone_up(hass: HomeAssistant, freezer) -> None:
+    """14 Nov 05:31, 06:36, 07:06: hall and kitchen only (no landing) marked the house up and the Echos on, three times."""
+    from types import SimpleNamespace as NS
+
+    from custom_components.sentient.sleep import Sleep
+
+    for oid in ("landing", "hall", "kitchen"):
+        hass.states.async_set(f"binary_sensor.{oid}", "off", {"device_class": "motion"})
+    s = Sleep(hass, "t", {"inside_sensors": ["binary_sensor.landing", "binary_sensor.hall", "binary_sensor.kitchen"]},
+              lambda: NS(timeline=Mock()))
+    s._store = Mock()
+    tz = dt_util.get_default_time_zone()
+    from datetime import datetime as D
+
+    s.history = [{"slept": D(2026, 11, d, 0, 30, tzinfo=tz).isoformat(), "woke": D(2026, 11, d, 7, 40, tzinfo=tz).isoformat()}
+                 for d in (10, 11, 12)]
+    s.asleep = True
+    from homeassistant.const import EVENT_STATE_CHANGED
+
+    unsub = hass.bus.async_listen(EVENT_STATE_CHANGED, s._changed)
+    with patch("custom_components.sentient.sleep.area_of", lambda _h, e: e.split(".")[1]):
+        freezer.move_to(D(2026, 11, 14, 5, 31, tzinfo=tz))
+        for oid in ("hall", "kitchen"):
+            hass.states.async_set(f"binary_sensor.{oid}", "on", {"device_class": "motion"})
+            await hass.async_block_till_done()
+        assert s.asleep  # usually up about 07:40: two rooms at 05:31 isn't enough
+        hass.states.async_set("binary_sensor.landing", "on", {"device_class": "motion"})  # someone came down
+        await hass.async_block_till_done()
+        await hass.async_block_till_done()
+        assert not s.asleep
+        # nearer the usual time, two rooms is enough again
+        s.asleep = True
+        s._moves = []
+        for oid in ("hall", "kitchen"):
+            hass.states.async_set(f"binary_sensor.{oid}", "off", {"device_class": "motion"})
+        await hass.async_block_till_done()
+        freezer.move_to(D(2026, 11, 14, 6, 50, tzinfo=tz))
+        for oid in ("hall", "kitchen"):
+            hass.states.async_set(f"binary_sensor.{oid}", "on", {"device_class": "motion"})
+            await hass.async_block_till_done()
+        await hass.async_block_till_done()
+        assert not s.asleep
+    unsub()
 
 
 def test_card_addresses_follow_the_files() -> None:

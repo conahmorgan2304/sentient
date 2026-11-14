@@ -138,3 +138,100 @@ async def test_the_zone_settings_are_in_camera_security(hass, hass_ws_client):
     assert result["data"]["security_event_zones"] == "zones" and result["data"]["security_event_hidden_zones"] == []
     camsec = next(g for g in result["groups"] if g["id"] == "camsec")
     assert {"security_event_zones", "security_event_hidden_zones"} <= {f["name"] for f in camsec["schema"]}
+
+
+async def test_an_incident_reviewed_as_nothing_marks_its_camera_events_not_a_person(hass):
+    events, _cache, rt = setup(hass, security_incidents=True)
+    rt.incidents = Incidents(hass, "visits", rt.options)
+    for i in ("a", "b"):
+        events.ingest(at(300, id=i, zones=["path"]))
+    item = next(i for i in rt.incidents.items if any(e["event_id"] == "a" for e in i["evidence"]))
+    events.feedback("b", "useful")  # one the household already answered isn't overwritten
+    rt.incidents.review(item["id"], "false_detection")
+    assert events.from_incident_review(rt.incidents, item["id"], "false_detection") == 1
+    assert events.items["a"]["feedback"]["value"] == "false_positive" and events.items["b"]["feedback"]["value"] == "useful"
+    rt.incidents.review(item["id"], "household")
+    assert events.from_incident_review(rt.incidents, item["id"], "household") == 1  # takes back only its own mark
+    assert "feedback" not in events.items["a"] and events.items["b"]["feedback"]["value"] == "useful"
+    events.configure({**events.options, "security_event_feedback": False})
+    assert events.from_incident_review(rt.incidents, item["id"], "false_detection") == 0
+
+
+async def test_reviewing_an_incident_on_the_page_reports_the_events_it_marked(hass, hass_ws_client):
+    from tests.test_phase3 import _setup
+
+    entry = await _setup(hass, security_incidents=True, security_event_evidence=True, security_event_feedback=True,
+                         clip_cameras=["camera.garden"])
+    hass.states.async_set("camera.garden", "idle", {"friendly_name": "Garden"})
+    rt = entry.runtime_data
+    rt.security_events.ingest(at(120, id="ev.ws", zones=["lawn"]))
+    item = next(i for i in rt.incidents.items if any(e["event_id"] == "ev.ws" for e in i["evidence"]))
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/security/incident/review", "incident_id": item["id"], "outcome": "false_detection"})
+    reply = await ws.receive_json()
+    assert reply["success"] and reply["result"]["events_marked"] == 1
+    assert rt.security_events.items["ev.ws"]["feedback"]["value"] == "false_positive"
+
+
+async def test_the_voice_can_say_who_has_been_to_a_spot_today(hass):
+    """14 Nov: fed the rabbits at 12:50 (seven person events in the Garden zone); asked at 13:08, the voice took a
+    live picture and said nobody had been. It needs the camera's record, by camera, room or named spot."""
+    from types import SimpleNamespace
+
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.security_voice import CameraActivityTool
+    from tests.test_security_events import context
+
+    events, _cache, rt = setup(hass)
+    rt.spots = SimpleNamespace(spots={"rabbit pen": {"name": "rabbit pen", "camera": "camera.garden"}},
+                               find_any=lambda text: "rabbit pen" if "rabbit" in text.lower() else None)
+    for n, ago in enumerate((1500, 1470, 1440, 1400)):  # one visit, about 25 minutes ago
+        events.ingest(at(ago, id=f"feed.{n}", zones=["Garden"]))
+    events.ingest(at(30000, id="old.cat", label="cat", zones=["Garden"]))  # over eight hours ago
+    tool = CameraActivityTool()
+    with patch("custom_components.sentient.security_voice._runtime", return_value=rt), \
+            patch("custom_components.sentient.security_voice.allowed", return_value=True):
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "the rabbit pen", "hours": 3}), context())
+        assert out["camera"] == "Garden" and out["spot"] == "rabbit pen"
+        assert len(out["visits"]) == 1 and out["visits"][0]["seen"] == ["person"] and out["visits"][0]["events"] == 4
+        assert out["visits"][0]["zones"] == ["Garden"]
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "garden", "hours": 12}), context())
+        assert [v["seen"] for v in out["visits"]] == [["person"], ["cat"]]  # newest first, every detection, zone or not
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "garden", "hours": 12, "label": "cat"}), context())
+        assert [v["seen"] for v in out["visits"]] == [["cat"]]
+        assert "error" in await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "moon"}), context())
+
+
+def test_questions_about_rabbits_and_the_garden_offer_the_camera_record() -> None:
+    from custom_components.sentient.focus import Focus
+
+    assert "sentient_camera_activity" in Focus().tools_for("Has anyone fed the rabbits this afternoon?")
+
+
+async def test_the_front_door_and_the_back_gate_are_never_one_incident(hass):
+    """14 Nov: the doorbell and the gate camera were linked as one incident; they're on opposite sides of the house."""
+    inc = Incidents(hass, "sides", {"security_incidents": True})
+    now = dt_util.utcnow()
+    a = inc.add("camera.front_door_doorbell", "Frigate reported person", "event", when=now)
+    b = inc.add("camera.gate", "Frigate reported person", "event", when=now)
+    assert a is b  # by time alone (nothing set), they'd be grouped
+    inc = Incidents(hass, "sides", {"security_incidents": True,
+                                     "incident_front": ["camera.front_door_doorbell", "binary_sensor.frontdoor_sensor"]})
+    front = inc.add("camera.front_door_doorbell", "Frigate reported person", "event", when=now)
+    back = inc.add("camera.gate", "Frigate reported person", "event", when=now)
+    assert front is not back
+    assert inc.add("binary_sensor.frontdoor_sensor", "Front door: on", "contact", when=now) is front
+    assert inc.add("camera.garden", "Frigate reported person", "event", when=now) is back  # back joins back
+    assert inc._side("camera.shed") == "back"
+
+
+async def test_front_of_the_house_is_in_safety_settings(hass, hass_ws_client):
+    from tests.test_phase3 import _setup
+
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/settings"})
+    result = (await ws.receive_json())["result"]
+    safety = next(g for g in result["groups"] if g["id"] == "safety")
+    assert "incident_front" in {f["name"] for f in safety["schema"]} and result["data"]["incident_front"] == []
