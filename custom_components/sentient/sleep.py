@@ -52,6 +52,11 @@ BACK_TO_BED = timedelta(hours=3)
 # that three times on 14 Nov, switching the Echos back on each time. A person comes down through more rooms.
 EARLY_MARGIN = timedelta(minutes=90)
 EARLY_ROOMS = 3
+# a sensor can be fine by day and never rest at night (a cat asleep in its view: the living room was "on" 98% of
+# the time from 01:00 to 06:06 on 14 Nov, so the house was only marked asleep at 05:25). Judged on night-time
+# samples alone (quiet hours, once a minute), kept across restarts.
+NIGHT_SAMPLES = 600
+MIN_NIGHT_SAMPLES = 120
 
 
 def one_per_night(history: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -80,6 +85,7 @@ class Sleep:
         self.since: str | None = None
         self._moves: list[tuple[datetime, str]] = []
         self._samples: dict[str, deque[bool]] = {}
+        self._night: dict[str, deque[bool]] = {}  # quiet-hours samples only
         self.history: list[dict[str, str]] = []
         self._restless_seen: frozenset[str] = frozenset()
         self.listeners: list[Callable[[], None]] = []  # told when the never-resting list changes
@@ -89,6 +95,8 @@ class Sleep:
         data = await self._store.async_load() or {}
         self.asleep, self.since = bool(data.get("asleep")), data.get("since")
         self.history: list[dict[str, str]] = one_per_night(data.get("history", []))  # [{"slept": iso, "woke": iso}]
+        self._night = {e: deque((c == "1" for c in bits), maxlen=NIGHT_SAMPLES)
+                       for e, bits in (data.get("night") or {}).items() if isinstance(bits, str)}
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
 
@@ -138,9 +146,41 @@ class Sleep:
                 "ignoring": self.never_rests()}
 
     # ----- sensors that never rest ---------------------------------------------------------
-    def _sample(self, sensors: list[Any]) -> None:
+    def _sample(self, sensors: list[Any], night: bool = False) -> None:
         for s in sensors:
             self._samples.setdefault(s.entity_id, deque(maxlen=SAMPLES)).append(s.state == "on")
+            if night:
+                self._night.setdefault(s.entity_id, deque(maxlen=NIGHT_SAMPLES)).append(s.state == "on")
+
+    def restless_at_night(self) -> list[dict[str, Any]]:
+        """Sensors on for most of the night: at night they can't say whether anyone's up."""
+        out = []
+        for eid, d in self._night.items():
+            if len(d) >= MIN_NIGHT_SAMPLES and (share := sum(d) / len(d)) >= NEVER_RESTS:
+                st = self.hass.states.get(eid)
+                out.append({"entity_id": eid, "name": st.name if st else eid, "on_share": round(share, 2)})
+        return out
+
+    def _in_use(self, room: str | None) -> bool:
+        """A light on, or something playing, in this room: people, not a cat asleep in the dark.
+
+        (A TV's own "idle" can't be trusted: the living room TV stayed "idle" until 03:39 after going off at 00:30.)"""
+        if not room:
+            return False
+        for st in self.hass.states.async_all(("light", "media_player")):
+            if area_of(self.hass, st.entity_id) != room:
+                continue
+            if st.domain == "light" and st.state == "on":
+                return True
+            if st.domain == "media_player" and (st.state == "playing" or (
+                    st.state == "on" and st.attributes.get("device_class") == "tv")):
+                return True
+        return False
+
+    def _save(self) -> None:
+        self._store.async_delay_save(lambda: {
+            "asleep": self.asleep, "since": self.since, "history": self.history,
+            "night": {e: "".join("1" if x else "0" for x in d) for e, d in self._night.items()}}, 1)
 
     def never_rests(self) -> list[dict[str, Any]]:
         """Sensors on for most of the last day: they can't say whether the house is asleep or up."""
@@ -177,14 +217,19 @@ class Sleep:
         ignore = set(self.options.get(CONF_SLEEP_IGNORE) or [])
         sensors = [s for e in inside_sensors(self.hass, self.options) if e not in ignore
                    and (s := self.hass.states.get(e)) and s.state not in ("unavailable", "unknown")]
-        self._sample(sensors)
+        quiet = rt.speech.quiet_hours_now()
+        self._sample(sensors, night=quiet)
+        if quiet and now.minute % 30 == 0:
+            self._save()  # the night's samples outlast a restart
         if (now_restless := frozenset(self._restless())) != self._restless_seen:
             self._restless_seen = now_restless
             for cb in list(self.listeners):
                 cb()
-        if self.asleep or not rt.speech.quiet_hours_now():
+        if self.asleep or not quiet:
             return
-        restless = self._restless()
+        restless = self._restless() | {r["entity_id"] for r in self.restless_at_night()}
+        # set aside only while its room is dark and quiet: with the lamp or the TV on, it's people
+        restless = {e for e in restless if not self._in_use(area_of(self.hass, e))}
         sensors = [s for s in sensors if s.entity_id not in restless]
         if not sensors or any(s.state == "on" for s in sensors):
             return
@@ -206,7 +251,8 @@ class Sleep:
         by_hand = new.domain == "light" and new.state == "on" and not new.context.parent_id
         if not by_hand and (new.state != "on" or new.entity_id not in inside_sensors(self.hass, self.options)
                             or new.entity_id in set(self.options.get(CONF_SLEEP_IGNORE) or [])
-                            or new.entity_id in self._restless()):
+                            or new.entity_id in self._restless()
+                            or new.entity_id in {r["entity_id"] for r in self.restless_at_night()}):
             return  # a bedroom sensor stirring isn't anyone up: it takes movement in two other rooms (or a light)
         area = area_of(self.hass, new.entity_id) or new.entity_id
         cutoff = now - UP_WINDOW
@@ -247,7 +293,7 @@ class Sleep:
         elif self.history and "woke" not in self.history[-1]:
             self.history[-1]["woke"] = self.since
         del self.history[:-21]
-        self._store.async_delay_save(lambda: {"asleep": self.asleep, "since": self.since, "history": self.history}, 1)
+        self._save()
         rt = self._rt()
         if rt is not None:
             rt.timeline.add("mode", "House asleep" if asleep else "Up and about", why or None)

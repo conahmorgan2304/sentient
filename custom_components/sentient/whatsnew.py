@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.10.3": [
+        "Fixed: a motion sensor that's fine by day but never rests at night (a cat asleep in its view) kept the house \"up\" until it went quiet near dawn, so the usual bedtime was learned as 05:25. It's now set aside at night while its room is dark and quiet; with a light on or something playing in there, it still counts as someone up. What it learns about the night is kept across restarts.",
+    ],
     "1.10.2": [
         "Security page: each incident card shows its camera picture, the camera, what was seen and the zones, says in plain words what its stage means (\"Observed · one report so far\"), and asks \"What was it?\" — one of us, a visitor, nothing or an animal, worrying, or not sure. A camera visit that's part of an incident is shown on that card, not twice.",
         "Marking an incident \"nothing / an animal\" also marks its camera events \"not a person\", so the HIDE THIS ZONE suggestion learns from the incident cards too.",
