@@ -23,6 +23,8 @@ NOTES: dict[str, list[str]] = {
         "The setup doctor is tidier: a one-line verdict at the top, anything to fix first with what to do, then each area as its own section of small tiles, with a detail they all share said once.",
         "A heater or kettle changed at the device while someone is up and moving about is noted on the timeline, not said or sent to phones as house health. Overnight, or with nobody moving, it's said as before.",
         "A self-test that gets every answer right is noted on the Mind tab instead of being sent to phones; a wrong answer still is.",
+        "Heating schedule: a thermostat running its own built-in programme (a Smart Life one can't have it switched off in the app) is now put into its manual hold by sending the mode on its own, which it accepts, rather than with the temperature, which it ignored. If it still won't hold, the timeline says so.",
+        "Settings: Never touch is under System, and Safety & security has its own Safety section with Night watch, instead of both sitting under Cameras.",
         "Heating schedule: a thermostat found away from the schedule (for example running its own built-in programme) is no longer put back to the night temperature when a period starts within half an hour, and the timeline names today's programme rather than the first one saved.",
     ],
     "1.9.0": [
