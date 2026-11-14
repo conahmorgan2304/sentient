@@ -142,6 +142,17 @@ async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client,
     item = rt.incidents.add("camera.gate", "Person reported at Gate", "detection")
     if item is not None:
         rt.incidents.review(item["id"], "visitor")
+    # camera visits on the Security page: one to review, one reviewed, and a zone suggested for hiding
+    from homeassistant.util import dt as dt_util
+
+    events = rt.security_events
+    events.cameras = lambda: {"gate"}
+    now = dt_util.utcnow().timestamp()
+    for n, (zone, label) in enumerate((("path", "person"), ("path", "person"), ("path", "person"), ("drive", "cat"))):
+        events.ingest({"id": f"visit-{n}", "camera": "gate", "label": label, "start_time": now - 4000 + n * 900,
+                       "end_time": now - 3990 + n * 900, "entered_zones": [zone], "has_snapshot": True, "has_clip": True})
+    for n in range(3):
+        events.feedback(f"visit-{n}", "false_positive")
     from homeassistant.helpers.entity_component import DATA_INSTANCES
 
     for entity in hass.data[DATA_INSTANCES]["sensor"].entities:  # the Mind sensor shows them now, not in a minute

@@ -295,3 +295,4 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] 1.7.0 — Sentient 2.0 Phase 2: conversations, memory and learning measured (see the Phase 2 items above).
 - [x] 1.8.0 — Sentient 2.0 Phase 3: the cognitive core reasons about the order of events, is scored against the usual rules per kind of incident, and can earn a second decision (night heads-ups for people coming home).
 - [x] 1.9.0 — Sentient 2.0 Phase 4: guarded, verified voice routines and model routing measured per kind of job.
+- [x] 1.10.0 — Security page events follow Frigate zones, grouped into visits; GOOD CATCH / NOT A PERSON / IGNORE fold reviewed visits away and NOT A PERSON counts as an incident review; HIDE THIS ZONE after repeated corrections.

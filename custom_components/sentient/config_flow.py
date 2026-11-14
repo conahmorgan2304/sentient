@@ -20,7 +20,8 @@ from .incidents import CONF_COVERAGE
 from .frigate_health import CONF_FRIGATE_HEALTH
 from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
-from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK
+from .security_events import (CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_EVENT_ZONES,
+                              CONF_HIDDEN_ZONES, ZONE_MODES)
 from .clip_analysis import CONF_SHARED_CLIPS
 
 from .const import (
@@ -502,6 +503,12 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_EVIDENCE, **d(CONF_EVIDENCE, False)): selector.BooleanSelector(),
             vol.Required(CONF_INCIDENTS, **d(CONF_INCIDENTS, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_EVIDENCE, **d(CONF_EVENT_EVIDENCE, False)): selector.BooleanSelector(),
+            vol.Required(CONF_EVENT_ZONES, **d(CONF_EVENT_ZONES, "zones")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=list(ZONE_MODES), translation_key="security_event_zones")
+            ),
+            vol.Optional(CONF_HIDDEN_ZONES, **d(CONF_HIDDEN_ZONES, [])): selector.TextSelector(
+                selector.TextSelectorConfig(multiple=True)
+            ),
             vol.Required(CONF_COVERAGE, **d(CONF_COVERAGE, False)): selector.BooleanSelector(),
             vol.Required(CONF_FRIGATE_HEALTH, **d(CONF_FRIGATE_HEALTH, False)): selector.BooleanSelector(),
             vol.Required(CONF_EVENT_CONTEXT, **d(CONF_EVENT_CONTEXT, False)): selector.BooleanSelector(),

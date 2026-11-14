@@ -223,7 +223,7 @@ class Incidents:
             "alert_level": item.get("alert_level", 0),
         }
 
-    def review(self, incident_id: str, outcome: str) -> dict:
+    def review(self, incident_id: str, outcome: str, via: str | None = None) -> dict:
         """Attach explicit household review to a retained incident only.
 
         Human review is not independent ground truth. Never adjust alarms,
@@ -251,6 +251,8 @@ class Incidents:
             row["household_review"] = {"label": outcome, "predicted_stage": predicted, "core_stage": core,
                                        "at": now, "source": "household_review_not_independent_proof",
                                        "prediction_recorded": verified}
+            if via:
+                row["household_review"]["via"] = via  # e.g. "not a person" on the security page
             self.reviews.append({"id": incident_id, "at": now, "label": outcome, "legacy": predicted, "core": core,
                                  "prediction_recorded": verified, "prediction_at": snapshot.get("at") if verified else None})
             self.reviews = self.reviews[-MAX_REVIEWS:]
@@ -345,7 +347,7 @@ class Incidents:
         out = []
         for i in chosen:
             row = dict(i, evidence=[public_evidence(e) for e in i['evidence']], assessment=assess_incident(i))
-            row.pop("household_review", None)  # private labels are shown only in aggregate
+            row["reviewed"] = isinstance(row.pop("household_review", None), dict)  # the label stays private
             # The original stage remains authoritative; the new coordinator
             # only compares decisions and tracks disagreement for later review.
             final, reason, by, legacy_stage = self.stage_for(i, row['assessment'])

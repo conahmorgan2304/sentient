@@ -35,7 +35,8 @@ from .incidents import CONF_COVERAGE
 from .frigate_health import CONF_FRIGATE_HEALTH
 from .topics import CONF_ROOM_HANDOFF
 from .sessions import CONF_SESSIONS, CONF_SESSION_SECONDS, CONF_GUARDED, CONF_UNDO, CONF_EVIDENCE, CONF_INCIDENTS
-from .security_events import CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
+from .security_events import (CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_EVENT_ZONES,
+                              CONF_HIDDEN_ZONES, FEEDBACK)
 from .clip_analysis import CONF_SHARED_CLIPS
 
 from .const import (
@@ -336,7 +337,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ]),
     ("camsec", "Camera security", "mdi:cctv", "People on the cameras: their route from one to the next, someone in the garden without the gate opening, anyone about at night.", [
         CONF_CAMSEC, CONF_CAMSEC_SENSORS, CONF_CAMSEC_INSIDE, CONF_CAMSEC_ENTRIES, CONF_CAMSEC_DESCRIBE, "security_reasoning",
-        CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE, CONF_FRIGATE_HEALTH,
+        CONF_EVENT_EVIDENCE, CONF_EVENT_ZONES, CONF_HIDDEN_ZONES, CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, CONF_COVERAGE,
+        CONF_FRIGATE_HEALTH,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
         CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT,
@@ -1103,7 +1105,8 @@ def ws_incident_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> 
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/security/event/feedback",
-                                  vol.Required("event_id"): str, vol.Required("value"): vol.In(FEEDBACK)})
+                                  vol.Required("event_id"): str, vol.Required("value"): vol.In(FEEDBACK),
+                                  vol.Optional("event_ids"): vol.All([str], vol.Length(max=50))})
 @websocket_api.require_admin
 @callback
 def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
@@ -1111,11 +1114,35 @@ def ws_security_event_feedback(hass: HomeAssistant, connection, msg: dict[str, A
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
-    result = entry.runtime_data.security_events.feedback(msg["event_id"], msg["value"])
+    result = entry.runtime_data.security_events.feedback(msg["event_id"], msg["value"], msg.get("event_ids") or ())
     if result.get("error"):
         connection.send_error(msg["id"], "not_available", result["error"])
     else:
         connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "sentient/security/zone/hide",
+                                  vol.Required("camera"): vol.All(str, vol.Length(min=1, max=160)),
+                                  vol.Required("zone"): vol.All(str, vol.Length(min=1, max=100)),
+                                  vol.Optional("hide", default=True): bool})
+@websocket_api.require_admin
+@callback
+def ws_security_zone_hide(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Stop listing movement that's only in one zone of a camera (or list it again). Frigate isn't changed."""
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
+        return
+    if "/" in msg["camera"]:
+        connection.send_error(msg["id"], "invalid", "Not a camera name")
+        return
+    key = f"{msg['camera'].removeprefix('camera.')}/{msg['zone']}"
+    options = {**entry.data, **entry.options}
+    hidden = [z for z in options.get(CONF_HIDDEN_ZONES) or [] if isinstance(z, str) and z != key]
+    if msg["hide"]:
+        hidden.append(key)
+    hass.config_entries.async_update_entry(entry, options={**options, CONF_HIDDEN_ZONES: hidden[-50:]})
+    connection.send_result(msg["id"], {"hidden": hidden[-50:], "detector_settings_changed": False})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/whats_new"})
@@ -1170,6 +1197,7 @@ def ws_usage(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_incident_review)
     websocket_api.async_register_command(hass, ws_security_event_feedback)
+    websocket_api.async_register_command(hass, ws_security_zone_hide)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_games_edit)
@@ -1390,6 +1418,8 @@ DEPENDS: dict[str, str] = {
     **{k: "ai_routing_enabled" for k in ("ai_routing_alternative", "ai_routing_primary_cost",
                                            "ai_routing_alternative_cost", "ai_routing_max_p95_ms")},
     "cognitive_shadow": CONF_INCIDENTS,
+    CONF_EVENT_ZONES: CONF_EVENT_EVIDENCE,
+    CONF_HIDDEN_ZONES: CONF_EVENT_EVIDENCE,
     "cognitive_decides": CONF_INCIDENTS,
     "cognitive_quiet_heads_up": "cognitive_decides",
     "security_reasoning": CONF_CAMSEC,

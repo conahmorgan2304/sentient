@@ -9,9 +9,10 @@ vm.runInNewContext(fs.readFileSync('custom_components/sentient/frontend/sentient
 });
 function setup(callWS) {
   const panel = new Panel();
-  panel.mind = { security_event_feedback_enabled: true, security_events: [
-    { id: 'event-one', camera: 'garden', label: 'person', alerts: [], limits: 'Not live evidence',
-      analysis: { summary: '<unsafe description>' }, snapshot: true, clip: true },
+  panel.mind = { security_event_feedback_enabled: true, security_visits: [
+    { id: 'event-one', ids: ['event-one', 'event-two'], camera: 'garden', labels: ['person', 'cat'], zones: ['side_path'],
+      start: 1700000000, end: 1700000030, alerts: [], limits: 'Not live evidence',
+      analysis: { summary: '<unsafe description>' }, snapshot: '/thumb.jpg', clip: '/clip.mp4' },
   ] };
   panel._hass = { user: { is_admin: true }, callWS };
   panel._st = () => ({ attributes: panel.mind });
@@ -20,28 +21,49 @@ function setup(callWS) {
   return panel;
 }
 
-test('event feedback waits for acknowledgement, prevents repeat clicks and clears visibly', async () => {
-  let finish, calls = 0;
-  const panel = setup(() => { calls++; return new Promise(resolve => { finish = resolve; }); });
-  const pending = panel._securityFeedback('event-one', 'cat');
+test('visit feedback waits for acknowledgement, covers every event of the visit and folds it away', async () => {
+  let finish, calls = 0, sent;
+  const panel = setup((msg) => { calls++; sent = msg; return new Promise(resolve => { finish = resolve; }); });
+  assert.match(panel.html, /GARDEN · .* · PERSON, CAT/);
+  assert.match(panel.html, /In side path · 2 events/);
+  assert.match(panel.html, />GOOD CATCH<.*>NOT A PERSON<.*>IGNORE</);
+  assert.doesNotMatch(panel.html, /REVIEWED \(/);
+  const pending = panel._securityFeedback('event-one', 'false_positive');
   assert.match(panel.html, /Saving event feedback/);
   assert.match(panel.html, /disabled data-act="securityfeedback"/);
-  assert.doesNotMatch(panel.html, /Saved feedback:/);
-  await panel._securityFeedback('event-one', 'cat');
+  await panel._securityFeedback('event-one', 'false_positive');
   assert.equal(calls, 1);
-  finish({ feedback: { value: 'cat' } });
+  assert.deepEqual(sent.event_ids, ['event-one', 'event-two']);
+  finish({ feedback: { value: 'false_positive' }, incidents_reviewed: 1 });
   await pending;
-  assert.match(panel.html, /Saved feedback: cat/);
+  assert.match(panel.html, /<details class="evdone"><summary data-act="evdone" data-id="visits">REVIEWED \(1\)<\/summary>/);
+  assert.match(panel.html, /Marked not a person · counted as a reviewed false detection/);
+  assert.match(panel.html, />UNDO</);
+  assert.doesNotMatch(panel.html, />GOOD CATCH</);
   panel._hass.callWS = async () => ({ feedback: null });
   await panel._securityFeedback('event-one', 'clear');
-  assert.doesNotMatch(panel.html, /Saved feedback:|Saving event feedback/);
+  assert.doesNotMatch(panel.html, /Marked|Saving event feedback|REVIEWED \(/);
+  assert.match(panel.html, />GOOD CATCH</);
+});
+
+test('a zone marked not a person a few times can be hidden from the list', async () => {
+  let sent;
+  const panel = setup(async (msg) => { sent = msg; return { hidden: ['garden/side_path'] }; });
+  panel.mind.security_event_feedback_summary = [{ camera: 'garden', reviewed: 3, useful: 0, not_useful: 0, false_positive: 3, cat: 0,
+    limits: 'Only reviewed events', zones: [{ zone: 'side_path', not_a_person: 3 }] }];
+  panel._render();
+  assert.match(panel.html, /side path: 3 marked not a person/);
+  assert.match(panel.html, /data-act="securityzonehide" data-id="garden" data-text="side_path">HIDE THIS ZONE/);
+  await panel._securityZoneHide('garden', 'side_path');
+  assert.equal(JSON.stringify(sent), JSON.stringify({ type: 'sentient/security/zone/hide', camera: 'garden', zone: 'side_path', hide: true }));
+  assert.match(panel.html, /side path hidden/);
 });
 
 test('feedback errors are visible and escaped, with retry available', async () => {
   const panel = setup(async () => { throw new Error('<event expired>'); });
   await panel._securityFeedback('event-one', 'cat');
   assert.match(panel.html, /role="alert">&lt;event expired&gt;/);
-  assert.doesNotMatch(panel.html, /Saved feedback:|disabled data-act/);
+  assert.doesNotMatch(panel.html, /Marked|disabled data-act/);
   assert.match(panel.html, /&lt;unsafe description&gt;/);
   assert.doesNotMatch(panel.html, /<unsafe description>/);
 });

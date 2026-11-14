@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.10.0": [
+        "Security page: camera events now follow your Frigate zones. On a camera with zones, only something that entered one is listed or starts a security incident; walking past outside every zone no longer does. Settings → Camera security → Which camera events are listed.",
+        "Events on one camera within a minute of each other are one visit: one card with the time, what was seen, the zones it went through and a thumbnail.",
+        "Three buttons per visit: GOOD CATCH, NOT A PERSON and IGNORE. A reviewed visit folds away into REVIEWED, and so does a reviewed incident. NOT A PERSON also counts as a reviewed false detection for an incident made only of that visit; a review you gave yourself is never replaced.",
+        "After three NOT A PERSON in one zone, the Security page offers HIDE THIS ZONE: movement only in that zone stops being listed. Frigate isn't changed, and the zone can be listed again in Settings.",
+    ],
     "1.9.0": [
         "Voice routines now check requested final device states and report failures. Already-satisfied states are distinguished from changes; unsupported or conditional steps cannot be proven executed from a matching state alone.",
         "Only successfully changed lights and switches in explicitly voice-requested routines get temporary person-request priority. Automated routines and unchanged devices do not.",

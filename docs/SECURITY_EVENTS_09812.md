@@ -29,6 +29,16 @@ Camera and sensor exposure and read permissions are checked, including after asy
 
 Feedback never changes Frigate thresholds, masks, zones, alarm state or announcement suppression automatically. The camera summary counts only reviewed events, rather than claiming a measured false-positive rate. Three reviewed person events marked cat/false positive produce a suggestion to review that camera's detection settings. Feedback remains a household report, separately labelled from detector output and AI inference.
 
+## Zones, visits and corrections (1.10.0)
+
+Frigate's event feed reports every object it tracks, whether or not it entered a zone; its required zones only apply to its own alerts and detections. With **Which camera events are listed** at *Only what enters a zone* (the default), an event on a camera that has zones is listed, and can start a security incident, only once the object has entered one of them. Which cameras have zones comes from Frigate's `/api/config`, or from any retained event that entered a zone; a camera with no zones lists everything. *Anything detected* lists every tracked object, as before.
+
+Events on one camera that start within a minute of the previous one ending are shown as one visit. A visit is a display grouping; it doesn't establish that it was one person.
+
+The page offers GOOD CATCH (useful), NOT A PERSON (false positive) and IGNORE (not useful) for a whole visit. A reviewed visit, and a reviewed incident, folds into a REVIEWED list; UNDO clears it. NOT A PERSON is also recorded as a `false_detection` review for any incident whose evidence is made only of that visit's events, so it counts towards the cognitive core's authority; incidents with other evidence (a door, a sensor without an event ID) are left for REVIEW THIS INCIDENT, and a review given there is never replaced. Changing the answer takes back only reviews made from the event card.
+
+After three NOT A PERSON corrections on person events in one zone of a camera, the page offers HIDE THIS ZONE. Hidden zones (`camera/zone`, Settings → Camera security) stop events that are only ever in them from being listed or starting incidents. Frigate's settings are never changed.
+
 ## Shared analysis and cost
 
 The shared cache coalesces concurrent compatible requests and reuses completed results. Keys include camera, event ID, footage range, provider, identity profile and the current settings/privacy context. Both compatible paths use the same neutral structured analysis and at most the first 30 seconds of a finished event. Budget is spent inside the producer, once, rather than by each waiter. Individual waiter cancellation does not cancel another valid waiter's producer.
