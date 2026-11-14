@@ -63,9 +63,16 @@ def wanted(item: dict[str, Any], kinds: set[str]) -> str | None:
         return "Daily digest"
     if kind == "learned" and "digest" in kinds:
         return "This week"
-    if kind == "health" and "health" in kinds:
+    if kind == "health" and "health" in kinds and not item.get("recovered"):
         return "House health"
     return None
+
+
+def alert_tag(item: dict[str, Any]) -> str:
+    """One notification per security alert: later news about it replaces it rather than adding another."""
+    import hashlib
+
+    return "sentient-alert-" + hashlib.sha1(str(item.get("time") or "").encode()).hexdigest()[:10]
 
 
 def app_service_for(hass: HomeAssistant, entity_id: str) -> str | None:
@@ -230,6 +237,8 @@ class Notifier:
         kind = "door" if event.data.get("kind") == "visitor" else "reminders" if event.data.get("reminder") else None
         link = tap_link(event.data)
         tap = {"url": link, "clickAction": link, "group": "sentient"}  # iOS opens url, Android clickAction
+        if event.data.get("kind") == "security":
+            tap["tag"] = alert_tag(event.data)  # so the picture check can update this notification in place
         if self.on_sent is not None:
             self.on_sent(event.data.get("time"), title)
         rich = self._with_buttons(kind, event.data) if kind else None
@@ -243,6 +252,22 @@ class Notifier:
             self.hass.async_create_task(self._send_app(sorted(set(apps.values())), f"{persona} · {title}", text, tap), eager_start=True)
         if others := [t for t in targets if t not in apps]:
             self.hass.async_create_task(self._send(others, f"{persona} · {title}", text), eager_start=True)
+
+    @callback
+    def follow_up(self, item: dict[str, Any] | None, line: str) -> None:
+        """Add what the picture showed to a security alert already on the phones, in place (same tag, no new buzz).
+
+        The alert itself always goes first and is never withdrawn: a snapshot can miss someone."""
+        if not item or not item.get("phoned") or not line:
+            return
+        apps = phone_apps(self.hass, self.options)
+        if not apps:
+            return
+        persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
+        link = tap_link(item)
+        data = {"url": link, "clickAction": link, "group": "sentient", "tag": alert_tag(item), "alert_once": True}
+        self.hass.async_create_task(self._send_app(apps, f"{persona} · {item['phoned']}",
+                                                   f"{item.get('text', '')}\n{line}", data), eager_start=True)
 
     async def _send(self, targets: list[str], title: str, message: str) -> None:
         try:
