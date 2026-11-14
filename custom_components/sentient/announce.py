@@ -1,8 +1,10 @@
 """Announcements: said straight away when something happens — the doorbell, the gate opening.
 
 Set up on the Settings page: what to watch, what to say (a few ways, picked at random), on which
-speakers, whether it gets through quiet hours, and a door that means "someone's just going out"
-(the gate opening within half a minute of the back door isn't news). Afterwards the house keeps
+speakers, whether it gets through quiet hours, other things that mean the same visit (the doorbell pressed, or
+someone reaching the doorstep: whichever comes first is said, the other is a repeat), and a door that means "someone's just going out"
+(the gate opening within half a minute of the back door, or while it's still standing open, isn't news:
+someone's going in and out of the garden). Afterwards the house keeps
 other chatter back for a minute so nothing talks over it.
 """
 
@@ -24,6 +26,7 @@ from .shortcuts import async_run_actions
 _LOGGER = logging.getLogger(__name__)
 _EVENTISH = ("event", "input_button", "button", "scene")
 HOLD_AFTER = 60  # seconds of quiet after an announcement
+OPEN_STATES = ("on", "open", "opening", "unlocked")
 
 
 def fired(new, old, to_state: str | None) -> bool:
@@ -79,9 +82,12 @@ class Announcements:
     @callback
     def _changed(self, event: Event) -> None:
         entity_id = event.data.get("entity_id")
+        new, old = event.data.get("new_state"), event.data.get("old_state")
         for item in self.items.enabled():
-            if not item.get("event_type") and item.get("entity") == entity_id and fired(event.data.get("new_state"), event.data.get("old_state"), item.get("to_state")):
+            if not item.get("event_type") and item.get("entity") == entity_id and fired(new, old, item.get("to_state")):
                 self._fire(item)
+            elif entity_id in (item.get("also_entities") or []) and fired(new, old, "on"):
+                self._fire(item)  # another way the same thing shows up; the first one wins, the rest are repeats
 
     @callback
     def _fire(self, item: dict[str, Any]) -> None:
@@ -92,8 +98,14 @@ class Announcements:
             return
         if skip := item.get("skip_entity"):
             st = self.hass.states.get(skip)
+            why = None
             if st is not None and now - st.last_changed <= timedelta(seconds=float(item.get("skip_seconds") or 0)):
-                rt.timeline.add("noticed", f"{item['name']}: not announced", f"{st.name} had just changed — someone going out")
+                why = f"{st.name} had just changed — someone going out"
+            elif st is not None and item.get("skip_while_open", True) and st.state in OPEN_STATES:
+                # live 14 Nov: five gate announcements in an hour, all while the back door stood open
+                why = f"{st.name} is open — someone's in and out"
+            if why:
+                rt.timeline.add("noticed", f"{item['name']}: not announced", why)
                 self.items.update(item["id"], last=now.isoformat())
                 return
         self.items.update(item["id"], last=now.isoformat())

@@ -2525,7 +2525,7 @@
         const chips = [
           !r.respect_quiet ? "IGNORES QUIET HOURS" : r.quiet_start && r.quiet_end ? `QUIET ${esc(r.quiet_start)}–${esc(r.quiet_end)}` : "OFF IN HOUSE QUIET HOURS",
           r.only_dark ? (r.lux_sensor ? `BELOW ${r.lux_below} LX` : "SUNSET → SUNRISE") : "ANY TIME",
-          `OFF AFTER ${r.off_after} MIN`,
+          r.waiting_minutes && r.waiting_minutes > r.off_after ? `OFF AFTER ${r.waiting_minutes} MIN (WAITING LONGER)` : `OFF AFTER ${r.off_after} MIN`,
           r.light.startsWith("light.") ? `${r.brightness}%${r.night_brightness ? ` · ${r.night_brightness}% LATE` : ""}` : "",
         ].filter(Boolean);
         return `<div class="card ml${r.enabled ? "" : " off"}"><div class="r"><ha-icon icon="${esc(lit ? "mdi:lightbulb-on" : "mdi:lightbulb-outline")}" class="${esc(lit ? "lit" : "")}"></ha-icon>
@@ -2561,7 +2561,7 @@
       wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       const LABELS = {
         light: "Light", motion: "Motion sensors", enabled: "On", respect_quiet: "Stay off during quiet hours", protect_voice_override: "Keep motion from undoing voice-off",
-        only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for",
+        only_dark: "Only between sunset and sunrise", off_after: "Off after no movement for", wait_longer: "Wait longer if it comes straight back on",
         brightness: "Brightness", night_brightness: "Late-night brightness",
         lux_sensor: "Light sensor (optional)", lux_below: "Dark below",
       };
@@ -2569,6 +2569,7 @@
         motion: "Any of these seeing movement turns the light on. Picked from the light's room when you choose the light.",
         respect_quiet: "Uses this light’s custom times if set below. Switch off to let motion work through quiet hours.",
         protect_voice_override: "Optional: for two minutes after a guarded voice-off request, motion will not turn this light back on. Off by default.",
+        wait_longer: "If movement turns it back on within five minutes of going off, someone was sitting still: it waits twice as long next time, then four times, until it has been off for half an hour.",
         night_brightness: "Used late at night (the window above). 0 keeps the normal brightness.",
         lux_sensor: "For dim rooms: with a light sensor, “dark” means it reads below the level here, not just after sunset.",
       };
@@ -2580,6 +2581,7 @@
         { name: "protect_voice_override", selector: { boolean: {} } },
         { name: "only_dark", selector: { boolean: {} } },
         { name: "off_after", selector: { number: { min: 0.5, max: 60, step: 0.5, unit_of_measurement: "min", mode: "box" } } },
+        { name: "wait_longer", selector: { boolean: {} } },
         { name: "brightness", selector: { number: { min: 1, max: 100, unit_of_measurement: "%", mode: "slider" } } },
         { name: "night_brightness", selector: { number: { min: 0, max: 100, unit_of_measurement: "%", mode: "slider" } } },
         { name: "lux_sensor", selector: { entity: { domain: "sensor", device_class: "illuminance" } } },
@@ -3210,14 +3212,14 @@
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
       else if (act === "mladd") {
-        this._mlDraft = { enabled: true, respect_quiet: true, protect_voice_override: false, only_dark: true, off_after: 3, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
+        this._mlDraft = { enabled: true, respect_quiet: true, protect_voice_override: false, only_dark: true, off_after: 3, wait_longer: true, brightness: 100, night_brightness: 10, lux_below: 30, motion: [] };
         this._openMotionForm({});
       } else if (act === "mledit") {
         const r = (this._ml.rules || []).find((x) => x.id === id);
         if (r) { this._mlDraft = { ...r }; this._openMotionForm(r); }
       } else if (act === "mlcancel") { this._mlEdit = null; this._form = null; this._drawMotion(); }
       else if (act === "mlsave") {
-        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "protect_voice_override", "only_dark", "off_after", "brightness", "night_brightness", "lux_sensor", "lux_below"];
+        const keys = ["id", "light", "motion", "enabled", "respect_quiet", "protect_voice_override", "only_dark", "off_after", "wait_longer", "brightness", "night_brightness", "lux_sensor", "lux_below"];
         const rule = {};
         keys.forEach((k) => { if (this._mlDraft[k] !== undefined && this._mlDraft[k] !== null) rule[k] = this._mlDraft[k]; });
         if (!rule.lux_sensor) rule.lux_sensor = null;

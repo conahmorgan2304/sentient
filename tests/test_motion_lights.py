@@ -259,3 +259,57 @@ def test_quiet_window_needs_a_pair_of_different_local_times():
     rule.quiet_end = "20:30"
     with pytest.raises(ValueError, match="different local times"):
         rule.quiet_window()
+
+
+async def _cycle(hass, freezer, on, off, minutes: float) -> None:
+    """Movement, the light on (our change), then still for this long."""
+    await _motion(hass, True)
+    hass.states.async_set("light.landing", "on", context=on[-1].context)
+    await _motion(hass, False)
+    freezer.tick(timedelta(minutes=minutes))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+async def test_waits_longer_when_it_comes_straight_back_on(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass, freezer, 19)
+    on = async_mock_service(hass, "light", "turn_on")
+    off = async_mock_service(hass, "light", "turn_off")
+    ml = entry.runtime_data.motion_lights
+    rule = ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "off_after": 3})
+    await _cycle(hass, freezer, on, off, 3.1)
+    assert len(off) == 1  # its own three minutes
+    hass.states.async_set("light.landing", "off", context=off[-1].context)
+    freezer.tick(timedelta(minutes=2))  # someone sitting still moves again
+    await _cycle(hass, freezer, on, off, 3.1)
+    assert len(off) == 1 and "waiting 6 min" in rule.last
+    freezer.tick(timedelta(minutes=3))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(off) == 2  # six minutes now
+    hass.states.async_set("light.landing", "off", context=off[-1].context)
+    freezer.tick(timedelta(minutes=1))
+    await _cycle(hass, freezer, on, off, 6.1)
+    assert len(off) == 2 and ml.listing()["rules"][0]["waiting_minutes"] == 12
+    freezer.tick(timedelta(minutes=6))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(off) == 3
+    # off for half an hour: back to its own wait
+    hass.states.async_set("light.landing", "off", context=off[-1].context)
+    freezer.tick(timedelta(minutes=31))
+    await _cycle(hass, freezer, on, off, 3.1)
+    assert len(off) == 4
+
+
+async def test_wait_longer_can_be_switched_off(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass, freezer, 19)
+    on = async_mock_service(hass, "light", "turn_on")
+    off = async_mock_service(hass, "light", "turn_off")
+    ml = entry.runtime_data.motion_lights
+    ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "off_after": 3, "wait_longer": False})
+    await _cycle(hass, freezer, on, off, 3.1)
+    hass.states.async_set("light.landing", "off", context=off[-1].context)
+    freezer.tick(timedelta(minutes=2))
+    await _cycle(hass, freezer, on, off, 3.1)
+    assert len(off) == 2

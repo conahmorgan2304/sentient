@@ -88,11 +88,12 @@ KINDS: dict[str, dict[str, Any]] = {
         "title": "Announcements",
         "icon": "mdi:bullhorn-outline",
         "blurb": "Said straight away when something happens — the doorbell, the gate opening. Can get through quiet "
-                 "hours, and can be skipped when a door was opened just before (someone going out).",
+                 "hours, and can be skipped when a door was opened just before or is still open (someone going out).",
         "add": "+ NEW ANNOUNCEMENT",
         "defaults": {
             "enabled": True, "entity": None, "event_type": "", "to_state": "on", "messages": "", "speakers": [],
-            "through_quiet": True, "skip_entity": None, "skip_seconds": 30, "actions": [],
+            "through_quiet": True, "skip_entity": None, "skip_seconds": 30, "skip_while_open": True, "actions": [],
+            "also_entities": [],
             "cooldown_seconds": 15, "last": None,
         },
         "schema": [
@@ -101,11 +102,13 @@ KINDS: dict[str, dict[str, Any]] = {
             _sel("entity", {"entity": {}}),
             _sel("event_type", {"text": {}}),
             _sel("to_state", {"text": {}}),
+            _sel("also_entities", {"entity": {"multiple": True}}),
             _sel("messages", {"text": {"multiline": True}}),
             _sel("speakers", {"entity": {"domain": ["assist_satellite", "media_player"], "multiple": True}}),
             _sel("through_quiet", {"boolean": {}}),
             _sel("skip_entity", {"entity": {}}),
             _sel("skip_seconds", {"number": {"min": 0, "max": 600, "unit_of_measurement": "s", "mode": "box"}}),
+            _sel("skip_while_open", {"boolean": {}}),
             _sel("actions", {"action": {}}),
             _sel("cooldown_seconds", {"number": {"min": 0, "max": 3600, "unit_of_measurement": "s", "mode": "box"}}),
         ],
@@ -113,10 +116,13 @@ KINDS: dict[str, dict[str, Any]] = {
             "name": "Name", "enabled": "On", "entity": "When this happens (doorbell, gate sensor…)",
             "event_type": "…or when this event fires (e.g. doorbell_pressed), instead of the above",
             "to_state": "…and changes to (usually 'on'; ignored for buttons and doorbell events)",
+            "also_entities": "…or when any of these turn on (e.g. someone reaching the doorstep). Whichever comes first is "
+                             "said; the others within \"Ignore repeats for\" are the same visit",
             "messages": "What to say — one per line, picked at random",
             "speakers": "Say it on (empty = where people are)", "through_quiet": "Say it even in quiet hours",
             "skip_entity": "Don't say it if this opened just before (e.g. the back door: someone going out)",
-            "skip_seconds": "…within", "actions": "Also do (e.g. show the camera on the tablets)",
+            "skip_seconds": "…within",
+            "skip_while_open": "…or while it's still open (someone's in and out)", "actions": "Also do (e.g. show the camera on the tablets)",
             "cooldown_seconds": "Ignore repeats for",
         },
     },
@@ -368,6 +374,8 @@ def summary(kind: str, item: dict[str, Any], hass) -> str:
         return " · ".join(bits)
     if kind == "announce":
         bits = [f"on event {item['event_type']}" if item.get("event_type") else f"when {name_of(item.get('entity'))} {item.get('to_state') or 'on'}"]
+        if also := item.get("also_entities"):
+            bits.append("or " + ", ".join(name_of(e) for e in also) + ", whichever's first")
         if item.get("through_quiet"):
             bits.append("through quiet hours")
         if item.get("skip_entity"):

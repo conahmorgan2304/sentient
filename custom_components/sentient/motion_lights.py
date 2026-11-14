@@ -6,6 +6,10 @@ Each light has its own rule (stored, edited from the sidebar page):
 - whether it stays off during quiet hours, with an optional window for this light;
 - its brightness, and a dimmer brightness for late at night.
 
+If movement brings a light straight back on soon after it went off, someone was sitting still: next time it
+waits longer (twice, then four times as long) until it has stayed off for a while (live 14 Nov: a bedroom light
+going off every three minutes for an hour with someone in the room).
+
 No AI. A light someone switched on by hand is left alone, and if someone changes a light the
 house switched on, the house stops managing it until it's next off.
 """
@@ -34,6 +38,9 @@ STORAGE_VERSION = 1
 DEFAULT_NIGHT_START = "23:00"
 DEFAULT_NIGHT_END = "06:00"
 SETTLE = timedelta(seconds=30)  # a light reporting back after our command is not a person
+COMEBACK = timedelta(minutes=5)  # movement this soon after an auto-off: it went off on someone sitting still
+SETTLED = timedelta(minutes=30)  # off this long: back to the light's own wait
+MAX_STRETCH = 4
 EVENT_MOTION_LIGHTS = f"{DOMAIN}_motion_lights"
 EVENT_MOTION_LIGHT = f"{DOMAIN}_motion_light"
 
@@ -47,6 +54,7 @@ class MotionRule:
     enabled: bool = True
     respect_quiet: bool = True
     protect_voice_override: bool = False  # opt in: don't immediately undo a recent guarded voice command
+    wait_longer: bool = True  # back on soon after going off: wait longer next time
     only_dark: bool = True
     off_after: float = 3  # minutes after the last movement
     brightness: int = 100  # percent; ignored for switches
@@ -101,6 +109,8 @@ class MotionLights:
         self._timers: dict[str, CALLBACK_TYPE] = {}
         self._listeners: list[CALLBACK_TYPE] = []
         self.paused: set[str] = set()  # lights something else is running for now (disco mode)
+        self._auto_off: dict[str, datetime] = {}  # light -> when we last switched it off for no movement
+        self.stretch: dict[str, int] = {}  # light -> how many times its own wait it's waiting now
 
     # ----- storage ---------------------------------------------------------------
     async def async_load(self) -> None:
@@ -144,6 +154,10 @@ class MotionLights:
         rule = MotionRule.from_dict(merged)
         if type(rule.protect_voice_override) is not bool:
             raise ValueError("Protect voice overrides must be on or off")
+        if type(rule.wait_longer) is not bool:
+            raise ValueError("Wait longer must be on or off")
+        if not rule.wait_longer:
+            self.stretch.pop(rule.light, None)
         window = rule.quiet_window()
         if window:
             start, end = window
@@ -400,8 +414,29 @@ class MotionLights:
             self._note(rule, "stayed off: quiet hours")
             return
         late = self.late_night() and rule.night_brightness > 0
+        back = self._came_back(rule)
         if self._turn(rule, True, rule.night_brightness if late else rule.brightness):
-            self._note(rule, f"on at {rule.night_brightness}% (late night)" if late else "on with motion")
+            note = f"on at {rule.night_brightness}% (late night)" if late else "on with motion"
+            if back:
+                note += f" — back soon after going off, so waiting {self._wait(rule):g} min now"
+            self._note(rule, note)
+
+    def _came_back(self, rule: MotionRule) -> bool:
+        """Movement soon after an auto-off stretches this light's wait; a long time off puts it back."""
+        off = self._auto_off.pop(rule.light, None)
+        if not rule.wait_longer:
+            self.stretch.pop(rule.light, None)
+            return False
+        if off is not None and dt_util.utcnow() - off <= COMEBACK:
+            self.stretch[rule.light] = min(MAX_STRETCH, self.stretch.get(rule.light, 1) * 2)
+            return True
+        if off is None or dt_util.utcnow() - off >= SETTLED:
+            self.stretch.pop(rule.light, None)
+        return False
+
+    def _wait(self, rule: MotionRule) -> float:
+        """Minutes after the last movement before this light goes off."""
+        return rule.off_after * (self.stretch.get(rule.light, 1) if rule.wait_longer else 1)
 
     @callback
     def _on_still(self, rule: MotionRule) -> None:
@@ -414,9 +449,10 @@ class MotionLights:
             self._timers.pop(rule.light, None)
             if rule.light in self._ours and rule.light not in self.paused and not self._motion_now(rule):
                 if self._turn(rule, False):
+                    self._auto_off[rule.light] = dt_util.utcnow()
                     self._note(rule, "off: no movement")
 
-        self._timers[rule.light] = async_call_later(self.hass, rule.off_after * 60, _off)
+        self._timers[rule.light] = async_call_later(self.hass, self._wait(rule) * 60, _off)
 
     @callback
     def _turn(self, rule: MotionRule, on: bool, brightness: int | None = None) -> bool:
@@ -461,6 +497,7 @@ class MotionLights:
             item = asdict(rule)
             item["managing"] = rule.light in self._ours
             item["timer"] = rule.light in self._timers
+            item["waiting_minutes"] = self._wait(rule)
             item["quiet_now"] = rule.respect_quiet and (
                 self._custom_quiet(rule) if rule.quiet_start is not None else self.speech.quiet_hours_now()
             )
