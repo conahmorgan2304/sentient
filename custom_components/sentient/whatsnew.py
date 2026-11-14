@@ -20,6 +20,7 @@ NOTES: dict[str, list[str]] = {
         "Events on one camera within a minute of each other are one visit: one card with the time, what was seen, the zones it went through and a thumbnail.",
         "Three buttons per visit: GOOD CATCH, NOT A PERSON and IGNORE. A reviewed visit folds away into REVIEWED, and so does a reviewed incident. NOT A PERSON also counts as a reviewed false detection for an incident made only of that visit; a review you gave yourself is never replaced.",
         "After three NOT A PERSON in one zone, the Security page offers HIDE THIS ZONE: movement only in that zone stops being listed. Frigate isn't changed, and the zone can be listed again in Settings.",
+        "The setup doctor is tidier: a one-line verdict at the top, anything to fix first with what to do, then each area as its own section of small tiles, with a detail they all share said once.",
     ],
     "1.9.0": [
         "Voice routines now check requested final device states and report failures. Already-satisfied states are distinguished from changes; unsupported or conditional steps cannot be proven executed from a matching state alone.",

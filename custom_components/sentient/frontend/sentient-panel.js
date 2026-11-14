@@ -1545,13 +1545,33 @@
       }
       if (this._group !== "doctor") return;
       const ic = { ok: "mdi:check-circle-outline", warn: "mdi:alert-outline", bad: "mdi:close-circle-outline" };
-      const areas = [...new Set(this._doc.rows.map((r) => r.area))];
-      const rows = areas.map((a) => `<div class="h" style="margin-top:12px"><span class="t">${esc(a).toUpperCase()}</span><i></i></div>`
-        + this._doc.rows.filter((r) => r.area === a).map((r) => `<div class="card ml doc ${esc(r.status)}"><div class="r"><ha-icon icon="${esc(ic[r.status] || ic.warn)}"></ha-icon><b>${esc(r.name)}</b><u>${esc(r.status === "ok" ? "OK" : r.status === "bad" ? "FIX" : "CHECK")}</u></div>
-          <div class="mlsub">${esc(r.detail)}</div>${r.fix ? `<div class="hint">${esc(r.fix)}</div>` : ""}</div>`).join("")).join("");
+      // Home Assistant names voice satellites "<room> Assist satellite"; the section already says what they are
+      const short = (name) => { const n = String(name).replace(/\s*assist satellite/ig, "").trim() || String(name); return n.charAt(0).toUpperCase() + n.slice(1); };
+      const all = this._doc.rows || [];
+      const problems = all.filter((r) => r.status !== "ok");
+      // problems first, in full, with what to do
+      const problemCards = problems.map((r) => `<div class="card doc ${esc(r.status)} docprob"><div class="r"><ha-icon icon="${esc(ic[r.status] || ic.warn)}"></ha-icon><b class="wrap">${esc(short(r.name))}<small>${esc(r.area)}</small></b><u>${r.status === "bad" ? "FIX" : "CHECK"}</u></div>
+          <div class="mlsub">${esc(r.detail)}</div>${r.fix ? `<div class="docfix">${esc(r.fix)}</div>` : ""}</div>`).join("");
+      // then every area as its own section of small tiles; a detail every tile shares is said once
+      const areas = [...new Set(all.map((r) => r.area))];
+      const sections = areas.map((a) => {
+        const ok = all.filter((r) => r.area === a && r.status === "ok");
+        if (!ok.length) return "";
+        const counts = new Map();
+        for (const r of ok) counts.set(r.detail, (counts.get(r.detail) || 0) + 1);
+        const [common, times] = [...counts].sort((x, y) => y[1] - x[1])[0];
+        const shared = times > 1 ? common : "";
+        const tiles = ok.map((r) => `<div class="doctile"><ha-icon icon="${ic.ok}"></ha-icon><span><b>${esc(short(r.name))}</b>${shared && r.detail === shared ? "" : `<i>${esc(r.detail)}</i>`}</span></div>`).join("");
+        const bad = all.filter((r) => r.area === a && r.status !== "ok").length;
+        return `<section class="docarea">${this._h(esc(a.toUpperCase()), bad ? `${ok.length} OK · ${bad} TO LOOK AT` : `${ok.length} OK`)}${shared ? `<div class="docshared">${esc(shared)}</div>` : ""}<div class="docgrid">${tiles}</div></section>`;
+      }).join("");
+      const summary = problems.length
+        ? `<div class="docsum warn"><ha-icon icon="mdi:alert-outline"></ha-icon><b>${problems.length} to look at</b><span>${all.length - problems.length} of ${all.length} checks passed</span></div>`
+        : `<div class="docsum"><ha-icon icon="mdi:check-decagram-outline"></ha-icon><b>Everything checks out</b><span>All ${all.length} checks passed</span></div>`;
+      const rows = summary + (problemCards ? `<div class="docprobs">${problemCards}</div>` : "") + sections;
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:stethoscope"></ha-icon><div><div class="bt">SETUP DOCTOR</div>
           <div class="bs">Checks Sentient's setup — the AI, the voice pipeline, speakers, voices, cameras and folders — and says what to fix. Nothing is changed and no AI is used. TEST SPEAKERS says a short line on each one.</div></div></div>
-        <div class="mllist">${rows}</div><div class="spmsg" id="docmsg"></div>
+        <div class="doclist">${rows}</div><div class="spmsg" id="docmsg"></div>
         <div class="hint">DOWNLOAD THE LAST DAY saves a file of what happened in the house over the last 24 hours (from the house ledger) and what Sentient decided, for checking a new version against your own days. It stays on your device; nothing is sent.</div>
         <div class="bar"><span id="status"></span><button class="btn ghost" data-act="replayexport">DOWNLOAD THE LAST DAY</button><button class="btn ghost" data-act="docspeak">TEST SPEAKERS</button><button class="btn" data-act="docrun">CHECK AGAIN</button></div>`;
     }
@@ -3669,6 +3689,17 @@ select{background:#0d1626;border:1px solid rgba(0,255,247,.3);border-radius:8px;
 .ml{padding:12px 14px} .ml .r{margin:0;background:none;border:none;padding:0 0 6px} .ml.off{opacity:.55} .doc.bad{border-left:3px solid var(--bad,#ff6b80)} .doc.warn{border-left:3px solid var(--warn,#ffbe55)} .doc.ok ha-icon{color:var(--ok,#3dffa8)} .x.pin ha-icon{color:var(--accent,#00fff7)} .x ha-icon{--mdc-icon-size:16px}
 .r ha-icon.lit,.ml ha-icon.lit{color:#ffd76a;filter:drop-shadow(0 0 6px rgba(255,215,106,.7))}
 .mlsub{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(150,220,235,.75);margin:2px 0 8px} .mlsub ha-icon{--mdc-icon-size:14px;color:#5fd8e6}
+.doclist{display:flex;flex-direction:column;gap:18px;margin-top:6px}
+.docsum{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(61,255,168,.35);border-radius:14px;background:rgba(61,255,168,.06)}
+.docsum ha-icon{color:var(--ok,#3dffa8)} .docsum b{font-size:14px} .docsum span{margin-left:auto;font-size:11px;letter-spacing:.08em;color:rgba(150,220,235,.7)}
+.docsum.warn{border-color:rgba(255,190,85,.45);background:rgba(255,190,85,.07)} .docsum.warn ha-icon{color:var(--warn,#ffbe55)}
+.docprobs{display:grid;gap:10px} .docprob{padding:12px 14px} .docprob .r{margin:0;background:none;border:none;padding:0 0 6px}
+.docfix{font-size:12px;color:#e6f7fa;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.04)}
+.docarea .h{margin-top:0} .docshared{font-size:11.5px;color:rgba(150,220,235,.7);margin:-2px 2px 8px}
+.docgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:8px}
+.doctile{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border:1px solid rgba(0,255,247,.14);border-radius:10px;background:rgba(0,255,247,.03);min-width:0}
+.doctile ha-icon{--mdc-icon-size:16px;color:var(--ok,#3dffa8);flex:0 0 auto;margin-top:1px}
+.doctile span{display:flex;flex-direction:column;gap:2px;min-width:0} .doctile b{font-size:12.5px;font-weight:500;overflow-wrap:anywhere} .doctile i{font-style:normal;font-size:11px;color:rgba(150,220,235,.65);overflow-wrap:anywhere}
 .chips.left{justify-content:flex-start}
 .mlform{margin-top:14px;border-color:rgba(0,255,247,.55)} .row.end{justify-content:flex-end;margin-top:10px} .row.end .spmsg{flex:1;color:#ff7088}
 .tg{position:relative;flex:none;width:34px;height:18px;cursor:pointer} .tg input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
