@@ -171,3 +171,39 @@ async def test_reviewing_an_incident_on_the_page_reports_the_events_it_marked(ha
     reply = await ws.receive_json()
     assert reply["success"] and reply["result"]["events_marked"] == 1
     assert rt.security_events.items["ev.ws"]["feedback"]["value"] == "false_positive"
+
+
+async def test_the_voice_can_say_who_has_been_to_a_spot_today(hass):
+    """14 Nov: fed the rabbits at 12:50 (seven person events in the Garden zone); asked at 13:08, the voice took a
+    live picture and said nobody had been. It needs the camera's record, by camera, room or named spot."""
+    from types import SimpleNamespace
+
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.security_voice import CameraActivityTool
+    from tests.test_security_events import context
+
+    events, _cache, rt = setup(hass)
+    rt.spots = SimpleNamespace(spots={"rabbit pen": {"name": "rabbit pen", "camera": "camera.garden"}},
+                               find_any=lambda text: "rabbit pen" if "rabbit" in text.lower() else None)
+    for n, ago in enumerate((1500, 1470, 1440, 1400)):  # one visit, about 25 minutes ago
+        events.ingest(at(ago, id=f"feed.{n}", zones=["Garden"]))
+    events.ingest(at(30000, id="old.cat", label="cat", zones=["Garden"]))  # over eight hours ago
+    tool = CameraActivityTool()
+    with patch("custom_components.sentient.security_voice._runtime", return_value=rt), \
+            patch("custom_components.sentient.security_voice.allowed", return_value=True):
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "the rabbit pen", "hours": 3}), context())
+        assert out["camera"] == "Garden" and out["spot"] == "rabbit pen"
+        assert len(out["visits"]) == 1 and out["visits"][0]["seen"] == ["person"] and out["visits"][0]["events"] == 4
+        assert out["visits"][0]["zones"] == ["Garden"]
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "garden", "hours": 12}), context())
+        assert [v["seen"] for v in out["visits"]] == [["person"], ["cat"]]  # newest first, every detection, zone or not
+        out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "garden", "hours": 12, "label": "cat"}), context())
+        assert [v["seen"] for v in out["visits"]] == [["cat"]]
+        assert "error" in await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "moon"}), context())
+
+
+def test_questions_about_rabbits_and_the_garden_offer_the_camera_record() -> None:
+    from custom_components.sentient.focus import Focus
+
+    assert "sentient_camera_activity" in Focus().tools_for("Has anyone fed the rabbits this afternoon?")

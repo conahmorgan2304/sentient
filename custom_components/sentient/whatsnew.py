@@ -21,6 +21,7 @@ NOTES: dict[str, list[str]] = {
         "Fixed: house changes waiting to be saved could be lost when Home Assistant restarted; they're now saved while it can still write.",
         "Fixed: tapping the heating up several times in a row is one adjustment with one time limit, not one per tap, and it goes back to where it was before the first tap.",
         "Fixed: going back to bed soon after getting up (within three hours) is the same night, not a new bedtime. Up at 5:30 and back to bed was being learned as a 5am bedtime, so the usual bedtime read \"06:15\". Nights already saved are joined up the same way when it starts.",
+        "Ask \"has anyone been to the rabbits today?\" or \"when was someone last in the garden?\" and the voice now checks the camera record (every visit, with times and zones) instead of taking a picture now and saying nobody's there. Named spots like the rabbit pen work too.",
         "A security alert on your phone is updated in place once the camera picture has been checked: \"Checked the picture: no one visible, so possibly a false alarm\" or who was there. The alert itself still goes first and is never withdrawn.",
         "Good news (\"battery fine again\", \"is back to normal\") stays on the timeline and no longer goes to phones as House health.",
         "The overnight learning note no longer says \"tested beliefs: 0 held, 0 missed\" on nights there was nothing to test.",

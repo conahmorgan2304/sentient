@@ -486,6 +486,20 @@ class SecurityEvents:
         groups.sort(key=lambda g: g[0]["start"], reverse=True)
         return [self._visit(g) for g in groups[:limit]]
 
+    def activity(self, camera, since, limit=20):
+        """Every detection on one camera since a time, as visits (newest first), zones or not: what the house
+        actually saw, for "has anyone been in the garden today?". Parked vehicles are left out."""
+        self._prune()
+        rows = sorted((r for r in self.items.values() if r["camera"] == camera and not r.get("parked")
+                       and (r["end"] or r["start"]) >= since), key=lambda r: r["start"])
+        groups = []
+        for row in rows:
+            if groups and row["start"] <= max((r["end"] or r["start"]) for r in groups[-1]) + VISIT_GAP:
+                groups[-1].append(row)
+            else:
+                groups.append([row])
+        return [self._visit(g) for g in reversed(groups)][:limit]
+
     def _visit(self, rows):
         hidden = self.hidden_zones(rows[0]["camera"])
         best = next((r for r in rows if r["label"] == "person" and r.get("has_snapshot")), None) or next(

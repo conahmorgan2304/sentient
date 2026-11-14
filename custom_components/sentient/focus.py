@@ -41,7 +41,8 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
     name: (re.compile(words, re.I), set(tools)) for name, words, tools in [
         ("cameras", r"camera|\bdoor|gate|garden|shed|drive|parcel|deliver|post\b|visitor|someone|anyone|\bwho\b|\bsee\b|"
                     r"look|\bbins?\b|rabbit|hutch|\bcats?\b|\bcars?\b|what was that|outside",
-         ["sentient_look", "sentient_spot", "sentient_what_happened", "sentient_visitors", "sentient_timeline"]),
+         ["sentient_look", "sentient_spot", "sentient_what_happened", "sentient_visitors", "sentient_timeline",
+          "sentient_camera_activity"]),
         ("heating", r"warm|cold|heat|temperature|degrees|radiator|boiler|thermostat|energy|electric|power|cost|bill|usage",
          ["sentient_heating", "sentient_energy"]),
         ("later", r"remind|watch|keep an eye|tell me when|let me know|\bwake|alarm|appointment|later|tomorrow|tonight|"

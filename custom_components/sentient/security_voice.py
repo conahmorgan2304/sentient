@@ -9,6 +9,8 @@ from homeassistant.auth.permissions.const import POLICY_READ
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.util import dt as dt_util
 
+from homeassistant.helpers import config_validation as cv
+
 from .llm_api import _Tool, _runtime, _read_only
 from .security_events import CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
 
@@ -222,3 +224,60 @@ class SecurityFeedbackTool(_Tool):
         if row is None:
             return result
         return rt.security_events.feedback(row["id"], tool_input.tool_args["value"])
+
+
+class CameraActivityTool(_Tool):
+    annotations = _read_only()
+    reads_outside = True
+    name = "sentient_camera_activity"
+    description = ("Who or what a camera detected over a period, newest first, from the house's own camera record: "
+                   "for 'has anyone been in the garden / to the rabbits / at the gate today?', 'when was someone last "
+                   "in the garden?', 'did anyone go to the shed this afternoon?'. 'camera' is a camera, a room or a named "
+                   "spot (e.g. 'rabbit pen'); 'hours' is how far back (default 12; 'this morning' is since the morning). "
+                   "Use this for anything in the past, not sentient_look (that's only the picture right now) or "
+                   "sentient_what_happened (one clip). A detection says a person was seen, not who.")
+    parameters = vol.Schema({vol.Required("camera"): cv.string,
+                             vol.Optional("hours", default=12): vol.All(vol.Coerce(float), vol.Range(min=0.25, max=168)),
+                             vol.Optional("label"): cv.string})
+
+    async def async_call(self, hass, tool_input, llm_context):
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        events = rt.security_events
+        if not events.tracking:
+            return {"error": "Camera event records are switched off (Settings → Camera security)"}
+        args = tool_input.tool_args
+        asked = args["camera"]
+        camera, spot = camera_named(hass, asked), None
+        spots = getattr(rt, "spots", None)
+        if camera is None and spots is not None and (key := spots.find_any(asked)):
+            spot = spots.spots[key]
+            camera = spot["camera"]
+        if camera is None:
+            from .watches import resolve_entity
+
+            found = resolve_entity(hass, asked, "camera")
+            camera = found if found and found.startswith("camera.") else None
+        if camera is None or not await allowed(hass, llm_context, camera):
+            return {"error": "Which camera? Choose an exposed camera you may read",
+                    "cameras": sorted(f"camera.{c}" for c in events.cameras())}
+        name = camera.removeprefix("camera.")
+        if name not in events.cameras():
+            return {"error": f"{hass.states.get(camera).name if hass.states.get(camera) else camera} isn't one of the cameras Sentient keeps a record of"}
+        since = dt_util.utcnow().timestamp() - args["hours"] * 3600
+        visits = events.activity(name, since)
+        if label := (args.get("label") or "").strip().lower():
+            visits = [v for v in visits if label in [str(x).lower() for x in v["labels"]]]
+        local = lambda t: dt_util.as_local(dt_util.utc_from_timestamp(t)).strftime("%H:%M") if t else None  # noqa: E731
+        state = hass.states.get(camera)
+        return {
+            "camera": state.name if state else camera, "spot": spot["name"] if spot else None,
+            "since": dt_util.as_local(dt_util.utc_from_timestamp(since)).isoformat(timespec="minutes"),
+            "visits": [{"from": local(v["start"]), "to": local(v["end"]) or "still going", "seen": v["labels"],
+                        "zones": v["zones"], "what_was_seen": (v.get("analysis") or {}).get("summary"),
+                        "events": len(v["ids"])} for v in visits],
+            "note": ("Frigate's detections on this camera, grouped into visits a minute apart. None listed means it "
+                     "detected nothing, not that it watched the whole time. A person detected isn't who it was"
+                     + (f"; the {spot['name']} is part of this camera's picture, and visits aren't split by spot." if spot else ".")),
+        }
