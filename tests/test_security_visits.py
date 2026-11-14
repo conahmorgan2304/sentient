@@ -207,3 +207,31 @@ def test_questions_about_rabbits_and_the_garden_offer_the_camera_record() -> Non
     from custom_components.sentient.focus import Focus
 
     assert "sentient_camera_activity" in Focus().tools_for("Has anyone fed the rabbits this afternoon?")
+
+
+async def test_the_front_door_and_the_back_gate_are_never_one_incident(hass):
+    """14 Nov: the doorbell and the gate camera were linked as one incident; they're on opposite sides of the house."""
+    inc = Incidents(hass, "sides", {"security_incidents": True})
+    now = dt_util.utcnow()
+    a = inc.add("camera.front_door_doorbell", "Frigate reported person", "event", when=now)
+    b = inc.add("camera.gate", "Frigate reported person", "event", when=now)
+    assert a is b  # by time alone (nothing set), they'd be grouped
+    inc = Incidents(hass, "sides", {"security_incidents": True,
+                                     "incident_front": ["camera.front_door_doorbell", "binary_sensor.frontdoor_sensor"]})
+    front = inc.add("camera.front_door_doorbell", "Frigate reported person", "event", when=now)
+    back = inc.add("camera.gate", "Frigate reported person", "event", when=now)
+    assert front is not back
+    assert inc.add("binary_sensor.frontdoor_sensor", "Front door: on", "contact", when=now) is front
+    assert inc.add("camera.garden", "Frigate reported person", "event", when=now) is back  # back joins back
+    assert inc._side("camera.shed") == "back"
+
+
+async def test_front_of_the_house_is_in_safety_settings(hass, hass_ws_client):
+    from tests.test_phase3 import _setup
+
+    await _setup(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/settings"})
+    result = (await ws.receive_json())["result"]
+    safety = next(g for g in result["groups"] if g["id"] == "safety")
+    assert "incident_front" in {f["name"] for f in safety["schema"]} and result["data"]["incident_front"] == []

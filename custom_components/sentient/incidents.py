@@ -24,6 +24,7 @@ MAX_REVIEWS = 300
 
 CONF_COVERAGE = "security_coverage"
 CONF_STAGES = "incident_stages"
+CONF_FRONT = "incident_front"  # cameras and sensors at the front: never one incident with anything at the back
 RESOLVED_AFTER = timedelta(minutes=30)
 
 
@@ -130,6 +131,16 @@ class Incidents:
             self.add(camera_for(self.hass, eid) or eid, f'Person reported at {new.name}', 'detection',
                      read_source=eid)
 
+    def _side(self, source):
+        """'front' or 'back' when the front of the house is set (Settings → Safety), else None."""
+        chosen = self.options.get(CONF_FRONT) or []
+        if not chosen:
+            return None
+        from .camsecurity import camera_for
+
+        front = set(chosen) | {cam for e in chosen if e.startswith("binary_sensor.") and (cam := camera_for(self.hass, e))}
+        return "front" if source in front else "back"
+
     def add(self, source, text, kind, *, evidence='observed', when=None, event_id=None, read_source=None):
         if not self.enabled:
             return None
@@ -144,11 +155,14 @@ class Incidents:
             if existing is not None:
                 return existing
         possible = []
+        side = self._side(source)
         for item in self.items:
             start, end = dt_util.parse_datetime(item['start']), dt_util.parse_datetime(item['end'])
             if start - GAP <= now <= end + GAP:
                 if kind == 'clip' and source not in item['sources']:
                     continue  # delayed clips must also match a known camera
+                if side is not None and any(self._side(s) != side for s in item['sources']):
+                    continue  # the other side of the house: someone at the front door isn't at the back gate
                 possible.append(item)
         item = possible[0] if len(possible) == 1 else None
         if item is None:
