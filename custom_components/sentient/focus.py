@@ -73,7 +73,7 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
         ("recipes", r"recipe|cook|bake|make (?:the|a|some)|ingredients|next step|step|what'?s next|repeat that|for dinner|for tea",
          ["sentient_recipe"]),
         ("house", r"\bhouse\b|\bhome\b|happen|while i was|today|this week|check|anything|how'?s|status|announce|"
-                  r"tell (?:the|every)|learn",
+                  r"tell (?:the|every)|learn|(?:get|got|gets|come|came|comes) (?:back|in)\b|arriv|\bleft (?:home|the house|for|at)\b|went out|go(?:ne)? out",
          ["sentient_house_check", "sentient_weekly_report", "sentient_timeline", "sentient_announce",
           "sentient_what_happened"]),
     ]
