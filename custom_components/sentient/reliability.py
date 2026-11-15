@@ -125,9 +125,9 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         # deliberately checks tool relevance, not just whether any tool ran.
         evidence_names = ("history", "timeline", "what_happened", "camera_activity",
                           "visitors", "incidents", "root_cause", "conversations",
-                          "logbook", "recorder", "security_event", "HassGetHistory")
-        if not any(any(word.casefold() in name.casefold() for word in evidence_names)
-                   for name, _err, _changed in outcomes):
+                          "logbook", "recorder", "security_event", "evidence", "HassGetHistory")
+        if not any(err is None and any(word.casefold() in name.casefold() for word in evidence_names)
+                   for name, err, _changed in outcomes):
             out.append({"kind": "no_evidence", "detail": "no relevant historical tool was used"})
     return out
 
@@ -194,7 +194,8 @@ class Reliability:
             turn["tools"].append(content)
 
     @callback
-    def answered(self, conversation_id: str, text: str, room: str | None = None) -> None:
+    def answered(self, conversation_id: str, text: str, room: str | None = None,
+                 device_id: str | None = None) -> None:
         turn = self._turn.pop(conversation_id, None)
         if not self.enabled or turn is None:
             return
@@ -206,7 +207,9 @@ class Reliability:
         # the other carries none. Two complete requests are separate turns.
         relay_pair = last is not None and bool(turn["tools"]) != bool(last["tools"])
         same_room = last is not None and last.get("room") == room
-        if relay_pair and same_room and last["key"] == key and (now_dt - last["at"]).total_seconds() < 15:
+        compatible_device = last is not None and (not device_id or not last.get("device_id")
+                                                   or device_id == last["device_id"])
+        if relay_pair and same_room and compatible_device and last["key"] == key and (now_dt - last["at"]).total_seconds() < 15:
             # the same question and answer again within seconds: one request seen twice — a voice add-on (voice
             # recognition) passes it to this agent and then relays the answer in its own conversation. Count it
             # once, keeping whichever copy shows the tools that were used.
@@ -220,7 +223,7 @@ class Reliability:
             return
         self.turns.append(now)
         self._last = {"key": key, "at": now_dt, "tools": bool(turn["tools"]),
-                      "record": self._record(now, room, turn, text), "room": room}
+                      "record": self._record(now, room, turn, text), "room": room, "device_id": device_id}
         self._trim()
         self._save()
 
