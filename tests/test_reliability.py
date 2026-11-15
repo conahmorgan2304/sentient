@@ -142,3 +142,32 @@ async def test_the_voice_is_told_to_look_things_up_not_reuse_answers(hass: HomeA
 
     assert "when did you last see the rabbits" in CameraActivityTool.description
     assert "not from an earlier answer" in CameraActivityTool.description
+
+
+def test_action_tool_without_completion_evidence_is_not_a_success() -> None:
+    pending = {"tool_name": "sentient_watch", "tool_result": {"status": "pending"}}
+    assert "claimed_done" in _kinds(
+        "watch the garden", "Done, I'm watching.", [pending],
+        actions=frozenset({"sentient_watch"}),
+    )
+    no_targets = {"tool_name": "HassTurnOn", "tool_result": {"data": {"success": [], "failed": []}}}
+    assert "claimed_done" in _kinds("turn on the light", "Done.", [no_targets])
+
+
+def test_unrelated_tool_does_not_count_as_historical_evidence() -> None:
+    unrelated = {"tool_name": "HassGetState", "tool_result": {"state": "on"}}
+    assert "no_evidence" in _kinds(
+        "when was the gate last opened?", "It was opened earlier.", [unrelated])
+    supported = {"tool_name": "sentient_history", "tool_result": {"changes": []}}
+    assert "no_evidence" not in _kinds(
+        "when was the gate last opened?", "No history found.", [supported])
+
+
+async def test_independent_identical_turns_are_not_deduplicated(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for cid in ("separate1", "separate2"):
+        rt.conversations.attach(cid, None)
+        rt.conversations._chat(cid, "content_added", {"content": {"role": "user", "content": "is the light on?"}})
+        rt.conversations._chat(cid, "content_added", {"content": {"role": "assistant", "content": "Yes."}})
+    assert rt.reliability.summary()["turns"] == 2
