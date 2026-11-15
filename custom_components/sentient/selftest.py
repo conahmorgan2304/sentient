@@ -364,24 +364,6 @@ class SelfTest:
                                 energy_check, "energy"))
             break
 
-        # A dry-run planning probe: the assistant must name both devices but
-        # must never actually operate either. No simulated action is executed.
-        if lights and openings:
-            visible_openings = [d for d in openings if self._exposed(d.entity_id)]
-            if visible_openings:
-                first_light, first_opening = lights[0], visible_openings[0]
-
-                def planning_check(answer: str, a=first_light.name, b=first_opening.name) -> tuple[bool, str]:
-                    from .reliability import DONE
-
-                    return ((mentions(answer, a) and mentions(answer, b) and not DONE.search(answer)),
-                            f"a hypothetical plan mentioning {a} and {b}, without claiming to act")
-
-                out.append(Question("dry-run plan",
-                    f"If I asked you to check {first_opening.name} and switch off {first_light.name}, "
-                    "what steps would you take? This is only a hypothetical question. Do not control anything.",
-                    planning_check, "planning"))
-
         def unknowable(answer: str) -> tuple[bool, str]:
             return bool(DOESNT_KNOW.search(answer)), "says it doesn't know (an invented answer is a fail)"
 
