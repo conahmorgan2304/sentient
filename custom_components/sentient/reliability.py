@@ -80,6 +80,10 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
         if bad:
             return name, "didn't work: " + ", ".join(bad[:4]), ok
         return name, None, ok
+    if isinstance(result, dict) and result.get("success") is True:
+        # a script or tool that reports success did what it was asked (15 Nov: "Show camera on Echo Show" ran and
+        # put the doorbell up, but was logged as "said it was done, but nothing was done")
+        return name, None, True
     if isinstance(result, dict) and result.get("success") is False:
         return name, _short(str(result.get("message") or result.get("reason") or "failed"), 140), False
     return name, None, False
@@ -177,16 +181,36 @@ class Reliability:
         turn = self._turn.pop(conversation_id, None)
         if not self.enabled or turn is None:
             return
-        now = dt_util.utcnow().isoformat()
+        now_dt = dt_util.utcnow()
+        now = now_dt.isoformat()
+        key = (" ".join(str(turn["asked"]).split()).casefold(), " ".join(str(text or "").split()).casefold())
+        last = getattr(self, "_last", None)
+        if last is not None and last["key"] == key and (now_dt - last["at"]).total_seconds() < 15:
+            # the same question and answer again within seconds: one request seen twice — a voice add-on (voice
+            # recognition) passes it to this agent and then relays the answer in its own conversation. Count it
+            # once, keeping whichever copy shows the tools that were used.
+            if turn["tools"] and not last["tools"]:
+                if last["record"] is not None and last["record"] in self.records:
+                    self.records.remove(last["record"])
+                last["record"] = self._record(now, room, turn, text)
+                last["tools"] = True
+                self._trim()
+                self._save()
+            return
         self.turns.append(now)
-        found = classify(turn["asked"], text, turn["tools"], self.actions)
-        if found:
-            self.records.insert(0, {
-                "time": now, "room": room, "asked": _short(turn["asked"], 120), "said": _short(text, 160),
-                "tools": list(dict.fromkeys(_tool_outcome(t)[0] for t in turn["tools"]))[:6], "problems": found,
-            })
+        self._last = {"key": key, "at": now_dt, "tools": bool(turn["tools"]),
+                      "record": self._record(now, room, turn, text)}
         self._trim()
         self._save()
+
+    def _record(self, now: str, room: str | None, turn: dict[str, Any], text: str) -> dict[str, Any] | None:
+        found = classify(turn["asked"], text, turn["tools"], self.actions)
+        if not found:
+            return None
+        record = {"time": now, "room": room, "asked": _short(turn["asked"], 120), "said": _short(text, 160),
+                  "tools": list(dict.fromkeys(_tool_outcome(t)[0] for t in turn["tools"]))[:6], "problems": found}
+        self.records.insert(0, record)
+        return record
 
     @callback
     def forget(self, conversation_id: str) -> None:
