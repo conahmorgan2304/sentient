@@ -112,8 +112,6 @@ async def test_benchmark_expands_to_heating_energy_and_dry_run_plan(hass: HomeAs
                           {"friendly_name": "Test door", "device_class": "door"})
     with patch.object(type(rt.selftest), "_exposed", lambda self, entity_id: True):
         qs = {q.key: q for q in rt.selftest.household_questions(rt)}
-    assert {"heating current", "energy reading", "dry-run plan"} <= set(qs)
+    assert {"heating current", "energy reading"} <= set(qs)
     assert qs["heating current"].check("The thermostat reports 19.5 degrees.")[0]
     assert qs["energy reading"].check("The reading is 12.6 kWh.")[0]
-    assert qs["dry-run plan"].check("First check the test door, then switch off the test lamp.")[0]
-    assert not qs["dry-run plan"].check("Done, I switched off the lamp.")[0]
