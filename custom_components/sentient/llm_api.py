@@ -2529,7 +2529,8 @@ class SentientAPI(llm.API):
         if not rt.speech.guest_mode and not private and (talk := rt.conversations.prompt_lines(exclude=conversation_id)):
             lines.append(
                 "Recent conversations on the house's speakers (any room) — pick up where they left off if it's "
-                "relevant; sentient_conversations has more:"
+                "relevant; sentient_conversations has more. When the same question comes up again, look the answer "
+                "up afresh rather than repeating what you said before — it may have been wrong or out of date:"
             )
             lines.extend(talk)
         if drive := rt.drive.prompt_line():
