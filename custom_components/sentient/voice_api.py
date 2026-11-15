@@ -196,9 +196,9 @@ class IncidentsTool(_Tool):
 # not grant additional device-control authority: the same tool implementations and
 # their existing exposure, user-permission and guest checks are used.
 GUARDED_READ_ONLY = {
+    # Each of these has explicit entity-visibility and household-privacy checks.
     'sentient_history', 'sentient_root_cause', 'sentient_camera_activity',
-    'sentient_manual', 'sentient_warnings', 'sentient_calendar_clashes',
-    'sentient_self', 'sentient_security_audit', 'sentient_evidence',
+    'sentient_evidence',
 }
 
 
