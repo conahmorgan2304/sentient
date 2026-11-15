@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.6": [
+        "Asked the same thing again, the voice looks the answer up afresh instead of repeating what it said earlier — so an answer that was vague or wrong the first time isn't copied.",
+    ],
     "1.11.5": [
         "Times are said to the minute: when the house knows when something happened (a car arriving at 3:12pm), the voice says \"twelve minutes past three\", not \"just after three\". Things from yesterday are called yesterday rather than by the date.",
     ],

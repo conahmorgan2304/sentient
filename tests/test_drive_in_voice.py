@@ -50,3 +50,16 @@ async def test_times_are_said_to_the_minute(hass: HomeAssistant) -> None:
     await setup_one(hass)
     assert "say it to the minute" in await _prompt(hass)
     assert local_when(dt_util.now() - timedelta(days=1)).endswith("yesterday")
+
+
+async def test_a_repeated_question_is_looked_up_afresh(hass: HomeAssistant) -> None:
+    """15 Nov: after the fix, it repeated its earlier "past three o'clock" from the recent conversations."""
+    from tests.test_phase1 import _prompt, _setup as setup_one
+
+    entry = await setup_one(hass)
+    conv = entry.runtime_data.conversations
+    conv.attach("c1", None)
+    conv._chat("c1", "content_added", {"content": {"role": "user", "content": "what time did she get back?"}})
+    conv._chat("c1", "content_added", {"content": {"role": "assistant", "content": "Just after three."}})
+    conv._finish("c1")
+    assert "look the answer up afresh" in await _prompt(hass)
