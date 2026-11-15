@@ -198,7 +198,7 @@ class IncidentsTool(_Tool):
 GUARDED_READ_ONLY = {
     'sentient_history', 'sentient_root_cause', 'sentient_camera_activity',
     'sentient_manual', 'sentient_warnings', 'sentient_calendar_clashes',
-    'sentient_self', 'sentient_security_audit', 'sentient_devices',
+    'sentient_self', 'sentient_security_audit', 'sentient_evidence',
 }
 
 
