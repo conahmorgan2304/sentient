@@ -251,6 +251,20 @@ class Conversations:
             self._save()
 
     @callback
+    def amend_said(self, conversation_id: str, sentences: list[str]) -> None:
+        """Take sentences out of what was last said in a conversation (a security offer that was never spoken)."""
+        for ep in [self._open.get(conversation_id)] + [e for e in self.episodes if e.get("id") == conversation_id[-10:]]:
+            if not ep:
+                continue
+            for turn in reversed(ep.get("turns", [])):
+                if turn.get("who") == "me":
+                    text = turn["text"]
+                    for sentence in sentences:
+                        text = text.replace(sentence, "", 1)
+                    turn["text"] = " ".join(text.split())
+                    break
+
+    @callback
     def drop(self, conversation_id: str) -> None:
         """Forget a conversation that wasn't a person talking, and ignore the rest of it.
 

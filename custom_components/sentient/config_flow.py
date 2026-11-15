@@ -24,6 +24,7 @@ from .security_events import (CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVEN
                               CONF_HIDDEN_ZONES, ZONE_MODES)
 from .clip_analysis import CONF_SHARED_CLIPS
 
+from .security_offers import CONF_NO_SECURITY_OFFERS
 from .const import (
     CONF_COMFORT_TEMP,
     CONF_CAMSEC,
@@ -738,6 +739,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_HOUSE_RULES, **d(CONF_HOUSE_RULES, "")): selector.TextSelector(
                 selector.TextSelectorConfig(multiline=True)
             ),
+            vol.Required(CONF_NO_SECURITY_OFFERS, **d(CONF_NO_SECURITY_OFFERS, False)): selector.BooleanSelector(),
             vol.Optional(CONF_LEARN_ENTITIES, **d(CONF_LEARN_ENTITIES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["light", "switch", "fan", "input_boolean", "cover"], multiple=True)
             ),

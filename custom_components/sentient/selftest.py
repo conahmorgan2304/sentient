@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.ulid import ulid_now
 
 from .const import CONF_BRIEFING_WEATHER, CONF_CHAT_AGENT, CONF_SELF_TEST, CONF_SELF_TEST_HOUSEHOLD, CONF_VOICE_AGENT, DOMAIN
+from .security_offers import SECURITY_OFFER  # "Shall I arm it in away mode?" when only asked
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,10 +61,6 @@ ASKS_BACK = re.compile(r"\?|\bwhich\b|what do you mean|do you mean|could you (?:
 ACTION_TOOLS = {"HassTurnOn", "HassTurnOff", "HassToggle", "HassLightSet", "HassClimateSetTemperature", "HassSetPosition",
                 "HassVacuumStart", "HassVacuumReturnToBase", "HassMediaPause", "HassMediaUnpause", "HassSetVolume",
                 "HassMediaNext", "HassMediaPrevious", "HassFanSetSpeed", "HassLawnMowerStartMowing", "HassOpen", "HassClose"}
-# "Shall I arm it in away mode?": a question about the alarm answered with an offer to change it
-SECURITY_OFFER = re.compile(
-    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|let me)\b[^.?!]{0,30}?"
-    r"\b(?:arm|disarm|unlock|unset)\b", re.I)
 
 
 def _tool_name(content: dict[str, Any]) -> str:

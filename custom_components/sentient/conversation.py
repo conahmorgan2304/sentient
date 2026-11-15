@@ -438,19 +438,63 @@ class BackedUpAgent(conversation.ConversationEntity):
     async def _process_streaming_aware(self, user_input):
         """Answer; when the reply is being spoken as it's written, also say whatever Sentient changed afterwards."""
 
+        from .security_offers import CONF_NO_SECURITY_OFFERS, applies
+
+        offers = applies(self._options().get(CONF_NO_SECURITY_OFFERS, False), user_input.text)
         log = None
         if self._options().get("stream_voice_replies") and self.supports_streaming:
             from homeassistant.components.conversation.chat_log import current_chat_log
 
             log = current_chat_log.get()
         if log is None or log.delta_listener is None:
-            return await self._async_process_impl(user_input)
+            result = await self._async_process_impl(user_input)
+            if offers:
+                self._drop_security_offers(result)
+            return result
         from .voice_stream import StreamWatch
 
-        with StreamWatch(log, self.entity_id, self._pronouncer(user_input)) as watch:
+        with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=offers) as watch:
             result = await self._async_process_impl(user_input)
+            if offers:
+                self._drop_security_offers(result, log)
             await watch.finish(spoken_text(result.response))
         return result
+
+    def _drop_security_offers(self, result, log=None) -> None:
+        """Take any sentence offering to arm, disarm or unlock out of the reply, and out of what the conversation
+        remembers it said (so a "yes" later can't answer an offer nobody heard). Never stops a reply."""
+        try:
+            from .security_offers import remove
+
+            speech = result.response.speech or {}
+            if "plain" not in speech:
+                return
+            plain = speech["plain"].get("speech") or ""
+            kept, gone = remove(plain)
+            if not gone:
+                return
+            result.response.async_set_speech(kept)
+            _LOGGER.debug("Took an offer to arm/disarm/unlock out of the reply: %s", gone)
+            if log is None:
+                from homeassistant.components.conversation.chat_log import current_chat_log
+
+                log = current_chat_log.get()
+            if log is not None:
+                for i in range(len(log.content) - 1, -1, -1):
+                    content = log.content[i]
+                    if getattr(content, "role", "") != "assistant" or not content.content:
+                        continue
+                    text = content.content
+                    for sentence in gone:
+                        text = text.replace(sentence, "", 1)
+                    if text != content.content:
+                        log.content[i] = replace(content, content=" ".join(text.split()))
+                    break
+            rt = getattr(self._entry, "runtime_data", None)
+            if rt is not None and result.conversation_id and getattr(rt, "conversations", None) is not None:
+                rt.conversations.amend_said(result.conversation_id, gone)
+        except Exception:  # noqa: BLE001 - the reply goes out regardless
+            _LOGGER.debug("Couldn't check the reply for security offers", exc_info=True)
 
     async def _async_process_impl(self, user_input):
         """Answer, carrying on the last conversation from the same speaker when it was only a moment ago."""
