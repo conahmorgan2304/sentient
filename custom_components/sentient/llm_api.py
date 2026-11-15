@@ -2394,7 +2394,9 @@ class SentientAPI(llm.API):
             language_prompt(self.hass, opts),
             *([talk] if (talk := talk_line(opts)) else []),
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')} — if asked the time, say this exact "
-            f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it.",
+            f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it. When a tool or this prompt gives "
+            "the time something happened (\"3:12pm\"), say it to the minute (\"twelve minutes past three\" or "
+            "\"three twelve\") — not \"about three\", \"just after three\" or \"past three\".",
             "To say anything on a speaker — including the Alexa Echo speakers — call sentient_announce with that "
             "speaker's or room's name (e.g. 'kitchen echo', 'girls echo'). Never use media play, pause or resume to "
             "test or reach a speaker, and never decide a speaker can't be used because of an Amazon Kids or parental "
