@@ -60,7 +60,7 @@ UNANSWERED = re.compile(
     r"\bi'?m not (?:sure|able)\b", re.I)
 QUESTION = re.compile(r"\?\s*$|^(?:has|have|had|did|was|were|when|who|what|which|how (?:long|many|often)|is there|are there)\b", re.I)
 PAST = re.compile(r"\b(?:has|have|had|did|was|were|last|earlier|yesterday|today|tonight|this (?:morning|afternoon|evening)|"
-                  r"recently|ago|been)\b", re.I)
+                  r"recently|ago|been|happened|overnight|previously)\b", re.I)
 
 
 def _short(text: str, limit: int) -> str:
