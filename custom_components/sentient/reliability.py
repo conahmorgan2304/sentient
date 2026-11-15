@@ -76,13 +76,16 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
     data = result.get("data") if isinstance(result, dict) else None
     if isinstance(data, dict) and ("success" in data or "failed" in data):
         bad = [str(t.get("name")) for t in data.get("failed") or [] if isinstance(t, dict) and t.get("name")]
-        ok = bool(data.get("success"))
+        # A nonempty success list represents a reported successful target, not
+        # independent verification of the physical state.
+        success = data.get("success")
+        ok = isinstance(success, list) and bool(success)
         if bad:
             return name, "didn't work: " + ", ".join(bad[:4]), ok
         return name, None, ok
     if isinstance(result, dict) and result.get("success") is True:
-        # a script or tool that reports success did what it was asked (15 Nov: "Show camera on Echo Show" ran and
-        # put the doorbell up, but was logged as "said it was done, but nothing was done")
+        # Explicit success is evidence that the tool reports completion. It is
+        # not independent verification that the physical device changed.
         return name, None, True
     if isinstance(result, dict) and result.get("success") is False:
         return name, _short(str(result.get("message") or result.get("reason") or "failed"), 140), False
@@ -94,7 +97,8 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
     ``actions`` are tool names that change something (a successful one counts as having done something)."""
     out: list[dict[str, str]] = []
     outcomes = [_tool_outcome(t) for t in tools]
-    did = any(changed or (name in actions and not err) for name, err, changed in outcomes)
+    # No error from an action-classified tool is not proof it executed.
+    did = any(changed for _name, _err, changed in outcomes)
     for i, (name, err, _changed) in enumerate(outcomes):
         if not err:
             continue
@@ -110,8 +114,15 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         out.append({"kind": "offered_impossible", "detail": f"\"{_short(m.group(0), 80)}\""})
     if said_clean and UNANSWERED.search(said_clean):
         out.append({"kind": "unanswered", "detail": "used " + (", ".join(dict.fromkeys(n for n, _e, _c in outcomes)) or "no tools")})
-    elif not tools and asked and QUESTION.search(asked.strip()) and PAST.search(asked):
-        out.append({"kind": "no_evidence", "detail": "no tool was used"})
+    elif asked and QUESTION.search(asked.strip()) and PAST.search(asked):
+        # A generic device command is not evidence about prior events. This
+        # deliberately checks tool relevance, not just whether any tool ran.
+        evidence_names = ("history", "timeline", "what_happened", "camera_activity",
+                          "visitors", "incidents", "root_cause", "conversations",
+                          "logbook", "recorder", "security_event", "HassGetHistory")
+        if not any(any(word.casefold() in name.casefold() for word in evidence_names)
+                   for name, _err, _changed in outcomes):
+            out.append({"kind": "no_evidence", "detail": "no relevant historical tool was used"})
     return out
 
 
@@ -185,7 +196,11 @@ class Reliability:
         now = now_dt.isoformat()
         key = (" ".join(str(turn["asked"]).split()).casefold(), " ".join(str(text or "").split()).casefold())
         last = getattr(self, "_last", None)
-        if last is not None and last["key"] == key and (now_dt - last["at"]).total_seconds() < 15:
+        # Only collapse a likely relay: one record carries actual tool results,
+        # the other carries none. Two complete requests are separate turns.
+        relay_pair = last is not None and bool(turn["tools"]) != bool(last["tools"])
+        same_room = last is not None and last.get("room") == room
+        if relay_pair and same_room and last["key"] == key and (now_dt - last["at"]).total_seconds() < 15:
             # the same question and answer again within seconds: one request seen twice — a voice add-on (voice
             # recognition) passes it to this agent and then relays the answer in its own conversation. Count it
             # once, keeping whichever copy shows the tools that were used.
@@ -199,7 +214,7 @@ class Reliability:
             return
         self.turns.append(now)
         self._last = {"key": key, "at": now_dt, "tools": bool(turn["tools"]),
-                      "record": self._record(now, room, turn, text)}
+                      "record": self._record(now, room, turn, text), "room": room}
         self._trim()
         self._save()
 
