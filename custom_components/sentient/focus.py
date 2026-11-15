@@ -95,7 +95,7 @@ class Focus:
         # Multi-system investigations need tools outside the first keyword hit.
         # Prefer completeness to a smaller model prompt for these requests.
         investigating = bool(re.search(
-            r"\\b(why|investigat\\w*|diagnos\\w*|figure out|work out|find out|what caused|not working|stopped working)\\b",
+            r"\b(why|investigat\w*|diagnos\w*|figure out|work out|find out|what caused|not working|stopped working)\b",
             text, re.I))
         if investigating and len(topics) >= 2:
             return None
