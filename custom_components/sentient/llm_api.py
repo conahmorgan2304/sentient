@@ -891,6 +891,19 @@ AUTOMATION_YES = re.compile(
     r"|sounds good|please do)(?:[ ,]+(?:please|thanks|thank you|save it|do it|go ahead|that'?s (?:right|fine)))*[.!]*$", re.I)
 
 
+async def _history_read_permission(hass: HomeAssistant, llm_context: llm.LLMContext):
+    """Filter historical entities by Assist exposure and the requesting HA user."""
+    from homeassistant.auth.permissions.const import POLICY_READ
+
+    context = llm_context.context
+    user_id = getattr(context, "user_id", None)
+    user = await hass.auth.async_get_user(user_id) if user_id else None
+    if user_id and (user is None or not user.is_active):
+        return lambda entity_id: False
+    return lambda entity_id: (_exposed(hass, entity_id) and
+                              (user is None or user.permissions.check_entity(entity_id, POLICY_READ)))
+
+
 class HistoryTool(_Tool):
     annotations = _read_only()
     name = "sentient_history"
@@ -912,10 +925,11 @@ class HistoryTool(_Tool):
             return {"error": "Sentient's memory database isn't running"}
         if _household_private(hass, llm_context):
             return {"error": "Household history isn't shared with guests or in a private room."}
+        readable = await _history_read_permission(hass, llm_context)
         a = tool_input.tool_args
         out = await brain.async_history(a.get("what"), min(float(a["hours"]), 24 * 90), a.get("cause"), a.get("changed_to"))
         if "changes" in out:
-            out["changes"] = [c for c in out["changes"] if _exposed(hass, c["entity_id"])]
+            out["changes"] = [c for c in out["changes"] if readable(c["entity_id"])]
         return out
 
 
@@ -938,10 +952,11 @@ class RootCauseTool(_Tool):
             return {"error": "Household history isn't shared with guests or in a private room."}
         from .ledger import resolve_entities
 
-        found = [e for e in resolve_entities(hass, tool_input.tool_args["what"]) if _exposed(hass, e)]
+        readable = await _history_read_permission(hass, llm_context)
+        found = [e for e in resolve_entities(hass, tool_input.tool_args["what"]) if readable(e)]
         if not found:
             return {"error": f"No device called '{tool_input.tool_args['what']}' that voice assistants may use."}
-        return await brain.async_root_cause(found[0], lambda e: _exposed(hass, e))
+        return await brain.async_root_cause(found[0], readable)
 
 
 class WarningsTool(_Tool):
