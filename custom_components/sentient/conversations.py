@@ -193,7 +193,8 @@ class Conversations:
             self.reliability.tool(conversation_id, content)
         elif role == "assistant" and isinstance(text, str) and text and not content.get("tool_calls"):
             if conversation_id in self._ours:  # a conversation using Sentient, not a background AI job
-                self.reliability.answered(conversation_id, text, (self._ours.get(conversation_id) or {}).get("room"))
+                source = self._ours.get(conversation_id) or {}
+                self.reliability.answered(conversation_id, text, source.get("room"), source.get("device_id"))
             else:
                 self.reliability.forget(conversation_id)
 
