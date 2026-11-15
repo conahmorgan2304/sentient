@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.8": [
+        "Never offer to arm, disarm or unlock: when the offer was the reply's question, the speaker no longer keeps listening for an answer to it, and the conversation no longer holds it as an unanswered question.",
+    ],
     "1.11.7": [
         "New: Never offer to arm, disarm or unlock (Settings → Voice → Personality & house rules; off by default). With it on, a sentence offering to arm or disarm the alarm or unlock a door (\"Shall I arm it in away mode?\") is taken out of the voice's reply before it's said — including a reply spoken as it's written, which is held back a sentence at a time — and out of what the conversation remembers saying. Someone who asked to arm, disarm, lock, unlock or open still gets their confirmation question, and a reply that's nothing but the offer is left alone rather than going silent.",
         "The overnight self-test uses the same check, so it marks exactly the replies this would have changed.",
