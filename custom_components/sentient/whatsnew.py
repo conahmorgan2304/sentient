@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.10": [
+        "Where the voice went wrong: a script that reports it worked (like showing a camera on the Echo Show) now counts as having done something, instead of \"said it was done, but nothing was done\".",
+        "Voice requests through Sentient Voice Recognition were counted twice (the request, then the relayed answer with no tools). The same question and answer within seconds now count once, judged by the copy that shows the tools used.",
+        "Questions about what was seen or happened (\"when did you last see the rabbits?\") are looked up in the camera record every time, not answered from an earlier reply.",
+    ],
     "1.11.9": [
         "Weather warnings: when the warnings feed can't be reached, the voice is told so in plain words (\"Couldn't read the warnings just now\") instead of being handed a raw technical error it could read out.",
         "Replay benchmark (for testing changes against recorded days): a day with a restart in it no longer starts devices as \"unavailable\", and a replay no longer hangs on a real-time wait inside Sentient.",

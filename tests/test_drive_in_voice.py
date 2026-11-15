@@ -62,4 +62,5 @@ async def test_a_repeated_question_is_looked_up_afresh(hass: HomeAssistant) -> N
     conv._chat("c1", "content_added", {"content": {"role": "user", "content": "what time did she get back?"}})
     conv._chat("c1", "content_added", {"content": {"role": "assistant", "content": "Just after three."}})
     conv._finish("c1")
-    assert "look the answer up afresh" in await _prompt(hass)
+    prompt = await _prompt(hass)
+    assert "look the answer up afresh" in prompt and "look it up with a tool, not from these" in prompt

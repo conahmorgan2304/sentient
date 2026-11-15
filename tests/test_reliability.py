@@ -93,3 +93,52 @@ async def test_switching_it_off_stops_it_and_clears_what_was_kept(hass: HomeAssi
     rt.conversations._chat("c2", "content_added", {"content": {"role": "user", "content": "did the bins go out?"}})
     rt.conversations._chat("c2", "content_added", {"content": {"role": "assistant", "content": "They did."}})
     assert not rt.reliability.records
+
+
+def test_a_script_that_reports_success_did_something() -> None:
+    """15 Nov: "Show camera on Echo Show" ran and put the doorbell up, but it was logged as "said it was done, but
+    nothing was done" — a script's {"success": true} wasn't counted as an action."""
+    from custom_components.sentient.reliability import classify
+
+    shown = {"tool_name": "jarvis_show_camera_on_echo_show", "tool_result": {"success": True, "result": None}}
+    assert classify("the doorbell camera", "I've put the doorbell feed up on the screen.", [shown]) == []
+    failed = {"tool_name": "jarvis_show_camera_on_echo_show", "tool_result": {"success": False, "message": "no"}}
+    kinds = [p["kind"] for p in classify("the doorbell camera", "I've put it on the screen.", [failed])]
+    assert "claimed_done" in kinds and "tool_failed" in kinds
+
+
+async def test_a_relayed_answer_is_counted_once_keeping_the_tools(hass: HomeAssistant) -> None:
+    """15 Nov: Sentient Voice Recognition passes the request to this agent, then relays the answer in its own
+    conversation — every voice request was counted twice, the relayed copy with no tools."""
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    conv = rt.conversations
+    for cid, tools in (("inner", True), ("outer", False)):
+        conv.attach(cid, None)
+        conv._chat(cid, "content_added", {"content": {"role": "user", "content": "The doorbell camera."}})
+        if tools:
+            conv._chat(cid, "content_added", {"content": {"role": "tool_result", "tool_name": "jarvis_show_camera",
+                                                          "tool_result": {"success": True}}})
+        conv._chat(cid, "content_added", {"content": {"role": "assistant",
+                                                      "content": "I've put the doorbell feed up on the screen."}})
+    summary = rt.reliability.summary()
+    assert summary["turns"] == 1 and summary["recent"] == []
+    # the other way round: the relayed copy first, then the real one — the real one's tools are what's judged
+    conv.attach("outer2", None)
+    conv._chat("outer2", "content_added", {"content": {"role": "user", "content": "did anyone come?"}})
+    conv._chat("outer2", "content_added", {"content": {"role": "assistant", "content": "Nobody came."}})
+    assert rt.reliability.summary()["recent"][0]["problems"][0]["kind"] == "no_evidence"
+    conv.attach("inner2", None)
+    conv._chat("inner2", "content_added", {"content": {"role": "user", "content": "did anyone come?"}})
+    conv._chat("inner2", "content_added", {"content": {"role": "tool_result", "tool_name": "sentient_visitors",
+                                                       "tool_result": {"visitors": []}}})
+    conv._chat("inner2", "content_added", {"content": {"role": "assistant", "content": "Nobody came."}})
+    summary = rt.reliability.summary()
+    assert summary["turns"] == 2 and summary["recent"] == []
+
+
+async def test_the_voice_is_told_to_look_things_up_not_reuse_answers(hass: HomeAssistant) -> None:
+    from custom_components.sentient.security_voice import CameraActivityTool
+
+    assert "when did you last see the rabbits" in CameraActivityTool.description
+    assert "not from an earlier answer" in CameraActivityTool.description

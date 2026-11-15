@@ -232,7 +232,8 @@ class CameraActivityTool(_Tool):
     name = "sentient_camera_activity"
     description = ("Who or what a camera detected over a period, newest first, from the house's own camera record: "
                    "for 'has anyone been in the garden / to the rabbits / at the gate today?', 'when was someone last "
-                   "in the garden?', 'did anyone go to the shed this afternoon?'. 'camera' is a camera, a room or a named "
+                   "in the garden?', 'when did you last see the rabbits?', 'did anyone go to the shed this afternoon?'. Look it up "
+                   "every time — not from an earlier answer or the house summary. 'camera' is a camera, a room or a named "
                    "spot (e.g. 'rabbit pen'); 'hours' is how far back (default 12; 'this morning' is since the morning). "
                    "Use this for anything in the past, not sentient_look (that's only the picture right now) or "
                    "sentient_what_happened (one clip). A detection says a person was seen, not who.")
