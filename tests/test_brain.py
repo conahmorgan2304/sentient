@@ -1153,5 +1153,5 @@ async def test_household_history_filters_requesting_users_permissions(hass: Home
     with patch("custom_components.sentient.llm_api._exposed", return_value=True), \
          patch.object(hass.auth, "async_get_user", new=AsyncMock(return_value=person)):
         allowed = await _history_read_permission(hass, context)
-    assert allowed("light.public") is True
-    assert allowed("light.secret") is False
+        assert allowed("light.public") is True
+        assert allowed("light.secret") is False
