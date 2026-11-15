@@ -192,6 +192,16 @@ class IncidentsTool(_Tool):
         return {'incidents': reports}
 
 
+# Read-only investigation tools should remain available on guarded agents. This does
+# not grant additional device-control authority: the same tool implementations and
+# their existing exposure, user-permission and guest checks are used.
+GUARDED_READ_ONLY = {
+    'sentient_history', 'sentient_root_cause', 'sentient_camera_activity',
+    'sentient_manual', 'sentient_warnings', 'sentient_calendar_clashes',
+    'sentient_self', 'sentient_security_audit', 'sentient_devices',
+}
+
+
 class GuardedAPI(SentientAPI):
     def __init__(self, hass):
         llm.API.__init__(self, hass=hass, id=GUARDED_API, name='Sentient guarded')
@@ -199,7 +209,7 @@ class GuardedAPI(SentientAPI):
     async def async_get_api_instance(self, llm_context):
         instance = await super().async_get_api_instance(llm_context)
         instance.api = self
-        instance.tools = [t for t in instance.tools if t.name in SAFE_TOOLS or isinstance(t, (SessionTool, IncidentsTool, ClarifyTool))]
+        instance.tools = [t for t in instance.tools if t.name in SAFE_TOOLS or t.name in GUARDED_READ_ONLY or isinstance(t, (SessionTool, IncidentsTool, ClarifyTool))]
         instance.tools += [DevicesTool(), ControlTool()]
         instance.api_prompt += ('\nGuarded control: use sentient_devices to resolve exact exposed entities, then '
                                 'sentient_control. No scripts, scenes, alarms or arbitrary service execution. '
