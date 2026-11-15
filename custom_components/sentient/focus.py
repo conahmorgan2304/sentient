@@ -34,7 +34,7 @@ ALWAYS = {
     "sentient_session", "sentient_clarify", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_undo_last", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
     "sentient_search", "sentient_ask_later", "sentient_self", "sentient_game", "sentient_game_set", "sentient_game_log",
-    "sentient_history", "sentient_root_cause",
+    "sentient_history", "sentient_root_cause", "sentient_evidence",
 }
 
 TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
@@ -92,6 +92,13 @@ class Focus:
             return None
         topics = {name for name, (words, _tools) in TOPICS.items() if words.search(text)}
         before = self._last.get(conversation_id or "", set())
+        # Multi-system investigations need tools outside the first keyword hit.
+        # Prefer completeness to a smaller model prompt for these requests.
+        investigating = bool(re.search(
+            r"\b(why|investigat\w*|diagnos\w*|figure out|work out|find out|what caused|not working|stopped working)\b",
+            text, re.I))
+        if investigating and len(topics) >= 2:
+            return None
         if not topics and not before:
             from .sessions import COMMAND
 

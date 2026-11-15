@@ -647,6 +647,7 @@
           "stream_voice_replies": "Speak voice replies as they're written (trial)",
           "voice_timing_diagnostics": "Voice response timing diagnostics",
           "reliability_log": "Note where the voice goes wrong",
+          "unified_evidence": "Unified household evidence lookup",
           "specific_clarification": "Specific device and value questions",
           "action_recovery": "Device results and cautious recovery",
           "recheck_unconfirmed": "Look again at changes that didn't report back",

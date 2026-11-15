@@ -891,6 +891,19 @@ AUTOMATION_YES = re.compile(
     r"|sounds good|please do)(?:[ ,]+(?:please|thanks|thank you|save it|do it|go ahead|that'?s (?:right|fine)))*[.!]*$", re.I)
 
 
+async def _history_read_permission(hass: HomeAssistant, llm_context: llm.LLMContext):
+    """Filter historical entities by Assist exposure and the requesting HA user."""
+    from homeassistant.auth.permissions.const import POLICY_READ
+
+    context = llm_context.context
+    user_id = getattr(context, "user_id", None)
+    user = await hass.auth.async_get_user(user_id) if user_id else None
+    if user_id and (user is None or not user.is_active):
+        return lambda entity_id: False
+    return lambda entity_id: (_exposed(hass, entity_id) and
+                              (user is None or user.permissions.check_entity(entity_id, POLICY_READ)))
+
+
 class HistoryTool(_Tool):
     annotations = _read_only()
     name = "sentient_history"
@@ -912,10 +925,11 @@ class HistoryTool(_Tool):
             return {"error": "Sentient's memory database isn't running"}
         if _household_private(hass, llm_context):
             return {"error": "Household history isn't shared with guests or in a private room."}
+        readable = await _history_read_permission(hass, llm_context)
         a = tool_input.tool_args
         out = await brain.async_history(a.get("what"), min(float(a["hours"]), 24 * 90), a.get("cause"), a.get("changed_to"))
         if "changes" in out:
-            out["changes"] = [c for c in out["changes"] if _exposed(hass, c["entity_id"])]
+            out["changes"] = [c for c in out["changes"] if readable(c["entity_id"])]
         return out
 
 
@@ -938,10 +952,11 @@ class RootCauseTool(_Tool):
             return {"error": "Household history isn't shared with guests or in a private room."}
         from .ledger import resolve_entities
 
-        found = [e for e in resolve_entities(hass, tool_input.tool_args["what"]) if _exposed(hass, e)]
+        readable = await _history_read_permission(hass, llm_context)
+        found = [e for e in resolve_entities(hass, tool_input.tool_args["what"]) if readable(e)]
         if not found:
             return {"error": f"No device called '{tool_input.tool_args['what']}' that voice assistants may use."}
-        return await brain.async_root_cause(found[0], lambda e: _exposed(hass, e))
+        return await brain.async_root_cause(found[0], readable)
 
 
 class WarningsTool(_Tool):
@@ -2303,6 +2318,119 @@ class HouseCheckTool(_Tool):
         return out
 
 
+
+class UnifiedEvidenceTool(_Tool):
+    """Bounded read-only lookup across existing evidence providers.
+
+    Each underlying tool retains its own permission/privacy checks. Missing
+    coverage is explicit, so a missing event never becomes "nothing happened".
+    """
+
+    annotations = _read_only()
+    reads_outside = True
+    name = "sentient_evidence"
+    description = (
+        "Investigate what happened or why across the house without guessing. "
+        "Retrieve the house ledger and timeline together; optionally include "
+        "camera detection history and a device root-cause investigation. "
+        "For a named device or room set 'what'; for cameras set 'camera'. "
+        "Results label each source as available or unavailable; omitted cameras "
+        "are NOT evidence that nobody was seen. Read-only, no actions."
+    )
+    parameters = vol.Schema({
+        vol.Optional("what"): cv.string,
+        vol.Optional("camera"): cv.string,
+        vol.Optional("hours", default=12): vol.All(vol.Coerce(float), vol.Range(min=0.25, max=72)),
+        vol.Optional("explain", default=False): cv.boolean,
+    })
+
+    async def async_call(self, hass, tool_input, llm_context):
+        from types import SimpleNamespace
+
+        args = tool_input.tool_args
+        hours = float(args["hours"])
+        what = (args.get("what") or "").strip()
+        camera = (args.get("camera") or "").strip()
+        sources = {}
+
+        async def read(label, tool, parameters):
+            try:
+                # The shared tool wrapper validates parameters, preserves the
+                # normal visibility restrictions and returns HA's ToolResult.
+                value = await asyncio.wait_for(
+                    tool.async_call(hass, SimpleNamespace(tool_args=parameters), llm_context),
+                    timeout=12,
+                )
+                if isinstance(value, dict):
+                    data = value
+                else:
+                    data = getattr(value, "data", None)
+                if not isinstance(data, dict):
+                    sources[label] = {"available": False, "reason": "unsupported tool result"}
+                    return
+                if "error" in data:
+                    sources[label] = {"available": False, "reason": str(data["error"])[:180]}
+                    return
+                # Keep tool payloads bounded for voice models.
+                bounded = {}
+                for key, val in data.items():
+                    if isinstance(val, list):
+                        bounded[key] = val[:20]
+                    else:
+                        bounded[key] = val
+                sources[label] = {"available": True, "data": bounded}
+            except Exception as err:  # noqa: BLE001 - individual source is allowed to fail
+                sources[label] = {"available": False, "reason": type(err).__name__}
+
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        if _household_private(hass, llm_context):
+            return {"error": "Household evidence is private for this request"}
+        # Reuse the existing tools rather than circumventing their policy.
+        await read("timeline", TimelineTool(), {"hours": hours})
+        if getattr(rt, "brain", None) is not None and rt.brain.on("house_ledger"):
+            await read("ledger", HistoryTool(), {"hours": hours, **({"what": what} if what else {})})
+            if what and args.get("explain"):
+                await read("root_cause", RootCauseTool(), {"what": what})
+        else:
+            sources["ledger"] = {"available": False, "reason": "house ledger disabled"}
+        # Recorder is queried only for a specifically named, visible device.
+        # Never expose an unbounded whole-house Recorder dump to a voice model.
+        if what:
+            from .ledger import resolve_entities
+            from homeassistant.components.recorder import get_instance, history
+            from datetime import timedelta
+
+            readable = await _history_read_permission(hass, llm_context)
+            entities = [e for e in resolve_entities(hass, what) if readable(e)][:2]
+            if entities:
+                try:
+                    since = dt_util.utcnow() - timedelta(hours=min(hours, 24.0))
+                    rows = await asyncio.wait_for(get_instance(hass).async_add_executor_job(
+                        lambda: history.get_significant_states(
+                            hass, since, None, entities, significant_changes_only=True,
+                            no_attributes=True, include_start_time_state=True)), timeout=12)
+                    sources["recorder"] = {"available": True, "entities": {
+                        entity: [{"time": state.last_changed.isoformat(), "state": state.state}
+                                 for state in readings[-20:]]
+                        for entity, readings in rows.items() if entity in entities}}
+                except Exception as err:  # noqa: BLE001 - source failure must not break other sources
+                    sources["recorder"] = {"available": False, "reason": type(err).__name__}
+            else:
+                sources["recorder"] = {"available": False, "reason": "no exposed, permitted matching entity"}
+        else:
+            sources["recorder"] = {"available": False, "reason": "no device selected"}
+        if camera:
+            from .security_voice import CameraActivityTool
+
+            await read("camera_activity", CameraActivityTool(), {"camera": camera, "hours": hours})
+        else:
+            sources["camera_activity"] = {"available": False, "reason": "no camera selected"}
+        return {"hours": hours, "subject": what or None, "sources": sources,
+                "note": "A source unavailable or not queried cannot establish that no event occurred."}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -2336,6 +2464,7 @@ class SentientAPI(llm.API):
                  *([GameSetTool(), GameLogTool()] if _games(self.hass) is not None and _games(self.hass).active is not None else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else []),
                  *([HistoryTool(), RootCauseTool()] if getattr(rt0, "brain", None) is not None and rt0.brain.on("house_ledger") else []),
+                 *([UnifiedEvidenceTool()] if rt0 is not None and rt0.options.get("unified_evidence", False) else []),
                  *([WarningsTool()] if rt0 is not None and rt0.options.get("weather_warnings") else []),
                  *([EmailTool()] if rt0 is not None and rt0.options.get("email_read") else []),
                  *([CalendarClashesTool()] if rt0 is not None and rt0.options.get("calendar_clashes") else []),

@@ -97,3 +97,21 @@ async def test_a_camera_and_the_door_are_asked_about_from_what_was_recorded(hass
     assert not qs["camera"].check("No one's been seen there.")[0]
     assert qs["visitors"].check("No, nobody's been to the door today.")[0]
     assert not qs["visitors"].check("Yes, a delivery driver came at noon.")[0]
+
+
+async def test_benchmark_expands_to_heating_energy_and_dry_run_plan(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    hass.states.async_set("climate.test_heater", "heat",
+                          {"friendly_name": "Test heater", "current_temperature": 19.5})
+    hass.states.async_set("sensor.test_energy", "12.6",
+                          {"friendly_name": "Test energy", "device_class": "energy",
+                           "unit_of_measurement": "kWh"})
+    hass.states.async_set("light.test_lamp", "on", {"friendly_name": "Test lamp"})
+    hass.states.async_set("binary_sensor.test_door", "off",
+                          {"friendly_name": "Test door", "device_class": "door"})
+    with patch.object(type(rt.selftest), "_exposed", lambda self, entity_id: True):
+        qs = {q.key: q for q in rt.selftest.household_questions(rt)}
+    assert {"heating current", "energy reading"} <= set(qs)
+    assert qs["heating current"].check("The thermostat reports 19.5 degrees.")[0]
+    assert qs["energy reading"].check("The reading is 12.6 kWh.")[0]

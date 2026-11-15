@@ -1138,3 +1138,20 @@ async def test_overnight_doesnt_report_testing_beliefs_when_there_were_none(hass
         await brain.async_think_overnight()
     line = next(i["text"] for i in entry.runtime_data.timeline.items if i["text"].startswith("Overnight:"))
     assert line == "Overnight: I expected 94% of yesterday's 100 changes." and "tested beliefs" not in line
+
+
+async def test_household_history_filters_requesting_users_permissions(hass: HomeAssistant) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from homeassistant.helpers import llm
+    from custom_components.sentient.llm_api import _history_read_permission
+
+    access = SimpleNamespace(check_entity=lambda entity, policy: entity == "light.public")
+    person = SimpleNamespace(is_active=True, permissions=access)
+    context = llm.LLMContext(platform="test", context=Context(user_id="some-user"),
+                             language="en", assistant="conversation", device_id=None)
+    with patch("custom_components.sentient.llm_api._exposed", return_value=True), \
+         patch.object(hass.auth, "async_get_user", new=AsyncMock(return_value=person)):
+        allowed = await _history_read_permission(hass, context)
+        assert allowed("light.public") is True
+        assert allowed("light.secret") is False

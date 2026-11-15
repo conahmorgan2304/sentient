@@ -329,6 +329,41 @@ class SelfTest:
 
                 out.append(Question("visitors", "Has anyone been to the front door today?", door_today, "history"))
 
+        # Additional bounded household checks: one real thermostat and one
+        # real energy sensor where a current numeric reading is available.
+        climates = [c for c in hass.states.async_all("climate")
+                    if c.state not in ("unknown", "unavailable")
+                    and self._exposed(c.entity_id)
+                    and isinstance(c.attributes.get("current_temperature"), (int, float))]
+        if climates:
+            heating = climates[0]
+            current = float(heating.attributes["current_temperature"])
+
+            def heating_check(answer: str, want=current) -> tuple[bool, str]:
+                return any(abs(n - want) <= 0.5 for n in numbers(answer)), f"about {want} degrees"
+
+            out.append(Question("heating current", f"What is the current temperature at the {heating.name}?",
+                                heating_check, "heating"))
+
+        energy_sensors = [e for e in hass.states.async_all("sensor")
+                          if e.attributes.get("device_class") == "energy"
+                          and self._exposed(e.entity_id) and e.state not in ("unknown", "unavailable")]
+        for sensor in energy_sensors:
+            try:
+                amount = float(sensor.state)
+            except (TypeError, ValueError):
+                continue
+            if not math.isfinite(amount):
+                continue
+            units = str(sensor.attributes.get("unit_of_measurement") or "")
+
+            def energy_check(answer: str, want=amount) -> tuple[bool, str]:
+                return any(abs(n - want) <= max(0.1, abs(want) * 0.02) for n in numbers(answer)), f"about {want} {units}"
+
+            out.append(Question("energy reading", f"What is the current reading of {sensor.name} in {units}?",
+                                energy_check, "energy"))
+            break
+
         def unknowable(answer: str) -> tuple[bool, str]:
             return bool(DOESNT_KNOW.search(answer)), "says it doesn't know (an invented answer is a fail)"
 

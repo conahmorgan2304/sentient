@@ -142,3 +142,99 @@ async def test_the_voice_is_told_to_look_things_up_not_reuse_answers(hass: HomeA
 
     assert "when did you last see the rabbits" in CameraActivityTool.description
     assert "not from an earlier answer" in CameraActivityTool.description
+
+
+def test_action_tool_without_completion_evidence_is_not_a_success() -> None:
+    pending = {"tool_name": "sentient_watch", "tool_result": {"status": "pending"}}
+    assert "unverified" in _kinds(
+        "watch the garden", "Done, I'm watching.", [pending],
+        actions=frozenset({"sentient_watch"}),
+    )
+    no_targets = {"tool_name": "HassTurnOn", "tool_result": {"data": {"success": [], "failed": []}}}
+    assert "claimed_done" in _kinds("turn on the light", "Done.", [no_targets])
+
+
+def test_unrelated_tool_does_not_count_as_historical_evidence() -> None:
+    unrelated = {"tool_name": "HassGetState", "tool_result": {"state": "on"}}
+    assert "no_evidence" in _kinds(
+        "when was the gate last opened?", "It was opened earlier.", [unrelated])
+    supported = {"tool_name": "sentient_history", "tool_result": {"changes": []}}
+    assert "no_evidence" not in _kinds(
+        "when was the gate last opened?", "No history found.", [supported])
+
+
+async def test_independent_identical_turns_are_not_deduplicated(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for cid in ("separate1", "separate2"):
+        rt.conversations.attach(cid, None)
+        rt.conversations._chat(cid, "content_added", {"content": {"role": "user", "content": "is the light on?"}})
+        rt.conversations._chat(cid, "content_added", {"content": {"role": "assistant", "content": "Yes."}})
+    assert rt.reliability.summary()["turns"] == 2
+
+
+async def test_unified_evidence_is_optional_and_preserves_source_gaps(hass: HomeAssistant) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, patch
+    from custom_components.sentient.llm_api import SentientAPI, UnifiedEvidenceTool
+    from homeassistant.core import Context
+    from homeassistant.helpers import llm
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    ctx = llm.LLMContext(platform="test", context=Context(), language="en",
+                         assistant="conversation", device_id=None)
+    api = await SentientAPI(hass).async_get_api_instance(ctx)
+    assert "sentient_evidence" not in {t.name for t in api.tools}
+    rt.options["unified_evidence"] = True
+    api = await SentientAPI(hass).async_get_api_instance(ctx)
+    assert "sentient_evidence" in {t.name for t in api.tools}
+
+    tool = UnifiedEvidenceTool()
+    with patch("custom_components.sentient.llm_api.TimelineTool.async_call",
+               new_callable=AsyncMock, return_value={"events": [{"what": "door opened"}]}) as timeline, \
+         patch("custom_components.sentient.security_voice.CameraActivityTool.async_call",
+               new_callable=AsyncMock, return_value={"error": "not exposed"}) as camera, \
+         patch.object(rt.brain, "on", return_value=False):
+        got = await tool.async_call(
+            hass, SimpleNamespace(tool_args={"camera": "garden", "hours": 2}), ctx)
+    data = got.data if hasattr(got, "data") else got
+    assert data["sources"]["timeline"]["available"] is True
+    assert data["sources"]["ledger"]["available"] is False
+    assert data["sources"]["camera_activity"]["available"] is False
+    assert "not exposed" in data["sources"]["camera_activity"]["reason"]
+    timeline.assert_awaited_once()
+    camera.assert_awaited_once()
+
+
+async def test_identical_turns_on_different_devices_remain_distinct(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    log = entry.runtime_data.reliability
+    for cid, device, has_tools in (("first", "satellite.one", True),
+                                   ("second", "satellite.two", False)):
+        log.asked(cid, "did anyone visit?")
+        if has_tools:
+            log.tool(cid, {"tool_name": "sentient_visitors", "tool_result": {"visitors": []}})
+        log.answered(cid, "No one visited.", room="Livingroom", device_id=device)
+    assert log.summary()["turns"] == 2
+
+
+def test_failed_historical_lookup_does_not_count_as_evidence() -> None:
+    failed = {"tool_name": "sentient_history", "tool_result": {"error": "ledger unavailable"}}
+    assert "no_evidence" in _kinds("when did the door open?", "It was at 2 am.", [failed])
+
+
+def test_unified_evidence_all_sources_unavailable_is_not_a_successful_lookup() -> None:
+    empty = {"tool_name": "sentient_evidence",
+             "tool_result": {"sources": {"timeline": {"available": False},
+                                         "ledger": {"available": False}}}}
+    good = {"tool_name": "sentient_evidence",
+            "tool_result": {"sources": {"timeline": {"available": True, "data": {"events": []}}}}}
+    assert "no_evidence" in _kinds("what happened overnight?", "Nothing happened.", [empty])
+    assert "no_evidence" not in _kinds("what happened overnight?", "No events recorded.", [good])
+
+
+def test_existing_why_tool_counts_as_historical_evidence() -> None:
+    tool = {"tool_name": "sentient_why", "tool_result": {"investigation": {"findings": []}}}
+    assert "no_evidence" not in _kinds(
+        "why did the hall light go off?", "I found no recorded reason.", [tool])

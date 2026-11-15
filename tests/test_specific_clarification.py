@@ -295,3 +295,10 @@ async def test_completed_action_correction_retains_goal_and_prior_action(hass):
     assert session.last_action['actions'][0]['entity_id'] == IDS[0]
     assert session.correction['previous_action'] == session.last_action
     assert session.pending is None
+
+
+def test_guarded_read_only_tools_do_not_expand_action_permissions():
+    from custom_components.sentient.voice_api import GUARDED_READ_ONLY, SAFE_TOOLS
+    assert {"sentient_history", "sentient_root_cause", "sentient_camera_activity"} <= GUARDED_READ_ONLY
+    assert not {"sentient_control", "sentient_run_routine", "sentient_create_automation", "sentient_scene"} & GUARDED_READ_ONLY
+    assert "sentient_run_routine" not in SAFE_TOOLS
