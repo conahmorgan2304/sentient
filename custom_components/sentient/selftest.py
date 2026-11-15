@@ -374,8 +374,8 @@ class SelfTest:
                 def planning_check(answer: str, a=first_light.name, b=first_opening.name) -> tuple[bool, str]:
                     from .reliability import DONE
 
-                    return (mentions(answer, a) and mentions(answer, b) and not DONE.search(answer)), \\
-                        f"a hypothetical plan mentioning {a} and {b}, without claiming to act"
+                    return ((mentions(answer, a) and mentions(answer, b) and not DONE.search(answer)),
+                            f"a hypothetical plan mentioning {a} and {b}, without claiming to act")
 
                 out.append(Question("dry-run plan",
                     f"If I asked you to check {first_opening.name} and switch off {first_light.name}, "
