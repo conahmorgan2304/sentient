@@ -222,3 +222,13 @@ async def test_identical_turns_on_different_devices_remain_distinct(hass: HomeAs
 def test_failed_historical_lookup_does_not_count_as_evidence() -> None:
     failed = {"tool_name": "sentient_history", "tool_result": {"error": "ledger unavailable"}}
     assert "no_evidence" in _kinds("when did the door open?", "It was at 2 am.", [failed])
+
+
+def test_unified_evidence_all_sources_unavailable_is_not_a_successful_lookup() -> None:
+    empty = {"tool_name": "sentient_evidence",
+             "tool_result": {"sources": {"timeline": {"available": False},
+                                         "ledger": {"available": False}}}}
+    good = {"tool_name": "sentient_evidence",
+            "tool_result": {"sources": {"timeline": {"available": True, "data": {"events": []}}}}}
+    assert "no_evidence" in _kinds("what happened overnight?", "Nothing happened.", [empty])
+    assert "no_evidence" not in _kinds("what happened overnight?", "No events recorded.", [good])
