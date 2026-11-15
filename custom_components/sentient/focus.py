@@ -34,7 +34,7 @@ ALWAYS = {
     "sentient_session", "sentient_clarify", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_undo_last", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
     "sentient_search", "sentient_ask_later", "sentient_self", "sentient_game", "sentient_game_set", "sentient_game_log",
-    "sentient_history", "sentient_root_cause",
+    "sentient_history", "sentient_root_cause", "sentient_evidence",
 }
 
 TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
