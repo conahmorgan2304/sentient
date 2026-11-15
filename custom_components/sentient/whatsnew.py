@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.4": [
+        "The drive in voice answers: \"what time did she get back?\" now gets the time her car arrived. The voice is told the drive's last change (whose car came or went, and when), the timeline it can look things up in now includes cars arriving and leaving, and questions about getting back, getting in, arriving or going out bring that timeline along. Before, it only knew what was parked right now.",
+    ],
     "1.11.3": [
         "Where people are: movement in an outdoor area (a doorbell camera seeing people walk past, the garden) no longer counts as someone being in the house. Before, the front door camera could be the \"likeliest room\", so Sentient thought someone was up and about when they weren't and the morning briefing could wait for a room nobody was in. Uses the Outdoor areas setting.",
     ],

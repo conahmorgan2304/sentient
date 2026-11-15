@@ -1909,8 +1909,9 @@ class TimelineTool(_Tool):
     name = "sentient_timeline"
     description = (
         "What the house did and noticed recently, newest first: what it said or held back, doorbell "
-        "visitors, watches and reminders going off, motion lights, devices going offline. Use for "
-        "'what happened while I was out?', 'did anything happen overnight?'."
+        "visitors, cars arriving on and leaving the drive (whose, when known), watches and reminders going off, "
+        "motion lights, devices going offline. Use for 'what happened while I was out?', 'did anything happen "
+        "overnight?', 'what time did someone get back?' (their car arriving on the drive)."
     )
     parameters = vol.Schema({vol.Optional("hours", default=12): vol.Coerce(float)})
 
@@ -1925,7 +1926,7 @@ class TimelineTool(_Tool):
         if private_history(rt, llm_context.device_id):
             return {"error": "Household history is private for this request."}
         hours = max(0.5, min(72.0, float(tool_input.tool_args.get("hours", 12))))
-        items = rt.timeline.since(hours, ["said", "visitor", "watch", "light", "health"], 40)
+        items = rt.timeline.since(hours, ["said", "visitor", "drive", "watch", "light", "health"], 40)
         from .watches import local_when
 
         return {

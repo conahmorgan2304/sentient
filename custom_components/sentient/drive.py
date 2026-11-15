@@ -256,5 +256,15 @@ class Drive:
         what = "nothing parked" if not d["cars"] else f"{d['cars']} — {d['description']}" if d["description"] else str(d["cars"])
         if d.get("whose"):
             what += " (" + ", ".join(f"{w}'s" for w in d["whose"]) + ")"
-        return (f"On the drive (last checked {d['checked']}): {what}. For a fresh look, call sentient_look "
-                "with the drive spot.")
+        line = f"On the drive (last checked {d['checked']}): {what}."
+        # 15 Nov: "what time did Kayleigh get back?" — the drive knew (15:12, her car arrived) but the voice only
+        # saw what's parked now, so it looked at the gate camera and couldn't say
+        rt = self._rt()
+        timeline = getattr(rt, "timeline", None) if rt is not None else None
+        last = timeline.since(7 * 24, ["drive"], 1) if timeline is not None else []
+        if last and (when := dt_util.parse_datetime(last[0]["time"])) is not None:
+            from .watches import local_when
+
+            line += f" Last change: {last[0]['text']}, at {local_when(when)}."
+        return line + (" For when a car came or went, sentient_timeline lists the drive's arrivals and departures; "
+                       "for a fresh look, call sentient_look with the drive spot.")
