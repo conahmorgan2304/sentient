@@ -2370,6 +2370,8 @@ class UnifiedEvidenceTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        if _household_private(hass, llm_context):
+            return {"error": "Household evidence is private for this request"}
         # Reuse the existing tools rather than circumventing their policy.
         await read("timeline", TimelineTool(), {"hours": hours})
         if getattr(rt, "brain", None) is not None and rt.brain.on("house_ledger"):
