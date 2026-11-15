@@ -36,3 +36,17 @@ def test_asking_when_someone_got_back_brings_the_timeline() -> None:
     for asked in ("what time did kayleigh get back", "when did Sam get in?", "has the car arrived yet", "when she left for work", "when did they go out"):
         assert "sentient_timeline" in Focus().tools_for(asked), asked
     assert "sentient_timeline" not in (Focus().tools_for("turn on the left bedroom light") or set())
+
+
+async def test_times_are_said_to_the_minute(hass: HomeAssistant) -> None:
+    """15 Nov: the car arrived at 3:12pm and the voice said "past three o'clock"."""
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.watches import local_when
+    from tests.test_phase1 import _prompt, _setup as setup_one
+
+    await setup_one(hass)
+    assert "say it to the minute" in await _prompt(hass)
+    assert local_when(dt_util.now() - timedelta(days=1)).endswith("yesterday")

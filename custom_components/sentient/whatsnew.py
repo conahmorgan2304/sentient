@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.5": [
+        "Times are said to the minute: when the house knows when something happened (a car arriving at 3:12pm), the voice says \"twelve minutes past three\", not \"just after three\". Things from yesterday are called yesterday rather than by the date.",
+    ],
     "1.11.4": [
         "The drive in voice answers: \"what time did she get back?\" now gets the time her car arrived. The voice is told the drive's last change (whose car came or went, and when), the timeline it can look things up in now includes cars arriving and leaving, and questions about getting back, getting in, arriving or going out bring that timeline along. Before, it only knew what was parked right now.",
     ],

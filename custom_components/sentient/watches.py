@@ -126,6 +126,8 @@ def local_when(when: datetime) -> str:
         return f"{clock} today"
     if days == 1:
         return f"{clock} tomorrow"
+    if days == -1:
+        return f"{clock} yesterday"
     return f"{clock} on {local:%A} {local.day} {local:%B}"
 
 
