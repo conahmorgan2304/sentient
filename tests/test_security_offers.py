@@ -142,7 +142,7 @@ def test_unspoken_ignores_spacing() -> None:
     assert unspoken("A.", "A. B.") == "B."
 
 
-async def _agent_reply(hass: HomeAssistant, asked: str, said: str, **options) -> conversation.ConversationResult:
+async def _agent_reply(hass: HomeAssistant, asked: str, said: str, before=None, **options) -> conversation.ConversationResult:
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
     from custom_components.sentient.const import DOMAIN
@@ -162,8 +162,11 @@ async def _agent_reply(hass: HomeAssistant, asked: str, said: str, **options) ->
     async def impl(user_input):
         response = intent.IntentResponse(language="en")
         response.async_set_speech(said)
-        return conversation.ConversationResult(response=response, conversation_id="c1")
+        return conversation.ConversationResult(response=response, conversation_id="c1",
+                                               continue_conversation=said.rstrip().endswith("?"))
 
+    if before is not None:
+        before(entry.runtime_data)
     with patch.object(agent, "_async_process_impl", impl):
         return await agent._process_streaming_aware(conversation.ConversationInput(
             text=asked, context=Context(), conversation_id=None, device_id=None, satellite_id=None, language="en",
@@ -174,6 +177,7 @@ async def test_the_agent_takes_the_offer_out_when_switched_on(hass: HomeAssistan
     result = await _agent_reply(hass, "Is the alarm on?", "The alarm is currently disarmed. Shall I arm it in away mode?",
                                 no_security_offers=True)
     assert result.response.speech["plain"]["speech"] == "The alarm is currently disarmed."
+    assert result.continue_conversation is False  # the offer was the question: no longer listening for a "yes"
 
 
 async def test_the_agent_leaves_it_when_switched_off(hass: HomeAssistant) -> None:
@@ -185,6 +189,7 @@ async def test_the_agent_still_confirms_when_asked_to_arm(hass: HomeAssistant) -
     result = await _agent_reply(hass, "arm the alarm", "Shall I arm it in away mode or at home mode?",
                                 no_security_offers=True)
     assert result.response.speech["plain"]["speech"] == "Shall I arm it in away mode or at home mode?"
+    assert result.continue_conversation is True
 
 
 async def test_the_setting_is_on_the_settings_page(hass: HomeAssistant, hass_ws_client) -> None:
@@ -196,3 +201,20 @@ async def test_the_setting_is_on_the_settings_page(hass: HomeAssistant, hass_ws_
     result = (await ws.receive_json())["result"]
     names = {f["name"] for g in result["groups"] for f in g["schema"]}
     assert "no_security_offers" in names and result["data"]["no_security_offers"] is False
+
+
+async def test_the_session_forgets_the_offer_as_an_unanswered_question(hass: HomeAssistant) -> None:
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.sentient.sessions import VoiceSession
+
+    held = {}
+
+    def before(rt):
+        session = VoiceSession("c1", (None, None, None), dt_util.utcnow())
+        session.question, session.waiting = "Shall I arm it in away mode?", True
+        rt.sessions.items[("c1", None, None, None)] = held["s"] = session
+
+    await _agent_reply(hass, "Is the alarm on?", "The alarm is currently disarmed. Shall I arm it in away mode?",
+                       before=before, no_security_offers=True)
+    assert held["s"].question == "" and held["s"].waiting is False

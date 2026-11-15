@@ -475,6 +475,19 @@ class BackedUpAgent(conversation.ConversationEntity):
                 return
             result.response.async_set_speech(kept)
             _LOGGER.debug("Took an offer to arm/disarm/unlock out of the reply: %s", gone)
+            from .sessions import ends_in_question
+
+            asking = ends_in_question(kept)
+            if not asking:
+                # the offer was the question: nothing is asked now, so don't keep listening for an answer to it
+                result.continue_conversation = False
+            rt = getattr(self._entry, "runtime_data", None)
+            for session in list(getattr(getattr(rt, "sessions", None), "items", {}).values()):
+                if session.question and any(g in session.question for g in gone):
+                    session.question = ""  # nor offer it back to the voice as an unanswered question
+                    if not asking:
+                        session.waiting = False
+                        session.listen_reason = "completed_single_request"
             if log is None:
                 from homeassistant.components.conversation.chat_log import current_chat_log
 
@@ -490,7 +503,6 @@ class BackedUpAgent(conversation.ConversationEntity):
                     if text != content.content:
                         log.content[i] = replace(content, content=" ".join(text.split()))
                     break
-            rt = getattr(self._entry, "runtime_data", None)
             if rt is not None and result.conversation_id and getattr(rt, "conversations", None) is not None:
                 rt.conversations.amend_said(result.conversation_id, gone)
         except Exception:  # noqa: BLE001 - the reply goes out regardless
