@@ -146,7 +146,7 @@ async def test_the_voice_is_told_to_look_things_up_not_reuse_answers(hass: HomeA
 
 def test_action_tool_without_completion_evidence_is_not_a_success() -> None:
     pending = {"tool_name": "sentient_watch", "tool_result": {"status": "pending"}}
-    assert "claimed_done" in _kinds(
+    assert "unverified" in _kinds(
         "watch the garden", "Done, I'm watching.", [pending],
         actions=frozenset({"sentient_watch"}),
     )
