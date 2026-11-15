@@ -92,6 +92,13 @@ class Focus:
             return None
         topics = {name for name, (words, _tools) in TOPICS.items() if words.search(text)}
         before = self._last.get(conversation_id or "", set())
+        # Multi-system investigations need tools outside the first keyword hit.
+        # Prefer completeness to a smaller model prompt for these requests.
+        investigating = bool(re.search(
+            r"\\b(why|investigat\\w*|diagnos\\w*|figure out|work out|find out|what caused|not working|stopped working)\\b",
+            text, re.I))
+        if investigating and len(topics) >= 2:
+            return None
         if not topics and not before:
             from .sessions import COMMAND
 
