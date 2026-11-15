@@ -74,3 +74,23 @@ async def test_the_self_test_is_never_counted_as_a_person_and_its_tools_are_kept
     assert [c["tool_name"] for c in conv.test_tools["t1"]] == ["sentient_camera_activity"]
     summary = entry.runtime_data.reliability.summary()
     assert summary["turns"] == 0 and summary["recent"] == []
+
+
+async def test_movement_in_an_outdoor_area_isnt_someone_in_the_house(hass: HomeAssistant) -> None:
+    """15 Nov: the doorbell camera's motion made "Front door" the likeliest room in the house."""
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+
+    from custom_components.sentient.presence import ActivityTracker
+
+    areas, ents = ar.async_get(hass), er.async_get(hass)
+    front = areas.async_create("Front door")
+    kitchen = areas.async_create("Kitchen")
+    for obj, area in (("doorbell_motion", front.id), ("kitchen_motion", kitchen.id)):
+        entry = ents.async_get_or_create("binary_sensor", "test", obj, suggested_object_id=obj)
+        ents.async_update_entity(entry.entity_id, area_id=area)
+        hass.states.async_set(entry.entity_id, "on", {"device_class": "motion"})
+    tracker = ActivityTracker(hass, {})
+    tracker._seed_from_states()
+    assert set(tracker.scores()) == {front.id, kitchen.id}
+    tracker.options = {"outdoor_areas": [front.id]}
+    assert set(tracker.scores()) == {kitchen.id} and tracker.best_area() in (kitchen.id, None)
