@@ -2395,6 +2395,32 @@ class UnifiedEvidenceTool(_Tool):
                 await read("root_cause", RootCauseTool(), {"what": what})
         else:
             sources["ledger"] = {"available": False, "reason": "house ledger disabled"}
+        # Recorder is queried only for a specifically named, visible device.
+        # Never expose an unbounded whole-house Recorder dump to a voice model.
+        if what:
+            from .ledger import resolve_entities
+            from homeassistant.components.recorder import get_instance, history
+            from datetime import timedelta
+
+            readable = await _history_read_permission(hass, llm_context)
+            entities = [e for e in resolve_entities(hass, what) if readable(e)][:2]
+            if entities:
+                try:
+                    since = dt_util.utcnow() - timedelta(hours=min(hours, 24.0))
+                    rows = await asyncio.wait_for(get_instance(hass).async_add_executor_job(
+                        lambda: history.get_significant_states(
+                            hass, since, None, entities, significant_changes_only=True,
+                            no_attributes=True, include_start_time_state=True)), timeout=12)
+                    sources["recorder"] = {"available": True, "entities": {
+                        entity: [{"time": state.last_changed.isoformat(), "state": state.state}
+                                 for state in readings[-20:]]
+                        for entity, readings in rows.items() if entity in entities}}
+                except Exception as err:  # noqa: BLE001 - source failure must not break other sources
+                    sources["recorder"] = {"available": False, "reason": type(err).__name__}
+            else:
+                sources["recorder"] = {"available": False, "reason": "no exposed, permitted matching entity"}
+        else:
+            sources["recorder"] = {"available": False, "reason": "no device selected"}
         if camera:
             from .security_voice import CameraActivityTool
 
