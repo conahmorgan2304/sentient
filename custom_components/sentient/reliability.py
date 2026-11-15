@@ -126,8 +126,22 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         evidence_names = ("history", "timeline", "what_happened", "camera_activity",
                           "visitors", "incidents", "root_cause", "conversations",
                           "logbook", "recorder", "security_event", "evidence", "HassGetHistory")
-        if not any(err is None and any(word.casefold() in name.casefold() for word in evidence_names)
-                   for name, err, _changed in outcomes):
+        def relevant_evidence(index: int, name: str, error: str | None) -> bool:
+            if error or not any(word.casefold() in name.casefold() for word in evidence_names):
+                return False
+            if name == "sentient_evidence":
+                result = tools[index].get("tool_result") or {}
+                if isinstance(result, dict):
+                    payload = result.get("data") if isinstance(result.get("data"), dict) else result
+                    sources = payload.get("sources") or {}
+                    return isinstance(sources, dict) and any(
+                        isinstance(value, dict) and value.get("available") is True
+                        for value in sources.values())
+                return False
+            return True
+
+        if not any(relevant_evidence(i, name, err)
+                   for i, (name, err, _changed) in enumerate(outcomes)):
             out.append({"kind": "no_evidence", "detail": "no relevant historical tool was used"})
     return out
 
