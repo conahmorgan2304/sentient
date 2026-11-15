@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.9": [
+        "Weather warnings: when the warnings feed can't be reached, the voice is told so in plain words (\"Couldn't read the warnings just now\") instead of being handed a raw technical error it could read out.",
+        "Replay benchmark (for testing changes against recorded days): a day with a restart in it no longer starts devices as \"unavailable\", and a replay no longer hangs on a real-time wait inside Sentient.",
+    ],
     "1.11.8": [
         "Never offer to arm, disarm or unlock: when the offer was the reply's question, the speaker no longer keeps listening for an answer to it, and the conversation no longer holds it as an unanswered question.",
     ],
