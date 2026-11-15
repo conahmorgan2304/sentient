@@ -124,7 +124,7 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         # A generic device command is not evidence about prior events. This
         # deliberately checks tool relevance, not just whether any tool ran.
         evidence_names = ("history", "timeline", "what_happened", "camera_activity",
-                          "visitors", "incidents", "root_cause", "conversations",
+                          "visitors", "incidents", "root_cause", "conversations", "sentient_why",
                           "logbook", "recorder", "security_event", "evidence", "HassGetHistory")
         def relevant_evidence(index: int, name: str, error: str | None) -> bool:
             if error or not any(word.casefold() in name.casefold() for word in evidence_names):
