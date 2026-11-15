@@ -2312,6 +2312,7 @@ class UnifiedEvidenceTool(_Tool):
     """
 
     annotations = _read_only()
+    reads_outside = True
     name = "sentient_evidence"
     description = (
         "Investigate what happened or why across the house without guessing. "
@@ -2363,7 +2364,7 @@ class UnifiedEvidenceTool(_Tool):
                     else:
                         bounded[key] = val
                 sources[label] = {"available": True, "data": bounded}
-            except (asyncio.TimeoutError, Exception) as err:
+            except Exception as err:  # noqa: BLE001 - individual source is allowed to fail
                 sources[label] = {"available": False, "reason": type(err).__name__}
 
         rt = _runtime(hass)
