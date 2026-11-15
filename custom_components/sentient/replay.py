@@ -82,9 +82,16 @@ async def async_export_day(hass: HomeAssistant, rt: Any, hours: float = 24) -> d
     wanted: set[str] = {c["entity"] for c in changes}
     _entities_in(options, wanted)
     ereg, areg = er.async_get(hass), ar.async_get(hass)
+    # how each device was when the period began. A restart in the period shows as a change from "unavailable"
+    # (the ledger never sees the shutdown), so that "unavailable" isn't how it was: its first real value is used
     first: dict[str, str] = {}
     for c in changes:
-        first.setdefault(c["entity"], c.get("old"))
+        if c["entity"] in first:
+            continue
+        for value in (c.get("old"), c.get("new")):
+            if value not in (None, "unavailable", "unknown"):
+                first[c["entity"]] = value
+                break
     states, entities = {}, {}
     for entity_id in sorted(wanted):
         entry = ereg.async_get(entity_id)

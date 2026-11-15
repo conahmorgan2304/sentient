@@ -18,6 +18,7 @@ What's real and what isn't:
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import patch
@@ -132,7 +133,14 @@ async def async_replay(hass: HomeAssistant, day: dict[str, Any], freezer: Any) -
     entry = MockConfigEntry(domain=DOMAIN, title=options.get("persona") or "Replay", unique_id=DOMAIN,
                             data={k: v for k, v in options.items()})
     entry.add_to_hass(hass)
-    with patch.object(ai_module.AIGate, "async_call", _no_ai):
+    real_sleep = asyncio.sleep
+
+    async def _no_wait(delay=0, result=None):  # noqa: ANN001 - same signature as asyncio.sleep
+        # The clock is simulated: a real-time wait (letting a speaker finish, Frigate settle after a visit) would
+        # never end, and the whole replay would hang on it. Waits pass at once; the order of events is kept.
+        return await real_sleep(0, result)
+
+    with patch.object(ai_module.AIGate, "async_call", _no_ai), patch("asyncio.sleep", _no_wait):
         assert await hass.config_entries.async_setup(entry.entry_id), "Sentient didn't start in the replay"
         await hass.async_block_till_done()
         incidents = getattr(entry.runtime_data, "incidents", None)

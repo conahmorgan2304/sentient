@@ -41,3 +41,22 @@ def test_every_timeline_decision_reads_the_same_way() -> None:
     health = decision_record({"time": "t", "kind": "health", "text": "x", "decision": {
         "kind": "unexplained_change", "evidence": ["a"], "surprise": 0.7, "ai_used": False}})
     assert health["action"] == "noted" and health["source"] == "unexplained_change" and health["surprise"] == 0.7
+
+
+async def test_a_restart_in_the_day_doesnt_start_devices_as_unavailable(hass: HomeAssistant, hass_ws_client) -> None:
+    """15 Nov: after a restart the ledger's first change is "unavailable → off" (it never sees the shutdown), so the
+    replay started the camera sensors as unavailable and invented ten "unavailable for a while" health alerts."""
+    hass.states.async_set("binary_sensor.gate_person", "unavailable", {"device_class": "occupancy"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        "persona": "Nova", "speakers": [], "house_ledger": True})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.gate_person", "off", {"device_class": "occupancy"}, context=Context())
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.gate_person", "on", {"device_class": "occupancy"}, context=Context())
+    await hass.async_block_till_done()
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/replay/export", "hours": 2})
+    day = (await ws.receive_json())["result"]
+    assert day["states"]["binary_sensor.gate_person"]["state"] == "off"

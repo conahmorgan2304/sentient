@@ -201,7 +201,8 @@ class Warnings:
                 self.error = f"No official warnings feed for {country or 'this country'} yet."
                 return []
         except Exception as err:  # noqa: BLE001
-            self.error = f"Couldn't read the warnings: {err}"
+            # a short reason only: this is read out by the voice, and an exception's text can be a raw task dump
+            self.error = f"Couldn't read the warnings just now ({type(err).__name__})"
             _LOGGER.debug("Warnings check failed", exc_info=True)
             return self.current
         region = str(self.options.get(CONF_WARNINGS_REGION) or "").strip().casefold()
