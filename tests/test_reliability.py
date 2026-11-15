@@ -232,3 +232,9 @@ def test_unified_evidence_all_sources_unavailable_is_not_a_successful_lookup() -
             "tool_result": {"sources": {"timeline": {"available": True, "data": {"events": []}}}}}
     assert "no_evidence" in _kinds("what happened overnight?", "Nothing happened.", [empty])
     assert "no_evidence" not in _kinds("what happened overnight?", "No events recorded.", [good])
+
+
+def test_existing_why_tool_counts_as_historical_evidence() -> None:
+    tool = {"tool_name": "sentient_why", "tool_result": {"investigation": {"findings": []}}}
+    assert "no_evidence" not in _kinds(
+        "why did the hall light go off?", "I found no recorded reason.", [tool])
