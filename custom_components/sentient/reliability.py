@@ -35,6 +35,7 @@ KINDS = {
     "tool_failed": "A tool failed",
     "action_failed": "A device didn't do it",
     "claimed_done": "Said it was done, but nothing was done",
+    "unverified": "Reported completion without a recognised success result",
     "offered_impossible": "Offered something no device can do",
     "unanswered": "Couldn't answer",
     "no_evidence": "Answered about the past without looking",
@@ -109,7 +110,12 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         out.append({"kind": "tool_failed", "detail": f"{name}: {err}" + (" (put right on a retry)" if retried else "")})
     said_clean = " ".join((said or "").split())
     if said_clean and not did and DONE.search(said_clean):
-        out.append({"kind": "claimed_done", "detail": "no action in this turn succeeded"})
+        # A Sentient action tool can have its own success contract (watch IDs,
+        # reminder IDs, etc). Don't call such a response a failed action.
+        # Keep it distinct from a turn in which no action tool ran at all.
+        attempted_action = any(name in actions for name, _err, _changed in outcomes)
+        out.append({"kind": "unverified" if attempted_action else "claimed_done",
+                    "detail": "action outcome not verified" if attempted_action else "no action in this turn succeeded"})
     if said_clean and (m := OFFER.search(said_clean)):
         out.append({"kind": "offered_impossible", "detail": f"\"{_short(m.group(0), 80)}\""})
     if said_clean and UNANSWERED.search(said_clean):
