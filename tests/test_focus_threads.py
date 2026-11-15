@@ -83,3 +83,11 @@ async def test_the_voice_knows_it_cant_do_physical_things(hass: HomeAssistant) -
     await _setup(hass)
     prompt = (await _api(hass, "have the rabbits been fed?")).api_prompt
     assert "You have no body" in prompt and "Never offer to do anything physical yourself" in prompt
+
+
+def test_cross_domain_investigations_keep_all_tools_available() -> None:
+    from custom_components.sentient.focus import Focus
+    focus = Focus()
+    assert focus.tools_for("Why did the garden camera and heating automation stop working?") is None
+    selected = focus.tools_for("Is the garden camera working?")
+    assert selected is not None and "sentient_camera_activity" in selected
