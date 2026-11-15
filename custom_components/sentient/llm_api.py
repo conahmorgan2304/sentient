@@ -2303,6 +2303,90 @@ class HouseCheckTool(_Tool):
         return out
 
 
+
+class UnifiedEvidenceTool(_Tool):
+    """Bounded read-only lookup across existing evidence providers.
+
+    Each underlying tool retains its own permission/privacy checks. Missing
+    coverage is explicit, so a missing event never becomes "nothing happened".
+    """
+
+    annotations = _read_only()
+    name = "sentient_evidence"
+    description = (
+        "Investigate what happened or why across the house without guessing. "
+        "Retrieve the house ledger and timeline together; optionally include "
+        "camera detection history and a device root-cause investigation. "
+        "For a named device or room set 'what'; for cameras set 'camera'. "
+        "Results label each source as available or unavailable; omitted cameras "
+        "are NOT evidence that nobody was seen. Read-only, no actions."
+    )
+    parameters = vol.Schema({
+        vol.Optional("what"): cv.string,
+        vol.Optional("camera"): cv.string,
+        vol.Optional("hours", default=12): vol.All(vol.Coerce(float), vol.Range(min=0.25, max=72)),
+        vol.Optional("explain", default=False): cv.boolean,
+    })
+
+    async def async_call(self, hass, tool_input, llm_context):
+        from types import SimpleNamespace
+
+        args = tool_input.tool_args
+        hours = float(args["hours"])
+        what = (args.get("what") or "").strip()
+        camera = (args.get("camera") or "").strip()
+        sources = {}
+
+        async def read(label, tool, parameters):
+            try:
+                # The shared tool wrapper validates parameters, preserves the
+                # normal visibility restrictions and returns HA's ToolResult.
+                value = await asyncio.wait_for(
+                    tool.async_call(hass, SimpleNamespace(tool_args=parameters), llm_context),
+                    timeout=12,
+                )
+                if isinstance(value, dict):
+                    data = value
+                else:
+                    data = getattr(value, "data", None)
+                if not isinstance(data, dict):
+                    sources[label] = {"available": False, "reason": "unsupported tool result"}
+                    return
+                if "error" in data:
+                    sources[label] = {"available": False, "reason": str(data["error"])[:180]}
+                    return
+                # Keep tool payloads bounded for voice models.
+                bounded = {}
+                for key, val in data.items():
+                    if isinstance(val, list):
+                        bounded[key] = val[:20]
+                    else:
+                        bounded[key] = val
+                sources[label] = {"available": True, "data": bounded}
+            except (asyncio.TimeoutError, Exception) as err:
+                sources[label] = {"available": False, "reason": type(err).__name__}
+
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        # Reuse the existing tools rather than circumventing their policy.
+        await read("timeline", TimelineTool(), {"hours": hours})
+        if getattr(rt, "brain", None) is not None and rt.brain.on("house_ledger"):
+            await read("ledger", HistoryTool(), {"hours": hours, **({"what": what} if what else {})})
+            if what and args.get("explain"):
+                await read("root_cause", RootCauseTool(), {"what": what})
+        else:
+            sources["ledger"] = {"available": False, "reason": "house ledger disabled"}
+        if camera:
+            from .security_voice import CameraActivityTool
+
+            await read("camera_activity", CameraActivityTool(), {"camera": camera, "hours": hours})
+        else:
+            sources["camera_activity"] = {"available": False, "reason": "no camera selected"}
+        return {"hours": hours, "subject": what or None, "sources": sources,
+                "note": "A source unavailable or not queried cannot establish that no event occurred."}
+
+
 class SentientAPI(llm.API):
     """Shared brain exposed to conversation agents."""
 
@@ -2336,6 +2420,7 @@ class SentientAPI(llm.API):
                  *([GameSetTool(), GameLogTool()] if _games(self.hass) is not None and _games(self.hass).active is not None else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else []),
                  *([HistoryTool(), RootCauseTool()] if getattr(rt0, "brain", None) is not None and rt0.brain.on("house_ledger") else []),
+                 *([UnifiedEvidenceTool()] if rt0 is not None and rt0.options.get("unified_evidence", False) else []),
                  *([WarningsTool()] if rt0 is not None and rt0.options.get("weather_warnings") else []),
                  *([EmailTool()] if rt0 is not None and rt0.options.get("email_read") else []),
                  *([CalendarClashesTool()] if rt0 is not None and rt0.options.get("calendar_clashes") else []),
