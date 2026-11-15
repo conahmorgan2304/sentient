@@ -117,3 +117,30 @@ def broken(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]
     for eid in set(missing) - still_missing:
         missing.pop(eid, None)  # back (or no longer chosen): the clock starts again if it vanishes later
     return out
+
+
+def unexposed_cameras(hass: HomeAssistant, rt: Any, ignore: set[str] | None = None) -> list[dict[str, Any]]:
+    """Cameras Sentient keeps a record of that Assist can't see: the voice's camera questions all fail on them.
+
+    15 Nov: none of the house's cameras were exposed to Assist, so every "has anyone been to the rabbits?" failed
+    and nothing said why. House health names each one so it can be exposed (or the camera taken out of the record).
+    """
+    events = getattr(rt, "security_events", None)
+    if events is None or not getattr(events, "tracking", False):
+        return []
+    from homeassistant.components.homeassistant.exposed_entities import async_should_expose
+
+    ignore = ignore or set()
+    out = []
+    for name in sorted(events.cameras()):
+        eid = f"camera.{name}"
+        if eid in ignore or (st := hass.states.get(eid)) is None:
+            continue
+        try:
+            shown = async_should_expose(hass, "conversation", eid)
+        except Exception:  # noqa: BLE001 - can't tell: don't claim it's hidden
+            continue
+        if not shown:
+            out.append({"kind": "hidden_camera", "name": st.name or eid, "entity_id": eid,
+                        "text": f"{st.name or eid} isn't exposed to Assist, so the voice can't look back on what it saw"})
+    return out

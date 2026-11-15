@@ -246,7 +246,8 @@ class CameraActivityTool(_Tool):
             return {"error": "Sentient is not loaded"}
         events = rt.security_events
         if not events.tracking:
-            return {"error": "Camera event records are switched off (Settings → Camera security)"}
+            return {"error": "Camera event records are switched off (Settings → Camera security)",
+                    "note": "You couldn't check, so don't say nobody or nothing was seen."}
         args = tool_input.tool_args
         asked = args["camera"]
         camera, spot = camera_named(hass, asked), None
@@ -259,12 +260,22 @@ class CameraActivityTool(_Tool):
 
             found = resolve_entity(hass, asked, "camera")
             camera = found if found and found.startswith("camera.") else None
-        if camera is None or not await allowed(hass, llm_context, camera):
-            return {"error": "Which camera? Choose an exposed camera you may read",
-                    "cameras": sorted(f"camera.{c}" for c in events.cameras())}
+        couldnt = ("You couldn't check, so don't say nobody or nothing was seen: say you couldn't look at that "
+                   "camera's record.")
+        if camera is None:
+            readable = [f"camera.{c}" for c in sorted(events.cameras())
+                        if await allowed(hass, llm_context, f"camera.{c}")]
+            if not readable:  # 15 Nov: every camera was hidden from Assist, so each call failed and it said "nobody"
+                return {"error": "None of the cameras Sentient keeps a record of are exposed to Assist", "note": couldnt}
+            return {"error": "Which camera? Use one of these", "cameras": readable, "note": couldnt}
+        if not await allowed(hass, llm_context, camera):
+            state = hass.states.get(camera)
+            return {"error": f"{state.name if state else camera} isn't exposed to Assist, so its record can't be read",
+                    "note": couldnt}
         name = camera.removeprefix("camera.")
         if name not in events.cameras():
-            return {"error": f"{hass.states.get(camera).name if hass.states.get(camera) else camera} isn't one of the cameras Sentient keeps a record of"}
+            return {"error": f"{hass.states.get(camera).name if hass.states.get(camera) else camera} isn't one of the cameras Sentient keeps a record of",
+                    "note": couldnt}
         since = dt_util.utcnow().timestamp() - args["hours"] * 3600
         visits = events.activity(name, since)
         if label := (args.get("label") or "").strip().lower():
