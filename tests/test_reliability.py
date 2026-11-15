@@ -171,3 +171,37 @@ async def test_independent_identical_turns_are_not_deduplicated(hass: HomeAssist
         rt.conversations._chat(cid, "content_added", {"content": {"role": "user", "content": "is the light on?"}})
         rt.conversations._chat(cid, "content_added", {"content": {"role": "assistant", "content": "Yes."}})
     assert rt.reliability.summary()["turns"] == 2
+
+
+async def test_unified_evidence_is_optional_and_preserves_source_gaps(hass: HomeAssistant) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, patch
+    from custom_components.sentient.llm_api import SentientAPI, UnifiedEvidenceTool
+    from homeassistant.core import Context
+    from homeassistant.helpers import llm
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    ctx = llm.LLMContext(platform="test", context=Context(), language="en",
+                         assistant="conversation", device_id=None)
+    api = await SentientAPI(hass).async_get_api_instance(ctx)
+    assert "sentient_evidence" not in {t.name for t in api.tools}
+    rt.options["unified_evidence"] = True
+    api = await SentientAPI(hass).async_get_api_instance(ctx)
+    assert "sentient_evidence" in {t.name for t in api.tools}
+
+    tool = UnifiedEvidenceTool()
+    with patch("custom_components.sentient.llm_api.TimelineTool.async_call",
+               new_callable=AsyncMock, return_value={"events": [{"what": "door opened"}]}) as timeline, \
+         patch("custom_components.sentient.security_voice.CameraActivityTool.async_call",
+               new_callable=AsyncMock, return_value={"error": "not exposed"}) as camera, \
+         patch.object(rt.brain, "on", return_value=False):
+        got = await tool.async_call(
+            hass, SimpleNamespace(tool_args={"camera": "garden", "hours": 2}), ctx)
+    data = got.data if hasattr(got, "data") else got
+    assert data["sources"]["timeline"]["available"] is True
+    assert data["sources"]["ledger"]["available"] is False
+    assert data["sources"]["camera_activity"]["available"] is False
+    assert "not exposed" in data["sources"]["camera_activity"]["reason"]
+    timeline.assert_awaited_once()
+    camera.assert_awaited_once()
