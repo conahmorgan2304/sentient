@@ -30,6 +30,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_MOTION_WINDOW,
+    CONF_OUTDOOR_AREAS,
     CONF_PASS_THROUGH_AREAS,
     CONF_SPEAKERS,
     DEFAULT_MOTION_WINDOW,
@@ -88,6 +89,10 @@ class ActivityTracker:
     @property
     def pass_through(self) -> set[str]:
         return set(self.options.get(CONF_PASS_THROUGH_AREAS) or [])
+
+    @property
+    def outdoor(self) -> set[str]:
+        return set(self.options.get(CONF_OUTDOOR_AREAS) or [])
 
     @property
     def speakers(self) -> list[str]:
@@ -221,9 +226,12 @@ class ActivityTracker:
         cutoff = now - window
         tau = window.total_seconds() / 2
         out: dict[str, float] = defaultdict(float)
+        outdoor = self.outdoor
         for entity_id, intervals in self._intervals.items():
             area = area_of(self.hass, entity_id)
-            if not area:
+            # 15 Nov: the doorbell camera's motion (people walking past) made "Front door" the likeliest room,
+            # so Sentient thought someone was up and about and the morning briefing waited for the kitchen
+            if not area or area in outdoor:
                 continue
             weight = PASS_THROUGH_WEIGHT if area in self.pass_through else 1.0
             for start, end in intervals:

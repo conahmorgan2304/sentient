@@ -307,9 +307,10 @@ class HouseHealth:
             out += [i for i in dog.issues() if i.get("entity_id") not in ignore]
         if (test := getattr(rt, "selftest", None)) is not None:
             out += test.issues()
-        from .wiring import broken
+        from .wiring import broken, unexposed_cameras
 
         out += broken(self.hass, self.options)
+        out += unexposed_cameras(self.hass, rt, ignore)
         from .presence import inside_sensors
 
         sensors = [st for e in inside_sensors(self.hass, self.options)
@@ -327,7 +328,7 @@ class HouseHealth:
         out = []
         now = dt_util.utcnow()
         for i in self.issues:
-            if i["kind"] in ("wear", "fight", "frozen", "snapshot_failed", "selftest", "duplicate"):
+            if i["kind"] in ("wear", "fight", "frozen", "snapshot_failed", "selftest", "duplicate", "hidden_camera"):
                 out.append(i["text"])
             elif i["kind"] == "ai":
                 out.append("The AI hasn't answered the last few times — plain words for now")

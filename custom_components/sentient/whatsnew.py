@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.3": [
+        "Where people are: movement in an outdoor area (a doorbell camera seeing people walk past, the garden) no longer counts as someone being in the house. Before, the front door camera could be the \"likeliest room\", so Sentient thought someone was up and about when they weren't and the morning briefing could wait for a room nobody was in. Uses the Outdoor areas setting.",
+    ],
+    "1.11.2": [
+        "Camera questions: when a camera isn't exposed to Assist, the voice is now told why it couldn't look and not to answer \"nobody\" anyway — before, every camera question failed this way and still got a confident \"no one was seen\". House health names any camera Sentient keeps a record of that Assist can't see.",
+        "Self-test: an answer whose tools failed (and weren't put right on a retry) is now a fail, as is offering to arm, disarm or unlock when only asked. The self-test's own questions no longer count in \"Where the voice went wrong\", and the tools it used are shown again.",
+    ],
     "1.11.1": [
         "Learned bedtimes can be forgotten (admin command sentient/sleep/forget), for when nights were recorded wrongly — say by a motion sensor that flickered all night — and the usual bedtime came out at 05:25. It starts learning again that night; which sensors are restless at night is kept.",
     ],

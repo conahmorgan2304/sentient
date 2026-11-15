@@ -82,6 +82,10 @@ class Conversations:
     def __init__(self, hass: HomeAssistant, entry_id: str, options: dict[str, Any]) -> None:
         self.hass = hass
         self.skip: set[str] = set()  # conversations that aren't people talking (the self-test)
+        # the question the self-test is asking right now: its conversation is marked as soon as the question
+        # arrives (HA gives it a new id, so it can't be named beforehand), and the tools' results are kept for it
+        self.testing: str | None = None
+        self.test_tools: dict[str, list[dict[str, Any]]] = {}
         self.options = options
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.conversations")
         self.episodes: list[dict[str, Any]] = []  # newest first
@@ -140,9 +144,18 @@ class Conversations:
 
     @callback
     def _chat(self, conversation_id: str, event_type: Any, data: dict[str, Any]) -> None:
-        if conversation_id in self.skip:
-            return
         kind = str(event_type)
+        content = (data.get("content") or {}) if kind.endswith("content_added") else {}
+        if (self.testing is not None and conversation_id not in self.skip and content.get("role") == "user"
+                and content.get("content") == self.testing):
+            self.skip.add(conversation_id)  # the self-test: not counted as a person talking, nor in reliability
+            self.test_tools[conversation_id] = []
+            if self.reliability is not None:
+                self.reliability.forget(conversation_id)
+        if conversation_id in self.skip:
+            if content.get("role") == "tool_result" and (kept := self.test_tools.get(conversation_id)) is not None:
+                kept.append(content)
+            return
         if kind.endswith("deleted"):
             self._finish(conversation_id)
             if self.reliability is not None:

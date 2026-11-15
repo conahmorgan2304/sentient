@@ -60,6 +60,26 @@ ASKS_BACK = re.compile(r"\?|\bwhich\b|what do you mean|do you mean|could you (?:
 ACTION_TOOLS = {"HassTurnOn", "HassTurnOff", "HassToggle", "HassLightSet", "HassClimateSetTemperature", "HassSetPosition",
                 "HassVacuumStart", "HassVacuumReturnToBase", "HassMediaPause", "HassMediaUnpause", "HassSetVolume",
                 "HassMediaNext", "HassMediaPrevious", "HassFanSetSpeed", "HassLawnMowerStartMowing", "HassOpen", "HassClose"}
+# "Shall I arm it in away mode?": a question about the alarm answered with an offer to change it
+SECURITY_OFFER = re.compile(
+    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|let me)\b[^.?!]{0,30}?"
+    r"\b(?:arm|disarm|unlock|unset)\b", re.I)
+
+
+def _tool_name(content: dict[str, Any]) -> str:
+    return str(content.get("tool_name") or "").split("__")[-1]
+
+
+def failed_tools(results: list[dict[str, Any]]) -> list[str]:
+    """Tools that went wrong in one answer and weren't put right by a later call of the same tool."""
+    from .reliability import _tool_outcome
+
+    outcomes = [_tool_outcome(c) for c in results]
+    out: list[str] = []
+    for i, (name, err, _did) in enumerate(outcomes):
+        if err and not any(n == name and not e for n, e, _d in outcomes[i + 1:]) and name not in out:
+            out.append(name)
+    return out
 
 
 def yes_no(answer: str) -> bool | None:
@@ -352,20 +372,32 @@ class SelfTest:
             cid = ulid_now()
             began = time.monotonic()
             rt.conversations.skip.add(cid)
+            rt.conversations.testing = q.ask
+            results_seen: list[dict[str, Any]] = []
             try:
                 result = await conversation.async_converse(
                     self.hass, q.ask, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
                 )
                 answer = result.response.speech.get("plain", {}).get("speech", "") or ""
-                tools = self._tools_used(result.conversation_id)
+                results_seen = rt.conversations.test_tools.pop(result.conversation_id, None) or []
+                tools = sorted({_tool_name(c) for c in results_seen} | set(self._tools_used(result.conversation_id)))
                 if result.conversation_id:
                     rt.conversations.drop(result.conversation_id)  # HA gave it its own id: not a person talking
             except Exception as err:  # noqa: BLE001
                 answer = f"(no answer: {err})"
+            finally:
+                rt.conversations.testing = None
+                rt.conversations.test_tools.clear()
             right, expected = q.check(answer)
             acted = sorted(set(tools) & ACTION_TOOLS)
             if acted:  # only asked: switching something is a fail whatever it said
                 right, expected = False, f"{expected}, and nothing switched (it used {', '.join(acted)})"
+            elif failed := failed_tools(results_seen):
+                # 15 Nov: the camera tool failed every time and the answer ("nobody") still passed; a guess isn't right
+                right, expected = False, f"{expected}, with every tool working (failed: {', '.join(failed)})"
+            elif SECURITY_OFFER.search(answer):
+                # only asked whether it's on: offering to arm, disarm or unlock isn't the voice's place
+                right, expected = False, f"{expected}, without offering to arm, disarm or unlock"
             results.append({"key": q.key, "kind": q.kind, "question": q.ask, "answer": answer[:200], "right": right,
                             "expected": expected, "tools": tools, "ms": round((time.monotonic() - began) * 1000)})
         history = [*self.last.get("history", []), {
