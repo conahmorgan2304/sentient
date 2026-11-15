@@ -205,3 +205,20 @@ async def test_unified_evidence_is_optional_and_preserves_source_gaps(hass: Home
     assert "not exposed" in data["sources"]["camera_activity"]["reason"]
     timeline.assert_awaited_once()
     camera.assert_awaited_once()
+
+
+async def test_identical_turns_on_different_devices_remain_distinct(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    log = entry.runtime_data.reliability
+    for cid, device, has_tools in (("first", "satellite.one", True),
+                                   ("second", "satellite.two", False)):
+        log.asked(cid, "did anyone visit?")
+        if has_tools:
+            log.tool(cid, {"tool_name": "sentient_visitors", "tool_result": {"visitors": []}})
+        log.answered(cid, "No one visited.", room="Livingroom", device_id=device)
+    assert log.summary()["turns"] == 2
+
+
+def test_failed_historical_lookup_does_not_count_as_evidence() -> None:
+    failed = {"tool_name": "sentient_history", "tool_result": {"error": "ledger unavailable"}}
+    assert "no_evidence" in _kinds("when did the door open?", "It was at 2 am.", [failed])
