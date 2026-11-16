@@ -182,7 +182,11 @@ class RememberTool(_Tool):
         "automation knows it later. Use for preferences, people, routines and facts "
         "the household tells you, or asks you to remember. One short sentence. "
         "Never store passwords, card or account numbers, or health details. pin=true when they say it's "
-        "important or to always remember it: it's then given to every voice every time."
+        "important or to always remember it: it's then given to every voice every time. "
+        # 16 Nov: "used to macon coffee" and "a Ford Cougar" (a Kuga) were saved just as they were misheard
+        "Write it in clean words: fix an obvious mishearing (\"macon coffee\" is \"make coffee\") and use the "
+        "names and details you already know rather than a different-sounding one; if you can't tell what they "
+        "said, ask before saving. Say a date (\"on 16 November\"), not \"today\"."
     )
     parameters = vol.Schema(
         {
@@ -2532,6 +2536,11 @@ class SentientAPI(llm.API):
             "switch it — and nothing earlier in this conversation says which device, ask which one they mean "
             "(\"Which one do you mean?\") — don't pick a device and answer about it. \"Is it raining?\" or \"What time "
             "is it?\" aren't about a device: just answer those.",
+            # 16 Nov: told "the scooter was packed up just after one", it answered "it looks like it was" without looking
+            "When someone tells you something happened (\"it was packed up just after one\", \"she got back at "
+            "six\"), don't agree or repeat it as fact unless a tool or this prompt shows it — look it up first, and "
+            "if you can't tell, say so. If they question an answer you gave, look again rather than changing your "
+            "answer to match theirs.",
             "To say anything on a speaker — including the Alexa Echo speakers — call sentient_announce with that "
             "speaker's or room's name (e.g. 'kitchen echo', 'girls echo'). Never use media play, pause or resume to "
             "test or reach a speaker, and never decide a speaker can't be used because of an Amazon Kids or parental "
@@ -2648,7 +2657,8 @@ class SentientAPI(llm.API):
         lessons = [m for m in rt.memory.items if m.category == "correction"][-15:]
         if lessons:
             lines.append("You've been corrected on these before — get them right first time:")
-            lines.extend(f"- {m.text}" for m in lessons)
+            # a correction worked out overnight is a guess, like any other: marked, as the memories below are
+            lines.extend(f"- {m.text}" + (" (a guess)" if getattr(m, "basis", "said") == "guess" else "") for m in lessons)
         memories = [] if private else self._memories(rt, int(opts.get(CONF_PROMPT_MEMORIES, DEFAULT_PROMPT_MEMORIES)),
                                                       bool(opts.get(CONF_RELEVANT_MEMORIES, True)))
         memories = voice_id.speaker_scope(self.hass, opts, memories)

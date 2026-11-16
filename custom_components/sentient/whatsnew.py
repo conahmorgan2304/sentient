@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.17": [
+        "Voice: when you tell it something happened (\"it was packed up just after one\"), it checks before agreeing, and if you question an answer it looks again rather than just changing its answer to match yours.",
+        "Voice: a conversation ends on the answer — no more \"Is there anything else you'd like me to check?\" after each reply. It still asks a real follow-up when there is one.",
+        "Voice: when it saves a memory it fixes obvious mishearings, uses the names it already knows, asks if it couldn't make out what you said, and writes a date rather than \"today\".",
+        "Memory: pinning a memory that says \"today\" writes the day in, as pinned memories never expire (memories already pinned are put right too). Overnight guesses filed as corrections are now marked as guesses for the voice.",
+        "Mind page: how conversations go (follow-ups, corrections, timings — never the words) is now kept over a restart, so it builds up. Switching off \"Show voice timings\" clears it.",
+    ],
     "1.11.16": [
         "Motion lights: a light someone switches off by hand now stays off while the room's in use, and motion turns it on again once there's been no movement for ten minutes. It used to come straight back on with the next movement (live: a bedroom light switched off came back on five seconds later).",
     ],

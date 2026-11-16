@@ -71,6 +71,20 @@ _MONTHS = ["january", "february", "march", "april", "may", "june", "july", "augu
 _HABIT = re.compile(r"\b(every|each|usually|always|normally|most)\b")
 
 
+_RELATIVE_DAY = re.compile(r"\b(?:earlier )?(?:today|tonight|this (?:morning|afternoon|evening))\b", re.IGNORECASE)
+
+
+def dated_text(text: str, expires: str | None) -> str:
+    """'…today' as '…on 10 November 2026', for a memory about one day (*expires* is the day after it)."""
+    if not expires or not _RELATIVE_DAY.search(text):
+        return text
+    try:
+        day = date.fromisoformat(expires) - timedelta(days=1)
+    except ValueError:
+        return text
+    return _RELATIVE_DAY.sub(f"on {day.day} {day:%B %Y}", text, count=1)
+
+
 def expiry_for(text: str, today: date | None = None) -> str | None:
     """The day after the date a memory is about ("on Thursday", "tomorrow", "12th November"), or None for
     anything that isn't tied to a day — including habits like "every Thursday" or "on Thursdays"."""
@@ -175,6 +189,10 @@ class MemoryStore:
         self._items = [Memory(**{k: v for k, v in item.items() if k in known}) for item in data.get("items", [])]
         self.changed = list(data.get("changed") or [])[-30:]
         self.reviewed = list(data.get("reviewed") or [])[-300:]
+        for memory in self._items:  # pinned before the day was written in
+            if memory.pinned and (dated := dated_text(memory.text, memory.expires)) != memory.text:
+                memory.text = dated
+                self._save()
 
     @callback
     def _save(self) -> None:
@@ -410,6 +428,10 @@ class MemoryStore:
         memory = self.get(memory_id)
         if memory is not None:
             memory.pinned = pinned
+            if pinned and (dated := dated_text(memory.text, memory.expires)) != memory.text:
+                # a pinned memory never expires, so "today" would stay "today" for good (16 Nov: "Conah set up
+                # a new voice ID integration today", pinned on 10 Nov): say the day instead
+                memory.text = dated
             self._save()
         return memory
 

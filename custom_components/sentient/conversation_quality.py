@@ -5,6 +5,8 @@ Every voice or chat turn is counted with what can be seen without AI: whether it
 "why?", "make it warmer"), whether the reply had to ask which thing was meant, whether the person then corrected
 it ("no, I meant…"), whether it failed, and how long it took. No words are kept — only those labels and counts —
 and nothing is kept in guest mode. Shown on the Mind tab with the voice timings (setting "Show voice timings").
+The counts are saved, so a restart doesn't wipe them (16 Nov: several restarts a day meant it never built up);
+switching "Show voice timings" off clears them.
 
 These are the Phase 2 measures: a change to how conversations work is judged on them.
 """
@@ -15,11 +17,16 @@ from contextvars import ContextVar
 from statistics import median
 from typing import Any
 
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
+
+from .const import DOMAIN
 
 TURN: ContextVar[dict | None] = ContextVar("sentient_turn_quality", default=None)  # set for the turn being answered
 KEEP = 300  # turns
 MIN_TURNS = 10  # before rates are shown
+SAVE_DELAY = 60
 
 
 def classify(text: str) -> str | None:
@@ -47,11 +54,33 @@ def _shows_in(memory: str, text: str, need: int = 2) -> bool:
 
 
 class ConversationQuality:
-    def __init__(self) -> None:
+    def __init__(self, hass: HomeAssistant | None = None, entry_id: str | None = None) -> None:
         self.turns: deque[dict[str, Any]] = deque(maxlen=KEEP)
+        self._store: Store[dict[str, Any]] | None = (
+            Store(hass, 1, f"{DOMAIN}.{entry_id}.conversation_quality") if hass is not None and entry_id else None)
+
+    async def async_load(self, enabled: bool = True) -> None:
+        if self._store is None:
+            return
+        data = await self._store.async_load() or {}
+        if not enabled:
+            if data:
+                await self._store.async_remove()  # switched off: nothing kept
+            return
+        self.turns.extend(t for t in data.get("turns", []) if isinstance(t, dict) and "time" in t)
+
+    @callback
+    def async_stop(self) -> None:
+        if self._store is not None:
+            self._store.async_delay_save(self._data, 0)
+
+    def _data(self) -> dict[str, Any]:
+        return {"turns": list(self.turns)}
 
     def clear(self) -> None:
         self.turns.clear()
+        if self._store is not None:
+            self._store.async_delay_save(self._data, 1)
 
     def record(self, *, text: str, reply: str, carried: bool, asked_back: bool, error: bool,
                ms: int | None = None, memories: list[str] | None = None, recalled: bool = False,
@@ -69,6 +98,8 @@ class ConversationQuality:
         if kind == "correction" and self.turns:
             self.turns[-1]["corrected"] = True
         self.turns.append(turn)
+        if self._store is not None:
+            self._store.async_delay_save(self._data, SAVE_DELAY)
         return turn
 
     def summary(self) -> dict[str, Any]:

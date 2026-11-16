@@ -53,7 +53,22 @@ async def test_times_are_said_to_the_minute(hass: HomeAssistant) -> None:
     assert "\"half past\" when it wasn't on the half hour" in prompt  # 16 Nov: 08:34 was said "half past eight"
     # 16 Nov: "Is it on?" with nothing said before was answered about the coffee machine
     assert "ask which one they mean" in prompt and "don't pick a device" in prompt
+    # 16 Nov: told the scooter "was packed up just after one", it agreed without looking
+    assert "don't agree or repeat it as fact unless a tool or this prompt shows it" in prompt
+    assert "look again rather than changing your answer to match theirs" in prompt
+
     assert local_when(dt_util.now() - timedelta(days=1)).endswith("yesterday")
+
+
+def test_discussions_end_on_the_answer_not_an_offer_of_more_help() -> None:
+    """16 Nov: "Is there anything else you would like me to check on?" after each answer, until "stop listening"."""
+    import inspect
+
+    from custom_components.sentient import conversation
+
+    source = inspect.getsource(conversation)
+    assert "an offer of more help ('is there anything else you'd like me to check?', 'anything else?') never is one" in source
+    assert "so end with the answer instead" in source
 
 
 async def test_a_repeated_question_is_looked_up_afresh(hass: HomeAssistant) -> None:
@@ -68,3 +83,19 @@ async def test_a_repeated_question_is_looked_up_afresh(hass: HomeAssistant) -> N
     conv._finish("c1")
     prompt = await _prompt(hass)
     assert "look the answer up afresh" in prompt and "look it up with a tool, not from these" in prompt
+
+
+async def test_saved_memories_are_cleaned_up_and_guessed_corrections_are_marked(hass: HomeAssistant) -> None:
+    """16 Nov: "macon coffee" and "a Ford Cougar" were saved as misheard; an overnight guess was listed as a lesson."""
+    from custom_components.sentient.llm_api import RememberTool
+    from tests.test_phase1 import _prompt, _setup as setup_one
+
+    assert "fix an obvious mishearing" in RememberTool.description
+    assert "if you can't tell what they said, ask before saving" in RememberTool.description
+    assert "Say a date" in RememberTool.description
+    entry = await setup_one(hass)
+    entry.runtime_data.memory.add("When asked about the vacuum, call it the vacuum.", "correction", "reflection")
+    entry.runtime_data.memory.add("Never offer to close the windows.", "correction", "conversation")
+    prompt = await _prompt(hass)
+    assert "- When asked about the vacuum, call it the vacuum. (a guess)" in prompt
+    assert "- Never offer to close the windows.\n" in prompt  # someone said it: not marked
