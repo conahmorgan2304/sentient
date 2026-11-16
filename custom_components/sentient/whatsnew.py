@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.0": [
+        "New, off by default: room trackers. Point Sentient at a Bluetooth room sensor (such as Bermuda's \"Area\" sensor for your phone) and things meant for wherever people are get said in the room you're in. When it can't tell — phone not seen, you're out, or that room has no speaker — it uses motion as before. It's only used to choose where to speak, never to decide whether anyone's up. Settings → Voice → Speakers & volume.",
+    ],
     "1.11.17": [
         "Voice: when you tell it something happened (\"it was packed up just after one\"), it checks before agreeing, and if you question an answer it looks again rather than just changing its answer to match yours.",
         "Voice: a conversation ends on the answer — no more \"Is there anything else you'd like me to check?\" after each reply. It still asks a real follow-up when there is one.",

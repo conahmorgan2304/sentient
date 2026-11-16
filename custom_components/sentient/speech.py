@@ -229,6 +229,7 @@ class SpeechRouter:
         self.holiday = None  # set by the runtime: holiday mode (only safety alerts are said out loud)
         self.on_unheard = None  # set by the runtime: (text, priority, source, held_reason) for messages nobody heard
         self.nobody_about = False  # the last pick found nobody in any speaker's room
+        self.tracked_route = False  # the last pick went where a room tracker put someone
         self.mutes = None  # set by the runtime: things people asked not to hear about  # visitors in: no remarks or offers, keep personal things private
 
     # ----- remembering what was said, across restarts -----------------------------------
@@ -353,6 +354,14 @@ class SpeechRouter:
                 by_area[area] = speaker
         if not by_area or self.tracker is None:
             return []
+        from .room_trackers import tracked_areas
+
+        # a room tracker (Bermuda and the like) knows where someone is: say it there. When none knows, or their room
+        # has no speaker, it's the motion-based guess as before
+        if tracked := [a for a in tracked_areas(self.hass, self.options) if a in by_area]:
+            self.tracked_route = True
+            return [by_area[a] for a in tracked]
+        self.tracked_route = False
         if self.options.get(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED):
             areas = self.tracker.occupied_areas(set(by_area))
         else:

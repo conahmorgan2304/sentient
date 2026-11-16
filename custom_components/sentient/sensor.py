@@ -163,6 +163,9 @@ class LikelyRoomSensor(_Base):
         return {
             "scores": {self._name(a): v for a, v in scores},
             "speaker": (rt.speech.pick_speaker() or [None])[0],
+            # where room trackers (Bermuda and the like) put people, and whether that chose the speaker just now
+            "room_trackers": _room_trackers(self.hass, rt.options),
+            "speaker_from_tracker": bool(getattr(rt.speech, "tracked_route", False)),
             "quiet_hours": rt.speech.quiet_now(),
             "persona": rt.options.get("persona") or self._entry.title,
             "ai_checks_today": rt.ai.used,
@@ -493,6 +496,12 @@ def _security_review_quality(rt) -> dict[str, Any]:
     from .outcome_learning import reviewed_feedback
 
     return reviewed_feedback(list(rt.security_events.items.values()))
+
+
+def _room_trackers(hass, options) -> list[dict[str, Any]]:
+    from .room_trackers import describe
+
+    return describe(hass, options)
 
 
 def _conversation_quality(rt) -> dict[str, Any]:

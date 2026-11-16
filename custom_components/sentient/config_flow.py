@@ -25,6 +25,7 @@ from .security_events import (CONF_EVENT_EVIDENCE, CONF_EVENT_CONTEXT, CONF_EVEN
 from .clip_analysis import CONF_SHARED_CLIPS
 
 from .security_offers import CONF_NO_SECURITY_OFFERS
+from .room_trackers import CONF_ROOM_TRACKERS, CONF_ROOM_TRACKING
 from .const import (
     CONF_COMFORT_TEMP,
     CONF_CAMSEC,
@@ -680,6 +681,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "alarm_control_panel"], multiple=True)
             ),
             vol.Required(CONF_ALL_OCCUPIED, **d(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED)): selector.BooleanSelector(),
+            vol.Required(CONF_ROOM_TRACKING, **d(CONF_ROOM_TRACKING, False)): selector.BooleanSelector(),
+            vol.Optional(CONF_ROOM_TRACKERS, **d(CONF_ROOM_TRACKERS, [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["sensor"], multiple=True)
+            ),
             vol.Required(CONF_QUIET_START, **d(CONF_QUIET_START, DEFAULT_QUIET_START)): selector.TimeSelector(),
             vol.Required(CONF_QUIET_END, **d(CONF_QUIET_END, DEFAULT_QUIET_END)): selector.TimeSelector(),
             vol.Optional(CONF_BUSY_ENTITIES, **d(CONF_BUSY_ENTITIES, [])): selector.EntitySelector(
