@@ -583,7 +583,8 @@
           "automation_builder": "Build automations",
           "pronounce_names": "Say names as they're pronounced",
           "pronunciations": "Pronunciations (one per line)",
-          "health_duplicates": "Spot devices listed twice"
+          "health_duplicates": "Spot devices listed twice",
+          "unified_evidence": "Recherche groupée dans l'historique de la maison"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -850,7 +851,8 @@
           "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
           "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Siobhan is pronounced Shivawn\". Off: names are read as spelt.",
           "pronunciations": "Written = said, one per line, e.g. Siobhan = Shivawn. Spell the said version the way the voice should read it.",
-          "health_duplicates": "On: a device that appears twice under one name where one copy is empty (a plug in Tuya Local and again from Tuya's cloud) is shown in House health, with a button to disable the empty copy. Off: not checked."
+          "health_duplicates": "On: a device that appears twice under one name where one copy is empty (a plug in Tuya Local and again from Tuya's cloud) is shown in House health, with a button to disable the empty copy. Off: not checked.",
+          "unified_evidence": "Désactivé par défaut. Donne à la voix un outil supplémentaire, en lecture seule, qui consulte ensemble le journal de la maison, la chronologie et l'historique des caméras quand vous demandez ce qui s'est passé ou pourquoi. Il ne peut rien commander et signale quand une source n'a pas pu être consultée au lieu d'affirmer qu'il ne s'est rien passé. Le désactiver retire simplement l'outil ; rien n'est conservé."
         }
       },
       "memories": {
