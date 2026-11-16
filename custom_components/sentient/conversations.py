@@ -146,7 +146,9 @@ class Conversations:
     def _chat(self, conversation_id: str, event_type: Any, data: dict[str, Any]) -> None:
         kind = str(event_type)
         content = (data.get("content") or {}) if kind.endswith("content_added") else {}
-        if (self.testing is not None and conversation_id not in self.skip and content.get("role") == "user"
+        # 16 Nov: the self-test puts its own id in skip before asking, so "not in skip" never matched and every
+        # answer was scored with no tools seen (a failed camera look-up could pass)
+        if (self.testing is not None and conversation_id not in self.test_tools and content.get("role") == "user"
                 and content.get("content") == self.testing):
             self.skip.add(conversation_id)  # the self-test: not counted as a person talking, nor in reliability
             self.test_tools[conversation_id] = []

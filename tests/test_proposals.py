@@ -103,3 +103,16 @@ async def test_self_test_asks_the_question_asked_most(hass: HomeAssistant) -> No
     assert qs["asked often"].ask == "Is it going to rain later?"
     assert qs["asked often"].check("Yes, from about four.")[0]
     assert not qs["asked often"].check("Sorry, I don't know.")[0]
+
+
+async def test_self_test_doesnt_ask_the_most_asked_question_twice(hass: HomeAssistant) -> None:
+    """16 Nov: "Is the alarm on?" was both the alarm check and the most-asked question, so it was asked twice."""
+    hass.states.async_set("alarm_control_panel.house", "disarmed")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    now = dt_util.utcnow().isoformat()
+    rt.conversations.episodes = [{"id": str(n), "start": now, "turns": [{"who": "them", "text": text}]}
+                                 for n, text in enumerate(["Is the alarm on"] * 4 + ["Is it going to rain later?"] * 3)]
+    asks = [q.ask for q in rt.selftest.questions()]
+    assert asks.count("Is the alarm on?") == 1 and "Is the alarm on" not in asks
+    assert "Is it going to rain later?" in asks  # the next most-asked one is used instead

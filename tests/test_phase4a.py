@@ -153,3 +153,34 @@ def test_spoken_times() -> None:
     assert spoken_times("It's 11:49") == [11 * 60 + 49]
     assert spoken_times("eleven forty-nine") == [11 * 60 + 49]
     assert spoken_times("three o'clock") == [180]
+
+
+async def test_self_test_sees_the_tools_the_voice_used(hass: HomeAssistant) -> None:
+    """16 Nov: every live self-test answer showed no tools, because the test put its own conversation in the skip list
+    before asking and the tool results were then never collected — so a failed look-up could still pass."""
+    hass.states.async_set("weather.home", "rainy", {"temperature": 12.4})
+    entry = await _setup(hass, self_test="nightly", self_test_household=False)
+    conv = entry.runtime_data.conversations
+
+    async def converse(hass_, text, cid, context, **kw):
+        # the chat log events as Home Assistant fires them; a voice that hands on gets a second, inner id
+        for each in (cid, "inner-" + cid):
+            conv._chat(each, "content_added", {"content": {"role": "user", "content": text}})
+        if text.startswith("What's the temperature"):
+            conv._chat("inner-" + cid, "content_added", {"content": {
+                "role": "tool_result", "tool_name": "sentient_weather", "tool_result": {"error": "Weather unavailable"}}})
+            speech = "It's about twelve degrees outside."
+        else:
+            conv._chat(cid, "content_added", {"content": {
+                "role": "tool_result", "tool_name": "sentient_clock", "tool_result": {"time": "now"}}})
+            speech = f"It's {dt_util.now():%H:%M}."
+        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": speech}}), conversation_id=cid)
+
+    with patch("homeassistant.components.conversation.async_converse", converse):
+        out = await entry.runtime_data.selftest.async_run()
+    by_key = {r["key"]: r for r in out["results"]}
+    assert by_key["outside"]["tools"] == ["sentient_weather"]
+    assert not by_key["outside"]["right"] and "failed: sentient_weather" in by_key["outside"]["expected"]
+    assert by_key["time"]["tools"] == ["sentient_clock"] and by_key["time"]["right"]
+    assert conv.test_tools == {} and conv.testing is None
+    assert entry.runtime_data.reliability.summary()["turns"] == 0  # still not counted as someone talking

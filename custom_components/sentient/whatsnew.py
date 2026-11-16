@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.12": [
+        "Self-test: a plain \"Yes, it is.\" or \"No, it isn't.\" now counts as a right answer to \"Is the light on?\". It was marked wrong even when it was right, which put a false self-test failure in house health.",
+        "Self-test: it now sees which tools the voice used for each answer. Before, every answer showed none, so a failed look-up (like a camera check) could still be marked right.",
+        "Self-test: the most-asked question is no longer asked a second time when it's already one of the checks (\"Is the alarm on?\" came up twice).",
+    ],
     "1.11.10": [
         "Where the voice went wrong: a script that reports it worked (like showing a camera on the Echo Show) now counts as having done something, instead of \"said it was done, but nothing was done\".",
         "Voice requests through Sentient Voice Recognition were counted twice (the request, then the relayed answer with no tools). The same question and answer within seconds now count once, judged by the copy that shows the tools used.",

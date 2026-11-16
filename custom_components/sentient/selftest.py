@@ -90,7 +90,15 @@ def yes_no(answer: str) -> bool | None:
 def on_off(answer: str) -> bool | None:
     if SAYS_OFF.search(answer):
         return False
-    return True if SAYS_ON.search(answer) else None
+    if SAYS_ON.search(answer):
+        return True
+    # 16 Nov: asked "Is the Girls Projector Background on?", "Yes, it is." was right and marked wrong — a plain
+    # yes or no answers "is it on?" too
+    if re.match(r"\W*(?:yes|yeah|yep)\b", answer, re.I):
+        return True
+    if re.match(r"\W*(?:no|nope)\b", answer, re.I) or re.search(r"\bisn['’]t\b|\bit(?:['’]s| is) not\b", answer, re.I):
+        return False
+    return None
 
 
 def _near_time(answer: str, when: datetime, minutes: int = 10) -> bool:
@@ -260,7 +268,10 @@ class SelfTest:
         if rt is not None:
             from .selfaware import ANSWERED_BADLY, asked_often, is_question
 
-            often = next((q for q, _n in asked_often(rt) if is_question(q)), None)
+            # 16 Nov: "Is the alarm on?" was asked twice in one run (the alarm check, then as the most-asked question)
+            asked = {re.sub(r"\W+", " ", q.ask).strip().lower() for q in out}
+            often = next((q for q, _n in asked_often(rt)
+                          if is_question(q) and re.sub(r"\W+", " ", q).strip().lower() not in asked), None)
             if often:
 
                 def answered(answer: str) -> tuple[bool, str]:
@@ -411,7 +422,8 @@ class SelfTest:
                     self.hass, q.ask, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
                 )
                 answer = result.response.speech.get("plain", {}).get("speech", "") or ""
-                results_seen = rt.conversations.test_tools.pop(result.conversation_id, None) or []
+                # every conversation that asked this question (a voice that hands on to another agent has two ids)
+                results_seen = [c for seen in rt.conversations.test_tools.values() for c in seen]
                 tools = sorted({_tool_name(c) for c in results_seen} | set(self._tools_used(result.conversation_id)))
                 if result.conversation_id:
                     rt.conversations.drop(result.conversation_id)  # HA gave it its own id: not a person talking
