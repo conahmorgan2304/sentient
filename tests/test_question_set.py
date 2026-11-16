@@ -29,6 +29,15 @@ def test_reading_yes_no_and_on_off() -> None:
     assert yes_no("There were two visits, at 16:10 and 16:45.") is True
     assert yes_no("I'm checking the camera now.") is None
     assert on_off("The kitchen light is on.") is True
+    # a plain yes or no answers "is it on?" (16 Nov: "Yes, it is." was marked wrong)
+    assert on_off("Yes, it is.") is True
+    assert on_off("Yeah, it is.") is True
+    assert on_off("No, it isn't.") is False
+    assert on_off("It isn't.") is False
+    assert on_off("Nope.") is False
+    assert on_off("No, it's on.") is True
+    assert on_off("Yes, it's off now.") is False
+    assert on_off("I'm not sure.") is None
     assert on_off("No, it's off.") is False
 
 

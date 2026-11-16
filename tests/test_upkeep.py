@@ -40,7 +40,9 @@ def _ai(hass: HomeAssistant, reply):
     return calls
 
 
-async def test_briefing_facts_and_tool(hass: HomeAssistant) -> None:
+async def test_briefing_facts_and_tool(hass: HomeAssistant, freezer) -> None:
+    # midday, so a reminder in 30 minutes is still today (on the real clock this failed half an hour before midnight)
+    freezer.move_to("2026-06-15 12:00:00+00:00")
     await _setup(hass)
     await hass.services.async_call(DOMAIN, "remind", {"message": "Put the bins out.", "minutes": 30}, blocking=True)
     facts = await hass.services.async_call(DOMAIN, "briefing", {"speak": False}, blocking=True, return_response=True)
