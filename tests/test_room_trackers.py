@@ -107,3 +107,32 @@ async def test_a_phone_doesnt_make_the_house_think_someone_is_up(hass: HomeAssis
     clock.back()
     assert entry.runtime_data.tracker.best_area() is None
     assert entry.runtime_data.tracker.occupied_areas() == []
+
+
+async def test_a_backup_speaker_in_the_tracked_room_is_used(hass: HomeAssistant, freezer) -> None:
+    """16 Nov live: the phone was in the living room, whose speaker is backup-only, and the motion guess (upstairs and
+    the kitchen) was used instead."""
+    entry, ids, _ = await _house(hass, freezer, fallback_speakers=["assist_satellite.living"])
+    # motion in the kitchen now, so the main speakers have somewhere busy
+    hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
+    hass.states.async_set(PHONE, "Living Room", {"area_id": ids["Living Room"]})
+    assert await _say(hass) == ["assist_satellite.living"]
+    assert entry.runtime_data.speech.tracked_route
+    # not tracked: backups still wait for the main rooms to be empty, as before
+    hass.states.async_set(PHONE, "unknown")
+    assert await _say(hass) == ["assist_satellite.kitchen"]
+    assert not entry.runtime_data.speech.tracked_route
+
+
+async def test_a_room_with_a_main_and_a_backup_speaker_uses_the_main_one(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    entry, ids, _ = await _house(hass, freezer, fallback_speakers=["assist_satellite.living"],
+                                 speakers=["assist_satellite.living", "assist_satellite.kitchen",
+                                           "assist_satellite.lounge_two"])
+    ents = er.async_get(hass)
+    extra = ents.async_get_or_create("assist_satellite", "test", "lounge_two", suggested_object_id="lounge_two")
+    ents.async_update_entity(extra.entity_id, area_id=ids["Living Room"])
+    hass.states.async_set("assist_satellite.lounge_two", "idle")
+    hass.states.async_set(PHONE, "Living Room", {"area_id": ids["Living Room"]})
+    assert await _say(hass) == ["assist_satellite.lounge_two"]

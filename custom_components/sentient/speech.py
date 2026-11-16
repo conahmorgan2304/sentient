@@ -335,8 +335,16 @@ class SpeechRouter:
         ]
         backup = set(self.usable(self.options.get(CONF_FALLBACK_SPEAKERS), important))
         self.nobody_about = False
+        self.tracked_route = False
         if self.tracker is not None:
-            for group in ([s for s in live if s not in backup], [s for s in live if s in backup]):
+            main, spare = [s for s in live if s not in backup], [s for s in live if s in backup]
+            # a room tracker (Bermuda and the like) knows where someone is: say it there, whether that room's speaker
+            # is a main or a backup one (16 Nov: a phone in the living room, whose speaker is a backup, got the motion
+            # guess instead). A room with both uses its main speaker.
+            if tracked := self._tracked(main + spare):
+                self.tracked_route = True
+                return tracked
+            for group in (main, spare):
                 chosen = self._occupied(group)
                 if chosen:
                     return chosen
@@ -346,6 +354,19 @@ class SpeechRouter:
             return [default]
         return speakers[:1]
 
+    def _tracked(self, speakers: list[str]) -> list[str]:
+        """The speakers in the rooms room trackers put people in ([] when none knows, or their rooms have none)."""
+        from .room_trackers import tracked_areas
+
+        areas = tracked_areas(self.hass, self.options)
+        if not areas:
+            return []
+        by_area: dict[str, str] = {}
+        for speaker in speakers:
+            if (area := self._area_of(speaker)) and area not in by_area:
+                by_area[area] = speaker
+        return [by_area[a] for a in areas if a in by_area]
+
     def _occupied(self, speakers: list[str]) -> list[str]:
         by_area: dict[str, str] = {}
         for speaker in speakers:
@@ -354,14 +375,6 @@ class SpeechRouter:
                 by_area[area] = speaker
         if not by_area or self.tracker is None:
             return []
-        from .room_trackers import tracked_areas
-
-        # a room tracker (Bermuda and the like) knows where someone is: say it there. When none knows, or their room
-        # has no speaker, it's the motion-based guess as before
-        if tracked := [a for a in tracked_areas(self.hass, self.options) if a in by_area]:
-            self.tracked_route = True
-            return [by_area[a] for a in tracked]
-        self.tracked_route = False
         if self.options.get(CONF_ALL_OCCUPIED, DEFAULT_ALL_OCCUPIED):
             areas = self.tracker.occupied_areas(set(by_area))
         else:
