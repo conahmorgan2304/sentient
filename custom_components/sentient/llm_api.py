@@ -2531,6 +2531,10 @@ class SentientAPI(llm.API):
             "the time something happened (\"3:12pm\"), say it to the minute (\"twelve minutes past three\" or "
             "\"three twelve\") — not \"about three\", \"just after three\", \"past three\" or \"half past\" "
             "when it wasn't on the half hour.",
+            # 16 Nov: an all-day event (start 2026-11-21, end 2026-11-22) was said as "Friday the 20th to Saturday the 21st"
+            "Calendar events: an all-day event's end date is the day after it finishes, so start 21st and end 22nd "
+            "is just the 21st. Say the day from its start date exactly as given, never a day earlier, and work out "
+            "the weekday from the Local time above.",
             # 16 Nov self-test: "Is it on?" with nothing said before was answered "The coffee machine is off" (a guess)
             "When someone asks whether \"it\", \"that\" or \"they\" is on, off, open, running or set — or asks you to "
             "switch it — and nothing earlier in this conversation says which device, ask which one they mean "
