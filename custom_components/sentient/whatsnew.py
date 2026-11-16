@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.1": [
+        "Room trackers: a room whose speaker is a backup one (only used when the main rooms are empty) now gets the message when your phone is in it. Before, it went to wherever the motion was instead.",
+    ],
     "1.12.0": [
         "New, off by default: room trackers. Point Sentient at a Bluetooth room sensor (such as Bermuda's \"Area\" sensor for your phone) and things meant for wherever people are get said in the room you're in. When it can't tell — phone not seen, you're out, or that room has no speaker — it uses motion as before. It's only used to choose where to speak, never to decide whether anyone's up. Settings → Voice → Speakers & volume.",
     ],
