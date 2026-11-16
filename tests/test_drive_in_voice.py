@@ -48,7 +48,11 @@ async def test_times_are_said_to_the_minute(hass: HomeAssistant) -> None:
     from tests.test_phase1 import _prompt, _setup as setup_one
 
     await setup_one(hass)
-    assert "say it to the minute" in await _prompt(hass)
+    prompt = await _prompt(hass)
+    assert "say it to the minute" in prompt
+    assert "\"half past\" when it wasn't on the half hour" in prompt  # 16 Nov: 08:34 was said "half past eight"
+    # 16 Nov: "Is it on?" with nothing said before was answered about the coffee machine
+    assert "ask which one they mean" in prompt and "don't pick a device" in prompt
     assert local_when(dt_util.now() - timedelta(days=1)).endswith("yesterday")
 
 
