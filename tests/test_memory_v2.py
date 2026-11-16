@@ -93,3 +93,28 @@ async def test_repeated_dated_memory_gets_a_fresh_expiry(hass, freezer):
     new = store.add("Parcel arriving tomorrow")
     assert new.id != old.id and new.expires == "2026-11-14"
     assert store.search("parcel", count_hits=False) == [new]
+
+
+async def test_pinning_writes_the_day_in(hass: HomeAssistant, hass_storage):
+    """16 Nov: "Conah set up a new voice ID integration today", pinned on 10 Nov, still said "today" six days on."""
+    from custom_components.sentient.memory import dated_text
+
+    store = MemoryStore(hass, "t")
+    await store.async_load()
+    m = store.add("Someone set up voice recognition today so their voice can be recognised")
+    m.expires = "2026-11-11"  # about 10 November
+    store.pin(m.id)
+    assert m.text == "Someone set up voice recognition on 10 November 2026 so their voice can be recognised"
+    habit = store.add("The rabbits live by the shed")
+    store.pin(habit.id)
+    assert habit.text == "The rabbits live by the shed"  # not about a day: unchanged
+    unpinned = store.add("The parcel is coming this afternoon")
+    assert "this afternoon" in unpinned.text  # it'll expire, so it can keep its own words
+    assert dated_text("Bins went out tonight", "2026-11-17") == "Bins went out on 16 November 2026"
+    # already pinned before this change: put right when loaded
+    hass_storage["sentient.t2.memory"] = {"version": 1, "key": "sentient.t2.memory", "data": {"items": [
+        {"text": "The new speaker was set up today", "category": "fact", "id": "a1", "created": "2026-11-10T10:00:00+00:00",
+         "pinned": True, "expires": "2026-11-11"}]}}
+    old = MemoryStore(hass, "t2")
+    await old.async_load()
+    assert old.items[0].text == "The new speaker was set up on 10 November 2026"

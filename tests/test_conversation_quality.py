@@ -79,3 +79,47 @@ async def test_a_correction_sticks_when_the_thing_isnt_said_again(hass: HomeAssi
     fb.record("sensor.kettle", -1.0, "thumbs up")  # liked after all: not a correction any more
     assert fb.stuck()["corrections"] == 1
     fb.async_stop()
+
+
+async def test_the_counts_are_kept_over_a_restart_and_cleared_when_switched_off(hass: HomeAssistant, hass_storage, freezer) -> None:
+    """16 Nov: several restarts a day wiped the counts each time, so they never built up."""
+    q = ConversationQuality(hass, "e1")
+    await q.async_load()
+    q.record(text="is everything ok outside?", reply="All quiet.", carried=False, asked_back=False, error=False, ms=900)
+    q.record(text="what about the shed?", reply="Nothing there.", carried=True, asked_back=False, error=False, ms=800)
+    q.async_stop()
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+    from datetime import timedelta
+
+    freezer.tick(timedelta(seconds=5))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    saved = hass_storage["sentient.e1.conversation_quality"]["data"]["turns"]
+    assert len(saved) == 2 and all("text" not in t and "reply" not in t for t in saved)  # still no words
+    again = ConversationQuality(hass, "e1")
+    await again.async_load()
+    assert again.summary()["turns"] == 2 and again.summary()["carried_on"] == 1
+    # "Show voice timings" off: nothing loaded, and the saved copy goes
+    off = ConversationQuality(hass, "e1")
+    await off.async_load(enabled=False)
+    await hass.async_block_till_done()
+    assert off.summary()["turns"] == 0 and "sentient.e1.conversation_quality" not in hass_storage
+
+
+async def test_setup_loads_the_saved_counts(hass: HomeAssistant, hass_storage) -> None:
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.sentient.const import DOMAIN
+
+    hass_storage[f"{DOMAIN}.saved1.conversation_quality"] = {"version": 1, "key": "x", "data": {"turns": [
+        {"time": "2026-11-16T10:00:00+00:00", "carried": True, "kind": None, "asked_back": False, "error": False,
+         "ms": 700}]}}
+    entry = MockConfigEntry(domain=DOMAIN, entry_id="saved1", title="Nova", unique_id=DOMAIN,
+                            data={"persona": "Nova", "voice_timing_diagnostics": True})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.runtime_data.conversation_quality.summary()["turns"] == 1
+    from custom_components.sentient.conversation_quality import of
+
+    assert of(entry.runtime_data) is entry.runtime_data.conversation_quality

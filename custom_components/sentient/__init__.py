@@ -725,6 +725,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     from . import voice_id as _voice_id
 
     entry.async_on_unload(hass.bus.async_listen(_voice_id.EVENT_TURN, lambda event: _voice_id.record_turn(hass, event, {**entry.data, **entry.options})))
+    from .conversation_quality import ConversationQuality
+
+    quality = ConversationQuality(hass, entry.entry_id)  # kept over restarts (Mind tab: how conversations go)
+    await quality.async_load(bool(options.get("voice_timing_diagnostics")))
+    entry.runtime_data.conversation_quality = quality
+    entry.async_on_unload(quality.async_stop)
     engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "reliability": reliability, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
@@ -863,6 +869,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.household_tasks.clear()
     entry.runtime_data.ai.voice_timings.clear()
+    if not options.get("voice_timing_diagnostics") and (quality := getattr(entry.runtime_data, "conversation_quality", None)):
+        quality.clear()  # "Show voice timings" off: the saved conversation counts go too
     entry.runtime_data.voice_checks.stop()
     entry.runtime_data.followthrough.clear()
     entry.runtime_data.camsec.clear()
