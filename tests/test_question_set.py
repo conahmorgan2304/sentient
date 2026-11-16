@@ -45,8 +45,12 @@ async def test_the_set_is_built_from_the_house_and_scored(hass: HomeAssistant, f
     freezer.move_to("2026-06-15 14:00:00+00:00")
     entry = await _setup(hass)
     rt = entry.runtime_data
+    door = {"device_class": "door", "friendly_name": "Back door"}
+    freezer.move_to("2026-06-15 12:59:00+00:00")
+    hass.states.async_set("binary_sensor.back_door", "on", door)
     freezer.move_to("2026-06-15 13:00:00+00:00")
-    hass.states.async_set("binary_sensor.back_door", "off", {"device_class": "door", "friendly_name": "Back door"})
+    hass.states.async_set("binary_sensor.back_door", "off", door)
+    await hass.async_block_till_done()
     freezer.move_to("2026-06-15 14:00:00+00:00")
     asked = {}
     with patch.object(type(rt.selftest), "_exposed", lambda self, entity_id: True):
@@ -124,3 +128,29 @@ async def test_benchmark_expands_to_heating_energy_and_dry_run_plan(hass: HomeAs
     assert {"heating current", "energy reading"} <= set(qs)
     assert qs["heating current"].check("The thermostat reports 19.5 degrees.")[0]
     assert qs["energy reading"].check("The reading is 12.6 kWh.")[0]
+
+
+async def test_a_door_reporting_closed_again_isnt_a_new_close(hass: HomeAssistant, freezer) -> None:
+    """16 Nov: the front door shut at 08:34, its sensor said "closed" again at 08:53 (a reload), and the test expected
+    08:53 — so the voice's right answer ("half past eight") was marked wrong."""
+    freezer.move_to("2026-06-15 07:00:00+00:00")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    door = {"device_class": "door", "friendly_name": "Front door"}
+    for at, state in (("08:30", "on"), ("08:34", "off"), ("08:53", "unavailable"), ("08:53:05", "off")):
+        freezer.move_to(f"2026-06-15 {at}+00:00" if at.count(":") == 2 else f"2026-06-15 {at}:00+00:00")
+        hass.states.async_set("binary_sensor.front_door", state, door)
+        await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.never_opened", "off", {"device_class": "window", "friendly_name": "Loft window"})
+    freezer.move_to("2026-06-15 10:00:00+00:00")
+    with patch.object(type(rt.selftest), "_exposed", lambda self, entity_id: True):
+        qs = {q.key: q for q in rt.selftest.questions()}
+    assert qs["last closed"].ask == "When was the Front door last closed?"
+    local = dt_util.as_local(dt_util.parse_datetime("2026-06-15 08:34:00+00:00"))
+    assert qs["last closed"].check(f"It was last shut at {local:%H:%M}.")[0]
+    late = dt_util.as_local(dt_util.parse_datetime("2026-06-15 08:53:00+00:00"))
+    assert not qs["last closed"].check(f"It was last shut at {late:%H:%M}.")[0]
+    # kept over a restart
+    rt.selftest.async_stop()
+    saved = rt.selftest._saved()
+    assert "binary_sensor.front_door" in saved["shut"] and "binary_sensor.never_opened" not in saved["shut"]

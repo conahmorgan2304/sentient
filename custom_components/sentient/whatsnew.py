@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.14": [
+        "Self-test: \"When was the front door last closed?\" now checks against the last time the door was really opened and shut. It used the sensor's last report, so a sensor that said \"closed\" again after a reload moved the expected time and a right answer was marked wrong.",
+    ],
     "1.11.13": [
         "Where the voice went wrong: a reminder, watch or announcement that worked is no longer logged as a voice problem (\"reported completion without a recognised success result\"), which 1.11.11 started doing. One that says it isn't finished yet is still noted, and \"done\" after a tool failed is still a false claim.",
         "The \"Unified household evidence lookup\" setting now has a description, and French text.",
