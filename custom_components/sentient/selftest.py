@@ -24,7 +24,8 @@ import math
 import re
 from typing import Any, Callable
 
-from homeassistant.core import Context, HomeAssistant, callback
+from homeassistant.const import EVENT_STATE_CHANGED
+from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -175,10 +176,16 @@ class SelfTest:
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.selftest")
         self.last: dict[str, Any] = {}  # {time, results: [{key, question, answer, right, expected, tools}]}
         self._unsub = None
+        self._unsub_shut = None
+        # when each door or window was really last closed (open, then shut). 16 Nov: the test asked from the sensor's
+        # last change, and a sensor that reports "closed" again (a reload, a restart) moved that from 08:34 to 08:53
+        self.shut: dict[str, str] = {}
         self.context = Context()
 
     async def async_start(self) -> None:
         self.last = await self._store.async_load() or {}
+        self.shut = dict(self.last.pop("shut", None) or {})
+        self._unsub_shut = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._closed)
         self._unsub = async_track_time_change(self.hass, self._tick, hour=RUN_AT[0], minute=RUN_AT[1], second=0)
 
     @callback
@@ -186,6 +193,22 @@ class SelfTest:
         if self._unsub:
             self._unsub()
             self._unsub = None
+        if self._unsub_shut:
+            self._unsub_shut()
+            self._unsub_shut = None
+
+    def _saved(self) -> dict[str, Any]:
+        return {**self.last, "shut": self.shut}
+
+    @callback
+    def _closed(self, event: Event) -> None:
+        entity_id = event.data.get("entity_id", "")
+        old, new = event.data.get("old_state"), event.data.get("new_state")
+        if (not entity_id.startswith("binary_sensor.") or old is None or new is None or old.state != "on"
+                or new.state != "off" or new.attributes.get("device_class") not in ("door", "window")):
+            return
+        self.shut[entity_id] = new.last_changed.isoformat()
+        self._store.async_delay_save(self._saved, 30)
 
     @property
     def mode(self) -> str:
@@ -295,15 +318,17 @@ class SelfTest:
         hass, out = self.hass, []
         now, today = dt_util.utcnow(), dt_util.start_of_local_day()
         # history: when a door or window last closed (today, a while ago, so it's a real look back)
-        shut = sorted((s for s in hass.states.async_all("binary_sensor")
-                       if s.attributes.get("device_class") in ("door", "window") and s.state == "off"
-                       and today <= s.last_changed <= now - timedelta(minutes=10) and self._exposed(s.entity_id)),
-                      key=lambda s: s.last_changed, reverse=True)
+        # only a real close (open, then shut) that Sentient saw: a sensor reporting "closed" again isn't one
+        shut = sorted(((st, when) for entity_id, at in self.shut.items()
+                       if (st := hass.states.get(entity_id)) is not None and st.state == "off"
+                       and (when := dt_util.parse_datetime(at)) is not None
+                       and today <= when <= now - timedelta(minutes=10) and self._exposed(entity_id)),
+                      key=lambda pair: pair[1], reverse=True)
         if shut:
-            door = shut[0]
+            door, when = shut[0]
 
-            def closed(answer: str, d=door) -> tuple[bool, str]:
-                return _near_time(answer, d.last_changed), f"about {dt_util.as_local(d.last_changed):%H:%M}"
+            def closed(answer: str, w=when) -> tuple[bool, str]:
+                return _near_time(answer, w), f"about {dt_util.as_local(w):%H:%M}"
 
             out.append(Question("last closed", f"When was the {door.name} last closed?", closed, "history"))
         # everyday: is a light on (one the voice can see, in a plain on/off state)
@@ -448,7 +473,7 @@ class SelfTest:
             "time": dt_util.utcnow().isoformat(), "right": sum(1 for r in results if r["right"]), "total": len(results),
             "ms": sorted(r["ms"] for r in results)[len(results) // 2] if results else None}][-HISTORY_KEEP:]
         self.last = {"time": dt_util.utcnow().isoformat(), "results": results, "history": history}
-        self._store.async_delay_save(lambda: self.last, 2)
+        self._store.async_delay_save(self._saved, 2)
         wrong = [r for r in results if not r["right"]]
         rt.timeline.add(  # only a wrong answer is house health (and reaches phones); a pass is just noted
             "health" if wrong else "mind", f"Self-test: {len(results) - len(wrong)} of {len(results)} answers right",
