@@ -2640,6 +2640,11 @@ class SentientAPI(llm.API):
                     "ask it naturally as your follow-up question, unless the person is dealing with something urgent "
                     "or upsetting — then leave it."
                 )
+        if not private and not rt.speech.guest_mode:
+            from .room_trackers import prompt_line
+
+            if tracked := prompt_line(self.hass, opts):
+                lines.append(tracked)
         usual = rt.sleep.usual()
         if usual["bedtime"] or usual["up"]:
             lines.append(
