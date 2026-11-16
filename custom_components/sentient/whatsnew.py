@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.15": [
+        "Voice: asked \"Is it on?\" with nothing said before, it now asks which one you mean instead of guessing a device (it answered about the coffee machine). \"Is it raining?\" and \"What time is it?\" are answered as before.",
+        "Voice: a time like 08:34 is no longer rounded to \"half past eight\".",
+    ],
     "1.11.14": [
         "Self-test: \"When was the front door last closed?\" now checks against the last time the door was really opened and shut. It used the sensor's last report, so a sensor that said \"closed\" again after a reload moved the expected time and a right answer was marked wrong.",
     ],
