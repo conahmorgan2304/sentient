@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.16": [
+        "Motion lights: a light someone switches off by hand now stays off while the room's in use, and motion turns it on again once there's been no movement for ten minutes. It used to come straight back on with the next movement (live: a bedroom light switched off came back on five seconds later).",
+    ],
     "1.11.15": [
         "Voice: asked \"Is it on?\" with nothing said before, it now asks which one you mean instead of guessing a device (it answered about the coffee machine). \"Is it raining?\" and \"What time is it?\" are answered as before.",
         "Voice: a time like 08:34 is no longer rounded to \"half past eight\".",

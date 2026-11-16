@@ -88,6 +88,7 @@ async def test_hands_off_a_light_someone_controls(hass: HomeAssistant, freezer) 
     assert not on
     hass.states.async_set("light.landing", "off")
     await _motion(hass, False)
+    freezer.tick(timedelta(minutes=11))  # switched off by hand: the room has to be still for a while first
     # ours, then someone changes it by hand: no longer switched off
     await _motion(hass, True)
     hass.states.async_set("light.landing", "on", {"brightness": 255}, context=on[-1].context)
@@ -210,6 +211,7 @@ async def test_custom_quiet_cutoff_stops_only_its_own_motion_light(hass, freezer
     hass.states.async_set("light.bedroom", "off", context=off[0].context)
     hass.states.async_set("light.landing", "off")
     await _motion(hass, False)
+    freezer.tick(timedelta(minutes=11))  # the landing was switched off by hand: still for a while first
     await _motion(hass, True)
     assert [call.data["entity_id"] for call in on[2:]] == ["light.landing"]
 
@@ -313,3 +315,64 @@ async def test_wait_longer_can_be_switched_off(hass: HomeAssistant, freezer) -> 
     freezer.tick(timedelta(minutes=2))
     await _cycle(hass, freezer, on, off, 3.1)
     assert len(off) == 2
+
+
+async def test_switched_off_by_hand_stays_off_while_the_room_is_in_use(hass: HomeAssistant, freezer) -> None:
+    """Live 15 Nov: a bedroom light switched off by hand came back on with the next movement five seconds later."""
+    entry = await _setup(hass, freezer, 19)
+    on = async_mock_service(hass, "light", "turn_on")
+    async_mock_service(hass, "light", "turn_off")
+    ml = entry.runtime_data.motion_lights
+    rule = ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "off_after": 2})
+    await _motion(hass, True)
+    assert len(on) == 1
+    hass.states.async_set("light.landing", "on", context=on[-1].context)
+    await hass.async_block_till_done()
+    # switched off by hand (a person in Home Assistant, or the wall switch)
+    hass.states.async_set("light.landing", "off", context=Context(user_id="someone"))
+    await hass.async_block_till_done()
+    await _motion(hass, False)
+    freezer.tick(timedelta(seconds=5))
+    await _motion(hass, True)
+    assert len(on) == 1 and rule.last == "stayed off: switched off by hand"
+    # still moving about on and off for half an hour: stays off, as the still time counts from the last movement
+    for _ in range(6):
+        await _motion(hass, False)
+        freezer.tick(timedelta(minutes=5))
+        await _motion(hass, True)
+    assert len(on) == 1
+    # the room empties for longer than ten minutes: motion works again
+    await _motion(hass, False)
+    freezer.tick(timedelta(minutes=11))
+    await _motion(hass, True)
+    assert len(on) == 2
+
+
+async def test_switched_back_on_by_hand_clears_the_hold(hass: HomeAssistant, freezer) -> None:
+    entry = await _setup(hass, freezer, 19)
+    on = async_mock_service(hass, "light", "turn_on")
+    off = async_mock_service(hass, "light", "turn_off")
+    ml = entry.runtime_data.motion_lights
+    ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "off_after": 1})
+    hass.states.async_set("light.landing", "on")
+    hass.states.async_set("light.landing", "off")  # off by hand
+    hass.states.async_set("light.landing", "on")  # and on again by hand: theirs, as before
+    await hass.async_block_till_done()
+    assert "light.landing" not in ml._hand_off
+    # our own switch-off for no movement doesn't hold it: the next movement turns it back on
+    hass.states.async_set("light.landing", "off")
+    await _motion(hass, False)
+    freezer.tick(timedelta(minutes=11))
+    await _motion(hass, True)
+    assert len(on) == 1
+    hass.states.async_set("light.landing", "on", context=on[-1].context)
+    await _motion(hass, False)
+    freezer.tick(timedelta(minutes=1, seconds=5))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(off) == 1
+    hass.states.async_set("light.landing", "off", context=off[-1].context)
+    await hass.async_block_till_done()
+    assert "light.landing" not in ml._hand_off
+    await _motion(hass, True)
+    assert len(on) == 2

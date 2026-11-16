@@ -11,7 +11,8 @@ waits longer (twice, then four times as long) until it has stayed off for a whil
 going off every three minutes for an hour with someone in the room).
 
 No AI. A light someone switched on by hand is left alone, and if someone changes a light the
-house switched on, the house stops managing it until it's next off.
+house switched on, the house stops managing it until it's next off. A light switched off by hand stays off until
+the room has had no movement for ten minutes, so it isn't put straight back on.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ import logging
 from typing import Any
 import uuid
 
-from homeassistant.const import STATE_ON
+from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import CALLBACK_TYPE, Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event, async_track_time_change
 from homeassistant.helpers.storage import Store
@@ -41,6 +42,9 @@ SETTLE = timedelta(seconds=30)  # a light reporting back after our command is no
 COMEBACK = timedelta(minutes=5)  # movement this soon after an auto-off: it went off on someone sitting still
 SETTLED = timedelta(minutes=30)  # off this long: back to the light's own wait
 MAX_STRETCH = 4
+# switched off by hand (or by anything but motion lights): stays off until the room has been still this long. Live 15
+# Nov: a bedroom light switched off by hand came back on with the next movement five seconds later, three times
+HAND_OFF_STILL = timedelta(minutes=10)
 EVENT_MOTION_LIGHTS = f"{DOMAIN}_motion_lights"
 EVENT_MOTION_LIGHT = f"{DOMAIN}_motion_light"
 
@@ -111,6 +115,7 @@ class MotionLights:
         self.paused: set[str] = set()  # lights something else is running for now (disco mode)
         self._auto_off: dict[str, datetime] = {}  # light -> when we last switched it off for no movement
         self.stretch: dict[str, int] = {}  # light -> how many times its own wait it's waiting now
+        self._hand_off: dict[str, datetime] = {}  # light -> switched off by hand; last movement since
 
     # ----- storage ---------------------------------------------------------------
     async def async_load(self) -> None:
@@ -351,9 +356,15 @@ class MotionLights:
 
     @callback
     def _light_changed(self, rule: MotionRule, event: Event[EventStateChangedData]) -> None:
+        new, old = event.data["new_state"], event.data["old_state"]
+        mine = event.context.id in self._ours.get(rule.light, ())
+        if new is not None and old is not None and not mine:
+            if old.state == STATE_ON and new.state == STATE_OFF:
+                self._hand_off[rule.light] = dt_util.utcnow()  # someone wants it off: don't put it straight back on
+            elif new.state == STATE_ON:
+                self._hand_off.pop(rule.light, None)
         if rule.light not in self._ours:
             return
-        new = event.data["new_state"]
         if new is None or new.state != STATE_ON:
             self._release(rule.light)
             return
@@ -396,6 +407,12 @@ class MotionLights:
         light = self.hass.states.get(rule.light)
         if light is None:
             return
+        if (held := self._hand_off.get(rule.light)) is not None:
+            if light.state != STATE_ON and dt_util.utcnow() - held < HAND_OFF_STILL:
+                self._hand_off[rule.light] = dt_util.utcnow()  # still in use: keep waiting for the room to be still
+                self._note(rule, "stayed off: switched off by hand")
+                return
+            self._hand_off.pop(rule.light, None)
         if self._custom_quiet(rule):
             if light.state == STATE_ON:
                 self._off_during_quiet(rule)
@@ -440,6 +457,8 @@ class MotionLights:
 
     @callback
     def _on_still(self, rule: MotionRule) -> None:
+        if rule.light in self._hand_off:
+            self._hand_off[rule.light] = dt_util.utcnow()  # the still time counts from the last movement
         if rule.light not in self._ours or rule.light in self.paused:
             return
         self._cancel_timer(rule.light)

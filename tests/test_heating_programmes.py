@@ -73,8 +73,10 @@ async def _setup(hass, **extra):
 
 
 async def test_runs_on_and_off_through_the_page(hass: HomeAssistant, freezer, hass_ws_client, hass_admin_user):
+    # start before the first period: on the real clock this failed on Monday 16 Nov, inside its 15:00-17:00 period
+    ws = await hass_ws_client(hass)  # signed in first: moving the clock back would make its token invalid
+    freezer.move_to(dt_util.as_utc(at(0, 4, 0)))
     entry = await _setup(hass)
-    ws = await hass_ws_client(hass)
     await ws.send_json({"id": 1, "type": "sentient/heating/programme/save", "programme": DAY})
     saved = (await ws.receive_json())["result"]
     assert saved["id"] and len(saved["periods"]) == 3
