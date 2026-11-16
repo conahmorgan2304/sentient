@@ -51,6 +51,7 @@ async def test_times_are_said_to_the_minute(hass: HomeAssistant) -> None:
     prompt = await _prompt(hass)
     assert "say it to the minute" in prompt
     assert "\"half past\" when it wasn't on the half hour" in prompt  # 16 Nov: 08:34 was said "half past eight"
+    assert "start 21st and end 22nd is just the 21st" in prompt  # 16 Nov: an all-day event said a day early
     # 16 Nov: "Is it on?" with nothing said before was answered about the coffee machine
     assert "ask which one they mean" in prompt and "don't pick a device" in prompt
     # 16 Nov: told the scooter "was packed up just after one", it agreed without looking
