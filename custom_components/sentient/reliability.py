@@ -63,6 +63,10 @@ PAST = re.compile(r"\b(?:has|have|had|did|was|were|last|earlier|yesterday|today|
                   r"recently|ago|been|happened|overnight|previously)\b", re.I)
 
 
+# a tool result that says it hasn't happened yet
+NOT_DONE = {"pending", "queued", "accepted", "unverified", "waiting", "scheduled_retry"}
+
+
 def _short(text: str, limit: int) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
@@ -98,8 +102,18 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
     ``actions`` are tool names that change something (a successful one counts as having done something)."""
     out: list[dict[str, str]] = []
     outcomes = [_tool_outcome(t) for t in tools]
-    # No error from an action-classified tool is not proof it executed.
-    did = any(changed for _name, _err, changed in outcomes)
+    # Sentient's own action tools (``actions``) report a failure as an error, so one that comes back without an
+    # error or a "not done yet" status did what it was asked. 16 Nov: 1.11.11 stopped counting them, and every
+    # reminder, watch or announcement that worked was logged as a voice problem. Home Assistant's own intents still
+    # need a named success target, and anything else needs an explicit success.
+    def sentient_done(index: int, name: str, err: str | None) -> bool:
+        if name not in actions or err:
+            return False
+        result = tools[index].get("tool_result")
+        status = str(result.get("status") or "").casefold() if isinstance(result, dict) else ""
+        return status not in NOT_DONE and not (isinstance(result, dict) and result.get("done") is False)
+
+    did = any(changed or sentient_done(i, name, err) for i, (name, err, changed) in enumerate(outcomes))
     for i, (name, err, _changed) in enumerate(outcomes):
         if not err:
             continue
@@ -113,7 +127,9 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         # A Sentient action tool can have its own success contract (watch IDs,
         # reminder IDs, etc). Don't call such a response a failed action.
         # Keep it distinct from a turn in which no action tool ran at all.
-        attempted_action = any(name in actions for name, _err, _changed in outcomes)
+        # an action ran without an error but isn't known to have finished ("pending"); if every action errored,
+        # saying it was done is a plain false claim
+        attempted_action = any(name in actions and not err for name, err, _changed in outcomes)
         out.append({"kind": "unverified" if attempted_action else "claimed_done",
                     "detail": "action outcome not verified" if attempted_action else "no action in this turn succeeded"})
     if said_clean and (m := OFFER.search(said_clean)):

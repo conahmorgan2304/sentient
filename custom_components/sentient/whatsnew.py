@@ -15,10 +15,19 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.11.13": [
+        "Where the voice went wrong: a reminder, watch or announcement that worked is no longer logged as a voice problem (\"reported completion without a recognised success result\"), which 1.11.11 started doing. One that says it isn't finished yet is still noted, and \"done\" after a tool failed is still a false claim.",
+        "The \"Unified household evidence lookup\" setting now has a description, and French text.",
+    ],
     "1.11.12": [
         "Self-test: a plain \"Yes, it is.\" or \"No, it isn't.\" now counts as a right answer to \"Is the light on?\". It was marked wrong even when it was right, which put a false self-test failure in house health.",
         "Self-test: it now sees which tools the voice used for each answer. Before, every answer showed none, so a failed look-up (like a camera check) could still be marked right.",
         "Self-test: the most-asked question is no longer asked a second time when it's already one of the checks (\"Is the alarm on?\" came up twice).",
+    ],
+    "1.11.11": [
+        "Guarded voice agents can now use the read-only look-ups too (history, why something happened, camera activity), with the same privacy checks; switching things is still guarded.",
+        "Where the voice went wrong: answering about the past now needs a look-up that actually covers the past, not just any tool, and two people asking the same thing in different rooms are no longer merged into one.",
+        "New optional setting, off by default: one look-up that checks the house record, timeline and cameras together.",
     ],
     "1.11.10": [
         "Where the voice went wrong: a script that reports it worked (like showing a camera on the Echo Show) now counts as having done something, instead of \"said it was done, but nothing was done\".",

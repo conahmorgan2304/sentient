@@ -238,3 +238,23 @@ def test_existing_why_tool_counts_as_historical_evidence() -> None:
     tool = {"tool_name": "sentient_why", "tool_result": {"investigation": {"findings": []}}}
     assert "no_evidence" not in _kinds(
         "why did the hall light go off?", "I found no recorded reason.", [tool])
+
+
+def test_sentient_actions_that_worked_are_not_voice_problems() -> None:
+    """16 Nov: 1.11.11 logged every reminder, watch or announcement that worked as "reported completion without a
+    recognised success result"."""
+    from custom_components.sentient.conversations import SENTIENT_ACTIONS
+
+    actions = frozenset(SENTIENT_ACTIONS)
+    reminder = {"tool_name": "sentient_remind", "tool_result": {"reminder": {"what": "Bins", "when": "19:00"}}}
+    assert _kinds("remind me at seven to put the bins out", "Done, I'll remind you at seven.", [reminder],
+                  actions=actions) == []
+    spoken = {"tool_name": "sentient_announce", "tool_result": {"spoken": True, "speakers": ["Kitchen"]}}
+    assert _kinds("tell the kitchen tea's ready", "Done, I've told the kitchen.", [spoken], actions=actions) == []
+    # an action that failed, then "done", is still a false claim — not merely unverified
+    failed = {"tool_name": "sentient_remind", "tool_result": {"error": "That time has passed"}}
+    kinds = _kinds("remind me at seven", "Done.", [failed], actions=actions)
+    assert "claimed_done" in kinds and "unverified" not in kinds
+    # and one that says it hasn't happened yet is still unverified
+    waiting = {"tool_name": "sentient_watch", "tool_result": {"status": "queued"}}
+    assert "unverified" in _kinds("watch the gate", "Done, I'm watching it.", [waiting], actions=actions)
