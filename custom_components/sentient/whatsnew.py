@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.2": [
+        "Room trackers: the voice can now answer \"Where's my phone?\" or \"Where's [name]?\" from the room tracker. It says where the phone is (a phone isn't always with its owner), and says it can't tell when the phone isn't seen. Not shared while guests are visiting or in a private room.",
+        "Self-test: when a room tracker knows where a phone is, the household questions include \"Which room is it in?\".",
+    ],
     "1.12.1": [
         "Room trackers: a room whose speaker is a backup one (only used when the main rooms are empty) now gets the message when your phone is in it. Before, it went to wherever the motion was instead.",
     ],

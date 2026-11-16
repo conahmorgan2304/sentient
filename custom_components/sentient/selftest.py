@@ -400,6 +400,17 @@ class SelfTest:
                                 energy_check, "energy"))
             break
 
+        # where a room tracker puts a phone now (only when one says a room: "not seen" isn't a fair test)
+        from .room_trackers import describe, whose
+
+        if placed := next((t for t in describe(hass, self.options) if t["room"]), None):
+            room = placed["room"]
+
+            def where(answer: str, want=room) -> tuple[bool, str]:
+                return want.casefold() in answer.casefold(), f"the {want}"
+
+            out.append(Question("room tracker", f"Which room is {whose(placed['tracker'])} in?", where, "room"))
+
         def unknowable(answer: str) -> tuple[bool, str]:
             return bool(DOESNT_KNOW.search(answer)), "says it doesn't know (an invented answer is a fail)"
 

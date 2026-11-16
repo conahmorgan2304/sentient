@@ -13,6 +13,7 @@ would otherwise make the house think someone is about. Nothing is stored.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -40,6 +41,21 @@ def _area_for(hass: HomeAssistant, state: Any) -> str | None:
         if area.id == value or area.name.casefold() == wanted or wanted in {a.casefold() for a in area.aliases or ()}:
             return area.id
     return None
+
+
+def whose(name: str) -> str:
+    """'Conah's phone Area' -> 'Conah's phone': Bermuda and similar add the word 'Area' to the device's name."""
+    return re.sub(r"\s+(area|room)$", "", name.strip(), flags=re.IGNORECASE) or name
+
+
+def prompt_line(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
+    """Where the room trackers put things now, for the voice ('Where's ...?'). None when off or nothing set."""
+    known = describe(hass, options)
+    if not known:
+        return None
+    where = "; ".join(f"{whose(t['tracker'])}: {t['room'] or 'not seen in any room just now'}" for t in known)
+    return ("Room trackers (Bluetooth) place these now — " + where + ". A phone is usually with its owner but not "
+            "always: say where the phone is, not where the person definitely is. Not seen: say you can't tell.")
 
 
 def tracked_areas(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:

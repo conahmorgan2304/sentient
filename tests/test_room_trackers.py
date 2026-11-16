@@ -136,3 +136,30 @@ async def test_a_room_with_a_main_and_a_backup_speaker_uses_the_main_one(hass: H
     hass.states.async_set("assist_satellite.lounge_two", "idle")
     hass.states.async_set(PHONE, "Living Room", {"area_id": ids["Living Room"]})
     assert await _say(hass) == ["assist_satellite.lounge_two"]
+
+
+async def test_the_voice_and_the_self_test_know_where_the_phone_is(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.room_trackers import whose
+
+    entry, ids, _ = await _house(hass, freezer)
+    rt = entry.runtime_data
+
+    async def prompt() -> str:
+        return (await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en",
+                                                                     assistant=None, device_id=None))).api_prompt
+
+    assert whose("My phone Area") == "My phone" and whose("Area") == "Area"
+    hass.states.async_set(PHONE, "Kitchen", {"area_id": ids["Kitchen"], "friendly_name": "My phone Area"})
+    assert "My phone: Kitchen" in await prompt()
+    q = {q.key: q for q in rt.selftest.household_questions(rt)}["room tracker"]
+    assert q.ask == "Which room is My phone in?"
+    assert q.check("It's in the kitchen.")[0] and not q.check("It's in the hallway.")[0]
+    # not seen: the voice is told it can't tell, and the self-test doesn't ask
+    hass.states.async_set(PHONE, "unknown", {"friendly_name": "My phone Area"})
+    assert "My phone: not seen in any room just now" in await prompt()
+    assert "room tracker" not in {q.key for q in rt.selftest.household_questions(rt)}
+    # guests visiting: kept out of the prompt
+    rt.speech.guest_mode = True
+    assert "Room trackers" not in await prompt()
