@@ -376,3 +376,27 @@ async def test_switched_back_on_by_hand_clears_the_hold(hass: HomeAssistant, fre
     assert "light.landing" not in ml._hand_off
     await _motion(hass, True)
     assert len(on) == 2
+
+
+async def test_stay_off_by_hand_can_be_switched_off_per_light(hass: HomeAssistant, freezer) -> None:
+    """Live 16 Nov: the kitchen light switched off on the way out stayed off when he walked back in a minute later."""
+    entry = await _setup(hass, freezer, 19)
+    on = async_mock_service(hass, "light", "turn_on")
+    async_mock_service(hass, "light", "turn_off")
+    ml = entry.runtime_data.motion_lights
+    rule = ml.upsert({"light": "light.landing", "motion": ["binary_sensor.landing_motion"], "off_after": 3,
+                      "stay_off_by_hand": False})
+    assert rule.stay_off_by_hand is False and ml.listing()["rules"][0]["stay_off_by_hand"] is False
+    hass.states.async_set("light.landing", "on")
+    hass.states.async_set("light.landing", "off")  # switched off by hand on the way out
+    await hass.async_block_till_done()
+    assert "light.landing" not in ml._hand_off
+    freezer.tick(timedelta(minutes=1))
+    await _motion(hass, True)  # back in a minute later: on again
+    assert len(on) == 1
+    # switched back on: a hold left from before is cleared too
+    ml._hand_off["light.landing"] = dt_util.utcnow()
+    hass.states.async_set("light.landing", "off")
+    await _motion(hass, False)
+    await _motion(hass, True)
+    assert "light.landing" not in ml._hand_off

@@ -59,6 +59,9 @@ class MotionRule:
     respect_quiet: bool = True
     protect_voice_override: bool = False  # opt in: don't immediately undo a recent guarded voice command
     wait_longer: bool = True  # back on soon after going off: wait longer next time
+    # switched off by hand: stay off while the room is in use (bedrooms). Off: the next movement puts it back on
+    # (kitchens: switched off on the way out, wanted back on when you walk back in a minute later)
+    stay_off_by_hand: bool = True
     only_dark: bool = True
     off_after: float = 3  # minutes after the last movement
     brightness: int = 100  # percent; ignored for switches
@@ -163,6 +166,10 @@ class MotionLights:
             raise ValueError("Wait longer must be on or off")
         if not rule.wait_longer:
             self.stretch.pop(rule.light, None)
+        if type(rule.stay_off_by_hand) is not bool:
+            raise ValueError("Stay off when switched off by hand must be on or off")
+        if not rule.stay_off_by_hand:
+            self._hand_off.pop(rule.light, None)
         window = rule.quiet_window()
         if window:
             start, end = window
@@ -359,7 +366,7 @@ class MotionLights:
         new, old = event.data["new_state"], event.data["old_state"]
         mine = event.context.id in self._ours.get(rule.light, ())
         if new is not None and old is not None and not mine:
-            if old.state == STATE_ON and new.state == STATE_OFF:
+            if old.state == STATE_ON and new.state == STATE_OFF and rule.stay_off_by_hand:
                 self._hand_off[rule.light] = dt_util.utcnow()  # someone wants it off: don't put it straight back on
             elif new.state == STATE_ON:
                 self._hand_off.pop(rule.light, None)
@@ -407,7 +414,9 @@ class MotionLights:
         light = self.hass.states.get(rule.light)
         if light is None:
             return
-        if (held := self._hand_off.get(rule.light)) is not None:
+        if not rule.stay_off_by_hand:
+            self._hand_off.pop(rule.light, None)
+        elif (held := self._hand_off.get(rule.light)) is not None:
             if light.state != STATE_ON and dt_util.utcnow() - held < HAND_OFF_STILL:
                 self._hand_off[rule.light] = dt_util.utcnow()  # still in use: keep waiting for the room to be still
                 self._note(rule, "stayed off: switched off by hand")

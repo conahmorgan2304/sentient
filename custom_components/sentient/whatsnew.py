@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.4": [
+        "Motion lights: new per-light switch, \"Stay off after it's switched off by hand\". Leave it on for bedrooms, so a light you switch off stays off while you're still moving about. Switch it off for rooms like the kitchen, so walking back in turns the light on again. On by default, as before.",
+    ],
     "1.12.3": [
         "Voice: all-day calendar events are said on the right day. Before, an event on Saturday could be read out as \"Friday to Saturday\", because a calendar stores an all-day event as ending the next day.",
     ],

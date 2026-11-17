@@ -1985,6 +1985,7 @@ def ws_motion_list(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
             vol.Optional("respect_quiet"): bool,
             vol.Optional("protect_voice_override"): bool,
             vol.Optional("wait_longer"): bool,
+            vol.Optional("stay_off_by_hand"): bool,
             vol.Optional("quiet_start"): vol.Any(None, str),
             vol.Optional("quiet_end"): vol.Any(None, str),
             vol.Optional("only_dark"): bool,
