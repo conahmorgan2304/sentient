@@ -120,7 +120,7 @@ KINDS: dict[str, dict[str, Any]] = {
                              "said; the others within \"Ignore repeats for\" are the same visit",
             "messages": "What to say — one per line, picked at random",
             "speakers": "Say it on (empty = where people are)", "through_quiet": "Say it even in quiet hours",
-            "skip_entity": "Don't say it if this opened just before (e.g. the back door: someone going out)",
+            "skip_entity": "Don't say it if this opened just before (e.g. the back door: someone going out). With doorstep sensors above, only those sightings are skipped: a doorbell press is always said",
             "skip_seconds": "…within",
             "skip_while_open": "…or while it's still open (someone's in and out)", "actions": "Also do (e.g. show the camera on the tablets)",
             "cooldown_seconds": "Ignore repeats for",

@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.7": [
+        "Announcements: when an announcement also listens to doorstep sensors, its 'Don't say it if this opened just before' setting now only skips those sightings. A doorbell press is always said. Set it to the front door and someone going out is no longer announced as \"someone at the front door\", while a visitor ringing still always is.",
+    ],
     "1.12.6": [
         "Offers: say yes to \"Shall I put the kettle on?\" and it now says \"Okay, I'll put the kettle on.\", not \"Request sent.\"",
         "Fixed: a phone notification sent to a named phone made the house's change log throw an error, so that change wasn't recorded.",
