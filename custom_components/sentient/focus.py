@@ -54,8 +54,9 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_warnings"]),
         ("email", r"e-?mails?|inbox|\bmail\b",
          ["sentient_email"]),
-        ("calendar", r"calendar|clash|diary|appointment|meeting|double.?booked|busy (?:today|tomorrow)",
-         ["sentient_calendar_clashes"]),
+        ("calendar", r"calendar|clash|diary|appointment|meeting|double.?booked|busy (?:today|tomorrow)|what'?s on\b|"
+                     r"(?:this|next) week|weekend|any plans|my plans",
+         ["sentient_calendar", "sentient_calendar_clashes"]),
         ("routines", r"good ?night|morning|\bbed\b|routine|hoover|vacuum|party|disco|light show|scene|briefing|"
                      r"motion light|\brule\b|every time|whenever|automat",
          ["sentient_routines", "sentient_adopt_routine", "sentient_forget_routine", "sentient_run_routine",
