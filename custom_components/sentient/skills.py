@@ -117,6 +117,64 @@ async def async_calendar_clashes(hass: HomeAssistant, calendars: list[str], hour
     return {"clashes": find_clashes(events), "events": len(events), "hours": hours}
 
 
+def _day(d: Any, today: Any) -> str:
+    """'today', 'tomorrow' or 'Saturday 21 November' for a local date."""
+    gap = (d - today).days
+    return "today" if gap == 0 else "tomorrow" if gap == 1 else f"{d:%A} {d.day} {d:%B}"
+
+
+def describe_when(event: dict[str, Any], today: Any) -> str:
+    """When an event is, in words, worked out here so the voice never has to.
+
+    16 Nov: an all-day event on Saturday 21st (start 2026-11-21, end 2026-11-22 — the end is exclusive) was said
+    "Friday the twentieth to Saturday the twenty-first", then "Friday the twenty-first to Saturday the twenty-second".
+    """
+    from datetime import date
+
+    start, end = str(event.get("start") or ""), str(event.get("end") or "")
+    if "T" not in start:  # all day: the end date is the day after it finishes
+        first = date.fromisoformat(start[:10])
+        last = date.fromisoformat(end[:10]) - timedelta(days=1) if end else first
+        if last <= first:
+            return f"{_day(first, today)}, all day"
+        return f"{_day(first, today)} to {_day(last, today)}, all day"
+    begins = dt_util.as_local(dt_util.parse_datetime(start))
+    ends = dt_util.as_local(dt_util.parse_datetime(end)) if end else None
+    when = f"{_day(begins.date(), today)} at {begins:%H:%M}"
+    if ends is not None:
+        when += f" until {ends:%H:%M}" if ends.date() == begins.date() else f" until {_day(ends.date(), today)} {ends:%H:%M}"
+    return when
+
+
+async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days: int = 7) -> dict[str, Any]:
+    """Upcoming events with 'when' already in words, soonest first."""
+    if not calendars:
+        return {"events": [], "note": "No calendars are shared with the voice."}
+    now = dt_util.now()
+    end = dt_util.start_of_local_day() + timedelta(days=days)
+    try:
+        response = await hass.services.async_call(
+            "calendar", "get_events", {"entity_id": calendars, "start_date_time": now.isoformat(),
+                                       "end_date_time": end.isoformat()},
+            blocking=True, return_response=True)
+    except Exception as err:  # noqa: BLE001
+        return {"error": f"Couldn't read the calendars: {err}"}
+    today = now.date()
+    out = []
+    for cal, data in (response or {}).items():
+        st = hass.states.get(cal)
+        for e in (data or {}).get("events", []):
+            try:
+                when = describe_when(e, today)
+            except (TypeError, ValueError):
+                continue
+            out.append({"sort": str(e.get("start")), "calendar": st.name if st else cal, "what": e.get("summary"),
+                        "when": when, **({"where": e["location"]} if e.get("location") else {})})
+    out.sort(key=lambda e: e.pop("sort"))
+    return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "events": out,
+            **({} if out else {"note": "Nothing on in that time."})}
+
+
 # ----- security check ------------------------------------------------------------------------
 async def async_security_audit(hass: HomeAssistant, options: dict[str, Any]) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
