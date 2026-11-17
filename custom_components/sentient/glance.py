@@ -177,7 +177,8 @@ def knows(rt: Any) -> list[dict[str, Any]]:
 
 
 # what each timeline kind counts as on the overview's day chart
-DAY_GROUPS = {"light": "movement", "mode": "movement", "said": "spoke", "held": "spoke", "visitor": "outside",
+# (held back isn't said: live 17 Nov, one held rain warning made "63 said" by noon when 13 had been)
+DAY_GROUPS = {"light": "movement", "mode": "movement", "said": "spoke", "visitor": "outside",
               "security": "outside", "voice": "you", "learned": "you"}
 
 

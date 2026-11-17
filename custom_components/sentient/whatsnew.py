@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.8": [
+        "Overview: \"The day so far\" only counts what was actually said. Messages held back (for quiet hours, say) no longer count as said.",
+        "Timeline: the same message held back again for the same reason is one entry that shows how many times and when it was last held, instead of a new line every retry.",
+        "Rooms: a speaker's own occupancy sensors (like a Waveshare's \"Is speaking\") no longer count as someone in the room. So a speaker talking doesn't make its room look occupied, or the house look awake at night. A camera's motion sensor on a speaker or tablet still counts.",
+    ],
     "1.12.7": [
         "Announcements: when an announcement also listens to doorstep sensors, its 'Don't say it if this opened just before' setting now only skips those sightings. A doorbell press is always said. Set it to the front door and someone going out is no longer announced as \"someone at the front door\", while a visitor ringing still always is.",
     ],
