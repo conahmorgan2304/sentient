@@ -141,6 +141,23 @@ class Timeline:
     def _held(self, event: Event) -> None:
         d = event.data
         why = held_reason(self.hass, str(d.get("reason") or ""))
+        # live 17 Nov: one rain warning, held for quiet hours and retried every 10 minutes, was logged 48 times
+        # overnight (pushing older entries out of the timeline). The same thing held again for the same reason,
+        # with nothing said in between, is one entry: how many times and the latest are kept on it.
+        message, reason = d.get("message", ""), d.get("reason")
+        since = dt_util.utcnow() - timedelta(hours=12)
+        for item in self.items:
+            if (dt_util.parse_datetime(item.get("time") or "") or since) < since:
+                break
+            if item.get("kind") == "said" and item.get("text") == message:
+                break
+            if item.get("kind") == "held" and item.get("text") == message and item.get("reason") == reason:
+                item["times"] = int(item.get("times") or 1) + 1
+                item["last"] = dt_util.utcnow().isoformat()
+                item["detail"] = (f"held back: {why} · {item['times']} times, "
+                                  f"last at {dt_util.as_local(dt_util.utcnow()):%H:%M}" if why else item.get("detail"))
+                self._save()
+                return
         self.add("held", d.get("message", ""), f"held back: {why}" if why else None, reason=d.get("reason"), source=d.get("source"),
                  why=d.get("why"))
 

@@ -60,6 +60,30 @@ def area_of(hass: HomeAssistant, entity_id: str) -> str | None:
     return None
 
 
+# A speaker's own "occupancy" sensors ("Is speaking", "Playing") say the speaker is busy, not that someone is in
+# the room. Live 17 Nov: the Waveshare speakers' "Is speaking" counted as people, so a room looked lived-in
+# whenever it talked, and the kitchen speaker at night could look like someone up. A speaker's motion
+# sensor (a tablet's camera) is still movement, so only occupancy/presence ones on a speaker are left out.
+_SPEAKER_SENSORS: set[str] = set()
+
+
+def refresh_speaker_sensors(hass: HomeAssistant) -> None:
+    """Which occupancy/presence binary sensors belong to a voice satellite or media player device."""
+    reg = er.async_get(hass)
+    speaker_devices = {e.device_id for e in reg.entities.values()
+                       if e.device_id and e.domain in ("assist_satellite", "media_player")}
+    found = set()
+    for e in reg.entities.values():
+        if e.domain != "binary_sensor" or e.device_id not in speaker_devices:
+            continue
+        st = hass.states.get(e.entity_id)
+        cls = (st.attributes.get("device_class") if st else None) or e.device_class or e.original_device_class
+        if cls in ("occupancy", "presence"):
+            found.add(e.entity_id)
+    _SPEAKER_SENSORS.clear()
+    _SPEAKER_SENSORS.update(found)
+
+
 def _decayed_seconds(start: datetime, end: datetime, now: datetime, tau: float) -> float:
     """Integral of exp(-(now - t) / tau) dt over [start, end]."""
     if end <= start:
@@ -100,6 +124,8 @@ class ActivityTracker:
 
     # ----- lifecycle ----------------------------------------------------------------
     async def async_start(self) -> None:
+        refresh_speaker_sensors(self.hass)
+        self._unsub_registry = self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_changed)
         self._seed_from_states()
         await self._async_seed_from_history()
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed)
@@ -109,6 +135,13 @@ class ActivityTracker:
         if self._unsub:
             self._unsub()
             self._unsub = None
+        if unsub := getattr(self, "_unsub_registry", None):
+            unsub()
+            self._unsub_registry = None
+
+    @callback
+    def _registry_changed(self, _event: Event) -> None:
+        refresh_speaker_sensors(self.hass)
 
     # ----- feeding ------------------------------------------------------------------
     @staticmethod
@@ -117,6 +150,7 @@ class ActivityTracker:
             state is not None
             and state.domain == "binary_sensor"
             and state.attributes.get("device_class") in PRESENCE_CLASSES
+            and state.entity_id not in _SPEAKER_SENSORS
         )
 
     def _seed_from_states(self) -> None:
