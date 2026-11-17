@@ -151,9 +151,12 @@ class Ledger:
                 self.note_context(ctx, "home_assistant", event.data.get("domain"))
         # cloud devices often report a change a little later, under a new context: remember who asked for it
         data = event.data.get("service_data") or {}
-        targets = data.get("entity_id") or (data.get("target") or {}).get("entity_id") or []
+        # 17 Nov: a notify call's "target" is the phone or address it goes to (plain text), not an entity target
+        target = data.get("target")
+        targets = data.get("entity_id") or (target.get("entity_id") if isinstance(target, dict) else None) or []
         if isinstance(targets, str):
             targets = [targets]
+        targets = [t for t in targets if isinstance(t, str)] if isinstance(targets, (list, tuple)) else []
         if targets:
             cause = self.cause_of(ctx)
             now = event.time_fired.timestamp()

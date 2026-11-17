@@ -368,7 +368,7 @@ class MindSensor(_Base):
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
             "voice_check": None if rt.speech.guest_mode or not rt.options.get(CONF_LIVE_VOICE_CHECK, True) else rt.voice_checks.status(),
             "speech_deliveries": [] if rt.speech.guest_mode or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else list(rt.speech.deliveries)[:5],
-            "voice_timings": rt.ai.voice_timings.describe() if rt.options.get("voice_timing_diagnostics") and not rt.speech.guest_mode else [],
+            "voice_timings": timings if not rt.speech.guest_mode else [],
             "voice_timing_enabled": bool(rt.options.get("voice_timing_diagnostics")) and not rt.speech.guest_mode,
             "conversation_quality": (_conversation_quality(rt) if rt.options.get("voice_timing_diagnostics")
                                      and not rt.speech.guest_mode else {}),
@@ -384,9 +384,9 @@ class MindSensor(_Base):
             # Aggregate only: no names, camera images, conversation text or
             # device IDs. Hidden in guest mode and never authorises alerts.
             "cognitive_shadow": ({} if rt.speech.guest_mode or not rt.options.get("cognitive_shadow") or not rt.options.get("security_incidents")
-                                 or not getattr(rt.incidents, "cognitive", None) else rt.incidents.cognitive.summary()),
+                                 or not getattr(rt.incidents, "cognitive", None) else cognitive),
             "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
-                               else rt.intents.summary()),
+                               else intent_metrics),
             "learning_effectiveness": ({} if rt.speech.guest_mode else
                                        learning_report(cognitive=cognitive, intents=intent_metrics,
                                                        voice_timings=timings)),
