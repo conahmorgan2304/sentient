@@ -1155,3 +1155,18 @@ async def test_household_history_filters_requesting_users_permissions(hass: Home
         allowed = await _history_read_permission(hass, context)
         assert allowed("light.public") is True
         assert allowed("light.secret") is False
+
+
+async def test_a_notify_call_with_a_plain_text_target_is_fine(hass: HomeAssistant, caplog):
+    """17 Nov live: a service call whose "target" was plain text (a phone) raised in the ledger's listener."""
+    from homeassistant.const import EVENT_CALL_SERVICE
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    await hass.async_block_till_done(wait_background_tasks=True)
+    for data in ({"message": "hi", "target": "my_phone"}, {"message": "hi", "target": ["a", "b"]},
+                 {"entity_id": ["light.landing", 3]}):
+        hass.bus.async_fire(EVENT_CALL_SERVICE, {"domain": "notify", "service": "send", "service_data": data})
+    await hass.async_block_till_done()
+    assert rt.brain.ledger is not None
+    assert "Error running job" not in caplog.text and "has no attribute 'get'" not in caplog.text

@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.6": [
+        "Offers: say yes to \"Shall I put the kettle on?\" and it now says \"Okay, I'll put the kettle on.\", not \"Request sent.\"",
+        "Fixed: a phone notification sent to a named phone made the house's change log throw an error, so that change wasn't recorded.",
+        "The Mind sensor does less work each time it updates.",
+    ],
     "1.12.5": [
         "Voice: calendar questions (\"What's on this week?\") are now answered by Sentient's own calendar reader. It works out each event's day itself (\"Saturday 21 November, all day\") instead of leaving the AI to work it out, which got all-day events a day out. It reads the calendars you've exposed to Assist, and none of it is shared with guests or in a private room.",
     ],

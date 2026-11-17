@@ -8,6 +8,8 @@ feedback, so an offer that keeps getting turned down is asked less.
 
 from __future__ import annotations
 
+import re
+
 from copy import deepcopy
 from datetime import datetime, timedelta
 import logging
@@ -27,6 +29,16 @@ from .shortcuts import async_run_actions
 
 _LOGGER = logging.getLogger(__name__)
 ANSWER_FOR = timedelta(minutes=2)
+
+
+_SHALL_I = re.compile(r"\b(?:shall|should|can|could) i ([^?.!]+)[?.!]", re.I)
+
+
+def agreed(question: str) -> str:
+    """What to say after a yes, from the question asked: "Shall I put the kettle on?" -> "Okay, I'll put the kettle on." """
+    if found := _SHALL_I.search(question or ""):
+        return f"Okay, I'll {found.group(1).strip()}."
+    return "Okay, I'll do that now."
 
 
 def version(offer):
@@ -178,7 +190,8 @@ class Offers:
             consumed = True
             if kind == "yes":
                 out = await self.async_accept(offer["id"], True, expected=expected, allowed=valid, allow_disabled=force)
-                return "Request sent." if out.get("done") else str(out.get("error") or "That didn't work.")
+                # 17 Nov: "Fancy a brew? Shall I put the kettle on?" — "yes" got "Request sent." Say what's happening
+                return agreed(question) if out.get("done") else str(out.get("error") or "That didn't work.")
             if kind == "done":  # "it's already on": not a no to the offer itself
                 rt.timeline.add("mode", f"Already done: {offer['name']}")
                 return "Right, it's already sorted."
@@ -191,7 +204,8 @@ class Offers:
                 extra_prompt=(
                     f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
                     f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
-                    f"If they say no, call it with accept false. Then answer briefly."
+                    f"If they say no, call it with accept false. Then say in a few words what you're doing, as a person would "
+                    f"(\"Okay, I'll put the kettle on.\") — never \"request sent\" or \"command sent\"."
                 ),
             )
         return result.as_dict()

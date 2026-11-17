@@ -216,7 +216,7 @@ async def test_offer_answer_is_consumed_once(hass):
     await obj.async_ask(item)
     answer = rt.speech.async_ask.call_args.kwargs['on_answer']
     with patch('custom_components.sentient.offers.async_run_actions', new=AsyncMock()) as actions:
-        assert await answer('yes') == 'Request sent.'
+        assert await answer('yes') == "Okay, I'll do that now."
         assert 'no longer awaiting' in await answer('yes')
     assert actions.await_count == 1
 
@@ -272,7 +272,7 @@ async def test_explicit_offer_test_retains_disabled_rule_override(hass):
     await obj.async_ask(item, force=True)
     answer = rt.speech.async_ask.call_args.kwargs['on_answer']
     with patch('custom_components.sentient.offers.async_run_actions', new=AsyncMock()) as actions:
-        assert await answer('yes') == 'Request sent.'
+        assert await answer('yes') == "Okay, I'll do that now."
     actions.assert_awaited_once()
 
 
@@ -423,3 +423,12 @@ async def test_forgotten_camera_watch_does_not_send_prepared_image(hass):
         with pytest.raises(HomeAssistantError, match='no AI request was sent'):
             await rt.watches._async_ask(watch)
     generate.assert_not_awaited()
+
+
+def test_a_yes_to_an_offer_is_answered_like_a_person() -> None:
+    """17 Nov: "Fancy a brew? Shall I put the kettle on?" — "yes" was answered "Request sent." """
+    from custom_components.sentient.offers import agreed
+
+    assert agreed("Fancy a brew? Shall I put the kettle on?") == "Okay, I'll put the kettle on."
+    assert agreed("Brr, 14 degrees. Shall I warm the house up?") == "Okay, I'll warm the house up."
+    assert agreed("Would you like the heating on?") == "Okay, I'll do that now."
