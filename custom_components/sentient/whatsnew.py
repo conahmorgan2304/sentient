@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.9": [
+        "Front door: when someone is seen on the doorstep, the announcement now waits for the door camera's look (usually 3–5 seconds) and stays quiet if the camera sees nobody there. A doorbell press is still said straight away, and if the camera look fails or is slow it's said anyway after at most 12 seconds.",
+    ],
     "1.12.8": [
         "Overview: \"The day so far\" only counts what was actually said. Messages held back (for quiet hours, say) no longer count as said.",
         "Timeline: the same message held back again for the same reason is one entry that shows how many times and when it was last held, instead of a new line every retry.",

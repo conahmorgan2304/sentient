@@ -19,11 +19,14 @@ from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
+from .const import EVENT_VISITOR
 from .items import Items
 from .kinds import variant
 from .shortcuts import async_run_actions
 
 _LOGGER = logging.getLogger(__name__)
+
+DOOR_LOOK_WAIT = 12  # seconds a doorstep sighting waits for the door camera's look (it usually takes 2–3)
 _EVENTISH = ("event", "input_button", "button", "scene")
 HOLD_AFTER = 60  # seconds of quiet after an announcement
 OPEN_STATES = ("on", "open", "opening", "unlocked")
@@ -46,6 +49,7 @@ class Announcements:
         self._unsub = None
         self._event_unsubs: dict[str, Any] = {}
         self._skipped: dict[str, Any] = {}  # when a sighting was last left unsaid, so the timeline notes it once
+        self._waiting: dict[str, Any] = {}  # doorstep sightings waiting on the door camera's look
 
     @callback
     def async_start(self) -> None:
@@ -100,6 +104,10 @@ class Announcements:
         """
         rt = self._rt()
         now = dt_util.utcnow()
+        if not sighting and self._waiting.pop(item["id"], None) is not None:
+            self.items.update(item["id"], last=now.isoformat())  # the bell rang while a sighting waited on the camera
+            self.hass.async_create_task(self.async_announce(item))
+            return
         last = dt_util.parse_datetime(item.get("last") or "")
         if last and now - last < timedelta(seconds=float(item.get("cooldown_seconds") or 0)):
             return
@@ -120,8 +128,75 @@ class Announcements:
                 if not item.get("also_entities"):
                     self.items.update(item["id"], last=now.isoformat())
                 return
+        before = item.get("last")
         self.items.update(item["id"], last=now.isoformat())
+        if sighting and (sensor := self._door_look_for(item)):
+            self._waiting[item["id"]] = now
+            self.hass.async_create_task(self._async_after_door_look(item, now, before, sensor))
+            return
         self.hass.async_create_task(self.async_announce(item))
+
+    def _door_look_for(self, item: dict[str, Any]) -> str | None:
+        """A doorstep sighting the door camera also looks at (its 'who's at the door' look), if any."""
+        visitors = getattr(self._rt(), "visitors", None)
+        if visitors is None or not visitors.camera:
+            return None
+        watched = visitors.triggers | visitors.doorstep
+        return next((e for e in item.get("also_entities") or [] if e in watched), None)
+
+    async def _async_after_door_look(self, item: dict[str, Any], when, before: str | None, sensor: str) -> None:
+        """Wait (a few seconds at most) for the door camera's look, and stay quiet if it saw nobody.
+
+        Live 17–18 Nov: a doorstep sighting said "Someone is at the front door." while the camera's look at the same
+        moment said "empty yard" / "nobody at the door". The bell itself never waits; if the look fails, is
+        off for today or is slow, it's said as before.
+        """
+        rt = self._rt()
+        visitors = rt.visitors
+        # did the camera start a look for this sighting? It decides on the same state change, so give its listener
+        # a turn. If it didn't (just looked, the front door opened first, zone looks off), there's nothing to wait for.
+        started = None
+        for _ in range(5):
+            if (last := getattr(visitors, "_last", None)) and last >= when - timedelta(seconds=1):
+                started = last
+                break
+            await asyncio.sleep(0)
+        if started is None:
+            if self._waiting.pop(item["id"], None) is not None:
+                await self.async_announce(item)
+            return
+
+        def fresh() -> dict | None:
+            latest = visitors.log[0] if visitors.log else None
+            seen = dt_util.parse_datetime(str((latest or {}).get("time") or ""))
+            return latest if seen and seen >= started - timedelta(seconds=1) else None
+
+        visit = fresh()
+        if visit is None:
+            done = asyncio.Event()
+
+            @callback
+            def _looked(_event: Event) -> None:
+                done.set()
+
+            unsub = self.hass.bus.async_listen(EVENT_VISITOR, _looked)
+            try:
+                async with asyncio.timeout(DOOR_LOOK_WAIT):
+                    while (visit := fresh()) is None:
+                        done.clear()
+                        await done.wait()
+            except TimeoutError:
+                visit = None
+            finally:
+                unsub()
+        if self._waiting.pop(item["id"], None) is None:
+            return
+        if visit is not None and visit.get("kind") == "nobody":
+            self.items.update(item["id"], last=before)  # not said, so a doorbell press straight after still is
+            rt.timeline.add("noticed", f"{item['name']}: not announced",
+                            f"the door camera saw nobody ({visit.get('description') or 'nobody'})")
+            return
+        await self.async_announce(item)
 
     async def async_announce(self, item: dict[str, Any]) -> dict[str, Any]:
         rt = self._rt()

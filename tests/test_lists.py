@@ -1,5 +1,6 @@
 """Offers, announcements, alarms and camera checks."""
 
+import asyncio
 from datetime import datetime, timedelta
 
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
@@ -185,6 +186,59 @@ async def test_someone_going_out_isnt_someone_at_the_door(hass: HomeAssistant, f
     hass.states.async_set("binary_sensor.doorstep_person", "on")
     await hass.async_block_till_done()
     assert len(said) == 2
+
+
+async def test_a_doorstep_sighting_waits_for_the_camera_and_stays_quiet_if_it_saw_nobody(hass: HomeAssistant, freezer,
+                                                                                     monkeypatch) -> None:
+    """Live 18 Nov: the camera's look said "empty yard", then "Someone is at the front door." was said anyway."""
+    from custom_components.sentient.const import EVENT_VISITOR
+
+    freezer.move_to(dt_util.as_utc(_t(14, 0, 0)))
+    hass.states.async_set("binary_sensor.doorstep_person", "off")
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    item = rt.lists["announce"].upsert({
+        "name": "Doorbell", "event_type": "doorbell_pressed", "messages": "Someone is at the front door.",
+        "also_entities": ["binary_sensor.doorstep_person"], "cooldown_seconds": 60,
+    })
+
+    door = rt.visitors  # the door camera: looking at the doorstep sensor, but no real look in the test
+    monkeypatch.setattr(type(door), "camera", property(lambda _s: "camera.door"))
+    monkeypatch.setattr(type(door), "triggers", property(lambda _s: {"binary_sensor.doorstep_person"}))
+
+    async def no_real_look(*_a, **_k):
+        return None
+
+    monkeypatch.setattr(door, "async_visit", no_real_look)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+
+    async def sighting(kind: str):
+        freezer.tick(timedelta(minutes=5))
+        door._last = dt_util.utcnow()  # the camera starts its look
+        before = len(said)
+        hass.states.async_set("binary_sensor.doorstep_person", "on")
+        for _ in range(10):
+            await asyncio.sleep(0)
+        assert len(said) == before  # waiting on the camera
+        door.log.appendleft({"time": dt_util.now().isoformat(), "kind": kind, "description": "empty yard"})
+        hass.bus.async_fire(EVENT_VISITOR, {"count": len(door.log)})
+        await hass.async_block_till_done()
+        hass.states.async_set("binary_sensor.doorstep_person", "off")
+
+    await sighting("nobody")
+    assert said == []
+    assert next(i for i in rt.lists["announce"].listing() if i["id"] == item["id"]).get("last") is None  # not counted: a ring straight after is said
+    hass.bus.async_fire("doorbell_pressed")
+    await hass.async_block_till_done()
+    assert len(said) == 1
+    await sighting("visitor")
+    assert len(said) == 2
+    # no look started (the camera's busy, the door opened first…): said without waiting for one
+    freezer.tick(timedelta(minutes=5))
+    door._busy = True
+    hass.states.async_set("binary_sensor.doorstep_person", "on")
+    await hass.async_block_till_done()
+    assert len(said) == 3
 
 
 async def test_alarm_rings_runs_actions_then_room_actions(hass: HomeAssistant, freezer) -> None:
