@@ -1014,14 +1014,23 @@ class BackedUpAgent(conversation.ConversationEntity):
             rt.timeline.add("health", "Voice answered by the backup agent", f"the AI failed: {why[:120]}")
             if (selfaware := getattr(rt, "selfaware", None)) is not None:
                 selfaware.voice_fell_back(why)
-        try:
-            async with asyncio.timeout(BACKUP_TIMEOUT):
-                result = await self._converse(self.backup_agent, user_input)
-            if result.response.response_type != intent.IntentResponseType.ERROR:
-                return result
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("Backup agent failed too: %s", err)
-            result = None
+        result = None
+        # An AI backup (another model, another key) first; then Home Assistant's own agent, which needs no internet,
+        # so lights and heating still work when every AI is out.
+        # Only for a command, though: asked "what's the news", Home Assistant's own agent answers with the time.
+        from .sessions import COMMAND as _COMMAND
+
+        backups = [self.backup_agent] + ([DEFAULT_BACKUP_AGENT] if self.backup_agent != DEFAULT_BACKUP_AGENT
+                                         and _COMMAND.search(user_input.text or "") else [])
+        for backup in backups:
+            try:
+                async with asyncio.timeout(BACKUP_TIMEOUT):
+                    result = await self._converse(backup, user_input)
+                if result.response.response_type != intent.IntentResponseType.ERROR:
+                    return result
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Backup agent %s failed too: %s", backup, err)
+                result = None
         response = intent.IntentResponse(language=user_input.language)
         response.async_set_speech(NOT_ANSWERING)
         try:  # so a streaming pipeline speaks it too
