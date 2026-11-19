@@ -24,9 +24,11 @@ def test_every_settings_page_has_exactly_one_home():
 
 
 def test_folding_sections_hold_every_setting_of_their_page_once():
+    from custom_components.sentient.const import ALWAYS_ON
+
     for gid, sections in SECTIONS.items():
-        keys = list(next(g[4] for g in GROUPS if g[0] == gid))
-        named = [n for s in sections for n in s["names"]]
+        keys = [k for k in next(g[4] for g in GROUPS if g[0] == gid) if k not in ALWAYS_ON]
+        named = [n for s in sections for n in s["names"] if n not in ALWAYS_ON]
         assert sorted(named) == sorted(keys), gid
         assert any(s["open"] for s in sections), f"{gid} opens with every section folded"
 

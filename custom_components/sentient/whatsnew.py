@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.13.0": [
+        "Settings: 10 reliability checks are now always on and no longer shown as switches: rechecking unconfirmed actions, the live voice check, speech delivery history, the voice mistakes log, self-check, duplicate check, routine checks, the camera pre-filter, hiding camera sub-streams and the battery forecast. Any you'd switched off are turned back on.",
+        "Settings: the less-used voice checks, diagnostics and trials move to a closed \"Advanced\" section at the bottom of the Voice page, and the AI budget section on the Mind page is now \"Advanced: AI budget & tuning\".",
+    ],
     "1.12.9": [
         "Vacuum: stopping off its dock (remote control, a pause) no longer counts as stuck or says it's finished each time. A run finishes after 10 minutes stopped, and it only counts as not making it back if it's still off its dock after an hour. Earlier counts, which included remote-control sessions, are cleared.",
         "Voice: \"What did you say?\" now repeats the last thing said out loud in that room.",

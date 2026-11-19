@@ -461,9 +461,11 @@ def _all_fields() -> dict[str, tuple[Any, Any]]:
 
 
 def group_schema(group_id: str) -> vol.Schema:
+    from .const import ALWAYS_ON
+
     keys = next(g[4] for g in GROUPS if g[0] == group_id)
     fields = _all_fields()
-    return vol.Schema({fields[k][0]: fields[k][1] for k in keys if k in fields})
+    return vol.Schema({fields[k][0]: fields[k][1] for k in keys if k in fields and k not in ALWAYS_ON})
 
 
 def _serialize(schema: vol.Schema) -> list[dict[str, Any]]:
@@ -1386,21 +1388,23 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "duck_media", "room_volume", "full_volume_speakers", "follow_you", "follow_minutes", "all_occupied",
             "room_tracking", "room_trackers"]},
         {"title": "Echo speakers & voices", "open": False, "names": [
-            "media_speakers", "media_important_only", "alexa_tts_only", "tts_entity", "stream_voice_replies"]},
+            "media_speakers", "media_important_only", "alexa_tts_only", "tts_entity"]},
         {"title": "Personality & house rules", "open": False, "names": [
             "personality", "personality_notes", "style_feedback", "style_notes", "chattiness", "conversation_style",
             "banned_words", "house_rules", "no_security_offers", "confirm_kinds", "pronounce_names", "pronunciations"]},
         {"title": "Conversations", "open": False, "names": [
             "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
-            "contextual_followups", "recent_followup_context", "conversation_cues", "specific_clarification",
-            "behaviour_explanations", "current_house_context", "house_context_entities", "house_context_updates",
-            "conversation_recovery", "focused_tools", "ask_later", "put_right", "routine_verify", "music", "music_alexa", "music_alexa_service"]},
+            "contextual_followups", "recent_followup_context", "conversation_cues",
+            "current_house_context", "house_context_entities", "house_context_updates",
+            "ask_later", "put_right", "music", "music_alexa", "music_alexa_service"]},
         {"title": "Guarded device control", "open": False, "names": [
-            "guarded_control", "voice_unlock", "voice_undo", "evidence_awareness", "action_recovery", "recheck_unconfirmed"]},
+            "guarded_control", "voice_unlock", "voice_undo", "recheck_unconfirmed"]},
         {"title": "Language", "open": False, "names": [
             "voice_language", "speak_house_language", "automatic_language", "remember_language_phrases"]},
-        {"title": "Checks & diagnostics", "open": False, "names": [
-            "live_voice_check", "speech_delivery_history", "speech_failure_notification", "voice_timing_diagnostics", "reliability_log", "unified_evidence"]},
+        {"title": "Advanced: diagnostics, checks & trials", "open": False, "names": [
+            "voice_timing_diagnostics", "unified_evidence", "focused_tools", "stream_voice_replies",
+            "speech_failure_notification", "conversation_recovery", "specific_clarification", "behaviour_explanations",
+            "evidence_awareness", "action_recovery"]},
     ],
     "mind": [
         {"title": "Thinking", "open": True, "names": [
@@ -1408,7 +1412,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "foresight_time", "thoughts", "normal_day", "knowledge_card", "goals"]},
         {"title": "Learning & suggestions", "open": False, "names": [
             "learn_corrections", "share_learning", "proposals", "self_adjust", "rules"]},
-        {"title": "AI budget", "open": False, "names": [
+        {"title": "Advanced: AI budget & tuning", "open": False, "names": [
             "daily_ai_limit", "budget_drive", "budget_noticing", "budget_cameras", "prompt_recent"]},
         {"title": "Self-checks & privacy", "open": False, "names": ["self_check", "self_test", "self_test_household", "privacy_log"]},
     ],
