@@ -453,6 +453,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
+    memory.use_tags = bool(_entry_options(entry).get("memory_tags"))
     from .own import OwnActions
 
     own = OwnActions(hass, entry.entry_id)  # first, so everything after can mark what it does as the house's own
@@ -888,6 +889,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._questions.clear()
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
+    entry.runtime_data.memory.use_tags = bool(options.get("memory_tags"))
     _manual_pages(hass, entry.runtime_data, options)
     entry.runtime_data.security_events.configure(options)
     entry.runtime_data.incidents.configure(options)

@@ -47,6 +47,29 @@ _COMMON = {"that", "this", "with", "have", "there", "their", "they", "them", "wh
            "about", "into", "only", "just", "been", "were", "which", "would", "could", "should", "every", "after"}
 
 
+REPEAT_HOURS = 24
+_SENTENCE = __import__("re").compile(r"[^.!?]+")
+
+
+def signatures(reply: str) -> list[str]:
+    """Short hashes of a reply's opening and of each of its longer sentences — so a reply said word for word
+    before can be counted without keeping any words (19 Nov: "it repeats the same thing")."""
+    import hashlib
+
+    def sig(words: list[str]) -> str:
+        return hashlib.sha1(" ".join(words).encode()).hexdigest()[:10]
+
+    out: list[str] = []
+    words = __import__("re").findall(r"[a-z0-9']+", (reply or "").casefold())
+    if len(words) >= 5:
+        out.append("o" + sig(words[:5]))  # the same opening
+    for sentence in _SENTENCE.findall((reply or "").casefold()):
+        w = __import__("re").findall(r"[a-z0-9']+", sentence)
+        if len(w) >= 6:
+            out.append("s" + sig(w))
+    return out[:8]
+
+
 def _shows_in(memory: str, text: str, need: int = 2) -> bool:
     """Whether a memory's own words show up in a piece of text (at least *need* of its words)."""
     words = {w for w in _WORD.findall((memory or "").casefold()) if w not in _COMMON}
@@ -94,6 +117,13 @@ class ConversationQuality:
                 "memories_offered": len(offered), "memories_used": sum(_shows_in(m, reply) for m in offered),
                 "relevant_offered": sum(_shows_in(m, text, 1) for m in offered),
                 "recalled": bool(recalled), "memory_corrected": bool(corrected)}
+        sigs = signatures(reply)
+        if sigs and not error:
+            since = (dt_util.utcnow() - __import__("datetime").timedelta(hours=REPEAT_HOURS)).isoformat()
+            before = {x for t in self.turns if t.get("time", "") >= since for x in t.get("sigs", [])}
+            turn["sigs"] = sigs
+            turn["repeated_opening"] = any(x[0] == "o" and x in before for x in sigs)
+            turn["repeated_sentence"] = any(x[0] == "s" and x in before for x in sigs)
         # a correction straight after an answer means that answer was wrong: count it against the turn before
         if kind == "correction" and self.turns:
             self.turns[-1]["corrected"] = True
@@ -127,6 +157,13 @@ class ConversationQuality:
                 "corrected": sum(bool(t.get("memory_corrected")) for t in turns),
                 "use_rate": rate(sum(t.get("memories_used", 0) > 0 for t in turns),
                                  sum(t.get("relevant_offered", 0) > 0 for t in turns)),
+            },
+            "repeats": {
+                "same_opening": sum(bool(t.get("repeated_opening")) for t in turns),
+                "same_sentence": sum(bool(t.get("repeated_sentence")) for t in turns),
+                "rate": rate(sum(bool(t.get("repeated_opening") or t.get("repeated_sentence")) for t in turns),
+                             sum("sigs" in t for t in turns)),
+                "note": f"A reply that starts with the same five words, or repeats a whole sentence, said in the {REPEAT_HOURS} hours before.",
             },
             "median_ms": round(median(times)) if len(times) >= MIN_TURNS else None,
             "note": "Counted from what's said, not what was meant: a correction is someone saying \"no, I meant…\" straight after.",

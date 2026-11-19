@@ -313,3 +313,34 @@ async def test_a_briefing_that_mentions_the_animals_takes_what_was_kept_about_th
                AsyncMock(return_value={"animals_outside": ["the rabbit hutch is at -1 degrees"]})):
         await rt.upkeep.async_speak_briefing()
     assert [q["source"] for q in rt.followyou.queue] == ["parcel"]
+
+
+async def test_related_words_let_recall_find_a_memory_by_meaning(hass: HomeAssistant) -> None:
+    """'Fancy a cuppa?' shares no words with 'the kettle starts about nine': the nightly related words fix that."""
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    kettle = rt.memory.add("The kettle starts up around nine every morning.")
+    rt.memory.add("The bins go out on Thursday nights.")
+    assert rt.memory.search("fancy a cuppa", count_hits=False) == []
+    calls = _ai(hass, {"tags": f"{kettle.id}: brew, tea, cuppa, drink, kettle\nnonsense line\nabc123: ignored"})
+    result = await rt.upkeep.async_tag_memories()
+    assert result["tagged"] == 1 and len(calls) == 1
+    assert kettle.tags == ["brew", "tea", "cuppa", "drink"]  # its own word isn't repeated
+    assert rt.memory.search("fancy a cuppa", count_hits=False) == []  # switch off: words kept but not used
+    rt.memory.use_tags = True
+    assert rt.memory.search("fancy a cuppa", count_hits=False) == [kettle]
+    assert [m.id for m in rt.memory.untagged()] != [kettle.id]  # only the untagged one is asked about tomorrow
+    rt.memory.update(kettle.id, "The kettle starts up around ten every morning.")
+    assert kettle.tags == []  # new wording: worked out again
+
+
+async def test_the_speakers_own_memories_come_first(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    mem = entry.runtime_data.memory
+    mine = mem.add("Likes oat milk in tea.", owner="conah")
+    for fact in ("The shed key is on the hook.", "The loft ladder sticks.", "Bin day is Thursday.",
+                 "The porch light is on a timer.", "The cats are Cookie and Daisy.", "The boiler was serviced in May.",
+                 "The router is in the hallway.", "Spare bulbs are under the sink."):
+        mem.add(fact)
+    assert mine not in mem.for_prompt("", 6)
+    assert mem.for_prompt("", 6, owner="Conah")[0] is mine

@@ -261,6 +261,22 @@ def plain_briefing(facts: dict[str, Any]) -> str:
             out.append(first.rstrip(".") + ".")
     return " ".join(out[:5]) or "Nothing needs doing right now."
 
+def last_briefing(rt: Any) -> str | None:
+    """What the previous day's briefing said (12 to 36 hours ago), so today's doesn't say it all again —
+    18 and 19 Nov both said the vacuum had failed to dock three times and the door sensor batteries."""
+    timeline = getattr(rt, "timeline", None)
+    if timeline is None:
+        return None
+    cutoff = (dt_util.utcnow() - timedelta(hours=12)).isoformat()
+    for item in timeline.since(36, ["said"], 200):
+        if item["time"] <= cutoff and str(item.get("source") or "").startswith("briefing"):
+            return str(item.get("text") or "")[:600] or None
+    return None
+
+
+TAG_BATCH = 40  # memories given related words in one night's call
+
+
 class Upkeep:
     """Briefings on request and the weekly memory tidy."""
 
@@ -303,6 +319,7 @@ class Upkeep:
         # Sundays at 03:45
         self._unsubs = [
             async_track_time_change(self.hass, self._weekly, hour=3, minute=45, second=0),
+            async_track_time_change(self.hass, self._nightly_tags, hour=3, minute=20, second=0),
             async_track_time_change(self.hass, self._every_minute, second=0),
         ]
         from .sleep import EVENT_SLEEP
@@ -505,6 +522,52 @@ class Upkeep:
             _LOGGER.debug("Scheduled briefing skipped: %s", err)
 
     @callback
+    def _nightly_tags(self, now: datetime) -> None:
+        rt = self._rt()
+        if rt is not None and rt.options.get("memory_tags") and not rt.speech.guest_mode:
+            self.hass.async_create_background_task(self._async_tags_quietly(), "sentient_memory_tags")
+
+    async def _async_tags_quietly(self) -> None:
+        try:
+            await self.async_tag_memories()
+        except (HomeAssistantError, AIUnavailable) as err:  # the AI wasn't available: tomorrow night
+            _LOGGER.debug("Memory tagging skipped: %s", err)
+
+    async def async_tag_memories(self, limit: int = TAG_BATCH) -> dict[str, Any]:
+        """Recall by meaning, without an embedding server: once, for each memory that hasn't had it, one small AI
+        call lists a few related words people might use instead ("The kettle is switched on by hand" → brew,
+        tea, cuppa, drink). Recall then matches those too. One call a night for up to *limit* memories."""
+        rt = self._rt()
+        todo = rt.memory.untagged(limit)
+        if not todo:
+            return {"tagged": 0}
+        listing = "\n".join(f"{m.id}: {m.text}" for m in todo)
+        reply = await self._ai(
+            "Sentient: related words for memories",
+            "For each household memory below (id: text), give up to eight single everyday words someone might use "
+            "when asking about it that are NOT already in the text: synonyms, casual words, the kind of thing it "
+            "is (\"kettle\" → brew, tea, cuppa, drink; \"bins\" → rubbish, refuse, collection, wheelie). British "
+            "English. No names of people unless the text names them. One line per memory: 'id: word, word, word'.\n\n"
+            + listing,
+            {"tags": {"description": "Lines of 'id: word, word'", "required": True,
+                      "selector": {"text": {"multiline": True}}}},
+            "upkeep",
+        )
+        text = reply.get("tags") if isinstance(reply, dict) else reply
+        valid = {m.id for m in todo}
+        tagged = 0
+        for line in str(text or "").splitlines():
+            if ":" not in line:
+                continue
+            mid, words = line.split(":", 1)
+            mid = mid.strip().strip("-* ")
+            if mid in valid and rt.memory.set_tags(mid, re.split(r"[,;/]", words)):
+                valid.discard(mid)
+                tagged += 1
+        self.last_tags = {"time": dt_util.now().isoformat(), "tagged": tagged}
+        return self.last_tags
+
+    @callback
     def _weekly(self, now: datetime) -> None:
         if dt_util.as_local(now).weekday() == 6:
             self.hass.async_create_background_task(self._async_tidy_quietly(), "sentient_tidy")
@@ -542,6 +605,7 @@ class Upkeep:
             return changed
         thought_ids = {q['id'] for q in rt.followyou.queue if q.get('source') == 'thought'
                        and q.get('text') in (facts.get('overnight_thoughts') or [])}
+        previous = last_briefing(rt)
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         rules = (rt.options.get(CONF_HOUSE_RULES) or "").strip()
         try:
@@ -553,6 +617,9 @@ class Upkeep:
                 "temperature, disk, memory) only when they're listed as problems, never as small talk. "
                 + personality_line(rt.options)
                 + (f"\nHouse rules:\n{rules}" if rules else "")
+                + (f"\nThe last briefing (yesterday) said: \"{previous}\" Don't say any of it again unless the "
+                   "facts show it has changed or it is due today; a problem that's no longer in the facts is over, "
+                   "so don't mention it at all." if previous else "")
                 + f"\nFacts: {facts}",
                 None,
                 "briefing",
@@ -565,12 +632,21 @@ class Upkeep:
         message = str(text or "").strip() if isinstance(text, (str, type(None))) else ""
         if not message:
             message = plain_briefing(facts)  # the AI couldn't: say the facts plainly
-        result = await rt.speech.async_say(message, priority, targets, source=source)
+        if facts.get("animals_outside"):
+            # the briefing says how the animals' place is; what was kept about it overnight needn't be said again
+            thought_ids |= {q['id'] for q in rt.followyou.queue if q.get('source') == 'animals'}
+        # 19 Nov: the overnight thought the briefing was saying was passed on again by follow-you 8 seconds
+        # later, while the briefing was still being spoken. Hold them until the briefing is done.
+        holding = getattr(rt.followyou, "holding", None)
+        if holding is not None:
+            holding |= thought_ids
+        try:
+            result = await rt.speech.async_say(message, priority, targets, source=source)
+        finally:
+            if holding is not None:
+                holding -= thought_ids
         if not current():
             return {**changed, 'spoken': result.spoken}  # dispatched speech cannot be recalled; do not return old content
-        if result.spoken and facts.get("animals_outside"):
-            # the briefing said how the animals' place is; what was kept about it overnight needn't be said again
-            thought_ids |= {q['id'] for q in rt.followyou.queue if q.get('source') == 'animals'}
         if result.spoken and thought_ids:
             rt.followyou.queue = [q for q in rt.followyou.queue if q['id'] not in thought_ids]
             rt.followyou._save()

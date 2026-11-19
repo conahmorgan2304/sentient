@@ -184,6 +184,9 @@ async def test_overnight_reflection(hass: HomeAssistant, freezer) -> None:
     assert rt.followyou.pending_thoughts() == []  # not till quiet hours end
     freezer.tick(timedelta(hours=4))
     assert rt.followyou.pending_thoughts() == ["The gate was left open twice yesterday evening."]
+    # the Mind sensor writes once a minute; the reflection ran in the background after that minute's write
+    hass.bus.async_fire("sentient_voice_session")
+    await hass.async_block_till_done()
     assert hass.states.get("sensor.nova_mind").attributes["thoughts"]
 
 
@@ -788,3 +791,85 @@ async def test_learned_bedtimes_can_be_forgotten(hass: HomeAssistant, hass_ws_cl
     assert reply["success"] and reply["result"]["forgotten"] == 3
     assert sleep.history == [] and sleep.usual() == {"bedtime": None, "up": None}
     assert any(i["text"] == "Forgot the learned bedtimes" for i in entry.runtime_data.timeline.items)
+
+
+def test_covered_spots_the_same_news_in_other_words() -> None:
+    """19 Nov 08:08: the briefing said the grey bin, then an overnight thought said it again eight seconds later."""
+    from custom_components.sentient.speech import covered
+
+    briefing = ("The grey bin needs putting out for today's refuse collection, and the living room and kitchen "
+                "require a clean.")
+    thought = "It is refuse collection today, so the grey bin will need to be put out."
+    assert covered(thought, [briefing]) == briefing
+    assert covered("The gate was left open twice yesterday.", [briefing]) is None
+    assert covered("Bin day.", [briefing]) is None  # too short to judge: said as it is
+
+
+async def test_a_thought_already_said_is_not_passed_on_again(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=13, minute=0)))
+    entry = await _setup(hass, quiet_start="22:00:00", quiet_end="07:00:00", morning_briefing=False)
+    rt = entry.runtime_data
+    rt.followyou.keep("It is refuse collection today, so the grey bin will need to be put out.", source="thought", hours=4)
+    rt.speech._remember_said("The grey bin needs putting out for today's refuse collection.")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is False and not said
+    assert rt.followyou.queue == []  # dropped, not kept for later
+
+
+async def test_what_the_briefing_is_saying_is_held_meanwhile(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(dt_util.now().replace(hour=13, minute=0)))
+    entry = await _setup(hass, quiet_start="22:00:00", quiet_end="07:00:00", morning_briefing=False)
+    rt = entry.runtime_data
+    rt.followyou.keep("The gate was left open twice yesterday.", source="thought", hours=4)
+    rt.followyou.holding |= {rt.followyou.queue[0]["id"]}
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is False and not said
+    rt.followyou.holding.clear()
+    assert await rt.followyou.async_pass_on("assist_satellite.kitchen") is True
+
+
+async def test_last_briefing_is_yesterdays(hass: HomeAssistant) -> None:
+    from custom_components.sentient.upkeep import last_briefing
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    assert last_briefing(rt) is None
+    old = (dt_util.utcnow() - timedelta(hours=24)).isoformat()
+    rt.timeline.items.insert(0, {"time": old, "kind": "said", "text": "The vacuum failed to dock three times.",
+                                 "source": "briefing:up"})
+    rt.timeline.items.insert(0, {"time": dt_util.utcnow().isoformat(), "kind": "said", "text": "Bin day.",
+                                 "source": "briefing:up"})  # today's own: not 'the last one'
+    assert last_briefing(rt) == "The vacuum failed to dock three times."
+
+
+def test_repeated_replies_are_counted_without_keeping_words() -> None:
+    from custom_components.sentient.conversation_quality import ConversationQuality
+
+    q = ConversationQuality()
+    reply = "The front door is locked and the gate is closed. Nothing else is open right now."
+    first = q.record(text="is it locked", reply=reply, carried=False, asked_back=False, error=False)
+    assert not first["repeated_opening"] and not first["repeated_sentence"]
+    again = q.record(text="is the house locked", reply=reply, carried=False, asked_back=False, error=False)
+    assert again["repeated_opening"] and again["repeated_sentence"]
+    other = q.record(text="what's the weather", reply="It's eleven degrees and dry, with rain later on tonight.",
+                     carried=False, asked_back=False, error=False)
+    assert not other["repeated_opening"] and not other["repeated_sentence"]
+    assert all("front" not in "".join(t.get("sigs", [])) for t in q.turns)
+    assert q.summary()["repeats"]["same_sentence"] == 1
+
+
+async def test_vary_replies_shows_the_voice_its_own_recent_replies(hass: HomeAssistant) -> None:
+    from custom_components.sentient.llm_api import own_recent_replies
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    rt.conversations.episodes = []
+    rt.conversations._ours = {}
+    now = dt_util.utcnow().isoformat()
+    for cid, said in (("c1", "The kettle has boiled and the kitchen is warm enough."),
+                      ("c2", "Your phone is in the bedroom, on the bedside table.")):
+        rt.conversations.episodes.insert(0, {"id": cid, "start": now, "room": "Kitchen", "turns": [
+            {"who": "them", "text": "hello"}, {"who": "me", "text": said}]})
+        rt.conversations._ours[cid] = {"room": "Kitchen"}
+    assert own_recent_replies(rt) == ["Your phone is in the bedroom, on the bedside table.",
+                                      "The kettle has boiled and the kitchen is warm enough."]

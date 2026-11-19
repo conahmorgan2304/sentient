@@ -152,6 +152,7 @@ class Memory:
     used: str | None = None  # last time it was recalled or matched what was asked
     expires: str | None = None  # a date (the day after the one it's about); gone after that unless pinned
     links: list[str] = field(default_factory=list)  # entities, rooms (area:...) and people it names
+    tags: list[str] = field(default_factory=list)  # related words worked out overnight ("kettle" → brew, tea, cuppa)
 
     @property
     def basis(self) -> str:
@@ -182,6 +183,7 @@ class MemoryStore:
         self.changed: list[dict[str, str]] = []  # recent replacements and expiries, newest last (for the Mind page)
         self.reviewed: list[str] = []  # memory pairs someone said are both fine
         self._index: tuple[float, list[tuple[str, str]]] | None = None
+        self.use_tags = False  # setting "Recall by meaning": match the related words too
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
@@ -354,6 +356,7 @@ class MemoryStore:
             return None
         if memory.text != text:
             memory.origin = "edited"
+            memory.tags = []  # worked out for the old wording: worked out again overnight
         memory.text = text
         memory.expires = expiry_for(text)
         memory.links = self.links_for(text)
@@ -396,6 +399,38 @@ class MemoryStore:
             self._save()
         return removed
 
+    def _words_of(self, memory: Memory) -> set[str]:
+        words = _words(memory.text)
+        if self.use_tags and memory.tags:
+            words |= {t for t in memory.tags if isinstance(t, str)}
+        return words
+
+    def untagged(self, limit: int = 40) -> list[Memory]:
+        """Memories with no related words yet (newest first): what tonight's tagging looks at."""
+        return [m for m in reversed(self._items) if not m.tags and m.category != "correction" and self.live(m)][:limit]
+
+    def set_tags(self, memory_id: str, tags: list[str]) -> bool:
+        memory = self.get(memory_id)
+        if memory is None:
+            return False
+        own = _words(memory.text)
+        clean = []
+        for t in tags:
+            for w in _words(str(t)):
+                if w not in own and w not in clean and len(w) <= 24:
+                    clean.append(w)
+        memory.tags = clean[:12] or ["-"]  # "-": looked at, nothing to add — not asked again
+        self._save()
+        return True
+
+    def clear_tags(self) -> int:
+        cleared = sum(1 for m in self._items if m.tags)
+        for m in self._items:
+            m.tags = []
+        if cleared:
+            self._save()
+        return cleared
+
     def search(self, query: str, limit: int = 8, count_hits: bool = True) -> list[Memory]:
         """Keyword-ranked recall. Good enough for hundreds of short facts."""
         q = _expand(_words(query))
@@ -406,11 +441,12 @@ class MemoryStore:
         for memory in self._items:
             if not self.live(memory):
                 continue
-            words = _words(memory.text)
+            words = self._words_of(memory)
             score = len(q & words) + 2 * len(asked_links & set(memory.links))
             # partial matches (rabbit / rabbits)
+            # (both words longer than three letters: "up" isn't part of "cuppa")
             score += 0.5 * sum(
-                1 for a in q for b in words if a != b and (a in b or b in a) and len(a) > 3
+                1 for a in q for b in words if a != b and (a in b or b in a) and len(a) > 3 and len(b) > 3
             )
             if score:
                 scored.append((score, memory))
@@ -435,22 +471,29 @@ class MemoryStore:
             self._save()
         return memory
 
-    def for_prompt(self, asked: str, limit: int) -> list[Memory]:
-        """What the voice is given: pinned ones, then those matching what was asked (words and word stems),
-        then the most used lately, then the newest — never more than *limit*."""
+    def for_prompt(self, asked: str, limit: int, owner: str | None = None) -> list[Memory]:
+        """What the voice is given: pinned ones, the speaker's own (when *owner* is known), then those matching
+        what was asked (words and word stems), then the most used lately, then the newest — never more than
+        *limit*."""
         everything = [m for m in self._items if m.category != "correction" and self.live(m)]
         if limit <= 0:
             return []
         pinned = [m for m in everything if m.pinned][:limit]
         rest = [m for m in everything if not m.pinned]
+        if owner:
+            # the person talking: what they said about themselves comes before the rest of the house
+            mine = [m for m in reversed(rest) if (m.owner or "").casefold() == owner.casefold()]
+            mine = mine[: max(0, (limit - len(pinned)) // 3)]
+            pinned = pinned + mine
+            rest = [m for m in rest if m not in mine]
         q = _expand(_words(asked))
         asked_links = set(self.links_for(asked)) if asked else set()
         matched: list[Memory] = []
         if q or asked_links:
             scored = []
             for i, m in enumerate(rest):
-                words = _words(m.text)
-                score = len(q & words) + 2 * len(asked_links & set(m.links)) + 0.5 * sum(1 for a in q for b in words if a != b and len(a) > 3 and (a in b or b in a))
+                words = self._words_of(m)
+                score = len(q & words) + 2 * len(asked_links & set(m.links)) + 0.5 * sum(1 for a in q for b in words if a != b and len(a) > 3 and len(b) > 3 and (a in b or b in a))
                 if score:
                     scored.append((score, i, m))
             scored.sort(key=lambda t: (-t[0], -t[1]))
