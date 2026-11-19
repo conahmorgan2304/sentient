@@ -110,3 +110,18 @@ def test_nothing_to_mend_means_no_retry(hass):
 
     assert repair_chat_log(hass, None) is False
     assert repair_chat_log(hass, "not-a-conversation") is False
+
+
+async def test_an_ai_backup_that_fails_too_hands_on_to_home_assistants_own(hass):
+    obj, rt = agent(hass, {'voice_agent': 'conversation.primary', 'backup_agent': 'conversation.second_ai'})
+    rt.timeline = Mock()
+
+    async def converse(agent_id, user_input):
+        if agent_id == 'conversation.home_assistant':
+            return response('Turned off the kitchen light.')
+        raise RuntimeError('no internet')
+
+    with patch.object(obj, '_converse', side_effect=converse) as calls, patch.object(obj, 'async_write_ha_state'):
+        result = await obj.async_process(request('Turn the kitchen light off'))
+    assert [c.args[0] for c in calls.call_args_list][-2:] == ['conversation.second_ai', 'conversation.home_assistant']
+    assert result.response.speech['plain']['speech'] == 'Turned off the kitchen light.'

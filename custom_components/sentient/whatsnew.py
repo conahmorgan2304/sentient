@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.2": [
+        "Backup voice: when the backup you've chosen is another AI and it can't answer either (no internet, say), Home Assistant's own agent now gets a go before Sentient gives up, so lights and heating can still be done by voice.",
+    ],
     "1.15.1": [
         "Fixed: when a voice conversation had an empty reply left in it, Google refused every later turn (\"content parts are required\") and the backup answered instead. That happened on 19 Nov when \"no thank you\" came after a camera question. The empty reply is now mended and the question asked again, once.",
         "Choosing which of two duplicate memories to keep is no longer read out in the evening as \"I've updated what I know\".",
