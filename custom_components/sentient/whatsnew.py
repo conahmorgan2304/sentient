@@ -15,6 +15,14 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.14.0": [
+        "Fewer repeats: an overnight thought or something nobody heard isn't passed on if it's already been said out loud in the last 12 hours, so the bin isn't said by the briefing and then again seconds later. The thoughts the briefing is saying are held back while it speaks. Doorbell, gate and urgent alerts are never affected.",
+        "The morning briefing is shown what yesterday's said, and leaves out anything unchanged that isn't due today, so the same problems aren't read out every morning.",
+        "Repeated replies are counted: with the voice timings shown, the Mind tab counts replies that start with the same words or repeat a whole sentence from the day before. Only short hashes are kept, never the words.",
+        "New, off by default: \"Say things differently each time\" (Voice → Conversations) shows the voice its own recent replies so it doesn't give the same one word for word.",
+        "New, off by default: \"Recall by meaning\" (Memory & learning). One small AI call a night gives each memory a few related words, so \"fancy a cuppa?\" finds the kettle memories. No embedding server needed.",
+        "With \"Keep each person's memories to them\" on, the memories you told it about yourself are always given to the voice first when it knows your voice. Recall no longer matches short words hidden inside longer ones (\"up\" in \"cuppa\").",
+    ],
     "1.13.0": [
         "Settings, tidied: 17 reliability and safety checks are now always on and no longer shown as switches. These are: rechecking and recovering actions, asking \"which one?\" when unsure, explaining why it did something, the live voice check, delivery history and the speech-failed alert, the voice mistakes log, self-check, duplicate, routine and Frigate checks, auto-off holding back after a voice command, the camera pre-filter, hiding camera sub-streams and the battery forecast. Any that were off are turned on.",
         "Settings, folded: each page opens with its main switches. The settings that only matter once a switch is on sit in a closed \"Fine-tune\" section, and rarely changed ones (diagnostics, trials, AI budget, semantic memory, page options) are in a closed \"Advanced\" section. Nothing else has changed, and every setting keeps its value. About 165 switches was too many to go through: a page now opens showing about 60.",

@@ -998,6 +998,23 @@ class EmailTool(_Tool):
         return rt.inbox.listing(tool_input.tool_args["limit"])
 
 
+def own_recent_replies(rt: Any, hours: float = 24, limit: int = 6) -> list[str]:
+    """The voice's own last few different replies, newest first, shortened."""
+    out: list[str] = []
+    conversations = getattr(rt, "conversations", None)
+    if conversations is None:
+        return out
+    for ep in conversations.recent(hours=hours, limit=20):
+        for turn in reversed(ep.get("turns", [])):
+            text = " ".join(str(turn.get("text") or "").split())
+            if turn.get("who") == "me" and len(text) > 25 and text not in out:
+                out.append(text if len(text) <= 160 else text[:157].rsplit(" ", 1)[0] + "…")
+                break  # one per conversation: its last word on it
+        if len(out) >= limit:
+            break
+    return out
+
+
 def _last_said_in(rt: Any, room: str) -> tuple[str, str] | None:
     """The last announcement spoken in a room in the last hour, as (HH:MM, text)."""
     timeline = getattr(rt, "timeline", None)
@@ -2746,6 +2763,12 @@ class SentientAPI(llm.API):
                 "anything seen or that happened (a camera, a visitor, a car), look it up with a tool, not from these:"
             )
             lines.extend(talk)
+        if opts.get("vary_replies") and not rt.speech.guest_mode and not private and (mine := own_recent_replies(rt)):
+            # 19 Nov: "it repeats the same thing". Shown its own recent wording, it can say it another way.
+            lines.append("Your own recent replies (the last day). Don't reuse their sentences or openings — if the "
+                         "news is the same, say it differently and more briefly, or say it's unchanged since you last "
+                         "said it:")
+            lines.extend(f"- \"{r}\"" for r in mine)
         if drive := rt.drive.prompt_line():
             lines.append(drive)
         if not rt.speech.guest_mode and not private and (seen := rt.faces.prompt_line()):
@@ -2842,12 +2865,26 @@ class SentientAPI(llm.API):
         except Exception:  # noqa: BLE001
             return ""
 
+    @staticmethod
+    def _speaker_owner(rt: Any) -> str | None:
+        """Who's talking, when "Speaker-aware memories" is on and their voice was matched — so what they told
+        Sentient about themselves is given first, not left out because newer house facts filled the list."""
+        from . import voice_id
+
+        opts = rt.options
+        if not opts.get("speaker_memories") or rt.speech.guest_mode:
+            return None
+        speaker = voice_id.current_speaker.get()
+        if speaker is None or speaker is voice_id.UNKNOWN_SPEAKER:
+            return None
+        return (voice_id.name_of(speaker) or "").casefold() or None
+
     def _memories(self, rt: Any, limit: int, relevant: bool) -> list[Any]:
         """The newest memories — or, once there are more than fit, the ones that match what was asked plus the newest."""
         everything = [m for m in rt.memory.items if m.category != "correction"]
         newest = list(reversed(everything))
         if hasattr(rt.memory, "for_prompt") and (relevant or any(getattr(m, "pinned", False) for m in everything)):
-            return rt.memory.for_prompt(self._asked() if relevant else "", limit)
+            return rt.memory.for_prompt(self._asked() if relevant else "", limit, owner=self._speaker_owner(rt))
         if not relevant or len(everything) <= limit or limit <= 0:
             return [m for m in rt.memory.recent(limit + 20) if m.category != "correction"][:limit]
         words = {w for w in re.findall(r"[a-z]{3,}", self._asked().lower()) if w not in STOPWORDS}

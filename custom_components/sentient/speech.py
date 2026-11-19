@@ -172,6 +172,41 @@ def _remark_key(text: str) -> str:
     return re.sub(r"[^a-z0-9 ]", "", text.lower()).strip()
 
 
+_NEWS_STOP = frozenset(
+    "a an the and or but so to of in on at for is are was were be been it its it's this that there their they "
+    "will would may might can could should need needs needed have has had do does just still now also about "
+    "with from by as you your i we our out up a thought overnight earlier and".split())
+
+
+def _news_words(text: str) -> set[str]:
+    """Content words of a remark, crudely stemmed: 'needs putting out for today's refuse' and 'the bin will need
+    to be put out today' share bin, need, today, refuse."""
+    out = set()
+    for w in re.findall(r"[a-z']+", text.lower()):
+        w = w.removesuffix("'s").strip("'")
+        if len(w) < 3 or w in _NEWS_STOP:
+            continue
+        for end in ("ing", "ed", "es", "s"):
+            if len(w) > len(end) + 3 and w.endswith(end):
+                w = w[: -len(end)]
+                break
+        out.add(w)
+    return out
+
+
+def covered(text: str, said: list[str], share: float = 0.6) -> str | None:
+    """The earlier remark that already said most of *text* (at least *share* of its content words, and at least
+    four of them), or None. 19 Nov: the briefing said the grey bin, then an overnight thought said it again
+    eight seconds later."""
+    words = _news_words(text)
+    if len(words) < 4:
+        return None
+    for earlier in said:
+        if len(words & _news_words(earlier)) >= max(4, share * len(words)):
+            return earlier
+    return None
+
+
 def clean_message(message: str, banned: list[str]) -> str:
     """Strip unwanted forms of address and tidy the sentence."""
     text = message
@@ -478,6 +513,11 @@ class SpeechRouter:
 
     def recent_said(self, limit: int = 5) -> list[str]:
         return [text for _, text in list(self._said)[:limit]]
+
+    def said_within(self, hours: float) -> list[str]:
+        """What was said out loud in the last *hours* (newest first; the last 20 remarks at most)."""
+        since = dt_util.utcnow() - timedelta(hours=hours)
+        return [text for when, text in self._said if when >= since]
 
     def _gate(self, text: str, priority: str, source: str | None, check_duplicate: bool = True) -> SpeechResult | None:
         """Shared rules; returns a held result, or None when it may speak."""

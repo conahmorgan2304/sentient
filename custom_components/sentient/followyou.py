@@ -44,6 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 SETTLE_SECONDS = 8  # let them get into the room first
 MAX_QUEUE = 8
 SAY_AT_ONCE = 3
+REPEAT_HOURS = 12  # something said out loud this recently isn't passed on again
 # things held back that are worth passing on later; everyday remarks aren't
 _KEEP_SOURCES = ("watch", "reminder", "followup", "visitor", "door", "security", "parcel", "thought")
 
@@ -100,6 +101,7 @@ class FollowYou:
         self.queue: list[dict[str, Any]] = []
         self._unsub = None
         self._pending = None
+        self.holding: set[str] = set()  # being said by the briefing right now: not passed on meanwhile
 
     async def async_start(self) -> None:
         data = await self._store.async_load() or {}
@@ -163,7 +165,7 @@ class FollowYou:
         self.queue = [q for q in self.queue if q["expires"] > now]
         if len(self.queue) != before:
             self._save()
-        return [q for q in self.queue if q["from"] <= now]
+        return [q for q in self.queue if q["from"] <= now and q["id"] not in self.holding]
 
     def listing(self) -> list[dict[str, Any]]:
         return [{"text": q["text"], "kept": q["kept"], "expires": q["expires"]} for q in self.queue]
@@ -210,7 +212,15 @@ class FollowYou:
         upkeep = getattr(rt, "upkeep", None)
         if upkeep is not None and upkeep.morning_coming(rt):
             return False  # the morning briefing is about to cover the night; what it doesn't is passed on after
-        live = self._live()[:SAY_AT_ONCE]
+        live = self._live()
+        # what's already been said out loud since (the briefing, a remark) isn't passed on again
+        from .speech import covered
+        said = rt.speech.said_within(REPEAT_HOURS) if hasattr(rt.speech, "said_within") else []
+        if said and (stale := {q["id"] for q in live if covered(q["text"], said)}):
+            self.queue = [q for q in self.queue if q["id"] not in stale]
+            self._save()
+            live = [q for q in live if q["id"] not in stale]
+        live = live[:SAY_AT_ONCE]
         if not live:
             return False
         text = compose(live)
