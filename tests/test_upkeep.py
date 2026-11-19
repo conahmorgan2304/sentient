@@ -344,3 +344,52 @@ async def test_the_speakers_own_memories_come_first(hass: HomeAssistant) -> None
         mem.add(fact)
     assert mine not in mem.for_prompt("", 6)
     assert mem.for_prompt("", 6, owner="Conah")[0] is mine
+
+
+def test_one_off_events_are_not_memories() -> None:
+    from custom_components.sentient.memory import one_off_event
+
+    assert one_off_event("Kayleigh's car left the drive at nine thirty-four this morning.")
+    assert one_off_event("Kayleigh's car left the drive at nine thirty-four on 18 November 2026.")
+    assert one_off_event("A person was in the garden at 22:30 last night.")
+    assert not one_off_event("Conah leaves for work most mornings between about 6:50 and 7:05.")
+    assert not one_off_event("The kettle starts up around nine every morning.")
+    assert not one_off_event("Kayleigh drives a black Ford Kuga.")
+
+
+async def test_the_same_memory_twice_becomes_one_overnight(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    mem = entry.runtime_data.memory
+    told = mem.add("The vacuum is called Viomi.", source="service")
+    again = mem.add("The vacuum is called Viomi", category="person", source="google_ai")  # filed differently
+    again.hits = 3
+    pinned_a = mem.add("Conah is pronounced Connor.")
+    pinned_b = mem.add("Always pronounce Conah's name as Connor.")
+    mem.pin(pinned_a.id), mem.pin(pinned_b.id)
+    assert mem.get(again.id) is again  # different categories: the store keeps both when they're added
+    dropped = mem.merge_duplicates()
+    assert dropped == ["The vacuum is called Viomi"]
+    assert mem.get(told.id) is told and told.hits == 3  # the told one kept, with the other's uses
+    assert mem.get(pinned_a.id) and mem.get(pinned_b.id)  # two pinned, different words: left for a person
+    assert mem.merge_duplicates() == []
+
+
+async def test_the_tidy_puts_pinned_duplicates_in_the_check_up(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    mem = rt.memory
+    ids = [mem.add(f"Fact number {n} about {w}").id for n, w in enumerate(
+        ["apples", "boats", "clocks", "doors", "eggs", "fields", "gates", "hills"])]
+    a = mem.add("Conah is pronounced Connor.")
+    b = mem.add("My name is spelled CONAH, and it is pronounced Connor")
+    mem.pin(a.id)
+    _ai(hass, {"remove": "", "merge": f"{a.id},{b.id} => Conah is pronounced Connor."})
+    await hass.services.async_call(DOMAIN, "tidy_memories", {}, blocking=True, return_response=True)
+    assert mem.get(a.id).text == "Conah is pronounced Connor." and mem.get(b.id) is not None  # nothing rewritten
+    pairs = mem.review()
+    assert pairs[0]["pair"] == "|".join(sorted((a.id, b.id))) and "weekly tidy" in pairs[0]["why"]
+    assert any(i["text"].startswith("Weekly memory tidy: merged 0, removed 0, 1 pair to check")
+               for i in rt.timeline.since(1, ["mind"], 10))
+    assert mem.resolve(pairs[0]["pair"], a.id) and mem.get(b.id) is None
+    assert all(p["pair"] != pairs[0]["pair"] for p in mem.review())
+    del ids

@@ -50,6 +50,32 @@ def stage(item, assessment=None, *, now=None):
         return 'investigating', 'more than one camera or sensor involved' if sources > 1 else 'alerted at night'
     return 'observed', 'one report so far'
 GAP = timedelta(minutes=3)
+ARRIVED_WITHIN = timedelta(minutes=5)  # a person who came home this recently is very likely the one seen
+FACE_WITHIN = timedelta(minutes=3)
+LEFT_WITHIN = timedelta(minutes=10)  # left home this soon after: most likely who was seen going out
+
+
+def household_signals(hass, now, faces=None) -> list[str]:
+    """What says the person seen is someone from the house, from signals that identify a person rather than
+    activity: a household person (a Home Assistant person) who arrived home in the last few minutes, or a face
+    Frigate named as one of them just now. A door opening or someone being in doesn't count: a visitor can do
+    both. Short plain notes, no AI."""
+    people: dict[str, str] = {}
+    out: list[str] = []
+    for st in hass.states.async_all('person'):
+        name = (st.name or '').strip()
+        if not name:
+            continue
+        people[name.casefold()] = name
+        if st.state == 'home' and st.last_changed is not None and timedelta(0) <= now - st.last_changed <= ARRIVED_WITHIN:
+            out.append(f"{name} arrived home {max(1, round((now - st.last_changed).total_seconds() / 60))} min before")
+    seen = getattr(faces, 'seen', None) or {}
+    for name, row in seen.items():
+        when = dt_util.parse_datetime((row or {}).get('time') or '')
+        key = str(name).replace('_', ' ').strip().casefold()
+        if when is not None and abs(now - when) <= FACE_WITHIN and key in people:
+            out.append(f"face recognised as {people[key]} at the {str(row.get('camera') or 'camera').lower()}")
+    return out[:4]
 ALERT_LEVELS = {'night': 1, 'away': 2, 'fence': 2, 'loitering': 3}
 
 
@@ -80,6 +106,7 @@ class Incidents:
         self._earned = None
         self._pending_alerts = {}
         self.cognitive = CognitiveCoordinator()  # bounded, read-only shadow comparisons
+        self.faces = None  # Faces, when set up: names Frigate put to a face
         self._unsub = None
 
     @property
@@ -120,6 +147,10 @@ class Incidents:
         new, old = event.data.get('new_state'), event.data.get('old_state')
         if new is None or old is None or new.state == old.state:
             return
+        if eid.startswith('person.'):
+            if old.state == 'home' and new.state not in ('home', 'unknown', 'unavailable'):
+                self._left_home(new.name or eid, new.last_changed or dt_util.utcnow())
+            return
         from .const import CONF_CAMSEC_ENTRIES, CONF_CAMSEC_SENSORS
         contacts = self.options.get(CONF_CAMSEC_ENTRIES) or []
         sensors = self.options.get(CONF_CAMSEC_SENSORS) or []
@@ -130,6 +161,24 @@ class Incidents:
             from .camsecurity import camera_for
             self.add(camera_for(self.hass, eid) or eid, f'Person reported at {new.name}', 'detection',
                      read_source=eid)
+
+    def _left_home(self, name: str, when) -> None:
+        """Someone from the house left a few minutes after an incident ended: most likely who was seen going
+        out. Added to those incidents as a household signal and their prediction captured again."""
+        changed = False
+        for item in self.items:
+            end = dt_util.parse_datetime(item.get('end') or '')
+            if end is None or not timedelta(0) <= when - end <= LEFT_WITHIN:
+                continue
+            note = f"{name} left home {max(1, round((when - end).total_seconds() / 60))} min after"
+            signals = item.setdefault('household_signals', [])
+            if not any(s.startswith(f"{name} left home") for s in signals):
+                signals.append(note)
+                item['household_signals'] = signals[-6:]
+                self._capture_prediction(item)
+                changed = True
+        if changed:
+            self._save()
 
     def _side(self, source):
         """'front' or 'back' when the front of the house is set (Settings → Safety), else None."""
@@ -193,6 +242,13 @@ class Incidents:
                 row['camera_gaps'] = gaps
         item['evidence'].append(row)
         item['evidence'] = item['evidence'][-50:]
+        if when is None and kind in ('contact', 'detection', 'alert'):
+            # 19 Nov: the core agreed on 0 of 21 incidents the household marked "that was us", because nothing
+            # it could see said who it was. These are the signals that do: noted for the core's judgement only.
+            for signal in household_signals(self.hass, now, self.faces):
+                if signal not in item.setdefault('household_signals', []):
+                    item['household_signals'].append(signal)
+            item['household_signals'] = item.get('household_signals', [])[-6:]
         self._capture_prediction(item)
         self._save()
         return item

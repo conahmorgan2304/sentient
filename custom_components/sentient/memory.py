@@ -118,6 +118,24 @@ def expiry_for(text: str, today: date | None = None) -> str | None:
 _CHANGEABLE = re.compile(r"^(\d+(?:\.\d+)?|on|off|not|no|never|longer|anymore|now|yes|open|closed|up|down|\w+n't|cannot)$")
 
 
+_CLOCK = re.compile(r"\b(?:\d{1,2}[:.]\d{2}|\d{1,2}\s?(?:am|pm)|half[- ]past|quarter (?:past|to)|o'clock|"
+                    r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) (?:o'clock|"
+                    r"(?:ten|fifteen|twenty|thirty|forty|fifty)(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?))\b",
+                    re.IGNORECASE)
+_ONE_DAY = re.compile(r"\b(?:this (?:morning|afternoon|evening)|last night|yesterday|today|tonight|earlier|"
+                      r"on \d{1,2} (?:january|february|march|april|may|june|july|august|september|october|november|december))\b",
+                      re.IGNORECASE)
+
+
+def one_off_event(text: str) -> bool:
+    """Something that happened once at a time on a day ("Kayleigh's car left the drive at nine thirty-four this
+    morning"): the timeline's job, not a memory. A habit ("leaves for work about 7 every morning") isn't one."""
+    return bool(_CLOCK.search(text) and _ONE_DAY.search(text) and not _HABIT.search(text))
+
+
+_STRENGTH = {"confirmed": 3, "told": 2, "said": 1, "guess": 0}
+
+
 def old_is_said(m: "Memory") -> bool:
     return m.source not in (None, "reflection")
 
@@ -182,6 +200,7 @@ class MemoryStore:
         self._items: list[Memory] = []
         self.changed: list[dict[str, str]] = []  # recent replacements and expiries, newest last (for the Mind page)
         self.reviewed: list[str] = []  # memory pairs someone said are both fine
+        self.suggested: list[str] = []  # pairs the weekly tidy thinks say the same thing, for a person to decide
         self._index: tuple[float, list[tuple[str, str]]] | None = None
         self.use_tags = False  # setting "Recall by meaning": match the related words too
 
@@ -191,6 +210,7 @@ class MemoryStore:
         self._items = [Memory(**{k: v for k, v in item.items() if k in known}) for item in data.get("items", [])]
         self.changed = list(data.get("changed") or [])[-30:]
         self.reviewed = list(data.get("reviewed") or [])[-300:]
+        self.suggested = list(data.get("suggested") or [])[-40:]
         for memory in self._items:  # pinned before the day was written in
             if memory.pinned and (dated := dated_text(memory.text, memory.expires)) != memory.text:
                 memory.text = dated
@@ -199,7 +219,8 @@ class MemoryStore:
     @callback
     def _save(self) -> None:
         self._store.async_delay_save(
-            lambda: {"items": [m.as_dict() for m in self._items], "changed": self.changed[-30:], "reviewed": self.reviewed[-300:]}, 5
+            lambda: {"items": [m.as_dict() for m in self._items], "changed": self.changed[-30:], "reviewed": self.reviewed[-300:],
+                     "suggested": self.suggested[-40:]}, 5
         )
         self.hass.bus.async_fire(EVENT_MEMORY_CHANGED, {"count": len(self._items)})
 
@@ -264,10 +285,19 @@ class MemoryStore:
         Plain rules, no AI; pairs someone said are both fine aren't shown again."""
         out: list[dict[str, Any]] = []
         items = [m for m in self._items if self.live(m)]
+        by_id = {m.id: m for m in items}
+        self.suggested = [p for p in self.suggested if all(i in by_id for i in p.split("|")) and p not in self.reviewed]
+        for pair in self.suggested:
+            a, b = (by_id[i] for i in pair.split("|"))
+            newer, older = (a, b) if a.created >= b.created else (b, a)
+            out.append({"kind": "duplicate", "pair": pair, "newer": newer.as_dict(), "older": older.as_dict(),
+                        "why": "the weekly tidy thinks these say the same thing"})
+            if len(out) >= limit:
+                return out
         for i, a in enumerate(items):
             wa, sa = _words(a.text), _subject(a.text)
             for b in items[i + 1:]:
-                if self._pair(a, b) in self.reviewed:
+                if self._pair(a, b) in self.reviewed or self._pair(a, b) in self.suggested:
                     continue
                 wb = _words(b.text)
                 if len(sa) >= 3 and sa == _subject(b.text) and _identity(a.text) != _identity(b.text):
@@ -281,6 +311,59 @@ class MemoryStore:
                 if len(out) >= limit:
                     return out
         return out
+
+    def suggest(self, a: str, b: str) -> bool:
+        """The weekly tidy thinks *a* and *b* say the same thing but may not merge them itself (one is pinned, or
+        they're filed differently): put the pair in the check-up for a person."""
+        if a == b or self.get(a) is None or self.get(b) is None:
+            return False
+        pair = "|".join(sorted((a, b)))
+        if pair in self.suggested or pair in self.reviewed:
+            return False
+        self.suggested.append(pair)
+        self._save()
+        return True
+
+    def merge_duplicates(self) -> list[str]:
+        """Nightly, plain rules: memories that say the same thing (the same words, or nearly all the same words)
+        become one. The one kept is the pinned one, else the best known (confirmed, told, said, then a guess),
+        else the older; it takes the other's use count, links and owner. Two pinned ones that aren't word for
+        word the same, and corrections against facts, are left to the check-up. Returns what was dropped."""
+        dropped: list[str] = []
+        for _ in range(20):
+            pair = None
+            items = [m for m in self._items if self.live(m)]
+            for i, a in enumerate(items):
+                wa = _words(a.text)
+                for b in items[i + 1:]:
+                    if self._pair(a, b) in self.reviewed:
+                        continue
+                    same = _identity(a.text) == _identity(b.text)
+                    wb = _words(b.text)
+                    close = bool(wa and wb) and len(wa & wb) / len(wa | wb) >= 0.75
+                    if not (same or (close and not (a.pinned and b.pinned)
+                                     and (a.category == b.category or "correction" not in (a.category, b.category)))):
+                        continue
+                    if _subject(a.text) == _subject(b.text) and _identity(a.text) != _identity(b.text):
+                        continue  # "bins on Thursday" / "bins on Friday": a conflict for a person, not a duplicate
+                    pair = (a, b)
+                    break
+                if pair:
+                    break
+            if pair is None:
+                break
+            a, b = pair
+            keep, drop = sorted(pair, key=lambda m: (not m.pinned, -_STRENGTH.get(m.basis, 0), m.created))
+            keep.hits += drop.hits
+            keep.links = list(dict.fromkeys([*keep.links, *drop.links]))
+            keep.owner = keep.owner or drop.owner
+            keep.pinned = keep.pinned or drop.pinned
+            self._items.remove(drop)
+            self._note("merged", drop.text, keep.text)
+            dropped.append(drop.text)
+        if dropped:
+            self._save()
+        return dropped
 
     def resolve(self, pair: str, keep: str | None) -> bool:
         """Keep one of a pair (the other is forgotten), or with keep=None say both are fine."""

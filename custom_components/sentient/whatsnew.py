@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.0": [
+        "Incident judgement can learn who it was: someone from the house who came home in the five minutes before, left within ten minutes after, or whose face Frigate named, now counts as household evidence for the cognitive core. Until now it agreed on none of the incidents marked \"that was us\", because nothing it saw said who it was, so it could never earn its way out of watching. It still only watches until it's earned it, and it can never hold back an alert or make a concerning incident less serious. It uses Home Assistant people, so add a person (with their phone) for everyone in the house.",
+        "Memory looks after itself better: every night the same thing remembered twice becomes one (the pinned or best-known one is kept), with no AI. The overnight reflection no longer files one-off events (\"the car left the drive at 9:34 this morning\") as memories, as those belong on the timeline.",
+        "The weekly tidy no longer leaves duplicates it isn't allowed to merge (a pinned memory, or two filed under different kinds). It puts them in Memories → check-up for you to choose which to keep. Each tidy is now noted on the timeline, even when nothing changed.",
+    ],
     "1.14.0": [
         "Fewer repeats: an overnight thought or something nobody heard isn't passed on if it's already been said out loud in the last 12 hours, so the bin isn't said by the briefing and then again seconds later. The thoughts the briefing is saying are held back while it speaks. Doorbell, gate and urgent alerts are never affected.",
         "The morning briefing is shown what yesterday's said, and leaves out anything unchanged that isn't due today, so the same problems aren't read out every morning.",

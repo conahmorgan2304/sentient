@@ -625,6 +625,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(sessions.stop)
     incidents = Incidents(hass, entry.entry_id, options)
     incidents.on_authority = lambda text: timeline.add("mind", text, "cognitive core")
+    incidents.faces = faces  # a face Frigate named is evidence of who it was, for the core's judgement
     await incidents.async_start()
     entry.async_on_unload(incidents.async_stop)
     from .focus import Focus

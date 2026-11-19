@@ -236,9 +236,13 @@ class Reflection:
             return [" ".join(v.split()) for v in value if isinstance(v, str) and v.strip() and len(v) <= 1000]
 
         known_ids = {m.id for m in rt.memory.items}
+        from .memory import one_off_event
+
         for text in _list(out.get("memories"))[:MAX_MEMORIES]:
             if any(p in text.lower() for p in PRIVATE):
                 continue
+            if one_off_event(text):
+                continue  # 19 Nov: "Kayleigh's car left the drive at nine thirty-four this morning" — the timeline's
             try:
                 memory = rt.memory.add(text, "fact", source="reflection")
                 if memory.id not in known_ids:

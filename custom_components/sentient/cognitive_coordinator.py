@@ -103,8 +103,13 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
     household = any(word in str(row.get("text", "")).lower() for row in (incident.get("evidence") or [])
                     if isinstance(row, dict) for word in HOUSEHOLD_WORDS)
     came_in, rang = arrival(incident)
+    # who it was: someone from the house who'd just come home, or a face Frigate named as one of them
+    identified = [str(s) for s in (incident.get("household_signals") or []) if isinstance(s, str)][:4]
     if age is not None and age > 1800:
         candidate = "resolved"
+    elif identified and not rang and level < 3:
+        # an identity signal outranks "a door opened" (which a visitor can do too), but never loitering
+        candidate = "likely household"
     elif household and level < 2:
         # Reads the same household marks as the existing stages, so a household episode can agree with them.
         candidate = "likely household"
@@ -135,11 +140,12 @@ def investigate(incident: dict[str, Any], assessment: dict[str, Any], *,
         "agrees": candidate == baseline_stage,
         "uncertainty": sorted(set(gaps))[:6],
         "identity_confirmed": False,
+        "household_signals": identified,
         "route_confirmed": False,
         "authoritative": False,
         "decision": decision(
             "incident_shadow_investigation",
-            evidence=[f"reported:{observed}", f"sources:{sources}", f"alert_level:{level}"],
+            evidence=[f"reported:{observed}", f"sources:{sources}", f"alert_level:{level}", *identified],
             gaps=gaps,
             choice=candidate,
             reasons=["evidence_only", "no_alert_changes"],

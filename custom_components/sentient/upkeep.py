@@ -319,7 +319,7 @@ class Upkeep:
         # Sundays at 03:45
         self._unsubs = [
             async_track_time_change(self.hass, self._weekly, hour=3, minute=45, second=0),
-            async_track_time_change(self.hass, self._nightly_tags, hour=3, minute=20, second=0),
+            async_track_time_change(self.hass, self._nightly_memory, hour=3, minute=20, second=0),
             async_track_time_change(self.hass, self._every_minute, second=0),
         ]
         from .sleep import EVENT_SLEEP
@@ -522,9 +522,15 @@ class Upkeep:
             _LOGGER.debug("Scheduled briefing skipped: %s", err)
 
     @callback
-    def _nightly_tags(self, now: datetime) -> None:
+    def _nightly_memory(self, now: datetime) -> None:
         rt = self._rt()
-        if rt is not None and rt.options.get("memory_tags") and not rt.speech.guest_mode:
+        if rt is None or rt.speech.guest_mode:
+            return
+        # plain rules, no AI: the same thing remembered twice becomes one (19 Nov: four of the same kind of note)
+        if dropped := rt.memory.merge_duplicates():
+            rt.timeline.add("mind", f"Merged {len(dropped)} duplicate memor{'y' if len(dropped) == 1 else 'ies'}",
+                            "; ".join(dropped)[:400])
+        if rt.options.get("memory_tags"):
             self.hass.async_create_background_task(self._async_tags_quietly(), "sentient_memory_tags")
 
     async def _async_tags_quietly(self) -> None:
@@ -575,8 +581,10 @@ class Upkeep:
     async def _async_tidy_quietly(self) -> None:
         try:
             await self.async_tidy()
-        except HomeAssistantError as err:  # the AI wasn't available: next week
+        except (HomeAssistantError, AIUnavailable) as err:  # the AI wasn't available: next week
             _LOGGER.debug("Memory tidy skipped: %s", err)
+            if (rt := self._rt()) is not None:
+                rt.timeline.add("mind", "Weekly memory tidy skipped", str(err)[:200])
 
     async def _ai(self, task: str, instructions: str, structure: dict | None, purpose: str = "upkeep") -> Any:
         rt = self._rt()
@@ -708,6 +716,7 @@ class Upkeep:
         removed: list[str] = []
         merged: list[str] = []
         merged_keepers: set[str] = set()
+        suggested = 0
         categories = {m.id: m.category for m in items}
         merge_text = reply.get("merge") if isinstance(reply.get("merge"), str) else ""
         for line in merge_text.splitlines():
@@ -716,8 +725,15 @@ class Upkeep:
             ids_part, text = line.split("=>", 1)
             ids = list(dict.fromkeys(i for i in re.findall(r"[0-9a-f]{6,}", ids_part) if i in valid))
             text = text.strip().strip('"')
-            if (len(ids) < 2 or ids[0] in pinned or len({categories[i] for i in ids}) > 1
-                    or not text or len(removed) + len(ids) - 1 > budget):
+            if len(ids) >= 2 and (ids[0] in pinned or len({categories[i] for i in ids}) > 1
+                                  or not [i for i in ids[1:] if i not in pinned]):
+                # not merged by itself (a pinned one would be rewritten, or they're filed differently): a person
+                # decides in the Memories check-up instead of the duplicates staying for good
+                for other in ids[1:]:
+                    if rt.memory.suggest(ids[0], other):
+                        suggested += 1
+                continue
+            if (len(ids) < 2 or not text or len(removed) + len(ids) - 1 > budget):
                 continue
             keep, drop = ids[0], [i for i in ids[1:] if i not in pinned]
             if not drop:
@@ -738,7 +754,8 @@ class Upkeep:
                     valid.discard(i)
         self.last_tidy = {
             "time": dt_util.now().isoformat(),
-            "result": f"merged {len(merged)}, removed {len(removed)}",
+            "result": f"merged {len(merged)}, removed {len(removed)}"
+                      + (f", {suggested} pair{'s' if suggested != 1 else ''} to check" if suggested else ""),
             "merged": merged,
         }
         _LOGGER.info("Sentient memory tidy: %s", self.last_tidy["result"])
@@ -746,4 +763,7 @@ class Upkeep:
             gone = "; ".join(before[i] for i in removed if i in before)[:400]
             rt.timeline.add("learned", f"Tidied memories: merged {len(merged)}, removed {len(removed)}",
                             ("now: " + " | ".join(merged)[:400] if merged else "") + (f" — was: {gone}" if gone else ""))
+        # always noted, so it's clear the tidy ran even when nothing changed (19 Nov: no sign it had for two weeks)
+        rt.timeline.add("mind", f"Weekly memory tidy: {self.last_tidy['result']}",
+                        "pairs to check are in Memories → check-up" if suggested else None)
         return self.last_tidy
