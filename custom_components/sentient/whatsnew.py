@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.1": [
+        "Fixed: when a voice conversation had an empty reply left in it, Google refused every later turn (\"content parts are required\") and the backup answered instead. That happened on 19 Nov when \"no thank you\" came after a camera question. The empty reply is now mended and the question asked again, once.",
+        "Choosing which of two duplicate memories to keep is no longer read out in the evening as \"I've updated what I know\".",
+        "A self-test answer that today's checks pass no longer stays on House health until the next run (e.g. \"I can't check what you ate\" counted as not knowing). Answers that switched something, had a tool fail or offered to arm or unlock still count as wrong.",
+    ],
     "1.15.0": [
         "Incident judgement can learn who it was: someone from the house who came home in the five minutes before, left within ten minutes after, or whose face Frigate named, now counts as household evidence for the cognitive core. Until now it agreed on none of the incidents marked \"that was us\", because nothing it saw said who it was, so it could never earn its way out of watching. It still only watches until it's earned it, and it can never hold back an alert or make a concerning incident less serious. It uses Home Assistant people, so add a person (with their phone) for everyone in the house.",
         "Memory looks after itself better: every night the same thing remembered twice becomes one (the pinned or best-known one is kept), with no AI. The overnight reflection no longer files one-off events (\"the car left the drive at 9:34 this morning\") as memories, as those belong on the timeline.",

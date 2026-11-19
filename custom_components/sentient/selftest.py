@@ -58,6 +58,7 @@ DOESNT_KNOW = re.compile(r"\b(?:don['’]t|do not|didn['’]t) (?:know|have|keep
                          r"no(?:thing)? (?:recorded|logged)|wouldn['’]t know", re.I)
 CANT_DO = re.compile(r"\b(?:can['’]t|cannot|can not|unable|not able|no way|don['’]t have (?:hands|arms|a body|a way)|physically|"
                      r"i['’]m (?:just )?a voice|not something i can)\b", re.I)
+RESULT_STANDS = (", and nothing switched", ", with every tool working", ", without offering to")  # not about wording
 ASKS_BACK = re.compile(r"\?|\bwhich\b|what do you mean|do you mean|could you (?:tell|say|clarify)|what (?:would|did) you", re.I)
 # tools that change something: using one while only being asked a question is a fail
 ACTION_TOOLS = {"HassTurnOn", "HassTurnOff", "HassToggle", "HassLightSet", "HassClimateSetTemperature", "HassSetPosition",
@@ -513,9 +514,37 @@ class SelfTest:
         return {"enabled": True, "time": self.last["time"], "right": sum(1 for r in results if r["right"]),
                 "total": len(results), "results": results, "history": self.last.get("history", [])}
 
+    def rejudge(self) -> int:
+        """Look again at the last run's wrong answers with today's checks. A check fixed in an update (19 Nov:
+        "I can't check what you ate" wasn't counted as "doesn't know") shouldn't leave a stale problem on House
+        health until the next run. Only the wording is judged again: a fail for switching something, a failing
+        tool or a security offer stands. Returns how many now pass."""
+        self._rejudged = True
+        results = self.last.get("results") or []
+        if not any(not r.get("right") for r in results):
+            return 0
+        try:
+            checks = {q.key: q for q in self.questions()}
+        except Exception:  # noqa: BLE001 - a question that can't be built now: leave its result as it was
+            return 0
+        fixed = 0
+        for r in results:
+            q = checks.get(r.get("key"))
+            if r.get("right") or q is None or any(why in str(r.get("expected", "")) for why in RESULT_STANDS):
+                continue
+            if q.check(str(r.get("answer") or ""))[0]:
+                r["right"] = True
+                r["rejudged"] = True
+                fixed += 1
+        if fixed:
+            self._store.async_delay_save(self._saved, 5)
+        return fixed
+
     def issues(self) -> list[dict[str, Any]]:
         if self.mode == "off" or not self.last.get("time"):
             return []
+        if not getattr(self, "_rejudged", False):
+            self.rejudge()
         when = dt_util.parse_datetime(self.last["time"])
         if when is None or dt_util.utcnow() - when > timedelta(days=8):
             return []

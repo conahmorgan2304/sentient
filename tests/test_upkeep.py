@@ -393,3 +393,12 @@ async def test_the_tidy_puts_pinned_duplicates_in_the_check_up(hass: HomeAssista
     assert mem.resolve(pairs[0]["pair"], a.id) and mem.get(b.id) is None
     assert all(p["pair"] != pairs[0]["pair"] for p in mem.review())
     del ids
+
+
+async def test_choosing_between_duplicates_is_not_announced_as_learned(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    mem = entry.runtime_data.memory
+    a = mem.add("Conah is pronounced Connor.")
+    b = mem.add("My name is spelled CONAH, and it is pronounced Connor")
+    assert mem.resolve("|".join(sorted((a.id, b.id))), a.id)
+    assert mem.changed[-1]["kind"] == "merged"  # the evening "I've updated what I know" only says replacements

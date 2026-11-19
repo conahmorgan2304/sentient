@@ -41,6 +41,32 @@ RETRY_PAUSE = 1  # seconds before the one extra try when the AI service says it 
 BUSY_SIGNS = ("503", "500", "502", "504", "429", "unavailable", "high demand", "overloaded", "internal error",
               "resource_exhausted", "try again later")
 FAILED_CODES = {intent.IntentResponseErrorCode.UNKNOWN}
+EMPTY_TURN = "content parts are required"  # Google: a message in the conversation has nothing in it
+
+
+def repair_chat_log(hass, conversation_id: str | None) -> bool:
+    """Give any empty assistant message in this conversation a single space, as Home Assistant itself does for an
+    empty string: an assistant turn with no text, no tool calls and no thinking (None, not "") reaches Google as a
+    message with no parts, and every later turn of that conversation then fails. True if one was mended."""
+    from dataclasses import replace as dc_replace
+
+    if not conversation_id:
+        return False
+    try:
+        from homeassistant.components.conversation.chat_log import DATA_CHAT_LOGS
+
+        log = (hass.data.get(DATA_CHAT_LOGS) or {}).get(conversation_id)
+    except Exception:  # noqa: BLE001 - a Home Assistant without this: nothing to mend
+        return False
+    if log is None:
+        return False
+    mended = False
+    for i, c in enumerate(list(log.content)):
+        if (getattr(c, "role", None) == "assistant" and not getattr(c, "content", None)
+                and not getattr(c, "tool_calls", None) and not getattr(c, "thinking_content", None)):
+            log.content[i] = dc_replace(c, content=" ")
+            mended = True
+    return mended
 def find_ai_agent(hass: HomeAssistant, opts: dict[str, Any], me: str | None) -> str | None:
     """The AI conversation agent that does the thinking — never one of Sentient's own agents (no going round
     in circles) and never Home Assistant's plain one. The agents chosen in Settings first; failing those, the
@@ -921,6 +947,12 @@ class BackedUpAgent(conversation.ConversationEntity):
                     why = response.speech.get("plain", {}).get("speech") or "an error"
                 except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
                     why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
+                if tries_left and EMPTY_TURN in why.lower() and not attempt.get('started') \
+                        and not attempt.get('action_started') and repair_chat_log(self.hass, user_input.conversation_id):
+                    # 19 Nov 18:31: an earlier reply with nothing in it was left in the conversation, and Google
+                    # refuses the whole conversation then ("content parts are required"). Mended: ask again.
+                    _LOGGER.info("Sentient: mended an empty reply in the conversation; trying once more")
+                    continue
                 if not (tries_left and self._worth_retrying(user_input, attempt, why)):
                     break
                 _LOGGER.info("Sentient: the AI service was busy (%s); trying once more", why[:80])

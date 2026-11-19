@@ -83,3 +83,30 @@ async def test_a_reply_that_already_started_speaking_is_not_retried(hass):
     with patch.object(obj, '_converse', side_effect=converse) as calls, patch('custom_components.sentient.conversation.RETRY_PAUSE', 0):
         await obj.async_process(request('Tell the kitchen dinner is ready and what time is it?'))
     assert calls.call_count == 1
+
+
+async def test_an_empty_earlier_reply_is_mended_and_asked_again(hass):
+    """19 Nov 18:31: "Uh, no thank you." failed with "content parts are required" and went to the backup."""
+    from homeassistant.components import conversation
+    from homeassistant.components.conversation.chat_log import DATA_CHAT_LOGS
+
+    obj = _agent(hass)
+    req = request('Uh, no thank you.')
+    log = Mock()
+    log.content = [conversation.SystemContent(content="prompt"), conversation.UserContent(content="check the gate"),
+                   conversation.AssistantContent(agent_id="conversation.primary", content=None),
+                   conversation.AssistantContent(agent_id="conversation.primary", content="It's clear.")]
+    hass.data[DATA_CHAT_LOGS] = {req.conversation_id: log}
+    replies = [_error("Error: <class 'ValueError'> content parts are required."), response('Okay.')]
+    with patch.object(obj, '_converse', side_effect=lambda *a: replies.pop(0)) as calls:
+        result = await obj.async_process(req)
+    assert [c.args[0] for c in calls.call_args_list] == ['conversation.primary', 'conversation.primary']
+    assert result.response.speech['plain']['speech'] == 'Okay.'
+    assert log.content[2].content == " " and log.content[3].content == "It's clear."
+
+
+def test_nothing_to_mend_means_no_retry(hass):
+    from custom_components.sentient.conversation import repair_chat_log
+
+    assert repair_chat_log(hass, None) is False
+    assert repair_chat_log(hass, "not-a-conversation") is False
