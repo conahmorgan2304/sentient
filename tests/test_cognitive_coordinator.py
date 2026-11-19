@@ -308,3 +308,52 @@ def test_cognitive_toggle_keeps_shared_control_reference_and_resets_both_counter
     assert control.cognitive is incidents.cognitive is shared
     assert shared.summary()["incidents_compared"] == 0
     assert shared.summary()["reported_successes"] == 0
+
+
+def test_someone_who_just_came_home_is_judged_household():
+    """19 Nov: the core agreed on 0 of 21 incidents marked "that was us": nothing it saw said who it was."""
+    came_home = {**_episode(), "household_signals": ["Conah arrived home 2 min before"]}
+    result = investigate(came_home, assess_incident(came_home), baseline_stage="investigating", now=NOW)
+    assert result["stage"] == "likely household" and result["household_signals"]
+    assert result["identity_confirmed"] is False and result["authoritative"] is False
+    assert investigate({**_episode(level=3), "household_signals": ["face recognised as Conah at the gate"]},
+                       {}, baseline_stage="concerning", now=NOW)["stage"] == "concerning"  # never loitering
+    assert investigate(_episode(), assess_incident(_episode()), baseline_stage="investigating",
+                       now=NOW)["stage"] != "likely household"  # a gate and a camera alone say nothing about who
+
+
+def test_household_signals_come_from_arrivals_and_named_faces(hass):
+    from types import SimpleNamespace
+
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.incidents import household_signals
+
+    hass.states.async_set("person.conah", "home", {"friendly_name": "Conah"})
+    hass.states.async_set("person.kayleigh", "not_home", {"friendly_name": "Kayleigh"})
+    now = dt_util.utcnow() + timedelta(minutes=2)
+    faces = SimpleNamespace(seen={"kayleigh": {"camera": "Gate", "time": now.isoformat()},
+                                  "nan": {"camera": "Gate", "time": now.isoformat()}})  # a visitor: not household
+    found = household_signals(hass, now, faces)
+    assert found == ["Conah arrived home 2 min before", "face recognised as Kayleigh at the gate"]
+    assert household_signals(hass, now + timedelta(minutes=10), None) == []  # came home a while ago: not evidence
+
+
+async def test_leaving_home_just_after_marks_the_incident(hass):
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.incidents import Incidents
+
+    incidents = Incidents(hass, "left-home", {"security_incidents": True, "cognitive_shadow": True})
+    await incidents.async_start()
+    hass.states.async_set("person.conah", "home", {"friendly_name": "Conah"})
+    end = dt_util.utcnow() - timedelta(minutes=2)
+    incidents.items = [{"id": "gate", "start": end.isoformat(), "end": end.isoformat(), "sources": ["camera.gate"],
+                        "alert_level": 0, "evidence": [{"source": "camera.gate", "kind": "detection",
+                                                        "status": "observed", "text": "Person reported",
+                                                        "time": end.isoformat()}]}]
+    hass.states.async_set("person.conah", "not_home", {"friendly_name": "Conah"})
+    await hass.async_block_till_done()
+    item = incidents.items[0]
+    assert item["household_signals"] == ["Conah left home 2 min after"]
+    assert item["decision_snapshot"]["core"] == "likely household"
+    assert item["decision_snapshot"]["legacy"] != "likely household"  # the rules' stage is unchanged
+    incidents.async_stop()
