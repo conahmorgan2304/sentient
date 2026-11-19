@@ -378,7 +378,9 @@ class MemoryStore:
             return False
         drop = self.get(ids[0] if ids[1] == keep else ids[1])
         self._items.remove(drop)
-        self._note("replaced", drop.text, self.get(keep).text)
+        # "merged", not "replaced": choosing between two copies isn't something newly learned, so it isn't
+        # announced in the evening as "I've updated what I know" (19 Nov, after a duplicate clean-up)
+        self._note("merged", drop.text, self.get(keep).text)
         self._save()
         return True
 

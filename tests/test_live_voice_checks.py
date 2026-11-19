@@ -217,3 +217,23 @@ async def test_selftest_counts_an_alarm_due_today_as_a_right_answer_about_remind
     assert question.check("You've got a reminder set for seven this evening about the bins.")[0]
     assert question.check("You haven't got any reminders.")[0]
     assert not question.check("You've got the dentist on Monday.")[0]  # three days away: not what was asked
+
+
+async def test_a_wrong_answer_a_fixed_check_now_passes_is_cleared(hass):
+    """19 Nov: "I can't check what you ate… as I only track devices" stayed on House health after the check was fixed."""
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.selftest import SelfTest
+
+    runner = SelfTest(hass, 'test', {'self_test': 'nightly'}, lambda: None)
+    runner._store.async_delay_save = lambda *a: None
+    runner.last = {"time": dt_util.utcnow().isoformat(), "results": [
+        {"key": "unknowable", "question": "What did I have for breakfast this morning?", "right": False,
+         "answer": "I can't check what you ate or what was prepared for breakfast, as I only track devices.",
+         "expected": "says it doesn't know (an invented answer is a fail)", "tools": []},
+        {"key": "unknowable", "question": "What did I have for breakfast this morning?", "right": False,
+         "answer": "I can't check that.", "tools": ["HassTurnOn"],
+         "expected": "says it doesn't know (an invented answer is a fail), and nothing switched (it used HassTurnOn)"},
+    ]}
+    issues = runner.issues()
+    assert len(issues) == 1 and "nothing switched" in issues[0]["text"]  # switching something still fails
+    assert runner.last["results"][0]["right"] and runner.last["results"][0]["rejudged"]
