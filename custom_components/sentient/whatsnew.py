@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.3": [
+        "The voice can read battery levels: \"how much battery has the back door sensor got?\" or \"any batteries running low?\" now gets the level and how long it should last. Battery sensors don't need exposing to Assist.",
+        "The evening look at tomorrow is shown what's already been said today, so a reminder about the bins at 7 isn't followed by the same news at half past.",
+    ],
     "1.15.2": [
         "Backup voice: when the backup you've chosen is another AI and it can't answer either (no internet, say), a command like \"turn the light off\" now goes to Home Assistant's own agent before Sentient gives up, so lights and heating still work by voice. Questions don't, because it guesses at them (asked \"what's the news\", it gives the time).",
     ],

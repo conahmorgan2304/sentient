@@ -2148,6 +2148,54 @@ class EnergyTool(_Tool):
         }
 
 
+class BatteryTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_batteries"
+    description = (
+        "Battery levels of the house's sensors and devices (door, window and motion sensors, remotes, locks), "
+        "with how long each is likely to last at its recent rate. Give 'name' for one ('back door'), or nothing "
+        "for the lowest. For 'how much battery has the back door sensor got?', 'any batteries running low?'."
+    )
+    parameters = vol.Schema({vol.Optional("name"): str})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        # 19 Nov: "how much battery does the back door sensor have left?" — battery sensors aren't exposed to the
+        # voice, so the voice said it had no reading. Sentient watches every battery anyway.
+        rt = _runtime(hass)
+        wanted = _battery_words(str(tool_input.tool_args.get("name") or ""))
+        forecasts = {b["entity_id"]: b for b in (rt.watchdog.battery_forecasts(365) if rt is not None else [])}
+        rows = []
+        for st in hass.states.async_all("sensor"):
+            if st.attributes.get("device_class") != "battery":
+                continue
+            try:
+                level = round(float(st.state))
+            except ValueError:
+                continue
+            name = str(st.name or st.entity_id).replace(" Battery", "").replace(" battery", "")
+            if wanted and not wanted <= _battery_words(name + " " + st.entity_id):
+                continue
+            row = {"name": name, "level": f"{level}%"}
+            if (f := forecasts.get(st.entity_id)) is not None:
+                row["lasts"] = f["text"].split(": ", 1)[-1]
+            rows.append((level, row))
+        if not rows:
+            return {"error": "No battery reading matched that name" if wanted else "No battery readings in the house"}
+        rows.sort(key=lambda r: r[0])
+        return {"batteries": [r for _, r in rows[:12]],
+                "note": "Say the level in words (\"about three quarters\" or \"75 percent\")."}
+
+
+def _battery_words(text: str) -> set[str]:
+    """Words of a battery's name, with 'backdoor' and 'back door' alike, minus the generic ones."""
+    text = re.sub(r"[_\-.]", " ", text.lower())
+    text = re.sub(r"\b(back|front)\s*(door)\b", r"\1\2", text)
+    return {w for w in re.findall(r"[a-z0-9]+", text)
+            if w not in {"sensor", "battery", "the", "s", "level", "how", "much", "left", "contact"}}
+
+
 class SecurityTool(_Tool):
     annotations = _read_only()
     name = "sentient_security"
@@ -2528,7 +2576,7 @@ class SentientAPI(llm.API):
         rt0 = _runtime(self.hass)
         tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), BatteryTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
                  *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else []),
                  *([BookTool()] if rt0 is not None and rt0.options.get("books") else []),

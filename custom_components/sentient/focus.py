@@ -50,6 +50,8 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_watch", "sentient_remind", "sentient_watches", "sentient_cancel_watch", "sentient_alarm"]),
         ("security", r"\block|secure|\bopen|\bshut|closed|window|\bdoor|alarm|night watch|\bsafe\b",
          ["sentient_security", "sentient_night_watch", "sentient_house_check", "sentient_security_audit"]),
+        ("batteries", r"batter(?:y|ies)|charge\b|running (?:low|out)",
+         ["sentient_batteries"]),
         ("warnings", r"warning|storm|flood|gale|snow|ice\b|weather",
          ["sentient_warnings"]),
         ("email", r"e-?mails?|inbox|\bmail\b",

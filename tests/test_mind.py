@@ -433,9 +433,12 @@ async def test_look_ahead_only_speaks_when_worth_it(hass: HomeAssistant) -> None
     assert out["facts"]["weather"]["condition"] == "snowy" and "snowy" in ai[0].data["instructions"]
     assert said and out["said"].startswith("Snow and frost")
     said.clear()
-    _ai(hass, {"speak": False})
+    second = _ai(hass, {"speak": False})
     out = await entry.runtime_data.foresight.async_look_ahead()
     assert not said and out["said"] is None
+    # 19 Nov: the bin said at 19:00 and again at 19:30 — what's been said today is shown, so it isn't said twice
+    assert "Already said out loud today" in second[0].data["instructions"]
+    assert "Snow and frost tomorrow" in second[0].data["instructions"]
 
 
 async def test_auto_off_learns_to_wait_longer(hass: HomeAssistant, freezer) -> None:
