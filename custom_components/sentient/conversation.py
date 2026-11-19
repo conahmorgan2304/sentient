@@ -1017,7 +1017,11 @@ class BackedUpAgent(conversation.ConversationEntity):
         result = None
         # An AI backup (another model, another key) first; then Home Assistant's own agent, which needs no internet,
         # so lights and heating still work when every AI is out.
-        backups = [self.backup_agent] + ([DEFAULT_BACKUP_AGENT] if self.backup_agent != DEFAULT_BACKUP_AGENT else [])
+        # Only for a command, though: asked "what's the news", Home Assistant's own agent answers with the time.
+        from .sessions import COMMAND as _COMMAND
+
+        backups = [self.backup_agent] + ([DEFAULT_BACKUP_AGENT] if self.backup_agent != DEFAULT_BACKUP_AGENT
+                                         and _COMMAND.search(user_input.text or "") else [])
         for backup in backups:
             try:
                 async with asyncio.timeout(BACKUP_TIMEOUT):
