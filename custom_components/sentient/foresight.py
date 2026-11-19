@@ -141,6 +141,12 @@ class Foresight:
                 out["outside_information_now"] = outside
         return out
 
+    @staticmethod
+    def _said_today(rt: Any) -> list[str]:
+        """19 Nov: a reminder said the bin was due at 19:00, and the look at tomorrow said it again at 19:30."""
+        speech = getattr(rt, "speech", None)
+        return [t[:200] for t in speech.said_within(8)][:8] if hasattr(speech, "said_within") else []
+
     async def async_look_ahead(self, speak: bool = True) -> dict[str, Any]:
         rt = self._rt()
         facts = await self.gather()
@@ -157,8 +163,10 @@ class Foresight:
                 "defrosting, heavy rain so bring the washing in, a strong wind for the bins, very hot or cold; if "
                 "animals live outside and it'll freeze or be very hot, their water and bedding or shade). "
                 "Ordinary weather and ordinary days need nothing: then speak is false. Don't repeat anything an "
-                "alarm will already say tonight. If speaking, at most two short, natural sentences, British English, "
+                "alarm will already say tonight, or anything already said today (below), even in other words. "
+                "If speaking, at most two short, natural sentences, British English, "
                 "no greetings, no names. " + personality_line(self.options)
+                + (f"\nAlready said out loud today: {said_today}" if (said_today := self._said_today(rt)) else "")
                 + (f"\nHouse rules:\n{rules}" if rules else "") + f"\nFacts: {facts}"
             ),
             "structure": {
