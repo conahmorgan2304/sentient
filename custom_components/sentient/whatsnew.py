@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.12.9": [
+        "Vacuum: stopping off its dock (remote control, a pause) no longer counts as stuck or says it's finished each time. A run finishes after 10 minutes stopped, and it only counts as not making it back if it's still off its dock after an hour. Earlier counts, which included remote-control sessions, are cleared.",
+        "Voice: \"What did you say?\" now repeats the last thing said out loud in that room.",
+        "Voice: asking a camera to look without saying what for (\"Can you see the rabbits?\") now just looks, instead of failing.",
+        "Self-test: an honest \"I can't check that\" is marked right for questions it can't know.",
+        "The voice mistakes log counts reading the calendar as looking, and a near-miss word in the voice's notes no longer fails it.",
+    ],
     "1.12.8": [
         "Overview: \"The day so far\" only counts what was actually said. Messages held back (for quiet hours, say) no longer count as said.",
         "Timeline: the same message held back again for the same reason is one entry that shows how many times and when it was last held, instead of a new line every retry.",

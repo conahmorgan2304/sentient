@@ -53,7 +53,8 @@ SAYS_NO = re.compile(r"\b(no|nobody|no one|no-one|not seen|nothing|hasn['’]t|h
 SAYS_OFF = re.compile(r"\b(off|not on|isn['’]t on|is not on|switched off|turned off)\b", re.I)
 SAYS_ON = re.compile(r"\b(on|switched on|turned on|lit)\b", re.I)
 DOESNT_KNOW = re.compile(r"\b(?:don['’]t|do not|didn['’]t) (?:know|have|keep|track|see)|no (?:idea|record|way of knowing|information)|"
-                         r"(?:can['’]t|cannot|couldn['’]t|unable to|not able to) (?:know|tell|say|see|find)|not sure|"
+                         r"(?:can['’]t|cannot|couldn['’]t|unable to|not able to) (?:know|tell|say|see|find|check|track|access)|not sure|"
+                         r"only (?:track|keep track of|know about|see) |"  # 18–19 Nov: "I can't check what you ate…, as I only track…"
                          r"no(?:thing)? (?:recorded|logged)|wouldn['’]t know", re.I)
 CANT_DO = re.compile(r"\b(?:can['’]t|cannot|can not|unable|not able|no way|don['’]t have (?:hands|arms|a body|a way)|physically|"
                      r"i['’]m (?:just )?a voice|not something i can)\b", re.I)
