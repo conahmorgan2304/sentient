@@ -280,8 +280,11 @@ async def test_a_tool_with_missing_arguments_does_not_crash_the_voice(hass: Home
 
     await _setup(hass)
     api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
-    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden"}))
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={}))
     assert "wrong arguments" in out["error"]
+    # 17–18 Nov: no question is fine now — it just looks ("What can you see?")
+    out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden"}))
+    assert "wrong arguments" not in out.get("error", "")
 
 
 async def test_announce_to_several_rooms_or_everywhere(hass: HomeAssistant) -> None:
@@ -402,3 +405,37 @@ async def test_stop_flagging_picks_the_real_device_when_two_share_a_name(hass):
     real = devs.async_get_or_create(config_entry_id=local.entry_id, identifiers={("tuya_local", "y")}, name="bedroom waxmelt")
     er.async_get(hass).async_get_or_create("switch", "tuya_local", "y", device_id=real.id, suggested_object_id="bedroom_waxmelt")
     assert entry.runtime_data.watchdog._device_id("bedroom waxmelt") == real.id
+
+
+async def test_a_vacuum_driven_by_remote_isnt_stuck(hass: HomeAssistant, freezer) -> None:
+    """17 Nov live: remote control went cleaning → idle → cleaning three times, then docked; each idle was "stuck"."""
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    hass.states.async_set("vacuum.robot", "docked", {"friendly_name": "Robot"})
+    entry = await _setup(hass)
+    app = entry.runtime_data.appliances
+
+    async def to(state: str, minutes: float = 0) -> None:
+        freezer.tick(timedelta(minutes=minutes))
+        hass.states.async_set("vacuum.robot", state, {"friendly_name": "Robot"})
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    for _ in range(3):
+        await to("cleaning", 2)
+        await to("idle", 4)
+    await to("docked", 3)
+    for _ in range(70):  # an hour on
+        freezer.tick(timedelta(minutes=1))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert app.errors.get("vacuum.robot", []) == []
+    assert "vacuum.robot" not in app.running
+    # left off its dock for over an hour: that one counts
+    await to("cleaning", 1)
+    await to("idle", 5)
+    for _ in range(65):
+        freezer.tick(timedelta(minutes=1))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    assert len(app.errors["vacuum.robot"]) == 1 and "vacuum.robot" not in app.running

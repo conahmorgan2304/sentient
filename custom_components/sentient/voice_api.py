@@ -21,6 +21,19 @@ SAFE_TOOLS = {'sentient_remember', 'sentient_correction', 'sentient_recall', 'se
               'sentient_quiet', 'sentient_shush'}
 
 
+_TASK_STATES = {'in_progress': 'in_progress', 'waiting': 'waiting', 'completed': 'completed', 'done': 'completed',
+                'complete': 'completed', 'finished': 'completed', 'pending': 'waiting', 'started': 'in_progress',
+                'active': 'in_progress', 'ongoing': 'in_progress', 'open': 'in_progress'}
+
+
+def _task_state(value) -> str | None:
+    """The three task states, taking near-misses ('done', 'pending'…) rather than failing the call.
+
+    17 Nov: a call with another word for one of them failed the whole tool and had to be put right on a retry.
+    """
+    return _TASK_STATES.get(str(value or '').strip().lower().replace(' ', '_').replace('-', '_'))
+
+
 class SessionTool(_Tool):
     name = 'sentient_session'
     description = ('Track the current goal, topic, selected entities, missing detail and task state. '
@@ -32,7 +45,7 @@ class SessionTool(_Tool):
     parameters = vol.Schema({vol.Optional('active'): bool, vol.Optional('topic'): str,
                              vol.Optional('entities'): [str], vol.Optional('question'): str,
                              vol.Optional('goal'): str, vol.Optional('missing_detail'): str,
-                             vol.Optional('task_state'): vol.In(['in_progress', 'waiting', 'completed'])})
+                             vol.Optional('task_state'): _task_state})
 
     async def async_call(self, hass, tool_input, llm_context):
         rt, session = _runtime(hass), current_session.get()
@@ -47,7 +60,7 @@ class SessionTool(_Tool):
         for key in ('goal', 'missing_detail'):
             if key in a:
                 setattr(session, key, a[key][:200])
-        if 'task_state' in a:
+        if a.get('task_state'):
             session.task_state = a['task_state']
         if 'topic' in a:
             session.topic = a['topic'][:200]

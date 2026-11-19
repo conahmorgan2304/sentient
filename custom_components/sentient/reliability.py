@@ -141,7 +141,10 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         # deliberately checks tool relevance, not just whether any tool ran.
         evidence_names = ("history", "timeline", "what_happened", "camera_activity",
                           "visitors", "incidents", "root_cause", "conversations", "sentient_why",
-                          "logbook", "recorder", "security_event", "evidence", "HassGetHistory")
+                          "logbook", "recorder", "security_event", "evidence", "HassGetHistory",
+                          # 17 Nov: "What was the next birthday on my calendar?" read the calendar but was logged as
+                          # answering without looking; "What did you say?" is answered from what was said
+                          "calendar", "said", "spoken")
         def relevant_evidence(index: int, name: str, error: str | None) -> bool:
             if error or not any(word.casefold() in name.casefold() for word in evidence_names):
                 return False

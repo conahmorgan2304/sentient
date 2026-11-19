@@ -59,3 +59,30 @@ async def test_a_speakers_is_speaking_sensor_isnt_a_person(hass: HomeAssistant) 
     assert not ActivityTracker.is_presence(hass.states.get(speaking.entity_id))
     assert ActivityTracker.is_presence(hass.states.get(camera.entity_id))  # a camera's motion is still movement
     assert ActivityTracker.is_presence(hass.states.get(room.entity_id))
+
+
+def test_19nov_small_fixes() -> None:
+    from custom_components.sentient.selftest import DOESNT_KNOW
+    from custom_components.sentient.voice_api import _task_state
+
+    # the breakfast answer the self-test marked wrong
+    assert DOESNT_KNOW.search("I can't check what you ate or what was prepared for breakfast, as I only track device "
+                              "activity and home sensors rather than meals.")
+    assert not DOESNT_KNOW.search("You had toast and a coffee.")
+    assert _task_state("done") == "completed" and _task_state("Pending") == "waiting" and _task_state("x") is None
+
+
+async def test_what_did_you_say_gets_the_last_thing_said_in_the_room(hass: HomeAssistant) -> None:
+    from types import SimpleNamespace
+
+    from custom_components.sentient.llm_api import _last_said_in
+
+    now = dt_util.utcnow()
+    items = [{"time": now.isoformat(), "kind": "said", "text": "Hello there", "detail": "Hallway", "source": "conversation"},
+             {"time": now.isoformat(), "kind": "said", "text": "The kettle has finished boiling.", "detail": "Kitchen, Hallway",
+              "source": "notice"},
+             {"time": (now - timedelta(hours=2)).isoformat(), "kind": "said", "text": "Old", "detail": "Bedroom"}]
+    rt = SimpleNamespace(timeline=SimpleNamespace(items=items))
+    assert _last_said_in(rt, "kitchen")[1] == "The kettle has finished boiling."
+    assert _last_said_in(rt, "Hallway")[1] == "The kettle has finished boiling."  # the voice's own replies aren't this
+    assert _last_said_in(rt, "Bedroom") is None  # over an hour ago

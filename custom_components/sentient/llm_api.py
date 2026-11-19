@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -997,6 +998,22 @@ class EmailTool(_Tool):
         return rt.inbox.listing(tool_input.tool_args["limit"])
 
 
+def _last_said_in(rt: Any, room: str) -> tuple[str, str] | None:
+    """The last announcement spoken in a room in the last hour, as (HH:MM, text)."""
+    timeline = getattr(rt, "timeline", None)
+    if timeline is None:
+        return None
+    since = dt_util.utcnow() - timedelta(hours=1)
+    for item in timeline.items:
+        when = dt_util.parse_datetime(str(item.get("time") or ""))
+        if when is None or when < since:
+            return None
+        rooms = [r.strip().casefold() for r in str(item.get("detail") or "").split(",")]
+        if item.get("kind") == "said" and item.get("source") != "conversation" and room.casefold() in rooms:
+            return f"{dt_util.as_local(when):%H:%M}", str(item.get("text") or "")[:300]
+    return None
+
+
 def _voice_calendars(hass: HomeAssistant) -> list[str]:
     """The calendars the voice may read: the ones exposed to Assist, as Home Assistant's own calendar tool uses."""
     try:
@@ -1513,7 +1530,10 @@ class LookTool(_Tool):
         "is used automatically. Answer the person in your own words from the result."
     )
     parameters = vol.Schema(
-        {vol.Required("camera"): cv.string, vol.Required("question"): cv.string, vol.Optional("spot"): cv.string}
+        {vol.Required("camera"): cv.string,
+         # 17–18 Nov: twice called with no question ("How's the rabbit? Can you see them?") and failed
+         vol.Optional("question", default="What can you see? Describe anyone or any animal there."): cv.string,
+         vol.Optional("spot"): cv.string}
     )
 
     async def async_call(
@@ -2634,6 +2654,11 @@ class SentientAPI(llm.API):
         room = self._room_of_device(llm_context.device_id)
         if room:
             lines.append(f"The person talking to you is in the {room}.")
+            # 17 Nov: "What did you say?" got "You were asking me what to check…". Give it the last thing said here.
+            if said := _last_said_in(rt, room):
+                lines.append(f"The last thing said out loud in the {room} ({said[0]}): \"{said[1]}\". If they ask "
+                             "\"what did you say?\" or to say it again, repeat that (or your own last reply, if that "
+                             "came after it).")
         profile = rt.profiles.for_device(llm_context.device_id) if getattr(rt, "profiles", None) is not None else None
         from . import voice_id
 

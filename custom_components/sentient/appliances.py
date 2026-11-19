@@ -46,6 +46,11 @@ ERROR = {"error", "fault", "stuck", "jammed"}
 MIN_RUN = timedelta(minutes=1)
 POWER_SETTLE = timedelta(minutes=5)  # a long run (a wash) may pause: wait this long before calling it done
 SHORT_SETTLE = timedelta(seconds=30)  # a short run (a kettle) is done when it's done
+# 17 Nov live: driven by remote control, the vacuum went cleaning → idle → cleaning three times, then docked. Each idle
+# was counted as stuck "away from its dock" and said "finished". A vacuum stopped off its dock is now a pause: the
+# run is finished after VACUUM_PAUSE, and only counts as not making it back if it's still off its dock after VACUUM_LOST.
+VACUUM_PAUSE = timedelta(minutes=10)
+VACUUM_LOST = timedelta(minutes=60)
 LONG_RUN = timedelta(minutes=15)
 KEEP_RUNS = 20
 STUCK_FACTOR = 1.5
@@ -76,7 +81,8 @@ class Appliances:
         self._low: dict[str, datetime] = {}  # power sensor -> since when it's been low mid-run
         self._warned: set[str] = set()  # stuck already said for this run
         self.last: dict[str, dict[str, Any]] = {}  # entity -> last finished run
-        self.errors: dict[str, list[str]] = {}  # entity -> when it got stuck or finished away from its dock
+        self.errors: dict[str, list[str]] = {}  # entity -> when it got stuck or didn't make it back to its dock
+        self._paused: dict[str, datetime] = {}  # vacuum -> when it stopped away from its dock
         self._unsubs: list = []
 
     async def async_start(self) -> None:
@@ -84,7 +90,8 @@ class Appliances:
         self.runs = {k: list(v) for k, v in (data.get("runs") or {}).items()}
         self.running = dict(data.get("running") or {})
         self.last = dict(data.get("last") or {})
-        self.errors = {k: list(v) for k, v in (data.get("errors") or {}).items()}
+        # "stuck" (1.12.9): the old "errors" counted every pause away from the dock (remote control), so they're dropped
+        self.errors = {k: list(v) for k, v in (data.get("stuck") or {}).items()}
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
         # anything that stopped while Home Assistant was off
@@ -100,7 +107,7 @@ class Appliances:
             self._unsubs.pop()()
 
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"runs": self.runs, "running": self.running, "last": self.last, "errors": self.errors}, 5)
+        self._store.async_delay_save(lambda: {"runs": self.runs, "running": self.running, "last": self.last, "stuck": self.errors}, 5)
 
     # ----- which, and whether it's working -----------------------------------------------
     def watched(self) -> list[str]:
@@ -160,6 +167,8 @@ class Appliances:
             self.hass.async_create_task(self._async_say(f"{_friendly(new.name)} seems to be stuck.", "stuck", entity_id),
                                         eager_start=False)
         working = self._working(new)
+        if new.domain == "vacuum" and new.state.lower() != "idle":
+            self._paused.pop(entity_id, None)  # working again (same run) or back on its dock
         if working:
             self._low.pop(entity_id, None)
             if entity_id not in self.running:
@@ -175,7 +184,8 @@ class Appliances:
         if new.state.lower() in ERROR:
             return  # not finished: waiting to be helped
         if new.domain == "vacuum" and new.state.lower() == "idle":
-            self._error(entity_id)  # stopped somewhere other than its dock
+            self._paused.setdefault(entity_id, now)  # stopped off its dock: paused (remote control) or lost
+            return
         self._finish(entity_id, now)
 
     def _error(self, entity_id: str) -> None:
@@ -194,6 +204,12 @@ class Appliances:
                 self._low.pop(entity_id, None)
                 if entity_id in self.running:
                     self._finish(entity_id, since)
+        for entity_id, since in list(self._paused.items()):
+            if entity_id in self.running and now - since >= VACUUM_PAUSE:
+                self._finish(entity_id, since)  # it stopped then: that's when the run ended
+            if now - since >= VACUUM_LOST:
+                self._paused.pop(entity_id, None)
+                self._error(entity_id)  # an hour off its dock: it didn't make it back
         for entity_id, started in list(self.running.items()):
             usual = self.usual(entity_id)
             if usual is None or entity_id in self._warned or entity_id in self._low:
