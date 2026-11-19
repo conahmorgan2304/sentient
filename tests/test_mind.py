@@ -184,6 +184,9 @@ async def test_overnight_reflection(hass: HomeAssistant, freezer) -> None:
     assert rt.followyou.pending_thoughts() == []  # not till quiet hours end
     freezer.tick(timedelta(hours=4))
     assert rt.followyou.pending_thoughts() == ["The gate was left open twice yesterday evening."]
+    # the Mind sensor writes once a minute; the reflection ran in the background after that minute's write
+    hass.bus.async_fire("sentient_voice_session")
+    await hass.async_block_till_done()
     assert hass.states.get("sensor.nova_mind").attributes["thoughts"]
 
 
