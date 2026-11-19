@@ -181,36 +181,24 @@ async def test_disabled_delivery_history_keeps_delivery_and_failure_detection(ha
     assert 'media_player.unconfigured' in router.failures
 
 
-async def test_diagnostic_toggles_roundtrip_clear_and_reenable(hass, hass_ws_client):
+async def test_diagnostic_checks_are_always_on_and_not_offered_as_switches(hass, hass_ws_client):
+    """19 Nov: reliability plumbing isn't a switch any more; a house that had switched one off gets it back."""
+    from custom_components.sentient.const import ALWAYS_ON
     from tests.test_websocket import _setup
-    from custom_components.sentient.sensor import MindSensor
     entry = await _setup(hass)
-    rt = entry.runtime_data
-    rt.voice_checks.start()
-    rt.speech.deliveries.append({'message': 'old'})
     ws = await hass_ws_client(hass)
     await ws.send_json({'id': 1, 'type': 'sentient/settings'})
     settings = (await ws.receive_json())['result']
-    voice = next(g for g in settings['groups'] if g['id'] == 'voice')
-    assert {'live_voice_check', 'speech_delivery_history'} <= {f['name'] for f in voice['schema']}
-    await ws.send_json({'id': 2, 'type': 'sentient/settings/save', 'group': 'voice',
-                       'data': {'live_voice_check': False, 'speech_delivery_history': False, 'conversation_sessions': True}})
-    assert (await ws.receive_json())['success']
+    offered = {f['name'] for g in settings['groups'] for f in g['schema']}
+    assert not offered & ALWAYS_ON
+    rt = entry.runtime_data
+    rt.voice_checks.start()
+    assert rt.voice_checks.status() is not None
+    # switched off before: turned back on at start
+    hass.config_entries.async_update_entry(entry, options={**entry.options, 'live_voice_check': False})
+    await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
-    assert rt.voice_checks.status() is None and not rt.speech.deliveries
-    attrs = MindSensor(entry).extra_state_attributes
-    assert attrs['live_voice_check_enabled'] is False
-    assert attrs['voice_check'] is None and attrs['speech_deliveries'] == []
-    await ws.send_json({'id': 3, 'type': 'sentient/voice_check', 'action': 'start'})
-    assert (await ws.receive_json())['error']['code'] == 'disabled'
-    await ws.send_json({'id': 4, 'type': 'sentient/settings/save', 'group': 'voice',
-                       'data': {'live_voice_check': True, 'speech_delivery_history': True, 'conversation_sessions': True}})
-    assert (await ws.receive_json())['success']
-    await hass.async_block_till_done()
-    await ws.send_json({'id': 5, 'type': 'sentient/voice_check', 'action': 'start'})
-    assert (await ws.receive_json())['success']
-    assert rt.speech.options['speech_delivery_history'] is True
-    assert MindSensor(entry).extra_state_attributes['live_voice_check_enabled'] is True
+    assert entry.options['live_voice_check'] is True
 
 
 async def test_selftest_counts_an_alarm_due_today_as_a_right_answer_about_reminders(hass):

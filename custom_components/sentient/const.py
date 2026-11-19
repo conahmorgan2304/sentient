@@ -466,3 +466,15 @@ CONF_STREAM_VOICE = "stream_voice_replies"  # speak long voice replies as they a
 CONF_SPECIFIC_CLARIFICATION = "specific_clarification"
 
 CONF_ACTION_RECOVERY = "action_recovery"
+
+
+# Reliability and safety plumbing: always on, so no longer offered as switches in Settings (19 Nov: about 165 switches
+# was too many to set up). Turned on once for any house that had switched one off.
+ALWAYS_ON: frozenset[str] = frozenset({
+    "recheck_unconfirmed", "live_voice_check", "speech_delivery_history", "reliability_log", "self_check",
+    "health_duplicates", "routine_verify", "camera_prefilter", "hide_substreams", "battery_forecast",
+    # reliability fixes that used to start off: they stay on for every house now (the update checker keeps its
+    # switch, as it contacts GitHub)
+    "action_recovery", "specific_clarification", "behaviour_explanations",
+    "evidence_awareness", "speech_failure_notification", "frigate_pipeline_health", "autooff_respect_recent_voice",
+})

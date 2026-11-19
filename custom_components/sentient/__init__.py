@@ -445,6 +445,11 @@ DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
 
 async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> bool:
     started_at = time.monotonic()
+    from .const import ALWAYS_ON
+
+    if off := [k for k in ALWAYS_ON if _entry_options(entry).get(k) is not True]:
+        # these are no longer switches (always on): turn on any that a house had off (or never set)
+        hass.config_entries.async_update_entry(entry, options={**entry.options, **{k: True for k in off}})
     options = _entry_options(entry)
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
