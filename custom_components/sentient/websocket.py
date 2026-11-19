@@ -1353,7 +1353,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
         {
             "id": gid, "title": title, "icon": icon, "blurb": blurb,
             "schema": _serialize(group_schema(gid)),
-            **({"sections": SECTIONS[gid]} if gid in SECTIONS else {}),
+            **({"sections": SECTIONS[gid]} if gid in SECTIONS else _fine_tune(gid)),
         }
         for gid, title, icon, blurb, _keys in GROUPS
     ]
@@ -1379,15 +1379,29 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     )
 
 
+def _fine_tune(group_id: str) -> dict[str, Any]:
+    """A page's main switches open, and the settings that only matter once one is on folded into "Fine-tune".
+
+    19 Nov: about 165 switches took too long to set up. Nothing changes what Sentient does: every setting is still
+    there with its value, just folded away until it's wanted.
+    """
+    names = [str(m) for m in group_schema(group_id).schema]
+    tune = [n for n in names if DEPENDS.get(n) in names]
+    if len(tune) < 2:
+        return {}
+    return {"sections": [{"title": "Main", "open": True, "names": [n for n in names if n not in tune]},
+                         {"title": "Fine-tune", "open": False, "names": tune}]}
+
+
 # The longest settings pages fold into sections: (title, the settings in it, open at first). Anything a section
 # doesn't list is shown in a last "More" section, so a new setting can never go missing from the page.
 SECTIONS: dict[str, list[dict[str, Any]]] = {
     "voice": [
         {"title": "Speakers & volume", "open": True, "names": [
-            "persona", "speakers", "default_speaker", "fallback_speakers", "chime", "speak_volume", "night_volume",
-            "duck_media", "room_volume", "full_volume_speakers", "follow_you", "follow_minutes", "all_occupied",
-            "room_tracking", "room_trackers"]},
-        {"title": "Echo speakers & voices", "open": False, "names": [
+            "persona", "speakers", "default_speaker", "fallback_speakers", "speak_volume", "night_volume",
+            "follow_you", "follow_minutes", "all_occupied", "room_tracking", "room_trackers"]},
+        {"title": "Sound, Echo speakers & voices", "open": False, "names": [
+            "chime", "duck_media", "room_volume", "full_volume_speakers",
             "media_speakers", "media_important_only", "alexa_tts_only", "tts_entity"]},
         {"title": "Personality & house rules", "open": False, "names": [
             "personality", "personality_notes", "style_feedback", "style_notes", "chattiness", "conversation_style",
@@ -1403,13 +1417,13 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
             "voice_language", "speak_house_language", "automatic_language", "remember_language_phrases"]},
         {"title": "Advanced: diagnostics, checks & trials", "open": False, "names": [
             "voice_timing_diagnostics", "unified_evidence", "focused_tools", "stream_voice_replies",
-            "speech_failure_notification", "conversation_recovery", "specific_clarification", "behaviour_explanations",
-            "evidence_awareness", "action_recovery"]},
+            "conversation_recovery"]},
     ],
     "mind": [
         {"title": "Thinking", "open": True, "names": [
-            "conversation_memory", "follow_ups", "curiosity", "reflection", "reflection_time", "foresight",
-            "foresight_time", "thoughts", "normal_day", "knowledge_card", "goals"]},
+            "conversation_memory", "follow_ups", "reflection", "reflection_time", "foresight", "foresight_time"]},
+        {"title": "More thinking", "open": False, "names": [
+            "curiosity", "thoughts", "normal_day", "knowledge_card", "goals"]},
         {"title": "Learning & suggestions", "open": False, "names": [
             "learn_corrections", "share_learning", "proposals", "self_adjust", "rules"]},
         {"title": "Advanced: AI budget & tuning", "open": False, "names": [
@@ -1432,7 +1446,25 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
 
 # settings that only mean something while another one is switched on: the page hides them until it is
 # (their values are kept, so switching back on brings them back as they were)
+def _advanced(group_id: str, advanced: list[str], main: str = "Main") -> list[dict[str, Any]]:
+    """A page with its everyday settings open and the rarely changed ones in a closed Advanced section."""
+    keys = next(g[4] for g in GROUPS if g[0] == group_id)
+    return [{"title": main, "open": True, "names": [k for k in keys if k not in advanced]},
+            {"title": "Advanced", "open": False, "names": [k for k in keys if k in advanced]}]
+
+
+SECTIONS["memory"] = _advanced("memory", ["memory_semantic_enabled", "memory_semantic_url", "memory_semantic_model",
+                                          "voice_speed_watchdog", "voice_speed_restart", "ai_case_memory",
+                                          "incident_stages"])
+SECTIONS["page"] = _advanced("page", ["custom_pages", "suggestions", "whats_new", CONF_SIMPLE, "relevant_memories",
+                                      CONF_PROMPT_MEMORIES, CONF_CHAT_AGENT])
+
+
 DEPENDS: dict[str, str] = {
+    **{k: CONF_CAMSEC for k in ("camera_security_describe", "security_event_evidence", "security_conversation_context",
+                                "security_event_feedback", "security_coverage")},
+    **{k: "heating_schedule" for k in ("heating_graph", "heating_revert")},
+    "routine_evidence": CONF_SUGGEST_ROUTINES,
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
     "speaker_memories": CONF_VOICE_ID,
     # conversation settings that do nothing without conversation sessions, and a few "how often/when" partners

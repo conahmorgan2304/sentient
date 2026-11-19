@@ -471,7 +471,10 @@ CONF_ACTION_RECOVERY = "action_recovery"
 # Reliability and safety plumbing: always on, so no longer offered as switches in Settings (19 Nov: about 165 switches
 # was too many to set up). Turned on once for any house that had switched one off.
 ALWAYS_ON: frozenset[str] = frozenset({
-    # only ones that are on by default: an optional feature that starts off keeps its switch (in Advanced)
     "recheck_unconfirmed", "live_voice_check", "speech_delivery_history", "reliability_log", "self_check",
     "health_duplicates", "routine_verify", "camera_prefilter", "hide_substreams", "battery_forecast",
+    # reliability fixes that used to start off: they stay on for every house now (the update checker keeps its
+    # switch, as it contacts GitHub)
+    "action_recovery", "specific_clarification", "behaviour_explanations",
+    "evidence_awareness", "speech_failure_notification", "frigate_pipeline_health", "autooff_respect_recent_voice",
 })

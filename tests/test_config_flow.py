@@ -51,7 +51,10 @@ async def test_options_menu_and_memory_manager(hass: HomeAssistant) -> None:
     texts = sorted(m.text for m in mem.items)
     assert texts == ["Dinner is at six", "The bins go out on Wednesday nights"]
     assert mem.get(keep.id).text.endswith("Wednesday nights")
-    assert entry.options == {"motion_window": 7}  # settings untouched
+    from custom_components.sentient.const import ALWAYS_ON
+
+    # settings untouched (beyond the always-on checks, which are set at start)
+    assert {k: v for k, v in entry.options.items() if k not in ALWAYS_ON} == {"motion_window": 7}
 
 
 async def test_options_settings(hass: HomeAssistant) -> None:
