@@ -402,3 +402,20 @@ async def test_choosing_between_duplicates_is_not_announced_as_learned(hass: Hom
     b = mem.add("My name is spelled CONAH, and it is pronounced Connor")
     assert mem.resolve("|".join(sorted((a.id, b.id))), a.id)
     assert mem.changed[-1]["kind"] == "merged"  # the evening "I've updated what I know" only says replacements
+
+
+def test_items_told_before_are_taken_out_of_the_briefing() -> None:
+    """20 Nov: the door-sensor batteries and the to-do item were read out for the third morning running."""
+    from custom_components.sentient.upkeep import briefing_keys, drop_told
+
+    yesterday = {"system": {"problems": ["backdoor sensor Battery is running down about 5× faster than it used to"],
+                            "CPU": "45 °C"},
+                 "to_do": {"To do": ["Clean the kitchen"]}, "open_now": ["Bedroom window"]}
+    today = {"system": {"problems": ["backdoor sensor Battery is running down about 6× faster than it used to",
+                                     "Hallway tablet is offline"], "CPU": "44 °C"},
+             "to_do": {"To do": ["Clean the kitchen", "Ring the dentist"]}, "open_now": ["Bedroom window"]}
+    out = drop_told(today, briefing_keys(yesterday))
+    assert out["system"]["problems"] == ["Hallway tablet is offline"]  # the battery's only number changed
+    assert out["to_do"] == {"To do": ["Ring the dentist"]}
+    assert out["open_now"] == ["Bedroom window"]  # what's open now is always said
+    assert drop_told(yesterday, briefing_keys(yesterday)) == {"system": {"CPU": "45 °C"}, "open_now": ["Bedroom window"]}

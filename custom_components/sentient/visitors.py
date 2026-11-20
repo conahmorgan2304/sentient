@@ -60,6 +60,7 @@ PARCEL_RECHECK = 180  # seconds after a delivery
 KEEP = 30
 DOORSTEP_SETTLE = 10  # seconds after a doorstep visit ends, so the visitor has stepped away
 DOORSTEP_COOLDOWN = timedelta(minutes=2)
+DOOR_AFTER_ZONE = timedelta(seconds=15)  # the door opened this soon after the camera saw someone: from inside
 ZONE_DOOR_WINDOW = timedelta(seconds=90)  # the front door opened this recently: the zone is someone coming or going
 GRAB_WITHIN = 5  # seconds to get the door camera's picture the moment the visit starts
 RANG_RECENTLY = timedelta(minutes=5)  # a doorbell visit already does its own parcel check
@@ -89,6 +90,7 @@ class Visitors:
         self._door_opened: datetime | None = None
         self.parcel_waiting = False  # a parcel was there at the last look
         self.expecting: Callable[[], bool] = lambda: False  # set by the runtime: a parcel's out for delivery today
+        self.on_household: Callable[[dict[str, Any]], Any] | None = None  # set by the runtime: a visit relabelled
         self.on_visit: Callable[[str, str], Any] | None = None  # set by the runtime: (camera, text) for the security timeline
 
     async def async_start(self) -> None:
@@ -125,11 +127,11 @@ class Visitors:
 
     def today(self) -> list[dict[str, Any]]:
         start = dt_util.start_of_local_day()
-        return [v for v in self.log if (t := dt_util.parse_datetime(v["time"])) and t >= start]
+        return [v for v in self.log if not v.get("household") and (t := dt_util.parse_datetime(v["time"])) and t >= start]
 
     def summary(self, limit: int = 8) -> list[str]:
         out = []
-        for v in list(self.log)[:limit]:
+        for v in [v for v in self.log if not v.get("household")][:limit]:
             when = dt_util.parse_datetime(v["time"])
             who = f"{v['name']} — " if v.get("name") else ""
             line = f"{local_when(when) if when else ''}: {who}{v['description']}"
@@ -162,6 +164,7 @@ class Visitors:
         if new.entity_id in self.zone_doors:
             if new.state == STATE_ON and old.state != STATE_ON:
                 self._door_opened = dt_util.utcnow()
+                self._door_after_zone(self._door_opened)
             if new.entity_id not in self.doorstep and new.entity_id not in self.triggers:
                 return
         if new.entity_id in self.doorstep:
@@ -192,6 +195,39 @@ class Visitors:
         if any((st := self.hass.states.get(e)) and st.state == STATE_ON for e in self.zone_doors):
             return True
         return self._door_opened is not None and now - self._door_opened < ZONE_DOOR_WINDOW
+
+    def _from_inside(self, now: datetime) -> bool:
+        """The front door opened just after the camera saw someone, with no ring: someone from the house
+        stepping out (20 Nov 07:53: the camera saw them 0.2 seconds before the door sensor did)."""
+        return (self._zone_last is not None and timedelta(0) <= now - self._zone_last <= DOOR_AFTER_ZONE
+                and not self._rang_since(self._zone_last))
+
+    def _rang_since(self, since: datetime) -> bool:
+        for entity_id in self.triggers:
+            st = self.hass.states.get(entity_id)
+            if st is not None and st.last_changed >= since and (st.domain == "event" or st.state == STATE_ON):
+                return True
+        return False
+
+    @callback
+    def _door_after_zone(self, now: datetime) -> None:
+        if not self._from_inside(now) or not self.log:
+            return
+        visit = self.log[0]
+        when = dt_util.parse_datetime(visit.get("time") or "")
+        if visit.get("trigger") in self.doorstep and when is not None and abs(when - self._zone_last) <= DOOR_AFTER_ZONE:
+            self._mark_household(visit)
+
+    def _mark_household(self, visit: dict[str, Any]) -> None:
+        """Not a visitor after all: kept off the briefing, today's visitors and the phone."""
+        if visit.get("household"):
+            return
+        visit["household"] = True
+        visit["kind"] = "household"
+        visit["description"] = "someone from the house going out the front door"
+        self._save()
+        if self.on_household is not None:
+            self.on_household(visit)
 
     @callback
     def _zone_entered(self, entity_id: str) -> None:
@@ -322,7 +358,8 @@ class Visitors:
                 "Sentient: who's at the door",
                 ("This is a doorbell camera picture taken as someone reached the front door. " if via_zone else "This is a doorbell camera picture taken as the bell rang. ") + "Describe who is at the door "
                 "in a few plain words (e.g. 'a delivery driver holding a small parcel', 'a man in a "
-                "red coat', 'two children'). Don't guess names. Set kind to the best match, and parcel "
+                "red coat', 'two children'). The place is the front door: say 'at the front door' or 'by the "
+                "front door' if you mention it, never 'yard', 'driveway' or 'garden'. Don't guess names. Set kind to the best match, and parcel "
                 "to true if they are carrying or have put down a parcel or package.",
                 {
                     "kind": {"description": "Best match", "required": True,
@@ -352,6 +389,9 @@ class Visitors:
             "parcel_left": False,
             "trigger": trigger,
         }
+        if via_zone and self._door_opened is not None and self._from_inside(self._door_opened):
+            # the door opened while it was looking: someone from the house, not a visitor
+            visit.update(household=True, kind="household", description="someone from the house going out the front door")
         self.log.appendleft(visit)
         self._save()
         if self.on_visit is not None and self.camera:

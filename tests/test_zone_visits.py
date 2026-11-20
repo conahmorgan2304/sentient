@@ -109,3 +109,39 @@ async def test_a_visit_joins_the_security_timeline(hass: HomeAssistant) -> None:
     with patch("custom_components.sentient.visitors.asyncio.sleep"):
         await _flip(hass, ZONE, "on")
     assert seen == [("camera.doorbell", "Someone reached the front door: A man in a red coat")]
+
+
+async def test_door_opening_just_after_the_zone_is_someone_from_the_house(hass: HomeAssistant) -> None:
+    """20 Nov 07:53: the camera saw them 0.2 s before the door opened; the briefing then said someone was in the yard."""
+    entry = await _house(hass)
+    rt = entry.runtime_data
+    _ai(hass)
+    async_mock_service(hass, "assist_satellite", "announce")
+    with patch("custom_components.sentient.visitors.asyncio.sleep"):
+        await _flip(hass, ZONE, "on")
+        await _flip(hass, DOOR, "on")
+    visit = rt.visitors.log[0]
+    assert visit["household"] and visit["kind"] == "household"
+    assert rt.visitors.today() == [] and rt.visitors.summary() == []
+    assert not [i for i in rt.timeline.since(1, ["visitor"], 10)]
+    assert any("Someone from the house went out" in i["text"] for i in rt.timeline.since(1, ["noticed"], 10))
+
+
+async def test_door_opening_a_while_later_is_still_a_visitor(hass: HomeAssistant, freezer) -> None:
+    entry = await _house(hass)
+    rt = entry.runtime_data
+    _ai(hass)
+    async_mock_service(hass, "assist_satellite", "announce")
+    with patch("custom_components.sentient.visitors.asyncio.sleep"):
+        await _flip(hass, ZONE, "on")
+        freezer.tick(timedelta(seconds=40))  # someone answering the door to a caller
+        await _flip(hass, DOOR, "on")
+    assert not rt.visitors.log[0].get("household") and len(rt.visitors.today()) == 1
+
+
+def test_the_look_says_front_door_not_yard() -> None:
+    import inspect
+
+    from custom_components.sentient import visitors
+
+    assert "never 'yard'" in inspect.getsource(visitors.Visitors.async_visit)

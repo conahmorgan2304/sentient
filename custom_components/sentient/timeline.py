@@ -175,11 +175,28 @@ class Timeline:
             return
         visit = log[0]
         self._seen_visit = visit.get("time")
+        if visit.get("household"):
+            self.add("noticed", "Someone from the house went out the front door",
+                     "not a visitor: the front door opened as the camera saw them")
+            return
         who = f"{visit['name']} — " if visit.get("name") else ""
         self.add(
             "visitor", f"{who}{visit.get('description') or 'Someone at the door'}", visit.get("kind"),
             parcel=bool(visit.get("parcel_left")) or None,
         )
+
+    def relabel_household_visit(self, visit: dict) -> bool:
+        """A visitor entry that turned out to be someone from the house: changed in place, not left as a visit."""
+        when = dt_util.parse_datetime(visit.get("time") or "")
+        for item in list(self.items)[:30]:
+            t = dt_util.parse_datetime(item.get("time") or "")
+            if item.get("kind") == "visitor" and when is not None and t is not None and abs(t - when) <= timedelta(minutes=2):
+                item.update(kind="noticed", text="Someone from the house went out the front door",
+                            detail="not a visitor: the front door opened as the camera saw them")
+                item.pop("phoned", None)
+                self._save()
+                return True
+        return False
 
     @callback
     def _watch(self, event: Event) -> None:
