@@ -656,6 +656,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     parcels = Parcels(hass, entry.entry_id, options, get_rt)
     visitors.expecting = lambda: parcels.trackers != [] and parcels.expecting_today
+    visitors.on_household = timeline.relabel_household_visit  # a doorstep "visitor" who was someone going out
     visitors.on_visit = lambda camera, text: incidents.add(camera, text, "visit", evidence="observed")  # bell/zone visits join the security timeline
     from .rooms import RoomProfiles
 

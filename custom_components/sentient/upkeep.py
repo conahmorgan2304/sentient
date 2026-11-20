@@ -261,6 +261,49 @@ def plain_briefing(facts: dict[str, Any]) -> str:
             out.append(first.rstrip(".") + ".")
     return " ".join(out[:5]) or "Nothing needs doing right now."
 
+def _item_key(text: str) -> str:
+    """An item with its numbers taken out, so "about 5 days left" and "about 4 days left" are the same item."""
+    return re.sub(r"\s+", " ", re.sub(r"\d+(?:[.,]\d+)?[×x%]?", "#", str(text).lower())).strip()
+
+
+def briefing_keys(facts: dict[str, Any]) -> set[str]:
+    """The problems, jobs and to-do items a briefing would be told about."""
+    keys = {f"problem:{_item_key(p)}" for p in (facts.get("system") or {}).get("problems") or []}
+    keys |= {f"todo:{_item_key(i)}" for items in (facts.get("to_do") or {}).values() for i in items}
+    keys |= {f"job:{_item_key(j)}" for j in facts.get("maintenance_due") or []}
+    return keys
+
+
+def drop_told(facts: dict[str, Any], told: set[str]) -> dict[str, Any]:
+    """*facts* without the items an earlier briefing already told (unchanged): they aren't news."""
+    if not told:
+        return facts
+    out = dict(facts)
+    if problems := (facts.get("system") or {}).get("problems"):
+        system = dict(facts["system"])
+        system["problems"] = [p for p in problems if f"problem:{_item_key(p)}" not in told]
+        if not system["problems"]:
+            system.pop("problems")
+        if system:
+            out["system"] = system
+        else:
+            out.pop("system", None)
+    if todo := facts.get("to_do"):
+        kept = {name: [i for i in items if f"todo:{_item_key(i)}" not in told] for name, items in todo.items()}
+        kept = {name: items for name, items in kept.items() if items}
+        if kept:
+            out["to_do"] = kept
+        else:
+            out.pop("to_do", None)
+    if jobs := facts.get("maintenance_due"):
+        kept_jobs = [j for j in jobs if f"job:{_item_key(j)}" not in told]
+        if kept_jobs:
+            out["maintenance_due"] = kept_jobs
+        else:
+            out.pop("maintenance_due", None)
+    return out
+
+
 def last_briefing(rt: Any) -> str | None:
     """What the previous day's briefing said (12 to 36 hours ago), so today's doesn't say it all again —
     18 and 19 Nov both said the vacuum had failed to dock three times and the door sensor batteries."""
@@ -288,6 +331,7 @@ class Upkeep:
         self._tidying = False
         self._stopped = False
         self._morning: str | None = None
+        self._told: dict[str, Any] = {}  # what the last briefing told: {"day": date, "keys": [...]}
         from homeassistant.helpers.storage import Store
 
         self._store = Store(hass, 1, "sentient.morning_briefing")
@@ -300,7 +344,10 @@ class Upkeep:
     @_morning_day.setter
     def _morning_day(self, day: str | None) -> None:
         self._morning = day
-        self._store.async_delay_save(lambda: {"day": self._morning}, 1)
+        self._save_marker()
+
+    def _save_marker(self) -> None:
+        self._store.async_delay_save(lambda: {"day": self._morning, "told": self._told}, 1)
 
     async def _async_load_morning(self) -> None:
         try:
@@ -310,6 +357,8 @@ class Upkeep:
             return
         if isinstance(saved, dict) and self._morning is None:
             self._morning = saved.get("day")
+        if isinstance(saved, dict) and isinstance(saved.get("told"), dict) and not self._told:
+            self._told = saved["told"]
 
     @callback
     def async_start(self) -> None:
@@ -613,6 +662,12 @@ class Upkeep:
             return changed
         thought_ids = {q['id'] for q in rt.followyou.queue if q.get('source') == 'thought'
                        and q.get('text') in (facts.get('overnight_thoughts') or [])}
+        # 20 Nov: the door-sensor batteries and the to-do list's "clean the kitchen" were read out for the third
+        # morning running, "still" and "continuing", though told not to. So they're taken out in code: a problem,
+        # job or to-do item already told on an earlier day, and unchanged, isn't given to the AI at all.
+        today_keys = briefing_keys(facts)
+        told_before = set(self._told.get("keys") or []) if self._told.get("day") != dt_util.now().date().isoformat() else set()
+        facts = drop_told(facts, told_before)
         previous = last_briefing(rt)
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         rules = (rt.options.get(CONF_HOUSE_RULES) or "").strip()
@@ -655,6 +710,10 @@ class Upkeep:
                 holding -= thought_ids
         if not current():
             return {**changed, 'spoken': result.spoken}  # dispatched speech cannot be recalled; do not return old content
+        if result.spoken:
+            # everything still standing counts as told, so an item stays out until it's gone or has changed
+            self._told = {"day": dt_util.now().date().isoformat(), "keys": sorted(today_keys)[:200]}
+            self._save_marker()
         if result.spoken and thought_ids:
             rt.followyou.queue = [q for q in rt.followyou.queue if q['id'] not in thought_ids]
             rt.followyou._save()

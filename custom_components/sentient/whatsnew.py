@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.4": [
+        "Someone stepping out of the front door is no longer logged as a visitor. On 20 Nov at 07:53 the camera saw them a fraction of a second before the door opened, so the briefing said someone had been \"in the yard\". If the door opens within 15 seconds of the camera seeing someone, and nobody rang, it's noted as someone from the house going out: kept off the briefing, today's visitors and the phone. The doorstep announcement itself still plays straight away.",
+        "The morning briefing no longer repeats things: a problem, job or to-do item it told you on an earlier day isn't given to it again while it's unchanged. A new item, or one whose wording changes, is said. What's open right now is always said.",
+        "Descriptions of the front door camera now say \"at the front door\" or \"by the front door\", never \"the yard\".",
+    ],
     "1.15.3": [
         "The voice can read battery levels: \"how much battery has the back door sensor got?\" or \"any batteries running low?\" now gets the level and how long it should last. Battery sensors don't need exposing to Assist.",
         "The evening look at tomorrow is shown what's already been said today, so a reminder about the bins at 7 isn't followed by the same news at half past.",
