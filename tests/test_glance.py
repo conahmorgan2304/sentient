@@ -170,3 +170,43 @@ async def test_an_outdoor_area_is_shown_but_not_counted_as_the_house(hass: HomeA
     assert s["outside"] == [{"room": "Rabbit hutch", "temp": 4.0}]
     # left empty, every area counts as the house
     assert summary(rooms(hass))["coolest"]["room"] == "Rabbit hutch"
+
+
+async def test_a_speakers_chip_temperature_isnt_the_room(hass: HomeAssistant):
+    """A voice speaker's CPU temperature isn't the kitchen's: it's left out, and so is anything named after a chip."""
+    from homeassistant.helpers import device_registry as dr
+
+    areas = ar.async_get(hass)
+    kitchen = areas.async_create("Kitchen").id
+    cfg = MockConfigEntry(domain="esphome")
+    cfg.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(config_entry_id=cfg.entry_id, identifiers={("esphome", "sat1")})
+    reg = er.async_get(hass)
+    for eid in ("assist_satellite.sat1", "sensor.sat1_temperature"):
+        domain, obj = eid.split(".")
+        reg.async_get_or_create(domain, "esphome", obj, suggested_object_id=obj, device_id=dev.id)
+        reg.async_update_entity(eid, area_id=kitchen)
+    hass.states.async_set("assist_satellite.sat1", "idle")
+    hass.states.async_set("sensor.sat1_temperature", "32.7", {"device_class": "temperature"})
+    _put(hass, "sensor.plug_cpu_temperature", "45", {"device_class": "temperature"}, kitchen)
+    _put(hass, "light.kitchen", "off", {"friendly_name": "Kitchen light"}, kitchen)
+    row = next(r for r in rooms(hass) if r["area_id"] == kitchen)
+    assert row["temp"] is None and row["temp_from"] == []
+    # a real room sensor is used, and the page can say where it came from
+    _put(hass, "sensor.cupboard_temp", "19", {"device_class": "temperature", "friendly_name": "Cupboard temp"}, kitchen)
+    row = next(r for r in rooms(hass) if r["area_id"] == kitchen)
+    assert row["temp"] == 19 and row["temp_from"] == ["Cupboard temp"] and not row["temp_set"]
+
+
+async def test_the_areas_chosen_sensors_win(hass: HomeAssistant):
+    """The temperature and humidity sensors picked in the area's own settings are the only ones used."""
+    lounge, _ = await _house(hass)
+    hass.states.async_set("sensor.lounge_other", "23", {"device_class": "temperature", "friendly_name": "Wall thermometer"})
+    hass.states.async_set("sensor.lounge_other_hum", "60", {"device_class": "humidity"})
+    ar.async_get(hass).async_update(lounge, temperature_entity_id="sensor.lounge_other",
+                                    humidity_entity_id="sensor.lounge_other_hum")
+    lo = next(r for r in rooms(hass) if r["area_id"] == lounge)
+    assert lo["temp"] == 23 and lo["temp_from"] == ["Wall thermometer"] and lo["temp_set"] and lo["humidity"] == 60
+    hass.states.async_set("sensor.lounge_other", "unavailable", {"device_class": "temperature"})
+    lo = next(r for r in rooms(hass) if r["area_id"] == lounge)
+    assert lo["temp"] is None  # never falls back to a guess when one was chosen

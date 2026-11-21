@@ -20,6 +20,8 @@ DEAD = ("unavailable", "unknown")
 SCREEN_PLATFORMS = ("browser_mod", "fully_kiosk")
 # a light on a device that also speaks, plays or films is its screen or LED ring
 GADGET_DOMAINS = ("assist_satellite", "media_player", "camera")
+# a temperature named like this is the device's own chip or board, not the room
+CHIP_WORDS = ("cpu", "processor", "chip", "soc", "board", "core", "internal", "esp", "wifi", "system", "device")
 
 
 def _num(st: State) -> float | None:
@@ -27,6 +29,11 @@ def _num(st: State) -> float | None:
         return float(st.state)
     except (TypeError, ValueError):
         return None
+
+
+def _chip(st: State) -> bool:
+    words = f"{st.entity_id} {st.name}".lower().replace(".", " ").replace("_", " ").split()
+    return any(w in CHIP_WORDS for w in words)
 
 
 def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | None = None,
@@ -37,6 +44,7 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
     restless = restless or set()
     gadgets = {e.device_id for e in ents.entities.values() if e.device_id and e.domain in GADGET_DOMAINS}
     by_area: dict[str, list[State]] = {}
+    on_gadget: set[str] = set()
     for entry in ents.entities.values():
         if entry.disabled_by or entry.hidden_by or entry.entity_category is not None:
             continue
@@ -46,12 +54,15 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
         if not area_id or (st := hass.states.get(entry.entity_id)) is None:
             continue
         by_area.setdefault(area_id, []).append(st)
+        if entry.device_id in gadgets:
+            on_gadget.add(entry.entity_id)
 
     now = dt_util.utcnow()
     floor_order = {f.floor_id: (f.level if f.level is not None else 0) for f in floors.async_list_floors()}
     out = []
     for area in areas.async_list_areas():
         states = by_area.get(area.id) or []
+        temp_from: list[str] = []
         temps, hums, lights_on, lights, opened, playing, heating = [], [], [], 0, [], [], None
         moving, last_move = False, None
         for st in states:
@@ -59,7 +70,10 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
             if st.state in DEAD:
                 continue
             if domain == "sensor" and dc == "temperature" and (v := _num(st)) is not None:
-                temps.append(v)
+                # a speaker's, camera's or tablet's own temperature, or one named after its chip, is not the room's
+                if st.entity_id not in on_gadget and not _chip(st):
+                    temps.append(v)
+                    temp_from.append(st.name)
             elif domain == "sensor" and dc == "humidity" and (v := _num(st)) is not None and v > 0:  # 0% is a missing reading
                 hums.append(v)
             elif domain == "light":
@@ -80,10 +94,20 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
                 if (v := st.attributes.get("current_temperature")) is not None and not temps:
                     try:
                         temps.append(float(v))
+                        temp_from.append(st.name)
                     except (TypeError, ValueError):
                         pass
                 if st.attributes.get("hvac_action") == "heating":
                     heating = st.name
+        # the sensors chosen in the area's own Home Assistant settings always win
+        temp_set = False
+        if (chosen := getattr(area, "temperature_entity_id", None)) and (st := hass.states.get(chosen)) is not None:
+            temp_set = True
+            v = _num(st) if st.state not in DEAD else None
+            temps, temp_from = ([v], [st.name]) if v is not None else ([], [])
+        if (chosen := getattr(area, "humidity_entity_id", None)) and (st := hass.states.get(chosen)) is not None:
+            v = _num(st) if st.state not in DEAD else None
+            hums = [v] if v is not None and v > 0 else []
         if not (temps or hums or lights or opened or moving or last_move or playing):
             continue
         out.append({
@@ -93,6 +117,8 @@ def rooms(hass: HomeAssistant, likely: str | None = None, restless: set[str] | N
             "floor": area.floor_id,
             "level": floor_order.get(area.floor_id, 0) if area.floor_id else None,
             "temp": round(mean(temps), 1) if temps else None,
+            "temp_from": temp_from if temps else [],
+            "temp_set": temp_set,
             "humidity": round(mean(hums)) if hums else None,
             "lights": lights,
             "lights_on": lights_on,
