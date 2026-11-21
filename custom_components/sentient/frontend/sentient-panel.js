@@ -1990,7 +1990,7 @@
           r.playing.length ? `<span class="rc live" title="${esc(r.playing.join(", "))}"><ha-icon icon="mdi:music"></ha-icon>${esc(r.playing[0].toUpperCase())}</span>` : "",
         ].join("");
         return `<div class="rt${r.likely ? " here" : ""}${on ? " lit" : ""}"><div class="rn"><ha-icon icon="${esc(r.icon || "mdi:floor-plan")}"></ha-icon><b title="${esc(r.name)}">${esc(r.name)}</b>${r.likely ? "<s>HERE</s>" : r.outdoor ? "<s>OUTSIDE</s>" : ""}</div>`
-          + `<div class="rv"><span class="rtemp">${r.temp != null ? esc(r.temp) + "°" : "–"}</span>${r.humidity != null ? `<span class="rh">${esc(r.humidity)}%</span>` : ""}${r.heating ? `<ha-icon class="fl" icon="mdi:fire" title="${esc(r.heating)} heating"></ha-icon>` : ""}</div>`
+          + `<div class="rv"><span class="rtemp" title="${r.temp != null ? esc((r.temp_set ? "Chosen in the area's settings: " : "From ") + (r.temp_from || []).join(", ")) : "No room temperature sensor. Choose one in Home Assistant: Settings > Areas, labels &amp; zones > this area > Temperature sensor"}">${r.temp != null ? esc(r.temp) + "°" : "–"}</span>${r.humidity != null ? `<span class="rh">${esc(r.humidity)}%</span>` : ""}${r.heating ? `<ha-icon class="fl" icon="mdi:fire" title="${esc(r.heating)} heating"></ha-icon>` : ""}</div>`
           + `<div class="rs">${chips}</div></div>`;
       };
       el.innerHTML = this._h("ROOMS", `${rows.length} ROOMS${lit ? ` · ${lit} LIGHT${lit > 1 ? "S" : ""} ON` : ""}${open ? ` · ${open} OPEN` : ""}`) + `<div class="rgrid">${rows.map(tile).join("")}</div>`;
