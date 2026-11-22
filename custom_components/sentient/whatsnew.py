@@ -15,6 +15,16 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.0": [
+        "Awareness of the moment (Voice → Conversations): every reply knows who's home and since when, which rooms have movement, what happened in the last 45 minutes and anything unusual for today.",
+        "Short-term memory per room: the voice knows what was said, switched and announced in the room it's in over the last hour, and a conversation follows you into the next room.",
+        "Know who's probably talking: without voice recognition, a message typed in the app or your phone being the only one in the room tells it who it probably is, and your own things come first. A guess never allows anything.",
+        "Instant answers: the time, the weather, whether one device is on or open, a room's temperature, the next alarm, visitors and the lock-up check are answered straight from the house, without waiting for the AI.",
+        "Know what the house can do: the voice is told what it can control here, and what the house doesn't have (no locks, no blinds), so it doesn't offer what no device can do.",
+        "A memory that keeps itself (Memory & learning): the overnight reflection puts right memories that something said that day shows are out of date, and one guess a day is asked about.",
+        "Habits prove themselves (Noticing & learning): a newly learned habit is checked against the days after it was learned and offered only once it has been right on at least 3 of 4.",
+        "All of these are off until switched on in Settings.",
+    ],
     "1.15.9": [
         "With \"Unified household evidence lookup\" on, the voice is now told to use it first for questions about what happened earlier. It had been switched on since 19 Nov and never used.",
         "A device you've cleared from House health is still offline as far as the voice knows, so it won't say a command to it worked.",

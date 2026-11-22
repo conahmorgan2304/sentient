@@ -2716,6 +2716,10 @@ class SentientAPI(llm.API):
             lines.extend(games.prompt_lines())
         if getattr(rt, "goals", None) is not None and rt.goals.enabled and (goal_line := rt.goals.prompt_line()):
             lines.append(goal_line)
+        from .capabilities import line as capability_line
+
+        if can := capability_line(self.hass, opts):
+            lines.append(can)
         if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:
             from .never import names
 

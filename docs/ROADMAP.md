@@ -84,7 +84,13 @@ Sentient doesn't need another engine beside it; it needs to use its own tools an
 - [x] A household question set (1.11.0, `selftest.py`, "Household questions in the self-test", on with the self-test): built from the house's own devices — last closed, a light's state, a camera's last two hours, the door today, something it can't know, something no device can do, a vague question. An invented answer fails, however convincing; switching anything while only asked fails; time per question kept. Score and recent runs on the Mind page.
 - [ ] More of the set: multi-step requests (checked by what would have changed, run without acting), heating and energy questions, and questions taken from what the reliability log catches.
 - [ ] One read-only evidence tool (recorder history, ledger, timeline, camera events, logs in one call), so an investigation doesn't depend on choosing among 60 tools. Judged on the question set.
-- [ ] Capability awareness: the voice knows what the house can and can't do before offering, judged by the "offered something no device can do" count.
+- [ ] Capability awareness: the voice knows what the house can and can't do before offering, judged by the "offered something no device can do" count. *Built in 1.16.0 (`capabilities.py`, "Know what the house can do", off by default); ticked once the count stays at zero for a week.*
+- [x] Awareness of the moment (1.16.0, `moment.py`, off by default): who's home and since when, rooms with movement, the last 45 minutes and what's unusual today, in every voice reply. No AI.
+- [x] Short-term memory per room (1.16.0, `room_memory.py`, off by default): earlier conversations, voice-switched devices and announcements in this room over the last hour; a conversation follows someone into the next room.
+- [x] A memory that keeps itself (1.16.0, `reflection.py`, "memory_upkeep", off by default): out-of-date memories put right in the overnight reflection (kept as guesses), and one guess a day asked about.
+- [x] Knowing who's probably talking without voice recognition (1.16.0, `people.py`, off by default): the signed-in app user, or the only room-tracked phone in the room; their own memories first. Never grants anything.
+- [x] Instant answers (1.16.0, `instant.py`, off by default): the time, the weather, one exposed device's state, a room's temperature, alarms, visitors and the lock-up check answered without the AI, and added to the conversation.
+- [x] Habits prove themselves (1.16.0, `learning.py`, "prove_routines", off by default): a learned habit is judged on the days after it was learned and offered only when right on at least 3 of 4.
 - [ ] External tools only where they add something new, through Home Assistant's own MCP client, not an adapter of Sentient's.
 
 GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.
