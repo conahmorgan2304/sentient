@@ -2716,6 +2716,10 @@ class SentientAPI(llm.API):
             lines.extend(games.prompt_lines())
         if getattr(rt, "goals", None) is not None and rt.goals.enabled and (goal_line := rt.goals.prompt_line()):
             lines.append(goal_line)
+        from .capabilities import line as capability_line
+
+        if can := capability_line(self.hass, opts):
+            lines.append(can)
         if never := [e for e in (opts.get("never_entities") or []) if self.hass.states.get(e)]:
             from .never import names
 
@@ -2738,6 +2742,16 @@ class SentientAPI(llm.API):
         private = voice_id.private_history(rt, llm_context.device_id)
         lines.extend(voice_id.standing_lines(self.hass, opts))
         lines.extend(voice_id.prompt_lines(opts, speaker))
+        from . import people
+
+        device = dr.async_get(self.hass).async_get(llm_context.device_id) if llm_context.device_id else None
+        guess = people.likely_speaker(
+            self.hass, opts, user_id=llm_context.context.user_id if llm_context.context else None,
+            area_id=device.area_id if device else None,
+            voice_matched=speaker is not None,  # a voice heard, matched or not, says more than a phone nearby
+            guest=rt.speech.guest_mode, private=private)
+        people.GUESS.set(guess[0].casefold() if guess else None)
+        lines.extend(people.prompt_line(guess))
         if private:
             lines.append(
                 "This room is private: don't bring up personal details about anyone in the household, what other "
@@ -2746,7 +2760,8 @@ class SentientAPI(llm.API):
         if profile and profile.get("gentle"):
             lines.append("In this room speak gently: short, calm, simple words, nothing alarming or sarcastic.")
         if opts.get(CONF_PROMPT_RECENT, True) and not opts.get("current_house_context"):
-            lines.extend(self._now_lines(rt) if private else self._recent_lines(rt))
+            # with the moment on, its own lines carry the movement and the last 45 minutes
+            lines.extend(self._now_lines(rt) if private or opts.get("moment_awareness") else self._recent_lines(rt))
         if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
             lines.append(
                 "Ask first: before you " + "; or ".join(confirm) + ", say in a few words exactly what you're about "
@@ -2779,6 +2794,12 @@ class SentientAPI(llm.API):
 
             if tracked := prompt_line(self.hass, opts):
                 lines.append(tracked)
+        from .room_memory import lines as room_memory_lines
+
+        lines.extend(room_memory_lines(rt, opts, room, conversation_id, private=private, guest=rt.speech.guest_mode))
+        from .moment import lines as moment_lines
+
+        lines.extend(moment_lines(self.hass, rt, opts, private=private, guest=rt.speech.guest_mode))
         usual = rt.sleep.usual()
         if usual["bedtime"] or usual["up"]:
             lines.append(
@@ -2933,13 +2954,16 @@ class SentientAPI(llm.API):
         Sentient about themselves is given first, not left out because newer house facts filled the list."""
         from . import voice_id
 
+        from .people import CONF_KNOW_PEOPLE, GUESS
+
         opts = rt.options
-        if not opts.get("speaker_memories") or rt.speech.guest_mode:
+        if rt.speech.guest_mode:
             return None
         speaker = voice_id.current_speaker.get()
-        if speaker is None or speaker is voice_id.UNKNOWN_SPEAKER:
-            return None
-        return (voice_id.name_of(speaker) or "").casefold() or None
+        if opts.get("speaker_memories") and speaker is not None and speaker is not voice_id.UNKNOWN_SPEAKER:
+            return (voice_id.name_of(speaker) or "").casefold() or None
+        # not matched by voice: signed in, or their phone in the room (only puts their things first)
+        return GUESS.get() if opts.get(CONF_KNOW_PEOPLE) else None
 
     def _memories(self, rt: Any, limit: int, relevant: bool) -> list[Any]:
         """The newest memories — or, once there are more than fit, the ones that match what was asked plus the newest."""

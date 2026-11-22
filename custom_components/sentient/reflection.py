@@ -15,6 +15,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import logging
 import hashlib
+import re
 import json
 from copy import deepcopy
 from typing import Any, Callable
@@ -46,6 +47,9 @@ _LOGGER = logging.getLogger(__name__)
 KINDS = ["said", "visitor", "watch", "health", "security", "critical", "energy", "noticed", "loop", "drive", "mode", "light"]
 MAX_MEMORIES = 3
 MAX_THOUGHTS = 2
+MAX_FIXES = 3
+CONF_MEMORY_UPKEEP = "memory_upkeep"
+_FIX = re.compile(r"^\[?([0-9a-f]{8})\]?\s*[:\-–—]\s*(.+)$")
 PRIVATE = ("password", "pin ", "card", "account number", "bank", "salary", "diagnos", "medication", "illness")
 
 
@@ -176,7 +180,11 @@ class Reflection:
             self._keep(result)
             return result
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
-        known = [m.text for m in rt.memory.recent(60)]
+        upkeep = bool(rt.options.get(CONF_MEMORY_UPKEEP))
+        recent_memories = rt.memory.recent(60)
+        # with upkeep on, each memory carries its id, so one that today's conversations show is out of date can be
+        # put right; ones a person confirmed (pinned or edited) are never offered for that
+        known = [f"[{m.id}] {m.text}" if upkeep and m.basis != "confirmed" else m.text for m in recent_memories]
         rules = (rt.options.get(CONF_HOUSE_RULES) or "").strip()
         instructions = (
             f"You are {persona}, the mind of a family home, thinking over the last 24 hours. "
@@ -197,7 +205,10 @@ class Reflection:
             "4. lessons: corrections people made to you in the conversations ('no, I meant the lamp', 'not that "
             "room') worth remembering so it never happens again — one short sentence each, saying what was meant "
             "(e.g. 'In the living room, \"the light\" means the lamp.'). Skip any already known. Usually none.\n"
-            "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
+            + ("5. outdated: known memories (the ones with an [id]) that something a person said in today's "
+               "conversations shows is now wrong or out of date — each as \"[id]: the corrected sentence\". Only "
+               "when a person clearly said so, never from the log alone or a guess. Usually none.\n" if upkeep else "")
+            + "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + "\n\nAlready known:\n" + "\n".join(f"- {k}" for k in known[:60])
             + "\n\nLog:\n" + ("\n".join(log) or "(nothing)")
@@ -217,6 +228,10 @@ class Reflection:
                             "selector": {"text": {"multiple": True}}},
             },
         }
+        if upkeep:
+            data["structure"]["outdated"] = {"description": "[id]: corrected sentence, for memories shown out of date "
+                                             "today (often none)", "required": False,
+                                             "selector": {"text": {"multiple": True}}}
         if ai_entity := rt.options.get(CONF_SMART_AI) or rt.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         if not rt.watches.spend("overnight"):
@@ -261,6 +276,10 @@ class Reflection:
                     known_ids.add(memory.id)
             except ValueError:
                 pass
+        if upkeep:
+            result["fixed"] = self._fix_outdated(rt, _list(out.get("outdated")))
+            if question := self._confirm_a_guess(rt):
+                result["checking"] = question
         result["thoughts"] = _list(out.get("thoughts"))[:MAX_THOUGHTS]
         raw_question = out.get("question")
         question = " ".join(raw_question.split()) if isinstance(raw_question, str) and len(raw_question) <= 1000 else ""
@@ -277,11 +296,45 @@ class Reflection:
                 " ".join(result["thoughts"]),
                 f"wondering: {result['question']}" if result["question"] else "",
                 f"learned from {len(result['lessons'])} correction{'s' if len(result['lessons']) > 1 else ''}" if result["lessons"] else "",
+                f"put right {len(result['fixed'])} out-of-date memor{'y' if len(result['fixed']) == 1 else 'ies'}" if result.get("fixed") else "",
             ) if p
         )
         rt.timeline.add("mind", summary or "Thought over the day — nothing to add.", "overnight reflection")
         self._keep(result)
         return result
+
+    @staticmethod
+    def _fix_outdated(rt: Any, lines: list[str]) -> list[str]:
+        """Put right memories today's conversations showed are out of date. A fix is a guess until confirmed."""
+        fixed = []
+        for line in lines[:MAX_FIXES]:
+            m = _FIX.match(line.strip())
+            if not m or any(p in line.lower() for p in PRIVATE):
+                continue
+            memory = rt.memory.get(m.group(1))
+            text = m.group(2).strip()
+            if memory is None or memory.basis == "confirmed" or not text or text == memory.text:
+                continue
+            old = memory.text
+            if rt.memory.update(memory.id, text) is None:
+                continue
+            memory.origin, memory.source = None, "reflection"  # worked out, not told: a guess until confirmed
+            rt.memory._note("replaced", old, memory.text)
+            rt.memory._save()
+            fixed.append(f"{old} → {memory.text}")
+        return fixed
+
+    @staticmethod
+    def _confirm_a_guess(rt: Any) -> str | None:
+        """One guess a day goes to curiosity to be asked about, so guesses become things the house knows."""
+        day_old = (dt_util.now() - timedelta(days=1)).isoformat()
+        for memory in sorted(rt.memory.items, key=lambda m: m.created):
+            if memory.basis != "guess" or memory.created > day_old or memory.category == "correction":
+                continue
+            question = f"I worked out that {memory.text[0].lower()}{memory.text[1:].rstrip('.')} — is that right?"
+            if rt.curiosity.wonder(question, why=f"checking a guess ({memory.id})", source="memory"):
+                return question
+        return None
 
     def _keep(self, result: dict[str, Any]) -> None:
         self.last = result

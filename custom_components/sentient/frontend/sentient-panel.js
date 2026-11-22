@@ -557,7 +557,7 @@
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
           return `<div class="r rtr ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}"><ha-icon icon="${esc(r.adopted ? "mdi:robot-happy-outline" : "mdi:repeat")}"></ha-icon>
-            <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
+            <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)}${r.proved && !r.adopted ? " · " + esc(r.proved) : ""} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
         }).join("") || '<div class="e">NO ROUTINES LEARNED YET · CHECKED EACH NIGHT</div>');
 
       // watches (left alone while a reminder is being typed)

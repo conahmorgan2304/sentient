@@ -501,6 +501,11 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("vary_replies", **d("vary_replies", False)): selector.BooleanSelector(),
             vol.Required("behaviour_explanations", **d("behaviour_explanations", False)): selector.BooleanSelector(),
             vol.Required("current_house_context", **d("current_house_context", False)): selector.BooleanSelector(),
+            vol.Required("moment_awareness", **d("moment_awareness", False)): selector.BooleanSelector(),
+            vol.Required("room_memory", **d("room_memory", False)): selector.BooleanSelector(),
+            vol.Required("know_people", **d("know_people", False)): selector.BooleanSelector(),
+            vol.Required("instant_answers", **d("instant_answers", False)): selector.BooleanSelector(),
+            vol.Required("capability_awareness", **d("capability_awareness", False)): selector.BooleanSelector(),
             vol.Optional("house_context_entities", **d("house_context_entities", [])): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
             vol.Required("house_context_updates", **d("house_context_updates", False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),
@@ -768,6 +773,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "media_player", "input_boolean", "switch", "light"], multiple=True)
             ),
             vol.Required(CONF_SUGGEST_ROUTINES, **d(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)): selector.BooleanSelector(),
+            vol.Required("prove_routines", **d("prove_routines", False)): selector.BooleanSelector(),
             vol.Optional(CONF_DOOR_CAMERA, **d(CONF_DOOR_CAMERA)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="camera")
             ),
@@ -961,6 +967,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("learn_reactions", **d("learn_reactions", True)): selector.BooleanSelector(),
             vol.Required("ai_case_memory", **d("ai_case_memory", True)): selector.BooleanSelector(),
             vol.Required("memory_tags", **d("memory_tags", False)): selector.BooleanSelector(),
+            vol.Required("memory_upkeep", **d("memory_upkeep", False)): selector.BooleanSelector(),
             vol.Required("memory_semantic_enabled", **d("memory_semantic_enabled", False)): selector.BooleanSelector(),
             vol.Optional("memory_semantic_url", **d("memory_semantic_url", "")): selector.TextSelector(),
             vol.Optional("memory_semantic_model", **d("memory_semantic_model", "")): selector.TextSelector(),

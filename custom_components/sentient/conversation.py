@@ -379,6 +379,26 @@ class BackedUpAgent(conversation.ConversationEntity):
         parts.extend(f"{r['entity_id']}: {r.get('reason', r['status'])}." for r in other)
         return " ".join(parts) or "No devices were changed."
 
+    def _instant_reply(self, user_input, text: str):
+        """Answer without the AI, but add the exchange to the conversation so a follow-up knows what was asked."""
+        conversation_id = user_input.conversation_id
+        try:
+            from homeassistant.helpers import chat_session
+
+            with chat_session.async_get_chat_session(self.hass, user_input.conversation_id) as session:
+                conversation_id = session.conversation_id
+                if (convs := getattr(self._entry.runtime_data, "conversations", None)) is not None:
+                    convs.attach(conversation_id, user_input.device_id, "instant")
+                with conversation.async_get_chat_log(self.hass, session, user_input) as chat_log:
+                    chat_log.async_add_assistant_content_without_tools(
+                        conversation.AssistantContent(agent_id=self.entity_id or DOMAIN, content=text))
+        except Exception:  # noqa: BLE001 - an answer without a history entry is still the right answer
+            _LOGGER.debug("Sentient: couldn't add an instant answer to the conversation", exc_info=True)
+        response = intent.IntentResponse(language=user_input.language)
+        response.async_set_speech(text)
+        return conversation.ConversationResult(response=response, conversation_id=conversation_id,
+                                               continue_conversation=False)
+
     def _plain_reply(self, user_input, text: str):
         response = intent.IntentResponse(language=user_input.language)
         response.async_set_speech(text)
@@ -634,6 +654,14 @@ class BackedUpAgent(conversation.ConversationEntity):
                     self._cancel_session(user_input)
                     result = self._plain_reply(user_input, "Okay.")
                 return await self._localise_result(result)
+        if not explicit and not (cautious or changed_speaker) and options.get("instant_answers"):
+            from .instant import async_answer as instant_answer
+
+            if said := await instant_answer(self.hass, self._entry.runtime_data, user_input.text, user_input.context):
+                # straight from the house, no AI: the clock, the weather, one device's state, Sentient's own records
+                if (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
+                    brain.count("local")
+                return await self._localise_result(self._instant_reply(user_input, said))
         from .focus import current_request, turn_flags
 
         flags: dict = {}
