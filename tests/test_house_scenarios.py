@@ -1,6 +1,5 @@
 """Scenarios from a real house with every 1.16 feature on: the parts working together, and the prompt kept lean."""
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
