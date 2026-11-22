@@ -258,3 +258,45 @@ def test_sentient_actions_that_worked_are_not_voice_problems() -> None:
     # and one that says it hasn't happened yet is still unverified
     waiting = {"tool_name": "sentient_watch", "tool_result": {"status": "queued"}}
     assert "unverified" in _kinds("watch the gate", "Done, I'm watching it.", [waiting], actions=actions)
+
+
+def _tool(name, result=None):
+    return {"tool_name": name, "tool_result": result if result is not None else {"ok": True}}
+
+
+def test_questions_about_the_conversation_need_no_lookup() -> None:
+    # 20 and 21 Nov live: logged as "answered about the past without looking"
+    assert classify("What did you say?", "I asked which room the pencils are in.", []) == []
+    assert classify("Was you not watching the gate camera originally?",
+                    "I wasn't watching it with an alert set up until you asked.", [_tool("sentient_session")]) == []
+    # a question about the house still needs looking up, even phrased to the voice
+    assert [p["kind"] for p in classify("Have you seen anyone at the gate today?", "No one.", [])] == ["no_evidence"]
+
+
+def test_a_saved_picture_counts_as_looking() -> None:
+    # 21 Nov 18:36: "What did the person look like at 6:14?" looked at a camera snapshot
+    assert classify("What did the person look like at 6:14?", "A white hooded top.",
+                    [_tool("sentient_what_happened")]) == []
+    assert classify("What did the person look like earlier?", "A white hooded top.",
+                    [_tool("recall_snapshot")]) == []
+
+
+async def test_kept_notes_are_judged_again_with_todays_rules(hass: HomeAssistant) -> None:
+    from custom_components.sentient.reliability import Reliability
+
+    rel = Reliability(hass, "test", {})
+    now = "2026-11-21T18:40:00+00:00"
+    rel.records = [
+        {"time": now, "asked": "Was you not watching the gate camera originally?", "tools": ["sentient_session"],
+         "problems": [{"kind": "no_evidence", "detail": "no relevant historical tool was used"}]},
+        {"time": now, "asked": "Can you watch for cars?", "tools": ["sentient_watch"],
+         "problems": [{"kind": "tool_failed", "detail": "sentient_watch: wrong arguments"}]},
+        {"time": now, "asked": "What did the person look like at 6:14?", "tools": ["jarvis_recall_snapshot"],
+         "problems": [{"kind": "no_evidence", "detail": "x"}, {"kind": "tool_failed", "detail": "y"}]},
+        {"time": now, "asked": "Has anyone been to the shed today?", "tools": [],
+         "problems": [{"kind": "no_evidence", "detail": "no relevant historical tool was used"}]},
+    ]
+    assert rel.rejudge() == 2
+    assert [r["asked"] for r in rel.records] == ["Can you watch for cars?", "What did the person look like at 6:14?",
+                                                 "Has anyone been to the shed today?"]
+    assert [p["kind"] for p in rel.records[1]["problems"]] == ["tool_failed"]  # only the stale note goes

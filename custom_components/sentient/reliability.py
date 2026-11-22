@@ -62,6 +62,30 @@ QUESTION = re.compile(r"\?\s*$|^(?:has|have|had|did|was|were|when|who|what|which
 PAST = re.compile(r"\b(?:has|have|had|did|was|were|last|earlier|yesterday|today|tonight|this (?:morning|afternoon|evening)|"
                   r"recently|ago|been|happened|overnight|previously)\b", re.I)
 
+# a question about the conversation or about the voice's own doing ("What did you say?", "Was you not watching the
+# gate camera?"): answered from what was said, not from the house's records (22 Nov: logged as not looking)
+ABOUT_ITSELF = re.compile(
+    r"\b(?:what|did|do|were|was|have|had)\s+you\s+(?:not\s+|just\s+|actually\s+)?(?:say|said|mean|meant|ask|asked|"
+    r"tell|told|understand|watching|listening|doing)\b|\bwhat (?:did|was it) i (?:just )?(?:say|said|ask|asked)\b", re.I)
+# tool names that look the answer up in a record of the past
+EVIDENCE_NAMES = ("history", "timeline", "what_happened", "camera_activity", "visitors", "incidents", "root_cause",
+                  "conversations", "sentient_why", "logbook", "recorder", "security_event", "evidence", "HassGetHistory",
+                  # 17 Nov: "What was the next birthday on my calendar?" read the calendar but was logged as
+                  # answering without looking; "What did you say?" is answered from what was said
+                  "calendar", "said", "spoken",
+                  # 22 Nov: "What did the person look like at 6:14?" looked at a saved picture
+                  "snapshot", "clip", "recap", "camera_events")
+
+
+def needs_evidence(asked: str) -> bool:
+    """A question about something that happened, which should be looked up rather than answered from memory."""
+    asked = (asked or "").strip()
+    return bool(asked and QUESTION.search(asked) and PAST.search(asked) and not ABOUT_ITSELF.search(asked))
+
+
+def is_evidence(name: str) -> bool:
+    return any(word.casefold() in (name or "").casefold() for word in EVIDENCE_NAMES)
+
 
 # a tool result that says it hasn't happened yet
 NOT_DONE = {"pending", "queued", "accepted", "unverified", "waiting", "scheduled_retry"}
@@ -136,17 +160,11 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
         out.append({"kind": "offered_impossible", "detail": f"\"{_short(m.group(0), 80)}\""})
     if said_clean and UNANSWERED.search(said_clean):
         out.append({"kind": "unanswered", "detail": "used " + (", ".join(dict.fromkeys(n for n, _e, _c in outcomes)) or "no tools")})
-    elif asked and QUESTION.search(asked.strip()) and PAST.search(asked):
+    elif needs_evidence(asked):
         # A generic device command is not evidence about prior events. This
         # deliberately checks tool relevance, not just whether any tool ran.
-        evidence_names = ("history", "timeline", "what_happened", "camera_activity",
-                          "visitors", "incidents", "root_cause", "conversations", "sentient_why",
-                          "logbook", "recorder", "security_event", "evidence", "HassGetHistory",
-                          # 17 Nov: "What was the next birthday on my calendar?" read the calendar but was logged as
-                          # answering without looking; "What did you say?" is answered from what was said
-                          "calendar", "said", "spoken")
         def relevant_evidence(index: int, name: str, error: str | None) -> bool:
-            if error or not any(word.casefold() in name.casefold() for word in evidence_names):
+            if error or not is_evidence(name):
                 return False
             if name == "sentient_evidence":
                 result = tools[index].get("tool_result") or {}
@@ -190,6 +208,26 @@ class Reliability:
         self.records = data.get("records", [])
         self.turns = data.get("turns", [])
         self._trim()
+        if self.rejudge():
+            self._save()
+
+    def rejudge(self) -> int:
+        """Look again at kept "answered about the past without looking" notes with today's rules, so a checker fix
+        counts on the Mind page straight away rather than after 7 days. Only that note is judged again, from the
+        question and the tool names kept; any other problem in the turn stands. Returns how many were cleared."""
+        cleared = 0
+        for record in list(self.records):
+            problems = record.get("problems") or []
+            if not any(p.get("kind") == "no_evidence" for p in problems):
+                continue
+            if needs_evidence(record.get("asked", "")) and not any(
+                    is_evidence(t) and t != "sentient_evidence" for t in record.get("tools") or []):
+                continue
+            record["problems"] = [p for p in problems if p.get("kind") != "no_evidence"]
+            cleared += 1
+            if not record["problems"]:
+                self.records.remove(record)
+        return cleared
 
     @callback
     def async_stop(self) -> None:
