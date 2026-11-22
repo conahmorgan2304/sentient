@@ -2620,7 +2620,12 @@ class SentientAPI(llm.API):
             context_line = context_prompt(await house_context.snapshot(
                 llm_context.context, llm_context.device_id, current_request.get() or self._asked(), current_session.get()))
         if rt is not None and not private and not rt.speech.guest_mode and getattr(rt, "brain", None) is not None:
-            if lines := rt.brain.situations():
+            lines = rt.brain.situations()
+            if rt.options.get("moment_awareness"):
+                # the moment already says who got home, where there's movement and what's unusual: keep the rest
+                lines = [line for line in lines if not line.startswith(("Movement in the last", "Unusual"))
+                         and not line.endswith("just got home.")]
+            if lines:
                 context_line += "\nRight now in the house (from Sentient's ledger): " + " ".join(lines)
         if rt is not None and not private:
             from .security_voice import reference_prompt
