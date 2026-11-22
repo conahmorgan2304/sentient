@@ -61,7 +61,7 @@ async def test_everything_on_in_the_kitchen(hass: HomeAssistant) -> None:
     assert "Who's about" in prompt and "Sam home since" in prompt
     assert "Probably Sam talking (their phone is the only tracked phone in this room)" in prompt
     assert "What you can control in this house by voice: 2 lights, 1 heating or cooling control." in prompt
-    assert "This house has no locks" in prompt
+    assert "This house has no smart locks" in prompt
     # nothing said twice: one "movement" line, no recent-changes block alongside the moment
     assert prompt.count("Movement in the last") <= 1 and "Movement lately in" not in prompt
     assert prompt.count("just got home") <= 1

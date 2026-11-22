@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.3": [
+        "Know what the house can do: it now says there's no smart lock (or motorised blind) it can use, rather than that the house has no locks.",
+    ],
     "1.16.2": [
         "The voice is given less to read each turn, so replies can be quicker: the current house context is now short lines rather than a block of data (about a third of the size for a typical turn), and with awareness of the moment on, who got home, the movement and anything unusual are said once rather than twice.",
         "New house scenario checks: every new feature on together, an instant answer remembered in its room, a voice that wasn't recognised never named from a phone nearby, and a size limit on what the voice is given.",

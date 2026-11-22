@@ -25,8 +25,8 @@ async def test_what_the_house_can_and_cannot_do(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
     prompt = (await llm.async_get_api(hass, DOMAIN, CTX)).api_prompt
     assert "What you can control in this house by voice: 2 lights, 1 heating or cooling control." in prompt
-    assert ("This house has no locks, blinds, curtains or garage doors, water valves, lawn mower or water heater "
-            "you can control") in prompt
+    assert ("This house has no smart locks, motorised blinds, curtains or garage doors, smart water valves, robot "
+            "mower or smart water heater you can control (the ordinary ones are still there") in prompt
     hass.config_entries.async_update_entry(entry, options={**entry.data, "capability_awareness": False})
     await hass.async_block_till_done()
     assert "What you can control" not in (await llm.async_get_api(hass, DOMAIN, CTX)).api_prompt
