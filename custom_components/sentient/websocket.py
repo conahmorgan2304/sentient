@@ -316,7 +316,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_PERSONA, CONF_SPEAKERS, CONF_DEFAULT_SPEAKER, CONF_FALLBACK_SPEAKERS, CONF_CHIME, CONF_SPEAK_VOLUME,
         CONF_NIGHT_VOLUME, CONF_DUCK_MEDIA, CONF_ALEXA_TTS_ONLY, CONF_ROOM_VOLUME, CONF_FULL_VOLUME_SPEAKERS, CONF_MEDIA_SPEAKERS, CONF_MEDIA_IMPORTANT_ONLY, CONF_TTS_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE, CONF_AUTOMATIC_LANGUAGE, CONF_REMEMBER_LANGUAGE_PHRASES, CONF_STREAM_VOICE, CONF_VOICE_TIMING_DIAGNOSTICS, CONF_RELIABILITY_LOG, CONF_UNIFIED_EVIDENCE, CONF_SPECIFIC_CLARIFICATION, CONF_ACTION_RECOVERY, "recheck_unconfirmed", CONF_VOICE_LANGUAGE, CONF_FOLLOW_YOU, CONF_FOLLOW_MINUTES, CONF_ALL_OCCUPIED, "room_tracking", "room_trackers",
         CONF_PERSONALITY, CONF_PERSONALITY_NOTES, "pronounce_names", "pronunciations", CONF_STYLE_FEEDBACK, CONF_STYLE_NOTES, CONF_CHATTINESS, CONF_TALK_STYLE, CONF_CARRY_ON_MINUTES, CONF_FOCUSED_TOOLS, CONF_ASK_LATER, CONF_PUT_RIGHT, CONF_MUSIC, "music_alexa", "music_alexa_service", CONF_BANNED_WORDS, CONF_HOUSE_RULES, "no_security_offers", CONF_CONFIRM,
-        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "vary_replies", "behaviour_explanations", "current_house_context", "moment_awareness", "room_memory", "know_people", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, "routine_verify", CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
+        CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, "speech_failure_notification", CONF_SESSIONS, CONF_ROOM_HANDOFF, CONF_CONTEXTUAL_FOLLOWUPS, "recent_followup_context", "conversation_cues", "vary_replies", "behaviour_explanations", "current_house_context", "moment_awareness", "room_memory", "know_people", "instant_answers", "house_context_entities", "house_context_updates", CONF_RECOVERY, CONF_SESSION_SECONDS, CONF_GUARDED, "routine_verify", CONF_VOICE_UNLOCK, CONF_UNDO, CONF_EVIDENCE,
     ]),
     ("quiet", "Quiet & rooms", "mdi:weather-night", "When to keep it down, knowing when the house has gone to bed and woken up, and how rooms are worked out.", [
         CONF_QUIET_START, CONF_QUIET_END, CONF_BUSY_ENTITIES, CONF_SLEEP, CONF_SLEEP_MINUTES, CONF_SLEEP_IGNORE, CONF_BEDTIME_ROUTINES, CONF_SLEEP_ACTIONS,
@@ -1422,7 +1422,7 @@ SECTIONS: dict[str, list[dict[str, Any]]] = {
         {"title": "Conversations", "open": False, "names": [
             "conversation_sessions", "session_seconds", "carry_on_minutes", "room_conversation_handoff",
             "contextual_followups", "recent_followup_context", "conversation_cues", "vary_replies",
-            "current_house_context", "moment_awareness", "room_memory", "know_people", "house_context_entities", "house_context_updates",
+            "current_house_context", "moment_awareness", "room_memory", "know_people", "instant_answers", "house_context_entities", "house_context_updates",
             "ask_later", "put_right", "music", "music_alexa", "music_alexa_service"]},
         {"title": "Guarded device control", "open": False, "names": [
             "guarded_control", "voice_unlock", "voice_undo", "recheck_unconfirmed"]},
