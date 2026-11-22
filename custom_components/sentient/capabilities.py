@@ -8,6 +8,7 @@ house with no smart lock. Worked out at most every five minutes; no AI. Off: not
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -71,7 +72,38 @@ def line(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     text = ("What you can control in this house by voice: " + ", ".join(have) + ". Only offer things these can do.")
     if missing:
         listed = ", ".join(missing[:-1]) + " or " + missing[-1] if len(missing) > 1 else missing[0]
-        text += (f" This house has no {listed} you can control (the ordinary ones are still there, just not "
-                 "connected): never offer to work them, and say it that way if asked.")
+        text += (f" This house has no {listed} you can control. The ordinary ones are still there, just not "
+                 "connected: never offer to work them, and if asked, say you can't, e.g. \"there's no smart lock I "
+                 "can use\" — never that the house has no locks.")
     cache.update(at=now, line=text)
     return text
+
+
+# 22 Nov: "Shall I close the bedroom window or leave it?" — said with a confirmed memory and the capability line
+# both saying it can't. A rule in the prompt can be missed, so the sentence is taken out of the reply.
+_OFFER_START = (r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can\b(?!['’]t)|"
+                r"i could\b(?!['’]?n)|let me|i'?ll|i will|happy to)\b[^.?!]{0,40}?")
+MOVED_THINGS = ("window", "door", "gate", "blind", "curtain", "shutter")
+
+
+def impossible_offer(hass: HomeAssistant, options: dict[str, Any]) -> re.Pattern[str] | None:
+    """An offer to open, close or lock something no device here can move, or None if there's nothing like that."""
+    if not options.get(CONF_CAPABILITIES):
+        return None
+    now = time.monotonic()
+    cache = hass.data.setdefault(CACHE_KEY + "_offers", {"at": 0.0, "pattern": None, "set": False})
+    if cache["set"] and now - cache["at"] < CACHE_SECONDS:
+        return cache["pattern"]
+    from .llm_api import _exposed
+
+    movable = " ".join((st.name or st.entity_id).casefold() for st in hass.states.async_all("cover")
+                       if _exposed(hass, st.entity_id))
+    things = [t for t in MOVED_THINGS if t not in movable]
+    parts = []
+    if things:
+        parts.append(r"\b(?:open|close|shut)\b[^.?!]{0,30}?\b(?:" + "|".join(things) + r")s?\b")
+    if not any(_exposed(hass, st.entity_id) for st in hass.states.async_all("lock")):
+        parts.append(r"\b(?:lock|unlock)\b")
+    pattern = re.compile(_OFFER_START + "(?:" + "|".join(parts) + ")", re.I) if parts else None
+    cache.update(at=now, pattern=pattern, set=True)
+    return pattern
