@@ -963,6 +963,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("learn_reactions", **d("learn_reactions", True)): selector.BooleanSelector(),
             vol.Required("ai_case_memory", **d("ai_case_memory", True)): selector.BooleanSelector(),
             vol.Required("memory_tags", **d("memory_tags", False)): selector.BooleanSelector(),
+            vol.Required("memory_upkeep", **d("memory_upkeep", False)): selector.BooleanSelector(),
             vol.Required("memory_semantic_enabled", **d("memory_semantic_enabled", False)): selector.BooleanSelector(),
             vol.Optional("memory_semantic_url", **d("memory_semantic_url", "")): selector.TextSelector(),
             vol.Optional("memory_semantic_model", **d("memory_semantic_model", "")): selector.TextSelector(),

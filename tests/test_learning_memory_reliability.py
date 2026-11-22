@@ -415,3 +415,45 @@ async def test_memory_recall_distinguishes_explicit_wording_inference_and_edits(
         memory.update(added["id"], "The porch light is called Wall Lamp")
         rows = (await RecallTool().async_call(hass, query, ctx))["memories"]
         assert any(r["basis"] == "memory was edited after it was first saved" for r in rows)
+
+
+async def test_memory_upkeep_puts_right_what_was_said_to_be_out_of_date(reflection, freezer):
+    obj, rt = reflection
+    rt.options['memory_upkeep'] = True
+    said = rt.memory.add('The window cleaner comes on Tuesdays', source='conversation')
+    pinned = rt.memory.add('The boiler service is in March', source='conversation')
+    pinned.pinned = True
+    guess = rt.memory.add('The landing light is left on for the cat at night', source='reflection')
+    freezer.tick(timedelta(days=2))
+    seen = {}
+
+    async def generate(hass, data):
+        seen['data'] = data
+        return {'data': {'outdated': [f'[{said.id}]: The window cleaner comes on Wednesdays now',
+                                      f'[{pinned.id}]: The boiler service is in April', '[zzzzzzzz]: nonsense']}}
+    with patch('custom_components.sentient.reflection.async_generate', side_effect=generate):
+        result = await obj.async_reflect()
+    assert f'[{said.id}] The window cleaner comes on Tuesdays' in seen['data']['instructions']
+    assert f'[{pinned.id}]' not in seen['data']['instructions']  # confirmed: never offered for fixing
+    assert 'outdated' in seen['data']['structure']
+    assert rt.memory.get(said.id).text == 'The window cleaner comes on Wednesdays now'
+    assert rt.memory.get(said.id).basis == 'guess'  # a fix is worked out, not told
+    assert rt.memory.get(pinned.id).text == 'The boiler service is in March'
+    assert result['fixed'] == ['The window cleaner comes on Tuesdays → The window cleaner comes on Wednesdays now']
+    question = rt.curiosity.wonder.call_args.args[0]
+    assert question == 'I worked out that the window cleaner comes on Wednesdays now — is that right?'  # the fix is checked first
+    assert result['checking'] == question
+
+
+async def test_without_upkeep_nothing_is_corrected(reflection):
+    obj, rt = reflection
+    said = rt.memory.add('The window cleaner comes on Tuesdays', source='conversation')
+    seen = {}
+
+    async def generate(hass, data):
+        seen['data'] = data
+        return {'data': {'outdated': [f'[{said.id}]: changed']}}
+    with patch('custom_components.sentient.reflection.async_generate', side_effect=generate):
+        await obj.async_reflect()
+    assert 'outdated' not in seen['data']['structure'] and f'[{said.id}]' not in seen['data']['instructions']
+    assert rt.memory.get(said.id).text == 'The window cleaner comes on Tuesdays'

@@ -186,7 +186,8 @@ class Curiosity:
                     "You asked because you were curious. When they answer, save what you learned with "
                     "sentient_remember as one plain, durable fact (category fact) — e.g. 'The Tuesday morning "
                     "caller is the window cleaner.' Then thank them in a few words. If they don't know or would "
-                    "rather not say, just say no problem and save nothing."
+                    "rather not say, just say no problem and save nothing. If you were checking something you worked "
+                    "out and they say it's wrong, forget it with sentient_forget and save what's right instead."
                 ),
             )
         if (self._stopped or self.options is not options or (not force and not self.enabled)
