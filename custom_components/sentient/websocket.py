@@ -332,7 +332,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_BRIEFING_CALENDARS, CONF_BRIEFING_SYSTEM, CONF_OUTSIDE_INFO, CONF_PARCEL_TRACKERS, CONF_BRIEFING_TIME, CONF_MORNING_BRIEFING, CONF_MORNING_BRIEFING_AREAS, "morning_briefing_quiet", CONF_DIGEST_TIME,
     ]),
     ("noticing", "Noticing & learning", "mdi:radar", "What it watches for and learns from.", [
-        CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LEARN_ANCHORS, CONF_OFFER_TOGETHER, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_UNTIL,
+        CONF_NOTICE_ENTITIES, CONF_REMARK_REPEAT_HOURS, CONF_LEARN_ENTITIES, CONF_LEARN_ANCHORS, CONF_OFFER_TOGETHER, CONF_LINK_TRIGGERS, CONF_SUGGEST_ROUTINES, "prove_routines", CONF_ROUTINE_EVIDENCE, CONF_WELCOME, CONF_WELCOME_PEOPLE, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_UNTIL,
         CONF_INSIDE_SENSORS, CONF_WEEKLY_REPORT, CONF_DAY_CHART,
     ]),
     ("nightwatch", "Night watch", "mdi:shield-moon-outline", "Doors and gates opening at times they never normally do, with nobody up.", [
@@ -1478,6 +1478,7 @@ DEPENDS: dict[str, str] = {
                                 "security_event_feedback", "security_coverage")},
     **{k: "heating_schedule" for k in ("heating_graph", "heating_revert")},
     "routine_evidence": CONF_SUGGEST_ROUTINES,
+    "prove_routines": CONF_SUGGEST_ROUTINES,
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
     "speaker_memories": CONF_VOICE_ID,
     # conversation settings that do nothing without conversation sessions, and a few "how often/when" partners

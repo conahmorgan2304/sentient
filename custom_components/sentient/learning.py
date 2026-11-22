@@ -99,6 +99,12 @@ _CAUSE_STATES = {
     "media_player": ("playing", "off"),
 }
 
+CONF_PROVE_ROUTINES = "prove_routines"
+PROVE_DAYS = 4  # days it must be checked against (after it was learned) before it's offered
+PROVE_SHARE = 0.75  # ...and right on at least this share of them
+PROVE_WINDOW = 45  # minutes either side of its usual time
+
+
 _DAYTYPES = {
     "every day": lambda d: True,
     "on weekdays": lambda d: d.weekday() < 5,
@@ -126,6 +132,9 @@ class Routine:
     anchor: str = "clock"  # or "sunset", "sunrise", "getting up"
     offset: int = 0  # minutes after the anchor (negative: before)
     dates: list[str] = field(default_factory=list)  # the days it happened (local, ISO) — to spot habits done together
+    # proving itself: since it was learned, on how many of the days it applied to it really happened near its time
+    proof_hits: int = 0
+    proof_days: int = 0
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -178,7 +187,13 @@ class Routine:
             "routine": self.describe(),
             "how_sure": f"{round(self.support * 100)}% of days ({self.evidence()})",
             "adopted": self.adopted,
+            "proved": (f"right on {self.proof_hits} of {self.proof_days} days since it was learned"
+                       if self.proof_days else "not checked against a day since it was learned yet"),
         }
+
+    @property
+    def proven(self) -> bool:
+        return self.proof_days >= PROVE_DAYS and self.proof_hits >= PROVE_SHARE * self.proof_days
 
 
 def _changes_to(states: list[State], target: str, automated: set[int] | None = None) -> list[datetime]:
@@ -714,6 +729,7 @@ class Learner:
                     routine.learned = old.learned
                     if old.adopted:
                         routine = old  # approval stays attached to its agreed schedule, not a fresh estimate
+                self.prove(routine, history.get(entity_id, []), automated.get(entity_id))
                 fresh[routine.id] = routine
         # adopted routines are kept even if a quiet fortnight made them fade
         for rid, old in self.routines.items():
@@ -889,8 +905,35 @@ class Learner:
             self._busy.discard(routine.id)
 
     def _offerable(self, r: Routine | Link) -> bool:
+        if isinstance(r, Routine) and self.options.get(CONF_PROVE_ROUTINES) and not r.proven:
+            return False  # still proving itself: watched, not offered
         return not (r.adopted or r.declined or r.suggested) and not (
             self.feedback is not None and self.feedback.offers_blocked(r.entity_id))
+
+    def prove(self, routine: Routine, states: list[State], automated: set[int] | None) -> None:
+        """Check the habit against each day since it was first learned: did a person really do it near its time?
+
+        Learned from the fortnight before, judged on the days after — so a habit is offered only once it has
+        predicted real days, not just fitted old ones. Days it doesn't apply to (a weekday habit at a weekend), and
+        days its time can't be worked out (nobody up), aren't counted."""
+        learned = dt_util.parse_datetime(routine.learned or "")
+        if learned is None:
+            return
+        today = dt_util.now().date()
+        # only days the history read tonight covers: older ones can't be judged, so they aren't counted
+        first = max(dt_util.as_local(learned).date() + timedelta(days=1), today - timedelta(days=WINDOW_DAYS))
+        changes = _changes_to(states, routine.state, automated)
+        hits = days = 0
+        day = first
+        while day < today:
+            if _DAYTYPES.get(routine.days, lambda d: True)(day):
+                due = self.minute_today(routine, day)
+                if due is not None:
+                    days += 1
+                    if any(c.date() == day and abs(c.hour * 60 + c.minute - due) <= PROVE_WINDOW for c in changes):
+                        hits += 1
+            day += timedelta(days=1)
+        routine.proof_hits, routine.proof_days = hits, days
 
     def together(self, routine: Routine | Link) -> list[Routine]:
         """This habit and others done at about the same time on mostly the same days — offered as one."""

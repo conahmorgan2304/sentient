@@ -280,3 +280,37 @@ async def test_deleted_routine_stays_deleted_until_restored(hass: HomeAssistant,
         await hass.services.async_call(DOMAIN, "forget_routine", {"restore": True}, blocking=True, return_response=True)
         await learner.async_learn()
         assert on.id in learner.routines
+
+
+async def test_a_habit_proves_itself_before_it_is_offered(hass: HomeAssistant, freezer) -> None:
+    """Learned from the past, judged on the days after: offered only once it has predicted real days."""
+    freezer.move_to(dt_util.as_utc(_local(TODAY, 10, 14)))
+    hass.states.async_set("light.hallway", "off", {"friendly_name": "Hallway light"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={
+        "persona": "Nova", "speakers": [], "quiet_start": "00:00:00", "quiet_end": "00:00:00",
+        "learn_entities": ["light.hallway"], "prove_routines": True,
+    })
+    entry.add_to_hass(hass)
+    rnd = random.Random(2)
+    history = {"light.hallway": _history("light.hallway", {a: (17, 30 + rnd.randint(-5, 5)) for a in range(1, 15)})}
+    with patch("custom_components.sentient.learning.Learner._async_history", return_value=history):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        learner = entry.runtime_data.learner
+        await learner.async_learn()
+        routine = next(iter(learner.routines.values()))
+        assert routine.proof_days == 0 and learner.next_to_offer() is None  # just learned: watched, not offered
+        # learned six days ago: judged on the five days since, right on all of them
+        routine.learned = dt_util.as_utc(_local(TODAY - timedelta(days=6), 12, 0)).isoformat()
+        await learner.async_learn()
+        routine = next(iter(learner.routines.values()))
+        assert (routine.proof_hits, routine.proof_days) == (5, 5)
+        assert learner.next_to_offer() is routine
+        assert routine.summary()["proved"] == "right on 5 of 5 days since it was learned"
+    # the light stopped going on: no longer proven
+    quiet = {"light.hallway": _history("light.hallway", {a: (17, 30) for a in range(6, 15)})}
+    with patch("custom_components.sentient.learning.Learner._async_history", return_value=quiet):
+        routine.learned = dt_util.as_utc(_local(TODAY - timedelta(days=6), 12, 0)).isoformat()
+        await learner.async_learn()
+    routine = next(iter(learner.routines.values()), None)
+    assert routine is None or not routine.proven

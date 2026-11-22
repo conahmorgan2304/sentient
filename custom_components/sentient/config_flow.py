@@ -772,6 +772,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.EntitySelectorConfig(domain=["binary_sensor", "media_player", "input_boolean", "switch", "light"], multiple=True)
             ),
             vol.Required(CONF_SUGGEST_ROUTINES, **d(CONF_SUGGEST_ROUTINES, DEFAULT_SUGGEST_ROUTINES)): selector.BooleanSelector(),
+            vol.Required("prove_routines", **d("prove_routines", False)): selector.BooleanSelector(),
             vol.Optional(CONF_DOOR_CAMERA, **d(CONF_DOOR_CAMERA)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="camera")
             ),
