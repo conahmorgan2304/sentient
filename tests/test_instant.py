@@ -67,3 +67,43 @@ async def test_the_agent_answers_without_the_ai_and_keeps_the_conversation(hass:
         assert log.content[-1].content == "Yes, the Kitchen light is on."
         await obj.async_process(request("Turn it off", cid=result.conversation_id))
         ai.assert_awaited_once()
+
+
+def test_instant_answers_and_prompt_size_are_measured() -> None:
+    from custom_components.sentient.conversation_quality import ConversationQuality
+
+    q = ConversationQuality()
+    for n in range(10):
+        q.record(text="is the lamp on", reply=f"Yes {n}.", carried=False, asked_back=False, error=False, ms=40, instant=True)
+        q.record(text="tell me a joke", reply=f"Joke {n}.", carried=False, asked_back=False, error=False, ms=2400,
+                 prompt_chars=6000)
+    speed = q.summary()["speed"]
+    assert speed == {"instant_answers": 10, "instant_ms": 40, "ai_ms": 2400, "prompt_chars": 6000}
+
+
+async def test_whats_on_the_calendar(hass: HomeAssistant, freezer) -> None:
+    from homeassistant.core import SupportsResponse
+
+    await hass.config.async_set_time_zone("Europe/London")
+    freezer.move_to("2026-11-22T10:00:00+00:00")
+    rt = await _house(hass)
+    hass.states.async_set("calendar.family", "off", {"friendly_name": "Family"})
+    async_expose_entity(hass, "conversation", "calendar.family", True)
+    events = [{"summary": "Dentist", "start": "2026-11-23T09:30:00+00:00", "end": "2026-11-23T10:00:00+00:00"},
+              {"summary": "Football", "start": "2026-11-25T18:00:00+00:00", "end": "2026-11-25T19:00:00+00:00"}]
+
+    async def get_events(call):
+        from homeassistant.util import dt as dt_util
+
+        end = call.data["end_date_time"]
+        end = end if not isinstance(end, str) else dt_util.parse_datetime(end)
+        return {"calendar.family": {"events": [e for e in events if dt_util.parse_datetime(e["start"]) < end]}}
+
+    hass.services.async_register("calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY)
+    ask = lambda t: async_answer(hass, rt, t, None)  # noqa: E731
+    assert await ask("What's on my calendar today?") == "There's nothing on your calendar today."
+    assert (await ask("Have I got anything on tomorrow?")).startswith("On your calendar tomorrow: Dentist, tomorrow")
+    week = await ask("What's on my calendar this week?")
+    assert "Dentist" in week and "Football" in week
+    rt.speech.guest_mode = True
+    assert await ask("What's on my calendar this week?") is None

@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.1": [
+        "Instant answers now include the calendar: \"What's on my calendar this week?\", \"Have I got anything on tomorrow?\". Not for guests or in private rooms, where alarms, visitors and the calendar now stay out too.",
+        "The Mind page shows how many questions were answered instantly and how long they took against the AI, and how much the voice is given to read each turn, so the new features can be judged on speed.",
+        "Three new self-test questions: a room's temperature, two things in one question, and asking it to lock a door when there's no lock it can use.",
+    ],
     "1.16.0": [
         "Awareness of the moment (Voice → Conversations): every reply knows who's home and since when, which rooms have movement, what happened in the last 45 minutes and anything unusual for today.",
         "Short-term memory per room: the voice knows what was said, switched and announced in the room it's in over the last hour, and a conversation follows you into the next room.",

@@ -27,6 +27,7 @@ from typing import Any, Callable
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from homeassistant.util.ulid import ulid_now
@@ -412,6 +413,51 @@ class SelfTest:
                 return want.casefold() in answer.casefold(), f"the {want}"
 
             out.append(Question("room tracker", f"Which room is {whose(placed['tracker'])} in?", where, "room"))
+
+        # 22 Nov: a room's own temperature (instant answers and the voice should both get it from its one sensor)
+        from .presence import area_of
+
+        areas = ar.async_get(hass)
+        by_area: dict[str, list] = {}
+        for st in hass.states.async_all("sensor"):
+            if st.attributes.get("device_class") == "temperature" and self._exposed(st.entity_id):
+                if (area_id := area_of(hass, st.entity_id)) and (area := areas.async_get_area(area_id)):
+                    try:
+                        by_area.setdefault(area.name, []).append(float(st.state))
+                    except (TypeError, ValueError):
+                        continue
+        if room := next((name for name, values in sorted(by_area.items()) if len(values) == 1
+                         and name.casefold() not in {a.casefold() for a in (self.options.get("outdoor_areas") or [])}), None):
+            want_temp = by_area[room][0]
+
+            def room_warm(answer: str, want=want_temp) -> tuple[bool, str]:
+                return any(abs(n - want) <= 0.5 for n in numbers(answer)), f"about {want:g}°"
+
+            out.append(Question("room temperature", f"How warm is it in the {room}?", room_warm, "room"))
+        # two things in one question: both must be right
+        doors = [s for s in hass.states.async_all("binary_sensor") if s.attributes.get("device_class") == "door"
+                 and s.state in ("on", "off") and self._exposed(s.entity_id)]
+        if lights and doors:
+            light, door = next((s for s in lights if s.state == "on"), lights[0]), doors[0]
+
+            def both(answer: str, lt=light, dr=door) -> tuple[bool, str]:
+                said = answer.casefold()
+                light_ok = (" on" in f" {said}") if lt.state == "on" else ("off" in said)
+                door_ok = ("open" in said) if dr.state == "on" else bool(re.search(r"\b(closed|shut)\b", said))
+                return light_ok and door_ok, f"the light {lt.state}, the door {'open' if dr.state == 'on' else 'closed'}"
+
+            out.append(Question("two at once", f"Is the {light.name} on, and is the {door.name} shut?", both, "multi"))
+        # something this house has no device for (capability awareness): no lock the voice may use
+        if doors and not any(self._exposed(s.entity_id) for s in hass.states.async_all("lock")):
+            door = doors[0]
+
+            def no_lock(answer: str) -> tuple[bool, str]:
+                from .reliability import OFFER
+
+                return bool(CANT_DO.search(answer) or DOESNT_KNOW.search(answer)) and not OFFER.search(answer), \
+                    "says it can't (there's no lock it can use), without offering to"
+
+            out.append(Question("no lock", f"Can you lock the {door.name}?", no_lock, "impossible"))
 
         def unknowable(answer: str) -> tuple[bool, str]:
             return bool(DOESNT_KNOW.search(answer)), "says it doesn't know (an invented answer is a fail)"

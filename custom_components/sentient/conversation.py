@@ -471,7 +471,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                 text=user_input.text or "", reply=reply, carried=bool(meta.get("carried")),
                 asked_back=bool(result.continue_conversation and reply.endswith("?") and not is_follow_up(reply)),
                 error=result.response.response_type == intent.IntentResponseType.ERROR, ms=ms,
-                memories=meta.get("memories"), recalled=bool(meta.get("recalled")), corrected=bool(meta.get("corrected")))
+                memories=meta.get("memories"), recalled=bool(meta.get("recalled")), corrected=bool(meta.get("corrected")),
+                prompt_chars=meta.get("prompt_chars"), instant=bool(meta.get("instant")))
         except Exception:  # noqa: BLE001 - measuring must never get in the way of an answer
             pass
 
@@ -657,10 +658,15 @@ class BackedUpAgent(conversation.ConversationEntity):
         if not explicit and not (cautious or changed_speaker) and options.get("instant_answers"):
             from .instant import async_answer as instant_answer
 
-            if said := await instant_answer(self.hass, self._entry.runtime_data, user_input.text, user_input.context):
+            if said := await instant_answer(self.hass, self._entry.runtime_data, user_input.text, user_input.context,
+                                            user_input.device_id):
                 # straight from the house, no AI: the clock, the weather, one device's state, Sentient's own records
                 if (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
                     brain.count("local")
+                from .conversation_quality import TURN
+
+                if (meta := TURN.get(None)) is not None:
+                    meta["instant"] = True
                 return await self._localise_result(self._instant_reply(user_input, said))
         from .focus import current_request, turn_flags
 
