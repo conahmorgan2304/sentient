@@ -74,6 +74,11 @@ class HouseHealth:
         self.dismissed: dict[str, str] = {}
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.health_dismissed")
 
+    @property
+    def all_issues(self) -> list[dict[str, Any]]:
+        """Every problem, including ones cleared by hand: a cleared offline device is still offline."""
+        return self._raw or self.issues
+
     @staticmethod
     def key(issue: dict[str, Any]) -> str:
         return f"{issue.get('kind')}:{issue.get('name')}"
