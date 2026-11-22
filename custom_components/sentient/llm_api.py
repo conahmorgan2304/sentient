@@ -2626,9 +2626,15 @@ class SentientAPI(llm.API):
             from .security_voice import reference_prompt
 
             context_line += await reference_prompt(self.hass, rt, llm_context)
+        prompt = self._prompt(llm_context, conversation_id) + context_line
+        from .conversation_quality import TURN
+
+        if (meta := TURN.get(None)) is not None:
+            meta["prompt_chars"] = len(prompt)  # how much the voice is given to read each turn (it costs time)
+            meta["tools"] = len(tools)
         return llm.APIInstance(
             api=self,
-            api_prompt=self._prompt(llm_context, conversation_id) + context_line,
+            api_prompt=prompt,
             llm_context=llm_context,
             tools=tools,
         )

@@ -107,7 +107,7 @@ class ConversationQuality:
 
     def record(self, *, text: str, reply: str, carried: bool, asked_back: bool, error: bool,
                ms: int | None = None, memories: list[str] | None = None, recalled: bool = False,
-               corrected: bool = False) -> dict[str, Any]:
+               corrected: bool = False, prompt_chars: int | None = None, instant: bool = False) -> dict[str, Any]:
         kind = classify(text)
         offered = list(memories or [])
         turn = {"time": dt_util.utcnow().isoformat(), "carried": bool(carried), "kind": kind,
@@ -116,7 +116,9 @@ class ConversationQuality:
                 # to search for more, and whether it was corrected (counts only — no memory text is kept)
                 "memories_offered": len(offered), "memories_used": sum(_shows_in(m, reply) for m in offered),
                 "relevant_offered": sum(_shows_in(m, text, 1) for m in offered),
-                "recalled": bool(recalled), "memory_corrected": bool(corrected)}
+                "recalled": bool(recalled), "memory_corrected": bool(corrected),
+                # 22 Nov: is the voice getting slower as it's given more to read, and how much do instant answers save
+                "prompt_chars": prompt_chars if isinstance(prompt_chars, int) else None, "instant": bool(instant)}
         sigs = signatures(reply)
         if sigs and not error:
             since = (dt_util.utcnow() - __import__("datetime").timedelta(hours=REPEAT_HOURS)).isoformat()
@@ -166,8 +168,21 @@ class ConversationQuality:
                 "note": f"A reply that starts with the same five words, or repeats a whole sentence, said in the {REPEAT_HOURS} hours before.",
             },
             "median_ms": round(median(times)) if len(times) >= MIN_TURNS else None,
+            "speed": _speed(turns),
             "note": "Counted from what's said, not what was meant: a correction is someone saying \"no, I meant…\" straight after.",
         }
+
+
+def _speed(turns: list[dict[str, Any]]) -> dict[str, Any]:
+    """Instant answers against AI answers, and how much the voice is given to read."""
+    def mid(values: list) -> int | None:
+        values = [v for v in values if isinstance(v, (int, float))]
+        return round(median(values)) if len(values) >= MIN_TURNS else None
+
+    instant = [t for t in turns if t.get("instant")]
+    by_ai = [t for t in turns if not t.get("instant")]
+    return {"instant_answers": len(instant), "instant_ms": mid([t.get("ms") for t in instant]),
+            "ai_ms": mid([t.get("ms") for t in by_ai]), "prompt_chars": mid([t.get("prompt_chars") for t in by_ai])}
 
 
 def of(rt: Any) -> ConversationQuality:

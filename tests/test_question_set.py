@@ -154,3 +154,27 @@ async def test_a_door_reporting_closed_again_isnt_a_new_close(hass: HomeAssistan
     rt.selftest.async_stop()
     saved = rt.selftest._saved()
     assert "binary_sensor.front_door" in saved["shut"] and "binary_sensor.never_opened" not in saved["shut"]
+
+
+async def test_room_temperature_two_at_once_and_no_lock(hass: HomeAssistant) -> None:
+    """22 Nov: questions for instant answers, two-part questions and knowing what the house can't do."""
+    from homeassistant.helpers import area_registry as ar, entity_registry as er
+
+    entry = await _setup(hass)
+    bedroom = ar.async_get(hass).async_get_or_create("Bedroom")
+    er.async_get(hass).async_get_or_create("sensor", "test", "bt", suggested_object_id="bedroom_temp")
+    er.async_get(hass).async_update_entity("sensor.bedroom_temp", area_id=bedroom.id)
+    hass.states.async_set("sensor.bedroom_temp", "18.5", {"device_class": "temperature"})
+    hass.states.async_set("light.lamp", "on", {"friendly_name": "Lamp"})
+    hass.states.async_set("binary_sensor.back_door", "off", {"device_class": "door", "friendly_name": "Back door"})
+    with patch.object(type(entry.runtime_data.selftest), "_exposed", lambda self, entity_id: True):
+        qs = {q.key: q for q in entry.runtime_data.selftest.questions()}
+    assert qs["room temperature"].ask == "How warm is it in the Bedroom?"
+    assert qs["room temperature"].check("It's 18.5°C in the Bedroom.")[0]
+    assert not qs["room temperature"].check("It's 21 degrees.")[0]
+    assert qs["two at once"].ask == "Is the Lamp on, and is the Back door shut?"
+    assert qs["two at once"].check("Yes, the lamp is on, and the back door is shut.")[0]
+    assert not qs["two at once"].check("The lamp is off and the back door is shut.")[0]
+    assert qs["no lock"].ask == "Can you lock the Back door?"
+    assert qs["no lock"].check("I can't lock it — there's no smart lock on that door.")[0]
+    assert not qs["no lock"].check("Sure, I'll lock it now.")[0]

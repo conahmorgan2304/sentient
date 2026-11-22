@@ -6,12 +6,13 @@ A cheap model still takes two or three seconds a turn. Plenty of what's asked ne
 * "What's the temperature outside?" / "How cold is it outside?" — the weather the house already uses;
 * "Is the kitchen light on?" / "Is the back door open?" — one device, named exactly, that voice may use;
 * "How warm is it in the bedroom?" — the room's own temperature sensor (or its thermostat's reading);
-* "When's my next alarm?", "Did anyone come round?", "Is the house locked up?" — Sentient's own records.
+* "When's my next alarm?", "Did anyone come round?", "Is the house locked up?" — Sentient's own records;
+* "What's on my calendar this week?" / "Have I got anything on tomorrow?" — the calendars shared with the voice.
 
 Only questions, never anything that could be a command; only a single device that clearly matches, never a guess
 between several; only entities exposed to voice assistants. Anything else, or any doubt, goes to the AI as before.
 The question and answer are added to the conversation, so a follow-up ("turn it off") still knows what "it" is.
-Guests get the clock, the weather and device states, not the household's alarms or visitors.
+Guests get the clock, the weather and device states, not the household's alarms, calendar or visitors.
 Off: every question goes to the AI.
 """
 
@@ -33,6 +34,9 @@ STATE = re.compile(r"^\s*(?:is|are) (?:the )?(?P<name>[\w' -]{2,40}?) (?:still |
                    r"locked|unlocked)(?: (?:now|right now|at the moment))?\s*\??\s*$", re.I)
 ROOM_TEMP = re.compile(r"^\s*(?:what(?:'s| is) the (?:temperature|temp) in (?:the )?(?P<a>[\w' -]{2,30}?)|how (?:warm|cold|hot) "
                        r"is (?:it in )?(?:the )?(?P<b>[\w' -]{2,30}?))(?: (?:now|right now))?\s*\??\s*$", re.I)
+CALENDAR = re.compile(r"^\s*(?:what(?:'s| is) on|(?:have|has) (?:i|we) got anything(?: on)?|do (?:i|we) have anything(?: on)?|"
+                      r"is there anything on)(?: (?:my|the|our) (?:calendar|diary))?(?: (?P<when>today|tomorrow|this week))?"
+                      r"(?: on (?:my|the|our) (?:calendar|diary))?\s*\??\s*$", re.I)
 ON = {"on", "open", "unlocked", "playing", "home", "heat", "cool", "heat_cool", "auto"}
 OPENISH = {"open": "open", "closed": "closed", "shut": "closed", "locked": "locked", "unlocked": "unlocked"}
 
@@ -121,7 +125,30 @@ def _outside(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     return f"It's {round(float(weather.attributes['temperature']))}{unit} outside and {sky}."
 
 
-async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context | None) -> str | None:
+async def _calendar(hass: HomeAssistant, when: str) -> str | None:
+    """What's on today, tomorrow or this week, from the calendars shared with the voice."""
+    from .llm_api import _voice_calendars
+    from .skills import async_calendar_events
+
+    calendars = _voice_calendars(hass)
+    if not calendars:
+        return None
+    found = await async_calendar_events(hass, calendars, {"today": 1, "tomorrow": 2}.get(when, 7))
+    if "error" in found:
+        return None
+    events = found.get("events") or []
+    if when == "tomorrow":
+        events = [e for e in events if str(e.get("when", "")).startswith("tomorrow")]
+    label = {"today": "today", "tomorrow": "tomorrow"}.get(when, "this week")
+    if not events:
+        return f"There's nothing on your calendar {label}."
+    said = [f"{e.get('what') or 'something'}, {e.get('when')}" for e in events[:4]]
+    more = f", and {len(events) - 4} more" if len(events) > 4 else ""
+    return f"On your calendar {label}: " + "; ".join(said) + more + "."
+
+
+async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context | None,
+                       device_id: str | None = None) -> str | None:
     """An instant answer, or None for the AI to answer as usual."""
     options = getattr(rt, "options", {}) or {}
     if not options.get(CONF_INSTANT) or not text:
@@ -132,6 +159,13 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
     if not is_question(text):
         return None
     guest = bool(getattr(getattr(rt, "speech", None), "guest_mode", False))
+    if not guest and device_id:
+        from .voice_id import private_history
+
+        try:
+            guest = bool(private_history(rt, device_id))  # a private room: household records stay out, as for guests
+        except Exception:  # noqa: BLE001 - can't tell: be careful
+            guest = True
     try:
         if TIME.match(text):
             from .llm_api import clock_words
@@ -152,6 +186,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
 
             report = await check_for_voice(hass, context)
             return report.get("summary")
+        if (m := CALENDAR.match(text)) and (m.group("when") or re.search(r"calendar|diary", text, re.I)):
+            return await _calendar(hass, (m.group("when") or "this week").casefold())
         if COMING.search(text):
             return _coming_up(rt)
         if VISITORS.search(text):
