@@ -613,7 +613,10 @@
       // (not on a hub row: ignoring a hub would list each of its devices on its own instead)
       const stop = (i) => i.device_id && !i.with && this._hass.user && this._hass.user.is_admin
         ? `<button class="hx" data-act="hignore" data-id="${esc(i.device_id)}" data-name="${esc(i.device || i.name)}" title="Stop flagging ${esc(i.device || i.name)}" aria-label="Stop flagging ${esc(i.device || i.name)}"><ha-icon icon="mdi:bell-off-outline"></ha-icon></button>` : "";
-      const healthRows = issues.slice(0, 6).map((i) => i.kind === "offline"
+      // ✕ clears one problem until it goes away by itself (it shows again if it comes back)
+      const clear = (i) => this._hass.user && this._hass.user.is_admin
+        ? `<button class="hx" data-act="hclear" data-id="${esc(i.kind + ":" + i.name)}" title="Clear this problem" aria-label="Clear this problem"><ha-icon icon="mdi:close"></ha-icon></button>` : "";
+      const healthRows = issues.slice(0, 6).map((i) => (i.kind === "offline"
         ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u>${stop(i)}</div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
@@ -621,7 +624,7 @@
         : ["wear", "fight", "frozen", "snapshot_failed", "hidden_camera"].includes(i.kind) ? `<div class="r warn"><ha-icon icon="${esc(i.kind === "fight" ? "mdi:sword-cross" : ["frozen", "snapshot_failed", "hidden_camera"].includes(i.kind) ? "mdi:cctv-off" : "mdi:wrench-clock")}"></ha-icon><b class="wrap">${esc(i.text)}</b>${stop(i)}</div>`
         : i.kind === "duplicate" ? `<div class="r warn"><ha-icon icon="mdi:content-duplicate"></ha-icon><b class="wrap">${esc(i.text)}</b>${this._hass.user && this._hass.user.is_admin ? `<button class="hx" data-act="hdupe" data-id="${esc(i.device_id)}" data-name="${esc(i.name)}" title="Disable the empty copy" aria-label="Disable the empty copy of ${esc(i.name)}"><ha-icon icon="mdi:eye-off-outline"></ha-icon></button>` : ""}</div>`
         : i.kind === "stuck" ? `<div class="r warn"><ha-icon icon="mdi:motion-sensor-off"></ha-icon><b>${esc(i.name)}</b><u>${i.on ? "STUCK ON" : "NOTHING SINCE " + ago(i.since)}</u></div>`
-        : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).join("")
+        : `<div class="r warn"><ha-icon icon="mdi:battery-alert-variant-outline"></ha-icon><b>${esc(i.name)}</b><u>${i.level == null ? "LOW" : i.level + "%"}</u></div>`).replace(/<\/div>$/, `${clear(i)}</div>`)).join("")
         + (updates.length ? `<div class="r"><ha-icon icon="mdi:package-up"></ha-icon><b>${updates.length} update${updates.length > 1 ? "s" : ""} waiting · ${esc(updates.slice(0, 3).join(", "))}</b></div>` : "");
       R("health").innerHTML = this._h("HOUSE HEALTH", issues.length ? `${issues.length} PROBLEM${issues.length > 1 ? "S" : ""}` : "ALL GOOD")
         + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
@@ -3037,6 +3040,12 @@
         const what = id === "ledger" ? "every recorded change in the house ledger" : "everything it has learned (expectations, beliefs, reactions, saved AI answers)";
         if (!window.confirm(`Clear ${what}? This can't be undone.`)) return;
         this._hass.callWS({ type: "sentient/brain/clear", what: id }).then(() => { this._innerAt = 0; this._loadInner(); }, (e) => window.alert(e.message || String(e)));
+      }
+      else if (act === "hclear") {
+        el.disabled = true;
+        this._hass.callWS({ type: "sentient/health/dismiss", key: id }).then(
+          () => { const row = el.closest(".r"); if (row) row.remove(); },
+          (e) => { el.disabled = false; window.alert(e.message || String(e)); });
       }
       else if (act === "hignore") {
         const name = el.dataset.name || "this device";

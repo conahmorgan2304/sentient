@@ -95,7 +95,8 @@ async def test_battery_draining_faster(hass: HomeAssistant) -> None:
     hass.states.async_set("sensor.door_battery", "60", {"device_class": "battery", "friendly_name": "Door battery"})
     entry = await _setup(hass)
     entry.runtime_data.watchdog.batteries["sensor.door_battery"] = rows
-    assert any("Door battery is running down about 4× faster" in i["text"] for i in entry.runtime_data.watchdog.issues())
+    # 22 Nov: no longer a House health problem (the battery forecast says when to change it)
+    assert not any("running down" in i.get("text", "") for i in entry.runtime_data.watchdog.issues())
 
 
 async def test_device_keeps_dropping_offline(hass: HomeAssistant) -> None:
