@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.4": [
+        "With \"Know what the house can do\" on, an offer to do something no device here can — closing a window, locking a door with no smart lock — is taken out of the reply before it's spoken, the way offers to arm or unlock already are. On 22 Nov it offered to close the bedroom window despite being told it can't.",
+        "Asked to lock a door, it now says there's no smart lock it can use, not that the house has no locks.",
+    ],
     "1.16.3": [
         "Know what the house can do: it now says there's no smart lock (or motorised blind) it can use, rather than that the house has no locks.",
     ],

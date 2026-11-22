@@ -49,15 +49,20 @@ def sentences(text: str) -> list[str]:
     return [s for s in (p.strip() for p in _END.split(text or "")) if s]
 
 
-def remove(text: str) -> tuple[str, list[str]]:
-    """The reply without any sentence offering to arm, disarm or unlock, and the sentences taken out.
+def _offer(sentence: str, security: bool, extra: re.Pattern[str] | None) -> bool:
+    return bool((security and SECURITY_OFFER.search(sentence)) or (extra is not None and extra.search(sentence)))
+
+
+def remove(text: str, *, security: bool = True, extra: re.Pattern[str] | None = None) -> tuple[str, list[str]]:
+    """The reply without any sentence offering to arm, disarm or unlock (and, with ``extra``, to do something no
+    device here can, such as closing a window), and the sentences taken out.
 
     A reply that is only the offer is left alone (silence would be worse) — that's returned with nothing removed."""
     parts = sentences(text)
-    kept = [s for s in parts if not SECURITY_OFFER.search(s)]
+    kept = [s for s in parts if not _offer(s, security, extra)]
     if not kept or len(kept) == len(parts):
         return text, []
-    return " ".join(kept), [s for s in parts if SECURITY_OFFER.search(s)]
+    return " ".join(kept), [s for s in parts if _offer(s, security, extra)]
 
 
 class StreamFilter:
@@ -65,7 +70,8 @@ class StreamFilter:
     offers to arm, disarm or unlock, when it's dropped. ``flush`` decides on the last, unfinished sentence; if every
     sentence was an offer, it gives them back so the reply isn't silent (as ``remove`` does)."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, security: bool = True, extra: re.Pattern[str] | None = None) -> None:
+        self.security, self.extra = security, extra
         self._held = ""
         self.passed: list[str] = []
         self.dropped: list[str] = []
@@ -90,7 +96,7 @@ class StreamFilter:
     def _decide(self, sentence: str, gap: str) -> str:
         if not sentence.strip():
             return sentence + gap
-        if SECURITY_OFFER.search(sentence):
+        if _offer(sentence, self.security, self.extra):
             self.dropped.append(sentence.strip())
             return ""
         self.passed.append(sentence.strip())

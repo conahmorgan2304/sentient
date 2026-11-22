@@ -28,15 +28,17 @@ def unspoken(streamed: str, final: str) -> str:
 class StreamWatch:
     """Watches the chat log's deltas the way the pipeline does, to know whether speaking has begun early."""
 
-    def __init__(self, log: Any, agent_id: str, pronouncer: Any = None, no_security_offers: bool = False) -> None:
+    def __init__(self, log: Any, agent_id: str, pronouncer: Any = None, no_security_offers: bool = False,
+                 impossible: Any = None) -> None:
         self.log = log
         self.agent_id = agent_id
         self._say = None
         self._offers = None
-        if no_security_offers:
+        if no_security_offers or impossible is not None:
             from .security_offers import StreamFilter
 
-            self._offers = StreamFilter()  # a sentence offering to arm, disarm or unlock never reaches the voice
+            # a sentence offering to arm, disarm or unlock (or to do what no device here can) never reaches the voice
+            self._offers = StreamFilter(security=no_security_offers, extra=impossible)
         if pronouncer is not None and pronouncer.table():
             from .pronounce import StreamPronouncer
 

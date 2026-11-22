@@ -487,7 +487,13 @@ class BackedUpAgent(conversation.ConversationEntity):
 
         from .security_offers import CONF_NO_SECURITY_OFFERS, applies
 
+        from .capabilities import impossible_offer
+
         offers = applies(self._options().get(CONF_NO_SECURITY_OFFERS, False), user_input.text)
+        # an offer to close a window or lock a door in a house where no device can: also taken out (22 Nov)
+        impossible = impossible_offer(self.hass, self._options()) if applies(True, user_input.text) else None
+        security = offers
+        offers = offers or impossible is not None
         log = None
         if self._options().get("stream_voice_replies") and self.supports_streaming:
             from homeassistant.components.conversation.chat_log import current_chat_log
@@ -496,18 +502,19 @@ class BackedUpAgent(conversation.ConversationEntity):
         if log is None or log.delta_listener is None:
             result = await self._async_process_impl(user_input)
             if offers:
-                self._drop_security_offers(result)
+                self._drop_security_offers(result, security=security, extra=impossible)
             return result
         from .voice_stream import StreamWatch
 
-        with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=offers) as watch:
+        with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=security,
+                         impossible=impossible) as watch:
             result = await self._async_process_impl(user_input)
             if offers:
-                self._drop_security_offers(result, log)
+                self._drop_security_offers(result, log, security=security, extra=impossible)
             await watch.finish(spoken_text(result.response))
         return result
 
-    def _drop_security_offers(self, result, log=None) -> None:
+    def _drop_security_offers(self, result, log=None, *, security: bool = True, extra=None) -> None:
         """Take any sentence offering to arm, disarm or unlock out of the reply, and out of what the conversation
         remembers it said (so a "yes" later can't answer an offer nobody heard). Never stops a reply."""
         try:
@@ -517,11 +524,11 @@ class BackedUpAgent(conversation.ConversationEntity):
             if "plain" not in speech:
                 return
             plain = speech["plain"].get("speech") or ""
-            kept, gone = remove(plain)
+            kept, gone = remove(plain, security=security, extra=extra)
             if not gone:
                 return
             result.response.async_set_speech(kept)
-            _LOGGER.debug("Took an offer to arm/disarm/unlock out of the reply: %s", gone)
+            _LOGGER.debug("Took an offer Sentient can't or mustn't make out of the reply: %s", gone)
             from .sessions import ends_in_question
 
             asking = ends_in_question(kept)
