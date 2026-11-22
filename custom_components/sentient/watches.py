@@ -306,13 +306,18 @@ class WatchManager:
         wake_on: str | list[str] | None = None,
         spot: str | None = None,
     ) -> Watch:
-        is_camera = bool(question) or entity.startswith("camera.")
+        # something to look for, with nothing to wait for on a device, is a camera watch: "watch for cars by the
+        # gate" named the gate, and the gate sensor was picked instead of the gate camera (21 Nov, three retries)
+        is_camera = bool(question) or entity.startswith("camera.") or (
+            bool(look_for) and to_state is None and above is None and below is None)
         entity_id = resolve_entity(self.hass, entity, "camera" if is_camera else None) or (
             resolve_entity(self.hass, entity) if is_camera else None
         )
         if entity_id is None:
             raise HomeAssistantError(f"I can't find anything called '{entity}'")
         kind = KIND_CAMERA if entity_id.startswith("camera.") else KIND_STATE
+        if kind == KIND_CAMERA and not question and look_for:
+            question = f"Can you see a {look_for.strip()}?"
         if kind == KIND_CAMERA and not question:
             raise HomeAssistantError("A camera watch needs a question, e.g. 'Are the cats near the rabbit pen?'")
         if kind == KIND_STATE and to_state is None and above is None and below is None:

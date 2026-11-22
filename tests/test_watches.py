@@ -329,3 +329,30 @@ async def test_unsure_answer_gets_second_opinion(hass: HomeAssistant) -> None:
     assert said[-1].data["message"] == "A fox is by the pen."
     watches = entry.runtime_data.watches
     assert watches.watches[0].second_opinions == 1 and watches.ai_checks_today == 2
+
+
+async def test_watch_for_something_by_a_named_place_picks_its_camera(hass: HomeAssistant) -> None:
+    """21 Nov: "watch for any more cars by the back gate" failed three times before a retry worked."""
+    entry = await _setup(hass)
+    _garden_camera(hass)
+    hass.states.async_set("binary_sensor.garden_door", "off", {"friendly_name": "Garden"})
+    watches = entry.runtime_data.watches
+    watch = watches.add("cars by the gate", "garden", look_for="car", until="23:59")
+    assert watch.entity_id == "camera.garden"
+    assert watch.question == "Can you see a car?"
+
+
+async def test_the_voice_can_name_the_camera_as_camera(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import llm
+
+    from custom_components.sentient.llm_api import WatchTool
+
+    entry = await _setup(hass)
+    _garden_camera(hass)
+    tool = WatchTool()
+    args = tool.parameters({"what": "cars", "camera": "camera.garden", "look_for": "car"})
+    result = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args=args), None)
+    assert "watching" in result, result
+    assert entry.runtime_data.watches.watches[0].entity_id == "camera.garden"
+    missing = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args=tool.parameters({"what": "x"})), None)
+    assert "error" in missing
