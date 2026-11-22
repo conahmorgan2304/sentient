@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.6": [
+        "Where the voice went wrong: questions about the conversation itself (\"What did you say?\", \"Were you watching the gate?\") are no longer logged as answering about the past without looking, and looking at a saved camera picture now counts as looking. Notes already kept are checked again with the new rules when Sentient starts.",
+    ],
     "1.15.5": [
         "Room temperatures on the House page now come from real room sensors. A voice speaker's, camera's or tablet's own temperature (for example a Satellite1's chip) is no longer shown as the room's, and nor is any sensor named after a CPU, chip, board or the device itself.",
         "You can choose exactly which sensor gives each room its temperature and humidity in Home Assistant: Settings > Areas, labels & zones > the area > Temperature sensor / Humidity sensor. When one is chosen, Sentient uses only that sensor. Hover over a room's temperature to see where it comes from.",
