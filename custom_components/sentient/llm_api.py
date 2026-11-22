@@ -2746,7 +2746,8 @@ class SentientAPI(llm.API):
         if profile and profile.get("gentle"):
             lines.append("In this room speak gently: short, calm, simple words, nothing alarming or sarcastic.")
         if opts.get(CONF_PROMPT_RECENT, True) and not opts.get("current_house_context"):
-            lines.extend(self._now_lines(rt) if private else self._recent_lines(rt))
+            # with the moment on, its own lines carry the movement and the last 45 minutes
+            lines.extend(self._now_lines(rt) if private or opts.get("moment_awareness") else self._recent_lines(rt))
         if confirm := [CONFIRM_KINDS[k] for k in opts.get(CONF_CONFIRM) or [] if k in CONFIRM_KINDS]:
             lines.append(
                 "Ask first: before you " + "; or ".join(confirm) + ", say in a few words exactly what you're about "
@@ -2779,6 +2780,12 @@ class SentientAPI(llm.API):
 
             if tracked := prompt_line(self.hass, opts):
                 lines.append(tracked)
+        from .room_memory import lines as room_memory_lines
+
+        lines.extend(room_memory_lines(rt, opts, room, conversation_id, private=private, guest=rt.speech.guest_mode))
+        from .moment import lines as moment_lines
+
+        lines.extend(moment_lines(self.hass, rt, opts, private=private, guest=rt.speech.guest_mode))
         usual = rt.sleep.usual()
         if usual["bedtime"] or usual["up"]:
             lines.append(
