@@ -876,3 +876,24 @@ async def test_vary_replies_shows_the_voice_its_own_recent_replies(hass: HomeAss
         rt.conversations._ours[cid] = {"room": "Kitchen"}
     assert own_recent_replies(rt) == ["Your phone is in the bedroom, on the bedside table.",
                                       "The kettle has boiled and the kitchen is warm enough."]
+
+
+async def test_the_voice_is_steered_to_the_evidence_lookup_when_it_is_on(hass: HomeAssistant) -> None:
+    """22 Nov: on since the 19th, never chosen once."""
+    ctx = llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None)
+    entry = await _setup(hass)
+    assert "call sentient_evidence first" not in (await llm.async_get_api(hass, DOMAIN, ctx)).api_prompt
+    hass.config_entries.async_update_entry(entry, options={**entry.data, "unified_evidence": True})
+    await hass.async_block_till_done()
+    api = await llm.async_get_api(hass, DOMAIN, ctx)
+    assert "call sentient_evidence first" in api.api_prompt
+    assert any(t.name == "sentient_evidence" for t in api.tools)
+
+
+async def test_a_cleared_offline_device_is_still_offline_to_the_voice(hass: HomeAssistant) -> None:
+    entry = await _setup(hass)
+    health = entry.runtime_data.health
+    health._raw = [{"kind": "offline", "name": "Hall plug"}]
+    health.issues = []
+    api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(platform="t", context=None, language="en", assistant=None, device_id=None))
+    assert "Hall plug" in api.api_prompt

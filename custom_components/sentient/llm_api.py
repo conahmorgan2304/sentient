@@ -2842,7 +2842,14 @@ class SentientAPI(llm.API):
                 "Named camera spots — for what's there right now, call sentient_look with the spot; it picks "
                 "the camera that can see it." + past + " Spots: " + "; ".join(spots[:15]) + "."
             )
-        offline = [i["name"] for i in rt.health.issues if i.get("kind") == "offline"]
+        if opts.get("unified_evidence") and not private:
+            # 22 Nov: on since the 19th and never chosen once — the voice reached for one source at a time
+            lines.append(
+                "For a question about what happened, when, or whether anyone or anything did something earlier "
+                "(\"has anyone been to the shed today?\", \"when did the back door last open?\", \"what went on "
+                "while I was out?\"), call sentient_evidence first: it checks the house record, the timeline and a "
+                "camera in one go. Name the device or room in 'what' and the camera or spot in 'camera'.")
+        offline = [i["name"] for i in rt.health.all_issues if i.get("kind") == "offline"]
         if offline:
             lines.append(
                 "Offline right now (commands to these won't work — say so instead of claiming it's done): "

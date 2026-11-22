@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.9": [
+        "With \"Unified household evidence lookup\" on, the voice is now told to use it first for questions about what happened earlier. It had been switched on since 19 Nov and never used.",
+        "A device you've cleared from House health is still offline as far as the voice knows, so it won't say a command to it worked.",
+    ],
     "1.15.8": [
         "House health: each problem has a ✕ to clear it. It stays cleared while it carries on, and shows again only if it goes away and comes back. The bell (\"Stop flagging\") is still there to ignore a device for good.",
         "A battery running down faster than it used to is no longer a House health problem. The battery forecast already says when each one will need changing.",
