@@ -331,11 +331,18 @@ class MindSensor(_Base):
         "security_events", "security_visits", "security_event_feedback_summary", "reliability", "self_test",
     })
 
+    # the security and learning summaries go through every kept camera event and review, and the page only needs
+    # them once a minute; a voice turn writes this sensor several times (session, check, timing), which took up to
+    # 0.77 s a write (22 Nov). Voice detail stays live; these are worked out again on the minute.
+    HEAVY_SECONDS = 60
+
     def __init__(self, entry: SentientConfigEntry) -> None:
         super().__init__(entry, "mind")
+        self._heavy: dict[str, Any] | None = None
+        self._heavy_at = 0.0
 
     async def async_added_to_hass(self) -> None:
-        self.async_on_remove(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
+        self.async_on_remove(async_track_time_interval(self.hass, self._minute, timedelta(minutes=1)))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_session", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_check", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_timing", self._tick))
@@ -346,16 +353,45 @@ class MindSensor(_Base):
     def _tick(self, _now) -> None:
         self.async_write_ha_state()
 
+    @callback
+    def _minute(self, _now) -> None:
+        self._heavy = None
+        self.async_write_ha_state()
+
     @property
     def native_value(self) -> int:
         return self._entry.runtime_data.conversations.count_today()
+
+    def _heavy_part(self, cognitive: dict[str, Any], intent_metrics: dict[str, Any],
+                    timings: list[Any]) -> dict[str, Any]:
+        import time
+
+        now = time.monotonic()
+        if self._heavy is not None and now - self._heavy_at < self.HEAVY_SECONDS:
+            return self._heavy
+        rt = self._entry.runtime_data
+        from .effectiveness import report as learning_report
+
+        self._heavy = {
+            "security_incidents": rt.incidents.recent(),
+            "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
+            "learning_effectiveness": ({} if rt.speech.guest_mode else
+                                       learning_report(cognitive=cognitive, intents=intent_metrics,
+                                                       voice_timings=timings)),
+            "security_events": rt.security_events.recent(),
+            "security_visits": rt.security_events.visits(),
+            "security_event_feedback_summary": rt.security_events.feedback_summary(),
+            "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
+                                        else _security_review_quality(rt)),
+        }
+        self._heavy_at = now
+        return self._heavy
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         rt = self._entry.runtime_data
         last = rt.reflection.last or {}
         curious = rt.curiosity.listing()
-        from .effectiveness import report as learning_report
 
         cognitive = (rt.incidents.cognitive.summary()
                      if rt.options.get("cognitive_shadow") and rt.options.get("security_incidents")
@@ -363,6 +399,9 @@ class MindSensor(_Base):
         intent_metrics = rt.intents.summary() if getattr(rt, "intents", None) else {}
         timings = (rt.ai.voice_timings.describe()
                    if rt.options.get("voice_timing_diagnostics") else [])
+        if rt.speech.guest_mode != getattr(self, "_heavy_guest", None):
+            self._heavy, self._heavy_guest = None, rt.speech.guest_mode  # guest mode hides parts: never serve stale
+        heavy = self._heavy_part(cognitive, intent_metrics, timings)
         return {
             "sentient_updates": rt.updates.status(),
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
@@ -377,8 +416,8 @@ class MindSensor(_Base):
             "reliability": ({"enabled": False} if rt.speech.guest_mode or rt.reliability is None
                             else rt.reliability.summary()),
             "self_test": {"enabled": False} if rt.speech.guest_mode else rt.selftest.summary(),
-            "security_incidents": rt.incidents.recent(),
-            "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
+            "security_incidents": heavy["security_incidents"],
+            "incident_review_quality": heavy["incident_review_quality"],
             "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else
                                     {**rt.incidents.authority(), "heads_up": rt.incidents.authority("night_heads_up")}),
             # Aggregate only: no names, camera images, conversation text or
@@ -387,15 +426,12 @@ class MindSensor(_Base):
                                  or not getattr(rt.incidents, "cognitive", None) else cognitive),
             "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
                                else intent_metrics),
-            "learning_effectiveness": ({} if rt.speech.guest_mode else
-                                       learning_report(cognitive=cognitive, intents=intent_metrics,
-                                                       voice_timings=timings)),
-            "security_events": rt.security_events.recent(),
-            "security_visits": rt.security_events.visits(),
+            "learning_effectiveness": heavy["learning_effectiveness"],
+            "security_events": heavy["security_events"],
+            "security_visits": heavy["security_visits"],
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
-            "security_event_feedback_summary": rt.security_events.feedback_summary(),
-            "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
-                                        else _security_review_quality(rt)),
+            "security_event_feedback_summary": heavy["security_event_feedback_summary"],
+            "security_review_quality": heavy["security_review_quality"],
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
             "last_reflection": last.get("time"),

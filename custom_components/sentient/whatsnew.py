@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.15.7": [
+        "Watches: \"watch for cars by the gate\" works first time. Asking to look for something picks the camera rather than a door or gate sensor with the same name, the question is worked out from what to look for, and the voice can name the camera as \"camera\".",
+        "The Mind sensor is quicker: the camera, incident and learning summaries are worked out once a minute rather than on every voice turn.",
+    ],
     "1.15.6": [
         "Where the voice went wrong: questions about the conversation itself (\"What did you say?\", \"Were you watching the gate?\") are no longer logged as answering about the past without looking, and looking at a saved camera picture now counts as looking. Notes already kept are checked again with the new rules when Sentient starts.",
     ],

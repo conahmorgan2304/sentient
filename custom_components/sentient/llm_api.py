@@ -586,7 +586,8 @@ class WatchTool(_Tool):
     parameters = vol.Schema(
         {
             vol.Required("what"): cv.string,
-            vol.Required("entity"): cv.string,
+            vol.Optional("entity"): cv.string,
+            vol.Optional("camera"): cv.string,
             vol.Optional("to_state"): cv.string,
             vol.Optional("above"): vol.Coerce(float),
             vol.Optional("below"): vol.Coerce(float),
@@ -609,8 +610,14 @@ class WatchTool(_Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         args = dict(tool_input.tool_args)
+        # "camera" is what a model reaches for on a camera watch (21 Nov): take it as the thing to watch
+        camera = args.pop("camera", None)
+        entity = camera or args.pop("entity", None)
+        args.pop("entity", None)
+        if not entity:
+            return {"error": "Say what to watch: a device, or a camera (entity)"}
         try:
-            watch = rt.watches.add(args.pop("what"), args.pop("entity"), **args)
+            watch = rt.watches.add(args.pop("what"), entity, **args)
         except HomeAssistantError as err:
             return {"error": str(err)}
         return {"watching": watch.summary()}
