@@ -2738,6 +2738,16 @@ class SentientAPI(llm.API):
         private = voice_id.private_history(rt, llm_context.device_id)
         lines.extend(voice_id.standing_lines(self.hass, opts))
         lines.extend(voice_id.prompt_lines(opts, speaker))
+        from . import people
+
+        device = dr.async_get(self.hass).async_get(llm_context.device_id) if llm_context.device_id else None
+        guess = people.likely_speaker(
+            self.hass, opts, user_id=llm_context.context.user_id if llm_context.context else None,
+            area_id=device.area_id if device else None,
+            voice_matched=speaker is not None,  # a voice heard, matched or not, says more than a phone nearby
+            guest=rt.speech.guest_mode, private=private)
+        people.GUESS.set(guess[0].casefold() if guess else None)
+        lines.extend(people.prompt_line(guess))
         if private:
             lines.append(
                 "This room is private: don't bring up personal details about anyone in the household, what other "
@@ -2940,13 +2950,16 @@ class SentientAPI(llm.API):
         Sentient about themselves is given first, not left out because newer house facts filled the list."""
         from . import voice_id
 
+        from .people import CONF_KNOW_PEOPLE, GUESS
+
         opts = rt.options
-        if not opts.get("speaker_memories") or rt.speech.guest_mode:
+        if rt.speech.guest_mode:
             return None
         speaker = voice_id.current_speaker.get()
-        if speaker is None or speaker is voice_id.UNKNOWN_SPEAKER:
-            return None
-        return (voice_id.name_of(speaker) or "").casefold() or None
+        if opts.get("speaker_memories") and speaker is not None and speaker is not voice_id.UNKNOWN_SPEAKER:
+            return (voice_id.name_of(speaker) or "").casefold() or None
+        # not matched by voice: signed in, or their phone in the room (only puts their things first)
+        return GUESS.get() if opts.get(CONF_KNOW_PEOPLE) else None
 
     def _memories(self, rt: Any, limit: int, relevant: bool) -> list[Any]:
         """The newest memories — or, once there are more than fit, the ones that match what was asked plus the newest."""

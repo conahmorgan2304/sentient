@@ -503,6 +503,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required("current_house_context", **d("current_house_context", False)): selector.BooleanSelector(),
             vol.Required("moment_awareness", **d("moment_awareness", False)): selector.BooleanSelector(),
             vol.Required("room_memory", **d("room_memory", False)): selector.BooleanSelector(),
+            vol.Required("know_people", **d("know_people", False)): selector.BooleanSelector(),
             vol.Optional("house_context_entities", **d("house_context_entities", [])): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
             vol.Required("house_context_updates", **d("house_context_updates", False)): selector.BooleanSelector(),
             vol.Required(CONF_RECOVERY, **d(CONF_RECOVERY, False)): selector.BooleanSelector(),
