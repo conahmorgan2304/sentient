@@ -32,8 +32,9 @@ KINDS = [  # (domain, one, many)
     ("lawn_mower", "lawn mower", "lawn mowers"),
 ]
 # common things people ask for: said when this house has none, so they're never offered
-ABSENT_WORTH_SAYING = {"lock": "locks", "cover": "blinds, curtains or garage doors", "valve": "water valves",
-                       "lawn_mower": "lawn mower", "water_heater": "water heater"}
+# "smart": 22 Nov, asked to lock the back door it said "this house doesn't have locks on the doors"
+ABSENT_WORTH_SAYING = {"lock": "smart locks", "cover": "motorised blinds, curtains or garage doors",
+                       "valve": "smart water valves", "lawn_mower": "robot mower", "water_heater": "smart water heater"}
 
 CACHE_KEY = "sentient_capabilities"
 
@@ -70,6 +71,7 @@ def line(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     text = ("What you can control in this house by voice: " + ", ".join(have) + ". Only offer things these can do.")
     if missing:
         listed = ", ".join(missing[:-1]) + " or " + missing[-1] if len(missing) > 1 else missing[0]
-        text += f" This house has no {listed} you can control: never offer to work them."
+        text += (f" This house has no {listed} you can control (the ordinary ones are still there, just not "
+                 "connected): never offer to work them, and say it that way if asked.")
     cache.update(at=now, line=text)
     return text
