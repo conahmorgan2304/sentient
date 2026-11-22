@@ -294,3 +294,25 @@ async def test_duplicates_work_when_the_registry_iterates_devices_themselves(has
 
     with patch.object(devs, "devices", Entries([real, empty])):
         assert [f["device_id"] for f in duplicates(hass)] == [empty.id]
+
+
+async def test_a_problem_can_be_cleared_until_it_comes_back(hass: HomeAssistant, hass_ws_client) -> None:
+    """22 Nov: a way to delete a House health problem."""
+    hass.states.async_set("sensor.door_battery", "8", {"device_class": "battery", "friendly_name": "Door battery"})
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data={"persona": "Nova", "speakers": []})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    health = entry.runtime_data.health
+    assert [i["name"] for i in health.async_check()] == ["Door battery"]
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/health/dismiss", "key": "battery:Door battery"})
+    assert (await ws.receive_json())["success"]
+    assert health.issues == [] and health.async_check() == []  # stays cleared while it carries on
+    await ws.send_json({"id": 2, "type": "sentient/health/dismiss", "key": "battery:Nothing"})
+    assert not (await ws.receive_json())["success"]
+    hass.states.async_set("sensor.door_battery", "90", {"device_class": "battery", "friendly_name": "Door battery"})
+    health.async_check()
+    assert health.dismissed == {}  # gone by itself: forgotten
+    hass.states.async_set("sensor.door_battery", "7", {"device_class": "battery", "friendly_name": "Door battery"})
+    assert [i["name"] for i in health.async_check()] == ["Door battery"]  # back again: shown again

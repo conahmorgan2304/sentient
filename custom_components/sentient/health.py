@@ -17,12 +17,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_BATTERY_THRESHOLD,
     CONF_HEALTH_IGNORE,
     DEFAULT_BATTERY_THRESHOLD,
+    DOMAIN,
     EVENT_HEALTH_CHANGED,
 )
 
@@ -57,6 +59,7 @@ class HouseHealth:
         self.options = options
         self._rt = rt_getter
         self.issues: list[dict[str, Any]] = []
+        self._raw: list[dict[str, Any]] = []  # before anything cleared by hand is taken out
         self.updates: list[str] = []
         self._unsub = None
         self._never: dict[str, datetime] = {}  # entity -> until when it counts as "never has a reading"
@@ -66,12 +69,37 @@ class HouseHealth:
         self._started = dt_util.utcnow()
         # names already reported offline before a restart (from the timeline); those are reported straight away
         self.was_offline_before: Callable[[], set[str]] = lambda: set()
+        # problems cleared from the list by hand ("kind:name" -> when). One stays cleared while it carries on; once
+        # it has gone away by itself, it shows again if it comes back. "Stop flagging" is the for-good version.
+        self.dismissed: dict[str, str] = {}
+        self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.health_dismissed")
+
+    @staticmethod
+    def key(issue: dict[str, Any]) -> str:
+        return f"{issue.get('kind')}:{issue.get('name')}"
 
     @callback
     def async_start(self) -> None:
         self._started = dt_util.utcnow()
         self._unsub = async_track_time_interval(self.hass, self._tick, CHECK_EVERY)
-        self.hass.loop.call_soon(self.async_check)
+        self.hass.async_create_task(self._async_load(), eager_start=True)
+
+    async def _async_load(self) -> None:
+        try:
+            self.dismissed = dict((await self._store.async_load() or {}).get("dismissed") or {})
+        except Exception:  # noqa: BLE001 - a damaged file: nothing is cleared
+            self.dismissed = {}
+        self.async_check()
+
+    @callback
+    def dismiss(self, key: str) -> bool:
+        """Clear one problem from the list (and from what's said about the house) until it goes away by itself."""
+        if not any(self.key(i) == key for i in self._raw):
+            return False
+        self.dismissed[key] = dt_util.utcnow().isoformat()
+        self._store.async_delay_save(lambda: {"dismissed": self.dismissed}, 1)
+        self.async_check()
+        return True
 
     @callback
     def async_stop(self) -> None:
@@ -229,6 +257,13 @@ class HouseHealth:
                   + sorted(low, key=lambda i: (i["level"] is None, i["level"] or 0)))
         if self.options.get(CONF_DUPLICATES, True):
             issues += duplicates(self.hass, ignore)
+        self._raw = issues
+        present = {self.key(i) for i in issues}
+        if gone := [k for k in self.dismissed if k not in present]:
+            for k in gone:
+                self.dismissed.pop(k)
+            self._store.async_delay_save(lambda: {"dismissed": self.dismissed}, 1)
+        issues = [i for i in issues if self.key(i) not in self.dismissed]
         if issues != self.issues or updates != self.updates:
             self.issues = issues
             self.updates = updates

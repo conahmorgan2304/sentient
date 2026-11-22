@@ -36,8 +36,6 @@ SLOWER_BY = 1.3
 SLOWER_MIN = 10  # minutes
 STUCK_TIMES = 3
 DROPS = 4
-DRAIN_FASTER = 2.0
-DRAIN_MIN = 1.0  # % a day
 HEATING_SLOWER = 0.7
 FIGHT_WINDOW = timedelta(minutes=10)
 FIGHTS = 3
@@ -326,11 +324,8 @@ class Watchdog:
                 if len(week) >= STUCK_TIMES:
                     out.append({"kind": "wear", "entity_id": entity_id, "name": f"{name(entity_id)} stuck",
                                 "text": f"{name(entity_id)} has got stuck or not made it back {len(week)} times this week"})
-        for entity_id, rows in self.batteries.items():
-            recent, before = drain_rate(rows, 0, 14, today), drain_rate(rows, 15, 45, today)
-            if recent and before and recent >= DRAIN_MIN and recent >= before * DRAIN_FASTER:
-                out.append({"kind": "wear", "entity_id": entity_id, "name": f"{name(entity_id)} draining",
-                            "text": f"{name(entity_id)} is running down about {recent / before:.0f}× faster than it used to"})
+        # 22 Nov: "running down faster than it used to" is no longer a House health problem — the battery forecast
+        # already says when each one will need changing, and a faster drain on its own isn't something to fix
         ignored = self._ignored_devices()
         for dev in [d for d in self.drops if d in ignored]:
             self.drops.pop(dev, None)  # "stop flagging it": its history goes too, not just the warning

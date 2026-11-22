@@ -533,6 +533,18 @@ def ws_health_ignore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": ignored})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/health/dismiss", vol.Required("key"): str})
+@websocket_api.require_admin
+@callback
+def ws_health_dismiss(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Clear one House health problem ("kind:name") until it goes away by itself; it shows again if it comes back."""
+    entry = _entry(hass)
+    if entry is None or not entry.runtime_data.health.dismiss(msg["key"]):
+        connection.send_error(msg["id"], "not_found", "That problem has already gone")
+        return
+    connection.send_result(msg["id"], {"dismissed": msg["key"]})
+
+
 @websocket_api.websocket_command({
     vol.Required("type"): "sentient/heating/programme/save", vol.Optional("programme_id"): str,
     vol.Required("programme"): dict,
@@ -1237,6 +1249,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_sleep_forget)
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
+    websocket_api.async_register_command(hass, ws_health_dismiss)
     websocket_api.async_register_command(hass, ws_games_edit)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)
