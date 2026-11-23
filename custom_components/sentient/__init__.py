@@ -202,6 +202,7 @@ class SentientRuntime:
     books: Any = None  # audiobooks and ebooks with bookmarks
     games: Any = None  # story games with their own memory
     brain: Any = None  # the database, house ledger, expectations, beliefs and learning (brain.py)
+    window_heat: Any = None  # an open window turns its room's heater down (window_heating.py)
     warnings: Any = None  # official weather and flood warnings
     inbox: Any = None  # read-only email from Home Assistant's IMAP integration
     recipes: Any = None  # recipes and cooking mode
@@ -438,6 +439,7 @@ DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
     "clipwatch": lambda o: bool(o.get("clip_watch")),
     "faces": lambda o: bool(o.get("faces") or o.get("face_teach") or float(o.get("face_forget_hours") or 0) > 0),
     "rain": lambda o: bool(o.get("rain_warnings")),
+    "window_heat": lambda o: bool(o.get("window_heating")),
     "parcels": lambda o: bool(o.get("outside_info") or o.get("parcel_trackers")),
     "cheap_power": lambda o: bool(o.get("price_entity")),
 }
@@ -741,12 +743,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await quality.async_load(bool(options.get("voice_timing_diagnostics")))
     entry.runtime_data.conversation_quality = quality
     entry.async_on_unload(quality.async_stop)
+    from .window_heating import WindowHeating
+
+    window_heat = WindowHeating(hass, entry.entry_id, options, get_rt)
+    entry.runtime_data.window_heat = window_heat
     engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "reliability": reliability, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
                "pets": pets, "autobackup": autobackup, "bins": bins, "faces": faces, "clipwatch": clipwatch,
                "selfaware": selfaware, "inner": inner, "heat_prog": heat_prog, "goals": goals, "books": books, "games": games, "recipes": recipes, "holiday": holiday, "trust": trust,
-               "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage}
+               "parcels": parcels, "maintenance": maintenance, "cheap_power": cheap_power, "whats_new": whats_new, "usage": usage,
+               "window_heat": window_heat}
     timings: dict[str, float] = {}
     for name, engine in engines.items():
         if name in DORMANT_WHEN_OFF and not DORMANT_WHEN_OFF[name](options):
@@ -924,11 +931,13 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
     entry.runtime_data.reliability.update_options(options)
-    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage"):
+    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage", "window_heat"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:
         await entry.runtime_data.holiday.async_end("disabled in settings")
+    if entry.runtime_data.window_heat is not None and not entry.runtime_data.window_heat.enabled:
+        await entry.runtime_data.window_heat.async_disable()
     entry.runtime_data.drive.async_setup_triggers()
     for name in sorted(entry.runtime_data.dormant):  # switched on just now: start it without a restart
         if DORMANT_WHEN_OFF[name](options):

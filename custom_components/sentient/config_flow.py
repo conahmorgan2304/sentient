@@ -600,6 +600,9 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=5, max=28, step=0.5, unit_of_measurement="°C", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Required(CONF_HEATING_REVERT, **d(CONF_HEATING_REVERT, True)): selector.BooleanSelector(),
+            vol.Required("window_heating", **d("window_heating", False)): selector.BooleanSelector(),
+            vol.Required("window_heating_minutes", **d("window_heating_minutes", 5.0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=60, step=1, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)),
             vol.Required(CONF_HEATING_REVERT_DAY, **d(CONF_HEATING_REVERT_DAY, DEFAULT_HEATING_REVERT_DAY)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=0.5, max=12, step=0.5, unit_of_measurement="h", mode=selector.NumberSelectorMode.BOX)
             ),
