@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.7": [
+        "New, off until switched on (Settings › Heating › Turn a room's heater down while its window is open): when a window has been open for a few minutes and that room has its own heater, Sentient turns it down to the night temperature and puts it back when the window shuts — only if nobody has changed it meanwhile, and to what the heating schedule wants by then. A whole-house thermostat is never turned down for one window; Sentient just says once that the window's open and the heating's on. Nothing stays turned down for more than 3 hours.",
+    ],
     "1.16.6": [
         "A heating offer when the heating is already on now asks to turn it up rather than to put it on — \"It's 18 degrees in here, and the heating's on at 18. Shall I turn it up to 20?\" — and a yes gets \"Okay, I'll turn it up to 20.\"",
     ],

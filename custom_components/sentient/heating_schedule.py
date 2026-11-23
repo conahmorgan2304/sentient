@@ -449,6 +449,9 @@ class HeatingProgrammes:
         rt = self._rt()
         if rt is None:
             return False
+        window = getattr(rt, "window_heat", None)
+        if window is not None and window.holding(heater):
+            return True  # turned down for an open window: it puts it back itself when the window's shut
         boost = getattr(getattr(rt, "heating", None), "_boosted", {}).get(heater)
         if boost and boost.get("status") in ("active", "pending"):
             until = dt_util.parse_datetime(boost.get("until") or "")
@@ -511,7 +514,8 @@ class HeatingProgrammes:
             state = self.hass.states.get(heater)
             if state is None or state.state in ("unknown", "unavailable") or blocked(self.hass, heater) \
                     or heater in (rt.options.get(CONF_NEVER_ENTITIES) or []) \
-                    or getattr(getattr(rt, "heating", None), "_boosted", {}).get(heater) is not None:
+                    or getattr(getattr(rt, "heating", None), "_boosted", {}).get(heater) is not None \
+                    or (getattr(rt, "window_heat", None) is not None and rt.window_heat.holding(heater)):
                 self._manual.pop(heater, None)
                 continue
             active = _active_period(programmes, heater, local)

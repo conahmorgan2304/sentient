@@ -344,7 +344,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_FRIGATE_HEALTH,
     ]),
     ("heating", "Heating", "mdi:radiator", "Switches for the heating features. The thermostats, night temperature, comfort temperature, time limits and warm-by times, and the heating schedule, are on the House tab.", [
-        CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT,
+        CONF_PREHEAT, CONF_HEATING_SCHEDULE, CONF_HEATING_GRAPH, CONF_HEATING_REVERT, "window_heating", "window_heating_minutes",
         "heating_energy_sensor", "heating_measurement_date", "heating_energy_price_kwh",
     ]),
     ("heating_zones", "Heating zones", "mdi:radiator", "Which thermostats Sentient looks after, the comfort temperature, the time limit and when the house should be warm by. Shown on the House tab.", [
@@ -1501,6 +1501,7 @@ DEPENDS: dict[str, str] = {
     **{k: CONF_CAMSEC for k in ("camera_security_describe", "security_event_evidence", "security_conversation_context",
                                 "security_event_feedback", "security_coverage")},
     **{k: "heating_schedule" for k in ("heating_graph", "heating_revert")},
+    "window_heating_minutes": "window_heating",
     "routine_evidence": CONF_SUGGEST_ROUTINES,
     "prove_routines": CONF_SUGGEST_ROUTINES,
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,
