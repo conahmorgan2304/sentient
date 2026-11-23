@@ -69,6 +69,8 @@ def _expand(words: set[str]) -> set[str]:
 _DAYNAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 _MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 _HABIT = re.compile(r"\b(every|each|usually|always|normally|most)\b")
+_RECURRING = re.compile(r"\b(?:mornings|evenings|nights|afternoons|weekends|weekdays|mondays|tuesdays|wednesdays|"
+                        r"thursdays|fridays|saturdays|sundays|daily|weekly|whenever|when(?:ever)? (?:it|someone|we|i|they))\b")
 
 
 _RELATIVE_DAY = re.compile(r"\b(?:earlier )?(?:today|tonight|this (?:morning|afternoon|evening))\b", re.IGNORECASE)
@@ -89,7 +91,7 @@ def expiry_for(text: str, today: date | None = None) -> str | None:
     """The day after the date a memory is about ("on Thursday", "tomorrow", "12th November"), or None for
     anything that isn't tied to a day — including habits like "every Thursday" or "on Thursdays"."""
     t = _normalise(text)
-    if _HABIT.search(t):
+    if _HABIT.search(t) or _RECURRING.search(t):  # "on Thursday nights" is every week, not this Thursday
         return None
     today = today or dt_util.now().date()
     when: date | None = None
@@ -113,6 +115,34 @@ def expiry_for(text: str, today: date | None = None) -> str | None:
         except ValueError:
             when = None
     return (when + timedelta(days=1)).isoformat() if when else None
+
+
+_FOR_NOW = re.compile(r"\b(?:for now|for the time being|for the moment|at the moment|right now|temporarily)\b")
+_FOR_SPAN = re.compile(r"\bfor (?:the next )?(a|an|one|two|three|four|five|six|seven|\d{1,2}) (day|days|week|weeks)\b")
+_NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7}
+# something done once ("Conah turned the heating on himself", "I've switched the fan off"): true on the day only
+_DONE_ONCE = re.compile(r"\b(?:turned|switched|plugged|unplugged|boosted|cranked)\b[^.]*\b(?:on|off|up|down|in|out)\b")
+
+
+def temporary_expiry(text: str, today: date | None = None) -> tuple[str | None, bool]:
+    """For "memory that understands time": (the day after it stops being true, whether it was a one-off).
+
+    "Kayleigh's away till Friday" already has a day (expiry_for). This covers what has none: "for now", "at the
+    moment" (a week), "for two weeks", and something done once ("I turned the heating on") — true that day only.
+    Habits ("every night", "usually") are never temporary."""
+    t = _normalise(text)
+    if _HABIT.search(t) or _RECURRING.search(t):
+        return None, False
+    today = today or dt_util.now().date()
+    if m := _FOR_SPAN.search(t):
+        n = int(m.group(1)) if m.group(1).isdigit() else _NUMBERS.get(m.group(1), 1)
+        days = n * (7 if m.group(2).startswith("week") else 1)
+        return (today + timedelta(days=days + 1)).isoformat(), False
+    if _FOR_NOW.search(t):
+        return (today + timedelta(days=8)).isoformat(), False
+    if _DONE_ONCE.search(t):
+        return (today + timedelta(days=1)).isoformat(), True
+    return None, False
 
 
 _CHANGEABLE = re.compile(r"^(\d+(?:\.\d+)?|on|off|not|no|never|longer|anymore|now|yes|open|closed|up|down|\w+n't|cannot)$")
@@ -203,6 +233,7 @@ class MemoryStore:
         self.suggested: list[str] = []  # pairs the weekly tidy thinks say the same thing, for a person to decide
         self._index: tuple[float, list[tuple[str, str]]] | None = None
         self.use_tags = False  # setting "Recall by meaning": match the related words too
+        self.time_aware = False  # setting "Memory that understands time": temporary things end by themselves
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
@@ -257,8 +288,16 @@ class MemoryStore:
                 raise ValueError("Memory is full of pinned items; unpin or forget one before adding another")
             drop = min(candidates, key=lambda m: (m.category != "note", m.hits, m.created))
             self._items.remove(drop)
+        expires = expiry_for(text)
+        if self.time_aware and expires is None and category != "correction":
+            expires, once = temporary_expiry(text)
+            if once and category not in ("fact", "note"):
+                expires, once = None, False  # "likes the lamp turned down low" is a preference, not something done once
+            if once:  # "…turned the heating on" — say which day, so it isn't read as today's news later
+                day = dt_util.now().date()
+                text = f"{text.rstrip('.')} (on {day.day} {day:%B %Y})."
         memory = Memory(text=text, category=category, source=source, origin=origin, owner=owner,
-                        expires=expiry_for(text), links=self.links_for(text))
+                        expires=expires, links=self.links_for(text))
         # newer replaces older: same wording apart from numbers, on/off or a negation
         subject = _subject(text)
         if len(subject) >= 3:

@@ -39,6 +39,7 @@ KINDS = {
     "offered_impossible": "Offered something no device can do",
     "unanswered": "Couldn't answer",
     "no_evidence": "Answered about the past without looking",
+    "wrong_state": "Said something was on, off, open or closed when it wasn't",
 }
 
 # "I've turned off…", "Done.", "All set": a claim that something happened
@@ -306,6 +307,20 @@ class Reliability:
                   "tools": list(dict.fromkeys(_tool_outcome(t)[0] for t in turn["tools"]))[:6], "problems": found}
         self.records.insert(0, record)
         return record
+
+    def add_graded(self, *, time: str, room: str | None, asked: str, said: str, detail: str) -> bool:
+        """A mistake found later (the nightly check of what the voice said). False if it was already recorded."""
+        if not self.enabled:
+            return False
+        short = _short(said, 160)
+        if any(r["time"] == time and r["said"] == short for r in self.records):
+            return False
+        self.records.insert(0, {"time": time, "room": room, "asked": _short(asked, 120), "said": short, "tools": [],
+                                "problems": [{"kind": "wrong_state", "detail": detail}], "graded": True})
+        self.records.sort(key=lambda r: r["time"], reverse=True)
+        self._trim()
+        self._save()
+        return True
 
     @callback
     def forget(self, conversation_id: str) -> None:

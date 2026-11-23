@@ -458,6 +458,34 @@ class RecallTool(_Tool):
         ]}
 
 
+class PastDaysTool(_Tool):
+    annotations = _read_only()
+    name = "sentient_past_days"
+    description = (
+        "The story of an earlier day, kept each night: use for 'what did we do last Saturday?', 'what happened "
+        "yesterday?' or 'when did the boiler last play up?'. 'day' is words like 'yesterday', 'last saturday', "
+        "'3 days ago' or a date; 'about' finds the days that mention something. Answer only from what it returns; "
+        "if nothing comes back, say you don't have that day."
+    )
+    parameters = vol.Schema({vol.Optional("day"): cv.string, vol.Optional("about"): cv.string})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        args = tool_input.tool_args
+        if not args.get("day") and not args.get("about"):
+            return {"error": "say which day, or what to look for"}
+        from .reflection import parse_day
+
+        if args.get("day") and parse_day(args["day"]) is None:
+            return {"error": f"I can't tell which day '{args['day']}' is — ask them for the day or date"}
+        days = rt.reflection.find_days(args.get("day"), args.get("about"))
+        return {"days": days} if days else {"days": [], "note": "No story kept for that. Say you don't have it."}
+
+
 class ForgetTool(_Tool):
     acts = True
     name = "sentient_forget"
@@ -567,6 +595,54 @@ class AnnounceTool(_Tool):
         return outcome
 
 
+_STEP = vol.Schema({
+    vol.Required("action"): cv.string,
+    vol.Required("target"): cv.string,
+    vol.Optional("brightness_pct"): vol.Coerce(int),
+    vol.Optional("temperature"): vol.Coerce(float),
+})
+
+
+def args_only_if(hass: HomeAssistant, args: dict[str, Any]) -> str:
+    from .acting import state_phrase, thing
+    from .rules import state_word
+
+    ref = str(args.get("only_if") or "")
+    return f"{thing(hass, ref)} is {state_phrase(hass, ref, state_word(args.get('only_if_is') or 'on'))}"
+
+
+def _acting_args(hass: HomeAssistant, rt: Any, args: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+    """Take then_do / only_if / for_minutes out of the arguments, checked; (extra watch fields, why not)."""
+    steps = args.pop("then_do", None)
+    only_if = args.pop("only_if", None)
+    only_if_is = args.pop("only_if_is", None)
+    hold = args.pop("for_minutes", None)
+    if not (steps or only_if or hold):
+        return {}, None
+    if not rt.watches.acting:
+        return {}, ("Watches that act, wait or check a condition are switched off. Say they can be switched on in "
+                    "Settings → Memory & learning → \"Watches and reminders can act\".")
+    extra: dict[str, Any] = {}
+    if steps:
+        from .acting import build
+
+        actions, why = build(hass, steps)
+        if why:
+            return {}, why
+        extra["do"] = actions
+    if only_if:
+        from .rules import state_word
+        from .watches import resolve_entity
+
+        found = resolve_entity(hass, only_if)
+        if found is None:
+            return {}, f"I can't find '{only_if}' — ask which device they mean"
+        extra["only_if"], extra["only_if_state"] = found, state_word(only_if_is or "on")
+    if hold:
+        extra["hold_minutes"] = float(hold)
+    return extra, None
+
+
 class WatchTool(_Tool):
     acts = True
     name = "sentient_watch"
@@ -581,7 +657,13 @@ class WatchTool(_Tool):
         "can name a zone or object sensor (e.g. 'front garden person occupancy') so it only "
         "looks when something enters that zone. Confirm briefly using the local time "
         "returned; never read the id aloud. For a plain reminder at a time, use sentient_remind. "
-        "If a named spot (see sentient_spot) is mentioned, only that part of the picture is checked."
+        "If a named spot (see sentient_spot) is mentioned, only that part of the picture is checked. "
+        "When watches can act (then_do in the arguments), it can also do something when it fires — e.g. 'when the "
+        "washing finishes, put the hallway light on' (entity + below a power number, then_do) or 'if the back door's "
+        "open for 10 minutes, turn the hall light off and tell me' (to_state on, for_minutes 10, then_do). "
+        "'only_if' + 'only_if_is' adds a condition checked when it fires. With then_do, first call with confirmed "
+        "false: read back the 'read_back' sentence and ask 'shall I set that up?'; only after their yes call again "
+        "with exactly the same details and confirmed true."
     )
     parameters = vol.Schema(
         {
@@ -600,6 +682,11 @@ class WatchTool(_Tool):
             vol.Optional("priority"): vol.In(PRIORITIES),
             vol.Optional("wake_on"): cv.string,
             vol.Optional("spot"): cv.string,
+            vol.Optional("then_do"): [_STEP],
+            vol.Optional("only_if"): cv.string,
+            vol.Optional("only_if_is"): cv.string,
+            vol.Optional("for_minutes"): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=24 * 60)),
+            vol.Optional("confirmed", default=False): cv.boolean,
         }
     )
 
@@ -616,8 +703,34 @@ class WatchTool(_Tool):
         args.pop("entity", None)
         if not entity:
             return {"error": "Say what to watch: a device, or a camera (entity)"}
+        extra, why = _acting_args(hass, rt, args)
+        if why:
+            return {"error": why}
+        confirmed = args.pop("confirmed", False)
+        if extra.get("do"):
+            from .readback import current, readbacks
+            from .acting import words
+
+            # what decides what happens, not the wording: the voice often rephrases "what" or the message on the yes
+            details = {"entity": entity, **{k: args.get(k) for k in ("to_state", "above", "below", "until", "minutes", "repeat")},
+                       **extra}
+            from .acting import state_phrase, thing
+            from .rules import state_word
+
+            when = (state_phrase(hass, entity, state_word(args["to_state"])) if args.get("to_state") else
+                    f"above {args['above']:g}" if args.get("above") is not None else
+                    f"below {args['below']:g}" if args.get("below") is not None else "like that")
+            read_back = (f"When {thing(hass, entity)} is {when}" + (f" for {extra['hold_minutes']:g} minutes" if extra.get("hold_minutes") else "")
+                         + (f", if {args_only_if(hass, {"only_if": extra["only_if"], "only_if_is": extra["only_if_state"]})}" if extra.get("only_if") else "")
+                         + f": {words(hass, extra['do'])}" + (f", and say “{args['message'].rstrip('.!')}”" if args.get("message") else ", and tell you") + ".")
+            if not confirmed:
+                readbacks(rt).propose("watch", details, current())
+                return {"read_back": read_back, "next": "Read this back and ask 'shall I set that up?'. Only after a "
+                        "clear yes, call sentient_watch again with exactly the same details and confirmed true."}
+            if refused := readbacks(rt).confirm("watch", details, current()):
+                return {"error": refused}
         try:
-            watch = rt.watches.add(args.pop("what"), entity, **args)
+            watch = rt.watches.add(args.pop("what"), entity, **args, **extra)
         except HomeAssistantError as err:
             return {"error": str(err)}
         return {"watching": watch.summary()}
@@ -630,14 +743,22 @@ class RemindTool(_Tool):
         "Remind someone of something at a time, spoken in whichever room people are in, e.g. "
         "'remind me at 6 to put the oven on' (at='18:00') or 'in 20 minutes check the "
         "washing' (minutes=20). 'message' is the exact sentence to say then, written to the "
-        "listener (e.g. 'Time to put the oven on.'). Confirm with the local time returned."
+        "listener (e.g. 'Time to put the oven on.'). Confirm with the local time returned. "
+        "When watches can act, a reminder can also check and do: 'at 11, if the back door's still open, turn the "
+        "hall light off and tell me' (at='23:00', only_if='back door', only_if_is='on', then_do=[…]). Nothing is "
+        "said or done if the condition isn't met then. With then_do, read back first (confirmed false) and only "
+        "after their yes call again with the same details and confirmed true."
     )
     parameters = vol.Schema(
         {
-            vol.Required("message"): cv.string,
+            vol.Optional("message", default=""): cv.string,
             vol.Optional("at"): cv.string,
             vol.Optional("minutes"): vol.Coerce(float),
             vol.Optional("speaker"): cv.string,
+            vol.Optional("then_do"): [_STEP],
+            vol.Optional("only_if"): cv.string,
+            vol.Optional("only_if_is"): cv.string,
+            vol.Optional("confirmed", default=False): cv.boolean,
         }
     )
 
@@ -647,10 +768,29 @@ class RemindTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        args = tool_input.tool_args
+        args = dict(tool_input.tool_args)
+        extra, why = _acting_args(hass, rt, args)
+        if why:
+            return {"error": why}
+        extra.pop("hold_minutes", None)
+        confirmed = args.pop("confirmed", False)
+        if extra.get("do"):
+            from .readback import current, readbacks
+            from .acting import words
+
+            details = {**{k: args.get(k) for k in ("at", "minutes")}, **extra}
+            when = f"At {args['at']}" if args.get("at") else f"In {args.get('minutes') or '?'} minutes"
+            read_back = (when + (f", if {args_only_if(hass, {"only_if": extra["only_if"], "only_if_is": extra["only_if_state"]})}" if extra.get("only_if") else "")
+                         + f": {words(hass, extra['do'])}" + (f", and say “{args['message'].rstrip('.!')}”" if args.get("message") else ", and tell you") + ".")
+            if not confirmed:
+                readbacks(rt).propose("remind", details, current())
+                return {"read_back": read_back, "next": "Read this back and ask 'shall I set that up?'. Only after a "
+                        "clear yes, call sentient_remind again with exactly the same details and confirmed true."}
+            if refused := readbacks(rt).confirm("remind", details, current()):
+                return {"error": refused}
         try:
             reminder = rt.watches.add_reminder(
-                args["message"], until=args.get("at"), minutes=args.get("minutes"), speaker=args.get("speaker")
+                args["message"], until=args.get("at"), minutes=args.get("minutes"), speaker=args.get("speaker"), **extra
             )
         except HomeAssistantError as err:
             return {"error": str(err)}
@@ -685,6 +825,53 @@ class CancelWatchTool(_Tool):
             return {"error": "Sentient is not loaded"}
         removed = rt.watches.cancel(tool_input.tool_args["what"])
         return {"cancelled": removed.what if removed else None}
+
+
+class PlanTool(_Tool):
+    acts = True
+    name = "sentient_plan"
+    description = (
+        "For a big request that needs several devices — 'get the house ready for film night', 'sort the house out, "
+        "we're going away', 'bedtime for everyone': work out a short plan of steps on devices that exist here "
+        "(e.g. {action: 'light.turn_on', target: 'living room lamp', brightness_pct: 30}, {action: "
+        "'light.turn_off', target: 'kitchen light'}; up to 12, only what clearly fits the request). First call "
+        "with confirmed false and read back the 'read_back' sentence word for word. Only after their yes, call "
+        "again with exactly the same goal and steps and confirmed true, then say the 'said' sentence it returns — "
+        "it says what didn't happen, if anything. Never for one device (just do that), never alarms or locks."
+    )
+    parameters = vol.Schema({
+        vol.Required("goal"): cv.string,
+        vol.Required("steps"): [_STEP],
+        vol.Optional("confirmed", default=False): cv.boolean,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .acting import async_carry_out, build, words
+        from .readback import current, readbacks
+
+        rt = _runtime(hass)
+        if rt is None:
+            return {"error": "Sentient is not loaded"}
+        if not rt.options.get("big_plans"):
+            return {"error": "Plans for big requests are switched off in Settings."}
+        args = tool_input.tool_args
+        actions, why = build(hass, args["steps"])
+        if why:
+            return {"error": why}
+        details = {"actions": actions}  # the steps decide it; the goal's wording often changes on the yes
+        if not args.get("confirmed"):
+            readbacks(rt).propose("plan", details, current())
+            return {"read_back": f"For {args['goal'].strip().rstrip('.')}, I'll {words(hass, actions)}. Shall I go ahead?",
+                    "next": "Read this back word for word and wait. Only after a clear yes, call sentient_plan again "
+                            "with exactly the same goal and steps and confirmed true."}
+        if refused := readbacks(rt).confirm("plan", details, current()):
+            return {"error": refused}
+        outcome = await async_carry_out(hass, actions, f"plan: {args['goal'][:60]}")
+        rt.timeline.add("mode", f"Plan: {args['goal'][:80]}", outcome["said"])
+        return {"said": outcome["said"], "not_done": [m.get("entity_id") for m in outcome["not_done"]
+                                                      if isinstance(m, dict)]}
 
 
 class RuleTool(_Tool):
@@ -2652,9 +2839,9 @@ class SentientAPI(llm.API):
         from .security_voice import CameraActivityTool, SecurityEventTool, SecurityFeedbackTool
 
         rt0 = _runtime(self.hass)
-        tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), ForgetTool(), AnnounceTool(),
+        tools = [SessionTool(), IncidentsTool(), *([ClarifyTool()] if rt0 is not None and rt0.options.get("specific_clarification") and rt0.options.get("conversation_sessions") else []), RememberTool(), CorrectionTool(), *([MusicTool()] if _music_on(self.hass) else []), *([MaintenanceTool()] if getattr(rt0, "maintenance", None) is not None and rt0.maintenance.items.enabled() else []), *([HolidayTool()] if getattr(rt0, "holiday", None) is not None and rt0.holiday.enabled else []), *([UndoLastTool()] if _put_right_on(self.hass) else []), HouseCheckTool(), RecallTool(), *([PastDaysTool()] if rt0 is not None and rt0.options.get("memory_time") else []), ForgetTool(), AnnounceTool(),
                    WatchTool(), RemindTool(), ListWatchesTool(), CancelWatchTool(), LookTool(),
-                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), BatteryTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
+                   RoutinesTool(), AdoptRoutineTool(), ForgetRoutineTool(), *([RuleTool()] if _rules_on(self.hass) else []), *([PlanTool()] if rt0 is not None and rt0.options.get("big_plans") else []), *([WhatHappenedTool()] if _clips_on(self.hass) else []), *([SearchTool()] if _search_on(self.hass) else []), AcceptOfferTool(), AlarmTool(), PartyTool(), HeatingTool(), NightWatchTool(), WeeklyTool(), BriefingTool(), VisitorsTool(), SpotTool(), MotionLightsTool(), TimelineTool(), QuietTool(), ShushTool(), RunRoutineTool(), EnergyTool(), BatteryTool(), SecurityTool(), ScenesTool(), FollowUpTool(), ConversationsTool(), WhyTool(), SelfTool(), *([AskLaterTool()] if _ask_later_on(self.hass) else []),
                  *([ManualTool()] if rt0 is not None and rt0.options.get("manuals") else []),
                  *([GoalTool()] if rt0 is not None and rt0.options.get("goals") else []),
                  *([BookTool()] if rt0 is not None and rt0.options.get("books") else []),
@@ -2879,8 +3066,11 @@ class SentientAPI(llm.API):
                 )
         if not private and not rt.speech.guest_mode:
             from .room_trackers import prompt_line
+            from .whereabouts import prompt_line as who_where_line
 
-            if tracked := prompt_line(self.hass, opts):
+            if fused := who_where_line(self.hass, rt):  # "Know who's where" replaces the plain tracker line
+                lines.append(fused)
+            elif tracked := prompt_line(self.hass, opts):
                 lines.append(tracked)
         from .room_memory import lines as room_memory_lines
 

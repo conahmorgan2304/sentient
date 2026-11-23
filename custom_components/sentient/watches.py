@@ -62,6 +62,7 @@ MAX_HOURS = 24 * 7
 _TRIGGER_CLASSES = {"motion", "occupancy", "presence"}
 PREFILTER_CHANGED = 0.06  # share of the picture that must look different before the AI is asked again
 _IGNORED = {STATE_UNAVAILABLE, STATE_UNKNOWN}
+CONF_WATCH_ACTIONS = "watch_actions"  # setting: watches and reminders can do things, not just say them
 
 
 @dataclass
@@ -83,6 +84,10 @@ class Watch:
     speaker: str | None = None
     triggers: list[str] = field(default_factory=list)
     spot: str | None = None
+    do: list[dict[str, Any]] = field(default_factory=list)  # actions to carry out when it fires ("watches can act")
+    only_if: str | None = None  # ...and only if this is in only_if_state when it fires
+    only_if_state: str | None = None
+    hold_minutes: float | None = None  # the state must last this long ("open for 10 minutes")
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:6])
     created: str = field(default_factory=lambda: dt_util.utcnow().isoformat())
     fired: int = 0
@@ -110,7 +115,13 @@ class Watch:
             "checks": self.checks,
             "second_opinions": self.second_opinions,
             "last_result": self.last_result,
+            **({"then": self.do_words} if self.do else {}),
+            **({"only_if": self.only_if_words or f"{self.only_if} is {self.only_if_state or 'on'}"} if self.only_if else {}),
+            **({"for_minutes": self.hold_minutes} if self.hold_minutes else {}),
         }
+
+    do_words: str = ""  # the actions in plain words, for the voice and the page
+    only_if_words: str = ""  # the condition in plain words ("the back door is open")
 
 
 def local_when(when: datetime) -> str:
@@ -231,10 +242,13 @@ class WatchManager:
         self._busy: set[str] = set()
         self._unsubs: list = []
         self._timers: dict[str, Any] = {}
+        self._holds: dict[str, Any] = {}  # watch id -> timer waiting for a state to last
+        self._held: set[str] = set()  # repeating watches that already fired for the current stretch
         self.spots: Any = None  # set by the runtime
         self.ai_day: str = dt_util.now().date().isoformat()
         self._ai_checks = 0
         self.gate: Any = None  # the runtime's AIGate: the meter and today's limit
+        self.runtime_getter: Any = None  # set by the runtime, for the timeline
 
     # ----- lifecycle ---------------------------------------------------------------
     async def async_start(self) -> None:
@@ -257,6 +271,9 @@ class WatchManager:
             else:
                 self._watches.pop(watch.id, None)
         self._expire()
+        for watch in [w for w in self._watches.values() if w.kind == KIND_STATE and w.hold_minutes]:
+            if (st := self.hass.states.get(watch.entity_id)) is not None and self._state_met(watch, st):
+                self._hold(watch)  # it was already so before the restart: count the time again from now
         self._unsubs.append(self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._on_state_changed))
         self._unsubs.append(async_track_time_interval(self.hass, self._tick, timedelta(minutes=1)))
 
@@ -269,6 +286,9 @@ class WatchManager:
         for unsub in self._timers.values():
             unsub()
         self._timers.clear()
+        for unsub in self._holds.values():
+            unsub()
+        self._holds.clear()
 
     @callback
     def _save(self) -> None:
@@ -305,6 +325,10 @@ class WatchManager:
         speaker: str | None = None,
         wake_on: str | list[str] | None = None,
         spot: str | None = None,
+        do: list[dict[str, Any]] | None = None,
+        only_if: str | None = None,
+        only_if_state: str | None = None,
+        hold_minutes: float | None = None,
     ) -> Watch:
         # something to look for, with nothing to wait for on a device, is a camera watch: "watch for cars by the
         # gate" named the gate, and the gate sensor was picked instead of the gate camera (21 Nov, three retries)
@@ -357,9 +381,16 @@ class WatchManager:
             speaker=speaker,
             triggers=triggers,
             spot=spot_key,
+            do=list(do or []),
+            only_if=only_if,
+            only_if_state=only_if_state,
+            hold_minutes=hold_minutes if kind == KIND_STATE and hold_minutes and hold_minutes > 0 else None,
         )
+        self._words(watch)
         self._watches[watch.id] = watch
         self._save()
+        if watch.hold_minutes and (st := self.hass.states.get(entity_id)) is not None and self._state_met(watch, st):
+            self._hold(watch)  # already so: "if the back door's open for ten minutes" counts from now
         return watch
 
     def add_reminder(
@@ -370,18 +401,23 @@ class WatchManager:
         minutes: float | None = None,
         speaker: str | None = None,
         priority: str = "urgent",
+        do: list[dict[str, Any]] | None = None,
+        only_if: str | None = None,
+        only_if_state: str | None = None,
     ) -> Watch:
         """Say something at a time. People asked for it, so by default it gets through quiet hours."""
-        message = " ".join(message.split())
-        if not message:
+        message = " ".join((message or "").split())
+        if not message and not do:
             raise HomeAssistantError("What should I remind you about?")
         if not until and not minutes:
             raise HomeAssistantError("When should I remind you?")
         when = parse_until(until, minutes, 1)
         watch = Watch(
-            what=message[:120], kind=KIND_REMINDER, entity_id="", until=when.isoformat(),
-            message=message, priority=priority, speaker=speaker,
+            what=(message or "a check")[:120], kind=KIND_REMINDER, entity_id="", until=when.isoformat(),
+            message=message or None, priority=priority, speaker=speaker,
+            do=list(do or []), only_if=only_if, only_if_state=only_if_state,
         )
+        self._words(watch)
         self._watches[watch.id] = watch
         self._schedule(watch)
         self._save()
@@ -410,6 +446,8 @@ class WatchManager:
             self._watches.pop(watch.id, None)
             if (unsub := self._timers.pop(watch.id, None)) is not None:
                 unsub()
+            if (unsub := self._holds.pop(watch.id, None)) is not None:
+                unsub()
             self._save()
         return watch
 
@@ -422,6 +460,8 @@ class WatchManager:
         gone = [w for w in self._watches.values() if w.until_dt <= now and w.kind != KIND_REMINDER]
         for w in gone:
             self._watches.pop(w.id, None)
+            if (unsub := self._holds.pop(w.id, None)) is not None:
+                unsub()
             _LOGGER.debug("Watch expired: %s", w.what)
             if not w.fired and now - w.until_dt < timedelta(minutes=30):  # not one long gone over a restart
                 self.hass.bus.async_fire(EVENT_WATCH_EXPIRED, {"id": w.id, "what": w.what, "entity_id": w.entity_id})
@@ -440,7 +480,15 @@ class WatchManager:
         entity_id = new.entity_id
         for watch in list(self._watches.values()):
             if watch.kind == KIND_STATE and watch.entity_id == entity_id:
-                if self._state_met(watch, new) and not (old is not None and self._state_met(watch, old)):
+                met = self._state_met(watch, new)
+                if watch.hold_minutes:
+                    if not met:
+                        self._held.discard(watch.id)  # a new stretch can fire again (repeating watches)
+                        if (unsub := self._holds.pop(watch.id, None)) is not None:
+                            unsub()  # it changed back before the time was up
+                    elif watch.id not in self._holds and watch.id not in self._held:
+                        self._hold(watch)
+                elif met and not (old is not None and self._state_met(watch, old)):
                     self.hass.async_create_task(self._async_fire(watch, None, new))
             elif watch.kind == KIND_CAMERA and entity_id in watch.triggers and new.state == STATE_ON:
                 if old is None or old.state != STATE_ON:
@@ -462,6 +510,63 @@ class WatchManager:
         if watch.below is not None and value >= watch.below:
             return False
         return True
+
+    def _hold(self, watch: Watch) -> None:
+        @callback
+        def _held(_now: datetime) -> None:
+            self._holds.pop(watch.id, None)
+            state = self.hass.states.get(watch.entity_id)
+            if state is not None and self._state_met(watch, state):
+                self._held.add(watch.id)  # once per stretch, however often the device reports in meanwhile
+                self.hass.async_create_task(self._async_fire(watch, None, state))
+
+        if (unsub := self._holds.pop(watch.id, None)) is not None:
+            unsub()
+        self._holds[watch.id] = async_track_point_in_utc_time(
+            self.hass, _held, dt_util.utcnow() + timedelta(minutes=float(watch.hold_minutes or 0)))
+
+    def _words(self, watch: Watch) -> None:
+        from .acting import state_phrase, thing, words
+
+        if watch.do:
+            watch.do_words = words(self.hass, watch.do)
+        if watch.only_if:
+            watch.only_if_words = f"{thing(self.hass, watch.only_if)} is {state_phrase(self.hass, watch.only_if, watch.only_if_state or 'on')}"
+
+    def _condition_met(self, watch: Watch) -> bool:
+        if not watch.only_if:
+            return True
+        from .rules import state_word
+
+        state = self.hass.states.get(watch.only_if)
+        if state is None or state.state in _IGNORED:
+            return False
+        want = state_word(watch.only_if_state or "on")
+        return state.state.lower() == want.lower()
+
+    @property
+    def runtime(self) -> Any:
+        try:
+            return self.runtime_getter() if self.runtime_getter is not None else None
+        except AttributeError:  # not finished starting
+            return None
+
+    @property
+    def acting(self) -> bool:
+        return bool(self.options.get(CONF_WATCH_ACTIONS, False))
+
+    async def _async_act(self, watch: Watch) -> str:
+        """Carry out what the watch was told to do; the sentence that says how it went."""
+        if not watch.do:
+            return ""
+        if not self.acting:
+            return "I didn't do the rest, because watches that act are switched off in Settings."
+        from .acting import async_carry_out
+
+        outcome = await async_carry_out(self.hass, watch.do, f"watch: {watch.what}")
+        if (rt := getattr(self, "runtime", None)) is not None and getattr(rt, "timeline", None) is not None:
+            rt.timeline.add("watch", f"Watch acted: {watch.what}", outcome["said"])
+        return outcome["said"]
 
     def _cooldown(self) -> timedelta:
         return timedelta(seconds=float(self.options.get(CONF_CAMERA_COOLDOWN, DEFAULT_CAMERA_COOLDOWN)))
@@ -706,11 +811,28 @@ class WatchManager:
         if watch.kind != KIND_REMINDER and watch.until_dt <= dt_util.utcnow():
             self._expire()
             return
+        if watch.only_if and not self._condition_met(watch):
+            # "at 11, if the back door's still open…": it isn't, so there's nothing to say or do
+            if not watch.repeat or watch.kind == KIND_REMINDER:
+                self._watches.pop(watch.id, None)
+                self._save()
+            if (rt := getattr(self, "runtime", None)) is not None and getattr(rt, "timeline", None) is not None:
+                rt.timeline.add("watch", f"Checked: {watch.what}", "the condition wasn't met, so nothing was done")
+            return
         watch.fired += 1
-        if not watch.repeat:
+        if not watch.repeat or watch.kind == KIND_REMINDER:
             self._watches.pop(watch.id, None)
+            self._held.discard(watch.id)
         self._save()
-        message = watch.message or description or self._default_message(watch, state)
+        acted = await self._async_act(watch) if watch.do else ""
+        if watch.do and not watch.message and not description:
+            message = acted  # what it did is the news
+        else:
+            message = watch.message or description or self._default_message(watch, state)
+            if acted:
+                message = f"{message.rstrip()} {acted}".strip()
+        if not message:
+            return
         targets = None
         if watch.speaker:
             found = self.speech.find_speaker(watch.speaker)

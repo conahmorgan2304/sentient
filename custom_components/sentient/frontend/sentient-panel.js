@@ -566,7 +566,7 @@
       const watches = this._attr("watches", "watches", []);
       if (!typing) R("watch").innerHTML = this._h("WATCHES &amp; REMINDERS", `${watches.length} ACTIVE`) + (watches.map((w) => {
         const ic = w.kind === "reminder" ? "mdi:bell-ring-outline" : w.kind === "camera" ? "mdi:cctv" : "mdi:eye-outline";
-        return `<div class="r"><ha-icon icon="${esc(ic)}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
+        return `<div class="r"><ha-icon icon="${esc(ic)}"></ha-icon><b>${esc(w.what)}${w.spot ? " · " + esc(w.spot) : ""}${w.for_minutes ? " · for " + esc(w.for_minutes) + " min" : ""}${w.only_if ? " · if " + esc(w.only_if) : ""}${w.then ? " · then " + esc(w.then) : ""}</b><u>${left(w.ends, w.minutes_left)}</u>
           <a class="x" data-act="cancel" data-id="${esc(w.id)}" data-text="${esc(w.what)}" title="Cancel">✕</a></div>`;
       }).join("") || '<div class="e">NOTHING BEING WATCHED · SAY “KEEP AN EYE ON…”</div>')
         + `<form class="add" data-form="remind"><ha-icon icon="mdi:bell-plus-outline"></ha-icon><input name="msg" placeholder="Remind…, e.g. take the bins out" autocomplete="off">

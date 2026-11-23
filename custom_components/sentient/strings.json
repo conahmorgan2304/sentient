@@ -250,7 +250,7 @@
           "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
-          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings \u203a Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
+          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings › Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
           "routine_fading": "On: when a routine the house does for you was already done by the time it was due on 5 days in two weeks (someone does it themselves now), Sentient asks once whether to keep it, and stops if you say no. Only the dates are kept, two weeks at most. Off: routines the house does are kept until you say otherwise.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
@@ -727,6 +727,11 @@
           "ai_case_memory": "Save AI calls (case memory)",
           "memory_tags": "Recall by meaning",
           "memory_upkeep": "A memory that keeps itself",
+          "watch_actions": "Watches and reminders can act",
+          "memory_time": "Memory that understands time",
+          "who_where": "Know who's where",
+          "big_plans": "Plans for big requests",
+          "self_grading": "Grade its own answers",
           "voice_speed_watchdog": "Voice speed watchdog",
           "voice_speed_restart": "Restart a slow speaker by itself",
           "incident_stages": "Security incident stages",
@@ -802,7 +807,7 @@
           "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
-          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings \u203a Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
+          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings › Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
           "routine_fading": "On: when a routine the house does for you was already done by the time it was due on 5 days in two weeks (someone does it themselves now), Sentient asks once whether to keep it, and stops if you say no. Only the dates are kept, two weeks at most. Off: routines the house does are kept until you say otherwise.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
@@ -1067,6 +1072,11 @@
           "ai_case_memory": "On: a background AI job identical to one in the last six hours reuses that answer instead of another call. Never used for pictures or clips. Off: every job calls the AI, and the saved answers are cleared.",
           "memory_tags": "Once for each memory, one small AI call at night adds a few related words people might use instead (“kettle” → brew, tea, cuppa), so “fancy a cuppa?” finds the kettle memories. Up to 40 memories a night; no embedding server needed. Switching it off stops the nightly call and recall ignores the words (they're kept, so switching back on is instant). Off by default.",
           "memory_upkeep": "In the overnight reflection (no extra AI call), memories that something a person said that day shows are out of date are put right, and kept as a guess until confirmed. Once a day one guess (something it worked out rather than was told) is added to its questions, so it can ask whether it's right. Memories a person confirmed or pinned are never changed. Needs the overnight reflection. Off: memories are only added, never corrected by it.",
+          "watch_actions": "Watches and reminders can do something as well as say it, check a condition first, and wait for something to last: \"if the back door's open for ten minutes, turn the hall light off and tell me\", \"when the washing finishes, put the hallway light on\", \"at 11, if the back door's still open, tell me\". The voice reads each one back and it's only set up after a yes on the next turn. Only devices exposed to voice assistants, never alarms, locks, scripts or anything on the never-touch list; each device is checked afterwards and the answer says what didn't happen. Off: watches and reminders only speak, as before, and ones already set don't act.",
+          "memory_time": "Things said that are only true for a while get an end date by themselves: \"for now\", \"at the moment\", \"this week\", \"until Friday\", and one-off things (\"I turned the heating on\") are kept for a day with the date written in, rather than becoming permanent facts. Once a day one fact nobody has confirmed or used in three months is checked with you. The overnight reflection also writes a short story of each day (no extra AI call), kept for 60 days, so \"what did we do last Saturday?\" or \"when did the boiler last play up?\" can be answered. Needs the overnight reflection for the stories and checks. Off: memories keep only the dates they name, and no stories are kept (ones already kept are deleted).",
+          "who_where": "Puts together what each source knows — phone room trackers (set under Voice), who was last recognised talking and where, and movement when only one person is home — into one best guess per person: which room, how sure, and since when. The voice is given it instead of the plain room tracker line, says how sure it is, and never says anything about someone who isn't home. Nothing is stored. Off: the voice only has the room trackers' line, as before.",
+          "big_plans": "\"Get the house ready for film night\" or \"sort the house out, we're going away\": the voice works out a short plan of device steps, reads it back, and only does it after a yes on the next turn. Each step is then checked on the device and the answer says what didn't happen. Only devices exposed to voice assistants; never alarms, locks, scripts or the never-touch list; up to 12 steps. Off: big requests are handled one device at a time, as before.",
+          "self_grading": "Each night, what the voice said that day about whether something was on, off, open or closed is checked against what the house recorded at that moment. A wrong one is added to \"Where the voice went wrong\" on the Mind page and becomes a lesson (\"check the back door before saying whether it's open\"), so it improves without being corrected. No AI. Needs the reliability log. Off: nothing is checked.",
           "voice_speed_watchdog": "On: notices when a speaker takes far longer to hear you than you took to speak (its audio arriving slower than real time) and puts it in the timeline with a restart suggestion. Off: no check.",
           "voice_speed_restart": "On: a speaker that keeps lagging is restarted with its own restart button. Off: it's only suggested.",
           "incident_stages": "On: each security incident shows how far it has got — observed, investigating, likely household, concerning or resolved — from what was recorded, never who someone was. Off: incidents are listed without a stage.",
@@ -1681,6 +1691,16 @@
     "reflect": {
       "name": "Reflect now",
       "description": "Think over the last day now, as it does overnight: new memories, morning thoughts and a question."
+    },
+    "grade_answers": {
+      "name": "Grade its own answers now",
+      "description": "Check what the voice said about doors, lights, switches and locks against what the house recorded, as it does each night with \"Grade its own answers\" on. Returns what was checked, what was wrong and any lessons.",
+      "fields": {
+        "hours": {
+          "name": "Hours",
+          "description": "How far back to check."
+        }
+      }
     },
     "check_drive": {
       "name": "Check the drive",

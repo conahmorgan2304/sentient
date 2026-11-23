@@ -46,7 +46,8 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
         ("heating", r"warm|cold|heat|temperature|degrees|radiator|boiler|thermostat|energy|electric|power|cost|bill|usage",
          ["sentient_heating", "sentient_energy"]),
         ("later", r"remind|watch|keep an eye|tell me when|let me know|\bwake|alarm|appointment|later|tomorrow|tonight|"
-                  r"\bin (?:a|an|\d+)\b|minutes?|hours?|cancel|o'?clock",
+                  r"\bin (?:a|an|\d+)\b|minutes?|hours?|cancel|o'?clock|\bat (?:\d{1,2}(?:[:.]\d{2})?|midnight|noon)\b|"
+                  r"\bstill (?:open|on|running)\b|\bwhen (?:the|it|my)\b[^?]*\b(?:finish|finishes|done|stops|opens|closes)\b",
          ["sentient_watch", "sentient_remind", "sentient_watches", "sentient_cancel_watch", "sentient_alarm"]),
         ("security", r"\block|secure|\bopen|\bshut|closed|window|\bdoor|alarm|night watch|\bsafe\b",
          ["sentient_security", "sentient_night_watch", "sentient_house_check", "sentient_security_audit"]),
@@ -75,6 +76,12 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_book"]),
         ("recipes", r"recipe|cook|bake|make (?:the|a|some)|ingredients|next step|step|what'?s next|repeat that|for dinner|for tea",
          ["sentient_recipe"]),
+        ("past", r"yesterday|last (?:mon|tues|wednes|thurs|fri|satur|sun)day|last week|days? ago|when did|"
+                 r"what did (?:we|i|you)|what happened (?:on|yesterday|last)|\bon (?:mon|tues|wednes|thurs|fri|satur|sun)day\b",
+         ["sentient_past_days", "sentient_timeline", "sentient_conversations"]),
+        ("plans", r"get (?:the )?(?:house|home|place|everything) ready|ready for|film night|movie night|going away|"
+                  r"sort (?:the house|the place|everything) out|set (?:the house |things )?up for|\bplan\b|bedtime for everyone",
+         ["sentient_plan"]),
         ("house", r"\bhouse\b|\bhome\b|happen|while i was|today|this week|check|anything|how'?s|status|announce|"
                   r"tell (?:the|every)|learn|(?:get|got|gets|come|came|comes) (?:back|in)\b|arriv|\bleft (?:home|the house|for|at)\b|went out|go(?:ne)? out",
          ["sentient_house_check", "sentient_weekly_report", "sentient_timeline", "sentient_announce",
