@@ -110,3 +110,29 @@ async def test_the_prompt_can_be_looked_at(hass: HomeAssistant, hass_ws_client) 
     await ws.send_json({"id": 1, "type": "sentient/voice/prompt", "device_id": sat.id})
     out = (await ws.receive_json())["result"]
     assert out["chars"] == len(out["prompt"]) and out["tools"] > 5 and out["biggest"]
+
+
+async def test_two_people_talking_at_once_never_see_each_others_things(hass: HomeAssistant) -> None:
+    """Two satellites, two recognised voices, prompts built at the same moment: each person's own memories only."""
+    import asyncio
+    from types import SimpleNamespace
+
+    entry, sat = await _house(hass)
+    hass.config_entries.async_update_entry(entry, options={**entry.data, "voice_id": True, "speaker_memories": True})
+    await hass.async_block_till_done()
+    mem = entry.runtime_data.memory
+    mem.add("Sam's surprise party for Alex is on Saturday", owner="sam", category="person")
+    mem.add("Alex's dentist appointment is on Friday", owner="alex", category="person")
+
+    async def prompt_as(name: str) -> str:
+        token = voice_id.current_speaker.set(SimpleNamespace(display_name=name))
+        try:
+            await asyncio.sleep(0)  # let the other turn run in between
+            return await _prompt(hass, sat.id)
+        finally:
+            voice_id.current_speaker.reset(token)
+
+    with patch("custom_components.sentient.voice_id.installed", return_value=True):
+        sams, alexs = await asyncio.gather(prompt_as("Sam"), prompt_as("Alex"))
+    assert "surprise party" in sams and "dentist" not in sams
+    assert "dentist" in alexs and "surprise party" not in alexs

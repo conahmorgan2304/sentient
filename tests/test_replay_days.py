@@ -34,6 +34,8 @@ async def test_a_recorded_day_decides_what_it_should(hass, freezer, path: Path) 
     for source, n in expect.get("phoned_sources_at_most", {}).items():
         assert phoned[source] <= n, f"{path.stem}: {source} went to phones {phoned[source]} times (at most {n})"
     assert result["ai_requests"] <= expect.get("ai_requests_at_most", 1000)
+    if "ai_answered" in expect:  # the recorded AI answers were really asked for: the AI path ran, not just the rules
+        assert sum(t["answered"] for t in result.get("ai_tasks", [])) == expect["ai_answered"], result.get("ai_tasks")
     assert not result["device_actions"] or expect.get("device_actions", True)
 
 
