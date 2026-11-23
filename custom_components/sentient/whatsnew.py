@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.17.2": [
+        "\"Lock the front door\" in a house without a smart lock now gets the same plain answer every time, with no AI: \"There's no smart lock I can use, so that one needs doing by hand — the Front door is shut.\" It no longer says the house has no locks. (Part of Instant answers.)",
+    ],
     "1.17.1": [
         "Situations now have a beginning and an end: someone arriving home, the heating struggling to reach its target (calling for heat an hour and hardly warming), a busy garden on the cameras, someone on the cameras, a device that keeps dropping offline, and the house asleep. Each carries when it started, what shows it, how sure it is and what ends it — and once it's over the voice is told it's over, so it doesn't bring up old news as if it's still happening. Settings › Memory & learning › Situations.",
         "Routines the house does for you: if one was already done by the time it was due on 5 days in two weeks (someone does it themselves now), Sentient asks once whether to keep it, and stops if you say no. Settings › Noticing & learning.",

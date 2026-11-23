@@ -107,3 +107,21 @@ async def test_whats_on_the_calendar(hass: HomeAssistant, freezer) -> None:
     assert "Dentist" in week and "Football" in week
     rt.speech.guest_mode = True
     assert await ask("What's on my calendar this week?") is None
+
+
+async def test_lock_with_no_smart_lock_is_answered_plainly(hass: HomeAssistant) -> None:
+    rt = await _house(hass)
+    ask = lambda t: async_answer(hass, rt, t, None)  # noqa: E731
+    reply = await ask("Can you lock the back door?")
+    assert reply == "There's no smart lock I can use, so that one needs doing by hand — the Back door is shut."
+    assert "doesn't have locks" not in reply
+    assert (await ask("lock the front door")).startswith("There's no smart lock I can use")  # no sensor named that
+    rt.speech.guest_mode = True
+    assert await ask("Unlock the back door please") == "There's no smart lock I can use, so that one needs doing by hand."
+
+
+async def test_a_real_smart_lock_is_left_to_the_voice(hass: HomeAssistant) -> None:
+    rt = await _house(hass)
+    hass.states.async_set("lock.front", "locked", {"friendly_name": "Front door"})
+    async_expose_entity(hass, "conversation", "lock.front", True)
+    assert await async_answer(hass, rt, "Can you lock the back door?", None) is None

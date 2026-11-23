@@ -154,6 +154,31 @@ async def _calendar(hass: HomeAssistant, when: str) -> str | None:
     return f"On your calendar {label}: " + "; ".join(said) + more + "."
 
 
+LOCK = re.compile(r"^(?:(?:can|could|would|will) you |please |hey \w+,? )*(?P<verb>lock|unlock)(?: up)? (?P<what>(?:the |my |our )?[\w' -]{2,40}?)(?: for me| please| now)?[?.!]*$",
+                  re.I)
+
+
+def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool) -> str | None:
+    """'Lock the front door' in a house with no smart lock the voice may use: the plain truth, every time.
+
+    23 Nov: the voice kept saying "this house doesn't have locks on the doors", which isn't true — they're ordinary
+    locks, just not connected. A fixed reply can't get that wrong."""
+    if any(_exposed(hass, st.entity_id) for st in hass.states.async_all("lock")):
+        return None  # there is a smart lock: the AI and its tools handle it
+    reply = "There's no smart lock I can use, so that one needs doing by hand."
+    if guest:
+        return reply
+    wanted = " ".join(what.casefold().removeprefix("the ").removeprefix("my ").removeprefix("our ").split())
+    doors = [st for st in hass.states.async_all("binary_sensor")
+             if st.attributes.get("device_class") in ("door", "garage_door", "opening") and _exposed(hass, st.entity_id)]
+    match = [st for st in doors if wanted and wanted in " ".join((st.name or "").casefold().split())]
+    if len(match) != 1 or match[0].state not in ("on", "off"):
+        return reply
+    door = match[0]
+    state = "shut" if door.state == "off" else "open"
+    return f"There's no smart lock I can use, so that one needs doing by hand — the {door.name} is {state}."
+
+
 async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context | None,
                        device_id: str | None = None) -> str | None:
     """An instant answer, or None for the AI to answer as usual."""
@@ -163,7 +188,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
     from .local_answers import COMING, SECURITY, VISITORS, _coming_up, _visitors, is_question
 
     text = " ".join(text.split())
-    if not is_question(text):
+    lock = LOCK.match(text)
+    if not lock and not is_question(text):
         return None
     guest = bool(getattr(getattr(rt, "speech", None), "guest_mode", False))
     if not guest and device_id:
@@ -173,6 +199,11 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             guest = bool(private_history(rt, device_id))  # a private room: household records stay out, as for guests
         except Exception:  # noqa: BLE001 - can't tell: be careful
             guest = True
+    if lock:
+        try:
+            return _no_lock_reply(hass, lock.group("what"), guest)
+        except Exception:  # noqa: BLE001
+            return None
     try:
         if TIME.match(text):
             from .llm_api import clock_words
