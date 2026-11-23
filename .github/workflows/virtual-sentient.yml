@@ -32,3 +32,21 @@ jobs:
         with:
           name: virtual-sentient-fixtures
           path: /tmp/sentient-virtual/report.json
+
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements_test.txt
+      - name: Run virtual Sentient through Home Assistant replay
+        run: python scripts/replay/virtual_suite.py --out /tmp/sentient-replay
+      - name: Upload replay results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: virtual-sentient-replay
+          path: /tmp/sentient-replay/
