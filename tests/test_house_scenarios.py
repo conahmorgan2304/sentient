@@ -102,3 +102,11 @@ async def test_an_unmatched_voice_is_never_guessed_from_a_phone(hass: HomeAssist
         assert "Probably Sam" not in await _prompt(hass, sat.id)
     finally:
         voice_id.current_speaker.reset(token)
+
+
+async def test_the_prompt_can_be_looked_at(hass: HomeAssistant, hass_ws_client) -> None:
+    entry, sat = await _house(hass)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/voice/prompt", "device_id": sat.id})
+    out = (await ws.receive_json())["result"]
+    assert out["chars"] == len(out["prompt"]) and out["tools"] > 5 and out["biggest"]

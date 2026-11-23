@@ -533,6 +533,29 @@ def ws_health_ignore(hass: HomeAssistant, connection, msg: dict[str, Any]) -> No
     connection.send_result(msg["id"], {"device": device.name_by_user or device.name, "ignored": ignored})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "sentient/voice/prompt", vol.Optional("device_id"): str})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_voice_prompt(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """What the voice is given to read for a turn from this device (admin only; for checking size and content)."""
+    from homeassistant.core import Context
+    from homeassistant.helpers import llm
+
+    ctx = llm.LLMContext(platform="sentient_preview", context=Context(), language="en", assistant=None,
+                         device_id=msg.get("device_id"))
+    api = await llm.async_get_api(hass, DOMAIN, ctx)
+    prompt = api.api_prompt
+    blocks: dict[str, int] = {}
+    head = "start"
+    for line in prompt.splitlines():
+        if line.endswith(":") and len(line) < 140 or line.startswith(("Current house context", "Right now", "Earlier in the")):
+            head = line[:60]
+        blocks[head] = blocks.get(head, 0) + len(line) + 1
+    biggest = sorted(blocks.items(), key=lambda kv: -kv[1])[:12]
+    connection.send_result(msg["id"], {"chars": len(prompt), "tools": len(api.tools),
+                                       "biggest": [{"part": k, "chars": v} for k, v in biggest], "prompt": prompt})
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/health/dismiss", vol.Required("key"): str})
 @websocket_api.require_admin
 @callback
@@ -1250,6 +1273,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_games)
     websocket_api.async_register_command(hass, ws_health_ignore)
     websocket_api.async_register_command(hass, ws_health_dismiss)
+    websocket_api.async_register_command(hass, ws_voice_prompt)
     websocket_api.async_register_command(hass, ws_games_edit)
     websocket_api.async_register_command(hass, ws_proposal)
     websocket_api.async_register_command(hass, ws_usage)

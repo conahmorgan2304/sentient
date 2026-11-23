@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.5": [
+        "Heating: turning a scheduled thermostat up (by voice, in the app or on the thermostat) now lasts its full time — 3 hours by day, 1 at night, as set in Return after a change — even if a period starts or ends meanwhile. Then it goes to whatever the schedule wants by then, rather than back to the temperature from before.",
+        "\"Shall I close it?\" after mentioning a window is taken out of the reply too, when nothing in the house can close one.",
+        "The nightly self-test no longer counts towards the repeated-replies and speed figures: it asks the same questions every night.",
+        "For checking: an admin-only websocket command, sentient/voice/prompt, shows what the voice is given to read for a turn and which parts are biggest.",
+    ],
     "1.16.4": [
         "With \"Know what the house can do\" on, an offer to do something no device here can — closing a window, locking a door with no smart lock — is taken out of the reply before it's spoken, the way offers to arm or unlock already are. On 22 Nov it offered to close the bedroom window despite being told it can't.",
         "Asked to lock a door, it now says there's no smart lock it can use, not that the house has no locks.",

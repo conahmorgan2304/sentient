@@ -454,7 +454,9 @@ class SelfTest:
             def no_lock(answer: str) -> tuple[bool, str]:
                 from .reliability import OFFER
 
-                return bool(CANT_DO.search(answer) or DOESNT_KNOW.search(answer)) and not OFFER.search(answer), \
+                cant = CANT_DO.search(answer) or DOESNT_KNOW.search(answer) or re.search(
+                    r"\b(?:no|n't have (?:a |any )?)(?:smart )?locks?\b", answer, re.I)
+                return bool(cant) and not OFFER.search(answer), \
                     "says it can't (there's no lock it can use), without offering to"
 
             out.append(Question("no lock", f"Can you lock the {door.name}?", no_lock, "impossible"))

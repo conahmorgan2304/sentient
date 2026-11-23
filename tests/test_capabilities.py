@@ -64,3 +64,14 @@ async def test_the_reply_is_spoken_without_the_impossible_offer(hass: HomeAssist
         result = await obj._process_streaming_aware(request("Anything happening in the house?"))
     assert result.response.speech["plain"]["speech"] == "The bedroom window is open."
     assert result.continue_conversation is False  # the question was the offer: nothing to wait for
+
+
+async def test_close_it_after_a_window_is_an_impossible_offer(hass: HomeAssistant) -> None:
+    from custom_components.sentient.capabilities import impossible_offer
+    from custom_components.sentient.security_offers import remove
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    pattern = impossible_offer(hass, {"capability_awareness": True})
+    assert remove("The bedroom window is open. Shall I close it?", security=False, extra=pattern)[0] == \
+        "The bedroom window is open."
+    assert remove("The app is open. Shall I close the app?", security=False, extra=pattern)[1] == []

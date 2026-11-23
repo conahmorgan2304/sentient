@@ -102,6 +102,9 @@ def impossible_offer(hass: HomeAssistant, options: dict[str, Any]) -> re.Pattern
     parts = []
     if things:
         parts.append(r"\b(?:open|close|shut)\b[^.?!]{0,30}?\b(?:" + "|".join(things) + r")s?\b")
+        if {"window", "door"} <= set(things):
+            # 23 Nov self-test: "The bedroom window is open. Shall I close it?" — nothing here closes anything
+            parts.append(r"\b(?:open|close|shut)\s+(?:it|them|that|those|one)\b(?!\s+(?:app|programme|program))")
     if not any(_exposed(hass, st.entity_id) for st in hass.states.async_all("lock")):
         parts.append(r"\b(?:lock|unlock)\b")
     pattern = re.compile(_OFFER_START + "(?:" + "|".join(parts) + ")", re.I) if parts else None
