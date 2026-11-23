@@ -44,6 +44,9 @@ jobs:
       - run: pip install -r requirements_test.txt
       - name: Run virtual Sentient through Home Assistant replay
         run: python scripts/replay/virtual_suite.py --out /tmp/sentient-replay
+      - name: Print replay summary
+        if: always()
+        run: cat /tmp/sentient-replay/report.json || true
       - name: Upload replay results
         if: always()
         uses: actions/upload-artifact@v4
