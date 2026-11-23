@@ -462,6 +462,10 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Count how the turn went (Phase 2 measures): never the words, never in guest mode."""
         if self._guest() or not self._options().get('voice_timing_diagnostics'):
             return
+        selftest = getattr(getattr(self._entry, "runtime_data", None), "selftest", None)
+        if selftest is not None and user_input.context is not None \
+                and user_input.context.parent_id == getattr(selftest, "context", None).id:
+            return  # the nightly self-test asks the same questions every night: not a person, and not a repeat
         try:
             from .conversation_quality import of
             from .sessions import is_follow_up

@@ -229,6 +229,8 @@ class Heating:
         self.learner = None  # set by the runtime: tells it which changes automations made
         self.trust = None  # set by the runtime: ask or say before warming up
         self.scheduled = lambda _entity_id: False  # set by the runtime: is this thermostat run by the heating schedule?
+        self.schedule_target = lambda _entity_id: None  # set by the runtime: what the schedule wants it at right now
+        self.schedule_hours = lambda _entity_id: None  # set by the runtime: how long a change lasts on the schedule
         self.own_contexts: set[str] = set()
         self._stopped = False
         self._preheating: set[str] = set()
@@ -645,7 +647,14 @@ class Heating:
         context = own_context(self.hass, 'heating')
         self.own_contexts.add(context.id)
         try:
-            if boost.get('was_off'):
+            scheduled_target = self.schedule_target(entity_id)
+            low, high = _num(st.attributes.get('min_temp')), _num(st.attributes.get('max_temp'))
+            if scheduled_target is not None and (low is None or scheduled_target >= low) \
+                    and (high is None or scheduled_target <= high):
+                # on the schedule: back to what it wants now (a period may have started meanwhile), not to before
+                service, data = 'set_temperature', {'entity_id': entity_id, 'temperature': scheduled_target}
+                restore_to = f'{scheduled_target:g}° (the schedule)'
+            elif boost.get('was_off'):
                 if self.scheduled(entity_id):
                     return  # the heating schedule takes it from here: a scheduled thermostat is never put back to off
                 service, data, restore_to = 'turn_off', {'entity_id': entity_id}, 'off'
@@ -653,7 +662,6 @@ class Heating:
                 service, data, restore_to = 'set_preset_mode', {'entity_id': entity_id, 'preset_mode': boost['preset']}, f"preset {boost['preset']}"
             elif _num(boost.get('temperature')) is not None:
                 target = _num(boost['temperature'])
-                low, high = _num(st.attributes.get('min_temp')), _num(st.attributes.get('max_temp'))
                 if (low is not None and target < low) or (high is not None and target > high):
                     self.timeline.add('health', f'Heating restore skipped for {st.name}', 'The previous target is outside the thermostat’s current limits.')
                     return
@@ -674,7 +682,7 @@ class Heating:
         if (self._stopped or event.data.get("domain") != "climate" or event.context.id in self.own_contexts
                 or is_own(self.hass, event.context)):
             return  # the house's own changes, automations and scripts aren't limited
-        hours = _num(self.options.get(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)) or 0
+        limit_hours = _num(self.options.get(CONF_HEATING_LIMIT, DEFAULT_HEATING_LIMIT)) or 0
         service = event.data.get("service")
         data = event.data.get("service_data") or {}
         ids = data.get("entity_id") or []
@@ -689,6 +697,11 @@ class Heating:
                 old = previous  # tapped up again before the thermostat answered: the same adjustment, the same baseline
             if service in ('set_temperature', 'set_preset_mode', 'set_hvac_mode', 'turn_off', 'turn_on', 'toggle') and previous is not None:
                 self._drop(entity_id, previous)
+            # a scheduled thermostat: the change lasts as long as the schedule leaves changes (3 h by day, 1 at night)
+            # so there's one rule, not two (23 Nov: limited to 1 hour while the schedule allowed 3)
+            hours = limit_hours
+            if limit_hours > 0 and (scheduled_hours := self.schedule_hours(entity_id)):
+                hours = scheduled_hours
             if hours <= 0 or event.context.parent_id or entity_id not in chosen:
                 continue  # only thermostats someone picked in Sentient, never every one in the house
             st = self.hass.states.get(entity_id)

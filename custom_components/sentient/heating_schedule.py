@@ -317,6 +317,8 @@ class HeatingProgrammes:
         self._owned: dict[str, dict[str, Any]] = {}
         self._pending: dict[str, dict[str, Any]] = {}
         self._manual: dict[str, dict[str, Any]] = {}  # heater -> when it was first found off the schedule
+        # heater -> the temperature this schedule last asked for: found at something else since, a person changed it
+        self._last_set: dict[str, float] = {}
         self._later: set = set()  # pending "did it start?" checks
         self.last_tick: str | None = None
         self.ran: dict[str, dict[str, Any]] = {}
@@ -414,6 +416,13 @@ class HeatingProgrammes:
         programmes = self.programmes()
         events = due(programmes, local, by_id=True)
         scheduled = {heater for heater, *_ in events}
+        if held := [e for e in events if self.held(e[0], now)]:
+            # someone's own change still has time to run: the period waits; reconcile puts it right afterwards
+            events = [e for e in events if e not in held]
+            for heater, *_ in held:
+                state = self.hass.states.get(heater)
+                rt.timeline.add("heating", f"Heating schedule waited: {state.name if state else heater}",
+                                "a change made by hand or by voice still has time to run; the schedule takes over after")
         for heater, record in list(self._owned.items()):
             programme = self.items.items.get(record["key"])
             if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
@@ -422,7 +431,7 @@ class HeatingProgrammes:
             if heater in scheduled or wanted_on(programmes, heater, local):
                 continue
             end = dt_util.parse_datetime(record["end"])
-            if end is not None and dt_util.as_utc(local) >= end:
+            if end is not None and dt_util.as_utc(local) >= end and not self.held(heater, now):
                 state = self.hass.states.get(heater)
                 self._observe(heater, state)
                 if heater in self._owned and state is not None and state.state not in ("unknown", "unavailable"):
@@ -430,6 +439,52 @@ class HeatingProgrammes:
         events.extend(e for e in self.reconcile(local) if e[0] not in scheduled)
         if events:
             self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
+
+    def held(self, heater: str, now: datetime) -> bool:
+        """Is someone's own change to this thermostat still within its time? Then a period starting or ending waits.
+
+        23 Nov: turned up by voice at 11:05, the next period's start would have put it straight back. A change made
+        by hand or by voice now lasts its full time (Settings: 3 hours by day, 1 at night), and only then does the
+        schedule take over, at whatever it wants by then."""
+        rt = self._rt()
+        if rt is None:
+            return False
+        boost = getattr(getattr(rt, "heating", None), "_boosted", {}).get(heater)
+        if boost and boost.get("status") in ("active", "pending"):
+            until = dt_util.parse_datetime(boost.get("until") or "")
+            if until is not None and dt_util.as_utc(now) < until:
+                return True
+        record = self._manual.get(heater)
+        state = self.hass.states.get(heater)
+        try:
+            have = float(state.attributes.get("temperature")) if state is not None else None
+        except (TypeError, ValueError):
+            have = None
+        asked = self._last_set.get(heater)
+        # only a change away from what the schedule itself last set counts as someone's: a thermostat found at
+        # another temperature that Sentient never set (after a restart, say) is simply taken over as before
+        changed_by_someone = asked is not None and (have is None or abs(have - asked) > 0.3 or state.state == "off")
+        if record and changed_by_someone and rt.options.get(CONF_HEATING_REVERT, True):
+            since = dt_util.parse_datetime(record.get("since") or "")
+            hours = revert_hours(rt.options, bool(record.get("day")))
+            if since is not None and hours > 0 and dt_util.as_utc(now) - since < timedelta(hours=hours):
+                return True
+        return False
+
+    def target_now(self, heater: str) -> float | None:
+        """What the schedule wants this thermostat at right now: the period's temperature, or the night temperature."""
+        rt = self._rt()
+        if rt is None or not self.covers(heater):
+            return None
+        active = _active_period(self.programmes(), heater, dt_util.now())
+        return float(active[1]["temp"]) if active else night_temp(rt.options)
+
+    def hold_hours(self, heater: str) -> float | None:
+        """How long someone's own change to a scheduled thermostat lasts now (None: not scheduled, or never put back)."""
+        rt = self._rt()
+        if rt is None or not self.covers(heater) or not rt.options.get(CONF_HEATING_REVERT, True):
+            return None
+        return revert_hours(rt.options, not self._night(rt.options, dt_util.now())) or None
 
     def covers(self, heater: str) -> bool:
         """Is this thermostat run by an enabled schedule (so it is never left off)?"""
@@ -634,6 +689,7 @@ class HeatingProgrammes:
                     self._drop(heater)  # do not repeatedly dispatch an uncertain request
                 continue
             self._manual.pop(heater, None)
+            self._last_set[heater] = night if setback else temp
             if what != "on":
                 self._pending.pop(heater, None)
                 self._drop(heater)

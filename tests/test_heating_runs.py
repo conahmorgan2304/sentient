@@ -108,3 +108,79 @@ async def test_missed_off_only_recovers_confirmed_unchanged_heat(hass, freezer, 
         assert LOUNGE not in restarted._owned
     finally:
         restarted.async_stop()
+
+
+async def _tick_at(hass, when):
+    from unittest.mock import patch  # noqa: F401
+
+    async_fire_time_changed(hass, dt_util.as_utc(when))
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+
+async def test_a_voice_turn_up_lasts_its_time_through_a_period_start(hass, freezer):
+    """23 Nov: turned up by voice at 11:05; the next period starting would have taken over straight away."""
+    freezer.move_to(datetime(2026, 11, 16, 11, 0, tzinfo=TZ()))
+    entry = await _setup(hass, heating_limit=1.0, heating_revert_day_hours=3.0)
+    rt = entry.runtime_data
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    prog = {"name": "Weekdays", "heaters": [LOUNGE], "days": ["mon"], "enabled": True,
+            "periods": [{"on": "12:00", "off": "20:00", "temp": 18}]}
+    rt.heat_prog.items.upsert(clean_programme(rt.options, prog))
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 15, "hvac_modes": ["off", "heat"]})
+    # someone turns it up to 20 (the app or the voice: a service call from a person)
+    await hass.services.async_call("climate", "set_temperature", {"entity_id": LOUNGE, "temperature": 20},
+                                   blocking=True, context=Context(user_id="someone"))
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 20, "hvac_modes": ["off", "heat"]})
+    await hass.async_block_till_done()
+    boost = rt.heating._boosted[LOUNGE]
+    until = dt_util.parse_datetime(boost["until"])
+    assert until - dt_util.utcnow() > timedelta(hours=2, minutes=59)  # the schedule's 3 hours, not the 1-hour limit
+    calls.clear()
+    for minute in (11 * 60 + 59, 12 * 60, 12 * 60 + 1):
+        freezer.move_to(datetime(2026, 11, 16, minute // 60, minute % 60, tzinfo=TZ()))
+        await _tick_at(hass, dt_util.now())
+    assert not [c for c in calls if c.data.get("temperature") == 18]  # the period waited
+    assert any("waited" in i["text"] for i in rt.timeline.since(2, None, 50))
+    # its time is up: back to what the schedule wants now (the period's 18), not to the 15 it was before
+    freezer.move_to(until + timedelta(minutes=1))
+    await _tick_at(hass, dt_util.now())
+    assert [c.data["temperature"] for c in calls] == [18]
+
+
+async def test_without_a_change_the_period_starts_on_time(hass, freezer):
+    freezer.move_to(datetime(2026, 11, 16, 11, 58, tzinfo=TZ()))
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    prog = {"name": "Weekdays", "heaters": [LOUNGE], "days": ["mon"], "enabled": True,
+            "periods": [{"on": "12:00", "off": "20:00", "temp": 18}]}
+    rt.heat_prog.items.upsert(clean_programme(rt.options, prog))
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 21, "hvac_modes": ["off", "heat"]})
+    for minute in (59, 60):
+        freezer.move_to(datetime(2026, 11, 16, 11, 0, tzinfo=TZ()) + timedelta(minutes=minute))
+        await _tick_at(hass, dt_util.now())
+    assert [c.data["temperature"] for c in calls] == [18]  # found at 21, but Sentient never set it: not someone's
+
+
+async def test_a_dial_change_after_the_schedule_set_it_also_waits(hass, freezer):
+    freezer.move_to(datetime(2026, 11, 16, 9, 0, tzinfo=TZ()))
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    prog = {"name": "Weekdays", "heaters": [LOUNGE], "days": ["mon"], "enabled": True,
+            "periods": [{"on": "09:00", "off": "12:00", "temp": 19}]}
+    rt.heat_prog.items.upsert(clean_programme(rt.options, prog))
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 15, "hvac_modes": ["off", "heat"]})
+    await _tick_at(hass, dt_util.now())
+    assert [c.data["temperature"] for c in calls] == [19]
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 19, "hvac_modes": ["off", "heat"]})
+    freezer.move_to(datetime(2026, 11, 16, 11, 0, tzinfo=TZ()))
+    hass.states.async_set(LOUNGE, "heat", {"friendly_name": "Lounge", "temperature": 22, "hvac_modes": ["off", "heat"]})
+    await _tick_at(hass, dt_util.now())  # turned up on the thermostat itself
+    calls.clear()
+    freezer.move_to(datetime(2026, 11, 16, 12, 0, tzinfo=TZ()))
+    await _tick_at(hass, dt_util.now())
+    assert not calls  # the period's end waited for the change
+    freezer.move_to(datetime(2026, 11, 16, 14, 1, tzinfo=TZ()))
+    await _tick_at(hass, dt_util.now())
+    assert [c.data["temperature"] for c in calls] == [15]  # then the night temperature, as the schedule wants now

@@ -534,6 +534,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     await prog_items.async_load()
     heat_prog = HeatingProgrammes(hass, prog_items, get_rt, entry.entry_id)
     heating.scheduled = heat_prog.covers
+    heating.schedule_target = heat_prog.target_now
+    heating.schedule_hours = heat_prog.hold_hours
     checks = CameraChecks(hass, lists["checks"], get_rt)
     autooff = AutoOff(hass, lists["autooff"], get_rt)
     from .rules import Rules
