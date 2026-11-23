@@ -49,6 +49,9 @@ MAX_MEMORIES = 3
 MAX_THOUGHTS = 2
 MAX_FIXES = 3
 CONF_MEMORY_UPKEEP = "memory_upkeep"
+CONF_MEMORY_TIME = "memory_time"
+KEEP_DAYS = 60  # day stories kept
+STALE_DAYS = 90  # a fact nobody has confirmed or used in this long is checked once
 _FIX = re.compile(r"^\[?([0-9a-f]{8})\]?\s*[:\-–—]\s*(.+)$")
 PRIVATE = ("password", "pin ", "card", "account number", "bank", "salary", "diagnos", "medication", "illness")
 
@@ -60,13 +63,21 @@ class Reflection:
         self._rt = rt_getter
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.reflection")
         self.last: dict[str, Any] | None = None
+        self.days: list[dict[str, str]] = []  # {"date": "2026-11-22", "story": "..."}, oldest first
+        self.asked_old: list[str] = []  # memory ids already checked with someone
         self._unsub = None
         self._busy = False
         self._stopped = False
 
     async def async_start(self) -> None:
         self._stopped = False
-        self.last = (await self._store.async_load() or {}).get("last")
+        data = await self._store.async_load() or {}
+        self.last = data.get("last")
+        if self.options.get(CONF_MEMORY_TIME):
+            self.days = [d for d in data.get("days") or [] if isinstance(d, dict) and d.get("date") and d.get("story")][-KEEP_DAYS:]
+            self.asked_old = list(data.get("asked_old") or [])[-500:]
+        elif data.get("days"):
+            self._keep(self.last or {})  # switched off: day stories already kept are deleted
         self._unsub = async_track_time_change(self.hass, self._tick, second=5)
 
     @callback
@@ -181,6 +192,7 @@ class Reflection:
             return result
         persona = rt.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         upkeep = bool(rt.options.get(CONF_MEMORY_UPKEEP))
+        time_aware = bool(rt.options.get(CONF_MEMORY_TIME))
         recent_memories = rt.memory.recent(60)
         # with upkeep on, each memory carries its id, so one that today's conversations show is out of date can be
         # put right; ones a person confirmed (pinned or edited) are never offered for that
@@ -208,6 +220,11 @@ class Reflection:
             + ("5. outdated: known memories (the ones with an [id]) that something a person said in today's "
                "conversations shows is now wrong or out of date — each as \"[id]: the corrected sentence\". Only "
                "when a person clearly said so, never from the log alone or a guess. Usually none.\n" if upkeep else "")
+            + ("6. story: two to four plain sentences telling the story of the day the log covers, for answering "
+               "'what did we do last Saturday?' or 'when did the boiler last play up?' weeks later — what people "
+               "did, plans made, anything that went wrong or was fixed, visitors as 'someone came to the door' "
+               "(never who), with times only where they matter. Nothing private (health, money, passwords). Never "
+               "say the house was empty. Write it in the past tense.\n" if time_aware else "")
             + "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + "\n\nAlready known:\n" + "\n".join(f"- {k}" for k in known[:60])
@@ -232,6 +249,9 @@ class Reflection:
             data["structure"]["outdated"] = {"description": "[id]: corrected sentence, for memories shown out of date "
                                              "today (often none)", "required": False,
                                              "selector": {"text": {"multiple": True}}}
+        if time_aware:
+            data["structure"]["story"] = {"description": "The day's story in two to four sentences", "required": False,
+                                          "selector": {"text": {}}}
         if ai_entity := rt.options.get(CONF_SMART_AI) or rt.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         if not rt.watches.spend("overnight"):
@@ -280,6 +300,12 @@ class Reflection:
             result["fixed"] = self._fix_outdated(rt, _list(out.get("outdated")))
             if question := self._confirm_a_guess(rt):
                 result["checking"] = question
+        if time_aware:
+            story = out.get("story")
+            if isinstance(story, str) and story.strip() and len(story) <= 2000 and not any(p in story.lower() for p in PRIVATE):
+                result["story"] = self.add_day(" ".join(story.split()))
+            if question := self._check_an_old_fact(rt):
+                result["checking_old"] = question
         result["thoughts"] = _list(out.get("thoughts"))[:MAX_THOUGHTS]
         raw_question = out.get("question")
         question = " ".join(raw_question.split()) if isinstance(raw_question, str) and len(raw_question) <= 1000 else ""
@@ -336,6 +362,88 @@ class Reflection:
                 return question
         return None
 
+    def _check_an_old_fact(self, rt: Any) -> str | None:
+        """One fact a day that nobody has confirmed or used in three months is checked with someone, once."""
+        cutoff = (dt_util.now() - timedelta(days=STALE_DAYS)).isoformat()
+        for memory in sorted(rt.memory.items, key=lambda m: m.created):
+            if (memory.pinned or memory.basis in ("confirmed", "told") or memory.category in ("correction", "note")
+                    or memory.id in self.asked_old or memory.created > cutoff or (memory.used or "") > cutoff
+                    or not rt.memory.live(memory)):
+                continue
+            question = f"A while ago I was told that {memory.text[0].lower()}{memory.text[1:].rstrip('.')} — is that still right?"
+            if rt.curiosity.wonder(question, why=f"checking an old memory ({memory.id})", source="memory"):
+                self.asked_old = (self.asked_old + [memory.id])[-500:]
+                return question
+            return None  # curiosity has enough to ask today
+        return None
+
+    def add_day(self, story: str, day: str | None = None) -> dict[str, str]:
+        """Keep the story of a day (the day the overnight log was mostly about)."""
+        when = day or (dt_util.now() - timedelta(hours=8)).date().isoformat()
+        self.days = [d for d in self.days if d["date"] != when] + [{"date": when, "story": story}]
+        self.days = sorted(self.days, key=lambda d: d["date"])[-KEEP_DAYS:]
+        self._keep(self.last or {})
+        return {"date": when, "story": story}
+
+    def find_days(self, day: str | None = None, about: str | None = None, limit: int = 5) -> list[dict[str, str]]:
+        """Day stories for a day ('yesterday', 'last Saturday', '2026-11-21', '3 days ago') and/or about something,
+        newest first."""
+        found = list(reversed(self.days))
+        if day:
+            wanted = parse_day(day)
+            if wanted is None:
+                return []
+            found = [d for d in found if d["date"] == wanted.isoformat()]
+        if about:
+            words = {w for w in re.findall(r"[a-z0-9]+", about.lower()) if len(w) > 2}
+            from .memory import _expand
+
+            words = _expand(words)
+            found = [d for d in found if words & set(re.findall(r"[a-z0-9]+", d["story"].lower()))]
+        out = []
+        for d in found[:limit]:
+            when = datetime.fromisoformat(d["date"]).date() if len(d["date"]) == 10 else None
+            out.append({"day": f"{when:%A} {when.day} {when:%B}" if when else d["date"], "story": d["story"]})
+        return out
+
     def _keep(self, result: dict[str, Any]) -> None:
-        self.last = result
-        self._store.async_delay_save(lambda: {"last": self.last}, 2)
+        self.last = result or None
+        if not self.options.get(CONF_MEMORY_TIME):
+            self.days, self.asked_old = [], []
+        self._store.async_delay_save(lambda: {"last": self.last, "days": self.days, "asked_old": self.asked_old}, 2)
+
+
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def parse_day(text: str, today: Any = None) -> Any:
+    """'yesterday', 'last saturday', 'saturday', '3 days ago', '2026-11-21', '21 november' -> a date (or None)."""
+    from datetime import date
+
+    t = " ".join(text.lower().split())
+    today = today or dt_util.now().date()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", t):
+        try:
+            return date.fromisoformat(t)
+        except ValueError:
+            return None
+    if t in ("today", "this morning", "earlier today"):
+        return today
+    if t in ("yesterday", "last night"):
+        return today - timedelta(days=1)
+    if m := re.fullmatch(r"(\d{1,2}|a|one|two|three|four|five|six|seven) days? ago", t):
+        n = {"a": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7}.get(m.group(1))
+        return today - timedelta(days=n or int(m.group(1)))
+    if m := re.fullmatch(r"(?:last |on )?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)", t):
+        back = (today.weekday() - _WEEKDAYS.index(m.group(1))) % 7 or 7
+        return today - timedelta(days=back)
+    if m := re.fullmatch(r"(?:the )?(\d{1,2})(?:st|nd|rd|th)? (?:of )?(january|february|march|april|may|june|july|"
+                         r"august|september|october|november|december)", t):
+        months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+                  "november", "december"]
+        try:
+            when = date(today.year, months.index(m.group(2)) + 1, int(m.group(1)))
+        except ValueError:
+            return None
+        return when if when <= today else date(today.year - 1, when.month, when.day)
+    return None

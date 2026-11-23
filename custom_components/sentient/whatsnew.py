@@ -15,6 +15,15 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.18.0": [
+        "Watches and reminders can act (Memory & learning): \"if the back door's open for ten minutes, turn the hall light off and tell me\", \"when the washing finishes, put the hallway light on\", \"at 11, if the back door's still open, tell me\". Read back first, set up only after a yes on the next turn, and each device is checked afterwards.",
+        "Memory that understands time: \"for now\", \"at the moment\" and one-off things (\"I turned the heating on\") end by themselves, an old unconfirmed fact is checked once, and each day gets a short story (from the same overnight AI call) for \"what did we do last Saturday?\".",
+        "Know who's where: voice recognition, phone room trackers and movement put together into one best guess per person at home, with how sure it is.",
+        "Plans for big requests: \"get the house ready for film night\" is read back as a short plan, done after a yes, and each step checked.",
+        "Grade its own answers: each night, what the voice said about doors, lights, switches and locks is checked against what the house recorded, and mistakes become lessons. No AI.",
+        "All five are off until switched on in Settings → Memory & learning.",
+        "Fixed for everyone: a habit named by its day (\"the bins go out on Thursday nights\") was given an end date and dropped after that Friday. It's kept now.",
+    ],
     "1.17.2": [
         "\"Lock the front door\" in a house without a smart lock now gets the same plain answer every time, with no AI: \"There's no smart lock I can use, so that one needs doing by hand — the Front door is shut.\" It no longer says the house has no locks. (Part of Instant answers.)",
     ],

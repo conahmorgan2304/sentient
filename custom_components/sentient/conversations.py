@@ -181,7 +181,8 @@ class Conversations:
                 "id": conversation_id[-10:], "start": dt_util.utcnow().isoformat(), "room": ours.get("room"),
                 "via": ours.get("via"), "turns": [],
             }
-        ep["turns"].append({"who": "them" if role == "user" else "me", "text": _short(text, 400)})
+        ep["turns"].append({"who": "them" if role == "user" else "me", "text": _short(text, 400),
+                            "at": dt_util.utcnow().isoformat()})
         ep["last"] = dt_util.utcnow().isoformat()
         del ep["turns"][:-12]
 

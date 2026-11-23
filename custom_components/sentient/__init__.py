@@ -457,6 +457,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     memory = MemoryStore(hass, entry.entry_id)
     await memory.async_load()
     memory.use_tags = bool(_entry_options(entry).get("memory_tags"))
+    memory.time_aware = bool(_entry_options(entry).get("memory_time"))
     from .own import OwnActions
 
     own = OwnActions(hass, entry.entry_id)  # first, so everything after can mark what it does as the house's own
@@ -528,6 +529,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     for items in lists.values():
         await items.async_load()
     get_rt = lambda: entry.runtime_data  # noqa: E731
+    watches.runtime_getter = get_rt
     offers = Offers(hass, lists["offers"], get_rt)
     announcements = Announcements(hass, lists["announce"], get_rt)
     alarms = Alarms(hass, lists["alarms"], get_rt)
@@ -779,6 +781,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     for engine in (offers, announcements, alarms, checks, camsec, autooff, rules):
         engine.async_start()
         entry.async_on_unload(engine.async_stop)
+    from .grading import SelfGrading
+
+    grading = SelfGrading(hass, lambda: entry.runtime_data)  # checks the setting itself each night
+    grading.async_start()
+    entry.async_on_unload(grading.async_stop)
+    setattr(entry.runtime_data, "grading", grading)
     from .pronounce import Pronouncer
 
     pronouncer = Pronouncer(lambda: entry.runtime_data.options, lambda: [m.text for m in entry.runtime_data.memory.items])
@@ -910,6 +918,10 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.speech._privacy_generation += 1
     entry.runtime_data.options = options
     entry.runtime_data.memory.use_tags = bool(options.get("memory_tags"))
+    entry.runtime_data.memory.time_aware = bool(options.get("memory_time"))
+    if not options.get("memory_time") and entry.runtime_data.reflection.days:
+        entry.runtime_data.reflection.options = options
+        entry.runtime_data.reflection._keep(entry.runtime_data.reflection.last or {})  # switched off: stories deleted
     _manual_pages(hass, entry.runtime_data, options)
     entry.runtime_data.security_events.configure(options)
     entry.runtime_data.incidents.configure(options)

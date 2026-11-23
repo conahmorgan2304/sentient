@@ -75,6 +75,12 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
          ["sentient_book"]),
         ("recipes", r"recipe|cook|bake|make (?:the|a|some)|ingredients|next step|step|what'?s next|repeat that|for dinner|for tea",
          ["sentient_recipe"]),
+        ("past", r"yesterday|last (?:mon|tues|wednes|thurs|fri|satur|sun)day|last week|days? ago|when did|"
+                 r"what did (?:we|i|you)|what happened (?:on|yesterday|last)|\bon (?:mon|tues|wednes|thurs|fri|satur|sun)day\b",
+         ["sentient_past_days", "sentient_timeline", "sentient_conversations"]),
+        ("plans", r"get (?:the )?(?:house|home|place|everything) ready|ready for|film night|movie night|going away|"
+                  r"sort (?:the house|the place|everything) out|set (?:the house |things )?up for|\bplan\b|bedtime for everyone",
+         ["sentient_plan"]),
         ("house", r"\bhouse\b|\bhome\b|happen|while i was|today|this week|check|anything|how'?s|status|announce|"
                   r"tell (?:the|every)|learn|(?:get|got|gets|come|came|comes) (?:back|in)\b|arriv|\bleft (?:home|the house|for|at)\b|went out|go(?:ne)? out",
          ["sentient_house_check", "sentient_weekly_report", "sentient_timeline", "sentient_announce",
