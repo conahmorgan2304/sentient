@@ -106,7 +106,10 @@ class WindowHeating:
     def _room_heaters(self, area_id: str | None) -> list[str]:
         if not area_id or self._pass_through(area_id):
             return []
-        return [h for h in self._heaters() if self._area(h) == area_id]
+        from .never import blocked
+
+        # a never-touch thermostat is left alone (the house is still told, as for whole-house heating)
+        return [h for h in self._heaters() if self._area(h) == area_id and not blocked(self.hass, h)]
 
     def _open_long_enough(self, now: datetime) -> list[Any]:
         wait = timedelta(minutes=_num(self.options.get(CONF_WINDOW_MINUTES)) or DEFAULT_MINUTES)

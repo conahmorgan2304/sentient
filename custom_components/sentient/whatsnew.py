@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.17.0": [
+        "New, off until switched on (Settings › Safety & security › Ready for tonight): \"make sure everything's ready for tonight\" checks the doors, windows and locks, switches off only the lights you've chosen (and checks they went off), looks at the heating, and says what's still open, unlocked, left on or can't be confirmed. Locks, the alarm and the heating are never changed, and the alarm is never offered. It can keep an eye on whatever was still open for up to three hours and say once, on the speaker you asked, when it's all sorted.",
+        "Open-window heating now leaves a never-touch thermostat alone (the house is still told the window's open).",
+        "How it's used now counts lists by voice, ready for tonight and open-window heating.",
+    ],
     "1.16.8": [
         "Shopping and to-do lists by voice work properly (Settings › Voice › Shopping and to-do lists, on by default): \"mark milk as bought\", \"what's on the shopping list?\", \"take bin bags off\", \"put eggs back on\". Items are found however they're said — any case, plurals, the only milk on the list — two possible matches are asked about, adding something already there doesn't add it twice, and Sentient only says it's done once the list shows it. Your notes about lists from memory are followed.",
         "Room temperatures: a 3D printer's chamber, nozzle or spool holder (AMS), and fridge, freezer, oven, water-tank or battery temperatures, are no longer taken as the room's. Choosing the area's temperature sensor in Home Assistant still overrides everything.",

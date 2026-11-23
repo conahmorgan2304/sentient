@@ -877,6 +877,10 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_RECIPES_FOLDER, **d(CONF_RECIPES_FOLDER, DEFAULT_RECIPES_FOLDER)): selector.TextSelector(),
             vol.Optional(CONF_RECIPES_LIST, **d(CONF_RECIPES_LIST, None)): selector.EntitySelector(selector.EntitySelectorConfig(domain="todo")),
             vol.Required("voice_lists", **d("voice_lists", True)): selector.BooleanSelector(),
+            vol.Required("ready_tonight", **d("ready_tonight", False)): selector.BooleanSelector(),
+            vol.Optional("ready_tonight_lights", **d("ready_tonight_lights", [])): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="light", multiple=True)),
+            vol.Required("ready_tonight_follow", **d("ready_tonight_follow", True)): selector.BooleanSelector(),
             vol.Optional(CONF_TANDOOR_URL, **d(CONF_TANDOOR_URL, "")): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.URL)),
             vol.Optional(CONF_TANDOOR_TOKEN, **d(CONF_TANDOOR_TOKEN, "")): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)),
             vol.Optional(CONF_NOTIFY_TARGETS, **d(CONF_NOTIFY_TARGETS, [])): selector.EntitySelector(
