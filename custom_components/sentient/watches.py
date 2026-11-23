@@ -822,6 +822,7 @@ class WatchManager:
         watch.fired += 1
         if not watch.repeat or watch.kind == KIND_REMINDER:
             self._watches.pop(watch.id, None)
+            self._held.discard(watch.id)
         self._save()
         acted = await self._async_act(watch) if watch.do else ""
         if watch.do and not watch.message and not description:

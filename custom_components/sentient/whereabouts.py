@@ -95,7 +95,10 @@ def who_where(hass: HomeAssistant, rt: Any) -> list[dict[str, Any]]:
     now = dt_util.utcnow()
     home = _people_home(hass)
     heard, phones = _heard(hass, rt, now), _phones(hass, options)
-    moving = _movement(hass, rt) if len(home) == 1 else None
+    # movement says who only when everyone else is known to be out: with one person set up in Home Assistant,
+    # the rest of the household could be the ones moving
+    everyone = hass.states.async_all("person")
+    moving = _movement(hass, rt) if len(home) == 1 and len(everyone) >= 2 else None
     out = []
     for person in home:
         key = (person.name or "").casefold()

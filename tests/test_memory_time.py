@@ -50,6 +50,8 @@ async def test_only_with_the_setting_on(hass: HomeAssistant, freezer) -> None:
     assert once.expires == "2026-11-24"
     lesson = store.add("When someone turned the fan on, don't turn it off", "correction")
     assert lesson.expires is None  # corrections are standing instructions
+    liking = store.add("Kayleigh likes the lamp turned down low", "preference")
+    assert liking.expires is None and "(on " not in liking.text  # a preference, not something done once
     freezer.move_to("2026-11-25T12:00:00+00:00")
     assert not store.live(once) and store.live(plain)
 

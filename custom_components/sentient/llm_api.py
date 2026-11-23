@@ -711,7 +711,9 @@ class WatchTool(_Tool):
             from .readback import current, readbacks
             from .acting import words
 
-            details = {"what": args.get("what"), "entity": entity, **{k: v for k, v in args.items() if k != "what"}, **extra}
+            # what decides what happens, not the wording: the voice often rephrases "what" or the message on the yes
+            details = {"entity": entity, **{k: args.get(k) for k in ("to_state", "above", "below", "until", "minutes", "repeat")},
+                       **extra}
             from .acting import state_phrase, thing
             from .rules import state_word
 
@@ -776,7 +778,7 @@ class RemindTool(_Tool):
             from .readback import current, readbacks
             from .acting import words
 
-            details = {**args, **extra}
+            details = {**{k: args.get(k) for k in ("at", "minutes")}, **extra}
             when = f"At {args['at']}" if args.get("at") else f"In {args.get('minutes') or '?'} minutes"
             read_back = (when + (f", if {args_only_if(hass, {"only_if": extra["only_if"], "only_if_is": extra["only_if_state"]})}" if extra.get("only_if") else "")
                          + f": {words(hass, extra['do'])}" + (f", and say “{args['message'].rstrip('.!')}”" if args.get("message") else ", and tell you") + ".")
@@ -858,7 +860,7 @@ class PlanTool(_Tool):
         actions, why = build(hass, args["steps"])
         if why:
             return {"error": why}
-        details = {"goal": " ".join(args["goal"].split()).casefold(), "actions": actions}
+        details = {"actions": actions}  # the steps decide it; the goal's wording often changes on the yes
         if not args.get("confirmed"):
             readbacks(rt).propose("plan", details, current())
             return {"read_back": f"For {args['goal'].strip().rstrip('.')}, I'll {words(hass, actions)}. Shall I go ahead?",

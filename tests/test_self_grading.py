@@ -15,6 +15,14 @@ from custom_components.sentient.memory import MemoryStore
 from custom_components.sentient.reliability import Reliability
 
 
+async def test_a_room_named_like_a_device_is_not_a_claim(hass: HomeAssistant) -> None:
+    await _house(hass)
+    hass.states.async_set("light.kitchen_room", "off", {"friendly_name": "Kitchen"})
+    async_expose_entity(hass, "conversation", "light.kitchen_room", True)
+    assert claims(hass, "The heating in the kitchen is on.") == []
+    assert claims(hass, "The kitchen is off.") == [("light.kitchen_room", "off")]
+
+
 async def _house(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, "homeassistant", {})
     hass.states.async_set("binary_sensor.back_door", "off", {"friendly_name": "Back door sensor", "device_class": "door"})
@@ -33,7 +41,9 @@ async def _house(hass: HomeAssistant) -> None:
     ("If the back door is open, I'll tell you.", []),  # a condition
     ("The back door isn't open.", []),  # a negation: left alone
     ("I've turned the kitchen light off.", []),  # an action report, checked when it happens
-    ("The kitchen light and the kitchen lamp are on.", []),  # two devices: not plain enough
+    ("The kitchen light and the kitchen lamp are on.", [("light.kitchen_lamp", "on")]),  # said of the lamp itself
+    ("The heating in the kitchen light's room is on.", []),  # "on" isn't said of the kitchen light
+    ("The kitchen light is on and the back door's open.", []),  # two devices: not plain enough
     ("The back door was open earlier.", []),  # the past
     ("Hall motion is on.", []),  # not a door, light, switch or lock
 ])

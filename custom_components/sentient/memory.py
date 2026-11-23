@@ -291,6 +291,8 @@ class MemoryStore:
         expires = expiry_for(text)
         if self.time_aware and expires is None and category != "correction":
             expires, once = temporary_expiry(text)
+            if once and category not in ("fact", "note"):
+                expires, once = None, False  # "likes the lamp turned down low" is a preference, not something done once
             if once:  # "…turned the heating on" — say which day, so it isn't read as today's news later
                 day = dt_util.now().date()
                 text = f"{text.rstrip('.')} (on {day.day} {day:%B %Y})."

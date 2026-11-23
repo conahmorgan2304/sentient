@@ -50,6 +50,9 @@ async def test_each_source_with_how_sure(hass: HomeAssistant) -> None:
 async def test_movement_only_counts_when_one_person_is_home(hass: HomeAssistant) -> None:
     lounge = ar.async_get(hass).async_create("Lounge")
     hass.states.async_set("person.conah", "home", {"friendly_name": "Conah"})
+    # the only person set up: the rest of the household could be the ones moving
+    assert who_where(hass, _rt({"who_where": True}, best=lounge.id))[0]["room"] is None
+    hass.states.async_set("person.kayleigh", "not_home", {"friendly_name": "Kayleigh"})
     people = who_where(hass, _rt({"who_where": True}, best=lounge.id))
     assert people == [{"name": "Conah", "room": "Lounge", "sure": "a guess",
                        "why": "the only one home, and there's been movement there"}]
@@ -99,6 +102,21 @@ async def test_a_plan_is_read_back_then_done_and_checked(hass: HomeAssistant) ->
     assert calls[0].data["brightness_pct"] == 30
     assert out["said"] == "Done, except the kitchen light is still on."
     assert out["not_done"] == ["light.kitchen"]
+
+
+async def test_a_reworded_goal_on_the_yes_still_counts(hass: HomeAssistant) -> None:
+    from custom_components.sentient.readback import readbacks
+
+    entry, api, calls = await _plan_setup(hass)
+    session = SimpleNamespace(id="c1", turn=1)
+    with patch("custom_components.sentient.readback.current", return_value=session):
+        await api.async_call_tool(llm.ToolInput(tool_name="sentient_plan", tool_args={"goal": "film night", "steps": STEPS}))
+        session.turn = 2
+        with patch("custom_components.sentient.plans.VERIFY_SECONDS", 0.2):
+            out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_plan", tool_args={
+                "goal": "getting ready for film night", "steps": STEPS, "confirmed": True}))
+    assert "said" in out and len(calls) == 2
+    assert readbacks(entry.runtime_data) is not None
 
 
 async def test_plans_refuse_what_the_voice_cannot_control(hass: HomeAssistant) -> None:

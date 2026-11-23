@@ -29,15 +29,6 @@ _SENTENCE = re.compile(r"[^.!?]+[.!?]?")
 _SKIP = re.compile(r"\?|\b(?:if|when|whenever|should|shall|would|could|might|maybe|probably|not|n't|no longer|"
                    r"never|was|were|earlier|ago|i've|i have|i'll|i will|i've just|turned|switched|turning|switching|"
                    r"done)\b|n't\b", re.IGNORECASE)
-# claim word -> (kind of device, state it means)
-_CLAIMS = [
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?(?:wide )?open\b", re.I), "opening", "on"),
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?(?:closed|shut)\b", re.I), "opening", "off"),
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?unlocked\b", re.I), "lock", "unlocked"),
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?locked\b", re.I), "lock", "locked"),
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?on\b", re.I), "switch", "on"),
-    (re.compile(r"\b(?:is|are|'s|’s) (?:still |now )?off\b", re.I), "switch", "off"),
-]
 _COVER = {"on": "open", "off": "closed"}
 _WORDS = {"on": "on or off", "off": "on or off", "locked": "locked", "unlocked": "locked"}
 
@@ -62,29 +53,40 @@ def _candidates(hass: HomeAssistant) -> list[tuple[str, str, str]]:
     return sorted(out, key=lambda c: len(c[0]), reverse=True)
 
 
+_PLACE = re.compile(r"\b(?:in|on|at|by|near|of|from|to|into|inside|outside|upstairs|downstairs)(?: the| my| our)?\s*$")
+_STATE_WORDS = {"open": ("opening", "on"), "closed": ("opening", "off"), "shut": ("opening", "off"),
+                "unlocked": ("lock", "unlocked"), "locked": ("lock", "locked"), "on": ("switch", "on"), "off": ("switch", "off")}
+
+
 def claims(hass: HomeAssistant, text: str, candidates: list[tuple[str, str, str]] | None = None) -> list[tuple[str, str]]:
-    """(entity_id, expected state) for each plain statement about one device in *text*."""
+    """(entity_id, expected state) for each plain statement about one device in *text*.
+
+    The state has to be said of the device itself — "the kitchen light is on", "the back door's closed" — so "the
+    heating in the kitchen is on" isn't read as being about a light called Kitchen."""
     candidates = _candidates(hass) if candidates is None else candidates
     found = []
     for sentence in _SENTENCE.findall(text or ""):
         s = sentence.strip()
         if not s or _SKIP.search(s):
             continue
-        low = s.lower()
-        named = []
-        rest = low
-        for name, entity_id, kind in candidates:
-            if re.search(rf"\b{re.escape(name)}\b", rest):
-                named.append((entity_id, kind))
-                rest = re.sub(rf"\b{re.escape(name)}\b", " ", rest)  # "kitchen light" isn't also "light"
-        said = [(kind, state) for pattern, kind, state in _CLAIMS if pattern.search(s)]
-        if len(named) != 1 or len(said) != 1:
-            continue  # two devices or two states in one sentence: not plain enough to judge
-        entity_id, kind = named[0]
-        claim_kind, state = said[0]
-        if kind != claim_kind:
-            if not (kind == "opening" and claim_kind == "switch"):
-                continue
+        low = s.lower().replace("’", "'")
+        hits = []
+        taken: list[tuple[int, int]] = []
+        for name, entity_id, kind in candidates:  # longest names first: "kitchen lamp" before "kitchen"
+            for m in re.finditer(rf"\b{re.escape(name)}(?:'s| is| are)(?: still| now)?(?: wide)? "
+                                 r"(open|closed|shut|unlocked|locked|on|off)\b", low):
+                if any(a <= m.start() < b for a, b in taken):
+                    continue
+                if _PLACE.search(low[:m.start()]):
+                    continue  # "the heating in the kitchen is on": a place, not the device
+                taken.append((m.start(), m.end()))
+                hits.append((entity_id, kind, m.group(1)))
+        if len(hits) != 1:
+            continue  # none, or two devices in one sentence: not plain enough to judge
+        entity_id, kind, word = hits[0]
+        claim_kind, state = _STATE_WORDS[word]
+        if kind != claim_kind and not (kind == "opening" and claim_kind == "switch"):
+            continue
         if entity_id.startswith("cover."):
             state = _COVER.get(state, state)
         found.append((entity_id, state))
