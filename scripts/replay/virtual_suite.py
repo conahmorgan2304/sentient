@@ -107,8 +107,12 @@ def main():
                 record["decisions"] = len(result.get("decisions", []))
                 record["recorded_device_actions"] = len(result.get("device_actions", []))
                 record["ai_requests"] = result.get("ai_requests")
+                record["coverage"] = "observed" if (record["decisions"] or record["recorded_device_actions"] or record["ai_requests"]) else "inconclusive_no_activity"
                 record["checks"] = validate_result(name, result)
-                if not all(record["checks"].values()):
+                if record["coverage"] == "inconclusive_no_activity":
+                    record["execution"] = "inconclusive"
+                    failed = True
+                elif not all(record["checks"].values()):
                     record["execution"] = "failed_assertions"
                     failed = True
         report[name] = record
