@@ -1507,6 +1507,49 @@ class RecipeTool(_Tool):
         return rt.recipes.move(speaker, a["action"], a.get("step"))
 
 
+class ListsTool(_Tool):
+    acts = True
+    name = "sentient_lists"
+    description = (
+        "Shopping and to-do lists: read them out, add things, tick things off (bought, done, got it), put ticked things "
+        "back, take things off. Use this rather than any other list tool. action: show, add, complete, reopen, remove; "
+        "items: what was said, one entry each ('milk', 'bin bags'); list: the list's name if one was said (otherwise "
+        "the shopping list). Only what comes back in done has happened: never say something was done unless it's "
+        "there. Follow house_notes_about_lists when it comes back."
+    )
+    parameters = vol.Schema({
+        vol.Required("action"): vol.In(["show", "add", "complete", "reopen", "remove"]),
+        vol.Optional("items", default=[]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("list"): cv.string,
+    })
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        from .lists import async_handle
+
+        rt = _runtime(hass)
+        if rt is None or not rt.options.get("voice_lists", True):
+            return {"error": "lists by voice are switched off in Sentient's settings"}
+        a = tool_input.tool_args
+        if a["action"] != "show" and not a.get("items"):
+            return {"error": "which items?"}
+        notes: list[str] = []
+        try:
+            from .voice_id import speaker_scope
+
+            found = rt.memory.search("shopping list to-do list", limit=6, count_hits=False)
+            found = speaker_scope(hass, getattr(rt, "options", {}), found)
+            notes = [m.text for m in found if re.search(r"\b(list|shopping|to.?do)\b", m.text, re.I)][:4]
+        except Exception:  # noqa: BLE001 - notes are a help, not a need
+            notes = []
+        try:
+            return await async_handle(hass, a["action"], a.get("items") or [], a.get("list"),
+                                      rt.options.get("recipes_list"), notes)
+        except Exception as err:  # noqa: BLE001
+            return {"error": f"the list couldn't be changed: {err}", "done": []}
+
+
 class AskLaterTool(_Tool):
     name = "sentient_ask_later"
     description = (
@@ -2590,6 +2633,7 @@ class SentientAPI(llm.API):
                  *([GameTool()] if _games(self.hass) is not None else []),
                  *([GameSetTool(), GameLogTool()] if _games(self.hass) is not None and _games(self.hass).active is not None else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else []),
+                 *([ListsTool()] if rt0 is not None and rt0.options.get("voice_lists", True) and bool(self.hass.states.async_entity_ids("todo")) else []),
                  *([HistoryTool(), RootCauseTool()] if getattr(rt0, "brain", None) is not None and rt0.brain.on("house_ledger") else []),
                  *([UnifiedEvidenceTool()] if rt0 is not None and rt0.options.get("unified_evidence", False) else []),
                  *([WarningsTool()] if rt0 is not None and rt0.options.get("weather_warnings") else []),
@@ -2692,6 +2736,9 @@ class SentientAPI(llm.API):
                          "Unknown or unavailable readings do not establish current state. Mention uncertainty when it "
                          "changes the answer. A timestamp is evidence age, not proof a quiet event-driven sensor is stale. "
                          "Never call an attempted action completed unless the device reported the requested result.")
+        if opts.get("voice_lists", True) and self.hass.states.async_entity_ids("todo"):
+            lines.append("Shopping and to-do lists: use sentient_lists (add, tick off, put back, take off, read out). "
+                         "Say something was done only if it's in the tool's done.")
         if opts.get("security_coverage"):
             lines.append("For what happened during a security incident, which way someone went, or whether a camera "
                          "missed part of the incident, use sentient_incidents or sentient_security_event for a selected "

@@ -91,6 +91,12 @@ def _one_entity(hass: HomeAssistant, name: str) -> Any | None:
     return found[0] if len(found) == 1 else None
 
 
+def _not_the_room(st: Any) -> bool:
+    from .glance import _chip
+
+    return _chip(st)
+
+
 def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
     from .presence import area_of
 
@@ -102,7 +108,8 @@ def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
     for st in hass.states.async_all("sensor"):
         if st.attributes.get("device_class") != "temperature" or not _exposed(hass, st.entity_id):
             continue
-        if (chosen and st.entity_id == chosen) or (not chosen and area_of(hass, st.entity_id) == area.id):
+        if (chosen and st.entity_id == chosen) or (not chosen and area_of(hass, st.entity_id) == area.id
+                                                   and not _not_the_room(st)):
             try:
                 readings.append((st, float(st.state)))
             except (TypeError, ValueError):

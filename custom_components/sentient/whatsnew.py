@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.8": [
+        "Shopping and to-do lists by voice work properly (Settings › Voice › Shopping and to-do lists, on by default): \"mark milk as bought\", \"what's on the shopping list?\", \"take bin bags off\", \"put eggs back on\". Items are found however they're said — any case, plurals, the only milk on the list — two possible matches are asked about, adding something already there doesn't add it twice, and Sentient only says it's done once the list shows it. Your notes about lists from memory are followed.",
+        "Room temperatures: a 3D printer's chamber, nozzle or spool holder (AMS), and fridge, freezer, oven, water-tank or battery temperatures, are no longer taken as the room's. Choosing the area's temperature sensor in Home Assistant still overrides everything.",
+    ],
     "1.16.7": [
         "New, off until switched on (Settings › Heating › Turn a room's heater down while its window is open): when a window has been open for a few minutes and that room has its own heater, Sentient turns it down to the night temperature and puts it back when the window shuts — only if nobody has changed it meanwhile, and to what the heating schedule wants by then. A whole-house thermostat is never turned down for one window; Sentient just says once that the window's open and the heating's on. Nothing stays turned down for more than 3 hours.",
     ],
