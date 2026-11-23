@@ -77,7 +77,7 @@ class Curiosity:
     def enabled(self) -> bool:
         return bool(self.options.get(CONF_CURIOSITY, True))
 
-    def wonder(self, question: str, why: str = "", source: str = "") -> bool:
+    def wonder(self, question: str, why: str = "", source: str = "", extra: str = "") -> bool:
         """Add something to ask about (once ever)."""
         question = " ".join((question or "").split())
         if len(question) < 8:
@@ -88,7 +88,7 @@ class Curiosity:
         if key in self.asked or any(q["key"] == key for q in self.queue):
             return False
         self.queue.append({"key": key, "question": question, "why": why, "source": source,
-                           "added": dt_util.utcnow().isoformat()})
+                           "added": dt_util.utcnow().isoformat(), **({"extra": extra} if extra else {})})
         del self.queue[:-5]  # only the freshest few
         self._save()
         return True
@@ -188,7 +188,7 @@ class Curiosity:
                     "caller is the window cleaner.' Then thank them in a few words. If they don't know or would "
                     "rather not say, just say no problem and save nothing. If you were checking something you worked "
                     "out and they say it's wrong, forget it with sentient_forget and save what's right instead."
-                ),
+                ) + (" " + item["extra"] if item.get("extra") else ""),
             )
         if (self._stopped or self.options is not options or (not force and not self.enabled)
                 or stamp != (getattr(speech, '_privacy_generation', 0), getattr(speech, '_guest_generation', 0))

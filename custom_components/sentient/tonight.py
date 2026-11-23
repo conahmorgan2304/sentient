@@ -10,7 +10,7 @@ heating, then:
 * optionally keeps an eye on what was outstanding for up to three hours and says once, on the speaker that asked,
   when it's all sorted ("That's everything ready for tonight now: the back door's shut.").
 
-It isn't a goals system: one check per speaker, replaced by the next one, gone after three hours or a restart.
+It isn't a goals system: one check per speaker, replaced by the next one, gone after three hours (kept over a restart).
 No AI. Off until switched on (Settings › Voice › Ready for tonight).
 """
 
@@ -45,12 +45,46 @@ def _num(value: Any) -> float | None:
 
 
 class Tonight:
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any]) -> None:
+    def __init__(self, hass: HomeAssistant, options: dict[str, Any], rt_getter: Callable[[], Any],
+                 entry_id: str | None = None) -> None:
         self.hass = hass
         self.options = options
         self._rt = rt_getter
-        self.runs: dict[str, dict[str, Any]] = {}  # owner -> {"outstanding": {eid: name}, "speaker", "until", "said"}
+        self.runs: dict[str, dict[str, Any]] = {}  # owner -> {"outstanding": {eid: name}, "names", "speaker", "until"}
         self._unsub: Callable[[], None] | None = None
+        self._store = None
+        if entry_id:
+            from homeassistant.helpers.storage import Store
+
+            from .const import DOMAIN
+
+            self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.tonight")
+
+    async def async_load(self) -> None:
+        """A check still being followed carries on after a restart, until its three hours are up."""
+        if self._store is None:
+            return
+        try:
+            saved = (await self._store.async_load() or {}).get("runs") or {}
+        except Exception:  # noqa: BLE001 - a damaged file: nothing being followed
+            saved = {}
+        now = dt_util.utcnow()
+        for owner, run in saved.items():
+            until = dt_util.parse_datetime(str(run.get("until") or ""))
+            if until is None or until <= now or not run.get("outstanding"):
+                continue
+            self.runs[owner] = {"outstanding": dict(run["outstanding"]), "names": dict(run.get("names") or run["outstanding"]),
+                                "speaker": run.get("speaker"), "until": until}
+        if self.runs and self.enabled:
+            self._listen()
+            self.hass.async_create_task(self.async_follow(), eager_start=False)  # anything sorted while it was down
+        else:
+            self.runs.clear()
+
+    def _save(self) -> None:
+        if self._store is not None:
+            self._store.async_delay_save(lambda: {"runs": {o: {**r, "until": r["until"].isoformat()}
+                                                           for o, r in self.runs.items()}}, 1)
 
     @property
     def enabled(self) -> bool:
@@ -58,10 +92,10 @@ class Tonight:
 
     @callback
     def async_stop(self) -> None:
+        """Unloading: stop listening, but keep what's being followed so it carries on after the restart."""
         if self._unsub is not None:
             self._unsub()
             self._unsub = None
-        self.runs.clear()
 
     def cancel(self, owner: str) -> bool:
         gone = self.runs.pop(owner, None) is not None
@@ -202,6 +236,7 @@ class Tonight:
 
     # following what was outstanding
     def _listen(self) -> None:
+        self._save()
         if self.runs and self._unsub is None:
             self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed)
         elif not self.runs and self._unsub is not None:

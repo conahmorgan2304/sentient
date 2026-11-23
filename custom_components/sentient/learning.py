@@ -100,6 +100,9 @@ _CAUSE_STATES = {
 }
 
 CONF_PROVE_ROUTINES = "prove_routines"
+CONF_ROUTINE_FADING = "routine_fading"
+FADE_DAYS = 14
+FADE_TIMES = 5
 PROVE_DAYS = 4  # days it must be checked against (after it was learned) before it's offered
 PROVE_SHARE = 0.75  # ...and right on at least this share of them
 PROVE_WINDOW = 45  # minutes either side of its usual time
@@ -135,6 +138,9 @@ class Routine:
     # proving itself: since it was learned, on how many of the days it applied to it really happened near its time
     proof_hits: int = 0
     proof_days: int = 0
+    # an adopted routine whose job someone keeps doing first (already on when it was due): has the habit moved?
+    already: list[str] = field(default_factory=list)  # local dates it was due and already done
+    asked_fading: bool = False
 
     def __post_init__(self) -> None:
         if not self.id:
@@ -485,6 +491,7 @@ class Learner:
         self.skip = None  # callable giving entities another feature already runs
         self.feedback = None  # set by the runtime: declines teach it what not to offer
         self.trust = None  # set by the runtime: do, say-then-do or ask first, by kind of device
+        self.wonder = None  # set by the runtime: curiosity, to ask once about a routine that's no longer needed
         self.woke_on = None  # (date) -> minute after midnight the house got up that day, or None
         self._sun: dict[tuple[str, Any], int | None] = {}
         self._stopped = False
@@ -879,6 +886,9 @@ class Learner:
                     and routine.state in _SUPPORTED[routine.entity_id.split('.', 1)[0]]
                     and not blocked(self.hass, routine.entity_id)
                     and not (self.skip and routine.entity_id in self.skip()))
+        if isinstance(routine, Routine) and (st := self.hass.states.get(routine.entity_id)) is not None \
+                and st.state == routine.state:
+            self._already_done(routine)
         if routine.id in self._busy or not valid():
             return
         self._busy.add(routine.id)
@@ -903,6 +913,27 @@ class Learner:
                 f'a routine you let the house do: {routine.describe().rstrip(".")}', valid=valid)
         finally:
             self._busy.discard(routine.id)
+
+    def _already_done(self, routine: Routine) -> None:
+        """It was due and someone had already done it. Often enough in a fortnight and the house asks, once, whether
+        it's still wanted (23 Nov: adopted routines were kept for good, even when nobody needed them any more)."""
+        if not self.options.get(CONF_ROUTINE_FADING, True):
+            return
+        today = dt_util.now().date()
+        cutoff = (today - timedelta(days=FADE_DAYS)).isoformat()
+        dates = sorted({d for d in routine.already if d >= cutoff} | {today.isoformat()})
+        routine.already = dates
+        self._save()
+        if routine.asked_fading or len(dates) < FADE_TIMES or self.wonder is None:
+            return
+        question = (f"The house does this for you — {routine.describe().rstrip('.').lower()} — but it's already been done "
+                    f"by then {len(dates)} times in the last two weeks. Do you still want me to do it?")
+        extra = (f"If they say no, or that they do it themselves now, call sentient_forget_routine with routine "
+                 f"'{routine.id}' and say you'll stop. If they want to keep it, just say okay and save nothing.")
+        if self.wonder(question, why=f"a routine that may not be needed any more ({routine.id})", source="routines",
+                       extra=extra):
+            routine.asked_fading = True
+            self._save()
 
     def _offerable(self, r: Routine | Link) -> bool:
         if isinstance(r, Routine) and self.options.get(CONF_PROVE_ROUTINES) and not r.proven:
