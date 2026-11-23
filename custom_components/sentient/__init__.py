@@ -673,6 +673,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     trust = Trust(hass, entry.entry_id, options, get_rt)
     learner.trust = trust
+    learner.wonder = lambda q, **kw: (  # only asked when curiosity is on: otherwise it would sit unasked for good
+        entry.runtime_data.curiosity.wonder(q, **kw)
+        if getattr(entry.runtime_data, "curiosity", None) is not None and entry.runtime_data.curiosity.enabled else False)
     heating.trust = trust
     from .holiday import Holiday
 
@@ -750,7 +753,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.runtime_data.window_heat = window_heat
     from .tonight import Tonight
 
-    entry.runtime_data.tonight = Tonight(hass, options, get_rt)
+    entry.runtime_data.tonight = Tonight(hass, options, get_rt, entry.entry_id)
+    await entry.runtime_data.tonight.async_load()
     entry.async_on_unload(entry.runtime_data.tonight.async_stop)
     engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "reliability": reliability, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,

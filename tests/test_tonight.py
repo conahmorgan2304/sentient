@@ -96,3 +96,31 @@ async def test_no_spoken_promise_in_quiet_hours(hass):
     rt.speech.quiet_now = lambda: True
     out = await rt.tonight.async_check("kitchen", Context(), "assist_satellite.kitchen")
     assert out["summary"].endswith("I'll note when that's sorted.")
+
+
+async def test_follow_up_carries_on_after_a_restart(hass, hass_storage):
+    from custom_components.sentient.tonight import Tonight
+
+    rt, said = await _house(hass)
+    first = Tonight(hass, rt.tonight.options, lambda: rt, "restart-test")
+    await first.async_check("kitchen", Context(), "assist_satellite.kitchen", act=True)
+    first.async_stop()
+    await first._store.async_save({"runs": {o: {**r, "until": r["until"].isoformat()} for o, r in first.runs.items()}})
+    again = Tonight(hass, rt.tonight.options, lambda: rt, "restart-test")
+    await again.async_load()
+    assert again.runs["kitchen"]["outstanding"] == {BACK: "Back door"}
+    hass.states.async_set(BACK, "off", {"device_class": "door", "friendly_name": "Back door"})
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert ("That's everything ready for tonight now: Back door's shut.", ["assist_satellite.kitchen"]) in said
+    again.async_stop()
+
+
+async def test_expired_follow_up_isnt_reloaded(hass, hass_storage):
+    from custom_components.sentient.tonight import Tonight
+
+    rt, _ = await _house(hass)
+    t = Tonight(hass, rt.tonight.options, lambda: rt, "expired-test")
+    await t._store.async_save({"runs": {"kitchen": {"outstanding": {BACK: "Back door"}, "names": {BACK: "Back door"},
+                                                    "speaker": None, "until": "2000-01-01T00:00:00+00:00"}}})
+    await t.async_load()
+    assert not t.runs

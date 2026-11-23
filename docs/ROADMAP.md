@@ -314,3 +314,4 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] 1.16.7 — Open-window heating protection (optional): a room's own heater turned down while its window is open and put back only if unchanged; whole-house heating is only mentioned.
 - [x] 1.16.8 — Lists by voice done properly (#206); 3D-printer and appliance temperatures aren't the room's (#197).
 - [x] 1.17.0 — "Make sure everything's ready for tonight" (optional): perimeter, permitted lights, heating read-only, outstanding items followed and reported once; never-touch respected by open-window heating.
+- [x] 1.17.1 — Situations with a start, evidence, certainty and end (said as over once over); faded adopted routines asked about once; ready-for-tonight follow-ups kept over a restart; repeated prompt rules said once.

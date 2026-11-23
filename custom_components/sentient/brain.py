@@ -98,6 +98,9 @@ class Brain:
         self.cases: dict[str, dict[str, Any]] = {}
         self.counters: dict[str, dict[str, int]] = {}  # day -> {ai_saved, gated, local}
         self.voice: dict[str, dict[str, Any]] = {}  # satellite -> {listening_since, samples[], warned}
+        from .situations import SituationBook
+
+        self.book = SituationBook(hass, lambda: self.options, rt_getter)  # ongoing situations with a start and an end
         self._said_unexplained: dict[str, float] = {}
         self._noted_day: dict[str, Any] = {}  # entity -> the day an unsaid repeat was last noted
         self._remarks: list[tuple[float, list[str]]] = []
@@ -722,16 +725,12 @@ class Brain:
     def situations(self) -> list[str]:
         if not self.on(CONF_SITUATIONS):
             return []
-        out: list[str] = []
-        rt = self._rt()
+        # what's going on, each with when it started, its evidence and what ends it (situations.py); it covers
+        # someone getting home and the house being asleep, which used to be lines of their own here
+        out: list[str] = self.book.lines()
         now = dt_util.utcnow().timestamp()
-        if rt is not None and getattr(rt, "sleep", None) is not None and getattr(rt.sleep, "asleep", False):
-            out.append("The house is asleep.")
         if self.ledger is not None:
             recent = self.ledger.recent_rows(now - 900)
-            home = sorted({r.get("name") or r["entity"] for r in recent if r["domain"] == "person" and r["new"] == "home"})
-            if home:
-                out.append(", ".join(home) + " just got home.")
             moving = sorted({r["area"] for r in recent if r["domain"] == "binary_sensor" and r["new"] == "on" and r.get("area")
                              and (st := self.hass.states.get(r["entity"])) is not None
                              and st.attributes.get("device_class") in ("motion", "occupancy", "presence")})
@@ -747,7 +746,7 @@ class Brain:
             if odd:
                 out.append("Unusual for this time in the last hour: " + "; ".join(
                     f"{r.get('name') or r['entity']} {r['new']} at {_clock(r['ts'])}" for r in odd[-3:]) + ".")
-        return out[:5]
+        return out[:8]
 
     # ----- trust in sensors -------------------------------------------------------------------
     def trust(self) -> list[dict[str, Any]]:
@@ -777,6 +776,11 @@ class Brain:
         self.hass.async_create_background_task(self._tick(), "sentient brain save")
 
     async def _tick(self) -> None:
+        if self.on(CONF_SITUATIONS):
+            try:
+                self.book.update()  # so a struggling heater's start is known even when nobody's talking
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("Situations update failed", exc_info=True)
         try:
             await self.async_sync_memories()
             await self.async_save()
@@ -899,5 +903,6 @@ class Brain:
             "independence": {"ai_calls": calls, "without_ai": saved,
                              "percent": round(100 * saved / (saved + calls)) if calls is not None and saved + calls else None},
             "recall_misses": counts.get("recall_miss", 0), "would_skip": counts.get("would_gate", 0), "disk_mb": await self.hass.async_add_executor_job(self.db.size_mb),
-            "voice": self.voice_issues(), "trust": self.trust(), "situations": self.situations(), **stored,
+            "voice": self.voice_issues(), "trust": self.trust(), "situations": self.situations(),
+            "situation_book": self.book.listing() if self.on(CONF_SITUATIONS) else [], **stored,
         }

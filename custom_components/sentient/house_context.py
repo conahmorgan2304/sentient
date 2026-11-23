@@ -278,11 +278,12 @@ def prompt(snapshot):
         out.append(f"- unfinished in this conversation: {_q(unfinished.get('goal'))} ({unfinished.get('state')}{missing}); "
                    'ask again before acting on it')
     world = snapshot.get('world_assessment') or {}
-    if care := world.get('needs_care'):
+    shown_unreported = {r.get('entity_id') for r in snapshot.get('current_readings') or [] if r.get('state') in ('unavailable', 'unknown')}
+    if care := [c for c in world.get('needs_care') or [] if c['entity_id'] not in shown_unreported]:
         out.append('- treat with care: ' + ', '.join(f"{c['entity_id']} ({c['certainty']})" for c in care))
-    out.append('Reports are not physical verification, unknown is not safe or normal, and readings age: fetch fresh '
-               'evidence before acting. Use only what bears on the request. Connect recent changes to current readings without claiming a '
-               'cause. Mention useful unresolved matters naturally, without reciting this. Do not invent routines, '
-               'feelings, activities, identity or awareness. A heating target is not a measured room temperature. '
-               'Never act on an unfinished task without a new request and normal confirmation.')
+    # the same rules in fewer words (1.17.1: the voice prompt is read on every turn)
+    out.append('Reports are not physical verification; unknown is not safe or normal; readings age, so fetch fresh '
+               'evidence before acting. A heating target is not a room temperature. Use only what bears on the request, '
+               'mention unresolved matters naturally, never claim a cause, never invent routines, feelings or identity, '
+               'and never act on an unfinished task without a new request.')
     return '\n'.join(out)

@@ -2697,9 +2697,10 @@ class SentientAPI(llm.API):
             if rt.options.get("moment_awareness"):
                 # the moment already says who got home, where there's movement and what's unusual: keep the rest
                 lines = [line for line in lines if not line.startswith(("Movement in the last", "Unusual"))
-                         and not line.endswith("just got home.")]
+                         and not (line.startswith("Going on since") and "arriving home" in line)]
             if lines:
-                context_line += "\nRight now in the house (from Sentient's ledger): " + " ".join(lines)
+                context_line += ("\nRight now in the house (from Sentient's ledger; something over is over — don't "
+                                 "talk about it as still happening): " + " ".join(lines))
         if rt is not None and not private:
             from .security_voice import reference_prompt
 
@@ -2963,10 +2964,11 @@ class SentientAPI(llm.API):
                 "Offline right now (commands to these won't work — say so instead of claiming it's done): "
                 + ", ".join(offline[:12]) + "."
             )
-        lines.append(
-            "After controlling a device, only say it's done if the tool result says it worked; if a device is "
-            "unavailable or the action failed, say so plainly."
-        )
+        if not opts.get(CONF_EVIDENCE):  # the evidence rules already say this, in more detail
+            lines.append(
+                "After controlling a device, only say it's done if the tool result says it worked; if a device is "
+                "unavailable or the action failed, say so plainly."
+            )
         routines = sorted(rt.learner.all(), key=lambda r: (r.adopted, r.support), reverse=True)[:10]
         if routines:
             lines.append("Household routines and habits learned from history:")
