@@ -20,8 +20,13 @@ DEAD = ("unavailable", "unknown")
 SCREEN_PLATFORMS = ("browser_mod", "fully_kiosk")
 # a light on a device that also speaks, plays or films is its screen or LED ring
 GADGET_DOMAINS = ("assist_satellite", "media_player", "camera")
-# a temperature named like this is the device's own chip or board, not the room
-CHIP_WORDS = ("cpu", "processor", "chip", "soc", "board", "core", "internal", "esp", "wifi", "system", "device")
+# a temperature named like this is the device's own chip or board, or inside an appliance, not the room
+CHIP_WORDS = ("cpu", "processor", "chip", "soc", "board", "core", "internal", "esp", "wifi", "system", "device",
+              # 3D printers and their spool holders (#197: a Bambu AMS chamber temperature showed as the room's)
+              "chamber", "nozzle", "hotend", "extruder", "heatbed", "printer", "spool", "filament", "ams",
+              # appliances and probes
+              "fridge", "freezer", "oven", "probe", "meat", "water", "tank", "boiler", "flow", "battery", "motor",
+              "inverter", "cylinder", "pool", "aquarium", "sauna")
 
 
 def _num(st: State) -> float | None:
