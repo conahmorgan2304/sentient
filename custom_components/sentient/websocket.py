@@ -362,8 +362,9 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("phone", "Phone notifications", "mdi:cellphone-message", "What also goes to people's phones.", [
         CONF_NOTIFY_TARGETS, CONF_NOTIFY_WHEN, CONF_PHONE_BUTTONS, CONF_PHONE_APPS,
     ]),
-    ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out.", [
+    ("safety", "Safety & security", "mdi:shield-home", "Smoke, CO, gas and leaks; doors left open; a check when everyone goes out, and \"make sure everything's ready for tonight\".", [
         CONF_INCIDENTS, "incident_front", "cognitive_shadow", "cognitive_decides", "cognitive_quiet_heads_up", "autooff_respect_recent_voice", CONF_CRITICAL, CONF_CRITICAL_EXTRA, CONF_CRITICAL_IGNORE, CONF_LEFT_OPEN_MINUTES, CONF_LEFT_OPEN_IGNORE, CONF_LEAVING_CHECK,
+        "ready_tonight", "ready_tonight_lights", "ready_tonight_follow",
     ]),
     ("party", "Light shows", "mdi:party-popper", "Disco, Halloween, Christmas and more: lights put on a show, can follow the music, then go back exactly as they were.", [
         CONF_PARTY_WHOLE_HOUSE, CONF_PARTY_LIGHTS, CONF_PARTY_EXCLUDE, CONF_PARTY_STYLE, CONF_PARTY_MINUTES,
@@ -422,7 +423,7 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
         CONF_VOICE_ID, CONF_VOICE_ID_UNKNOWN, "speaker_memories",
     ]),
     ("reading", "Books & recipes", "mdi:book-open-variant", "Ebooks and your own stories read aloud straight through until stopped or paused (the wake word pauses), audiobooks played, and each speaker keeps its own place. Pick a reading voice to give stories a different text-to-speech voice from the usual one, and use TRY THE VOICE to hear it first. Recipes come from a folder, Mealie or Tandoor, with a step-by-step cooking mode. Works on any speaker \u2014 but Echos (Alexa) cut long speech short, can't play the house's own audio files and only have Alexa's voice, so on an Echo a book comes one passage per request through the Alexa skill and audiobooks need another speaker. Recipes work fine on Echos.", [
-        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, "voice_lists", CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
+        CONF_BOOKS, CONF_BOOKS_FOLDER, CONF_READING_TTS, CONF_READING_VOICE, CONF_READ_AHEAD, CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_URL, CONF_TANDOOR_TOKEN,
     ]),
     ("energy", "Energy", "mdi:lightning-bolt", "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.", [
         CONF_ENERGY, CONF_ENERGY_PRICE, CONF_ENERGY_CURRENCY, CONF_PRICE_ENTITY,
@@ -440,8 +441,8 @@ GROUPS: list[tuple[str, str, str, str, list[str]]] = [
     ("warnings", "Weather warnings", "mdi:weather-lightning-rainy", "Official weather and flood warnings for your country, from its own weather service. Severe ones are said once; the rest go on the timeline.", [
         "weather_warnings", "warnings_country", "warnings_region", "warnings_speak",
     ]),
-    ("skills", "Extra skills", "mdi:puzzle-outline", "Reading email through Home Assistant's IMAP integration, calendar clashes, a security check of your setup, and making automations from plain English.", [
-        "email_read", "calendar_clashes", "security_audit", "automation_builder",
+    ("skills", "Extra skills", "mdi:puzzle-outline", "Reading email through Home Assistant's IMAP integration, calendar clashes, a security check of your setup, making automations from plain English, and shopping and to-do lists by voice.", [
+        "email_read", "calendar_clashes", "security_audit", "automation_builder", "voice_lists",
     ]),
     ("page", "This page", "mdi:monitor-dashboard", "The sidebar page and its Ask box.", [
         CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, "custom_pages", CONF_SUGGESTIONS, CONF_WHATS_NEW, CONF_SIMPLE, CONF_CHAT_AGENT, CONF_PROMPT_MEMORIES, CONF_RELEVANT_MEMORIES,
@@ -1502,6 +1503,7 @@ DEPENDS: dict[str, str] = {
                                 "security_event_feedback", "security_coverage")},
     **{k: "heating_schedule" for k in ("heating_graph", "heating_revert")},
     "window_heating_minutes": "window_heating",
+    **{k: "ready_tonight" for k in ("ready_tonight_lights", "ready_tonight_follow")},
     "routine_evidence": CONF_SUGGEST_ROUTINES,
     "prove_routines": CONF_SUGGEST_ROUTINES,
     CONF_VOICE_ID_UNKNOWN: CONF_VOICE_ID,

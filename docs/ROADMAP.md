@@ -311,3 +311,6 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] 1.8.0 — Sentient 2.0 Phase 3: the cognitive core reasons about the order of events, is scored against the usual rules per kind of incident, and can earn a second decision (night heads-ups for people coming home).
 - [x] 1.9.0 — Sentient 2.0 Phase 4: guarded, verified voice routines and model routing measured per kind of job.
 - [x] 1.10.0 — Security page events follow Frigate zones, grouped into visits; GOOD CATCH / NOT A PERSON / IGNORE fold reviewed visits away and NOT A PERSON counts as an incident review; HIDE THIS ZONE after repeated corrections.
+- [x] 1.16.7 — Open-window heating protection (optional): a room's own heater turned down while its window is open and put back only if unchanged; whole-house heating is only mentioned.
+- [x] 1.16.8 — Lists by voice done properly (#206); 3D-printer and appliance temperatures aren't the room's (#197).
+- [x] 1.17.0 — "Make sure everything's ready for tonight" (optional): perimeter, permitted lights, heating read-only, outstanding items followed and reported once; never-touch respected by open-window heating.

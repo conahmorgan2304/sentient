@@ -181,3 +181,15 @@ async def test_schedule_waits_for_a_window_held_heater(hass):
     rt = entry.runtime_data
     rt.window_heat = SimpleNamespace(holding=lambda h: h == LOUNGE)
     assert rt.heat_prog.held(LOUNGE, dt_util.now())
+
+
+async def test_never_touch_room_heater_is_left_alone(hass):
+    rt = _rt()
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    _heater(hass, LIVING, 21)
+    _window(hass, WIN_LIVING, "on")
+    eng = _engine(hass, rt)
+    with _areas(), patch("custom_components.sentient.never.never_list", lambda _h: {LIVING}):
+        await eng.async_check(_later(6))
+    assert not calls and not eng.holding(LIVING)
+    rt.speech.async_say.assert_awaited_once()  # still told, as for whole-house heating

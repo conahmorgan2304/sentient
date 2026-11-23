@@ -203,6 +203,7 @@ class SentientRuntime:
     games: Any = None  # story games with their own memory
     brain: Any = None  # the database, house ledger, expectations, beliefs and learning (brain.py)
     window_heat: Any = None  # an open window turns its room's heater down (window_heating.py)
+    tonight: Any = None  # "make sure everything's ready for tonight" (tonight.py)
     warnings: Any = None  # official weather and flood warnings
     inbox: Any = None  # read-only email from Home Assistant's IMAP integration
     recipes: Any = None  # recipes and cooking mode
@@ -747,6 +748,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
 
     window_heat = WindowHeating(hass, entry.entry_id, options, get_rt)
     entry.runtime_data.window_heat = window_heat
+    from .tonight import Tonight
+
+    entry.runtime_data.tonight = Tonight(hass, options, get_rt)
+    entry.async_on_unload(entry.runtime_data.tonight.async_stop)
     engines = {"followyou": followyou, "loops": loops, "conversations": conversations, "reliability": reliability, "curiosity": curiosity,
                "reflection": reflection, "drive": drive, "foresight": foresight, "sleep": sleep, "appliances": appliances,
                "animals": animals, "watchdog": watchdog, "screen": screen, "away": away, "selftest": selftest, "rain": rain,
@@ -931,7 +936,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     entry.runtime_data.camsec.options = options
     entry.runtime_data.party.options = options
     entry.runtime_data.reliability.update_options(options)
-    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage", "window_heat"):
+    for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage", "window_heat", "tonight"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
     if not entry.runtime_data.holiday.enabled:

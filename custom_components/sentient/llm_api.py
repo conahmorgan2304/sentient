@@ -1550,6 +1550,34 @@ class ListsTool(_Tool):
             return {"error": f"the list couldn't be changed: {err}", "done": []}
 
 
+class ReadyTonightTool(_Tool):
+    acts = True
+    name = "sentient_ready_tonight"
+    description = (
+        "'Make sure everything's ready for tonight', 'get the house ready for bed', 'is everything sorted for the "
+        "night?'. action: start (check the doors, windows and locks, switch off the lights the house allows, look at "
+        "the heating, and keep an eye on anything still open), status (check again, changing nothing), cancel (stop "
+        "keeping an eye). Use this rather than sentient_house_check for these. Say the summary it gives; never offer "
+        "to arm or disarm the alarm."
+    )
+    parameters = vol.Schema({vol.Optional("action", default="start"): vol.In(["start", "status", "cancel"])})
+
+    async def async_call(
+        self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
+    ) -> JsonObjectType:
+        rt = _runtime(hass)
+        tonight = getattr(rt, "tonight", None) if rt is not None else None
+        if tonight is None or not tonight.enabled:
+            return {"error": "ready for tonight is switched off in Sentient's settings"}
+        owner = llm_context.device_id or (llm_context.context.user_id if llm_context.context else None) or "page"
+        action = tool_input.tool_args.get("action") or "start"
+        if action == "cancel":
+            return {"summary": "Okay, I've stopped keeping an eye on it." if tonight.cancel(owner)
+                    else "I wasn't keeping an eye on anything for tonight."}
+        return await tonight.async_check(owner, llm_context.context, _speaker_here(hass, rt, llm_context),
+                                         act=action == "start")
+
+
 class AskLaterTool(_Tool):
     name = "sentient_ask_later"
     description = (
@@ -2633,6 +2661,7 @@ class SentientAPI(llm.API):
                  *([GameTool()] if _games(self.hass) is not None else []),
                  *([GameSetTool(), GameLogTool()] if _games(self.hass) is not None and _games(self.hass).active is not None else []),
                  *([RecipeTool()] if rt0 is not None and rt0.options.get("recipes") else []),
+                 *([ReadyTonightTool()] if getattr(rt0, "tonight", None) is not None and rt0.tonight.enabled else []),
                  *([ListsTool()] if rt0 is not None and rt0.options.get("voice_lists", True) and bool(self.hass.states.async_entity_ids("todo")) else []),
                  *([HistoryTool(), RootCauseTool()] if getattr(rt0, "brain", None) is not None and rt0.brain.on("house_ledger") else []),
                  *([UnifiedEvidenceTool()] if rt0 is not None and rt0.options.get("unified_evidence", False) else []),
