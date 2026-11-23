@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.16.6": [
+        "A heating offer when the heating is already on now asks to turn it up rather than to put it on — \"It's 18 degrees in here, and the heating's on at 18. Shall I turn it up to 20?\" — and a yes gets \"Okay, I'll turn it up to 20.\"",
+    ],
     "1.16.5": [
         "Heating: turning a scheduled thermostat up (by voice, in the app or on the thermostat) now lasts its full time — 3 hours by day, 1 at night, as set in Return after a change — even if a period starts or ends meanwhile. Then it goes to whatever the schedule wants by then, rather than back to the temperature from before.",
         "\"Shall I close it?\" after mentioning a window is taken out of the reply too, when nothing in the house can close one.",

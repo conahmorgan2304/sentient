@@ -159,6 +159,26 @@ class Offers:
                     continue
         return False
 
+    def _turn_up_instead(self, offer: dict[str, Any], value: float | None) -> str | None:
+        """When the heating it would set is already on, ask to turn it up rather than to put it on.
+
+        23 Nov: "It has dropped to 18 degrees in here. Shall I put the heating on?" — the heating was on, holding
+        the 18 it was set to. Saying yes still sets the offer's temperature; only the question is put right."""
+        for action in offer.get("actions") or []:
+            if not isinstance(action, dict) or str(action.get("action") or action.get("service")) != "climate.set_temperature":
+                continue
+            wanted = finite_float((action.get("data") or {}).get("temperature"))
+            ids = (action.get("target") or {}).get("entity_id") or (action.get("data") or {}).get("entity_id") or []
+            for entity_id in [ids] if isinstance(ids, str) else ids:
+                st = self.hass.states.get(entity_id)
+                if st is None or st.state in ("off", "unavailable", "unknown") or wanted is None:
+                    continue
+                target = reading_attr(st, "temperature")
+                now = f"It's {value:g} degrees in here" if value is not None else "It's a bit chilly in here"
+                set_to = f", and the heating's on at {target:g}" if target is not None else ", and the heating's on"
+                return f"{now}{set_to}. Shall I turn it up to {wanted:g}?"
+        return None
+
     async def async_ask(self, offer: dict[str, Any], area: str | None = None, *, force=True) -> dict[str, Any]:
         rt = self._rt()
         if self._stopped or self.items.items.get(offer['id']) is not offer or (not force and not self.ready(offer)):
@@ -178,6 +198,8 @@ class Offers:
         self.items.update(offer["id"], last=now.isoformat())
         value = reading(self.hass, offer.get("value_entity") or offer.get("below_entity"))
         question = variant(offer.get("questions"), value=f"{value:g}" if value is not None else "") or f"Shall I {offer['name'].lower()}?"
+        if (up := self._turn_up_instead(offer, value)) is not None:
+            question = up
         targets = None
         if area:
             a = ar.async_get(self.hass).async_get_area(area)

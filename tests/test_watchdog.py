@@ -440,3 +440,31 @@ async def test_a_vacuum_driven_by_remote_isnt_stuck(hass: HomeAssistant, freezer
         async_fire_time_changed(hass)
         await hass.async_block_till_done()
     assert len(app.errors["vacuum.robot"]) == 1 and "vacuum.robot" not in app.running
+
+
+async def test_heating_already_on_is_offered_a_turn_up_not_put_on(hass: HomeAssistant) -> None:
+    """23 Nov: "It has dropped to 18 degrees in here. Shall I put the heating on?" with the heating on at 18."""
+    hass.states.async_set("climate.hall", "heat_cool", {"temperature": 18, "current_temperature": 18.1})
+    entry = await _setup(hass)
+    offers = entry.runtime_data.offers
+    offer = entry.runtime_data.offers.items.upsert({
+        "name": "Heating on", "below_entity": "climate.hall", "below": 19, "areas": [], "times": "",
+        "questions": "It has dropped to {value} degrees in here. Shall I put the heating on?",
+        "actions": [{"action": "climate.set_temperature", "target": {"entity_id": "climate.hall"}, "data": {"temperature": 20}}]})
+    asked = []
+
+    async def ask(question, **kw):
+        asked.append(question)
+        return type("R", (), {"as_dict": lambda self: {}})()
+    entry.runtime_data.speech.async_ask = ask
+    await offers.async_ask(offer)
+    assert asked == ["It's 18.1 degrees in here, and the heating's on at 18. Shall I turn it up to 20?"]
+    from custom_components.sentient.offers import agreed
+
+    assert agreed(asked[0]) == "Okay, I'll turn it up to 20."
+    # really off: asked as written
+    hass.states.async_set("climate.hall", "off", {"temperature": 18, "current_temperature": 17})
+    offer = offers.items.items[offer["id"]]
+    asked.clear()
+    await offers.async_ask(offer)
+    assert asked == ["It has dropped to 17 degrees in here. Shall I put the heating on?"]
