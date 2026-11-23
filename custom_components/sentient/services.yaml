@@ -274,6 +274,15 @@ party:
           multiple: true
 
 reflect:
+grade_answers:
+  fields:
+    hours:
+      default: 24
+      selector:
+        number:
+          min: 1
+          max: 168
+          unit_of_measurement: h
 check_drive:
 wonder:
   fields:

@@ -250,7 +250,7 @@
           "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
-          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings \u203a Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
+          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings › Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
           "routine_fading": "On: when a routine the house does for you was already done by the time it was due on 5 days in two weeks (someone does it themselves now), Sentient asks once whether to keep it, and stops if you say no. Only the dates are kept, two weeks at most. Off: routines the house does are kept until you say otherwise.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
@@ -807,7 +807,7 @@
           "trust_heating": "The same for warming the heating before people are up. Asking first means it can't warm up while everyone's asleep.",
           "link_triggers": "Optional: more things that might set off a habit (the TV starting, a bed sensor…). Doors, windows and the learned lights are always considered.",
           "suggest_routines": "Once per new routine, during the day when someone's home, ask whether the house should do it from now on.",
-          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings \u203a Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
+          "prove_routines": "A newly learned habit is watched first: each day after it was learned, Sentient checks whether a person really did it within 45 minutes of its usual time. It's only offered once it has been right on at least 3 of 4 days it applied to (weekdays, weekends or every day). Settings › Learning shows how each one is doing. Off: habits are offered as soon as they're learned.",
           "routine_fading": "On: when a routine the house does for you was already done by the time it was due on 5 days in two weeks (someone does it themselves now), Sentient asks once whether to keep it, and stops if you say no. Only the dates are kept, two weeks at most. Off: routines the house does are kept until you say otherwise.",
           "door_camera": "Looked at once when the doorbell rings, to log who came.",
           "door_triggers": "The doorbell button (a binary sensor or event), or anything else that means someone's at the door.",
@@ -1691,6 +1691,16 @@
     "reflect": {
       "name": "Reflect now",
       "description": "Think over the last day now, as it does overnight: new memories, morning thoughts and a question."
+    },
+    "grade_answers": {
+      "name": "Grade its own answers now",
+      "description": "Check what the voice said about doors, lights, switches and locks against what the house recorded, as it does each night with \"Grade its own answers\" on. Returns what was checked, what was wrong and any lessons.",
+      "fields": {
+        "hours": {
+          "name": "Hours",
+          "description": "How far back to check."
+        }
+      }
     },
     "check_drive": {
       "name": "Check the drive",

@@ -1145,6 +1145,11 @@ def _register_services(hass: HomeAssistant) -> None:
     async def reflect(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).reflection.async_reflect()
 
+    async def grade_answers(call: ServiceCall) -> ServiceResponse:
+        from .grading import async_grade
+
+        return await async_grade(hass, _runtime(hass), float(call.data.get("hours", 24)))
+
     async def house_asleep(call: ServiceCall) -> ServiceResponse:
         return await _runtime(hass).sleep.async_set(call.data["asleep"], "set by hand")
 
@@ -1266,6 +1271,9 @@ def _register_services(hass: HomeAssistant) -> None:
         supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(DOMAIN, "reflect", reflect, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, "grade_answers", grade_answers, schema=vol.Schema(
+        {vol.Optional("hours", default=24): vol.All(vol.Coerce(float), vol.Range(min=1, max=168))}),
+        supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, "check_drive", drive_check, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, "wonder", wonder,

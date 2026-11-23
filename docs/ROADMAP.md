@@ -91,6 +91,7 @@ Sentient doesn't need another engine beside it; it needs to use its own tools an
 - [x] Knowing who's probably talking without voice recognition (1.16.0, `people.py`, off by default): the signed-in app user, or the only room-tracked phone in the room; their own memories first. Never grants anything.
 - [x] Instant answers (1.16.0, `instant.py`, off by default): the time, the weather, one exposed device's state, a room's temperature, alarms, visitors and the lock-up check answered without the AI, and added to the conversation.
 - [x] Habits prove themselves (1.16.0, `learning.py`, "prove_routines", off by default): a learned habit is judged on the days after it was learned and offered only when right on at least 3 of 4.
+- [ ] Acting on what it watches, time-aware memory, who's where, plans for big requests and grading its own answers. *Built in 1.18.0 (`acting.py`, `readback.py`, `whereabouts.py`, `grading.py`; five settings under Memory & learning, off by default); ticked once each has been switched on and has shown a result on the live house for a week (self-grading: the "said something was on, off, open or closed when it wasn't" count).*
 - [ ] External tools only where they add something new, through Home Assistant's own MCP client, not an adapter of Sentient's.
 
 GitHub checks show the software works under tested conditions; they can't show it works with every real camera, speaker or sensor. Each phase is also checked on a real Home Assistant before the next one starts.

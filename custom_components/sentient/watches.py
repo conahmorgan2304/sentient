@@ -116,11 +116,12 @@ class Watch:
             "second_opinions": self.second_opinions,
             "last_result": self.last_result,
             **({"then": self.do_words} if self.do else {}),
-            **({"only_if": f"{self.only_if} is {self.only_if_state or 'on'}"} if self.only_if else {}),
+            **({"only_if": self.only_if_words or f"{self.only_if} is {self.only_if_state or 'on'}"} if self.only_if else {}),
             **({"for_minutes": self.hold_minutes} if self.hold_minutes else {}),
         }
 
     do_words: str = ""  # the actions in plain words, for the voice and the page
+    only_if_words: str = ""  # the condition in plain words ("the back door is open")
 
 
 def local_when(when: datetime) -> str:
@@ -525,10 +526,12 @@ class WatchManager:
             self.hass, _held, dt_util.utcnow() + timedelta(minutes=float(watch.hold_minutes or 0)))
 
     def _words(self, watch: Watch) -> None:
-        if watch.do:
-            from .acting import words
+        from .acting import state_phrase, thing, words
 
+        if watch.do:
             watch.do_words = words(self.hass, watch.do)
+        if watch.only_if:
+            watch.only_if_words = f"{thing(self.hass, watch.only_if)} is {state_phrase(self.hass, watch.only_if, watch.only_if_state or 'on')}"
 
     def _condition_met(self, watch: Watch) -> bool:
         if not watch.only_if:

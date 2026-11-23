@@ -126,7 +126,7 @@ async def test_reminder_checks_its_condition_first(hass: HomeAssistant) -> None:
     args = {"at": "23:00", "only_if": "back door", "only_if_is": "on", "then_do": STEP,
             "message": "The back door's still open.", "confirmed": True}
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_remind", tool_args=args))
-    assert out["reminder"]["only_if"] == "binary_sensor.back_door is on"
+    assert out["reminder"]["only_if"] == "the back door is open"
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_remind", tool_args={**args, "confirmed": False}))
     assert out["read_back"] == "At 23:00, if the back door is open: turn off the hall light, and say “The back door's still open”."
     watch = entry.runtime_data.watches.watches[0]
@@ -163,3 +163,18 @@ def test_a_yes_has_to_come_on_a_later_turn() -> None:
     assert books.confirm("watch", details, session) is None
     assert books.confirm("watch", details, session) is not None  # used up
     assert books.confirm("watch", details, None) is None  # no voice sessions: as rules always worked
+
+
+def test_the_voice_is_offered_the_watch_tools_for_these() -> None:
+    from custom_components.sentient.focus import Focus
+
+    for asked in ("at 11 if the back door is still open tell me", "when the washing finishes, put the hallway light on",
+                  "if the back door's open for ten minutes turn the hall light off"):
+        offered = Focus().tools_for(asked, None)
+        assert offered is None or {"sentient_watch", "sentient_remind"} <= offered, asked
+
+
+async def test_grading_can_be_run_now(hass: HomeAssistant) -> None:
+    entry, *_ = await _setup(hass)
+    out = await hass.services.async_call(DOMAIN, "grade_answers", {}, blocking=True, return_response=True)
+    assert "skipped" in out  # off unless switched on
