@@ -11,8 +11,11 @@ What's real and what isn't:
   everything listening hear them as they happened.
 * Nothing is spoken and no device is touched: every speaker, phone and device service is a recorder. A device
   Sentient switches doesn't change state in the replay (only the recording changes states).
-* AI isn't called: every AI request is counted and answered "unavailable", so both versions run on their
-  plain rules. The count still shows how often each version would have asked.
+* AI isn't called. A day can carry recorded AI answers (``"ai": [{"task": "...", "answer": {...}}]``, with
+  ``"once": true`` for one used a single time, in order): a request whose task name or instructions contain
+  ``task`` gets that answer, so the AI-assisted paths (a remark, a
+  camera description) run too. Anything else is answered "unavailable" and both versions run on their plain
+  rules. Every request is counted and its task name kept, matched or not.
 * Sentient's own changes in the recording are applied as service calls by Home Assistant, not as Sentient:
   the replayed Sentient makes its own.
 """
@@ -112,10 +115,21 @@ async def async_replay(hass: HomeAssistant, day: dict[str, Any], freezer: Any) -
         if not hass.services.has_service(domain, service):
             hass.services.async_register(domain, service, _recorder)
 
-    asked = {"n": 0}
+    asked: dict[str, Any] = {"n": 0, "tasks": []}
+    answers = [dict(a) for a in (day.get("ai") or []) if isinstance(a, dict) and a.get("task")]
 
     async def _no_ai(self, data, *args, **kwargs):  # noqa: ANN001 - same signature as AIGate.async_call
         asked["n"] += 1
+        task = str((data or {}).get("task_name") or "")
+        said = f"{task}\n{(data or {}).get('instructions') or ''}"
+        for recorded in answers:
+            if recorded.get("_used") or str(recorded["task"]).casefold() not in said.casefold():
+                continue
+            if recorded.get("once"):  # answers in order: each "once" answer is given to one request only
+                recorded["_used"] = True
+            asked["tasks"].append({"task": task, "answered": True})
+            return {"data": recorded.get("answer"), "conversation_id": None}
+        asked["tasks"].append({"task": task, "answered": False})
         raise ai_module.AIUnavailable("replay: no AI")
 
     # the settings name rooms by their ids, which the replayed house gives new ones
@@ -182,6 +196,7 @@ async def async_replay(hass: HomeAssistant, day: dict[str, Any], freezer: Any) -
         "phones": [c for c in calls if c["domain"] == "notify"],
         "device_actions": [c for c in calls if (c["domain"], c["service"]) not in SPEECH and c["domain"] != "notify"],
         "ai_requests": asked["n"],
+        "ai_tasks": asked["tasks"],
     }
 
 

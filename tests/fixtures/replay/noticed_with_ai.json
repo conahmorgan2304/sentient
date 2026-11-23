@@ -1,0 +1,101 @@
+{
+  "format": 1,
+  "from": "2026-11-10T09:00:00+00:00",
+  "to": "2026-11-10T13:00:00+00:00",
+  "time_zone": "Europe/London",
+  "about": "Made-up house. The AI path, with recorded answers: a window opened on a cold morning is judged worth saying and is spoken; later, an answer that claims the house did something it didn't (\"I've closed the window\") must not be spoken as given.",
+  "options": {
+    "persona": "Nova",
+    "speakers": [
+      "assist_satellite.kitchen"
+    ],
+    "default_speaker": "assist_satellite.kitchen",
+    "house_ledger": true,
+    "quiet_start": "23:00:00",
+    "quiet_end": "06:00:00",
+    "notice_entities": [
+      "binary_sensor.bathroom_window"
+    ]
+  },
+  "floors": {
+    "ground": {
+      "name": "Ground floor",
+      "level": 0
+    }
+  },
+  "areas": {
+    "AREA_KITCHEN": {
+      "name": "Kitchen",
+      "floor": "ground"
+    },
+    "AREA_BATH": {
+      "name": "Bathroom",
+      "floor": "ground"
+    }
+  },
+  "entities": {
+    "assist_satellite.kitchen": {
+      "area": "AREA_KITCHEN"
+    },
+    "binary_sensor.bathroom_window": {
+      "area": "AREA_BATH"
+    }
+  },
+  "states": {
+    "assist_satellite.kitchen": {
+      "state": "idle",
+      "attributes": {
+        "friendly_name": "Kitchen speaker"
+      }
+    },
+    "binary_sensor.bathroom_window": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Bathroom window",
+        "device_class": "window"
+      }
+    }
+  },
+  "changes": [
+    {
+      "ts": "2026-11-10T09:30:00+00:00",
+      "entity": "binary_sensor.bathroom_window",
+      "old": "off",
+      "new": "on",
+      "cause": "device"
+    },
+    {
+      "ts": "2026-11-10T10:15:00+00:00",
+      "entity": "binary_sensor.bathroom_window",
+      "old": "on",
+      "new": "off",
+      "cause": "device"
+    }
+  ],
+  "ai": [
+    {
+      "task": "worth saying",
+      "once": true,
+      "answer": {
+        "speak": true,
+        "message": "The bathroom window's just been opened, and it's only two degrees out.",
+        "question": false
+      }
+    },
+    {
+      "task": "worth saying",
+      "answer": {
+        "speak": true,
+        "message": "I've closed the bathroom window for you.",
+        "question": false
+      }
+    }
+  ],
+  "expect": {
+    "spoken": {
+      "notice": 1
+    },
+    "ai_requests_at_most": 4,
+    "ai_answered": 2
+  }
+}
