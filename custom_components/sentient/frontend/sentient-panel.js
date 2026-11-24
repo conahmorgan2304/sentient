@@ -24,14 +24,23 @@
     mmg: ["MEMORY &amp; PRIVACY", ["memories", "mutes", "usage", "privacy"]],
     smg: ["CAMERA SET-UP", ["spots", "checks"]],
   };
+  // the house's language (sentient-i18n.js swaps the page's words; LOCALE formats dates and times)
+  const I18N_URL = "/sentient_frontend/sentient-i18n.js";
+  let LOCALE = "en-GB", I18N = null, HASS = null;
+  const isEnglish = (h) => /^en(-|$)/i.test(String((h && ((h.locale && h.locale.language) || h.language)) || "en"));
+  const T = (s) => (I18N && HASS ? I18N.t(HASS, s) : s);
+  const confirmT = (s) => window.confirm(T(s));
+  // option labels inside a form schema written in English (the item editors)
+  const trSchema = (x) => (Array.isArray(x) ? x.map(trSchema) : x && typeof x === "object"
+    ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, k === "label" && typeof v === "string" ? T(v) : trSchema(v)])) : x);
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
+  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); };
   const heldWhy = (reason) => {
     const [kind, what] = String(reason || "").split(/:(.*)/s);
     if (kind === "hushed_by") return what === "announcement" ? "AFTER ANOTHER ANNOUNCEMENT" : "AFTER " + String(what || "SOMETHING ELSE").split(".").pop().replaceAll("_", " ").toUpperCase();
     return ({ quiet_hours: "QUIET HOURS", said_recently: "SAID RECENTLY", duplicate: "JUST SAID", thumbs_down: "THUMBS-DOWN", guest_mode: "GUESTS IN", hourly_limit: "ENOUGH THIS HOUR", no_speaker: "NO SPEAKER", hushed: "HUSHED", holiday: "ON HOLIDAY", room_quiet: "ROOM'S QUIET TIME" })[kind] || kind.replaceAll("_", " ").toUpperCase();
   };
-  const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const day = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString(LOCALE, { day: "numeric", month: "short" }); };
   const left = (iso, fallback) => {
     const d = iso ? new Date(iso) : null;
     const m = d && !isNaN(d) ? Math.max(0, Math.round((d - Date.now()) / 60000)) : fallback;
@@ -58,13 +67,14 @@
 
   const dayNameShort = (iso) => {
     const d = new Date(iso), t = new Date();
-    return d.toDateString() === t.toDateString() ? "TODAY" : d.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
+    return d.toDateString() === t.toDateString() ? "TODAY" : d.toLocaleDateString(LOCALE, { weekday: "short" }).toUpperCase();
   };
 
   class SentientPanel extends HTMLElement {
     set hass(hass) {
       this._hass = hass;
       if (!this.shadowRoot) this._build();
+      this._language(hass);
       if (!this._layoutFetched) this._loadLayouts();
       if (!this._wizChecked && hass.user && hass.user.is_admin) {
         this._wizChecked = true;
@@ -118,12 +128,24 @@
     _st(key) { const id = this._ids()[key]; return id ? this._hass.states[id] : undefined; }
     _attr(key, name, dflt) { const s = this._st(key); return (s && s.attributes && s.attributes[name] != null) ? s.attributes[name] : dflt; }
     _call(service, data, confirmText) {
-      if (confirmText && !window.confirm(confirmText)) return Promise.resolve();
+      if (confirmText && !confirmT(confirmText)) return Promise.resolve();
       return this._hass.callService("sentient", service, data).catch((err) => window.alert(err.message || String(err)));
     }
     _$(id) { return id === "body" && this._host ? this._host : this.shadowRoot.getElementById(id); }
     // a list page (alarms, memories…) is open for editing: on the Settings tab, or on the tab it lives on
     _editorOpen() { return this._view === "settings" || !!this._host; }
+
+    _language(hass) {
+      HASS = hass;
+      LOCALE = isEnglish(hass) ? "en-GB" : String((hass.locale && hass.locale.language) || hass.language);
+      if (this._i18nUpdate) { this._i18nUpdate(hass); return; }
+      if (this._i18nLoading || isEnglish(hass)) return;
+      this._i18nLoading = import(I18N_URL).then((m) => {
+        I18N = m;
+        this._i18nUpdate = m.attach(this.shadowRoot, this._hass);
+        m.prepare(this._hass);
+      }, () => {});  // no translations: the page stays in English
+    }
 
     _build() {
       this.attachShadow({ mode: "open" });
@@ -189,7 +211,7 @@
       this.shadowRoot.addEventListener("submit", (ev) => this._submit(ev));
       this._$("sheet").addEventListener("click", (ev) => {
         if (ev.target !== this._$("sheet")) return;
-        if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
+        if (this._dirty && !confirmT("Leave without saving your changes?")) return;
         this._dirty = false; this._closeTabPage();
       });
       this.shadowRoot.addEventListener("change", (ev) => {
@@ -204,7 +226,7 @@
       });
       this.shadowRoot.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape" && this._editing) { this._editing = null; this._drawMemories(); }
-        else if (ev.key === "Escape" && this._host && (!this._dirty || window.confirm("Leave without saving your changes?"))) { this._dirty = false; this._closeTabPage(); }
+        else if (ev.key === "Escape" && this._host && (!this._dirty || confirmT("Leave without saving your changes?"))) { this._dirty = false; this._closeTabPage(); }
       });
       this._group = "home";
       this._show(this._view || "overview", false);
@@ -1242,7 +1264,7 @@
         ? `<form class="r edit" data-form="edit" data-id="${esc(m.id)}"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon>
             <input name="text" value="${esc(m.text)}" autocomplete="off"><select name="category">${opts(m.category)}</select>
             <button class="btn sm" type="submit">SAVE</button><a class="x" data-act="noedit" title="Cancel">✕</a></form>`
-        : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}${(m.links || []).length || m.expires ? `<small>${m.expires && !m.pinned ? "UNTIL " + esc(new Date(m.expires).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }).toUpperCase()) : ""}${m.expires && !m.pinned && (m.links || []).length ? " · " : ""}${(m.links || []).length ? "ABOUT " + esc(m.links.map((l) => l.startsWith("area:") ? l.slice(5).replace(/_/g, " ") : String((this._hass.states[l] || {}).attributes?.friendly_name || l)).join(", ").toUpperCase()) : ""}</small>` : ""}</b>
+        : `<div class="r mem"><ha-icon icon="${esc(CAT_ICON[m.category] || "mdi:brain")}"></ha-icon><b class="wrap" data-act="edit" data-id="${esc(m.id)}" title="Tap to edit">${esc(m.text)}${(m.links || []).length || m.expires ? `<small>${m.expires && !m.pinned ? "UNTIL " + esc(new Date(m.expires).toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" }).toUpperCase()) : ""}${m.expires && !m.pinned && (m.links || []).length ? " · " : ""}${(m.links || []).length ? "ABOUT " + esc(m.links.map((l) => l.startsWith("area:") ? l.slice(5).replace(/_/g, " ") : String((this._hass.states[l] || {}).attributes?.friendly_name || l)).join(", ").toUpperCase()) : ""}</small>` : ""}</b>
             <s>${esc(m.category).toUpperCase()}${m.basis === "guess" ? " · A GUESS" : m.basis === "confirmed" ? " · CONFIRMED" : ""}</s><u>${day(m.created)}${m.hits ? ` · USED ${m.hits}×` : ""}</u>
             <a class="x${m.pinned ? " pin" : ""}" data-act="pin" data-id="${esc(m.id)}" title="${m.pinned ? "Pinned: always given to the voice — tap to unpin" : "Pin: always give this to the voice"}"><ha-icon icon="${m.pinned ? "mdi:pin" : "mdi:pin-outline"}"></ha-icon></a><a class="x" data-act="edit" data-id="${esc(m.id)}" title="Edit">✎</a><a class="x" data-act="forget" data-id="${esc(m.id)}" data-text="${esc(m.text)}" title="Forget">✕</a></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:brain"></ha-icon><div><div class="bt">MEMORIES</div>
@@ -1502,7 +1524,7 @@
         if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
         const form = document.createElement("ha-form");
         form.hass = this._hass; form.schema = schema; form.data = this._scDraft;
-        form.computeLabel = (sc) => LABELS[sc.name] || sc.name;
+        form.computeLabel = (sc) => T(LABELS[sc.name] || sc.name);
         form.addEventListener("value-changed", (ev) => { this._scDraft = { ...ev.detail.value }; form.data = this._scDraft; });
         fw.innerHTML = ""; fw.appendChild(form); this._form = form;
       });
@@ -1520,7 +1542,7 @@
       const body = this._$("body");
       if (!data || !data.meta) { body.innerHTML = `<div class="e">${esc((data && data.err) || "LOADING…")}</div>`; return; }
       const m = data.meta;
-      const when = (it) => (kind === "alarms" || kind === "schedules") && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
+      const when = (it) => (kind === "alarms" || kind === "schedules") && it._next ? `<s>NEXT ${esc(new Date(it._next).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())}</s>` : "";
       // learned habits the house took over: shown with the schedules, with a way to stop each one
       const learned = (data.learned || []).length ? `<div class="h" style="margin-top:14px"><span class="t">LEARNED HABITS IT DOES FOR YOU</span><i></i></div>`
         + data.learned.map((l) => `<div class="card ml"><div class="r"><ha-icon icon="mdi:school-outline"></ha-icon><b>${esc(l.text)}</b>
@@ -1556,8 +1578,8 @@
         if (!fw || this._itEdit !== item) return;
         if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
         const form = document.createElement("ha-form");
-        form.hass = this._hass; form.schema = data.meta.schema; form.data = this._itDraft;
-        form.computeLabel = (sc) => data.meta.labels[sc.name] || sc.name;
+        form.hass = this._hass; form.schema = trSchema(data.meta.schema); form.data = this._itDraft;
+        form.computeLabel = (sc) => T(data.meta.labels[sc.name] || sc.name);
         form.addEventListener("value-changed", (ev) => { this._itDraft = { ...ev.detail.value }; form.data = this._itDraft; });
         fw.innerHTML = ""; fw.appendChild(form); this._form = form;
       });
@@ -1614,7 +1636,7 @@
       }
       if (this._group !== "usage") return;
       const U = this._use;
-      const ago = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+      const ago = (d) => d ? new Date(d).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) : "";
       const row = (r, icon, right, act) => `<div class="r"><ha-icon icon="${esc(icon)}"></ha-icon><b class="wrap">${esc(r.name)}${r.last_used ? `<small>last used ${esc(ago(r.last_used))}</small>` : ""}</b>${right}${act ? `<button class="btn sm ghost" data-act="group" data-id="${esc(r.page)}">SETTINGS</button>` : ""}</div>`;
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:chart-timeline-variant-shimmer"></ha-icon><div><div class="bt">HOW IT'S USED</div>
           <div class="bs">Which optional features are earning their keep — counted when you use one by voice or it says something. Anything on but never used is worth switching off to keep things simple.${U.since ? ` Counting since ${esc(ago(U.since))}.` : ""}</div></div></div>
@@ -1637,7 +1659,7 @@
       const n = (v, one, many) => `${v} ${v === 1 ? one : many}`;
       const what = (r) => [r.pictures && n(r.pictures, "picture", "pictures"), r.clips && n(r.clips, "clip", "clips"), r.documents && n(r.documents, "document", "documents")].filter(Boolean).join(", ") || "text only";
       const rows = Object.entries(P.by_feature || {}).map(([f, r]) => `<div class="r"><ha-icon icon="mdi:cloud-upload-outline"></ha-icon><b class="wrap">${esc(f)}<small>${esc(what(r))}</small></b><u>${esc(String(r.times))}×</u></div>`).join("");
-      const recent = (P.last_48_hours || []).slice(0, 30).map((s) => `<div class="r dim"><span class="tm">${new Date(s.time).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}</span><b class="wrap">${esc(s.feature)}<small>${esc(what(s))} · to ${esc(s.to)}</small></b></div>`).join("");
+      const recent = (P.last_48_hours || []).slice(0, 30).map((s) => `<div class="r dim"><span class="tm">${new Date(s.time).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" })}</span><b class="wrap">${esc(s.feature)}<small>${esc(what(s))} · to ${esc(s.to)}</small></b></div>`).join("");
       body.innerHTML = `<div class="bh"><ha-icon icon="mdi:shield-lock-outline"></ha-icon><div><div class="bt">WHAT LEAVES THE HOUSE</div>
           <div class="bs">Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.</div></div></div>
         ${P.keeping_record ? "" : '<div class="hint">THE RECORD IS TURNED OFF · SETTINGS → MIND</div>'}
@@ -1689,7 +1711,7 @@
       if (!file) return;
       try {
         const data = JSON.parse(await file.text());
-        if (!window.confirm(`Restore ${file.name}? It adds to what's here and doesn't delete anything.`)) return;
+        if (!confirmT(`Restore ${file.name}? It adds to what's here and doesn't delete anything.`)) return;
         const res = await this._hass.callWS({ type: "sentient/import", data, settings: this._$("bkset").checked });
         msg.textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
         this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
@@ -1734,7 +1756,7 @@
       const st = this._st("holiday");
       if (!st || st.state === "unavailable") return "";
       const on = st.state === "on";
-      const back = on && st.attributes.until ? ` · TILL ${new Date(st.attributes.until).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toUpperCase()}` : "";
+      const back = on && st.attributes.until ? ` · TILL ${new Date(st.attributes.until).toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" }).toUpperCase()}` : "";
       if (!on) return "";  // started from the switch or by voice; shown here while it's on
       return `<button class="mode on" data-act="mode" data-id="${esc(st.entity_id)}"><ha-icon icon="mdi:island"></ha-icon>ON HOLIDAY${esc(back)}</button>`;
     }
@@ -1860,12 +1882,12 @@
       if (w) tiles.push(`<div class="tt"><ha-icon icon="${esc(ic[w.condition] || "mdi:weather-partly-cloudy")}"></ha-icon><b>${esc(w.temp)}${esc(w.unit || "°")}</b><span>${esc(String(w.condition).replace(/-/g, " ").toUpperCase())}${w.wind != null ? " · WIND " + esc(w.wind) : ""}</span></div>`);
       for (const z of hz.slice(0, 2)) tiles.push(`<div class="tt${z.action === "heating" ? " warm" : ""}"><ha-icon icon="mdi:thermometer"></ha-icon><b>${esc(z.now ?? "–")}°</b><span>${esc(z.name.toUpperCase())}${z.state === "off" ? " · HEATING OFF" : z.target != null ? " · SET " + esc(z.target) + "°" : ""}</span></div>`);
       const ppl = (t.people || []).map((p) => `<span class="pp${p.home ? " home" : ""}">${esc(p.name.toUpperCase())} · ${p.home ? "HOME" : esc(String(p.where).replace(/_/g, " ").toUpperCase())}</span>`).join("");
-      el.innerHTML = this._h("TODAY", new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" }).toUpperCase())
+      el.innerHTML = this._h("TODAY", new Date().toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "short" }).toUpperCase())
         + `<div class="ttiles">${tiles.join("") || '<div class="e">CHOOSE A WEATHER ENTITY IN SETTINGS → BRIEFINGS</div>'}</div>`
         + (ppl ? `<div class="ppl">${ppl}</div>` : "")
-        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "NIGHT TEMPERATURE" + (nx.night != null ? " " + esc(nx.night) + "°" : "")} · ${esc(nx.name.toUpperCase())}</div>` : "");
+        + (nx ? `<div class="hint">HEATING NEXT: ${esc(new Date(nx.time).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase())} ${nx.what === "on" ? "ON TO " + esc(nx.temp) + "°" : "NIGHT TEMPERATURE" + (nx.night != null ? " " + esc(nx.night) + "°" : "")} · ${esc(nx.name.toUpperCase())}</div>` : "");
       const kic = { alarm: "mdi:alarm", routine: "mdi:calendar-sync", bins: "mdi:trash-can-outline", watch: "mdi:eye-outline" };
-      const when = (iso) => { const d = new Date(iso), today = new Date(); const tm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === today.toDateString() ? tm : d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " " + tm; };
+      const when = (iso) => { const d = new Date(iso), today = new Date(); const tm = d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === today.toDateString() ? tm : d.toLocaleDateString(LOCALE, { weekday: "short" }).toUpperCase() + " " + tm; };
       el2.innerHTML = this._h("COMING UP", (t.soon || []).length ? `${t.soon.length}` : "")
         + ((t.soon || []).map((x) => `<div class="r${x.kind === "routine" ? " dim" : ""}"><ha-icon icon="${esc(kic[x.kind] || "mdi:clock-outline")}"></ha-icon><b>${esc(x.what)}</b><u>${esc(when(x.when))}</u></div>`).join("")
           || '<div class="e">NOTHING DUE IN THE NEXT DAY OR SO</div>');
@@ -2098,7 +2120,7 @@
         if (!this._hgAt || Date.now() - this._hgAt > 600000) this._loadHeatGraph();
       }
       if (h.schedule_on) {
-        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "NIGHT " + (h.next.night != null ? h.next.night + "°" : "TEMPERATURE")}` : "";
+        const nx = h.next ? `NEXT: ${new Date(h.next.time).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }).toUpperCase()} ${h.next.what === "on" ? "ON TO " + h.next.temp + "°" : "NIGHT " + (h.next.night != null ? h.next.night + "°" : "TEMPERATURE")}` : "";
         html += `<div class="sub">SCHEDULE${nx ? " · " + esc(nx) : ""}</div>`;
         if ((h.programmes || []).length && (!h.ticking || Date.now() - new Date(h.ticking) > 180000)) html += `<div class="r bad"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><b class="wrap">The schedule's minute check isn't running<small>Nothing will switch until Home Assistant is restarted — if this stays after a restart, please report it</small></b></div>`;
         html += (h.programmes || []).map((p) => `<div class="prog${p.enabled ? "" : " dim"}"><div class="ph"><b>${esc(p.name)}</b><u>${esc(daysTxt(p.days))} · ${esc(p.heaters.map(zname).join(", "))}</u>`
@@ -2133,7 +2155,7 @@
     _progRan(r) {
       if (!r) return '<div class="pran">HASN\'T SWITCHED ANYTHING SINCE HOME ASSISTANT STARTED</div>';
       const t = new Date(r.time), today = t.toDateString() === new Date().toDateString();
-      const when = (today ? "" : t.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " ") + t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const when = (today ? "" : t.toLocaleDateString(LOCALE, { weekday: "short" }).toUpperCase() + " ") + t.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
       return `<div class="pran${r.ok === false ? " bad" : ""}">LAST: ${esc(when)} · ${r.ok === false ? "✕ " : r.ok ? "✓ " : ""}${esc(String(r.why || "").toUpperCase())}</div>`;
     }
 
@@ -2281,7 +2303,7 @@
       const key = cam + "|" + stream;
       const head = this._h("LIVE · " + esc(String(st.attributes.friendly_name || cam).toUpperCase()), this._liveFollow === false ? "PINNED" : "FOLLOWING MOTION");
       const chips = `<div class="tchips">${cams.map((c) => `<a class="tchip${c === cam ? " on" : ""}" data-act="livecam" data-id="${esc(c)}">${esc(String((this._hass.states[c] || {}).attributes?.friendly_name || c).toUpperCase())}</a>`).join("")}<a class="tchip${this._liveFollow === false ? "" : " on"}" data-act="livefollow">FOLLOW MOTION</a>${((st.attributes.supported_features || 0) & 2) === 2 ? `<a class="tchip${(() => { try { return JSON.parse(localStorage.getItem("sentient-live-smooth") || "[]").includes(cam) || JSON.parse(localStorage.getItem("sentient-live-auto") || "[]").includes(cam) || (this._hass.entities?.[cam]?.platform === "nest" && !JSON.parse(localStorage.getItem("sentient-live-picture") || "[]").includes(cam)); } catch (e) { return false; } })() ? " on" : ""}" data-act="livesmooth" data-id="${esc(cam)}" title="Home Assistant's own video player: smoother, but some cameras show black">SMOOTH VIDEO</a>` : ""}</div>`;
-      const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
+      const badge = here.length ? `<span class="lbadge">● ${esc([...new Set(here)].join(" · "))} NOW</span>` : (latest ? `<span class="lbadge dim">LAST: ${esc(latest.label.toUpperCase())} · ${esc(new Date(latest.start * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }))}</span>` : "");
       // Nest WebRTC cameras can return a successful placeholder image from the picture proxy.
       // Prefer Home Assistant's native player for Nest immediately, without relying on an image error.
       // Other cameras retain the existing picture-first fallback; users can override either mode.
@@ -2429,7 +2451,7 @@
       let svg = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" class="tlsvg">`;
       for (const [, i] of lanes) svg += `<line x1="0" x2="100" y1="${y(i)}" y2="${y(i)}" class="tll" vector-effect="non-scaling-stroke"/>`;
       let ticks = "";
-      for (let k = 1; k < hours; k++) { const tx = x(from + k * 3600e3); svg += `<line x1="${tx}" x2="${tx}" y1="0" y2="${H - 16}" class="tlg" vector-effect="non-scaling-stroke"/>`; ticks += `<span style="left:${tx}%">${new Date(from + k * 3600e3).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>`; }
+      for (let k = 1; k < hours; k++) { const tx = x(from + k * 3600e3); svg += `<line x1="${tx}" x2="${tx}" y1="0" y2="${H - 16}" class="tlg" vector-effect="non-scaling-stroke"/>`; ticks += `<span style="left:${tx}%">${new Date(from + k * 3600e3).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" })}</span>`; }
       for (const [a, b] of links) svg += `<line x1="${x(a.t)}" y1="${y(a.lane)}" x2="${x(b.t)}" y2="${y(b.lane)}" class="tlk" vector-effect="non-scaling-stroke"/>`;
       svg += "</svg>";
       const dotsHtml = dots.map((d) => `<a class="tld" style="left:${x(d.t)}%;top:${y(d.lane)}px;background:${col[d.label] || col.motion}"${d.id ? ` data-act="secsnap" data-id="${esc(d.id)}"` : ""} title="${esc(d.label)} · ${esc(new Date(d.t).toLocaleTimeString())}"></a>`).join("");
@@ -2449,7 +2471,7 @@
       const evs = (mind.security_events || []).filter((e) => e.has_snapshot && !e.parked).slice(0, 8);
       el.hidden = !evs.length;
       if (!evs.length) return;
-      el.innerHTML = this._h("LATEST SNAPSHOTS", `${evs.length}`) + `<div class="sgrid">${evs.map((e) => `<a class="sg" data-act="secsnap" data-id="${esc(e.id)}"><img loading="lazy" alt="" src="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg"><span>${esc(e.camera.replace(/_/g, " ").toUpperCase())} · ${esc(e.label.toUpperCase())} · ${esc(new Date(e.start * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</span></a>`).join("")}</div>`;
+      el.innerHTML = this._h("LATEST SNAPSHOTS", `${evs.length}`) + `<div class="sgrid">${evs.map((e) => `<a class="sg" data-act="secsnap" data-id="${esc(e.id)}"><img loading="lazy" alt="" src="/api/frigate/notifications/${encodeURIComponent(e.id)}/thumbnail.jpg"><span>${esc(e.camera.replace(/_/g, " ").toUpperCase())} · ${esc(e.label.toUpperCase())} · ${esc(new Date(e.start * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }))}</span></a>`).join("")}</div>`;
     }
 
     _drawCameras() {
@@ -2603,8 +2625,8 @@
         if (!ok) { fw.innerHTML = '<div class="e">THE FORM COULDN\'T LOAD · REFRESH THE PAGE</div>'; return; }
         const form = document.createElement("ha-form");
         form.hass = this._hass; form.schema = schema; form.data = this._mlDraft;
-        form.computeLabel = (sc) => LABELS[sc.name] || sc.name;
-        form.computeHelper = (sc) => HELP[sc.name] || "";
+        form.computeLabel = (sc) => T(LABELS[sc.name] || sc.name);
+        form.computeHelper = (sc) => T(HELP[sc.name] || "");
         form.addEventListener("value-changed", (ev) => {
           const v = { ...ev.detail.value };
           if (v.light && v.light !== this._mlDraft.light && !(v.motion || []).length) v.motion = this._motionNear(v.light);
@@ -2682,7 +2704,7 @@
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const that = new Date(d); that.setHours(0, 0, 0, 0);
         const diff = Math.round((today - that) / 864e5);
-        return diff === 0 ? "TODAY" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+        return diff === 0 ? "TODAY" : diff === 1 ? "YESTERDAY" : that.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
       };
       let last = "", html = "";
       for (const i of items) {
@@ -2778,7 +2800,7 @@
       }
       const said = { useful: "good catch", not_useful: "ignored", false_positive: "not a person", cat: "a cat" };
       const zoneName = (z) => String(z).replace(/_/g, " ");
-      const time = (t) => t ? new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      const time = (t) => t ? new Date(t * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) : "";
       const zoneReply = this._securityZoneReply;
       const summaries = (mind.security_event_feedback_summary || []).map(c => `<div class="r dim"><b class="wrap">${esc(c.camera)} · ${esc(c.reviewed)} EVENTS REVIEWED<small>Good catch: ${esc(c.useful)} · Ignored: ${esc(c.not_useful)} · Not a person: ${esc(c.false_positive + c.cat)}</small>${c.suggestion ? `<small>${esc(c.suggestion)}</small>` : ""}${(c.zones || []).map(z => `<small>${esc(zoneName(z.zone))}: ${esc(z.not_a_person)} marked not a person. Stop listing movement that's only in this zone? Frigate isn't changed.</small>${feedbackOn ? `<button class="btn sm ghost" data-act="securityzonehide" data-id="${esc(c.camera)}" data-text="${esc(z.zone)}">HIDE THIS ZONE</button>` : ""}`).join("")}${zoneReply && zoneReply.camera === c.camera ? `<small role="${zoneReply.error ? "alert" : "status"}">${esc(zoneReply.message)}</small>` : ""}<small>${esc(c.limits)}</small></b></div>`).join("");
       const card = (v) => {
@@ -2815,8 +2837,8 @@
 
     async _routeCalibration(action, provider) {
       if (!this._hass.user?.is_admin || this._routingCalBusy) return;
-      if (action === "run" && !window.confirm("Run ONE potentially billable, privacy-safe AI Task calibration request?")) return;
-       if (action === "reset_jobs" && !window.confirm("Clear alternative-model job penalties and let eligible jobs try it again? This does not run a paid test. The alternative still has to pass the normal reliability checks.")) return;
+      if (action === "run" && !confirmT("Run ONE potentially billable, privacy-safe AI Task calibration request?")) return;
+       if (action === "reset_jobs" && !confirmT("Clear alternative-model job penalties and let eligible jobs try it again? This does not run a paid test. The alternative still has to pass the normal reliability checks.")) return;
       const target = this._$("routingcalstatus");
       if (!target) return;
       this._routingCalBusy = true;
@@ -2873,7 +2895,7 @@
 
     // where the voice went wrong this week, by plain rules: the measure a change to Sentient should improve
     _reliabilityCard(rel) {
-      const when = (t) => t ? new Date(t).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
+      const when = (t) => t ? new Date(t).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
       const rate = rel.clean_rate == null ? "" : `${Math.round(rel.clean_rate * 100)}% WITHOUT A PROBLEM`;
       const counts = (rel.counts || []).map((c) => `${esc(c.label)} (${esc(c.count)})`).join(" · ");
       const head = rel.turns
@@ -2886,7 +2908,7 @@
 
     // the overnight question set: last night's score, each question, and how the score has moved
     _questionsCard(quiz) {
-      const when = (t) => t ? new Date(t).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
+      const when = (t) => t ? new Date(t).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
       const trend = (quiz.history || []).slice(-14).map((h) => h.total ? Math.round(h.right / h.total * 100) + "%" : "").filter(Boolean).join(" · ");
       const rows = (quiz.results || []).map((r) => `<div class="r${r.right ? "" : " warn"}"><ha-icon icon="${r.right ? "mdi:check" : "mdi:close"}"></ha-icon><b class="wrap">${esc(r.question)}<details><summary>${r.right ? "Right" : "Wrong"}</summary><small>SAID · ${esc(r.answer)}</small><small>EXPECTED · ${esc(r.expected)}</small><small>TOOLS · ${esc((r.tools || []).join(", ") || "none")}${r.ms != null ? " · " + esc(r.ms) + " ms" : ""}</small></details></b><u>${esc(String(r.kind || "").toUpperCase())}</u></div>`).join("");
       return this._h("HOUSEHOLD QUESTIONS", `${quiz.right} OF ${quiz.total}`)
@@ -2946,7 +2968,7 @@
       else if (act === "wonderask") this._call("wonder", { ask_now: true });
       else if (act === "lasthour") this._lastHour();
       else if (act === "openmind") this._show("mind", true);
-      else if (act === "mckeep") { const keep = el.dataset.keep || null; if (keep || window.confirm("Keep both as they are?")) this._hass.callWS({ type: "sentient/memory/resolve", pair: id, keep }).then(() => { this._innerAt = 0; this._loadInner(); }); }
+      else if (act === "mckeep") { const keep = el.dataset.keep || null; if (keep || confirmT("Keep both as they are?")) this._hass.callWS({ type: "sentient/memory/resolve", pair: id, keep }).then(() => { this._innerAt = 0; this._loadInner(); }); }
       else if (act === "unwatch") this._hass.callWS({ type: "sentient/notice/unwatch", entity_id: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "innerno") this._hass.callWS({ type: "sentient/inner/dismiss", key: id }).then(() => { this._innerAt = 0; this._loadInner(); });
       else if (act === "livecam") { this._liveCam = id; this._liveFollow = false; this._render(); }
@@ -2980,19 +3002,19 @@
       else if (act === "progaddper") { const ps = this._progDraft.periods, last = ps[ps.length - 1]; ps.push({ on: last ? last.off : "06:00", off: last ? (String((+last.off.slice(0, 2) + 2) % 24).padStart(2, "0") + last.off.slice(2)) : "09:00", temp: last ? last.temp : 21 }); this._progRedraw(); }
       else if (act === "progrmper") { this._progDraft.periods.splice(+id, 1); this._progRedraw(); }
       else if (act === "progdays") { const D = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]; this._progDraft.days = id === "wk" ? D.slice(0, 5) : id === "we" ? ["sat", "sun"] : D; this._progRedraw(); }
-      else if (act === "progdel") { if (window.confirm("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "progdel") { if (confirmT("Delete this heating schedule?")) this._hass.callWS({ type: "sentient/heating/programme/delete", programme_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "progonoff") { const p = ((this._heat || {}).programmes || []).find((x) => x.id === id); if (p) this._hass.callWS({ type: "sentient/heating/programme/save", programme_id: id, programme: { ...p, enabled: !p.enabled } }).then(() => { this._heatAt = 0; this._loadHeat(); }, (e) => window.alert(e.message || String(e))); }
       else if (act === "heatzones") this._openHeatZones(false);
       else if (act === "roomlights") this._hass.callService("light", "turn_off", {}, { area_id: id }).then(() => { this._glAt = 0; setTimeout(() => this._loadGlance(), 800); }, (e) => window.alert(e.message || e));
       else if (act === "heatzsave") this._saveHeatZones();
-      else if (act === "heatdel") { if (window.confirm("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
+      else if (act === "heatdel") { if (confirmT("Delete this heating time?")) this._hass.callWS({ type: "sentient/items/delete", kind: "heating", item_id: id }).then(() => { this._heatAt = 0; this._loadHeat(); }); }
       else if (act === "heatonoff") {
         const x = ((this._heat || {}).schedules || []).find((i) => i.id === id);
         if (x) this._hass.callWS({ type: "sentient/heating/save", item_id: id, entity_id: x.entity_id, time: x.time, days: x.days, temperature: x.temperature, enabled: !x.enabled }).then(() => { this._heatAt = 0; this._loadHeat(); });
       }
       else if (act === "bksave") this._hass.callWS({ type: "sentient/backups/save" }).then((r) => { this._$("bkmsg").textContent = `Saved ${r.name}.`; this._loadBackups(); }, (e) => { this._$("bkmsg").textContent = e.message || String(e); });
       else if (act === "bkrestore") {
-        if (!window.confirm(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
+        if (!confirmT(`Restore ${id}? It adds to what's here and doesn't delete anything.`)) return;
         this._hass.callWS({ type: "sentient/backups/restore", name: id, settings: this._$("bkset").checked }).then((res) => {
           this._$("bkmsg").textContent = "Restored: " + Object.entries(res).map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ") + ".";
           this._loadMemories(); this._loadSpots(); this._loadMotion(); this._loadShortcuts();
@@ -3033,12 +3055,12 @@
         }
       }
       else if (act === "hdupe") {
-        if (!window.confirm(`Disable the empty copy of ${el.dataset.name || "this device"}? It has no entities, so nothing stops working, and Home Assistant keeps it disabled even when its integration reloads. Undo from its device page.`)) return;
+        if (!confirmT(`Disable the empty copy of ${el.dataset.name || "this device"}? It has no entities, so nothing stops working, and Home Assistant keeps it disabled even when its integration reloads. Undo from its device page.`)) return;
         this._hass.callWS({ type: "sentient/health/disable_copy", device_id: id }).then(() => { const row = el.closest(".r"); if (row) row.remove(); }, (e) => window.alert(e.message || String(e)));
       }
       else if (act === "brainclear") {
         const what = id === "ledger" ? "every recorded change in the house ledger" : "everything it has learned (expectations, beliefs, reactions, saved AI answers)";
-        if (!window.confirm(`Clear ${what}? This can't be undone.`)) return;
+        if (!confirmT(`Clear ${what}? This can't be undone.`)) return;
         this._hass.callWS({ type: "sentient/brain/clear", what: id }).then(() => { this._innerAt = 0; this._loadInner(); }, (e) => window.alert(e.message || String(e)));
       }
       else if (act === "hclear") {
@@ -3049,7 +3071,7 @@
       }
       else if (act === "hignore") {
         const name = el.dataset.name || "this device";
-        if (!window.confirm(`Stop flagging ${name}? It goes on House health's ignore list; take it off again in Settings → House health.`)) return;
+        if (!confirmT(`Stop flagging ${name}? It goes on House health's ignore list; take it off again in Settings → House health.`)) return;
         el.disabled = true;
         this._hass.callWS({ type: "sentient/health/ignore", device_id: id }).then(
           () => { const row = el.closest(".r"); if (row) row.remove(); },
@@ -3061,8 +3083,8 @@
         if (first) { if (!this._openMenus) this._openMenus = new Set(); this._openMenus.clear(); this._openMenus.add(id); this._group = first; this._drawSide(); this._drawBody(); if (this._phone()) this._$("body").scrollIntoView({ behavior: "smooth", block: "start" }); }
       }
       else if (act === "hometab") this._show(id, true);
-      else if (act === "tabpage") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._openTabPage(id); }
-      else if (act === "tabpageclose") { if (this._dirty && !window.confirm("Leave without saving your changes?")) return; this._dirty = false; this._closeTabPage(); }
+      else if (act === "tabpage") { if (this._dirty && !confirmT("Leave without saving your changes?")) return; this._dirty = false; this._openTabPage(id); }
+      else if (act === "tabpageclose") { if (this._dirty && !confirmT("Leave without saving your changes?")) return; this._dirty = false; this._closeTabPage(); }
       else if (act === "wizard") this._openWizard();
       else if (act === "wizback") this._wizGo(this._wiz.i - 1);
       else if (act === "wiznext") this._wizNext();
@@ -3082,10 +3104,10 @@
         this._drawSide();
       } else if (act === "group" && TAB_OF[id]) {
         // a search hit for a page that lives on a tab: take them there
-        if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
+        if (this._dirty && !confirmT("Leave without saving your changes?")) return;
         this._dirty = false; this._show(TAB_OF[id], true); this._openTabPage(id);
       } else if (act === "group") {
-        if (this._dirty && !window.confirm("Leave without saving your changes?")) return;
+        if (this._dirty && !confirmT("Leave without saving your changes?")) return;
         this._dirty = false; this._group = id; this._editing = null; this._mlEdit = null; this._scEdit = null;
         if (this._phone() && this._openMenus) this._openMenus.clear();
         this._drawSide(); this._drawBody();
@@ -3123,7 +3145,7 @@
           .then((r) => { this._it[kind] = r; this._itEdit = null; this._form = null; this._drawSide(); this._drawItems(kind); },
             (e) => { if (msg) msg.textContent = e.message || String(e); });
       } else if (act === "itdel") {
-        if (!window.confirm(`Delete ${text}?`)) return;
+        if (!confirmT(`Delete ${text}?`)) return;
         const kind = this._group;
         this._hass.callWS({ type: "sentient/items/delete", kind, item_id: id }).then((r) => { this._it[kind] = r; this._drawSide(); this._drawItems(kind); });
       } else if (act === "ittest") {
@@ -3144,7 +3166,7 @@
         this._hass.callWS({ type: "sentient/shortcuts/save", item }).then((r) => { this._sc = r.items; this._scEdit = null; this._form = null; this._drawSide(); this._drawShortcuts(); },
           (e) => { const m = this._$("scmsg"); if (m) m.textContent = e.message || String(e); });
       } else if (act === "scdel") {
-        if (!window.confirm(`Delete the routine “${text}”?`)) return;
+        if (!confirmT(`Delete the routine “${text}”?`)) return;
         this._hass.callWS({ type: "sentient/shortcuts/delete", item_id: id }).then((r) => { this._sc = r.items; this._drawSide(); this._drawShortcuts(); });
       } else if (act === "scrun") {
         const r = (this._sc || []).find((x) => x.id === id);
@@ -3168,8 +3190,8 @@
       else if (act === "gcancel") { this._gnew = false; this._gtpl = null; this._drawGames(); }
       else if (act === "gstart") this._gameDo({ op: "start", game: id });
       else if (act === "gstop") this._gameDo({ op: "stop" });
-      else if (act === "grestart") { if (window.confirm("Start this story again? The saved memory and story so far are cleared; the setting and rules stay.")) this._gameDo({ op: "restart", game: id }); }
-      else if (act === "gdel") { if (window.confirm("Delete this game and everything saved for it?")) this._gameDo({ op: "delete", game: id }); }
+      else if (act === "grestart") { if (confirmT("Start this story again? The saved memory and story so far are cleared; the setting and rules stay.")) this._gameDo({ op: "restart", game: id }); }
+      else if (act === "gdel") { if (confirmT("Delete this game and everything saved for it?")) this._gameDo({ op: "delete", game: id }); }
       else if (act === "gentrydel") this._gameDo({ op: "remove", game: this._gid, entry: id });
       else if (act === "gedit") {
         const e = ((this._games.games.find((x) => x.id === this._gid) || {}).entries || []).find((x) => x.id === id);
@@ -3236,7 +3258,7 @@
       else if (act === "userun") this._drawUsage(true);
       else if (act === "showall" || act === "showless") { this._showAll = act === "showall"; this._drawSide(); }
       else if (act === "privforget") {
-        if (!window.confirm("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
+        if (!confirmT("Forget everything Sentient kept from the last 48 hours — the timeline, conversations, visitors, clip descriptions, faces seen, new memories (not pinned ones) and this record? It can't recall what was already sent to an AI service.")) return;
         this._hass.callWS({ type: "sentient/privacy/forget", hours: 48 }).then((r) => {
           const total = Object.values(r.forgot).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
           if (r.forgot.database_error) this._status(r.forgot.database_error, "warn");
@@ -3245,7 +3267,7 @@
         }, (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "docspeak") {
-        if (!window.confirm("Say a short test line on every speaker, one after another?")) return;
+        if (!confirmT("Say a short test line on every speaker, one after another?")) return;
         this._status("TESTING…", "warn");
         this._hass.callWS({ type: "sentient/doctor/speakers" }).then((r) => {
           const bad = r.results.filter((x) => !x.ok).map((x) => x.speaker);
@@ -3253,7 +3275,7 @@
         }, (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "critest") {
-        if (!window.confirm("Say a test safety alert on every speaker now?")) return;
+        if (!confirmT("Say a test safety alert on every speaker now?")) return;
         this._hass.callWS({ type: "sentient/critical/test" }).then(() => this._status("TEST ALERT SENT ✓", "ok"), (e) => this._status(e.message || String(e), "bad"));
       }
       else if (act === "tlkind") { this._tlKind = id; this._drawTimeline(); }
@@ -3275,11 +3297,11 @@
           if (ok) { this._mlEdit = null; this._form = null; this._drawSide(); this._drawMotion(); }
         });
       } else if (act === "mldel") {
-        if (!window.confirm(`Stop ${text} following motion?`)) return;
+        if (!confirmT(`Stop ${text} following motion?`)) return;
         this._motionDo("sentient/motion_lights/delete", { rule_id: id }).then(() => { this._drawSide(); this._drawMotion(); });
       }
       else if (act === "spforget") {
-        if (!window.confirm(`Forget the spot “${id}”?`)) return;
+        if (!confirmT(`Forget the spot “${id}”?`)) return;
         this._hass.callWS({ type: "sentient/spots/forget", name: id }).then((r) => { this._spots = r.spots; this._drawSide(); this._drawSpots(); }, (e) => window.alert(e.message || e));
       }
     }
@@ -3401,7 +3423,7 @@
       const days = Object.entries(ai.last_7_days || {});
       if (ai.today != null) days.push(["today", ai.today]);
       const most = Math.max(1, ...days.map(([, n]) => n));
-      const wd = (d) => d === "today" ? "TODAY" : new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+      const wd = (d) => d === "today" ? "TODAY" : new Date(d + "T12:00:00").toLocaleDateString(LOCALE, { weekday: "short" }).toUpperCase();
       const bars = days.slice(-8).map(([d, n]) => `<div class="wbar${d === "today" ? " now" : ""}" title="${esc(String(n))} AI calls"><b>${esc(String(n))}</b><i style="height:${Math.max(3, Math.round((n / most) * 64))}px"></i><span>${wd(d)}</span></div>`).join("");
       const tile = (n, l, cls) => `<div class="s${cls ? " " + cls : ""}"><div class="n">${esc(String(n))}</div><div class="l">${l}</div></div>`;
       const chip = (onNow, text) => `<span class="tchip${onNow ? " on" : ""}">${text}</span>`;

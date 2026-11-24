@@ -17,8 +17,19 @@
 */
 (() => {
   if (customElements.get("sentient-screen-card")) return;
+  // the house's language: sentient-i18n.js swaps the card's words, LOCALE formats times (as on the sidebar page)
+  let LOCALE = "en-GB";
+  const language = (card, h) => {
+    const l = String((h && ((h.locale && h.locale.language) || h.language)) || "en");
+    const english = /^en(-|$)/i.test(l);
+    LOCALE = english ? "en-GB" : l;
+    if (!card.shadowRoot) return;
+    if (card._i18nUpdate) { card._i18nUpdate(h); return; }
+    if (card._i18nLoading || english) return;
+    card._i18nLoading = import("/sentient_frontend/sentient-i18n.js").then((m) => { card._i18nUpdate = m.attach(card.shadowRoot, card._hass || h); }, () => {});
+  };
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
+  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); };
   const dayHm = (iso) => { const d = new Date(iso); if (isNaN(d)) return ""; const t = hm(iso); return d.toDateString() === new Date().toDateString() ? t : "TOMORROW " + t; };
   const KEYS = ["screen", "last_spoken", "watches", "visitors", "health", "house", "mind", "drive"];
   const SOURCE_ICON = [
@@ -62,6 +73,7 @@
       const sig = [...KEYS.map((k) => (ids[k] && h.states[ids[k]] ? h.states[ids[k]].last_updated : "")),
         wx ? wx.last_updated : "", ...(this._cfg.glance || []).map((g) => (h.states[g.entity || g] || {}).state)].join("|");
       if (sig !== this._sig) { this._sig = sig; this._draw(); }
+      language(this, h);
     }
 
     _ids() {
@@ -102,8 +114,8 @@
     _drawClock() {
       if (!this.shadowRoot) return;
       const now = new Date();
-      this._$("time").textContent = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-      this._$("date").textContent = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
+      this._$("time").textContent = now.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+      this._$("date").textContent = now.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long" }).toUpperCase();
     }
 
     _draw() {
@@ -201,7 +213,7 @@
       const ev = (mind.security_events || []).find((e) => e.has_snapshot && !e.parked);
       const people = (t.people || []);
       const side = (ev || people.length || nh) ? `<div class="side">
-          ${ev ? `<div class="seen"><img alt="" src="/api/frigate/notifications/${encodeURIComponent(ev.id)}/thumbnail.jpg"><span>LAST SEEN · ${esc(String(ev.camera).replace(/_/g, " ").toUpperCase())} · ${esc(String(ev.label).toUpperCase())} · ${esc(new Date(ev.start * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }))}</span></div>` : ""}
+          ${ev ? `<div class="seen"><img alt="" src="/api/frigate/notifications/${encodeURIComponent(ev.id)}/thumbnail.jpg"><span>LAST SEEN · ${esc(String(ev.camera).replace(/_/g, " ").toUpperCase())} · ${esc(String(ev.label).toUpperCase())} · ${esc(new Date(ev.start * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }))}</span></div>` : ""}
           ${people.length ? `<div class="ppl">${people.map((p) => `<span class="${p.home ? "home" : ""}">${esc(p.name.toUpperCase())} · ${p.home ? "HOME" : "OUT"}</span>`).join("")}</div>` : ""}
           ${nh ? `<div class="row dim"><ha-icon icon="mdi:radiator"></ha-icon><b>Heating ${nh.what === "on" ? "on to " + esc(nh.temp) + "°" : "off"}</b><u>${dayHm(nh.time)}</u></div>` : ""}
         </div>` : "";

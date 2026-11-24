@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.19.0": [
+        "The Sentient page and cards follow your Home Assistant language: tabs, headings, buttons, editors and messages are translated into Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian. Dates and times use your language too. English stays as it was.",
+        "What Sentient writes itself (timeline entries, briefings, house health) is still in English for now; that comes next.",
+    ],
     "1.18.1": [
         "\"Which room is my phone in?\" is answered from the room trackers again. The voice was going by the device list and the house context, which don't include trackers set up in Sentient, and said the phone wasn't showing.",
         "The nightly self-test no longer marks \"there's no smart lock I can use\" as a wrong answer.",
