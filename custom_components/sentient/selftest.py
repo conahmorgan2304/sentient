@@ -455,7 +455,7 @@ class SelfTest:
                 from .reliability import OFFER
 
                 cant = CANT_DO.search(answer) or DOESNT_KNOW.search(answer) or re.search(
-                    r"\b(?:no|n't have (?:a |any )?)(?:smart )?locks?\b", answer, re.I)
+                    r"\b(?:no |n't have (?:a |any )?)(?:smart )?locks?\b", answer, re.I)
                 return bool(cant) and not OFFER.search(answer), \
                     "says it can't (there's no lock it can use), without offering to"
 

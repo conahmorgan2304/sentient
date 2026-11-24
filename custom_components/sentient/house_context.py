@@ -178,15 +178,22 @@ class HouseContext:
         query = words(request)
         general = not query or bool(query & {'house', 'home', 'everything', 'system', 'happening'})
         selected = set(self.runtime().options.get('house_context_entities') or [])
+        options = self.runtime().options
+        # the room trackers chosen in Sentient's settings: not exposed to voice, but asked about ("where's my phone?")
+        trackers = set(options.get('room_trackers') or []) if options.get('room_tracking') else set()
         self.prune()
         ranked = []
         for state in self.hass.states.async_all():
             eid = state.entity_id
-            if state.domain not in DOMAINS or not async_should_expose(self.hass, 'conversation', eid):
+            tracker = eid in trackers
+            if not tracker and (state.domain not in DOMAINS or not async_should_expose(self.hass, 'conversation', eid)):
                 continue
             if user and not user.permissions.check_entity(eid, POLICY_READ):
                 continue
-            match = bool(query & words(eid + ' ' + state.name))
+            match = bool(query & words(eid + ' ' + state.name)) if not tracker else bool(
+                {w for w in query if len(w) > 2} & (words(state.name) - {'area', 'sensor'}))
+            if tracker and not match:
+                continue  # only when the question is about it
             local = bool(room and area_of(self.hass, eid) == room)
             if private and not local:
                 continue

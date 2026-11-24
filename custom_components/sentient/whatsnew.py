@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.18.1": [
+        "\"Which room is my phone in?\" is answered from the room trackers again. The voice was going by the device list and the house context, which don't include trackers set up in Sentient, and said the phone wasn't showing.",
+        "The nightly self-test no longer marks \"there's no smart lock I can use\" as a wrong answer.",
+        "Camera watches work out what to look for from the request (\"watch for any more cars\" looks for a car), and a sensor named by mistake is swapped for the camera in the same area, instead of the voice retrying.",
+        "Ready for Home Assistant 2027.5: the instant answers pass the turn's context when they join a conversation.",
+    ],
     "1.18.0": [
         "Watches and reminders can act (Memory & learning): \"if the back door's open for ten minutes, turn the hall light off and tell me\", \"when the washing finishes, put the hallway light on\", \"at 11, if the back door's still open, tell me\". Read back first, set up only after a yes on the next turn, and each device is checked afterwards.",
         "Memory that understands time: \"for now\", \"at the moment\" and one-off things (\"I turned the heating on\") end by themselves, an old unconfirmed fact is checked once, and each day gets a short story (from the same overnight AI call) for \"what did we do last Saturday?\".",

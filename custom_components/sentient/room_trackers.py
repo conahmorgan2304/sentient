@@ -54,8 +54,12 @@ def prompt_line(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     if not known:
         return None
     where = "; ".join(f"{whose(t['tracker'])}: {t['room'] or 'not seen in any room just now'}" for t in known)
-    return ("Room trackers (Bluetooth) place these now — " + where + ". A phone is usually with its owner but not "
-            "always: say where the phone is, not where the person definitely is. Not seen: say you can't tell.")
+    # 24 Nov: "Which room is Conah's phone in?" got "it isn't showing up on the trackers" while this line said the
+    # hallway: the tracker isn't in the exposed devices or the house context, and the voice went by those instead
+    return ("Room trackers (Bluetooth) place these now — " + where + ". These are set up in Sentient, so they won't "
+            "appear in the device list or the house context: answer where a phone is from this line. A phone is "
+            "usually with its owner but not always: say where the phone is, not where the person definitely is. "
+            "Not seen: say you can't tell.")
 
 
 def tracked_areas(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
