@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_track_point_in_utc_time, async_tra
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .language import write_in_line
 from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
@@ -718,6 +719,7 @@ class WatchManager:
             raise HomeAssistantError('Camera watch changed while preparing; no AI request was sent')
         if ai_entity := ai_entity or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
+        data["instructions"] += write_in_line(self.hass, self.options, spoken=True)
         response = await async_generate(self.hass, data)
         result = response.get("data") if isinstance(response, dict) else None
         if isinstance(result, str):  # tolerate only an unambiguous legacy yes/no, never arbitrary prose

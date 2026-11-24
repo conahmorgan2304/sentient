@@ -33,6 +33,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .language import write_in_line
 from .ai import async_generate
 from .media import UnsupportedCodec, read_media
 from .const import (
@@ -498,6 +499,7 @@ class ClipWatch:
                              "Never guess.")
             structure["whose"] = {"description": "Household member's name if clearly them, else empty",
                                   "required": False, "selector": {"text": {}}}
+        instructions += write_in_line(self.hass, self.options, spoken=False)
         data: dict[str, Any] = {"task_name": "Sentient: clip watch", "instructions": instructions,
                                 "structure": structure, "attachments": attachments}
         if ai := provider or self.options.get(CONF_AI_TASK_ENTITY):
@@ -559,6 +561,11 @@ class ClipWatch:
         msg = {"title": f"{persona} · {pretty(item['camera'])}", "message": text, "data": data}
 
         async def send() -> None:
+            from .phrases import async_written, async_written_data
+
+            msg.update(title=await async_written(self.hass, self.options, msg["title"]),
+                       message=await async_written(self.hass, self.options, msg["message"]),
+                       data=await async_written_data(self.hass, self.options, msg["data"]))
             for app in apps:
                 if (self._stopped or not self.enabled or stamp != self._stamp()
                         or item["camera"] not in self.cameras()):

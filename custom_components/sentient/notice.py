@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .reasons import because
+from .language import write_in
 from .ai import async_generate
 from .const import (
     personality_line,
@@ -441,7 +442,7 @@ class Noticer:
             "something with a device that's offline. "
             "You can't switch anything from here: never say you have done something (\"I've switched on the "
             "purifier\") — if a device changed by itself or someone changed it, just say what happened. "
-            "If you speak, write one short, natural sentence in British English, no IDs or entity names "
+            f"If you speak, write one short, natural sentence in {write_in(self.hass, self.options, spoken=True)}, no IDs or entity names "
             "in code form, no forms of address. Set question to true only if you're offering to do "
             "something and need a yes or no (e.g. 'It's got chilly, shall I put the heating on?')."
         )

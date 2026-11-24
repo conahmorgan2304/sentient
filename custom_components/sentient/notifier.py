@@ -270,6 +270,9 @@ class Notifier:
                                                    f"{item.get('text', '')}\n{line}", data), eager_start=True)
 
     async def _send(self, targets: list[str], title: str, message: str) -> None:
+        from .phrases import async_written
+
+        title, message = await async_written(self.hass, self.options, title), await async_written(self.hass, self.options, message)
         try:
             await self.hass.services.async_call(
                 "notify", "send_message", {"entity_id": targets, "title": title, "message": message}, blocking=True
@@ -278,6 +281,10 @@ class Notifier:
             _LOGGER.warning("Sentient couldn't send a notification: %s", err)
 
     async def _send_app(self, apps: list[str], title: str, message: str, data: dict[str, Any]) -> None:
+        from .phrases import async_written, async_written_data
+
+        title, message = await async_written(self.hass, self.options, title), await async_written(self.hass, self.options, message)
+        data = await async_written_data(self.hass, self.options, data)
         for app in apps:
             try:
                 await self.hass.services.async_call(

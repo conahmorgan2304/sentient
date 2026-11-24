@@ -28,6 +28,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
+from .language import write_in_line
 from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
@@ -446,6 +447,7 @@ class CameraSecurity:
         if ai := self.options.get(CONF_SMART_AI) or self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai
         try:
+            data["instructions"] += write_in_line(self.hass, self.options, spoken=True)
             response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("No description: %s", err)

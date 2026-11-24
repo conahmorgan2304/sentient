@@ -299,6 +299,15 @@ class Faces:
                            "'Someone else…' and type their name, or 'no'.",
                 "data": {"image": f"/api/frigate/notifications/{event_id}/thumbnail.jpg",
                          "tag": f"sentient-face-{token}", "actions": actions}}
+        from .phrases import async_written, async_written_data
+
+        data = {"title": await async_written(self.hass, self.options, data["title"]),
+                "message": await async_written(self.hass, self.options, data["message"]),
+                "data": await async_written_data(self.hass, self.options, data["data"])}
+        for action in data["data"].get("actions") or []:
+            for key in ("textInputButtonTitle", "textInputPlaceholder"):
+                if key in action:
+                    action[key] = await async_written(self.hass, self.options, action[key])
         for app in apps:
             try:
                 await self.hass.services.async_call("notify", app, data, blocking=True)

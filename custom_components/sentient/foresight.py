@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
+from .language import write_in
 from .ai import AIUnavailable, async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
@@ -164,7 +165,7 @@ class Foresight:
                 "animals live outside and it'll freeze or be very hot, their water and bedding or shade). "
                 "Ordinary weather and ordinary days need nothing: then speak is false. Don't repeat anything an "
                 "alarm will already say tonight, or anything already said today (below), even in other words. "
-                "If speaking, at most two short, natural sentences, British English, "
+                f"If speaking, at most two short, natural sentences in {write_in(self.hass, self.options, spoken=True)}, "
                 "no greetings, no names. " + personality_line(self.options)
                 + (f"\nAlready said out loud today: {said_today}" if (said_today := self._said_today(rt)) else "")
                 + (f"\nHouse rules:\n{rules}" if rules else "") + f"\nFacts: {facts}"

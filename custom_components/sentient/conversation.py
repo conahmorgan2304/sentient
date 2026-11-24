@@ -659,7 +659,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             getattr(speech, "_questions", {}).pop(user_input.satellite_id or "", None)
         elif not (cautious or changed_speaker) and take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
             # a plain answer to the house's own question: done without the AI
-            return await self._localise_result(self._plain_reply(user_input, said))
+            return await self._localise_result(self._plain_reply(user_input, said), user_input)
         from .language import async_language_ending
 
         if not explicit and options.get(CONF_SESSIONS) and options.get('automatic_language'):
@@ -674,7 +674,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 else:
                     self._cancel_session(user_input)
                     result = self._plain_reply(user_input, "Okay.")
-                return await self._localise_result(result)
+                return await self._localise_result(result, user_input)
         if not explicit and not (cautious or changed_speaker) and options.get("instant_answers"):
             from .instant import async_answer as instant_answer
 
@@ -687,7 +687,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
                 if (meta := TURN.get(None)) is not None:
                     meta["instant"] = True
-                return await self._localise_result(self._instant_reply(user_input, said))
+                return await self._localise_result(self._instant_reply(user_input, said), user_input)
         from .focus import current_request, turn_flags
 
         flags: dict = {}
@@ -728,18 +728,31 @@ class BackedUpAgent(conversation.ConversationEntity):
             self._ours.pop(next(iter(self._ours)))
 
     async def _localise_result(self, result, user_input=None):
+        from . import phrases
         from .language import async_in_house_language
 
+        # Sentient's own fixed replies ("Cancelled. No action was taken.") in the conversation's language: no AI
+        lang = getattr(user_input, "language", None) if user_input is not None else None
+        if (lang and self._options().get("house_language_text", True) and lang.lower().split("-")[0] != "en"
+                and (text := spoken_text(result.response))):
+            await phrases.async_load(self.hass, lang)
+            if (fixed := phrases.translate(text, lang)) != text:
+                result.response.async_set_speech(fixed)
+                self._ask_again(result, user_input, fixed)
         if self._options().get('automatic_language') and (text := spoken_text(result.response)):
             translated = await async_in_house_language(self.hass, self._options(), text)
             if translated != text:
                 result.response.async_set_speech(translated)
-                if user_input is not None and self._options().get(CONF_SESSIONS):
-                    key = (result.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
-                    session = self._entry.runtime_data.sessions.items.get(key)
-                    if session and not session.closed and session.waiting:
-                        session.question = translated[-300:]
+                self._ask_again(result, user_input, translated)
         return result
+
+    def _ask_again(self, result, user_input, text):
+        """A translated reply that asks something: the session keeps the words actually said."""
+        if user_input is not None and self._options().get(CONF_SESSIONS):
+            key = (result.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+            session = self._entry.runtime_data.sessions.items.get(key)
+            if session and not session.closed and session.waiting:
+                session.question = text[-300:]
 
     def _reply_language(self, user_input):
         from .language import selected_language

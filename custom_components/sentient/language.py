@@ -25,7 +25,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .ai import AIUnavailable, async_generate, gate
-from .const import CONF_AI_TASK_ENTITY, CONF_SPEAK_HOUSE_LANGUAGE
+from .const import CONF_AI_TASK_ENTITY, CONF_HOUSE_LANGUAGE_TEXT, CONF_SPEAK_HOUSE_LANGUAGE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,6 +110,63 @@ def house_language(hass: HomeAssistant, options=None) -> str | None:
     return None if lang.lower().split("-")[0] == "en" else lang
 
 
+# Language names the AI is told to write in (English names, which every model understands).
+NAMES = {
+    "pl": "Polish", "de": "German", "nl": "Dutch", "it": "Italian", "pt": "Portuguese", "pt-br": "Brazilian Portuguese",
+    "es": "Spanish", "fr": "French", "hu": "Hungarian", "fi": "Finnish", "sv": "Swedish", "da": "Danish",
+    "nb": "Norwegian", "no": "Norwegian", "tr": "Turkish", "ru": "Russian", "uk": "Ukrainian", "ar": "Arabic",
+    "hi": "Hindi", "bn": "Bengali", "zh": "Chinese", "zh-hans": "Simplified Chinese", "zh-hant": "Traditional Chinese",
+    "ja": "Japanese", "ko": "Korean", "id": "Indonesian", "vi": "Vietnamese", "th": "Thai", "he": "Hebrew",
+    "el": "Greek", "cs": "Czech", "ro": "Romanian", "sk": "Slovak", "sl": "Slovenian", "hr": "Croatian",
+    "bg": "Bulgarian", "lt": "Lithuanian", "lv": "Latvian", "et": "Estonian", "ca": "Catalan", "ga": "Irish",
+    "cy": "Welsh",
+}
+
+
+def written_language(hass: HomeAssistant, options=None) -> str | None:
+    """The language for Sentient's own written words (timeline, House health, the Mind tab, phones), when it
+    isn't English and "Sentient's own words in the house's language" is on: Home Assistant's language."""
+    options = options or {}
+    if not options.get(CONF_HOUSE_LANGUAGE_TEXT, True):
+        return None
+    lang = str(getattr(hass.config, "language", None) or "en").replace("_", "-")
+    if not re.fullmatch(r"[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8}){0,2}", lang) or lang.lower().split("-")[0] == "en":
+        return None
+    return lang
+
+
+def spoken_language(hass: HomeAssistant, options=None) -> str | None:
+    """The language Sentient speaks in when it isn't English: the voice's language, only with "Say built-in
+    sentences in the house's language" on (otherwise the voice may be an English one)."""
+    options = options or {}
+    return house_language(hass, options) if options.get(CONF_SPEAK_HOUSE_LANGUAGE) else None
+
+
+def language_name(lang: str | None) -> str:
+    """"Polish" for pl; British English when there's no other language."""
+    if not lang:
+        return "British English"
+    low = lang.lower()
+    return NAMES.get(low) or NAMES.get(low.split("-")[0]) or f"the language with code '{lang}'"
+
+
+def write_in(hass: HomeAssistant, options=None, *, spoken: bool) -> str:
+    """For prompts: the language the AI should write Sentient's words in — "British English", "Polish"…
+
+    Words that will be said out loud follow the voice (spoken_language); words only read follow the house
+    (written_language). Names of people, rooms and devices stay as they are either way."""
+    return language_name(spoken_language(hass, options) if spoken else written_language(hass, options))
+
+
+def write_in_line(hass: HomeAssistant, options=None, *, spoken: bool) -> str:
+    """A sentence for prompts that don't otherwise name a language; empty in English."""
+    lang = spoken_language(hass, options) if spoken else written_language(hass, options)
+    if not lang:
+        return ""
+    return (f" Write any sentence meant for people in {language_name(lang)}; keep names of people, rooms and "
+            "devices exactly as they are, and give true/false and other fixed answers exactly as asked.")
+
+
 async def async_in_house_language(
     hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *, known_english: bool = False
 ) -> str:
@@ -125,6 +182,13 @@ async def async_in_house_language(
         cache = owner.speech_language_cache = TranslationCache()
     generation = cache.generation
     key = (lang, text)
+    # Sentient's own fixed sentences have a written translation: no AI, no waiting, even when urgent
+    from . import phrases
+
+    if phrases.loaded(lang) is None and not urgent:
+        await phrases.async_load(hass, lang)
+    if (fixed := phrases.translate(text, lang)) != text:
+        return fixed
     if urgent:
         from .voice_locale import safety_sentence
 

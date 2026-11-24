@@ -23,6 +23,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
+from .language import write_in
 from .ai import AIUnavailable, async_generate
 from .const import (
     personality_line,
@@ -524,7 +525,7 @@ class Upkeep:
                 "Sentient: daily digest",
                 "Summarise this home's log in three or four short, friendly sentences for the family: "
                 "visitors, anything that went wrong or needs doing, notable things said. Skip routine "
-                "chatter and repeated items. Plain sentences, British English, no lists, no entity IDs. "
+                f"chatter and repeated items. Plain sentences in {write_in(self.hass, rt.options, spoken=False)}, no lists, no entity IDs. "
                 "Never say or imply the house is or was empty. " + personality_line(rt.options) + "\n\n" + "\n".join(lines),
                 None,
             )
@@ -675,7 +676,7 @@ class Upkeep:
             text = await self._ai(
                 "Sentient: briefing",
                 f"You are {persona}, the brain of a family home. Write a spoken briefing of two to four short, "
-                "natural sentences in British English from these facts. Lead with what needs doing; skip "
+                f"natural sentences in {write_in(self.hass, rt.options, spoken=True)} from these facts. Lead with what needs doing; skip "
                 "anything empty; no lists, no IDs, no forms of address. Mention system readings (computer "
                 "temperature, disk, memory) only when they're listed as problems, never as small talk. "
                 + personality_line(rt.options)
