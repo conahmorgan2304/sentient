@@ -124,6 +124,43 @@ class Watch:
     only_if_words: str = ""  # the condition in plain words ("the back door is open")
 
 
+_OBJECTS = {"car": "car", "cars": "car", "van": "van", "vans": "van", "person": "person", "people": "person",
+            "someone": "person", "anyone": "person", "somebody": "person", "cat": "cat", "cats": "cat", "dog": "dog",
+            "dogs": "dog", "fox": "fox", "foxes": "fox", "bike": "bike", "motorbike": "motorbike", "parcel": "parcel",
+            "parcels": "parcel", "delivery": "delivery driver", "lorry": "lorry", "truck": "truck"}
+
+
+def _object_in(text: str | None) -> str | None:
+    """'watch for any more cars appearing' -> 'car' (what a camera should look for), or None."""
+    for word in re.findall(r"[a-z]+", (text or "").lower()):
+        if word in _OBJECTS:
+            return _OBJECTS[word]
+    return None
+
+
+def _camera_near(hass: HomeAssistant, entity_id: str) -> str | None:
+    """The one camera in the same area as *entity_id* (a drive sensor -> the drive camera), else None."""
+    from homeassistant.helpers import device_registry as dr
+    from homeassistant.helpers import entity_registry as er
+
+    ents, devs = er.async_get(hass), dr.async_get(hass)
+
+    def area(eid: str) -> str | None:
+        entry = ents.async_get(eid)
+        if entry is None:
+            return None
+        if entry.area_id:
+            return entry.area_id
+        device = devs.async_get(entry.device_id) if entry.device_id else None
+        return device.area_id if device else None
+
+    where = area(entity_id)
+    if where is None:
+        return None
+    found = [st.entity_id for st in hass.states.async_all("camera") if area(st.entity_id) == where]
+    return found[0] if len(found) == 1 else None
+
+
 def local_when(when: datetime) -> str:
     """'5:18pm today', '7:30am tomorrow' or '9am on Friday 23 October', in local time.
 
@@ -339,9 +376,15 @@ class WatchManager:
         )
         if entity_id is None:
             raise HomeAssistantError(f"I can't find anything called '{entity}'")
+        # 23 Nov: "watch for any more cars appearing next to me" took three retries — first a sensor with nothing to
+        # wait for, then a camera with no question. What to look for is in the request itself.
+        seen = look_for or _object_in(what)
+        if (not entity_id.startswith("camera.") and seen and to_state is None and above is None and below is None
+                and (camera := _camera_near(self.hass, entity_id)) is not None):
+            entity_id = camera
         kind = KIND_CAMERA if entity_id.startswith("camera.") else KIND_STATE
-        if kind == KIND_CAMERA and not question and look_for:
-            question = f"Can you see a {look_for.strip()}?"
+        if kind == KIND_CAMERA and not question and seen:
+            question = f"Can you see a {seen.strip()}?"
         if kind == KIND_CAMERA and not question:
             raise HomeAssistantError("A camera watch needs a question, e.g. 'Are the cats near the rabbit pen?'")
         if kind == KIND_STATE and to_state is None and above is None and below is None:

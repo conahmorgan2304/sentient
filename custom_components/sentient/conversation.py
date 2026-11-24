@@ -106,6 +106,17 @@ async def async_setup_entry(
     async_add_entities([BackedUpAgent(entry), AlexaAgent(entry)])
 
 
+def _chat_session(hass, user_input):
+    """HA 2026.11 wants the turn's context (it stops working without one in 2027.5); older versions don't take it."""
+    import inspect
+
+    from homeassistant.helpers import chat_session
+
+    if "context" in inspect.signature(chat_session.async_get_chat_session).parameters:
+        return chat_session.async_get_chat_session(hass, user_input.conversation_id, context=user_input.context)
+    return chat_session.async_get_chat_session(hass, user_input.conversation_id)
+
+
 class BackedUpAgent(conversation.ConversationEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "voice"
@@ -383,9 +394,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Answer without the AI, but add the exchange to the conversation so a follow-up knows what was asked."""
         conversation_id = user_input.conversation_id
         try:
-            from homeassistant.helpers import chat_session
-
-            with chat_session.async_get_chat_session(self.hass, user_input.conversation_id) as session:
+            with _chat_session(self.hass, user_input) as session:
                 conversation_id = session.conversation_id
                 if (convs := getattr(self._entry.runtime_data, "conversations", None)) is not None:
                     convs.attach(conversation_id, user_input.device_id, "instant")
