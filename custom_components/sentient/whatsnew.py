@@ -17,6 +17,7 @@ from .const import CONF_WHATS_NEW, DOMAIN
 NOTES: dict[str, list[str]] = {
     "1.19.0": [
         "The Sentient page and cards follow your Home Assistant language: tabs, headings, buttons, editors and messages are translated into Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian. Dates and times use your language too. English stays as it was.",
+        "The Settings forms, options, services and entity names are now fully translated into the same languages. Polish, German, Dutch, Italian and Portuguese are new, and the gaps in Spanish, French and Hungarian are filled.",
         "What Sentient writes itself (timeline entries, briefings, house health) is still in English for now; that comes next.",
     ],
     "1.18.1": [

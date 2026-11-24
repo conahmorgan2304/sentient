@@ -148,7 +148,7 @@ For a local reply to **"Who's speaking?"**, set up the separate [Sentient Voice 
 
 ## Languages
 
-The Sentient page and cards follow your Home Assistant language. They're translated into English, Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian; any other language shows English. The Settings forms use `translations/`.
+The Sentient page and cards follow your Home Assistant language. They're translated into English, Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian; any other language shows English. The Settings forms, services and entity names come from `custom_components/sentient/translations/<language>.json` and are complete in the same languages; Home Assistant shows English for anything missing.
 
 To add or fix a language for the page, edit `custom_components/sentient/frontend/i18n/<language>.json`. Each English piece from `i18n/en.json` maps to its translation, and `{0}` or `{name}` slots are kept as they are. `node --test tests/frontend_i18n.test.cjs` checks that every language has every piece. Native speakers' corrections are very welcome.
 
