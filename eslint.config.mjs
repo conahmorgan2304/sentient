@@ -6,4 +6,8 @@ export default [{
   files: ["custom_components/sentient/frontend/*.js"],
   languageOptions: { ecmaVersion: 2023, sourceType: "script", globals: { ...globals.browser } },
   rules: { "no-undef": "error", "no-dupe-class-members": "error", "no-dupe-keys": "error" },
+}, {
+  // the shared translator is loaded with import() by the page and the cards
+  files: ["custom_components/sentient/frontend/sentient-i18n.js"],
+  languageOptions: { sourceType: "module" },
 }];

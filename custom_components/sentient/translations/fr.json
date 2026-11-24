@@ -46,11 +46,23 @@
           "carry_on_minutes": "Poursuivre une conversation pendant",
           "focused_tools": "Outils vocaux ciblés",
           "ask_later": "Demander comment ça s’est passé",
+          "put_right": "Corriger les erreurs en une fois",
+          "music": "De la musique à la demande",
+          "music_alexa": "Musique via Alexa (les Echo)",
+          "music_alexa_service": "Service musical pour les Echo",
           "house_rules": "Règles de la maison",
           "no_security_offers": "Ne jamais proposer d'armer, de désarmer ou de déverrouiller",
           "learn_entities": "Apprendre les routines à partir de",
+          "learn_anchors": "Habitudes qui suivent la journée",
+          "trust_lights": "Lumières",
+          "trust_switches": "Interrupteurs, prises et ventilateurs",
+          "trust_covers": "Volets et rideaux",
+          "trust_heating": "Chauffage",
+          "offer_together": "Proposer en une fois les habitudes qui vont ensemble",
           "link_triggers": "Apprendre également ce qui suit ces événements",
           "suggest_routines": "Proposer d’automatiser les routines",
+          "prove_routines": "Les habitudes doivent d'abord faire leurs preuves",
+          "routine_fading": "Demander pour les routines qui ne servent plus",
           "door_camera": "Caméra de la porte",
           "door_triggers": "Sonnette",
           "announce_visitors": "Annoncer qui est à la porte",
@@ -78,7 +90,10 @@
           "face_sensor": "Nom reconnu depuis",
           "sidebar_panel": "Afficher dans la barre latérale",
           "page_admin_only": "Page réservée aux administrateurs",
+          "custom_pages": "Réorganiser la page Sentient",
           "suggestions": "Suggestions sur la page Sentient",
+          "whats_new": "Nouveautés après une mise à jour",
+          "simple_settings": "Page de réglages simplifiée",
           "auto_backup": "Sauvegarder chaque semaine",
           "backup_keep": "Nombre de sauvegardes à conserver",
           "confirm_kinds": "Demander confirmation avant",
@@ -95,6 +110,8 @@
           "thoughts": "Montrer ce qu’il pense",
           "share_learning": "Dire ce qu’il a appris",
           "self_adjust": "S’ajuster",
+          "proposals": "Proposer des changements à ses réglages",
+          "privacy_log": "Garder une trace de ce qui sort de la maison",
           "goals": "Objectifs",
           "manuals": "Répondre à partir des documents",
           "manuals_folder": "Dossier des documents",
@@ -108,9 +125,14 @@
           "books_folder": "Dossier des livres",
           "reading_tts": "Voix de lecture : service",
           "reading_voice": "Voix de lecture",
+          "read_ahead": "Préparer la suite pendant la lecture",
           "recipes": "Recettes",
           "recipes_folder": "Dossier des recettes",
           "recipes_list": "Liste de courses pour les ingrédients",
+          "voice_lists": "Listes de courses et de tâches à la voix",
+          "ready_tonight": "Prêt pour la nuit",
+          "ready_tonight_lights": "Prêt pour la nuit : lumières qu'il peut éteindre",
+          "ready_tonight_follow": "Prêt pour la nuit : prévenez-moi quand c'est fait",
           "tandoor_url": "Adresse de Tandoor",
           "tandoor_token": "Jeton API Tandoor",
           "second_opinion_ai": "Deuxième avis de l’IA",
@@ -122,6 +144,10 @@
           "offline_answers": "Répondre aux questions courantes sans l’IA",
           "animal_sensors": "Capteurs de température des animaux",
           "away_lights_on": "Éclairage en cas d’absence",
+          "holiday_mode": "Mode vacances",
+          "holiday_thermostats": "Thermostats à baisser pendant les vacances",
+          "holiday_frost": "Température hors-gel",
+          "holiday_end_on_return": "Terminer le mode vacances quand quelqu'un est à la maison",
           "away_people": "Activer le mode absence lorsque tous sont sortis",
           "away_lights": "Éclairages à utiliser",
           "away_after": "Démarrer après une absence de",
@@ -135,20 +161,28 @@
           "rain_warnings": "Alertes de pluie",
           "rain_entities": "Fenêtres et portes à surveiller",
           "self_test": "Autotest",
+          "self_test_household": "Questions de la maison dans l'auto-test",
           "screen": "Utiliser l’écran de la tablette",
           "screen_actions": "Lorsqu’un élément apparaît",
           "screen_clear_actions": "Lorsque tout est effacé",
           "conversation_sessions": "Sessions de conversation",
+          "room_conversation_handoff": "Passage de la conversation d'une pièce à l'autre",
+          "verified_bedtime": "Coucher vérifié au rez-de-chaussée",
+          "verified_bedtime_lights": "Lumières du rez-de-chaussée au coucher",
+          "verified_bedtime_contacts": "Contacts d'ouverture du rez-de-chaussée au coucher",
           "session_seconds": "Délai d’inactivité de session",
           "guarded_control": "Confirmation vocale obligatoire",
+          "routine_verify": "Vérifier que les routines ont fonctionné",
           "voice_unlock": "Autoriser le déverrouillage par la voix",
           "voice_undo": "Annuler les modifications récentes de l’éclairage",
           "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
           "security_incidents": "Regrouper les incidents de sécurité",
+          "incident_front": "Devant de la maison",
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
           "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
           "update_checker": "Vérifier les mises à jour de Sentient",
+          "contextual_followups": "Relances et corrections liées",
           "conversation_recovery": "Annulation et reprise prudente des conversations",
           "speech_failure_notification": "Signaler les échecs de diffusion vocale",
           "recent_followup_context": "Suivis courts après un nouveau mot de réveil",
@@ -156,8 +190,21 @@
           "vary_replies": "Varier les réponses",
           "behaviour_explanations": "Expliquer les décisions d’écoute et d’action",
           "current_house_context": "Contexte actuel de la maison",
+          "moment_awareness": "Conscience du moment",
+          "room_memory": "Mémoire à court terme par pièce",
+          "know_people": "Savoir qui parle probablement",
+          "instant_answers": "Réponses instantanées",
+          "capability_awareness": "Savoir ce que la maison peut faire",
           "house_context_entities": "Entités supplémentaires du contexte",
-          "house_context_updates": "Signaler quand la température demandée est atteinte"
+          "house_context_updates": "Signaler quand la température demandée est atteinte",
+          "security_event_evidence": "Relier les alertes de sécurité aux événements Frigate",
+          "security_event_zones": "Quels événements caméra sont listés",
+          "security_event_hidden_zones": "Zones dont les événements ne sont pas listés",
+          "security_coverage": "Expliquer les angles morts des caméras",
+          "frigate_pipeline_health": "Afficher l'état du pipeline Frigate",
+          "security_conversation_context": "Garder l'événement de sécurité dans la conversation",
+          "security_event_feedback": "Enregistrer les avis sur les événements caméra",
+          "share_clip_analysis": "Réutiliser les analyses de clips correspondantes"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -188,11 +235,23 @@
           "carry_on_minutes": "Redire le mot d'activation peu après avoir parlé poursuit la même conversation sur le même appareil, pour que « et à l'étage ? » ait encore un sens. 0 désactive ; Home Assistant oublie une conversation après cinq minutes sans échange.",
           "focused_tools": "Ne donner à la voix que les outils de Sentient adaptés à la demande (caméras, chauffage, rappels…), plus la mémoire et la sécurité. Un choix plus restreint rend les modèles économiques plus rapides et plus précis. Ce qui ne correspond clairement à rien reçoit tous les outils.",
           "ask_later": "Quand quelqu'un mentionne un événement à venir (un voyage, un match, le vétérinaire), la voix peut penser à demander comment ça s'est passé la prochaine fois qu'on lui parle — une seule fois, jamais pendant les heures calmes ni avec des invités, et jamais sur un sujet privé. Elle ne parle jamais d'elle-même. Désactiver ceci oublie ce qui attendait d'être demandé.",
+          "put_right": "Quand vous dites « non, l'autre » ou « pas cette lumière, la lampe », la voix remet ce qu'elle vient de commuter (allumé ou éteint, dans les dernières minutes) et refait la demande avec seulement la partie corrigée — inutile de tout répéter. Désactiver ceci laisse la correction à l'agent vocal.",
+          "music": "Avec Music Assistant configuré (ou Musique via Alexa activée) : « mets quelque chose de calme dans la cuisine » choisit parmi vos playlists et stations de radio et le joue sur le lecteur Music Assistant de cette pièce (ou le demande à l'Echo de cette pièce) — au volume de nuit pendant les heures calmes, et pas dans une pièce pendant ses propres heures calmes, sauf si vous y êtes. Désactivé : pas d'outil musical.",
+          "music_alexa": "Activé : « mets quelque chose de calme dans la cuisine » demande à l'Echo de cette pièce (Alexa Media Player) de le jouer depuis le service ci-dessous, par son nom — une playlist, un artiste, un morceau ou une ambiance — au volume de nuit pendant les heures calmes, et pas dans une pièce pendant ses propres heures calmes, sauf si vous y êtes. Le service doit être associé dans l'application Alexa. Utilisé à la place de Music Assistant quand les deux sont configurés (Music Assistant ne peut pas lire Spotify sans Premium). Désactivé : on ne demande jamais de musique aux Echo.",
+          "music_alexa_service": "Le service depuis lequel jouent les Echo. Spotify fonctionne avec un compte gratuit, mais Alexa peut jouer une musique similaire au lieu du morceau exact ; Premium joue exactement ce qui est demandé.",
           "house_rules": "Instructions en langage naturel que toutes les voix doivent respecter, une par ligne, par exemple « Ne jamais dire que la maison est vide ».",
           "no_security_offers": "Retire des réponses de la voix toute phrase qui propose d'armer ou de désarmer l'alarme ou de déverrouiller une porte (« Voulez-vous que je l'arme ? »), même quand la réponse est dite au fil de l'écriture. Les réponses à quelqu'un qui a demandé d'armer, désarmer, verrouiller ou déverrouiller ne sont pas touchées, pour que la confirmation soit toujours demandée. Désactivé par défaut.",
           "learn_entities": "Lumières, interrupteurs, ventilateurs et volets actionnés manuellement. Chaque nuit, les deux dernières semaines sont analysées pour détecter les habitudes horaires et les actions qui suivent un événement.",
+          "learn_anchors": "Une habitude calée sur le coucher du soleil, le lever du soleil ou le réveil plutôt que sur l'horloge (la lampe au crépuscule, les volets au lever du soleil, la bouilloire après le lever) est apprise ainsi, pour qu'une routine que la maison fait pour vous suive les saisons. Le réveil nécessite le réglage endormi/éveillé. Désactivé : tout est appris selon l'horloge, comme avant.",
+          "offer_together": "Quand quelques choses arrivent d'habitude à peu près à la même heure les mêmes jours (la lampe allumée, les volets fermés, la télé allumée vers 20 h), elles sont proposées une seule fois, ensemble — un oui et la maison fait tout. Désactivé : chacune est proposée séparément.",
+          "trust_lights": "Quand une routine que vous avez confiée à la maison commute une lumière : le faire simplement, le dire d'abord, ou demander et ne le faire qu'après un oui (rien ne se passe si personne ne répond).",
+          "trust_switches": "Pareil pour les interrupteurs, prises connectées et ventilateurs.",
+          "trust_covers": "Pareil pour les volets et rideaux. Les portes de garage et portails demandent toujours.",
+          "trust_heating": "Pareil pour chauffer avant que les gens se lèvent. Demander d'abord signifie qu'il ne peut pas chauffer pendant que tout le monde dort.",
           "link_triggers": "Facultatif : événements supplémentaires pouvant déclencher une habitude (téléviseur allumé, capteur de lit…). Les portes, fenêtres et éclairages appris sont toujours pris en compte.",
           "suggest_routines": "Pour chaque nouvelle routine, demander une seule fois pendant la journée, lorsqu’une personne est présente, si la maison doit désormais l’exécuter.",
+          "prove_routines": "Une habitude tout juste apprise est d'abord observée : chaque jour après l'avoir apprise, Sentient vérifie si une personne l'a vraiment faite dans les 45 minutes autour de son heure habituelle. Elle n'est proposée qu'une fois juste au moins 3 jours sur 4 où elle s'appliquait (semaine, week-end ou tous les jours). Réglages › Apprentissage montre où en est chacune. Désactivé : les habitudes sont proposées dès qu'elles sont apprises.",
+          "routine_fading": "Activé : quand une routine que la maison fait pour vous était déjà faite à son heure 5 jours sur deux semaines (quelqu'un la fait désormais lui-même), Sentient demande une fois s'il faut la garder, et arrête si vous dites non. Seules les dates sont conservées, deux semaines au plus. Désactivé : les routines de la maison sont gardées jusqu'à ce que vous disiez le contraire.",
           "door_camera": "Analysée une fois lorsque la sonnette retentit pour enregistrer la visite.",
           "door_triggers": "Bouton de sonnette (capteur binaire ou événement) ou autre déclencheur signalant une présence à la porte.",
           "announce_visitors": "Désactivé : les visites sont simplement consignées et restent consultables par les assistants vocaux.",
@@ -220,10 +279,13 @@
           "face_sensor": "Facultatif : capteur de reconnaissance faciale dont l’état correspond au dernier nom reconnu (par exemple Frigate). Utilisé dans le journal et, si activé, dans l’annonce.",
           "sidebar_panel": "Page de la barre latérale affichant les souvenirs, routines, surveillances, visiteurs et annonces.",
           "page_admin_only": "Masque la page, et ce qu’elle affiche, à tous sauf aux administrateurs. Désactivé, la page reste ouverte à tout le foyer. Rien n’est supprimé.",
+          "custom_pages": "Activé : les onglets Vue d'ensemble, Maison, Esprit et Sécurité utilisent votre mise en page enregistrée, et les administrateurs ont ici MODIFIER LA MISE EN PAGE pour déplacer des cartes entre colonnes, les masquer, les réafficher ou réinitialiser un onglet. Il n'y a pas de bouton de modification sur les onglets eux-mêmes, seulement pendant l'édition. La mise en page est enregistrée dans Sentient, donc chaque écran affiche la même chose. Désactivé : les onglets reviennent à la mise en page standard ; votre mise en page enregistrée est conservée pour quand vous le réactiverez.",
           "confirm_kinds": "Demande à l’IA de décrire ces actions et d’attendre une confirmation. Il s’agit d’une instruction donnée au modèle, pas d’un blocage technique : l’agent conversationnel contrôle l’exécution. L’arrêt d’un appareil ne nécessite pas de confirmation. Si vide : aucune confirmation supplémentaire. Pour une vérification obligatoire, activez le contrôle protégé avec l’agent requis.",
           "auto_backup": "Chaque dimanche soir, sauvegarde des souvenirs, zones, routines, éclairages sur mouvement, silences et paramètres dans le dossier de configuration sentient_backups.",
           "backup_keep": "Les sauvegardes les plus anciennes sont supprimées.",
           "suggestions": "Sentient propose, une à la fois, des ressources disponibles mais non utilisées : nouveau haut-parleur, capteur de consommation du lave-linge ou thermomètre du clapier. « Oui » ajoute la ressource ; « non » empêche de la reproposer. Gratuit, sans IA.",
+          "whats_new": "Après une mise à jour de Sentient, une courte carte sur la page Sentient indique les nouveautés, en mots simples, jusqu'à ce que vous touchiez COMPRIS.",
+          "simple_settings": "La liste des réglages montre l'essentiel, avec TOUT AFFICHER pour les fonctions facultatives. Les nouvelles installations commencent ainsi. Ne change rien à ce que fait Sentient.",
           "chat_agent": "Agent qui répond dans le champ de question de la page. Choisissez un agent vocal pour lequel Sentient est activé. Si vide : utilise le pipeline Assist préféré.",
           "health_ignore": "Entités et appareils à ne pas considérer comme problématiques, par exemple un équipement volontairement éteint.",
           "hide_substreams": "Ne compte pas les flux HD et SD, les captures d’écran et les cartes parmi les caméras, pour qu’une sonnette ne compte pas pour plusieurs caméras. Rien n’est supprimé dans Home Assistant.",
@@ -235,6 +297,8 @@
           "thoughts": "Une courte liste à la première personne sur la page Esprit, et une estimation de la pièce où l’on va ensuite, avec le taux de réussite. Sans IA. Désactiver arrête les estimations et masque la liste ; ce qui a été appris est conservé.",
           "share_learning": "Une fois en soirée (17 h–20 h 30), quand quelqu’un est là et hors des heures calmes, il dit une chose apprise ou révisée ces deux derniers jours. Jamais deux fois la même. Désactiver garde tout sur la page Esprit, en silence.",
           "self_adjust": "Quand la vérification trouve un type de remarque souvent suivi d’un « chut », il la rend un peu plus rare (comme un pouce baissé ; cela s’estompe). Jamais pour la sécurité ou ce qu’il commande.",
+          "proposals": "Quand l'auto-vérification trouve quelque chose qu'il a mal fait, il propose un petit changement sur la page Esprit — moins de remarques, ne pas en répéter une aussi souvent, une section ajoutée au résumé, une limite IA plus haute — avec la raison. Rien ne change tant que vous ne dites pas oui ; après un non, il ne redemande pas avant un mois. Désactiver ceci efface les suggestions en attente.",
+          "privacy_log": "Chaque appel IA et recherche web de Sentient est noté — quelle fonction, combien d'images, de clips ou de documents, et quel service — jamais ce qui a été dit ou montré. À voir dans Cerveau et système → Ce qui sort de la maison, avec un bouton pour oublier les dernières 48 heures. Désactiver ceci efface l'enregistrement.",
           "goals": "Permettre à la voix de fixer des objectifs sur des jours ou des semaines. Un objectif peut suivre un capteur et comparer chaque jour à la semaine précédente. Rien n’est modifié dans la maison.",
           "manuals": "Répondre aux questions à partir des documents du dossier ci-dessous (un appel IA par question).",
           "manuals_folder": "Un dossier des médias de Home Assistant (ex. manuals = media/manuals). Nommez chaque fichier d’après son objet, ex. « Purificateur d’air.pdf ».",
@@ -248,9 +312,14 @@
           "books_folder": "Un dossier des médias de Home Assistant (books = media/books). Ebooks .epub ou .txt sans DRM ; livres audio en un fichier .mp3/.m4b/.m4a ou un dossier de parties.",
           "reading_tts": "Un autre service de synthèse vocale rien que pour les livres et les histoires. Laissez vide pour la voix habituelle. Les Echo utilisent toujours la voix d'Alexa.",
           "reading_voice": "Choisissez la voix de ce service. ESSAYER LA VOIX la fait entendre sur le haut-parleur par défaut avant d'enregistrer.",
+          "read_ahead": "Avec une voix de lecture, la partie suivante de l'histoire est préparée pendant la lecture de celle-ci, pour qu'une voix lente (gratuite ou dans le cloud) ne laisse pas de blanc entre les parties. Utilise cette voix un peu plus tôt, jamais plus souvent.",
           "recipes": "« Faisons les lasagnes » : les ingrédients, puis une étape à la fois — « suivant », « répète », « reviens en arrière » — en gardant l’étape par enceinte. Ajustement des portions ; ingrédients sur la liste de courses.",
           "recipes_folder": "Un dossier des médias de Home Assistant (recipes = media/recipes) avec PDF, photos, texte ou Markdown. Chacun est mis en étapes par un appel IA la première fois. Mealie est utilisé automatiquement s’il est installé.",
           "recipes_list": "Où ajouter les ingrédients. Vide : la liste dont le nom contient « shopping ».",
+          "voice_lists": "Activé : « coche le lait », « qu'y a-t-il sur la liste de courses ? », « enlève les sacs poubelle » — les articles sont trouvés quelle que soit la façon de les dire (majuscules, pluriels, le seul lait de la liste), en cas de deux correspondances possibles il demande laquelle, et Sentient ne dit que c'est fait qu'une fois que la liste l'affiche. Utilise les listes exposées à Assist (toutes si aucune ne l'est), et la liste de courses sauf si une autre est nommée. Pas d'IA propre. Désactivé : la voix utilise les commandes de listes de Home Assistant. Rien n'est conservé.",
+          "ready_tonight": "« Assure-toi que tout est prêt pour ce soir » : vérifie les portes, fenêtres et serrures qu'Assist voit, n'éteint que les lumières choisies ci-dessous, regarde le chauffage et dit ce qui est encore ouvert, déverrouillé, allumé ou ne peut pas être confirmé. Les serrures, l'alarme et le chauffage ne sont jamais modifiés, et l'alarme n'est jamais proposée. Pas d'IA propre. Désactivé : la voix peut toujours vérifier la maison, mais ceci n'est pas proposé. Rien n'est conservé.",
+          "ready_tonight_lights": "Les seules lumières que « prêt pour la nuit » peut éteindre. Chacune est vérifiée ensuite. Vide : aucune lumière n'est éteinte, elles sont seulement signalées.",
+          "ready_tonight_follow": "Quand quelque chose est encore ouvert ou déverrouillé, le surveiller jusqu'à trois heures et dire une fois, sur le haut-parleur où vous avez demandé, quand tout est réglé. Continue après un redémarrage.",
           "tandoor_url": "Facultatif : l’adresse de Tandoor Recipes.",
           "tandoor_token": "Facultatif : un jeton API de Tandoor. Conservé dans Home Assistant uniquement.",
           "voice_agent": "Agent IA qui répond habituellement (par exemple Google AI). Si vide : utilise l’agent de conversation de la page.",
@@ -260,6 +329,10 @@
           "away_lights_on": "Lorsque tout le monde est absent après la tombée de la nuit, les lumières reproduisent leur utilisation à la même heure la semaine précédente, selon l’historique Home Assistant. Le mode ne démarre pas ou s’arrête si quelqu’un est présent ou si un mouvement intérieur récent est détecté. Les lumières allumées sont ensuite remises dans leur état initial. Un interrupteur « Éclairage d’absence » est également disponible.",
           "away_people": "Si vide : toutes les personnes configurées. Vous pouvez choisir des téléphones (suivi d’appareil) à la place.",
           "away_lights": "Si vide : toutes les lumières des pièces, sauf écrans, anneaux LED, rétroéclairages et groupes. Seules celles utilisées à cette heure la semaine précédente s’allument.",
+          "holiday_mode": "Un interrupteur « Mode vacances », et à la voix « on part en vacances jusqu'à dimanche ». Tant qu'il est activé, rien n'est dit à voix haute sauf les alertes de sécurité — ce qui aurait été dit part sur les téléphones choisis pour les notifications, avec les visiteurs et les colis ; les lumières d'absence fonctionnent même si elles sont normalement désactivées ; et les thermostats ci-dessous sont baissés. Désactivé : pas d'interrupteur ni de vacances à la voix.",
+          "holiday_thermostats": "Baissés en hors-gel pendant votre absence, et remis exactement comme avant à la fin du mode vacances. Vide : le chauffage n'est pas touché.",
+          "holiday_frost": "La consigne des thermostats ci-dessus pendant votre absence.",
+          "holiday_end_on_return": "Une fois tout le monde parti, la première personne de retour met fin au mode vacances et remet le chauffage. Désactivé : il se termine à sa date ou quand on le coupe.",
           "away_after": "Pour éviter d’activer ce mode lors d’une courte sortie.",
           "animal_low": "Avertit une fois lorsque la température descend sous ce seuil (annonce reportée au matin pendant les heures de silence) et prévient la veille d’un gel.",
           "animal_high": "Émet une seule annonce lorsque la température dépasse ce seuil.",
@@ -271,20 +344,28 @@
           "rain_warnings": "Si de la pluie est prévue dans l’heure et qu’une fenêtre ou une porte est ouverte, annonce par exemple « Il va pleuvoir dans l’heure et la fenêtre de la chambre est ouverte ». Utilise les prévisions horaires, sans IA. Une seule annonce par épisode pluvieux.",
           "rain_entities": "Si vide : tous les capteurs de fenêtres et de portes.",
           "self_test": "Pendant la nuit, l’assistant vocal reçoit quelques questions courantes (température extérieure, ouvertures, rappels, alarme, heure). Ses réponses sont comparées aux données réelles de la maison. Toute erreur apparaît dans l’état de santé avec l’outil utilisé. Environ cinq appels IA par exécution. Aucune commande d’appareil.",
+          "self_test_household": "Ajoute environ 7 questions tirées de vos propres appareils : quand une porte ou une fenêtre a été fermée pour la dernière fois, si une lumière est allumée, si une caméra a vu quelqu'un ces deux dernières heures, si quelqu'un est venu à la porte aujourd'hui, une chose qu'il ne peut pas savoir (une réponse inventée échoue), une chose qu'aucun appareil ne peut faire, et une question trop vague pour répondre sans demander laquelle. Commuter quoi que ce soit pendant une question est un échec. Le score et sa tendance sont sur la page Esprit. Environ 7 appels IA de plus par passage.",
           "screen": "Affiche les alertes, notifications et la carte du matin sur la carte d’écran Sentient (custom:sentient-screen-card). Désactivé : affiche uniquement la vue d’ensemble de la maison.",
           "screen_actions": "Par exemple, réveiller une tablette et afficher la page contenant la carte d’écran.",
           "screen_clear_actions": "Par exemple, remettre la tablette sur sa page habituelle.",
-          "conversation_sessions": "Use the Sentient with backup agent. Single commands stop listening unless the spoken reply ends in a question. Information, security, health and system discussions ask if there is anything else and stay open until you say “that’s all”, “enough” or “stop listening”, or the inactivity timeout expires. Say “back to the…” to resume an unfinished topic from this device within 24 hours, without restoring action permissions. The Mind panel shows recent conversation decisions. Follow-up listening needs a compatible Assist device.",
+          "conversation_sessions": "Utilisez l'agent Sentient avec secours. Les commandes simples arrêtent l'écoute, sauf si la réponse parlée se termine par une question. Les échanges sur l'information, la sécurité, la santé et le système demandent s'il y a autre chose et restent ouverts jusqu'à ce que vous disiez « c'est tout », « ça suffit » ou « arrête d'écouter », ou jusqu'à l'expiration du délai d'inactivité. Dites « reviens à… » pour reprendre un sujet inachevé depuis cet appareil dans les 24 heures, sans rétablir les autorisations d'action. Le panneau Esprit montre les décisions récentes des conversations. L'écoute de suivi nécessite un appareil Assist compatible.",
+          "room_conversation_handoff": "Dites « continue avec » et nommez un sujet d'un autre appareil. Les deux demandes doivent venir du même utilisateur Home Assistant identifié. Les relevés récents sont vérifiés et les actions et confirmations précédentes ne sont pas reprises.",
+          "verified_bedtime": "Dites « lance le coucher du rez-de-chaussée » pour éteindre les lumières choisies et vérifier les contacts choisis. Demandez l'état du coucher du rez-de-chaussée pour revérifier, ou dites « annule le coucher du rez-de-chaussée » pour arrêter le suivi.",
+          "verified_bedtime_lights": "Choisissez jusqu'à vingt lumières individuelles exposées à Assist. Les groupes sont exclus et la liste Ne jamais toucher s'applique toujours.",
+          "verified_bedtime_contacts": "Choisissez jusqu'à vingt contacts de porte, de fenêtre ou d'autres ouvertures exposés à Assist à vérifier. Ils sont seulement lus.",
           "session_seconds": "Efface le contexte de session et les actions en attente après ce nombre de secondes sans nouvel échange. L’appareil vocal gère son propre délai de silence. Les confirmations expirent également après 60 secondes.",
-          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "guarded_control": "À activer avec un agent IA dédié et pris en charge : sélectionnez uniquement Sentient protégé sous Contrôler Home Assistant, puis utilisez Sentient avec secours dans le pipeline. Désactivez Préférer le traitement local des commandes et supprimez les déclencheurs de phrases en conflit, qui s'exécutent avant cet agent. Une mauvaise configuration de l'API de l'agent bloque les demandes. Aucun repli sans restriction, ni script, scène ou action d'alarme. Les portes, les démarrages d'appareils et les changements de chauffage importants exigent un oui séparé.",
+          "routine_verify": "Activé : après une routine vocale (bonne nuit, je sors…), chaque lumière, interrupteur, serrure et volet qu'elle a modifié est vérifié quelques secondes plus tard, et la réponse dit ce qui ne s'est pas fait (« C'est fait, sauf la lumière du palier, toujours allumée »). Les étapes qu'il ne peut pas vérifier (scripts, scènes) sont signalées comme non vérifiées, jamais comme faites. Rien n'est relancé ni annulé de lui-même. Désactivé : les routines tournent comme avant, sans vérification.",
           "voice_unlock": "Permet à la confirmation vocale obligatoire de déverrouiller une porte après un « oui » séparé. Désactivé (par défaut), le verrouillage et la fermeture restent possibles, mais pas le déverrouillage ni l’ouverture par la voix, car Sentient ne sait pas qui parle.",
           "voice_undo": "Avec le contrôle protégé, dites « annule ça » pour restaurer les derniers réglages d’éclairage vérifiés. Les lumières modifiées depuis sont ignorées. Cette possibilité expire avec la session et ne concerne jamais les serrures, le chauffage ou les appareils.",
           "evidence_awareness": "Demande à l’assistant de distinguer les observations, déductions, tentatives d’action et états vérifiés des appareils. Des capteurs de sécurité indisponibles empêchent toujours d’affirmer que tout est sécurisé.",
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
+          "incident_front": "Caméras et capteurs à l'avant de la maison (la sonnette, la porte d'entrée). Rien d'ici n'est regroupé en un seul incident de sécurité avec quelque chose qui n'y est pas, et inversement : quelqu'un à la porte d'entrée et quelqu'un au portail de derrière au même moment font deux incidents. Laissez vide pour regrouper uniquement selon l'heure.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
           "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
           "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
+          "contextual_followups": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Garde le sujet pour de courtes relances, actualise les relevés des appareils exposés et clarifie les réglages ambigus. N'accorde pas de droits d'action et ne change pas les règles d'écoute. Désactivé par défaut ; le désactiver efface le contexte temporaire de la conversation.",
           "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut.",
           "speech_failure_notification": "Afficher une notification Home Assistant si la diffusion échoue ou reste incertaine. Désactivé par défaut et en mode invité. Sans contenu vocal ni répétition. Les notifications existantes restent affichées jusqu’à leur fermeture.",
           "recent_followup_context": "Réutiliser un sujet récemment terminé après un nouveau mot de réveil, pour le même appareil et utilisateur. Nécessite les sessions et les suivis contextuels. Respecte le délai de session, sans restaurer une autorisation ni l’écoute. Désactivé par défaut. Terminer ou oublier efface le contexte.",
@@ -292,8 +373,21 @@
           "vary_replies": "La voix voit ses dernières réponses de la journée et ne doit pas en reprendre les phrases ni les débuts. Pas dans les pièces privées ni en mode invités. Les réponses répétées sont comptées dans tous les cas. Désactivé par défaut.",
           "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire.",
           "current_house_context": "Fournir aux conversations un aperçu pertinent des états exposés, des changements récents et de la tâche en cours. Désactivé par défaut et en mode invité, sans appel IA en arrière-plan. Les changements expirent après 30 minutes. Désactiver ou oublier efface ce contexte en mémoire.",
+          "moment_awareness": "Chaque réponse vocale reçoit un court aperçu du « maintenant » à partir de ce que Sentient garde déjà : qui est à la maison et depuis quand, les pièces avec du mouvement, ce qui s'est passé ces 45 dernières minutes et tout ce qui est inhabituel aujourd'hui. Sans IA et rien n'est conservé. Dans une pièce privée ou en mode invités, seul le mouvement est donné. Désactivé : rien de tout cela n'est ajouté.",
+          "room_memory": "Chaque réponse vocale dans une pièce reçoit ce qui s'y est passé dans la dernière heure : conversations précédentes dans cette pièce, ce qui y a été commuté à la voix et ce qui y a été annoncé. Si quelqu'un parlait dans une autre pièce il y a quelques minutes et que rien n'a été dit ici depuis, cette conversation suit aussi, pour reprendre là où on s'était arrêté. Rien de nouveau n'est conservé. Les pièces privées et le mode invités ne reçoivent que l'historique de leur propre pièce. Désactivé : rien de tout cela n'est ajouté.",
+          "know_people": "Quand la reconnaissance vocale n'a pas nommé la personne qui parle, Sentient déduit qui c'est probablement à partir d'éléments fiables : un message tapé dans l'application Home Assistant vient du compte de cette personne, ou son téléphone est le seul suivi dans la pièce. La voix apprend qui c'est probablement et met en avant ce que cette personne lui a dit sur elle-même. Une supposition n'autorise jamais rien qui demande une confirmation, et rien n'est enregistré à son nom pour autant. Pas en mode invités ni dans les pièces privées. Désactivé : aucune supposition.",
+          "instant_answers": "Les questions courantes reçoivent une réponse directe de la maison, avant l'IA : l'heure, la météo dehors, si un appareil nommé est allumé, éteint, ouvert ou verrouillé, la température d'une pièce, le prochain réveil ou rappel, les visiteurs et si la maison est fermée. Seulement des questions, seulement un appareil qui correspond clairement et est exposé aux assistants vocaux ; tout le reste va à l'IA comme d'habitude. L'échange est ajouté à la conversation pour qu'une relance sache ce qui a été demandé. Les invités et les pièces privées n'ont que l'heure, la météo et l'état des appareils. Désactivé : toutes les questions vont à l'IA.",
+          "capability_awareness": "La voix apprend quels types de choses elle peut contrôler à la voix dans cette maison (d'après ce qui est exposé aux assistants vocaux, avec leur nombre) et lesquels, parmi les plus courants, la maison n'a pas, comme les serrures connectées ou les volets motorisés, pour ne jamais proposer ce qu'aucun appareil ne sait faire. Une proposition qui passe quand même (fermer une fenêtre, verrouiller une porte) est retirée de la réponse avant d'être dite. Calculé toutes les cinq minutes, sans IA. Désactivé : rien n'est ajouté ni retiré.",
           "house_context_entities": "Appareils à inclure dans les résumés généraux, avec le chauffage et les capteurs d’ouverture ou de présence. Seuls les appareils exposés et accessibles sont partagés, avec huit relevés pertinents au maximum.",
-          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente."
+          "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente.",
+          "security_event_evidence": "Utiliser les identifiants d'événements, captures et clips Frigate sur les caméras configurées. Une correspondance unique caméra/heure est un lien possible, pas une preuve qu'un capteur a identifié cet événement. Conserver jusqu'à 3 000 événements pendant sept jours, en local. Désactivé par défaut. Le désactiver masque les liens et arrête la mise en correspondance ; les données conservées expirent ou peuvent être oubliées.",
+          "security_event_zones": "Seulement ce qui entre dans une zone : sur une caméra avec des zones Frigate, un événement n'est listé (et ne peut lancer un incident de sécurité) qu'une fois l'objet entré dans l'une d'elles, la même règle que Frigate utilise pour ses alertes. Une caméra sans zones liste tout. Tout ce qui est détecté : chaque objet suivi par Frigate sur les caméras choisies. Les réglages de Frigate ne sont jamais modifiés.",
+          "security_event_hidden_zones": "Une par ligne sous la forme caméra/zone, par exemple gate/driveway. Les événements qui ne sont que dans ces zones ne sont pas listés et ne lancent pas d'incident de sécurité. Utilisez MASQUER CETTE ZONE sur la page Sécurité après quelques corrections « pas une personne » à cet endroit, ou retirez une ligne pour relister la zone. Frigate n'est pas modifié.",
+          "security_coverage": "Afficher quelles caméras configurées ont fourni des preuves conservées et les éventuels signalements d'indisponibilité enregistrés avec les incidents en cours. Les signalements actuels des caméras sont affichés à part. Désactiver ceci efface les angles morts conservés.",
+          "frigate_pipeline_health": "Lire la disponibilité MQTT de Frigate, les taux de traitement par caméra et quand Sentient a reçu son dernier événement. Les données manquantes s'affichent comme inconnues. Aucun réglage de caméra n'est modifié.",
+          "security_conversation_context": "Se souvenir de l'événement choisi jusqu'à cinq minutes dans la même conversation, sur le même appareil et pour le même utilisateur. Les relances utilisent cet événement et des relevés de présence récents ; aucune identité ni présence continue n'est supposée. Suit les événements des caméras configurées. Désactivé par défaut. Le désactiver efface les références de la conversation ; les événements enregistrés expirent normalement.",
+          "security_event_feedback": "Les administrateurs peuvent marquer une visite comme bien vue, pas une personne, ou à ignorer. Les visites examinées passent dans une liste Examinées repliée, et « pas une personne » compte aussi comme fausse détection examinée pour un incident de sécurité composé de cette seule visite. Les corrections restent sept jours. Aucune modification automatique des détecteurs, de l'alarme ni des règles de notification. Désactiver masque les avis et arrête les nouvelles corrections ; utilisez Oublier les données récentes pour effacer les enregistrements.",
+          "share_clip_analysis": "Partager les analyses génériques compatibles d'un même événement Frigate terminé entre le visionnage automatique des clips et les questions sur les clips. Le fournisseur, la couverture des images et les réglages d'identité doivent correspondre. Les questions personnalisées sont analysées à part. Garder au plus 100 résultats en mémoire pendant six heures. Désactivé par défaut. Désactiver, modifier les réglages ou oublier vide le cache."
         }
       }
     },
@@ -349,11 +443,23 @@
           "carry_on_minutes": "Poursuivre une conversation pendant",
           "focused_tools": "Outils vocaux ciblés",
           "ask_later": "Demander comment ça s’est passé",
+          "put_right": "Corriger les erreurs en une fois",
+          "music": "De la musique à la demande",
+          "music_alexa": "Musique via Alexa (les Echo)",
+          "music_alexa_service": "Service musical pour les Echo",
           "house_rules": "Règles de la maison",
           "no_security_offers": "Ne jamais proposer d'armer, de désarmer ou de déverrouiller",
           "learn_entities": "Apprendre les routines à partir de",
+          "learn_anchors": "Habitudes qui suivent la journée",
+          "trust_lights": "Lumières",
+          "trust_switches": "Interrupteurs, prises et ventilateurs",
+          "trust_covers": "Volets et rideaux",
+          "trust_heating": "Chauffage",
+          "offer_together": "Proposer en une fois les habitudes qui vont ensemble",
           "link_triggers": "Apprendre également ce qui suit ces événements",
           "suggest_routines": "Proposer d’automatiser les routines",
+          "prove_routines": "Les habitudes doivent d'abord faire leurs preuves",
+          "routine_fading": "Demander pour les routines qui ne servent plus",
           "door_camera": "Caméra de la porte",
           "door_triggers": "Sonnette",
           "announce_visitors": "Annoncer qui est à la porte",
@@ -381,7 +487,10 @@
           "face_sensor": "Nom reconnu depuis",
           "sidebar_panel": "Afficher dans la barre latérale",
           "page_admin_only": "Page réservée aux administrateurs",
+          "custom_pages": "Réorganiser la page Sentient",
           "suggestions": "Suggestions sur la page Sentient",
+          "whats_new": "Nouveautés après une mise à jour",
+          "simple_settings": "Page de réglages simplifiée",
           "auto_backup": "Sauvegarder chaque semaine",
           "backup_keep": "Nombre de sauvegardes à conserver",
           "confirm_kinds": "Demander confirmation avant",
@@ -398,6 +507,8 @@
           "thoughts": "Montrer ce qu’il pense",
           "share_learning": "Dire ce qu’il a appris",
           "self_adjust": "S’ajuster",
+          "proposals": "Proposer des changements à ses réglages",
+          "privacy_log": "Garder une trace de ce qui sort de la maison",
           "goals": "Objectifs",
           "manuals": "Répondre à partir des documents",
           "manuals_folder": "Dossier des documents",
@@ -411,9 +522,14 @@
           "books_folder": "Dossier des livres",
           "reading_tts": "Voix de lecture : service",
           "reading_voice": "Voix de lecture",
+          "read_ahead": "Préparer la suite pendant la lecture",
           "recipes": "Recettes",
           "recipes_folder": "Dossier des recettes",
           "recipes_list": "Liste de courses pour les ingrédients",
+          "voice_lists": "Listes de courses et de tâches à la voix",
+          "ready_tonight": "Prêt pour la nuit",
+          "ready_tonight_lights": "Prêt pour la nuit : lumières qu'il peut éteindre",
+          "ready_tonight_follow": "Prêt pour la nuit : prévenez-moi quand c'est fait",
           "tandoor_url": "Adresse de Tandoor",
           "tandoor_token": "Jeton API Tandoor",
           "second_opinion_ai": "Deuxième avis de l’IA",
@@ -440,6 +556,7 @@
           "energy_insight": "Analyse énergétique",
           "energy_price": "Prix de l’électricité",
           "energy_currency": "Devise",
+          "price_entity": "Prix heures creuses (suggestions d'électricité bon marché)",
           "search_hints": "Signaler les outils de recherche à la voix",
           "web_search": "Recherche web de Sentient",
           "searxng_url": "Adresse SearXNG",
@@ -520,6 +637,10 @@
           "offline_answers": "Répondre aux questions courantes sans l’IA",
           "animal_sensors": "Capteurs de température des animaux",
           "away_lights_on": "Éclairage en cas d’absence",
+          "holiday_mode": "Mode vacances",
+          "holiday_thermostats": "Thermostats à baisser pendant les vacances",
+          "holiday_frost": "Température hors-gel",
+          "holiday_end_on_return": "Terminer le mode vacances quand quelqu'un est à la maison",
           "away_people": "Activer le mode absence lorsque tous sont sortis",
           "away_lights": "Éclairages à utiliser",
           "away_after": "Démarrer après une absence de",
@@ -533,26 +654,36 @@
           "rain_warnings": "Alertes de pluie",
           "rain_entities": "Fenêtres et portes à surveiller",
           "self_test": "Autotest",
+          "self_test_household": "Questions de la maison dans l'auto-test",
           "screen": "Utiliser l’écran de la tablette",
           "screen_actions": "Lorsqu’un élément apparaît",
           "screen_clear_actions": "Lorsque tout est effacé",
           "conversation_sessions": "Sessions de conversation",
+          "room_conversation_handoff": "Passage de la conversation d'une pièce à l'autre",
+          "verified_bedtime": "Coucher vérifié au rez-de-chaussée",
+          "verified_bedtime_lights": "Lumières du rez-de-chaussée au coucher",
+          "verified_bedtime_contacts": "Contacts d'ouverture du rez-de-chaussée au coucher",
           "session_seconds": "Délai d’inactivité de session",
           "guarded_control": "Confirmation vocale obligatoire",
+          "routine_verify": "Vérifier que les routines ont fonctionné",
           "voice_unlock": "Autoriser le déverrouillage par la voix",
           "voice_undo": "Annuler les modifications récentes de l’éclairage",
           "evidence_awareness": "Expliquer les éléments de preuve et les incertitudes",
           "security_incidents": "Regrouper les incidents de sécurité",
+          "incident_front": "Devant de la maison",
           "live_voice_check": "Test vocal en direct",
           "speech_delivery_history": "Historique des annonces par enceinte",
           "alexa_tts_only": "Utiliser uniquement le TTS sur Alexa",
           "update_checker": "Vérifier les mises à jour de Sentient",
+          "contextual_followups": "Relances et corrections liées",
           "conversation_recovery": "Annulation et reprise prudente des conversations",
           "automatic_language": "Prise en charge automatique des langues",
           "voice_language": "Langue de la voix et des conversations",
           "remember_language_phrases": "Mémoriser les phrases courantes traduites",
           "stream_voice_replies": "Réponses vocales en continu (essai)",
           "voice_timing_diagnostics": "Diagnostic du temps de réponse vocale",
+          "reliability_log": "Noter où la voix se trompe",
+          "unified_evidence": "Recherche groupée dans l'historique de la maison",
           "specific_clarification": "Questions précises sur les appareils et les valeurs",
           "action_recovery": "Résultats des appareils et récupération prudente",
           "recheck_unconfirmed": "Revérifier les changements non confirmés",
@@ -562,39 +693,75 @@
           "vary_replies": "Varier les réponses",
           "behaviour_explanations": "Expliquer les décisions d’écoute et d’action",
           "current_house_context": "Contexte actuel de la maison",
+          "moment_awareness": "Conscience du moment",
+          "room_memory": "Mémoire à court terme par pièce",
+          "know_people": "Savoir qui parle probablement",
+          "instant_answers": "Réponses instantanées",
+          "capability_awareness": "Savoir ce que la maison peut faire",
           "house_context_entities": "Entités supplémentaires du contexte",
           "house_context_updates": "Signaler quand la température demandée est atteinte",
+          "security_event_evidence": "Relier les alertes de sécurité aux événements Frigate",
+          "security_event_zones": "Quels événements caméra sont listés",
+          "security_event_hidden_zones": "Zones dont les événements ne sont pas listés",
+          "security_coverage": "Expliquer les angles morts des caméras",
+          "frigate_pipeline_health": "Afficher l'état du pipeline Frigate",
+          "security_conversation_context": "Garder l'événement de sécurité dans la conversation",
+          "security_event_feedback": "Enregistrer les avis sur les événements caméra",
+          "share_clip_analysis": "Réutiliser les analyses de clips correspondantes",
           "heating_graph": "Graphique de température sur la carte du chauffage",
           "heating_revert": "Retour au programme après un changement manuel",
+          "window_heating": "Baisser le radiateur d'une pièce quand sa fenêtre est ouverte",
+          "window_heating_minutes": "Minutes de fenêtre ouverte avant d'agir",
           "rooms_view": "Pièces en un coup d’œil (onglet Maison et vue d’ensemble)",
+          "outdoor_areas": "Zones extérieures",
           "knowledge_card": "Carte CE QUE JE SAIS dans l’onglet Esprit",
           "day_chart": "Graphique LA JOURNÉE JUSQU’ICI sur la vue d’ensemble",
-          "house_ledger": "House ledger",
-          "unexplained_changes": "Mention unexplained changes",
-          "unexplained_entities": "Devices to watch for unexplained changes",
-          "expectations": "Expectations and surprise",
-          "surprise_gating": "Skip remarks about what's usual",
-          "situations": "Tell the voice what's going on now",
-          "beliefs": "Form and test beliefs",
-          "learn_reactions": "Learn from reactions",
-          "ai_case_memory": "Save AI calls (case memory)",
+          "house_ledger": "Registre de la maison",
+          "unexplained_changes": "Signaler les changements inexpliqués",
+          "unexplained_entities": "Appareils à surveiller pour les changements inexpliqués",
+          "expectations": "Attentes et surprise",
+          "surprise_gating": "Passer les remarques sur ce qui est habituel",
+          "situations": "Dire à la voix ce qui se passe maintenant",
+          "beliefs": "Former et tester des convictions",
+          "learn_reactions": "Apprendre des réactions",
+          "ai_case_memory": "Économiser des appels IA (mémoire des cas)",
           "memory_tags": "Rappel par le sens",
-          "voice_speed_watchdog": "Voice speed watchdog",
-          "voice_speed_restart": "Restart a slow speaker by itself",
-          "incident_stages": "Security incident stages",
+          "memory_upkeep": "Une mémoire qui s'entretient toute seule",
+          "watch_actions": "Les surveillances et rappels peuvent agir",
+          "memory_time": "Une mémoire qui comprend le temps",
+          "who_where": "Savoir qui est où",
+          "big_plans": "Des plans pour les grosses demandes",
+          "self_grading": "Noter ses propres réponses",
+          "voice_speed_watchdog": "Surveillance de la vitesse de la voix",
+          "voice_speed_restart": "Redémarrer tout seul un haut-parleur lent",
+          "incident_stages": "Étapes des incidents de sécurité",
           "cognitive_shadow": "Comparer les incidents de sécurité (test)",
-          "weather_warnings": "Weather and flood warnings",
-          "warnings_country": "Country",
-          "warnings_region": "Region (optional)",
-          "warnings_speak": "Say severe warnings",
-          "email_read": "Read-only email",
-          "calendar_clashes": "Calendar clashes",
-          "security_audit": "Security check",
-          "automation_builder": "Build automations",
-          "pronounce_names": "Say names as they're pronounced",
-          "pronunciations": "Pronunciations (one per line)",
-          "health_duplicates": "Spot devices listed twice",
-          "unified_evidence": "Recherche groupée dans l'historique de la maison"
+          "cognitive_decides": "Laisser le noyau cognitif décider des étapes des incidents une fois qu'il l'a mérité",
+          "cognitive_quiet_heads_up": "Test uniquement : évaluer les décisions d'alerte nocturne (sans supprimer d'alerte)",
+          "weather_warnings": "Vigilances météo et inondation",
+          "warnings_country": "Pays",
+          "warnings_region": "Région (facultatif)",
+          "warnings_speak": "Annoncer les vigilances sévères",
+          "email_read": "E-mails en lecture seule",
+          "calendar_clashes": "Chevauchements dans l'agenda",
+          "security_audit": "Vérification de sécurité",
+          "automation_builder": "Créer des automatisations",
+          "pronounce_names": "Dire les noms comme ils se prononcent",
+          "pronunciations": "Prononciations (une par ligne)",
+          "health_duplicates": "Repérer les appareils listés deux fois",
+          "manuals_local_ocr": "Lire les pages PDF numérisées avec l'OCR local",
+          "memory_semantic_enabled": "Classement sémantique local des souvenirs",
+          "memory_semantic_url": "Adresse du serveur d'embeddings local",
+          "memory_semantic_model": "Modèle d'embeddings local",
+          "ai_routing_enabled": "Choisir automatiquement une IA moins chère pour les tâches de texte",
+          "ai_routing_alternative": "Entité de tâche IA alternative",
+          "ai_routing_primary_cost": "Coût estimé par appel de l'IA habituelle",
+          "ai_routing_alternative_cost": "Coût estimé par appel de l'IA alternative",
+          "ai_routing_max_p95_ms": "Temps de réponse maximal de l'IA alternative (ms)",
+          "heating_energy_sensor": "Compteur d'énergie du chauffage (kWh)",
+          "heating_measurement_date": "Date de comparaison de la consommation du chauffage",
+          "heating_energy_price_kwh": "Prix du chauffage par kWh",
+          "autooff_respect_recent_voice": "L'extinction automatique respecte les commandes vocales d'allumage récentes"
         },
         "data_description": {
           "motion_window": "Nombre de minutes d’historique de mouvement utilisées pour déterminer où se trouvent les personnes.",
@@ -625,11 +792,23 @@
           "carry_on_minutes": "Redire le mot d'activation peu après avoir parlé poursuit la même conversation sur le même appareil, pour que « et à l'étage ? » ait encore un sens. 0 désactive ; Home Assistant oublie une conversation après cinq minutes sans échange.",
           "focused_tools": "Ne donner à la voix que les outils de Sentient adaptés à la demande (caméras, chauffage, rappels…), plus la mémoire et la sécurité. Un choix plus restreint rend les modèles économiques plus rapides et plus précis. Ce qui ne correspond clairement à rien reçoit tous les outils.",
           "ask_later": "Quand quelqu'un mentionne un événement à venir (un voyage, un match, le vétérinaire), la voix peut penser à demander comment ça s'est passé la prochaine fois qu'on lui parle — une seule fois, jamais pendant les heures calmes ni avec des invités, et jamais sur un sujet privé. Elle ne parle jamais d'elle-même. Désactiver ceci oublie ce qui attendait d'être demandé.",
+          "put_right": "Quand vous dites « non, l'autre » ou « pas cette lumière, la lampe », la voix remet ce qu'elle vient de commuter (allumé ou éteint, dans les dernières minutes) et refait la demande avec seulement la partie corrigée — inutile de tout répéter. Désactiver ceci laisse la correction à l'agent vocal.",
+          "music": "Avec Music Assistant configuré (ou Musique via Alexa activée) : « mets quelque chose de calme dans la cuisine » choisit parmi vos playlists et stations de radio et le joue sur le lecteur Music Assistant de cette pièce (ou le demande à l'Echo de cette pièce) — au volume de nuit pendant les heures calmes, et pas dans une pièce pendant ses propres heures calmes, sauf si vous y êtes. Désactivé : pas d'outil musical.",
+          "music_alexa": "Sans Music Assistant : « mets quelque chose de calme dans la cuisine » demande à l'Echo de cette pièce (Alexa Media Player) de le jouer depuis le service ci-dessous, par son nom — une playlist, un artiste, une chanson ou une ambiance — au volume de nuit pendant les heures de silence, et pas dans une pièce pendant ses propres heures de silence, sauf si vous y êtes. Le service doit être lié dans l'application Alexa. Désactivé : on ne demande jamais aux Echo de jouer de la musique.",
+          "music_alexa_service": "Le service depuis lequel jouent les Echo. Spotify fonctionne avec un compte gratuit, mais Alexa peut jouer une musique similaire au lieu du morceau exact ; Premium joue exactement ce qui est demandé.",
           "house_rules": "Instructions en langage naturel que toutes les voix doivent respecter, une par ligne, par exemple « Ne jamais dire que la maison est vide ».",
           "no_security_offers": "Retire des réponses de la voix toute phrase qui propose d'armer ou de désarmer l'alarme ou de déverrouiller une porte (« Voulez-vous que je l'arme ? »), même quand la réponse est dite au fil de l'écriture. Les réponses à quelqu'un qui a demandé d'armer, désarmer, verrouiller ou déverrouiller ne sont pas touchées, pour que la confirmation soit toujours demandée. Désactivé par défaut.",
           "learn_entities": "Lumières, interrupteurs, ventilateurs et volets actionnés manuellement. Chaque nuit, les deux dernières semaines sont analysées pour détecter les habitudes horaires et les actions qui suivent un événement.",
+          "learn_anchors": "Une habitude calée sur le coucher du soleil, le lever du soleil ou le réveil plutôt que sur l'horloge (la lampe au crépuscule, les volets au lever du soleil, la bouilloire après le lever) est apprise ainsi, pour qu'une routine que la maison fait pour vous suive les saisons. Le réveil nécessite le réglage endormi/éveillé. Désactivé : tout est appris selon l'horloge, comme avant.",
+          "offer_together": "Quand quelques choses arrivent d'habitude à peu près à la même heure les mêmes jours (la lampe allumée, les volets fermés, la télé allumée vers 20 h), elles sont proposées une seule fois, ensemble — un oui et la maison fait tout. Désactivé : chacune est proposée séparément.",
+          "trust_lights": "Quand une routine que vous avez confiée à la maison commute une lumière : le faire simplement, le dire d'abord, ou demander et ne le faire qu'après un oui (rien ne se passe si personne ne répond).",
+          "trust_switches": "Pareil pour les interrupteurs, prises connectées et ventilateurs.",
+          "trust_covers": "Pareil pour les volets et rideaux. Les portes de garage et portails demandent toujours.",
+          "trust_heating": "Pareil pour chauffer avant que les gens se lèvent. Demander d'abord signifie qu'il ne peut pas chauffer pendant que tout le monde dort.",
           "link_triggers": "Facultatif : événements supplémentaires pouvant déclencher une habitude (téléviseur allumé, capteur de lit…). Les portes, fenêtres et éclairages appris sont toujours pris en compte.",
           "suggest_routines": "Pour chaque nouvelle routine, demander une seule fois pendant la journée, lorsqu’une personne est présente, si la maison doit désormais l’exécuter.",
+          "prove_routines": "Une habitude tout juste apprise est d'abord observée : chaque jour après l'avoir apprise, Sentient vérifie si une personne l'a vraiment faite dans les 45 minutes autour de son heure habituelle. Elle n'est proposée qu'une fois juste au moins 3 jours sur 4 où elle s'appliquait (semaine, week-end ou tous les jours). Réglages › Apprentissage montre où en est chacune. Désactivé : les habitudes sont proposées dès qu'elles sont apprises.",
+          "routine_fading": "Activé : quand une routine que la maison fait pour vous était déjà faite à son heure 5 jours sur deux semaines (quelqu'un la fait désormais lui-même), Sentient demande une fois s'il faut la garder, et arrête si vous dites non. Seules les dates sont conservées, deux semaines au plus. Désactivé : les routines de la maison sont gardées jusqu'à ce que vous disiez le contraire.",
           "door_camera": "Analysée une fois lorsque la sonnette retentit pour enregistrer la visite.",
           "door_triggers": "Bouton de sonnette (capteur binaire ou événement) ou autre déclencheur signalant une présence à la porte.",
           "announce_visitors": "Désactivé : les visites sont simplement consignées et restent consultables par les assistants vocaux.",
@@ -657,10 +836,13 @@
           "face_sensor": "Facultatif : capteur de reconnaissance faciale dont l’état correspond au dernier nom reconnu (par exemple Frigate). Utilisé dans le journal et, si activé, dans l’annonce.",
           "sidebar_panel": "Page de la barre latérale affichant les souvenirs, routines, surveillances, visiteurs et annonces.",
           "page_admin_only": "Masque la page, et ce qu’elle affiche, à tous sauf aux administrateurs. Désactivé, la page reste ouverte à tout le foyer. Rien n’est supprimé.",
+          "custom_pages": "Activé : les onglets Vue d'ensemble, Maison, Esprit et Sécurité utilisent votre mise en page enregistrée, et les administrateurs ont ici MODIFIER LA MISE EN PAGE pour déplacer des cartes entre colonnes, les masquer, les réafficher ou réinitialiser un onglet. Il n'y a pas de bouton de modification sur les onglets eux-mêmes, seulement pendant l'édition. La mise en page est enregistrée dans Sentient, donc chaque écran affiche la même chose. Désactivé : les onglets reviennent à la mise en page standard ; votre mise en page enregistrée est conservée pour quand vous le réactiverez.",
           "confirm_kinds": "Demande à l’IA de décrire ces actions et d’attendre une confirmation. Il s’agit d’une instruction donnée au modèle, pas d’un blocage technique : l’agent conversationnel contrôle l’exécution. L’arrêt d’un appareil ne nécessite pas de confirmation. Si vide : aucune confirmation supplémentaire. Pour une vérification obligatoire, activez le contrôle protégé avec l’agent requis.",
           "auto_backup": "Chaque dimanche soir, sauvegarde des souvenirs, zones, routines, éclairages sur mouvement, silences et paramètres dans le dossier de configuration sentient_backups.",
           "backup_keep": "Les sauvegardes les plus anciennes sont supprimées.",
           "suggestions": "Sentient propose, une à la fois, des ressources disponibles mais non utilisées : nouveau haut-parleur, capteur de consommation du lave-linge ou thermomètre du clapier. « Oui » ajoute la ressource ; « non » empêche de la reproposer. Gratuit, sans IA.",
+          "whats_new": "Après une mise à jour de Sentient, une courte carte sur la page Sentient indique les nouveautés, en mots simples, jusqu'à ce que vous touchiez COMPRIS.",
+          "simple_settings": "La liste des réglages montre l'essentiel, avec TOUT AFFICHER pour les fonctions facultatives. Les nouvelles installations commencent ainsi. Ne change rien à ce que fait Sentient.",
           "chat_agent": "Agent qui répond dans le champ de question de la page. Choisissez un agent vocal pour lequel Sentient est activé. Si vide : utilise le pipeline Assist préféré.",
           "health_ignore": "Entités et appareils à ne pas considérer comme problématiques, par exemple un équipement volontairement éteint.",
           "hide_substreams": "Ne compte pas les flux HD et SD, les captures d’écran et les cartes parmi les caméras, pour qu’une sonnette ne compte pas pour plusieurs caméras. Rien n’est supprimé dans Home Assistant.",
@@ -672,6 +854,8 @@
           "thoughts": "Une courte liste à la première personne sur la page Esprit, et une estimation de la pièce où l’on va ensuite, avec le taux de réussite. Sans IA. Désactiver arrête les estimations et masque la liste ; ce qui a été appris est conservé.",
           "share_learning": "Une fois en soirée (17 h–20 h 30), quand quelqu’un est là et hors des heures calmes, il dit une chose apprise ou révisée ces deux derniers jours. Jamais deux fois la même. Désactiver garde tout sur la page Esprit, en silence.",
           "self_adjust": "Quand la vérification trouve un type de remarque souvent suivi d’un « chut », il la rend un peu plus rare (comme un pouce baissé ; cela s’estompe). Jamais pour la sécurité ou ce qu’il commande.",
+          "proposals": "Quand l'auto-vérification trouve quelque chose qu'il a mal fait, il propose un petit changement sur la page Esprit — moins de remarques, ne pas en répéter une aussi souvent, une section ajoutée au résumé, une limite IA plus haute — avec la raison. Rien ne change tant que vous ne dites pas oui ; après un non, il ne redemande pas avant un mois. Désactiver ceci efface les suggestions en attente.",
+          "privacy_log": "Chaque appel IA et recherche web de Sentient est noté — quelle fonction, combien d'images, de clips ou de documents, et quel service — jamais ce qui a été dit ou montré. À voir dans Cerveau et système → Ce qui sort de la maison, avec un bouton pour oublier les dernières 48 heures. Désactiver ceci efface l'enregistrement.",
           "goals": "Permettre à la voix de fixer des objectifs sur des jours ou des semaines. Un objectif peut suivre un capteur et comparer chaque jour à la semaine précédente. Rien n’est modifié dans la maison.",
           "manuals": "Répondre aux questions à partir des documents du dossier ci-dessous (un appel IA par question).",
           "manuals_folder": "Un dossier des médias de Home Assistant (ex. manuals = media/manuals). Nommez chaque fichier d’après son objet, ex. « Purificateur d’air.pdf ».",
@@ -685,9 +869,14 @@
           "books_folder": "Un dossier des médias de Home Assistant (books = media/books). Ebooks .epub ou .txt sans DRM ; livres audio en un fichier .mp3/.m4b/.m4a ou un dossier de parties.",
           "reading_tts": "Un autre service de synthèse vocale rien que pour les livres et les histoires. Laissez vide pour la voix habituelle. Les Echo utilisent toujours la voix d'Alexa.",
           "reading_voice": "Choisissez la voix de ce service. ESSAYER LA VOIX la fait entendre sur le haut-parleur par défaut avant d'enregistrer.",
+          "read_ahead": "Avec une voix de lecture, la partie suivante de l'histoire est préparée pendant la lecture de celle-ci, pour qu'une voix lente (gratuite ou dans le cloud) ne laisse pas de blanc entre les parties. Utilise cette voix un peu plus tôt, jamais plus souvent.",
           "recipes": "« Faisons les lasagnes » : les ingrédients, puis une étape à la fois — « suivant », « répète », « reviens en arrière » — en gardant l’étape par enceinte. Ajustement des portions ; ingrédients sur la liste de courses.",
           "recipes_folder": "Un dossier des médias de Home Assistant (recipes = media/recipes) avec PDF, photos, texte ou Markdown. Chacun est mis en étapes par un appel IA la première fois. Mealie est utilisé automatiquement s’il est installé.",
           "recipes_list": "Où ajouter les ingrédients. Vide : la liste dont le nom contient « shopping ».",
+          "voice_lists": "Activé : « coche le lait », « qu'y a-t-il sur la liste de courses ? », « enlève les sacs poubelle » — les articles sont trouvés quelle que soit la façon de les dire (majuscules, pluriels, le seul lait de la liste), en cas de deux correspondances possibles il demande laquelle, et Sentient ne dit que c'est fait qu'une fois que la liste l'affiche. Utilise les listes exposées à Assist (toutes si aucune ne l'est), et la liste de courses sauf si une autre est nommée. Pas d'IA propre. Désactivé : la voix utilise les commandes de listes de Home Assistant. Rien n'est conservé.",
+          "ready_tonight": "« Assure-toi que tout est prêt pour ce soir » : vérifie les portes, fenêtres et serrures qu'Assist voit, n'éteint que les lumières choisies ci-dessous, regarde le chauffage et dit ce qui est encore ouvert, déverrouillé, allumé ou ne peut pas être confirmé. Les serrures, l'alarme et le chauffage ne sont jamais modifiés, et l'alarme n'est jamais proposée. Pas d'IA propre. Désactivé : la voix peut toujours vérifier la maison, mais ceci n'est pas proposé. Rien n'est conservé.",
+          "ready_tonight_lights": "Les seules lumières que « prêt pour la nuit » peut éteindre. Chacune est vérifiée ensuite. Vide : aucune lumière n'est éteinte, elles sont seulement signalées.",
+          "ready_tonight_follow": "Quand quelque chose est encore ouvert ou déverrouillé, le surveiller jusqu'à trois heures et dire une fois, sur le haut-parleur où vous avez demandé, quand tout est réglé. Continue après un redémarrage.",
           "tandoor_url": "Facultatif : l’adresse de Tandoor Recipes.",
           "tandoor_token": "Facultatif : un jeton API de Tandoor. Conservé dans Home Assistant uniquement.",
           "second_opinion_ai": "Facultatif : un modèle plus puissant est interrogé uniquement si le modèle habituel juge l’image trop sombre ou peu claire. Compte dans la limite quotidienne.",
@@ -713,6 +902,7 @@
           "energy_insight": "Compare la consommation du jour des appareils du tableau de bord Énergie avec celle de la semaine passée. Affiche une carte Énergie, une section dans les résumés, un outil vocal et des observations sur les consommations inhabituelles. Désactivé : masque et arrête ces fonctions.",
           "energy_price": "Facultatif : tarif unitaire par kWh, pour afficher le coût du jour des appareils du tableau Énergie — en centimes (24,5) ou en euros (0,245) ; les deux fonctionnent.",
           "energy_currency": "Devise des coûts. Vide : la devise de Home Assistant.",
+          "price_entity": "Votre prix actuel de l'électricité, issu de l'intégration de votre fournisseur (Octopus Energy, Nordpool…). S'il indique les tarifs à venir, ils sont utilisés ; sinon, le prix habituel de chaque heure est appris sur la dernière semaine. Une fois par appareil (lave-linge, lave-vaisselle, sèche-linge), il vous demande le soir si vous voulez un rappel pour utiliser le départ différé quand c'est le moins cher la nuit. Vide : désactivé.",
           "search_hints": "Quand Voice Satellite LLM Tools (ou la recherche de Sentient) est installé, la voix sait que les outils de recherche existent.",
           "web_search": "Recherche web vocale via votre SearXNG. Désactivée par défaut.",
           "searxng_url": "Par exemple http://localhost:8080. SearXNG doit autoriser le format json.",
@@ -761,31 +951,31 @@
           "follow_minutes": "Un message non entendu est supprimé après cette durée.",
           "conversation_memory": "Conserve un bref historique des échanges sur chaque haut-parleur pour reprendre une conversation dans une autre pièce. Conservation de deux semaines ; confidentialité préservée en présence d’invités.",
           "follow_ups": "Les assistants vocaux peuvent programmer des suivis (« Je vérifierai dans une heure que la pièce est chaude ») et annoncer la clôture d’une surveillance expirée sans événement.",
-          "curiosity": "At most once a day, when someone's about, it asks about something it can't explain — a regular caller, a pattern it noticed overnight — and remembers the answer.",
-          "reflection": "One AI call each night over the day's log and conversations: new things worth remembering, a thought or two for the morning, and a question to ask.",
-          "reflection_time": "Best in the small hours.",
-          "drive_spot": "The camera spot that shows the drive (draw it on the Spots tab).",
-          "drive_camera": "Only needed if more than one camera has a spot with that name.",
-          "drive_triggers": "Motion or car sensors that see the drive. Empty: the camera's own motion and car sensors.",
-          "camera_wake": "Actions that wake a camera from standby (a wake or refresh button, a stream switch, a script). {{ camera }} is the camera about to be looked at. Empty: cameras are looked at as they are.",
-          "camera_wake_cameras": "Empty: every camera the AI looks at.",
-          "camera_wake_seconds": "Seconds to wait after waking, for a fresh picture.",
-          "known_cars": "One per line, e.g. 'Sam: dark grey hatchback'. The same look at the drive then says whose car arrived ('Sam's car arrived on the drive') — no extra AI. Empty: cars aren't named.",
-          "full_volume_speakers": "Announcements on these are said at 100%, then the volume goes back — for tablets turned down for everything else. Not in quiet hours (the quiet-hours volume is used then).",
-          "tts_entity": "Speakers can be Assist speakers or media players. Echos are spoken to through Alexa Media Player; any other media player (a smart speaker, a Cast device) uses this text-to-speech voice.",
+          "curiosity": "Au plus une fois par jour, quand quelqu'un est là, il pose une question sur quelque chose qu'il ne sait pas expliquer — un visiteur régulier, une habitude remarquée pendant la nuit — et retient la réponse.",
+          "reflection": "Un appel IA chaque nuit sur le journal et les conversations de la journée : de nouvelles choses à retenir, une ou deux pensées pour le matin et une question à poser.",
+          "reflection_time": "De préférence au petit matin.",
+          "drive_spot": "La zone de caméra qui montre l'allée (dessinez-la dans l'onglet Zones).",
+          "drive_camera": "Nécessaire seulement si plusieurs caméras ont une zone portant ce nom.",
+          "drive_triggers": "Détecteurs de mouvement ou de voiture qui voient l'allée. Vide : les détecteurs de mouvement et de voiture de la caméra elle-même.",
+          "camera_wake": "Actions qui réveillent une caméra de sa veille (un bouton de réveil ou d'actualisation, un interrupteur de flux, un script). {{ camera }} est la caméra qui va être regardée. Vide : les caméras sont regardées telles quelles.",
+          "camera_wake_cameras": "Vide : toutes les caméras que l'IA regarde.",
+          "camera_wake_seconds": "Secondes d'attente après le réveil, pour une image fraîche.",
+          "known_cars": "Une par ligne, p. ex. « Sam : citadine gris foncé ». Le même regard sur l'allée dit alors à qui est la voiture arrivée (« La voiture de Sam est arrivée dans l'allée ») — sans IA supplémentaire. Vide : les voitures ne sont pas nommées.",
+          "full_volume_speakers": "Les annonces sur ceux-ci sont dites à 100 %, puis le volume revient — pour les tablettes baissées pour tout le reste. Pas pendant les heures de silence (le volume des heures de silence est alors utilisé).",
+          "tts_entity": "Les haut-parleurs peuvent être des haut-parleurs Assist ou des lecteurs multimédias. On parle aux Echo via Alexa Media Player ; tout autre lecteur (une enceinte connectée, un appareil Cast) utilise cette voix de synthèse vocale.",
           "speak_house_language": "Traduit les phrases anglaises ordinaires avec l'IA existante. Les alertes urgentes utilisent une traduction fixe (français/finnois), le cache ou l'anglais immédiatement, sans attendre l'IA. Le cache temporaire est vidé lors d'un changement de réglages, d'un oubli des données ou d'un déchargement. Les réponses simples oui/non et les fins de conversation sont reconnues en français et en finnois.",
-          "speakers": "Assist speakers or media players (Echos through Alexa Media Player).",
-          "media_speakers": "Off: only the voice speakers are used, even where an alarm or announcement names an Echo (it goes where people are instead). Also an 'Echo speakers' switch for automations and dashboards.",
-          "media_important_only": "On: the Echos only say alarms, reminders and safety alerts; announcements, notices and chat go to the voice speakers instead. Also an 'Echos: alarms and reminders only' switch.",
-          "foresight": "Each evening one AI look at tomorrow's calendars, weather, alarms and reminders. Says something only when there's something to do tonight — frost before an early start, rain on washing day. Usually silent.",
-          "foresight_time": "Before quiet hours start.",
-          "sleep_detection": "Asleep after a bedtime routine, or in quiet hours once nothing inside has moved for a while. Awake in the morning when there's movement in two rooms (or a light switched on by hand). A House sensor shows it.",
-          "bedtime_routines": "Routines that mean everyone's gone to bed, comma separated. Empty: any routine with 'night' or 'bed' in its name.",
-          "sleep_actions": "e.g. tablet screens off, the Echo speakers switch off.",
-          "wake_actions": "e.g. the Echo speakers back on, the hallway light on low.",
-          "appliances": "Washing machine, dryer, dishwasher, hoover — their power sensor or status. Leave empty to follow every robot vacuum and any power sensor named washing machine, dryer or dishwasher.",
-          "appliance_announce": "Says “the washing machine's finished” where people are, and when one is taking far longer than usual. Plain words, no AI.",
-          "appliance_watts": "For power sensors: running while above this, finished once it's stayed below for five minutes.",
+          "speakers": "Haut-parleurs Assist ou lecteurs multimédias (les Echo via Alexa Media Player).",
+          "media_speakers": "Désactivé : seuls les haut-parleurs vocaux sont utilisés, même quand une alarme ou une annonce désigne un Echo (cela va plutôt là où sont les gens). Il existe aussi un interrupteur « Haut-parleurs Echo » pour les automatisations et les tableaux de bord.",
+          "media_important_only": "Activé : les Echo ne disent que les alarmes, les rappels et les alertes de sécurité ; les annonces, les avis et les conversations vont plutôt aux haut-parleurs vocaux. Il existe aussi un interrupteur « Echo : alarmes et rappels uniquement ».",
+          "foresight": "Chaque soir, un regard de l'IA sur les agendas, la météo, les alarmes et les rappels du lendemain. Ne dit quelque chose que s'il y a quelque chose à faire ce soir — du gel avant un départ matinal, de la pluie le jour de lessive. En général silencieux.",
+          "foresight_time": "Avant le début des heures de silence.",
+          "sleep_detection": "Endormie après une routine du coucher, ou pendant les heures de silence quand rien n'a bougé à l'intérieur depuis un moment. Réveillée le matin quand il y a du mouvement dans deux pièces (ou une lumière allumée à la main). Un capteur Maison l'indique.",
+          "bedtime_routines": "Routines qui signifient que tout le monde est couché, séparées par des virgules. Vide : toute routine contenant « night » ou « bed » dans son nom.",
+          "sleep_actions": "p. ex. écrans des tablettes éteints, l'interrupteur des haut-parleurs Echo éteint.",
+          "wake_actions": "p. ex. les haut-parleurs Echo rallumés, la lumière du couloir allumée en faible intensité.",
+          "appliances": "Lave-linge, sèche-linge, lave-vaisselle, aspirateur — leur capteur de puissance ou leur état. Laissez vide pour suivre chaque robot aspirateur et tout capteur de puissance nommé lave-linge, sèche-linge ou lave-vaisselle.",
+          "appliance_announce": "Dit « le lave-linge a terminé » là où sont les gens, et quand l'un d'eux met beaucoup plus de temps que d'habitude. Des mots simples, sans IA.",
+          "appliance_watts": "Pour les capteurs de puissance : en marche tant que c'est au-dessus, terminé une fois resté en dessous pendant cinq minutes.",
           "voice_agent": "Agent IA qui répond habituellement (par exemple Google AI). Si vide : utilise l’agent de conversation de la page.",
           "backup_agent": "Prend le relais si l’agent principal échoue. L’agent natif Home Assistant peut gérer les lumières, le chauffage et les minuteries sans IA.",
           "offline_answers": "Si l’agent IA échoue, « la maison est-elle fermée ? », « quelle est ma prochaine alarme ? » et « quelqu’un est-il passé ? » sont répondues directement par la maison, avant l’agent de secours. Désactivé : tout va à l’agent de secours.",
@@ -793,6 +983,10 @@
           "away_lights_on": "Lorsque tout le monde est absent après la tombée de la nuit, les lumières reproduisent leur utilisation à la même heure la semaine précédente, selon l’historique Home Assistant. Le mode ne démarre pas ou s’arrête si quelqu’un est présent ou si un mouvement intérieur récent est détecté. Les lumières allumées sont ensuite remises dans leur état initial. Un interrupteur « Éclairage d’absence » est également disponible.",
           "away_people": "Si vide : toutes les personnes configurées. Vous pouvez choisir des téléphones (suivi d’appareil) à la place.",
           "away_lights": "Si vide : toutes les lumières des pièces, sauf écrans, anneaux LED, rétroéclairages et groupes. Seules celles utilisées à cette heure la semaine précédente s’allument.",
+          "holiday_mode": "Un interrupteur « Mode vacances », et à la voix « on part en vacances jusqu'à dimanche ». Tant qu'il est activé, rien n'est dit à voix haute sauf les alertes de sécurité — ce qui aurait été dit part sur les téléphones choisis pour les notifications, avec les visiteurs et les colis ; les lumières d'absence fonctionnent même si elles sont normalement désactivées ; et les thermostats ci-dessous sont baissés. Désactivé : pas d'interrupteur ni de vacances à la voix.",
+          "holiday_thermostats": "Baissés en hors-gel pendant votre absence, et remis exactement comme avant à la fin du mode vacances. Vide : le chauffage n'est pas touché.",
+          "holiday_frost": "La consigne des thermostats ci-dessus pendant votre absence.",
+          "holiday_end_on_return": "Une fois tout le monde parti, la première personne de retour met fin au mode vacances et remet le chauffage. Désactivé : il se termine à sa date ou quand on le coupe.",
           "away_after": "Pour éviter d’activer ce mode lors d’une courte sortie.",
           "animal_low": "Avertit une fois lorsque la température descend sous ce seuil (annonce reportée au matin pendant les heures de silence) et prévient la veille d’un gel.",
           "animal_high": "Émet une seule annonce lorsque la température dépasse ce seuil.",
@@ -804,26 +998,36 @@
           "rain_warnings": "Si de la pluie est prévue dans l’heure et qu’une fenêtre ou une porte est ouverte, annonce par exemple « Il va pleuvoir dans l’heure et la fenêtre de la chambre est ouverte ». Utilise les prévisions horaires, sans IA. Une seule annonce par épisode pluvieux.",
           "rain_entities": "Si vide : tous les capteurs de fenêtres et de portes.",
           "self_test": "Pendant la nuit, l’assistant vocal reçoit quelques questions courantes (température extérieure, ouvertures, rappels, alarme, heure). Ses réponses sont comparées aux données réelles de la maison. Toute erreur apparaît dans l’état de santé avec l’outil utilisé. Environ cinq appels IA par exécution. Aucune commande d’appareil.",
+          "self_test_household": "Ajoute environ 7 questions tirées de vos propres appareils : quand une porte ou une fenêtre a été fermée pour la dernière fois, si une lumière est allumée, si une caméra a vu quelqu'un ces deux dernières heures, si quelqu'un est venu à la porte aujourd'hui, une chose qu'il ne peut pas savoir (une réponse inventée échoue), une chose qu'aucun appareil ne peut faire, et une question trop vague pour répondre sans demander laquelle. Commuter quoi que ce soit pendant une question est un échec. Le score et sa tendance sont sur la page Esprit. Environ 7 appels IA de plus par passage.",
           "screen": "Affiche les alertes, notifications et la carte du matin sur la carte d’écran Sentient (custom:sentient-screen-card). Désactivé : affiche uniquement la vue d’ensemble de la maison.",
           "screen_actions": "Par exemple, réveiller une tablette et afficher la page contenant la carte d’écran.",
           "screen_clear_actions": "Par exemple, remettre la tablette sur sa page habituelle.",
-          "conversation_sessions": "Use the Sentient with backup agent. Single commands stop listening unless the spoken reply ends in a question. Information, security, health and system discussions ask if there is anything else and stay open until you say “that’s all”, “enough” or “stop listening”, or the inactivity timeout expires. Say “back to the…” to resume an unfinished topic from this device within 24 hours, without restoring action permissions. The Mind panel shows recent conversation decisions. Follow-up listening needs a compatible Assist device.",
+          "conversation_sessions": "Utilisez l'agent Sentient avec secours. Les commandes simples arrêtent l'écoute, sauf si la réponse parlée se termine par une question. Les échanges sur l'information, la sécurité, la santé et le système demandent s'il y a autre chose et restent ouverts jusqu'à ce que vous disiez « c'est tout », « ça suffit » ou « arrête d'écouter », ou jusqu'à l'expiration du délai d'inactivité. Dites « reviens à… » pour reprendre un sujet inachevé depuis cet appareil dans les 24 heures, sans rétablir les autorisations d'action. Le panneau Esprit montre les décisions récentes des conversations. L'écoute de suivi nécessite un appareil Assist compatible.",
+          "room_conversation_handoff": "Dites « continue avec » et nommez un sujet d'un autre appareil. Les deux demandes doivent venir du même utilisateur Home Assistant identifié. Les relevés récents sont vérifiés et les actions et confirmations précédentes ne sont pas reprises.",
+          "verified_bedtime": "Dites « lance le coucher du rez-de-chaussée » pour éteindre les lumières choisies et vérifier les contacts choisis. Demandez l'état du coucher du rez-de-chaussée pour revérifier, ou dites « annule le coucher du rez-de-chaussée » pour arrêter le suivi.",
+          "verified_bedtime_lights": "Choisissez jusqu'à vingt lumières individuelles exposées à Assist. Les groupes sont exclus et la liste Ne jamais toucher s'applique toujours.",
+          "verified_bedtime_contacts": "Choisissez jusqu'à vingt contacts de porte, de fenêtre ou d'autres ouvertures exposés à Assist à vérifier. Ils sont seulement lus.",
           "session_seconds": "Efface le contexte de session et les actions en attente après ce nombre de secondes sans nouvel échange. L’appareil vocal gère son propre délai de silence. Les confirmations expirent également après 60 secondes.",
-          "guarded_control": "Opt in with a dedicated supported AI agent: select only Sentient guarded under Control Home Assistant, then use Sentient with backup in the pipeline. Turn off Prefer handling commands locally and remove conflicting sentence triggers, which run before this agent. Wrong agent API configuration stops requests. No unrestricted fallback, scripts, scenes or alarm actions. Doors, appliance starts and significant heating changes require a separate yes.",
+          "guarded_control": "À activer avec un agent IA dédié et pris en charge : sélectionnez uniquement Sentient protégé sous Contrôler Home Assistant, puis utilisez Sentient avec secours dans le pipeline. Désactivez Préférer le traitement local des commandes et supprimez les déclencheurs de phrases en conflit, qui s'exécutent avant cet agent. Une mauvaise configuration de l'API de l'agent bloque les demandes. Aucun repli sans restriction, ni script, scène ou action d'alarme. Les portes, les démarrages d'appareils et les changements de chauffage importants exigent un oui séparé.",
+          "routine_verify": "Activé : après une routine vocale (bonne nuit, je sors…), chaque lumière, interrupteur, serrure et volet qu'elle a modifié est vérifié quelques secondes plus tard, et la réponse dit ce qui ne s'est pas fait (« C'est fait, sauf la lumière du palier, toujours allumée »). Les étapes qu'il ne peut pas vérifier (scripts, scènes) sont signalées comme non vérifiées, jamais comme faites. Rien n'est relancé ni annulé de lui-même. Désactivé : les routines tournent comme avant, sans vérification.",
           "voice_unlock": "Permet à la confirmation vocale obligatoire de déverrouiller une porte après un « oui » séparé. Désactivé (par défaut), le verrouillage et la fermeture restent possibles, mais pas le déverrouillage ni l’ouverture par la voix, car Sentient ne sait pas qui parle.",
           "voice_undo": "Avec le contrôle protégé, dites « annule ça » pour restaurer les derniers réglages d’éclairage vérifiés. Les lumières modifiées depuis sont ignorées. Cette possibilité expire avec la session et ne concerne jamais les serrures, le chauffage ou les appareils.",
           "evidence_awareness": "Demande à l’assistant de distinguer les observations, déductions, tentatives d’action et états vérifiés des appareils. Des capteurs de sécurité indisponibles empêchent toujours d’affirmer que tout est sécurisé.",
           "security_incidents": "Regroupe les capteurs de personnes des caméras de sécurité et les contacts d’entrée avec les alertes et résumés vidéo. Conservation locale de sept jours. La proximité temporelle suggère un lien sans prouver qu’il s’agit de la même personne. Seules les alertes qui s’aggravent sont répétées.",
+          "incident_front": "Caméras et capteurs à l'avant de la maison (la sonnette, la porte d'entrée). Rien d'ici n'est regroupé en un seul incident de sécurité avec quelque chose qui n'y est pas, et inversement : quelqu'un à la porte d'entrée et quelqu'un au portail de derrière au même moment font deux incidents. Laissez vide pour regrouper uniquement selon l'heure.",
           "live_voice_check": "Afficher le test vocal manuel dans le panneau Mind. La désactivation efface le test en cours et arrête son enregistrement. Les sessions de conversation doivent être activées pour démarrer un test.",
           "speech_delivery_history": "Conserver les résultats récents des annonces par enceinte dans le panneau Mind. La désactivation efface cet historique. La détection des échecs et la gestion des nouvelles tentatives restent actives.",
           "alexa_tts_only": "Utiliser le TTS au lieu des annonces Alexa si celles-ci sont peu fiables. Désactive le carillon Alexa ; les autres enceintes ne changent pas.",
           "update_checker": "Vérifier les versions stables sur GitHub au démarrage et toutes les six heures. Aucun appel IA, aucune installation ni aucun redémarrage automatique.",
+          "contextual_followups": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Garde le sujet pour de courtes relances, actualise les relevés des appareils exposés et clarifie les réglages ambigus. N'accorde pas de droits d'action et ne change pas les règles d'écoute. Désactivé par défaut ; le désactiver efface le contexte temporaire de la conversation.",
           "conversation_recovery": "Nécessite les sessions de conversation et l'agent Sentient avec secours. Permet d'annuler une demande en attente depuis la même conversation et le même appareil. Une commande incertaine n'est pas répétée après une erreur. Ne peut pas annuler une action déjà envoyée. Désactivé par défaut.",
           "automatic_language": "Nécessite la traduction des phrases intégrées. Prépare les phrases courantes, les fins de conversation et les libellés d’alerte avec votre IA existante. Utilise le budget IA et un cache en mémoire. Désactivé par défaut. La désactivation efface les phrases préparées. Les alertes urgentes n’attendent jamais l’IA ; les phrases générées ne donnent aucune autorisation.",
           "voice_language": "Choisissez auto pour la langue de Home Assistant, ou un code comme es, de ou pt-BR. Nécessite la traduction des phrases intégrées. La reconnaissance vocale et la voix TTS doivent également prendre en charge cette langue ; ce réglage ne reconfigure pas votre pipeline.",
           "remember_language_phrases": "Nécessite les deux options de langue. Enregistre uniquement les phrases génériques après un redémarrage, jamais les annonces personnelles. Désactivé par défaut. La désactivation, un changement de langue ou de fournisseur, ou l’oubli des données efface ces phrases.",
           "stream_voice_replies": "Lit à voix haute les longues réponses pendant qu'elles s'écrivent, même avec les conversations suivies. Si Sentient change ensuite la réponse (une question de confirmation, par exemple), ce qui change est dit après. Désactivé par défaut.",
           "voice_timing_diagnostics": "Conserve en mémoire les 20 derniers temps de réponse, sans transcription ni identifiant personnel. Affiche les étapes dans Mind. Les durées peuvent se chevaucher ; le microphone et la lecture finale ne sont pas mesurés. Désactivé par défaut ; les changements de réglages et l’oubli effacent cet historique. Compte aussi le déroulement des conversations (relances, corrections, rapidité des réponses — jamais les mots), conservé après un redémarrage ; le désactiver efface ces comptes.",
+          "reliability_log": "Vérifier chaque tour vocal avec des règles simples (sans IA) et noter dans la page Esprit quand un outil a échoué, qu'un appareil ne l'a pas fait, qu'il a dit qu'une chose était faite alors que rien ne s'était passé, qu'il a proposé quelque chose qu'aucun appareil ne sait faire, qu'il n'a pas su répondre ou qu'il a répondu sur le passé sans rien consulter. Garde une courte ligne de la question et de la réponse pendant 14 jours. Le désactiver l'arrête et efface ce qui a été conservé.",
+          "unified_evidence": "Désactivé par défaut. Donne à la voix un outil supplémentaire, en lecture seule, qui consulte ensemble le journal de la maison, la chronologie et l'historique des caméras quand vous demandez ce qui s'est passé ou pourquoi. Il ne peut rien commander et signale quand une source n'a pas pu être consultée au lieu d'affirmer qu'il ne s'est rien passé. Le désactiver retire simplement l'outil ; rien n'est conservé.",
           "specific_clarification": "Nécessite les sessions de conversation. Propose des appareils nommés et reconnaît localement leurs noms exacts, les numéros, les ordinaux anglais et les températures simples. Une nouvelle tentative, puis arrêt des questions répétées. Un choix ne confirme jamais une action. Désactivé par défaut ; la désactivation efface les choix en attente. Utilisez le contrôle protégé pour imposer les restrictions.",
           "action_recovery": "Nécessite les sessions et le contrôle protégé. Nomme les résultats partiels et vérifie les états actuels après une demande de récupération. Seules les actions jamais envoyées peuvent être proposées à nouveau, avec une nouvelle confirmation. Les actions réussies ou incertaines ne sont pas répétées. Désactivé par défaut ; historique temporaire de deux minutes, effacé par les réglages ou l’oubli.",
           "recheck_unconfirmed": "Si un appareil n’a pas encore confirmé son nouvel état, regarder à nouveau 20 secondes plus tard et mettre à jour le compte rendu. Rien n’est renvoyé.",
@@ -833,83 +1037,123 @@
           "vary_replies": "La voix voit ses dernières réponses de la journée et ne doit pas en reprendre les phrases ni les débuts. Pas dans les pièces privées ni en mode invités. Les réponses répétées sont comptées dans tous les cas. Désactivé par défaut.",
           "behaviour_explanations": "Répondre directement aux questions courtes sur l’écoute et les résultats enregistrés, sans appel IA. Nécessite les sessions. Respecte le mode invité et les droits d’accès ; ne répète aucune action. Désactivé par défaut, sans historique supplémentaire.",
           "current_house_context": "Fournir aux conversations un aperçu pertinent des états exposés, des changements récents et de la tâche en cours. Désactivé par défaut et en mode invité, sans appel IA en arrière-plan. Les changements expirent après 30 minutes. Désactiver ou oublier efface ce contexte en mémoire.",
+          "moment_awareness": "Chaque réponse vocale reçoit un court aperçu du « maintenant » à partir de ce que Sentient garde déjà : qui est à la maison et depuis quand, les pièces avec du mouvement, ce qui s'est passé ces 45 dernières minutes et tout ce qui est inhabituel aujourd'hui. Sans IA et rien n'est conservé. Dans une pièce privée ou en mode invités, seul le mouvement est donné. Désactivé : rien de tout cela n'est ajouté.",
+          "room_memory": "Chaque réponse vocale dans une pièce reçoit ce qui s'y est passé dans la dernière heure : conversations précédentes dans cette pièce, ce qui y a été commuté à la voix et ce qui y a été annoncé. Si quelqu'un parlait dans une autre pièce il y a quelques minutes et que rien n'a été dit ici depuis, cette conversation suit aussi, pour reprendre là où on s'était arrêté. Rien de nouveau n'est conservé. Les pièces privées et le mode invités ne reçoivent que l'historique de leur propre pièce. Désactivé : rien de tout cela n'est ajouté.",
+          "know_people": "Quand la reconnaissance vocale n'a pas nommé la personne qui parle, Sentient déduit qui c'est probablement à partir d'éléments fiables : un message tapé dans l'application Home Assistant vient du compte de cette personne, ou son téléphone est le seul suivi dans la pièce. La voix apprend qui c'est probablement et met en avant ce que cette personne lui a dit sur elle-même. Une supposition n'autorise jamais rien qui demande une confirmation, et rien n'est enregistré à son nom pour autant. Pas en mode invités ni dans les pièces privées. Désactivé : aucune supposition.",
+          "instant_answers": "Les questions courantes reçoivent une réponse directe de la maison, avant l'IA : l'heure, la météo dehors, si un appareil nommé est allumé, éteint, ouvert ou verrouillé, la température d'une pièce, le prochain réveil ou rappel, les visiteurs et si la maison est fermée. Seulement des questions, seulement un appareil qui correspond clairement et est exposé aux assistants vocaux ; tout le reste va à l'IA comme d'habitude. L'échange est ajouté à la conversation pour qu'une relance sache ce qui a été demandé. Les invités et les pièces privées n'ont que l'heure, la météo et l'état des appareils. Désactivé : toutes les questions vont à l'IA.",
+          "capability_awareness": "La voix apprend quels types de choses elle peut contrôler à la voix dans cette maison (d'après ce qui est exposé aux assistants vocaux, avec leur nombre) et lesquels, parmi les plus courants, la maison n'a pas, comme les serrures connectées ou les volets motorisés, pour ne jamais proposer ce qu'aucun appareil ne sait faire. Une proposition qui passe quand même (fermer une fenêtre, verrouiller une porte) est retirée de la réponse avant d'être dite. Calculé toutes les cinq minutes, sans IA. Désactivé : rien n'est ajouté ni retiré.",
           "house_context_entities": "Appareils à inclure dans les résumés généraux, avec le chauffage et les capteurs d’ouverture ou de présence. Seuls les appareils exposés et accessibles sont partagés, avec huit relevés pertinents au maximum.",
           "house_context_updates": "Nécessite le contexte actuel. Après une demande de chauffage confirmée et vérifiée, annoncer une fois la température atteinte selon le thermostat. Expire après une heure, annulé si la consigne change. Une annonce toutes les 15 minutes au maximum. Respecte les règles vocales et le mode invité. Désactivé par défaut ; désactiver efface les suivis en attente.",
+          "security_event_evidence": "Utiliser les identifiants d'événements, captures et clips Frigate sur les caméras configurées. Une correspondance unique caméra/heure est un lien possible, pas une preuve qu'un capteur a identifié cet événement. Conserver jusqu'à 3 000 événements pendant sept jours, en local. Désactivé par défaut. Le désactiver masque les liens et arrête la mise en correspondance ; les données conservées expirent ou peuvent être oubliées.",
+          "security_event_zones": "Seulement ce qui entre dans une zone : sur une caméra avec des zones Frigate, un événement n'est listé (et ne peut lancer un incident de sécurité) qu'une fois l'objet entré dans l'une d'elles, la même règle que Frigate utilise pour ses alertes. Une caméra sans zones liste tout. Tout ce qui est détecté : chaque objet suivi par Frigate sur les caméras choisies. Les réglages de Frigate ne sont jamais modifiés.",
+          "security_event_hidden_zones": "Une par ligne sous la forme caméra/zone, par exemple gate/driveway. Les événements qui ne sont que dans ces zones ne sont pas listés et ne lancent pas d'incident de sécurité. Utilisez MASQUER CETTE ZONE sur la page Sécurité après quelques corrections « pas une personne » à cet endroit, ou retirez une ligne pour relister la zone. Frigate n'est pas modifié.",
+          "security_coverage": "Afficher quelles caméras configurées ont fourni des preuves conservées et les éventuels signalements d'indisponibilité enregistrés avec les incidents en cours. Les signalements actuels des caméras sont affichés à part. Désactiver ceci efface les angles morts conservés.",
+          "frigate_pipeline_health": "Lire la disponibilité MQTT de Frigate, les taux de traitement par caméra et quand Sentient a reçu son dernier événement. Les données manquantes s'affichent comme inconnues. Aucun réglage de caméra n'est modifié.",
+          "security_conversation_context": "Se souvenir de l'événement choisi jusqu'à cinq minutes dans la même conversation, sur le même appareil et pour le même utilisateur. Les relances utilisent cet événement et des relevés de présence récents ; aucune identité ni présence continue n'est supposée. Suit les événements des caméras configurées. Désactivé par défaut. Le désactiver efface les références de la conversation ; les événements enregistrés expirent normalement.",
+          "security_event_feedback": "Les administrateurs peuvent marquer une visite comme bien vue, pas une personne, ou à ignorer. Les visites examinées passent dans une liste Examinées repliée, et « pas une personne » compte aussi comme fausse détection examinée pour un incident de sécurité composé de cette seule visite. Les corrections restent sept jours. Aucune modification automatique des détecteurs, de l'alarme ni des règles de notification. Désactiver masque les avis et arrête les nouvelles corrections ; utilisez Oublier les données récentes pour effacer les enregistrements.",
+          "share_clip_analysis": "Partager les analyses génériques compatibles d'un même événement Frigate terminé entre le visionnage automatique des clips et les questions sur les clips. Le fournisseur, la couverture des images et les réglages d'identité doivent correspondre. Les questions personnalisées sont analysées à part. Garder au plus 100 résultats en mémoire pendant six heures. Désactivé par défaut. Désactiver, modifier les réglages ou oublier vide le cache.",
           "sleep_ignore_sensors": "Capteurs de mouvement qui se déclenchent pendant le sommeil, par exemple dans une chambre. Le passage en mode endormi attend que rien ne bouge pendant la durée ci-dessus ; un capteur de chambre qui se déclenche quand quelqu’un se retourne garderait la maison « éveillée » toute la nuit. Ils comptent toujours pour le reste.",
           "heating_graph": "Activé : la carte du chauffage de l’onglet Maison montre les dernières 24 heures de température de chaque thermostat face à sa consigne, avec les horaires programmés en surbrillance. Lu dans l’historique de Home Assistant ; rien de plus n’est conservé. Désactivé : le graphique est masqué.",
           "heating_revert": "Activé : un thermostat modifié à la main est laissé un moment puis remis sur le programme : la température de la période le jour, la température de nuit la nuit.",
+          "window_heating": "Activé : quand une fenêtre ou une porte est ouverte depuis quelques minutes et que la pièce a son propre radiateur, Sentient baisse ce radiateur à la température de nuit et le remet quand la fenêtre se ferme, mais seulement si personne ne l'a modifié entre-temps. Un thermostat de toute la maison n'est jamais baissé pour une fenêtre : Sentient dit seulement une fois que la fenêtre est ouverte et que le chauffage est allumé. Abandonne au bout de 3 heures. Désactivé : rien n'est changé ni dit ; tout ce qu'il avait baissé est remis (si personne ne l'a modifié) et son petit enregistrement est effacé.",
+          "window_heating_minutes": "Combien de temps une fenêtre doit rester ouverte avant que Sentient agisse. Par défaut 5 minutes.",
           "rooms_view": "Activé : l’onglet Maison montre une tuile par pièce — température, humidité, lumières allumées, portes et fenêtres ouvertes, dernier mouvement et ce qui joue — et la vue d’ensemble reçoit une courte carte « autour de la maison ». Construit à partir de vos pièces ; rien n’est conservé. Désactivé : les deux sont masqués.",
+          "outdoor_areas": "Zones situées à l'extérieur de la maison, comme un clapier, un abri ou une serre. Elles ont toujours leur tuile dans l'onglet Maison, marquée EXTÉRIEUR, et leur température est affichée sur sa propre ligne dans la vue d'ensemble, mais elles sont exclues de la pièce la plus chaude et la plus fraîche, et un mouvement là-bas (une caméra qui voit des passants) ne compte pas comme une présence dans la maison. Laissez vide pour compter chaque zone comme faisant partie de la maison.",
           "knowledge_card": "Activé : l’onglet Esprit résume ce qu’il a appris de la maison — heure habituelle du coucher et du lever, capteurs mis de côté, vitesse de chauffe, prédictions de pièce, routines et souvenirs. Il ne montre que ce qui est déjà connu ; rien de plus n’est conservé. Désactivé : la carte est masquée.",
           "day_chart": "Activé : la vue d’ensemble montre la journée heure par heure — mouvements, ce qu’il a dit, ce qui s’est passé dehors et ce que vous lui avez demandé — avec le premier lever et l’heure la plus chargée. Compté à partir de la chronologie ; rien de plus n’est conservé. Désactivé : le graphique est masqué.",
-          "house_ledger": "On: every change to every device is recorded with what caused it (a person, a voice request, an automation, Sentient, or nothing in Home Assistant, meaning the device itself, its app or someone at it), so you can ask \"when did the heating go off, and why?\". Fast-changing numbers are kept as notable changes. Kept 90 days in Sentient's own database, then summarised by day. Off: nothing new is recorded; what was kept stays until you clear it on the Mind tab.",
-          "unexplained_changes": "On: when a watched device (by default the heating, water heaters and valves) changes with nothing in Home Assistant behind it at a time that's unusual for it, it is said once and put on the timeline, and repeats are linked: \"the third time this week, always around 11am\". While it is still learning a device, or once a repeat becomes usual, it only goes on the timeline. Off: still recorded, never mentioned.",
-          "unexplained_entities": "Leave empty for the heating, water heaters and valves. Locks, doors and gates are used by hand every day, so add them only if you want to hear about them.",
-          "expectations": "On: learns how often each device changes at each hour, on weekdays and at weekends (warmed up from the last three weeks of history), and scores every change from usual to very unusual. The Mind tab shows how much of each day it expected. Plain counting, no AI. Off: no scores; clear what it learned on the Mind tab.",
-          "surprise_gating": "Watch: notes which remarks it would skip because the change is usual for the time, without skipping any. On: skips them, which also saves the AI call. Never applies to safety alerts, alarms or anything you asked for.",
-          "situations": "On: the voice is told a few plain lines of what's going on now (just got home, movement in the last 15 minutes, anything unusual in the last hour). Not shared with guests or in a private room. Off: nothing extra is sent.",
-          "beliefs": "On: each night it looks for things that keep happening by themselves at about the same time, tests each one against the day just gone, asks about one that holds, and drops ones that don't. No AI. Off: no new beliefs and no testing; existing ones are cleared with the learning on the Mind tab.",
-          "learn_reactions": "On: something Sentient switched that's put straight back counts against doing it again, and a remark someone acts on counts in its favour. Off: reactions aren't scored.",
-          "ai_case_memory": "On: a background AI job identical to one in the last six hours reuses that answer instead of another call. Never used for pictures or clips. Off: every job calls the AI, and the saved answers are cleared.",
+          "house_ledger": "Activé : chaque changement de chaque appareil est enregistré avec sa cause (une personne, une demande vocale, une automatisation, Sentient, ou rien dans Home Assistant, c'est-à-dire l'appareil lui-même, son application ou quelqu'un sur place), pour que vous puissiez demander « quand le chauffage s'est-il éteint, et pourquoi ? ». Les valeurs qui changent vite sont conservées comme changements notables. Conservé 90 jours dans la base de données propre à Sentient, puis résumé par jour. Désactivé : rien de nouveau n'est enregistré ; ce qui a été conservé reste jusqu'à ce que vous l'effaciez dans l'onglet Esprit.",
+          "unexplained_changes": "Activé : quand un appareil surveillé (par défaut le chauffage, les chauffe-eau et les vannes) change sans rien dans Home Assistant derrière, à une heure inhabituelle pour lui, c'est dit une fois et mis dans la chronologie, et les répétitions sont reliées : « la troisième fois cette semaine, toujours vers 11 h ». Tant qu'il apprend encore un appareil, ou une fois qu'une répétition devient habituelle, cela va seulement dans la chronologie. Désactivé : toujours enregistré, jamais mentionné.",
+          "unexplained_entities": "Laissez vide pour le chauffage, les chauffe-eau et les vannes. Les serrures, portes et portails sont utilisés à la main tous les jours, ajoutez-les donc seulement si vous voulez en entendre parler.",
+          "expectations": "Activé : apprend à quelle fréquence chaque appareil change à chaque heure, en semaine et le week-end (amorcé sur les trois dernières semaines d'historique), et note chaque changement d'habituel à très inhabituel. L'onglet Esprit montre quelle part de chaque journée il avait prévue. Simple comptage, sans IA. Désactivé : pas de notes ; effacez ce qu'il a appris dans l'onglet Esprit.",
+          "surprise_gating": "Observer : note les remarques qu'il sauterait parce que le changement est habituel à cette heure, sans en sauter aucune. Activé : les saute, ce qui économise aussi l'appel IA. Ne s'applique jamais aux alertes de sécurité, aux alarmes ni à ce que vous avez demandé.",
+          "situations": "Activé : la voix reçoit quelques lignes simples sur ce qui se passe maintenant (vient de rentrer, mouvement dans les 15 dernières minutes, quelque chose d'inhabituel dans la dernière heure). Non partagé avec les invités ni dans une pièce privée. Désactivé : rien de plus n'est envoyé.",
+          "beliefs": "Activé : chaque nuit, il cherche des choses qui arrivent toutes seules à peu près à la même heure, teste chacune sur la journée écoulée, pose une question sur celle qui se confirme et abandonne les autres. Sans IA. Désactivé : pas de nouvelles convictions ni de tests ; les existantes sont effacées avec l'apprentissage dans l'onglet Esprit.",
+          "learn_reactions": "Activé : une chose que Sentient a commandée et qui est aussitôt remise compte contre le fait de recommencer, et une remarque suivie d'effet compte en sa faveur. Désactivé : les réactions ne sont pas notées.",
+          "ai_case_memory": "Activé : une tâche IA en arrière-plan identique à une autre des six dernières heures réutilise cette réponse au lieu d'un nouvel appel. Jamais pour les images ou les clips. Désactivé : chaque tâche appelle l'IA, et les réponses enregistrées sont effacées.",
           "memory_tags": "Une fois par souvenir, un petit appel IA la nuit ajoute quelques mots proches (« bouilloire » → thé, boisson), pour que le rappel les trouve aussi. Jusqu’à 40 souvenirs par nuit, sans serveur d’embeddings. Désactivé, l’appel nocturne s’arrête et les mots sont ignorés (ils sont gardés). Désactivé par défaut.",
-          "voice_speed_watchdog": "On: notices when a speaker takes far longer to hear you than you took to speak (its audio arriving slower than real time) and puts it in the timeline with a restart suggestion. Off: no check.",
-          "voice_speed_restart": "On: a speaker that keeps lagging is restarted with its own restart button. Off: it's only suggested.",
-          "incident_stages": "On: each security incident shows how far it has got — observed, investigating, likely household, concerning or resolved — from what was recorded, never who someone was. Off: incidents are listed without a stage.",
+          "memory_upkeep": "Pendant la réflexion nocturne (sans appel IA supplémentaire), les souvenirs que quelque chose dit par une personne ce jour-là montre comme dépassés sont corrigés et gardés comme hypothèse jusqu'à confirmation. Une fois par jour, une hypothèse (une chose qu'il a déduite plutôt qu'entendue) est ajoutée à ses questions, pour qu'il puisse demander s'il a raison. Les souvenirs confirmés ou épinglés par une personne ne sont jamais modifiés. Nécessite la réflexion nocturne. Désactivé : les souvenirs sont seulement ajoutés, jamais corrigés par lui.",
+          "watch_actions": "Les surveillances et les rappels peuvent faire quelque chose en plus de le dire, vérifier d'abord une condition et attendre qu'une chose dure : « si la porte de derrière reste ouverte dix minutes, éteins la lumière de l'entrée et dis-le-moi », « quand la lessive est finie, allume la lumière du couloir », « à 23 h, si la porte de derrière est encore ouverte, dis-le-moi ». La voix relit chacun et il n'est mis en place qu'après un oui au tour suivant. Uniquement les appareils exposés aux assistants vocaux, jamais les alarmes, serrures, scripts ni rien de la liste Ne jamais toucher ; chaque appareil est vérifié ensuite et la réponse dit ce qui ne s'est pas fait. Désactivé : les surveillances et rappels se contentent de parler, comme avant, et ceux déjà en place n'agissent pas.",
+          "memory_time": "Ce qui est dit et n'est vrai qu'un temps reçoit tout seul une date de fin : « pour l'instant », « en ce moment », « cette semaine », « jusqu'à vendredi », et les choses ponctuelles (« j'ai allumé le chauffage ») sont gardées une journée avec la date inscrite, au lieu de devenir des faits permanents. Une fois par jour, un fait que personne n'a confirmé ni utilisé depuis trois mois est vérifié avec vous. La réflexion nocturne écrit aussi un court récit de chaque journée (sans appel IA supplémentaire), conservé 60 jours, pour qu'on puisse répondre à « qu'avons-nous fait samedi dernier ? » ou « quand la chaudière a-t-elle fait des siennes pour la dernière fois ? ». Les récits et les vérifications nécessitent la réflexion nocturne. Désactivé : les souvenirs ne gardent que les dates qu'ils mentionnent, et aucun récit n'est conservé (ceux déjà conservés sont supprimés).",
+          "who_where": "Rassemble ce que chaque source sait — les suivis de pièce des téléphones (réglés sous Voix), qui a été reconnu en dernier en parlant et où, et les mouvements quand une seule personne est à la maison — en une meilleure estimation par personne : quelle pièce, avec quelle certitude et depuis quand. La voix reçoit cela à la place de la simple ligne du suivi de pièce, indique son degré de certitude et ne dit jamais rien sur quelqu'un qui n'est pas à la maison. Rien n'est enregistré. Désactivé : la voix n'a que la ligne des suivis de pièce, comme avant.",
+          "big_plans": "« Prépare la maison pour la soirée film » ou « range la maison, on part » : la voix établit un court plan d'étapes sur les appareils, le relit et ne l'exécute qu'après un oui au tour suivant. Chaque étape est ensuite vérifiée sur l'appareil et la réponse dit ce qui ne s'est pas fait. Uniquement les appareils exposés aux assistants vocaux ; jamais les alarmes, serrures, scripts ni la liste Ne jamais toucher ; jusqu'à 12 étapes. Désactivé : les grandes demandes sont traitées un appareil à la fois, comme avant.",
+          "self_grading": "Chaque nuit, ce que la voix a dit ce jour-là sur l'état allumé, éteint, ouvert ou fermé de quelque chose est comparé à ce que la maison avait enregistré à ce moment-là. Une réponse erronée est ajoutée à « Là où la voix s'est trompée » dans la page Esprit et devient une leçon (« vérifie la porte de derrière avant de dire si elle est ouverte »), pour qu'elle s'améliore sans être corrigée. Sans IA. Nécessite le journal de fiabilité. Désactivé : rien n'est vérifié.",
+          "voice_speed_watchdog": "Activé : remarque quand un haut-parleur met beaucoup plus de temps à vous entendre que vous n'en avez mis à parler (son audio arrive plus lentement qu'en temps réel) et le met dans la chronologie avec une suggestion de redémarrage. Désactivé : aucune vérification.",
+          "voice_speed_restart": "Activé : un haut-parleur qui reste à la traîne est redémarré avec son propre bouton de redémarrage. Désactivé : c'est seulement suggéré.",
+          "incident_stages": "Activé : chaque incident de sécurité montre où il en est — observé, en cours d'examen, probablement un occupant, préoccupant ou résolu — d'après ce qui a été enregistré, jamais qui était quelqu'un. Désactivé : les incidents sont listés sans étape.",
           "cognitive_shadow": "Activé : une seconde manière, plus stricte, de juger chaque incident de sécurité tourne à côté des étapes habituelles et compte combien de fois les deux sont d’accord, ainsi que le résultat des actions par la voix, affiché sur le capteur Mind en totaux uniquement (ni noms, ni images, ni appareils). C’est pour les tests : cela ne change jamais une alerte, une étape, ce qui est dit ni ce que la voix reçoit. Désactivé : rien n’est comparé, et les compteurs repartent de zéro.",
-          "weather_warnings": "On: official warnings for your country are checked every 30 minutes (Met Office and Environment Agency in the UK, MeteoAlarm across Europe, the National Weather Service in the US), using Home Assistant's location. Off: no checks, and what was found is forgotten.",
-          "warnings_country": "Leave empty to use Home Assistant's country.",
-          "warnings_region": "Only warnings naming this region, e.g. North West England. Leave empty for all of the country (flood and US warnings are always near home).",
-          "warnings_speak": "On: a new amber, red or severe warning is said once. Off: warnings only go on the timeline.",
-          "email_read": "On: keeps the sender, subject and a short preview of the last 20 messages Home Assistant's IMAP integration reports, so you can ask \"any new email?\". Read-only, no password, never shared with guests. Off: nothing is kept and what was kept is cleared.",
-          "calendar_clashes": "On: \"any clashes tomorrow?\" finds events that overlap, or with under 15 minutes between, in the briefing's calendars (or all calendars). Off: not offered.",
-          "security_audit": "On: an admin can ask \"is my setup secure?\" for a read-only check of plain-http remote access, locks and alarms the voice can reach without a confirmation, long-lived tokens and admins without two-factor login. Off: not offered.",
-          "automation_builder": "On: an admin can ask for an automation in plain English; every device and action is checked, it's read back for a yes, then saved to automations.yaml like one from the editor. Off: not offered; automations already made stay.",
-          "pronounce_names": "On: a name the voice reads wrongly from its spelling is said the way it's pronounced, on speakers only — the chat, timeline and phones keep the real spelling. Taken from the lines below and from memories such as \"Siobhan is pronounced Shivawn\". Off: names are read as spelt.",
-          "pronunciations": "Written = said, one per line, e.g. Siobhan = Shivawn. Spell the said version the way the voice should read it.",
-          "health_duplicates": "On: a device that appears twice under one name where one copy is empty (a plug in Tuya Local and again from Tuya's cloud) is shown in House health, with a button to disable the empty copy. Off: not checked.",
-          "unified_evidence": "Désactivé par défaut. Donne à la voix un outil supplémentaire, en lecture seule, qui consulte ensemble le journal de la maison, la chronologie et l'historique des caméras quand vous demandez ce qui s'est passé ou pourquoi. Il ne peut rien commander et signale quand une source n'a pas pu être consultée au lieu d'affirmer qu'il ne s'est rien passé. Le désactiver retire simplement l'outil ; rien n'est conservé."
+          "cognitive_decides": "Activé : une fois que vos évaluations des incidents de sécurité (les boutons sous chaque incident dans l'onglet Esprit) montrent qu'il juge bien chaque type — au moins 10 incidents d'occupants évalués avec 90 % d'accord, au moins 10 autres qu'il qualifie presque jamais d'occupant, et aucun incident préoccupant jugé moins grave — le noyau cognitif décide de l'étape de chaque incident : ce que l'onglet Esprit et la voix disent qu'est un incident. Il s'arrête de lui-même si des évaluations ultérieures sont insuffisantes, et le signale dans la chronologie. Il ne modifie ni ne retient jamais une alerte, et ne juge jamais un incident moins grave que « préoccupant » selon les règles habituelles. Tant qu'il ne l'a pas mérité, rien ne change. Désactivé : les règles habituelles décident ; vos évaluations sont conservées.",
+          "cognitive_quiet_heads_up": "Tests uniquement : enregistre l'éligibilité d'après les évaluations des incidents, mais ne supprime jamais les alertes de sécurité vocales ou sur téléphone. Une ouverture de portail suivie d'une détection de personne par une caméra n'établit pas l'identité d'un occupant. La fonction ne peut rien rendre silencieux tant qu'une preuve d'identité vérifiée de façon indépendante n'a pas été mise en œuvre et testée.",
+          "weather_warnings": "Activé : les vigilances officielles de votre pays sont vérifiées toutes les 30 minutes (Met Office et Environment Agency au Royaume-Uni, MeteoAlarm dans toute l'Europe, le National Weather Service aux États-Unis), à partir de la localisation de Home Assistant. Désactivé : aucune vérification, et ce qui a été trouvé est oublié.",
+          "warnings_country": "Laissez vide pour utiliser le pays de Home Assistant.",
+          "warnings_region": "Uniquement les vigilances mentionnant cette région, p. ex. Bretagne. Laissez vide pour tout le pays (les alertes inondation et américaines sont toujours proches du domicile).",
+          "warnings_speak": "Activé : une nouvelle vigilance orange, rouge ou sévère est annoncée une fois. Désactivé : les vigilances vont seulement dans la chronologie.",
+          "email_read": "Activé : conserve l'expéditeur, l'objet et un court aperçu des 20 derniers messages signalés par l'intégration IMAP de Home Assistant, pour que vous puissiez demander « des nouveaux e-mails ? ». Lecture seule, sans mot de passe, jamais partagé avec les invités. Désactivé : rien n'est conservé et ce qui l'était est effacé.",
+          "calendar_clashes": "Activé : « des chevauchements demain ? » trouve les événements qui se chevauchent, ou séparés de moins de 15 minutes, dans les agendas du résumé (ou tous les agendas). Désactivé : non proposé.",
+          "security_audit": "Activé : un administrateur peut demander « ma configuration est-elle sûre ? » pour une vérification en lecture seule de l'accès à distance en http simple, des serrures et alarmes que la voix peut atteindre sans confirmation, des jetons de longue durée et des administrateurs sans connexion à deux facteurs. Désactivé : non proposé.",
+          "automation_builder": "Activé : un administrateur peut demander une automatisation en langage courant ; chaque appareil et action est vérifié, elle est relue pour obtenir un oui, puis enregistrée dans automations.yaml comme une automatisation créée dans l'éditeur. Désactivé : non proposé ; les automatisations déjà créées restent.",
+          "pronounce_names": "Activé : un nom que la voix lit mal à cause de son orthographe est dit comme il se prononce, uniquement sur les haut-parleurs — le chat, la chronologie et les téléphones gardent la vraie orthographe. Tiré des lignes ci-dessous et de souvenirs comme « Siobhan se prononce Chivone ». Désactivé : les noms sont lus comme ils s'écrivent.",
+          "pronunciations": "Écrit = dit, un par ligne, p. ex. Siobhan = Chivone. Écrivez la version dite comme la voix doit la lire.",
+          "health_duplicates": "Activé : un appareil qui apparaît deux fois sous un même nom dont une copie est vide (une prise dans Tuya Local et à nouveau depuis le cloud Tuya) est affiché dans Santé de la maison, avec un bouton pour désactiver la copie vide. Désactivé : non vérifié.",
+          "manuals_local_ocr": "Facultatif et désactivé par défaut. Si Tesseract est déjà installé sur l'hôte Home Assistant, lire le texte de jusqu'à 20 pages PDF composées uniquement d'images par fichier. Aucune requête cloud ni téléchargement. Sur Home Assistant OS standard, Tesseract peut être indisponible ; le repli PDF d'origine reste en place.",
+          "memory_semantic_enabled": "Désactivé par défaut. Avec un service d'embeddings Ollama local configuré explicitement, reclasser uniquement les résultats de mémoire déjà autorisés pour cet utilisateur. Le texte privé est envoyé à l'hôte du réseau local configuré, jamais automatiquement vers internet. L'hôte configuré reçoit des extraits de souvenirs sélectionnés, exécutez-le donc sur une machine de confiance que vous contrôlez.",
+          "memory_semantic_url": "Une URL HTTP comme http://192.168.1.20:11434. Seules les adresses numériques de réseau local privé/bouclage sont acceptées (utilisez 127.0.0.1 au lieu de localhost). Le serveur doit exposer /api/embed et avoir déjà le modèle installé.",
+          "memory_semantic_model": "Le nom d'un modèle d'embeddings déjà installé dans Ollama, comme nomic-embed-text. Sentient ne téléchargera pas le modèle. Les services indisponibles ou lents se replient sur la recherche normale.",
+          "ai_routing_enabled": "Désactivé par défaut. Seules les tâches de texte en arrière-plan éligibles peuvent utiliser l'alternative configurée une fois que les deux fournisseurs ont plus de 20 appels mesurés et une fiabilité de service suffisante. Pas de bascule pour les images, les sorties structurées ou les choix d'IA explicites.",
+          "ai_routing_alternative": "Une seconde entité ai_task de Home Assistant à envisager pour les tâches de texte en arrière-plan adaptées. Elle doit exister localement et n'est jamais utilisée sans historique de service mesuré ni estimations de coût.",
+          "ai_routing_primary_cost": "Votre propre prix approximatif pour une tâche de texte comparable ; pas la facturation du fournisseur. Les deux prix doivent être fournis et vérifiés par vous avant qu'un fournisseur moins cher soit envisagé.",
+          "ai_routing_alternative_cost": "Votre propre estimation de prix pour l'entité de tâche IA alternative. Ce n'est pas une facturation en temps réel et elle peut différer des coûts réels en jetons.",
+          "ai_routing_max_p95_ms": "N'envisager le fournisseur secondaire que si son temps de service mesuré au 95e centile reste dans cette limite. 4000 ms par défaut. Les réponses vocales continuent par leur pipeline existant.",
+          "heating_energy_sensor": "Un capteur d'énergie cumulatif en kWh mesurant le système de chauffage, pas toute la maison. Utilisez un capteur conservé par l'enregistreur (Recorder) avec un historique suffisamment long.",
+          "heating_measurement_date": "La date du changement que vous voulez examiner. Sentient compare jusqu'à 14 jours avant et après avec les mêmes jours de la semaine ; il ne peut pas prouver que Sentient est à l'origine de la différence.",
+          "heating_energy_price_kwh": "Estimation facultative utilisée uniquement pour convertir les différences de kWh observées en variations de coût quotidiennes approximatives, pas en factures réelles ni en économies prouvées.",
+          "autooff_respect_recent_voice": "Désactivé par défaut. Une fois activé, l'extinction automatique d'une lumière ou d'un interrupteur est retenue jusqu'à deux minutes après une commande vocale protégée d'allumage plus prioritaire. Ne s'applique pas aux demandes d'arrêt manuelles, au chauffage, aux serrures ni aux alarmes."
         }
       },
       "memories": {
         "title": "Souvenirs",
-        "description": "The house remembers {count} things. Pick one to edit, tick any to forget, or add a new one.",
+        "description": "La maison se souvient de {count} choses. Choisissez-en une à modifier, cochez celles à oublier ou ajoutez-en une nouvelle.",
         "data": {
-          "edit": "Edit a memory",
-          "forget": "Forget",
-          "add": "Add a memory",
-          "category": "Category for the new memory"
+          "edit": "Modifier un souvenir",
+          "forget": "Oublier",
+          "add": "Ajouter un souvenir",
+          "category": "Catégorie du nouveau souvenir"
         }
       },
       "edit_memory": {
-        "title": "Edit memory",
+        "title": "Modifier le souvenir",
         "data": {
-          "text": "Memory",
-          "category": "Category"
+          "text": "Souvenir",
+          "category": "Catégorie"
         }
       },
       "briefing": {
         "title": "Résumés",
-        "description": "What a briefing covers — from the BRIEFING button, by voice, or at a set time each day.",
+        "description": "Ce que couvre un résumé — depuis le bouton RÉSUMÉ, à la voix ou à une heure fixe chaque jour.",
         "data": {
-          "briefings": "Briefings on",
-          "briefing_sections": "Include",
-          "briefing_weather": "Weather from",
-          "briefing_todo": "To-do lists",
-          "briefing_calendars": "Calendars",
-          "briefing_system": "System sensors to report",
-          "briefing_time": "Daily briefing at",
-          "digest_time": "Daily digest at",
-          "morning_briefing": "Briefing when someone's first up",
-          "morning_briefing_areas": "Morning briefing rooms",
+          "briefings": "Résumés activés",
+          "briefing_sections": "Inclure",
+          "briefing_weather": "Météo depuis",
+          "briefing_todo": "Listes de tâches",
+          "briefing_calendars": "Agendas",
+          "briefing_system": "Capteurs système à signaler",
+          "outside_info": "Informations extérieures",
+          "parcel_trackers": "Suivi de colis",
+          "briefing_time": "Résumé quotidien à",
+          "digest_time": "Synthèse quotidienne à",
+          "morning_briefing": "Résumé quand quelqu'un se lève en premier",
+          "morning_briefing_areas": "Pièces du résumé du matin",
           "morning_briefing_quiet": "Briefing du matin pendant les heures calmes"
         },
         "data_description": {
-          "briefings": "Off turns off the button, the voice tool and the service.",
-          "briefing_weather": "Leave empty to use the first weather entity.",
-          "briefing_system": "e.g. CPU temperature, disk use, the NAS. Pending updates are always counted.",
-          "briefing_time": "Optional. Only spoken if someone's home and it isn't quiet hours.",
-          "digest_time": "Optional: once a day the AI sums up the timeline in a few sentences. It goes on the timeline (and to phones if chosen). Not spoken.",
-          "morning_briefing": "Once a day before noon, in the room someone's in, as soon as the house sees them up and about (or, without that, the first time someone's moving after quiet hours end).",
-          "morning_briefing_areas": "Optional: only give it the first time someone comes into one of these rooms in the morning, on that room's speaker — get up, wash and dress, then hear it in the kitchen or living room. Empty: wherever they are.",
+          "briefings": "Désactivé coupe le bouton, l'outil vocal et le service.",
+          "briefing_weather": "Laissez vide pour utiliser la première entité météo.",
+          "briefing_system": "p. ex. température du processeur, utilisation du disque, le NAS. Les mises à jour en attente sont toujours comptées.",
+          "outside_info": "Capteurs d'autres intégrations lus dans le résumé et le regard du soir sur le lendemain : le prix de l'électricité du jour, une vigilance météo, des colis en route, la prochaine journée pédagogique. Les valeurs vides, nulles et « off » sont ignorées. Leur texte est traité uniquement comme une information.",
+          "parcel_trackers": "Quand l'un d'eux indique qu'un colis est en cours de livraison, il le dit une fois et surveille la porte toute la journée (même si les alertes colis sont désactivées) ; s'il indique livré avant que quoi que ce soit ait été vu à la porte, il le dit aussi. Vide : désactivé.",
+          "briefing_time": "Facultatif. Dit seulement si quelqu'un est à la maison et hors des heures de silence.",
+          "digest_time": "Facultatif : une fois par jour, l'IA résume la chronologie en quelques phrases. Cela va dans la chronologie (et sur les téléphones si choisis). Non dit à voix haute.",
+          "morning_briefing": "Une fois par jour avant midi, dans la pièce où se trouve quelqu'un, dès que la maison le voit levé (ou, à défaut, la première fois que quelqu'un bouge après la fin des heures de silence).",
+          "morning_briefing_areas": "Facultatif : ne le donner que la première fois que quelqu'un entre le matin dans l'une de ces pièces, sur le haut-parleur de cette pièce — se lever, se laver et s'habiller, puis l'écouter dans la cuisine ou le salon. Vide : là où la personne se trouve.",
           "morning_briefing_quiet": "Désactivé : quelqu’un de levé avant la fin des heures calmes reçoit le briefing une fois celles-ci passées, dès qu’on le voit bouger (dans les pièces choisies pour le briefing du matin, s’il y en a), et ce qui a été gardé pendant la nuit y est intégré. Activé : il est donné dès qu’on le voit levé, même pendant les heures calmes, sur le seul haut-parleur de cette pièce."
         }
       }
@@ -921,61 +1165,61 @@
         "name": "Souvenirs"
       },
       "last_spoken": {
-        "name": "Last spoken"
+        "name": "Dernière parole"
       },
       "likely_room": {
-        "name": "Likely room"
+        "name": "Pièce probable"
       },
       "watches": {
-        "name": "Watches"
+        "name": "Surveillances"
       },
       "routines": {
         "name": "Routines"
       },
       "visitors": {
-        "name": "Visitors"
+        "name": "Visiteurs"
       },
       "health": {
-        "name": "House health"
+        "name": "Santé de la maison"
       },
       "drive": {
-        "name": "Drive"
+        "name": "Allée"
       },
       "mind": {
-        "name": "Mind"
+        "name": "Esprit"
       },
       "house": {
-        "name": "House",
+        "name": "Maison",
         "state": {
-          "awake": "Awake",
+          "awake": "Réveillée",
           "asleep": "Endormi"
         }
       },
       "screen": {
-        "name": "Screen",
+        "name": "Écran",
         "state": {
-          "idle": "Idle",
-          "morning": "Morning",
-          "notice": "Notice",
+          "idle": "Inactif",
+          "morning": "Matin",
+          "notice": "Avis",
           "alert": "Alerte"
         }
       }
     },
     "switch": {
       "hush": {
-        "name": "Hush"
+        "name": "Silence"
       },
       "guest_mode": {
-        "name": "Guest mode"
+        "name": "Mode invités"
       },
       "chime": {
-        "name": "Chime"
+        "name": "Carillon"
       },
       "party_mode": {
-        "name": "Light show"
+        "name": "Spectacle lumineux"
       },
       "media_speakers": {
-        "name": "Echo speakers"
+        "name": "Haut-parleurs Echo"
       },
       "media_important_only": {
         "name": "Echo : alarmes et rappels uniquement"
@@ -984,12 +1228,15 @@
         "name": "Éclairage en cas d’absence"
       },
       "screen": {
-        "name": "Tablet screen"
+        "name": "Écran de tablette"
+      },
+      "holiday": {
+        "name": "Mode vacances"
       }
     },
     "conversation": {
       "voice": {
-        "name": "With backup"
+        "name": "Avec secours"
       },
       "alexa": {
         "name": "Pour Alexa"
@@ -999,16 +1246,16 @@
   "selector": {
     "priority": {
       "options": {
-        "low": "Low",
-        "normal": "Normal",
-        "urgent": "Urgent (ignores quiet hours)"
+        "low": "Faible",
+        "normal": "Normale",
+        "urgent": "Urgente (ignore les heures de silence)"
       }
     },
     "category": {
       "options": {
-        "fact": "Fact",
-        "preference": "Preference",
-        "person": "Person",
+        "fact": "Fait",
+        "preference": "Préférence",
+        "person": "Personne",
         "routine": "Routine",
         "note": "Note",
         "correction": "Correction"
@@ -1017,121 +1264,129 @@
     "chattiness": {
       "options": {
         "off": "Désactivé",
-        "quiet": "Quiet",
-        "normal": "Normal",
-        "chatty": "Chatty"
+        "quiet": "Discret",
+        "normal": "Normale",
+        "chatty": "Bavard"
       }
     },
     "briefing_section": {
       "options": {
-        "time": "Time",
-        "weather": "Weather",
-        "reminders": "Reminders due today",
-        "watches": "What's being watched",
-        "routines": "Routines coming up",
-        "open": "Windows and doors open",
-        "visitors": "Visitors today",
-        "said": "What was said recently",
-        "system": "System health",
-        "todo": "To-do lists",
-        "calendar": "Calendar (next 24 hours)",
-        "energy": "Electricity used today (and anything unusual)",
-        "security": "Anything open or unlocked"
+        "time": "Heure",
+        "weather": "Météo",
+        "reminders": "Rappels du jour",
+        "watches": "Ce qui est surveillé",
+        "routines": "Routines à venir",
+        "open": "Fenêtres et portes ouvertes",
+        "visitors": "Visiteurs du jour",
+        "said": "Ce qui a été dit récemment",
+        "system": "État du système",
+        "todo": "Listes de tâches",
+        "calendar": "Agenda (prochaines 24 heures)",
+        "energy": "Électricité consommée aujourd'hui (et tout ce qui est inhabituel)",
+        "security": "Tout ce qui est ouvert ou déverrouillé"
       }
     },
     "notify_when": {
       "options": {
-        "urgent": "Urgent announcements",
-        "held_quiet": "Things held back in quiet hours",
-        "unheard": "Things nobody could hear (no speaker available)",
-        "visitors": "Doorbell visitors and parcels",
-        "watches": "Watches and reminders going off",
-        "health": "House health problems",
-        "digest": "The daily digest",
-        "critical": "Safety alerts (smoke, CO, gas, leaks)",
-        "security": "Things left open when everyone goes out"
+        "urgent": "Annonces urgentes",
+        "held_quiet": "Ce qui a été retenu pendant les heures de silence",
+        "unheard": "Ce que personne n'a pu entendre (aucun haut-parleur disponible)",
+        "visitors": "Visiteurs à la sonnette et colis",
+        "watches": "Surveillances et rappels qui se déclenchent",
+        "health": "Problèmes de santé de la maison",
+        "digest": "La synthèse quotidienne",
+        "critical": "Alertes de sécurité (fumée, CO, gaz, fuites)",
+        "security": "Ce qui reste ouvert quand tout le monde sort"
       }
     },
     "personality": {
       "options": {
-        "calm": "Calm and to the point",
-        "dry": "Dry wit",
-        "warm": "Warm and friendly",
-        "cheeky": "Cheeky",
-        "composed": "Composed, like a butler"
+        "calm": "Calme et concis",
+        "dry": "Humour pince-sans-rire",
+        "warm": "Chaleureux et amical",
+        "cheeky": "Effronté",
+        "composed": "Posé, comme un majordome"
       }
     },
     "party_style": {
       "options": {
         "disco": "Disco",
-        "party": "Party",
-        "rainbow": "Rainbow",
-        "chill": "Chill",
+        "party": "Fête",
+        "rainbow": "Arc-en-ciel",
+        "chill": "Détente",
         "halloween": "Halloween",
-        "christmas": "Christmas"
+        "christmas": "Noël"
       }
     },
     "confirm_kinds": {
       "options": {
-        "locks": "Locks",
-        "garage": "Garage doors and gates",
-        "covers": "Blinds, curtains and shutters",
-        "heating": "Turning the heating up a lot",
-        "appliances": "Starting appliances"
+        "locks": "Serrures",
+        "garage": "Portes de garage et portails",
+        "covers": "Stores, rideaux et volets",
+        "heating": "Monter fortement le chauffage",
+        "appliances": "Démarrer des appareils"
+      }
+    },
+    "trust_level": {
+      "options": {
+        "do": "Le faire, tout simplement",
+        "tell": "Le dire, puis le faire",
+        "ask": "Demander d'abord"
       }
     },
     "self_test": {
       "options": {
         "off": "Désactivé",
-        "nightly": "Every night",
-        "weekly": "Once a week (Sunday night)"
+        "nightly": "Chaque nuit",
+        "weekly": "Une fois par semaine (dimanche soir)"
       }
     },
     "check_now": {
       "options": {
         "self_test": "Autotest",
-        "rain": "Rain warning",
-        "hutch": "Hutch check",
-        "cat": "Cat watch",
+        "rain": "Alerte pluie",
+        "hutch": "Contrôle du clapier",
+        "cat": "Surveillance des chats",
         "bins": "Vérification des poubelles",
-        "faces": "Who's this? (face teaching)",
-        "faces_forget": "Forget unnamed faces now",
-        "clip_watch": "Watch the latest clip now"
+        "faces": "Qui est-ce ? (apprendre les visages)",
+        "faces_forget": "Oublier maintenant les visages sans nom",
+        "clip_watch": "Regarder maintenant le dernier clip"
       }
     },
     "clip_scope": {
       "options": {
-        "alerts": "Frigate alerts only",
-        "zones": "Anything in a zone",
-        "all": "Every detection"
+        "alerts": "Alertes Frigate uniquement",
+        "zones": "Tout ce qui est dans une zone",
+        "all": "Chaque détection"
       }
     },
     "clip_when": {
       "options": {
-        "always": "Always",
-        "quiet": "Quiet hours",
-        "away": "When everyone's out",
-        "quiet_or_away": "Quiet hours or when everyone's out"
+        "always": "Toujours",
+        "quiet": "Heures de silence",
+        "away": "Quand tout le monde est absent",
+        "quiet_or_away": "Heures de silence ou quand tout le monde est absent"
       }
     },
     "clip_notify": {
       "options": {
         "off": "Désactivé",
-        "worth": "Ones worth a look",
-        "suspicious": "Suspicious only",
-        "all": "Every clip"
+        "worth": "Ceux qui valent le coup d'œil",
+        "suspicious": "Suspects uniquement",
+        "all": "Chaque clip"
       }
     },
     "clip_source": {
       "options": {
-        "sentient": "Sentient (one AI call a clip)",
-        "frigate": "Frigate's own AI summaries"
+        "sentient": "Sentient (un appel IA par clip)",
+        "frigate": "Les résumés IA de Frigate"
       }
     },
     "phone_buttons": {
       "options": {
-        "door": "At the door",
-        "reminders": "Reminders"
+        "door": "À la porte",
+        "reminders": "Rappels",
+        "questions": "Questions (Oui / Non)"
       }
     },
     "conversation_style": {
@@ -1142,382 +1397,430 @@
     },
     "surprise_gating": {
       "options": {
-        "off": "Off",
-        "watch": "Watch only",
-        "on": "On"
+        "off": "Désactivé",
+        "watch": "Observer seulement",
+        "on": "Activé"
+      }
+    },
+    "security_event_zones": {
+      "options": {
+        "zones": "Seulement ce qui entre dans une zone",
+        "all": "Tout ce qui est détecté"
       }
     }
   },
   "services": {
     "say": {
-      "name": "Say",
-      "description": "Speak through the house, following quiet hours and room awareness.",
+      "name": "Dire",
+      "description": "Parler à travers la maison, en respectant les heures de silence et la connaissance des pièces.",
       "fields": {
         "message": {
           "name": "Message",
-          "description": "What to say."
+          "description": "Ce qu'il faut dire."
         },
         "priority": {
-          "name": "Priority",
-          "description": "Urgent ignores quiet hours and hush periods; low never interrupts."
+          "name": "Priorité",
+          "description": "Urgente ignore les heures de silence et les mises en silence ; basse n'interrompt jamais."
         },
         "speaker": {
-          "name": "Speaker",
-          "description": "A speaker, room name or entity id. Leave empty to follow the person."
+          "name": "Haut-parleur",
+          "description": "Un haut-parleur, un nom de pièce ou un identifiant d'entité. Laissez vide pour suivre la personne."
         }
       }
     },
     "remember": {
-      "name": "Remember",
-      "description": "Add something to the house's long-term memory.",
+      "name": "Retenir",
+      "description": "Ajouter quelque chose à la mémoire à long terme de la maison.",
       "fields": {
         "text": {
-          "name": "Text",
-          "description": "One short sentence."
+          "name": "Texte",
+          "description": "Une phrase courte."
         },
         "category": {
-          "name": "Category",
-          "description": "What kind of memory this is."
+          "name": "Catégorie",
+          "description": "Le type de souvenir."
         }
       }
     },
     "forget": {
-      "name": "Forget",
-      "description": "Remove a memory by id or by matching text.",
+      "name": "Oublier",
+      "description": "Supprimer un souvenir par identifiant ou par texte correspondant.",
       "fields": {
         "what": {
-          "name": "What",
-          "description": "Memory id or words from it."
+          "name": "Quoi",
+          "description": "Identifiant du souvenir ou mots qu'il contient."
         }
       }
     },
     "watch": {
-      "name": "Watch",
-      "description": "Keep an eye on a device, sensor or camera and speak up when something happens.",
+      "name": "Surveiller",
+      "description": "Garder un œil sur un appareil, un capteur ou une caméra et parler quand il se passe quelque chose.",
       "fields": {
         "what": {
-          "name": "What",
-          "description": "Short description, e.g. 'the cats near the rabbit pen'."
+          "name": "Quoi",
+          "description": "Courte description, p. ex. « les chats près de l'enclos des lapins »."
         },
         "entity": {
-          "name": "Entity",
-          "description": "Entity id, name, or a camera's area name."
+          "name": "Entité",
+          "description": "Identifiant d'entité, nom ou nom de la zone d'une caméra."
         },
         "to_state": {
-          "name": "To state",
-          "description": "Fire when the entity reaches this state."
+          "name": "Vers l'état",
+          "description": "Se déclencher quand l'entité atteint cet état."
         },
         "above": {
-          "name": "Above",
-          "description": "Fire when the value goes above this."
+          "name": "Au-dessus",
+          "description": "Se déclencher quand la valeur passe au-dessus."
         },
         "below": {
-          "name": "Below",
-          "description": "Fire when the value goes below this."
+          "name": "En dessous",
+          "description": "Se déclencher quand la valeur passe en dessous."
         },
         "question": {
           "name": "Question",
-          "description": "Camera watches: a yes/no question about the picture."
+          "description": "Surveillances de caméra : une question oui/non sur l'image."
         },
         "look_for": {
-          "name": "Look for",
-          "description": "Camera watches: object to wake on, e.g. person, cat, car."
+          "name": "Rechercher",
+          "description": "Surveillances de caméra : objet qui réveille, p. ex. personne, chat, voiture."
         },
         "message": {
           "name": "Message",
-          "description": "What to say. Leave empty for an automatic sentence."
+          "description": "Ce qu'il faut dire. Laissez vide pour une phrase automatique."
         },
         "until": {
-          "name": "Until",
-          "description": "Clock time, e.g. 18:00 or 6pm."
+          "name": "Jusqu'à",
+          "description": "Heure, p. ex. 18:00."
         },
         "minutes": {
           "name": "Minutes",
-          "description": "Or how many minutes to watch for."
+          "description": "Ou pendant combien de minutes surveiller."
         },
         "repeat": {
-          "name": "Repeat",
-          "description": "Keep watching after it fires."
+          "name": "Répéter",
+          "description": "Continuer à surveiller après le déclenchement."
         },
         "priority": {
-          "name": "Priority",
-          "description": "Urgent ignores quiet hours."
+          "name": "Priorité",
+          "description": "Urgente ignore les heures de silence."
         },
         "speaker": {
-          "name": "Speaker",
-          "description": "Where to say it. Leave empty to follow people."
+          "name": "Haut-parleur",
+          "description": "Où le dire. Laissez vide pour suivre les personnes."
         },
         "wake_on": {
-          "name": "Wake on",
-          "description": "Camera watches: a zone or object sensor to wake on instead of the camera's own sensors."
+          "name": "Réveiller sur",
+          "description": "Surveillances de caméra : un capteur de zone ou d'objet qui réveille à la place des propres capteurs de la caméra."
         },
         "spot": {
-          "name": "Spot",
-          "description": "Camera watches: only check this named spot (taught by voice, e.g. 'the rabbit pen')."
+          "name": "Zone",
+          "description": "Surveillances de caméra : ne vérifier que cette zone nommée (apprise à la voix, p. ex. « l'enclos des lapins »)."
         }
       }
     },
     "cancel_watch": {
-      "name": "Cancel watch",
-      "description": "Stop a watch.",
+      "name": "Annuler la surveillance",
+      "description": "Arrêter une surveillance.",
       "fields": {
         "what": {
-          "name": "What",
-          "description": "Watch id or words from it."
+          "name": "Quoi",
+          "description": "Identifiant de la surveillance ou mots qu'elle contient."
         }
       }
     },
     "remind": {
-      "name": "Remind",
-      "description": "Say something at a time, in the room where people are.",
+      "name": "Rappeler",
+      "description": "Dire quelque chose à une heure donnée, dans la pièce où se trouvent les gens.",
       "fields": {
         "message": {
           "name": "Message",
-          "description": "What to say, e.g. 'Time to put the oven on.'"
+          "description": "Ce qu'il faut dire, p. ex. « C'est l'heure d'allumer le four. »"
         },
         "at": {
-          "name": "At",
-          "description": "Clock time, e.g. 18:00 or 6pm."
+          "name": "À",
+          "description": "Heure, p. ex. 18:00."
         },
         "minutes": {
           "name": "Minutes",
-          "description": "Or in how many minutes."
+          "description": "Ou dans combien de minutes."
         },
         "speaker": {
-          "name": "Speaker",
-          "description": "Where to say it. Leave empty to follow people."
+          "name": "Haut-parleur",
+          "description": "Où le dire. Laissez vide pour suivre les personnes."
         },
         "priority": {
-          "name": "Priority",
-          "description": "Urgent (default) still speaks during quiet hours."
+          "name": "Priorité",
+          "description": "Urgente (par défaut) parle même pendant les heures de silence."
         }
       }
     },
     "ask": {
-      "name": "Ask",
-      "description": "Ask a question out loud and listen for the answer, in the room where people are.",
+      "name": "Demander",
+      "description": "Poser une question à voix haute et écouter la réponse, dans la pièce où se trouvent les gens.",
       "fields": {
         "question": {
           "name": "Question",
-          "description": "e.g. 'Fancy a brew? Shall I put the kettle on?'"
+          "description": "p. ex. « Un petit thé ? Je mets la bouilloire en route ? »"
         },
         "priority": {
-          "name": "Priority",
-          "description": "Urgent ignores quiet hours and hush periods."
+          "name": "Priorité",
+          "description": "Urgente ignore les heures de silence et les mises en silence."
         },
         "speaker": {
-          "name": "Speaker",
-          "description": "Where to ask. Leave empty to follow people."
+          "name": "Haut-parleur",
+          "description": "Où demander. Laissez vide pour suivre les personnes."
         },
         "extra_prompt": {
-          "name": "Extra instructions",
-          "description": "Extra guidance for the voice agent handling the reply."
+          "name": "Instructions supplémentaires",
+          "description": "Indications supplémentaires pour l'agent vocal qui traite la réponse."
         },
         "preannounce": {
-          "name": "Chime first",
-          "description": "Play the chime before asking."
+          "name": "Carillon d'abord",
+          "description": "Jouer le carillon avant de demander."
         }
       }
     },
     "learn": {
-      "name": "Learn now",
-      "description": "Look for routines in recent history straight away instead of waiting for tonight."
+      "name": "Apprendre maintenant",
+      "description": "Chercher tout de suite des routines dans l'historique récent au lieu d'attendre cette nuit."
     },
     "briefing": {
-      "name": "Briefing",
-      "description": "A short briefing of what matters right now, spoken where people are.",
+      "name": "Résumé",
+      "description": "Un court résumé de ce qui compte maintenant, dit là où sont les gens.",
       "fields": {
         "speak": {
-          "name": "Speak it",
-          "description": "Off returns the facts without speaking or using the AI."
+          "name": "Le dire",
+          "description": "Désactivé renvoie les faits sans parler ni utiliser l'IA."
         },
         "priority": {
-          "name": "Priority",
-          "description": "Urgent speaks even in quiet hours, e.g. when someone pressed a button for it."
+          "name": "Priorité",
+          "description": "Urgente parle même pendant les heures de silence, p. ex. quand quelqu'un a appuyé sur un bouton pour cela."
         }
       }
     },
     "tidy_memories": {
-      "name": "Tidy memories",
-      "description": "Merge duplicates and drop nonsense from memory now (also runs every Sunday night)."
+      "name": "Ranger les souvenirs",
+      "description": "Fusionner les doublons et retirer maintenant les absurdités de la mémoire (se fait aussi chaque dimanche soir)."
     },
     "forget_routine": {
-      "name": "Delete learned routine",
-      "description": "Delete a learned routine or habit for good — the house stops doing it and never learns or offers it again. With Restore on, bring deleted ones back (one, or all if Routine is empty).",
+      "name": "Supprimer une routine apprise",
+      "description": "Supprimer définitivement une routine ou une habitude apprise — la maison arrête de la faire et ne l'apprend ni ne la propose plus jamais. Avec Restaurer activé, ramène celles supprimées (une, ou toutes si Routine est vide).",
       "fields": {
         "routine": {
           "name": "Routine",
-          "description": "Routine id or words from it."
+          "description": "Identifiant de la routine ou mots qu'elle contient."
         },
         "restore": {
-          "name": "Restore",
-          "description": "Bring deleted ones back instead."
+          "name": "Restaurer",
+          "description": "Ramener plutôt celles supprimées."
         }
       }
     },
     "adopt_routine": {
-      "name": "Adopt routine",
-      "description": "Have the house do a learned routine by itself, or stop. Leave Adopt empty to toggle.",
+      "name": "Adopter une routine",
+      "description": "Faire exécuter par la maison une routine apprise toute seule, ou arrêter. Laissez Adopter vide pour basculer.",
       "fields": {
         "routine": {
           "name": "Routine",
-          "description": "Routine id or words from it."
+          "description": "Identifiant de la routine ou mots qu'elle contient."
         },
         "adopt": {
-          "name": "Adopt",
-          "description": "On to start, off to stop."
+          "name": "Adopter",
+          "description": "Activé pour démarrer, désactivé pour arrêter."
         }
       }
     },
     "hush": {
-      "name": "Hush",
-      "description": "Say nothing that isn't urgent for a while. 0 minutes stops hushing.",
+      "name": "Silence",
+      "description": "Ne rien dire de non urgent pendant un moment. 0 minute arrête la mise en silence.",
       "fields": {
         "minutes": {
           "name": "Minutes",
-          "description": "How long to stay hushed."
+          "description": "Durée de la mise en silence."
         }
       }
     },
     "run_routine": {
-      "name": "Run routine",
-      "description": "Run a named routine (set up on the sidebar page's Settings → Routines).",
+      "name": "Lancer une routine",
+      "description": "Lancer une routine nommée (configurée dans la page de la barre latérale, sous Paramètres → Routines).",
       "fields": {
         "name": {
           "name": "Nom",
-          "description": "The routine's name or one of its other names."
+          "description": "Le nom de la routine ou l'un de ses autres noms."
         },
         "speak": {
-          "name": "Speak",
-          "description": "Say the result where people are."
+          "name": "Parler",
+          "description": "Dire le résultat là où sont les gens."
         },
         "details": {
-          "name": "Details",
-          "description": "For routines that take details, e.g. which rooms."
+          "name": "Détails",
+          "description": "Pour les routines qui acceptent des détails, p. ex. quelles pièces."
         }
       }
     },
     "weekly_report": {
       "name": "Rapport hebdomadaire",
-      "description": "Put together what the house learned and noticed in the last week, and keep it on the timeline."
+      "description": "Rassembler ce que la maison a appris et remarqué la semaine passée, et le garder dans la chronologie."
     },
     "party": {
-      "name": "Light show",
-      "description": "Start or stop a light show (disco, Halloween, Christmas…). Lights go back exactly as they were when it stops.",
+      "name": "Spectacle lumineux",
+      "description": "Démarrer ou arrêter un spectacle lumineux (disco, Halloween, Noël…). À l'arrêt, les lumières reviennent exactement comme elles étaient.",
       "fields": {
         "on": {
           "name": "Activé",
-          "description": "Off stops it and puts the lights back."
+          "description": "Désactivé l'arrête et remet les lumières comme avant."
         },
         "style": {
           "name": "Style",
-          "description": "Disco, party, rainbow, chill, Halloween or Christmas. Empty uses the setting."
+          "description": "Disco, fête, arc-en-ciel, détente, Halloween ou Noël. Vide utilise le réglage."
         },
         "minutes": {
           "name": "Minutes",
-          "description": "Stop by itself after this long (0 = until turned off). Empty uses the setting."
+          "description": "S'arrêter tout seul après cette durée (0 = jusqu'à l'arrêt). Vide utilise le réglage."
         },
         "area": {
-          "name": "Room",
-          "description": "Use this room's lights (or 'everywhere' for every light)."
+          "name": "Pièce",
+          "description": "Utiliser les lumières de cette pièce (ou « partout » pour toutes les lumières)."
         },
         "lights": {
-          "name": "Lights",
-          "description": "Use exactly these lights."
+          "name": "Lumières",
+          "description": "Utiliser exactement ces lumières."
         }
       }
     },
     "reflect": {
-      "name": "Reflect now",
-      "description": "Think over the last day now, as it does overnight: new memories, morning thoughts and a question."
+      "name": "Réfléchir maintenant",
+      "description": "Repenser maintenant à la dernière journée, comme il le fait la nuit : nouveaux souvenirs, pensées pour le matin et une question."
+    },
+    "grade_answers": {
+      "name": "Évaluer maintenant ses propres réponses",
+      "description": "Comparer ce que la voix a dit sur les portes, lumières, interrupteurs et serrures avec ce que la maison a enregistré, comme chaque nuit quand « Évaluer ses propres réponses » est activé. Renvoie ce qui a été vérifié, ce qui était faux et les éventuelles leçons.",
+      "fields": {
+        "hours": {
+          "name": "Heures",
+          "description": "Jusqu'où remonter pour vérifier."
+        }
+      }
     },
     "check_drive": {
-      "name": "Check the drive",
-      "description": "Take one AI look at the drive spot now and update what's parked there."
+      "name": "Vérifier l'allée",
+      "description": "Jeter maintenant un regard IA sur la zone de l'allée et mettre à jour ce qui y est garé."
     },
     "wonder": {
-      "name": "Wonder",
-      "description": "Add a question for curiosity to ask, drop one, or ask the next one now.",
+      "name": "S'interroger",
+      "description": "Ajouter une question que la curiosité doit poser, en abandonner une ou poser la suivante maintenant.",
       "fields": {
         "question": {
           "name": "Question",
-          "description": "Something to ask the household once."
+          "description": "Quelque chose à demander une fois au foyer."
         },
         "ask_now": {
-          "name": "Ask now",
-          "description": "Ask the next question straight away."
+          "name": "Demander maintenant",
+          "description": "Poser la question suivante tout de suite."
         },
         "dismiss": {
-          "name": "Dismiss",
-          "description": "Words from a question not to ask after all."
+          "name": "Écarter",
+          "description": "Mots d'une question à ne finalement pas poser."
         }
       }
     },
     "follow_up": {
-      "name": "Follow up",
-      "description": "Check back on something later and say how it went.",
+      "name": "Faire un suivi",
+      "description": "Revenir plus tard sur quelque chose et dire comment ça s'est passé.",
       "fields": {
         "minutes": {
           "name": "Minutes",
-          "description": "When to check."
+          "description": "Quand vérifier."
         },
         "about": {
-          "name": "About",
-          "description": "A few words on what it's about."
+          "name": "Sujet",
+          "description": "Quelques mots sur ce dont il s'agit."
         },
         "entity": {
-          "name": "Entity",
-          "description": "Device to check then."
+          "name": "Entité",
+          "description": "Appareil à vérifier à ce moment-là."
         },
         "state": {
-          "name": "State",
-          "description": "The state that means it worked."
+          "name": "État",
+          "description": "L'état qui signifie que ça a marché."
         },
         "above": {
-          "name": "Above",
-          "description": "Worked if the value is at least this."
+          "name": "Au-dessus",
+          "description": "Réussi si la valeur est au moins celle-ci."
         },
         "below": {
-          "name": "Below",
-          "description": "Worked if the value is at most this."
+          "name": "En dessous",
+          "description": "Réussi si la valeur est au plus celle-ci."
         },
         "if_done": {
-          "name": "If done",
-          "description": "What to say if it worked."
+          "name": "Si c'est fait",
+          "description": "Ce qu'il faut dire si ça a marché."
         },
         "if_not": {
-          "name": "If not",
-          "description": "What to say if it didn't."
+          "name": "Sinon",
+          "description": "Ce qu'il faut dire si ça n'a pas marché."
         },
         "speaker": {
-          "name": "Speaker",
-          "description": "Where to say it (default: where people are)."
+          "name": "Haut-parleur",
+          "description": "Où le dire (par défaut : là où sont les gens)."
         }
       }
     },
     "cancel_follow_up": {
-      "name": "Cancel a follow-up",
-      "description": "Stop it checking back on something.",
+      "name": "Annuler un suivi",
+      "description": "Arrêter de revenir sur quelque chose.",
       "fields": {
         "about": {
-          "name": "About",
-          "description": "Its id, or words from what it's about."
+          "name": "Sujet",
+          "description": "Son identifiant, ou des mots sur ce dont il s'agit."
+        }
+      }
+    },
+    "maintenance_done": {
+      "name": "Entretien effectué",
+      "description": "Marquer une tâche d'entretien comme faite (filtre changé, machine détartrée) pour que son compteur reparte de zéro.",
+      "fields": {
+        "job": {
+          "name": "Tâche",
+          "description": "Son nom dans la page Entretien."
+        }
+      }
+    },
+    "notice": {
+      "name": "Avis",
+      "description": "Faire passer un événement par Sentient — les mêmes règles d'heures de silence, de mise en silence, d'invités et de vacances, et (par défaut) sa propre décision sur l'intérêt de le dire et la façon de le dire.",
+      "fields": {
+        "message": {
+          "name": "Ce qui s'est passé",
+          "description": "En termes simples, p. ex. « Le lave-vaisselle a terminé »."
+        },
+        "entity_id": {
+          "name": "Appareil",
+          "description": "L'appareil concerné (facultatif) — donne la pièce et son état."
+        },
+        "decide": {
+          "name": "Le laisser décider",
+          "description": "Activé : l'IA décide si cela vaut la peine d'être dit, et comment (compte comme une remarque). Désactivé : le dire tel quel."
+        },
+        "priority": {
+          "name": "Priorité",
+          "description": "Urgente se fait entendre même pendant les heures de silence ; basse n'interrompt jamais."
         }
       }
     },
     "look_ahead": {
-      "name": "Look ahead",
-      "description": "Look at tomorrow now and say whether there's anything worth a heads-up.",
+      "name": "Regarder demain",
+      "description": "Regarder maintenant la journée de demain et dire s'il y a quelque chose à signaler.",
       "fields": {
         "speak": {
-          "name": "Say it",
+          "name": "Le dire",
           "description": "Le dire à voix haute le cas échéant."
         }
       }
     },
     "set_asleep": {
       "name": "Définir l’état de sommeil",
-      "description": "Tell the house it's asleep or awake (runs the bedtime or morning actions).",
+      "description": "Dire à la maison qu'elle dort ou qu'elle est réveillée (exécute les actions du coucher ou du matin).",
       "fields": {
         "asleep": {
           "name": "Endormi",
@@ -1563,7 +1866,7 @@
     },
     "check_now": {
       "name": "Vérifier maintenant",
-      "description": "Run one of the optional checks straight away — the self-test, a rain check, the hutch check, the cat watch, the bins check, a \"who's this?\" for the last face the door camera couldn't name, forgetting unnamed faces, or watching the latest clip from the first clip camera.",
+      "description": "Lancer tout de suite l'une des vérifications facultatives — l'autotest, une vérification de pluie, le contrôle du clapier, la surveillance des chats, la vérification des poubelles, un « qui est-ce ? » pour le dernier visage que la caméra de la porte n'a pas su nommer, l'oubli des visages sans nom ou le visionnage du dernier clip de la première caméra à clips.",
       "fields": {
         "what": {
           "name": "Lequel",

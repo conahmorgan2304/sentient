@@ -20,8 +20,19 @@
 */
 (() => {
   if (customElements.get("sentient-hub-card")) return;
+  // the house's language: sentient-i18n.js swaps the card's words, LOCALE formats times (as on the sidebar page)
+  let LOCALE = "en-GB";
+  const language = (card, h) => {
+    const l = String((h && ((h.locale && h.locale.language) || h.language)) || "en");
+    const english = /^en(-|$)/i.test(l);
+    LOCALE = english ? "en-GB" : l;
+    if (!card.shadowRoot) return;
+    if (card._i18nUpdate) { card._i18nUpdate(h); return; }
+    if (card._i18nLoading || english) return;
+    card._i18nLoading = import("/sentient_frontend/sentient-i18n.js").then((m) => { card._i18nUpdate = m.attach(card.shadowRoot, card._hass || h); }, () => {});
+  };
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const hm = (d) => (d && !isNaN(d) ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
+  const hm = (d) => (d && !isNaN(d) ? d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) : "");
   const KEYS = ["last_spoken", "likely_room", "watches", "visitors", "health", "hush", "guest_mode", "party_mode", "memories", "routines", "drive", "mind", "house"];
   const SHOWS = {
     disco: ["mdi:party-popper", "DISCO"], party: ["mdi:glass-cocktail", "PARTY"], rainbow: ["mdi:looks", "RAINBOW"],
@@ -63,6 +74,7 @@
         ...this._nodes().map((n) => (h.states[n.entity] || {}).state), ...Object.values(this._sys()).map((e) => (h.states[e] || {}).state),
         JSON.stringify(this._glance().map((g) => g.val))].join("|");
       if (sig !== this._sig) { this._sig = sig; this._draw(); }
+      language(this, h);
     }
 
     _ids() {
@@ -287,7 +299,7 @@
           </div>
           <div class="nodes">${nodeHtml}</div>
           <div class="quick">${quick}</div>
-          ${next ? `<div class="next"><ha-icon icon="${esc(next.icon)}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
+          ${next ? `<div class="next"><ha-icon icon="${esc(next.icon)}"></ha-icon><span class="nl">UP NEXT</span><span class="nt">${esc(next.text)}</span><em>${next.t.toDateString() === new Date().toDateString() ? hm(next.t) : next.t.toLocaleDateString(LOCALE, { weekday: "short" }).toUpperCase() + " " + hm(next.t)}</em></div>` : ""}
           ${thought ? `<div class="next mind"><ha-icon icon="mdi:head-lightbulb-outline"></ha-icon><span class="nl">${thought[0]}</span><span class="nt">${esc(thought[1])}</span></div>` : ""}
           <div class="tiles">${tiles}</div>
           ${glance.length ? `<div class="glance">${glance.map((g) => `<div class="gl${g.cls ? " " + esc(g.cls) : ""}"${g.more ? ` data-act="more" data-id="${esc(g.more)}"` : ""}><ha-icon icon="${esc(g.icon)}"></ha-icon><div><b>${esc(g.val)}</b><span>${esc(g.label)}</span></div></div>`).join("")}</div>` : ""}

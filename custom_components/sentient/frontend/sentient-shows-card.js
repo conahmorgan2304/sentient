@@ -4,6 +4,17 @@
    so it never clutters a dashboard. Optional: `entity` (the Light show switch), `title`. */
 (() => {
   if (customElements.get("sentient-shows-card")) return;
+  // the house's language: sentient-i18n.js swaps the card's words, LOCALE formats times (as on the sidebar page)
+  let LOCALE = "en-GB";
+  const language = (card, h) => {
+    const l = String((h && ((h.locale && h.locale.language) || h.language)) || "en");
+    const english = /^en(-|$)/i.test(l);
+    LOCALE = english ? "en-GB" : l;
+    if (!card.shadowRoot) return;
+    if (card._i18nUpdate) { card._i18nUpdate(h); return; }
+    if (card._i18nLoading || english) return;
+    card._i18nLoading = import("/sentient_frontend/sentient-i18n.js").then((m) => { card._i18nUpdate = m.attach(card.shadowRoot, card._hass || h); }, () => {});
+  };
   const SHOWS = {
     disco: ["mdi:party-popper", "Disco"], party: ["mdi:glass-cocktail", "Party"], rainbow: ["mdi:looks", "Rainbow"],
     chill: ["mdi:weather-night", "Chill"], halloween: ["mdi:halloween", "Halloween"], christmas: ["mdi:pine-tree", "Christmas"],
@@ -24,6 +35,7 @@
 
     set hass(hass) {
       this._hass = hass;
+      language(this, hass);
       const st = this._switch(hass);
       const sig = st ? `${st.state}|${st.attributes.style}|${(st.attributes.buttons || []).join(",")}|${st.attributes.until}|${st.attributes.following_sound}` : "none";
       if (sig === this._sig) return;
@@ -38,7 +50,7 @@
       if (on && style && SHOWS[style] && !list.includes(style)) list.push(style);
       this.style.display = list.length ? "" : "none"; // nothing chosen: take no space at all
       if (!list.length) { this.shadowRoot.innerHTML = ""; return; }
-      const until = on && st.attributes.until ? new Date(st.attributes.until).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "";
+      const until = on && st.attributes.until ? new Date(st.attributes.until).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) : "";
       this.shadowRoot.innerHTML = `<style>
         :host{display:block}
         ha-card{padding:12px 14px;background:rgba(10,15,25,.9);border:1px solid rgba(0,255,247,.3);border-radius:18px;

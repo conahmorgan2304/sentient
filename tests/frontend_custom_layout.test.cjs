@@ -39,7 +39,7 @@ test("the layout toolbar only appears once switched on in Settings", () => {
 test("AI routing calibration is explicitly approved and visible only to admin", () => {
   assert.match(panel, /data-act="routecal"/);
   assert.match(panel, /g\.id === "door" && this\._hass\.user\?\.is_admin/);
-  assert.match(panel, /window\.confirm\("Run ONE potentially billable/);
+  assert.match(panel, /confirmT\("Run ONE potentially billable/);  // window.confirm, in the house's language
   assert.match(panel, /type: "sentient\/ai\/routing\/calibrate"/);
   assert.match(ws, /async def ws_ai_routing_calibrate/);
   assert.match(ws, /@websocket_api\.require_admin/);
