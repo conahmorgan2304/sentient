@@ -377,3 +377,48 @@ async def test_pure_reminder_retries_only_before_dispatch(hass):
         await watches._async_fire(watch, None, None)
     assert watch not in watches.watches
     watches.cancel(watch.id)
+
+
+async def test_cancel_during_delivery_prevents_reminder_retry(hass):
+    from unittest.mock import patch
+    from custom_components.sentient.speech import SpeechResult
+
+    entry = await _setup(hass)
+    watches = entry.runtime_data.watches
+    watch = watches.add_reminder("Check the washing", minutes=2)
+
+    async def failed(*args, **kwargs):
+        assert watches.cancel(watch.id) is watch
+        return SpeechResult(False, "no_speaker", "Check the washing", [])
+
+    with patch.object(watches.speech, "async_say", side_effect=failed):
+        await watches._async_fire(watch, None, None)
+    assert watch not in watches.watches
+    assert watch.delivery_retries == 0
+    assert watch.id not in watches._timers
+
+
+async def test_watch_action_rechecks_exposure_after_validation(hass):
+    from unittest.mock import patch
+    from homeassistant.exceptions import HomeAssistantError
+    from custom_components.sentient.acting import async_carry_out
+
+    actions = [{"action": "light.turn_off", "target": {"entity_id": "light.hall"}}]
+    hass.states.async_set("light.hall", "on")
+    allowed = True
+
+    def exposed(*args):
+        return allowed
+
+    async def run(*args, before_run=None, **kwargs):
+        nonlocal allowed
+        allowed = False
+        assert before_run is not None
+        if not before_run():
+            raise HomeAssistantError("permission changed")
+        raise AssertionError("Revoked action should not run")
+
+    with patch("custom_components.sentient.acting.exposed", side_effect=exposed), \
+            patch("custom_components.sentient.shortcuts.async_run_actions", side_effect=run):
+        result = await async_carry_out(hass, actions, "test watch")
+    assert result["not_done"] == actions and not result["done"]
