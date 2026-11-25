@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.21.0": [
+        "Eight more languages: Swedish, Danish, Norwegian, Finnish, Czech, Romanian, Greek and Turkish. The page, cards, Settings and Sentient's own sentences (timeline, House health, the Mind tab, notifications, voice replies and spoken alerts) follow your Home Assistant language, with no AI used.",
+        "Spoken safety alerts always use their own fixed wording (\"Smoke detected: kitchen!\") before any general sentence, in every language.",
+    ],
     "1.20.0": [
         "What Sentient writes and says itself now follows your language too. Its fixed sentences (timeline entries, House health, the Mind tab, phone notifications, voice replies and spoken alerts) are translated into Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian from a built-in list, with no AI and no extra cost.",
         "Words the AI writes for Sentient (thoughts, the digest, briefings, welcome-home lines, camera descriptions) are written in your language: Home Assistant's language for reading, and the voice's language for anything said out loud.",

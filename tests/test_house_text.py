@@ -143,3 +143,12 @@ async def test_voice_reply_in_the_conversation_language(hass: HomeAssistant) -> 
     obj, _ = agent(hass, {"house_language_text": False})
     out = await obj._localise_result(response("Cancelled. No action was taken."), polish)
     assert out.response.speech["plain"]["speech"] == "Cancelled. No action was taken."
+
+
+async def test_safety_alert_wording_comes_before_general_sentences(hass: HomeAssistant) -> None:
+    calls = await _setup(hass, house_language="fi")
+    rt = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
+    await phrases.async_load(hass, "fi")
+    said = await language.async_in_house_language(hass, rt.options, "Smoke in the kitchen!", urgent=True)
+    assert said == "Savua havaittu: kitchen!"
+    assert not calls
