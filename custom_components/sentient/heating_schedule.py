@@ -436,7 +436,7 @@ class HeatingProgrammes:
                 self._observe(heater, state)
                 if heater in self._owned and state is not None and state.state not in ("unknown", "unavailable"):
                     events.append((heater, "recover_off", None, record["key"]))
-        events.extend(e for e in self.reconcile(local) if e[0] not in scheduled)
+        events.extend(self.reconcile(local, exclude=scheduled))
         if events:
             self.hass.async_create_background_task(self.async_run(events, local, revalidate=True), "sentient_heating_programme")
 
@@ -495,7 +495,7 @@ class HeatingProgrammes:
         return bool(rt is not None and enabled(rt.options) and any(
             p.get("enabled", True) and heater in p["heaters"] for p in self.programmes()))
 
-    def reconcile(self, local: datetime) -> list[tuple[str, str, float | None, str]]:
+    def reconcile(self, local: datetime, *, exclude: set[str] | None = None) -> list[tuple[str, str, float | None, str]]:
         """Thermostats found away from the schedule (turned up, down or off by hand, or by the device itself) are
         left alone for a while, 3 hours by day and 1 at night, then put back: a period's temperature, or the
         night temperature outside the periods. "off" here runs as the night temperature."""
@@ -511,6 +511,8 @@ class HeatingProgrammes:
             self._manual.pop(gone)
         night, now, out = night_temp(rt.options), dt_util.as_utc(local), []
         for heater in heaters:
+            if exclude and heater in exclude:
+                continue  # a boundary already owns this turn; do not invent a manual hold
             state = self.hass.states.get(heater)
             if state is None or state.state in ("unknown", "unavailable") or blocked(self.hass, heater) \
                     or heater in (rt.options.get(CONF_NEVER_ENTITIES) or []) \
@@ -646,9 +648,9 @@ class HeatingProgrammes:
             if revalidate:
                 if programme is None or heater not in programme["heaters"]:
                     continue
-                # Only recheck holds if the request waited across a state change.
-                # A schedule's own just-issued command is not a manual override.
-                if self.held(heater, current) and self._manual.get(heater):
+                # Boundary heaters were excluded from reconciliation, so a hold
+                # here cannot be invented by the same tick merely seeing a new target.
+                if self.held(heater, current):
                     continue
                 active = _active_period(self.programmes(), heater, current)
                 if what == "on" and (active is None or active[0].get("id", active[0]["name"]) != key
