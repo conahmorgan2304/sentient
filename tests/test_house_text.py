@@ -34,7 +34,12 @@ def test_every_language_has_every_template_with_its_slots(lang: str) -> None:
 
 
 def test_all_languages_are_there() -> None:
-    assert LANGS == ["cs", "da", "de", "el", "es", "fi", "fr", "hu", "it", "nb", "nl", "pl", "pt", "ro", "sv", "tr"]
+    assert LANGS == [
+        "ar", "bn", "cs", "da", "de", "el", "es", "fi",
+        "fr", "he", "hi", "hu", "id", "it", "ja", "ko",
+        "nb", "nl", "pl", "pt", "pt-br", "ro", "ru", "sv",
+        "th", "tr", "uk", "vi", "zh", "zh-hant",
+    ]
 
 
 D = phrases.compile_dictionary({
@@ -152,3 +157,21 @@ async def test_safety_alert_wording_comes_before_general_sentences(hass: HomeAss
     said = await language.async_in_house_language(hass, rt.options, "Smoke in the kitchen!", urgent=True)
     assert said == "Savua havaittu: kitchen!"
     assert not calls
+
+
+@pytest.mark.parametrize(("lang", "want"), [("ru", "Обнаружен дым: kitchen!"), ("pt-BR", "Fumaça detectada: kitchen!"),
+                                            ("de", "Rauch erkannt: kitchen!")])
+async def test_every_language_has_safety_alert_wording(hass: HomeAssistant, lang: str, want: str) -> None:
+    calls = await _setup(hass, house_language=lang)
+    rt = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
+    phrases._loaded.pop(lang.lower(), None)  # not read yet: an urgent alert still gets it
+    assert await language.async_in_house_language(hass, rt.options, "Smoke in the kitchen!", urgent=True) == want
+    assert not calls
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_every_language_can_word_an_alarm(lang: str) -> None:
+    from custom_components.sentient.voice_locale import safety_sentence
+
+    phrases.load(lang)
+    assert safety_sentence("The burglar alarm has gone off!", lang).endswith(": burglar alarm!")

@@ -185,14 +185,14 @@ async def async_in_house_language(
     # Sentient's own fixed sentences have a written translation: no AI, no waiting, even when urgent
     from . import phrases
 
+    if phrases.loaded(lang) is None:
+        await phrases.async_load(hass, lang)  # a few milliseconds, once; urgent alerts need it too
     if urgent:
         from .voice_locale import safety_sentence
 
         # a safety alert's own wording ("Smoke detected: kitchen!") comes before any general sentence
         if alert := safety_sentence(text, lang):
             return alert
-    if phrases.loaded(lang) is None and not urgent:
-        await phrases.async_load(hass, lang)
     if (fixed := phrases.translate(text, lang)) != text:
         return fixed
     if urgent:

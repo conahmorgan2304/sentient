@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "认识你家的大脑",
+    "description": "给它起个名字。这就是它的名称以及它在 Home Assistant 中的显示方式。",
+    "data": {
+     "persona": "姓名"
+    }
+   },
+   "speech": {
+    "title": "房子应该怎样说话?",
+    "description": "选择它可以通话的语音卫星。它会说出人们所在的位置（动作或有人与扬声器交谈），否则使用默认扬声器。",
+    "data": {
+     "speakers": "扬声器",
+     "default_speaker": "默认发言人",
+     "quiet_start": "安静时间开始",
+     "quiet_end": "安静时间结束",
+     "busy_entities": "忙碌时保持安静",
+     "motion_window": "房间意识窗口",
+     "banned_words": "切勿使用这些词（逗号分隔)",
+     "suppress_entities": "在这些自动化或脚本之后保持安静",
+     "suppress_seconds": "保持安静",
+     "prompt_memories": "与语音助手分享回忆",
+     "pass_through_areas": "通行区域",
+     "all_occupied": "在每个有人的房间里说话",
+     "room_tracking": "使用房间追踪器（Bluetooth)",
+     "room_trackers": "房间追踪器",
+     "ai_task_entity": "AI 后台工作",
+     "camera_cooldown": "相机检查之间的最小间隙",
+     "fallback_speakers": "仅备用扬声器",
+     "daily_ai_limit": "AI 每日通话次数",
+     "prompt_recent": "现在和最后一个小时在声音的背景下",
+     "rules": "规则，并通过语音制定规则",
+     "relevant_memories": "选择与要求相符的记忆",
+     "look_cache_minutes": "重复使用相机答案",
+     "camera_prefilter": "当没有任何变化时跳过相机外观",
+     "budget_drive": "每天的 AI 通话次数：驱动力",
+     "budget_noticing": "每天的 AI 通话次数：注意",
+     "budget_cameras": "每天的 AI 通话：摄像头检查和手表",
+     "routine_evidence": "说出例行公事的出现频率",
+     "notice_entities": "注意事项",
+     "remark_repeat_hours": "请勿重复备注",
+     "chattiness": "多么健谈啊",
+     "conversation_style": "它是如何说话的",
+     "carry_on_minutes": "进行对话",
+     "focused_tools": "专注的语音工具",
+     "ask_later": "询问事情进展如何",
+     "put_right": "一次性纠正错误",
+     "music": "询问音乐",
+     "music_alexa": "音乐通过Alexa（Echos)",
+     "music_alexa_service": "Echos 的音乐服务",
+     "house_rules": "入住须知",
+     "no_security_offers": "切勿提出布防、撤防或解锁",
+     "learn_entities": "学习日常习惯",
+     "learn_anchors": "当天的习惯",
+     "trust_lights": "灯",
+     "trust_switches": "开关、插头和风扇",
+     "trust_covers": "百叶窗和窗帘",
+     "trust_heating": "加热",
+     "offer_together": "提供一起养成的习惯",
+     "link_triggers": "还可以了解以下内容",
+     "suggest_routines": "主动提出接管日常事务",
+     "prove_routines": "习惯在被提供之前就证明了自己",
+     "routine_fading": "询问不再需要的例程",
+     "door_camera": "门口摄像头",
+     "door_triggers": "门铃",
+     "announce_visitors": "说谁在门口",
+     "faces": "人脸识别姓名",
+     "face_people": "只有这些人",
+     "face_teach": "打电话询问哪些未透露姓名的面孔",
+     "face_teach_cameras": "从这些相机中学习面孔",
+     "face_cameras": "仅来自这些相机的名称",
+     "face_forget_hours": "之后忘记无名面孔",
+     "clip_watch": "观看活动片段",
+     "clip_cameras": "相机",
+     "clip_scope": "哪些事件",
+     "clip_when": "什么时候",
+     "clip_notify": "发送至手机",
+     "clip_source": "谁写总结",
+     "clip_whose": "说出是哪位家庭成员",
+     "clip_looks": "当人们看不到脸时，他们会是什么样子",
+     "budget_clips": "观看了一天的剪辑（最多)",
+     "clip_days": "保留摘要",
+     "clip_keep": "保留剪辑文件",
+     "parcel_alerts": "说一下包裹何时被留下",
+     "doorstep_sensors": "拜访后检查包裹",
+     "zone_visits": "将前门摄像头区域的人员算作访客",
+     "zone_door_sensors": "前门传感器（如果先打开，则该区域将被忽略)",
+     "face_sensor": "公认的名字来自",
+     "sidebar_panel": "在侧边栏中显示",
+     "page_admin_only": "只有管​​理员才能打开此页面",
+     "custom_pages": "重新排列Sentient页面",
+     "suggestions": "Sentient 页面上的建议",
+     "whats_new": "更新后有什么新变化",
+     "simple_settings": "更简单的设置页面",
+     "auto_backup": "每周备份一次",
+     "backup_keep": "保留多少个",
+     "confirm_kinds": "问\"我可以吗？\"前",
+     "chat_agent": "侧边栏页面的聊天代理",
+     "battery_threshold": "下面电池电量低",
+     "battery_forecast": "说出电池何时耗尽",
+     "health_ignore": "忽略房屋健康",
+     "hide_substreams": "隐藏额外的相机视图",
+     "ignore_cameras": "需要忽略的相机",
+     "never_entities": "永远不要碰这些",
+     "self_check": "每晚检查自己",
+     "learn_corrections": "了解何时撤消它所做的事情",
+     "normal_day": "注意不寻常的一天",
+     "thoughts": "显示它在想什么",
+     "share_learning": "说说它学到了什么",
+     "self_adjust": "自行调整",
+     "proposals": "建议更改其设置",
+     "privacy_log": "记录离开房屋的物品",
+     "goals": "目标",
+     "manuals": "从文件中得到答案",
+     "manuals_folder": "文件文件夹",
+     "manuals_local_text": "查看文本文档内部",
+     "manuals_pages": "一页一页地阅读 PDF",
+     "games": "故事游戏",
+     "voice_id": "知道谁在说话",
+     "voice_id_unknown": "像对待客人一样对待无法匹配的声音",
+     "speaker_memories": "保留每个人的记忆",
+     "books": "图书",
+     "books_folder": "书籍文件夹",
+     "reading_tts": "读声：服务",
+     "reading_voice": "朗读语音",
+     "read_ahead": "边阅读边准备下一部分",
+     "recipes": "食谱",
+     "recipes_folder": "食谱文件夹",
+     "recipes_list": "配料购物清单",
+     "voice_lists": "通过语音显示购物和待办事项列表",
+     "ready_tonight": "准备今晚",
+     "ready_tonight_lights": "今晚准备好：灯可能会关闭",
+     "ready_tonight_follow": "今晚准备好：安排好后告诉我",
+     "tandoor_url": "泥炉地址",
+     "tandoor_token": "Tandoor API 令牌",
+     "second_opinion_ai": "提供第二意见的 AI",
+     "smart_ai_task": "更强大的人工智能安全和隔夜思考",
+     "event_clips": "观看 Frigate 的活动剪辑",
+     "chime": "说话前先鸣响",
+     "voice_agent": "主要AI语音代理",
+     "backup_agent": "备用助手",
+     "offline_answers": "无需人工智能即可回答常见问题",
+     "animal_sensors": "动物的温度传感器",
+     "away_lights_on": "远灯",
+     "holiday_mode": "假期模式",
+     "holiday_thermostats": "节假日恒温器将关闭",
+     "holiday_frost": "防冻温度",
+     "holiday_end_on_return": "当有人在家时结束假期模式",
+     "away_people": "当所有这些都结束时离开",
+     "away_lights": "使用的灯",
+     "away_after": "等大家都出去后开始",
+     "animal_low": "下面太冷了",
+     "animal_high": "上面太热了",
+     "hutch_check": "晚上检查动物笼子",
+     "hutch_spot": "小屋的拍照点",
+     "cat_watch": "夜猫守望",
+     "cat_sensors": "卡特彼勒传感器",
+     "cat_loud": "晚上直接说",
+     "rain_warnings": "降雨警告",
+     "rain_entities": "值得观看的窗户和门",
+     "self_test": "自检",
+     "self_test_household": "家庭自测题",
+     "screen": "使用平板电脑屏幕",
+     "screen_actions": "当某物出现时",
+     "screen_clear_actions": "当一切都清空的时候",
+     "conversation_sessions": "对话会",
+     "room_conversation_handoff": "房间到房间的对话切换",
+     "verified_bedtime": "楼下已核实就寝时间",
+     "verified_bedtime_lights": "楼下的睡前灯",
+     "verified_bedtime_contacts": "楼下睡前打开联系方式",
+     "session_seconds": "会话不活动超时",
+     "guarded_control": "强制语音确认",
+     "routine_verify": "检查例程是否有效",
+     "voice_unlock": "允许语音解锁",
+     "voice_undo": "撤消最近的灯光变化",
+     "evidence_awareness": "解释证据和不确定性",
+     "security_incidents": "集团安全事件",
+     "incident_front": "房子前面",
+     "live_voice_check": "现场语音检查",
+     "speech_delivery_history": "演讲者交付历史",
+     "alexa_tts_only": "仅在 Alexa 上使用 TTS",
+     "update_checker": "检查 Sentient 更新",
+     "contextual_followups": "关联的跟进和纠正",
+     "conversation_recovery": "通话取消并谨慎恢复",
+     "speech_failure_notification": "通知发言人传送失败",
+     "recent_followup_context": "新的唤醒词后的简短后续行动",
+     "conversation_cues": "了解主题的签署、更正和变更",
+     "vary_replies": "每次说的话都不一样",
+     "behaviour_explanations": "解释倾听和行动决定",
+     "current_house_context": "当前房屋环境",
+     "moment_awareness": "当下的意识",
+     "room_memory": "每个房间的短期记忆",
+     "know_people": "知道谁可能在说话",
+     "instant_answers": "即时解答",
+     "capability_awareness": "知道房子能做什么",
+     "house_context_entities": "附加上下文实体",
+     "house_context_updates": "当达到要求的供暖时告诉我",
+     "security_event_evidence": "将安全警报链接到 Frigate 事件",
+     "security_event_zones": "列出了哪些相机事件",
+     "security_event_hidden_zones": "未列出事件的区域",
+     "security_coverage": "解释相机覆盖范围的差距",
+     "frigate_pipeline_health": "显示Frigate管道健康状况",
+     "security_conversation_context": "将安全事件保留在对话中",
+     "security_event_feedback": "记录相机事件的反馈",
+     "share_clip_analysis": "重复使用匹配剪辑分析"
+    },
+    "data_description": {
+     "motion_window": "在决定人们所在位置时需要权衡多少分钟的运动历史。",
+     "suppress_entities": "例如你的门铃通知，所以背景评论不会谈论它。",
+     "busy_entities": "当其中任何一个打开时（会议日历、焦点开关、请勿打扰模式中的电话），Sentient 都会抑制可以等待的讲话，就像安静一样。您要求的安全警报和回复仍然会出现。留空以关闭此功能。",
+     "prompt_memories": "预先给了语音助手多少记忆。剩下的还是可以搜的。",
+     "pass_through_areas": "走廊、平台和楼梯。走过这些地方的意义要小得多，因此路人不会窃取公告。",
+     "all_occupied": "开：家里的每个人都能听到。关闭：仅最繁忙的房间。",
+     "room_tracking": "默认关闭。当房间跟踪器（例如百慕大的电话\"区域\"传感器）说有人在一个有扬声器的房间里时，就会说\"无论人们在哪里\"。当没有跟踪器知道时——没有看到电话、在外面或者房间里没有扬声器——像以前一样使用基于动作的猜测。只用来选择在哪里发言，从不决定是否有人在场。没有存储任何内容。",
+     "room_trackers": "状态为某物所在房间的传感器，例如百慕大\"区域\"传感器（每个电话或标签一个）。每个人都需要房间来匹配 Home Assistant 区域。",
+     "ai_task_entity": "人工智能任务用于摄像机观察、简报、夜间思考和展望明天。Empty使用Home Assistant的首选AI任务。",
+     "camera_cooldown": "带摄像头的手表最多会重复查看一次，以降低人工智能成本。",
+     "fallback_speakers": "仅当没有人在任何其他发言者的房间中时使用，例如一个你不想打扰的客厅。",
+     "daily_ai_limit": "后台人工智能呼叫（摄像头检查、简报、夜间思考、门铃……）在这么多次之后的第二天停止，并使用简单的文字代替。您提出的问题仍然会得到解答。0表示无限制。",
+     "prompt_recent": "现在有几行（睡觉、安静或安静的时间、客人、任何打开的东西、几个小时没有听到读数，所以它们不是最新的）、过去一小时发生了什么以及有什么动静，所以“我应该知道什么？”以及“刚刚发生了什么？”立即得到答复。免费：无需额外的AI调用。",
+     "rules": "\"当发生这种情况时，执行“规则”（“规则”页面），并且声音可以制定规则：它会读回规则，并仅在“是”后保存它。规则永远不能布防、撤防或解锁任何内容。关闭：没有规则运行。",
+     "relevant_memories": "一旦记忆的数量超出了声音上下文的范围，它就会获取与问题共享单词的记忆，然后是最新的记忆。免费，没有人工智能。关闭：始终是最新的。",
+     "look_cache_minutes": "在这段时间内对同一台摄像机提出相同的问题会得到最后的答案，而不是新的 AI 外观。0 总是再看一遍。",
+     "camera_prefilter": "相机检查和手表首先比较一张小图片（在这台机器上，免费），只有当相机或其位置看起来与上次看起来不同时才询问人工智能。",
+     "budget_drive": "自己每天的津贴在总体限额之内。0 表示仅共享总体限制。",
+     "budget_noticing": "自己每天的津贴在总体限额之内。0 表示仅共享总体限制。",
+     "budget_cameras": "自己每天的津贴在总体限额之内。0 表示它仅共享总体限制。安全，门铃和你提出的问题永远不会被阻止。",
+     "routine_evidence": "主动提出接管日常事务，并说明该事务发生的频率，例如'过去 4 个周末中的 4 天'.",
+     "notice_entities": "当这些发生变化时，人工智能会决定是否值得说些什么（或询问）。例如洗衣机、门、天气、垃圾箱。",
+     "remark_repeat_hours": "注意到同样的事情（\"水壶已经煮沸了。\"）这么长时间都没有再说过。0：无限制。",
+     "chattiness": "每小时限制评论数：安静 2、正常 4、闲聊 8。关闭则停止注意。",
+     "conversation_style": "简短：简短、切题的答案。自然：命令很短，但问题和聊天会得到一些自然的句子，当有人问一个问题时会出现后续问题，从而使麦克风保持监听状态。",
+     "carry_on_minutes": "通话后不久再次说出唤醒词会从同一个扬声器中进行相同的对话，所以\"楼上呢？\"还是有道理的。0 关闭此功能； Home Assistant 在安静五分钟后忘记了对话。",
+     "focused_tools": "仅向语音提供符合要求的 Sentient 工具（摄像头、加热、提醒……）以及内存和安全性。更小的选择使得更便宜的模型更快、更准确。任何不明显匹配的东西仍然可以获得所有工具。",
+     "ask_later": "当有人提到即将发生的事情（一次旅行、一场比赛、兽医）时，这个声音会记得在下次有人与它交谈时询问情况如何——一次，从来没有在安静的时间或有客人在场的时候，也从来没有谈论过任何私人的事情。它从来不会突然说出来。关闭此功能会忘记任何等待询问的内容。",
+     "put_right": "当您说\"不，是另一盏灯\"或\"不是那盏灯，是那盏灯\"时，语音会切换回刚刚打开或关闭的内容（在几分钟内打开或关闭），并仅使用更正的部分再次执行请求 — 无需再说一遍。关闭此功能后，将其直接交给语音代理。",
+     "music": "设置音乐助手（或通过 Alexa 开启音乐）：\"在厨房里播放平静的音乐\"从您自己的播放列表和广播电台中挑选，并在该房间的音乐助手播放器上播放（或询问该房间的 Echo） — 在安静时间的夜间音量，而不是在房间自己的安静时间播放，除非您在房间里。关闭：无音乐工具。",
+     "music_alexa": "开启：\"在厨房里播放一些安静的内容\"要求该房间的 Echo（Alexa 媒体播放器）从下面的服务中按名称（播放列表、艺术家、歌曲或心情）播放该内容，并在安静的时间以夜间音量播放，而不是在房间自己的安静时间播放，除非您在其中。该服务必须在 Alexa 应用程序中链接。当两者都设置时，代替音乐助手使用（音乐助手无法在没有 Premium 的情况下播放 Spotify）。关闭：Echos 不会被要求播放音乐。",
+     "music_alexa_service": "Echos 从哪个服务播放。Spotify 使用免费帐户，但 Alexa 可能会随机播放类似的音乐，而不是确切的歌曲； Premium 完全满足您的要求。",
+     "house_rules": "每个声音都必须遵循简单的句子，每行一个，例如“永远不要说房子是空的.'",
+     "no_security_offers": "从声音的回复中删除任何提出布防或解除警报或解锁门的句子（\"我要布防它吗？\"）——即使它是按书面说法说的。对要求布防、撤防、锁定或解锁的人的回复将被保留，因此仍会询问他们的确认。默认关闭。",
+     "learn_entities": "人们用手使用的灯、开关、风扇和百叶窗。过去两周的每天晚上都会检查大多数日子在同一时间完成的事情，以及在其他事情之后立即完成的事情（门打开，另一盏灯亮了).",
+     "learn_anchors": "通过日落、日出或起床而不是时钟（黄昏时的灯，日出时的百叶窗，起床后的水壶）来保持时间的习惯是通过这种方式学会的，因此房子为您做的例行工作会随着季节而变化。起床需要睡眠和清醒的环境。关：一切都是像以前一样争分夺秒地学习。",
+     "offer_together": "当一些事情通常在同一天的同一时间发生时（灯亮着，百叶窗关上，电视在晚上 8 点左右打开），它们会一起提供一次 — 是的，房子会做所有这些事情。关闭：每项均单独提供。",
+     "trust_lights": "当你让房子接管的例行公事打开灯时：就这样做，先说出来，或者问并且只在“是”的情况下才这样做（如果没有人回答，什么也不会发生).",
+     "trust_switches": "开关、智能插头和风扇也是如此。",
+     "trust_covers": "百叶窗和窗帘也是如此。车库门和大门总是问。",
+     "trust_heating": "人们起床之前加热暖气也是如此。首先询问意味着当每个人都在睡觉时它无法预热。",
+     "link_triggers": "可选：更多可能引发习惯的事物（电视启动、床传感器……）。门、窗和所学的灯光始终被考虑。",
+     "suggest_routines": "每次新例行公事，白天有人在家时，询问房子是否应该从现在开始这样做。",
+     "prove_routines": "首先观察新习得的习惯：习得后的每一天，Sentient 都会检查一个人是否真的在平时的 45 分钟内做到了这一点。仅当其适用的 4 天中至少 3 天（工作日、周末或每天）正确时，才会提供该服务。设置 › 学习显示每个人的表现。关闭：一旦养成习惯就立即提供。",
+     "routine_fading": "上：当房子为你做的例行公事在两周内的第 5 天到期时已经完成（现在有人自己做），Sentient 询问一次是否保留它，如果你说不，则停止。只保留日期，最多两周。关闭：保留房子的日常活动，直到您另有说明为止。",
+     "door_camera": "门铃一响就看一眼，记录谁来了。",
+     "door_triggers": "门铃按钮（二进制传感器或事件），或任何其他表示有人在门口的东西。",
+     "announce_visitors": "关闭会将其保存在一个安静的日志中，语音助手可以从中接听。",
+     "faces": "当 Frigate（或门铃）识别出某人时，它会出现在时间线上，并且声音可以回答\"Sam 回家了吗？\"。名字永远不会被公布或猜测——只有当有人问起时才会说出来。默认关闭。",
+     "face_people": "Frigate 等名字都认识他们。空：它认识的每个人。",
+     "face_teach": "帮助Frigate的人脸识别变得更好。当有人离开选定的摄像头并且 Frigate 保留一张无法命名的面孔时，手机会收到一条私人信息\"这是谁？\"带有家庭用的脸部和按钮（手机最多显示三个）。敲击一教Frigate； \"其他人……\"为新认识的人输入姓名，或者\"不\"删除陌生人的面孔。从来没有说过话，从来没有使用过平板电脑，最多每十分钟一次。需要启用 Frigate 人脸识别并选择用于通知的手机。默认关闭。",
+     "face_teach_cameras": "脸部清晰的特写镜头，例如门铃。空：门摄像头。",
+     "face_cameras": "空：每个相机。选择特写的（门铃、前门），这样繁忙的街道就不会报假名。",
+     "face_forget_hours": "每天晚上，Frigate 的面孔都会被保留，但没有人点名——大多数是陌生人——一旦到了这么老的年纪，就会从 Frigate 中删除。已命名的面孔将被保留。0：留给Frigate（它保留最后200).",
+     "clip_watch": "当 Frigate 在选定的摄像机上完成一个事件时，人工智能会观看该段录制一次，时间线和 Sentient 页面上会出现一句话：\"14:10 门——一个男人遛狗经过\"。那个声音回答：\"门口发生了什么事？\"无需再次进行 AI 呼叫即可从他们那里获得。从来没有说过话。默认关闭。",
+     "clip_cameras": "从一个开始，例如门。",
+     "clip_scope": "Frigate 的警报是您根据需要标记的区域中的人员 - 繁忙街道上最安静的选择。如果摄像机从不发出警报（Frigate 中没有设置所需区域），请选择\"区域中的任何内容\"——剪辑卡会显示跳过的内容以及原因。",
+     "clip_when": "只在这些时间观看。离开意味着在离开灯下选择的每个人都已退出。",
+     "clip_notify": "仅适用于手机，带有图片和播放按钮。",
+     "clip_source": "Frigate自带的AI审稿摘要需要在Frigate中开启；那么这里就没有进行AI调用。",
+     "clip_whose": "在同一个人工智能调用中，包含了 Frigate 面部库中的家庭面部照片（以及下面的长相），并且只有在明显是某人的情况下，它才会说出某人的名字 — \"可能是 Sam\"。陌生人从来不会被点名。只在被问到时才说，从未公开。",
+     "clip_looks": "每行一个，例如\"山姆：红色自行车头盔和黄色外套，骑自行车\"。当头盔或头罩遮住脸部时有帮助。",
+     "budget_clips": "也计入每日总体人工智能限制。0：本身没有限制。",
+     "clip_days": "总结只是文字，然后删除。",
+     "clip_keep": "关闭：每个剪辑在观看后立即删除。",
+     "parcel_alerts": "交货后，几分钟后再次查看并询问是否有包裹被留下。",
+     "doorstep_sensors": "可选：用于门口或前花园的人员传感器（例如 Frigate 区域的人员占用）。当访问结束而没有铃声响起时，会检查门口摄像头是否有遗留的包裹或邮件。",
+     "zone_visits": "使用上面的门阶传感器（例如 Frigate 区域的人员占用）。当没有人按铃时，到达该区域的人将被视为访客：查看门口摄像头并宣布。无论铃声还是区域，无论哪个先出现，都会进行访问，而另一个则被忽略。关：只有铃声开始访问。",
+     "zone_door_sensors": "可选：前门的打开/关闭传感器。如果门在最后一分半钟被打开（或正在打开），则该区域将被忽略，因为那是有人离开或回家。",
+     "face_sensor": "可选：面部识别传感器，其状态是它刚刚识别的名称（例如来自 Frigate）。在日志和公告中使用（如果已启用。",
+     "sidebar_panel": "侧边栏中的页面显示记忆、例行公事、手表、访客和所说内容。",
+     "page_admin_only": "对除管理员之外的所有人隐藏该页面及其读取的内容。关闭使其对整个家庭开放。打开它不会删除任何内容。",
+     "custom_pages": "打开：概览、房屋、思维和安全选项卡使用您保存的布局，管理员可以在此处编辑页面布局以在列之间移动卡片、隐藏它们、再次显示它们或重置选项卡。选项卡本身没有编辑按钮，仅在您进行编辑时才显示。布局保存在Sentient中，因此每个屏幕显示相同。关闭：选项卡返回标准布局；当您再次打开它时，您保存的布局将被保留。",
+     "confirm_kinds": "要求人工智能描述这些动作并等待“是”。这是提示指令，而不是强制操作块：您的对话代理控制设备执行。关闭东西不需要询问。空：没有额外的确认指令。对于强制检查，请使用所需的代理设置启用受保护的控制。",
+     "auto_backup": "周日晚上，记忆、地点、例程、运动灯、嘘声和设置的备份，保存在 sentient_backups 下的 config 文件夹中。",
+     "backup_keep": "较旧的已删除。",
+     "suggestions": "Sentient 可以使用但不能使用的东西——一个新的扬声器、洗衣机上的功率传感器、一个厨房温度计——一次只提供一条线。是的，添加它；不意味着它再也不会被提供。免费，无人工智能。",
+     "whats_new": "Sentient 更新后，Sentient 页面上会出现一张简短的卡片，用简单的文字说明新内容，直到您点击知道了。",
+     "simple_settings": "设置列表显示了基本功能，并显示了可选功能的所有内容。新安装以这种方式开始。不改变 Sentient 所做的事情。",
+     "chat_agent": "谁回答页面的询问框 — 选择一个勾选了 Sentient 的语音代理。清空使用您首选的辅助管道。",
+     "health_ignore": "不应视为问题的实体（及其设备），例如一些本该关闭的东西。",
+     "hide_substreams": "在计算和检查摄像头时，忽略了高清和标清流、屏幕截图和地图，因此一个门铃并不是多个摄像头。Home Assistant 中没有删除任何内容。",
+     "ignore_cameras": "相机 Sentient 不应计数、检查或提供，例如平板电脑的相机。他们原封不动地留在Home Assistant；再次选择带一个回来。",
+     "never_entities": "Sentient 永远不会切换、调暗或改变这些：不在规则、例行公事、优惠、自动关闭、离开或运动灯、灯光显示、加热或受保护的语音控制中，并且语音被告知不要打扰它们。它仍然可以阅读它们并谈论它们。任何会改变的事情都会被跳过并注明。",
+     "self_check": "每天晚上，它都会回顾自己的记录——它说了些什么，是如何发生的，失败的演讲者，被搁置的事情，一次又一次提出的问题，人工智能仪表——并记录下它对自己的注意到，以及背后的数字。没有人工智能。问\"你惹恼我们了吗？\"或\"你意识到了什么?\".",
+     "learn_corrections": "当有人改变房子刚才所做的事情（它亮起一盏灯，它接管了一个例程）时，它会记录下更正。你不断撤消的例行公事被交还（关闭），时间线也是如此。关闭此功能会停止观看；已注明的更正将被保留。",
+     "normal_day": "将今天与平常的情况进行比较，并在“思维”页面上进行记录：例如，当某人通常现在已经起床时，却没有人起床。规则很简单，不大声说话，也不交换任何内容。关闭此功能会停止检查并隐藏发现的内容。",
+     "thoughts": "思维页面上有一个简短的第一人称列表（\"人们不断地关闭着陆灯，所以我停了下来\"），再加上猜测某人接下来会去哪个房间并检查正确的频率。没有人工智能。关闭此功能会停止猜测并隐藏列表；它学到的东西会被保留。",
+     "share_learning": "每天晚上（17:00-20:30）一次，当有人在附近且不是安静的时间时，它会说出过去两天中它学到的或改变了主意的一件事：它发回的例程、它更新的事实、它发现的习惯、它现在猜测你下一步要去哪里的程度。永远不要做两次同样的事情。关闭此功能会将所有内容保留在“思维”页面上，但保持沉默。",
+     "self_adjust": "当自检发现某种评论时，房子里一直保持安静，让它安静一点（与大拇指向下相同；它再次消失）。绝不触及安全、安保或任何其控制的事物。",
+     "proposals": "当自我检查发现有问题时，建议在“思维”页面上进行一个小改变——减少评论，不要经常重复，在简报中添加一个部分，更高的人工智能限制——并附上原因。除非你说“是”，否则一切都不会改变；一个月内没有人再问“不”。关闭此功能会清除任何等待的建议。",
+     "privacy_log": "Sentient 进行的每次人工智能通话和网络搜索都会被记录下来——哪些功能、有多少图片、剪辑或文档，以及哪些服务——而不是所说或显示的内容。请在“大脑与系统”→“什么离开了家”下查看，并有一个按钮可以忘记过去 48 小时。关闭此功能会清除记录。",
+     "goals": "让声音设定几天或几周的目标（\"帮助我们本月减少使用暖气\"）。目标可以跟随传感器：它将每天与前一周进行比较，并在合适时提及进展。房子里什么都没有改变。",
+     "manuals": "回答下面文件夹中文档中的问题（每个 AI 调用一次）。关闭：文档保持不变。",
+     "manuals_folder": "Home Assistant 媒体中的文件夹（例如手册 = media/manuals）。根据每个文件的用途来命名，例如\"航空purifier.pdf\".",
+     "manuals_local_text": "当没有文件名与问题匹配时，请在 .txt 和 .md 文档中查找正确的文件名，如果无法联系到 AI，请读出最接近的段落，而不是什么也不读出。两者都没有使用人工智能。关：仅匹配文件名。",
+     "manuals_pages": "开启：每个 PDF（和文本文档）都被逐页读取一次到 Sentient 自己的数据库中——在这台计算机上，没有人工智能。然后，一个问题只会向人工智能发送匹配的几页，而不是整个文档，因此成本要低得多，而且答案会说明它在哪一页（\"在第 14 页\"）。名称不匹配的文档仍然可以通过其中的内容找到，如果无法到达人工智能，则会读出最近的段落及其页面。扫描的 PDF（页面图片）仍然由 AI 完整阅读。关：每次都读取整个文档，已读取的内容被清除。",
+     "games": "玩语音主导的故事游戏，例如与助手作为游戏大师一起逃离平坦的冒险。每个游戏都会在会话和助手之间保留自己保存的记忆（玩家在哪里、​​他们携带什么、他们发现和选择什么）。它仅在玩游戏时以声音显示，游戏主持人可以读取房子的普通内存，但永远不会改变它。打开“设置”→“故事游戏”来编写游戏并编辑其记忆。关闭：隐藏游戏工具和页面；保存的游戏会被保留，不会被清除。",
+     "voice_id": "使用本地发言人匹配此请求。要让 AI 模型个性化回复或按名称归属新记忆，还可以在语音识别中启用与对话代理共享匹配的名称。单独的本地“谁在说话？”语音识别中设置回复。",
+     "voice_id_unknown": "当辅助扬声器没有语音匹配时，请将该回合的家庭历史记录和保存的记忆保密。关：不匹配的声音被视为正常声音。",
+     "speaker_memories": "随着语音识别的运行：匹配的声音首先获得自己的记忆（“亚历克斯：喜欢茶”）——始终包括在内，即使更新的家庭事实会填满列表——而不是任何其他人的个人记忆；一个它无法匹配的声音无法获得任何人的个人记忆。家庭事实总是被分享。类型化请求和 Echos 保持不变。默认关闭。",
+     "books": "大声播放有声读物和阅读电子书，保持每个房间的位置。\"读我的书\"、\"继续读这本书\"、\"读 20 分钟\"、\"停止\"、\"下一章\"、\"向后退一点\"。没有人工智能（除了可选的回顾）。在 Echo 上：通过 Alexa 技能按请求电子书一篇文章；有声读物需要另一个扬声器。",
+     "books_folder": "Home Assistant 媒体中的文件夹（书籍=媒体/书籍）。无 DRM 的 .epub 或 .txt 电子书；有声读物为一个 .mp3/.m4b/.m4a 文件，或以该书命名的部分文件夹。",
+     "reading_tts": "专门针对书籍和故事的不同文本转语音服务 — Gemini 或 ElevenLabs 的声音通常是更好的讲故事者。将其留空，以便以平常的声音朗读。Echos始终使用Alexa自己的声音。",
+     "reading_voice": "从该服务中选择语音。保存前使用“尝试下面的声音”在默认扬声器上听到它。",
+     "read_ahead": "使用朗读语音时，故事的下一部分是在朗读这一部分的同时制作的，因此缓慢的语音（自由语音或云语音）不会在各部分之间留下间隙。更早地使用该声音，从不更频繁地使用该声音。",
+     "recipes": "\"让我们做烤宽面条\"：配料，然后一次一步——\"下一步\"、\"重复\"、\"返回\"、\"下一步是什么？\"——记住每个发言者的步骤。\"做 6 份\"可以衡量它；配料可以列在购物清单上。",
+     "recipes_folder": "Home Assistant 媒体中的文件夹（食谱 = 媒体/食谱），包含 PDF、照片、文本或 Markdown。每个步骤第一次都会由一个人工智能调用整理成步骤，然后保留。如果设置了集成，Mealie 将自动使用。",
+     "recipes_list": "将成分添加到购物清单”中放置它们的位置。空：名称中包含“购物”的列表。",
+     "voice_lists": "关于：“勾掉牛奶”、“购物清单上有什么？”、“把垃圾袋拿掉”——不管怎么说，都会找到物品（无论​​如何，复数，清单上唯一的牛奶），询问两个可能的匹配项，Sentient 仅在清单显示后才说已完成。使用向“协助”公开的列表（如果没有则为所有列表）和购物列表，除非指定了另一个列表。没有自己的人工智能。关闭：语音使用Home Assistant自己的列表命令。没有存储任何内容。",
+     "ready_tonight": "\"确保今晚一切准备就绪\"：检查门窗和锁，Assistance 可以看到，仅关闭下面选择的灯，查看暖气，并说出哪些部分仍然打开、未上锁、未打开或无法确认。锁、警报器和暖气永远不会改变，也永远不会发出警报。没有自己的人工智能。关闭：声音仍然可以检查房屋，但不提供此功能。没有存储任何内容。",
+     "ready_tonight_lights": "唯一\"为今晚做好准备\"的灯可能会熄灭。之后每一项都会被检查。空：没有关灯，只报告。",
+     "ready_tonight_follow": "当某些内容仍处于打开或解锁状态时，请密切关注该内容最多三个小时，并在一切都已解决时对您询问的扬声器说一次。重启后继续。",
+     "tandoor_url": "可选：您的 Tandoor Recipes 地址，例如http://192.168.1.20:8080.",
+     "tandoor_token": "可选：来自 Tandoor 的 API 令牌（设置 → API）。仅保存在 Home Assistant 中。",
+     "voice_agent": "通常应答的人工智能代理（例如 Google AI）。空使用页面的聊天代理。",
+     "backup_agent": "当主代理出现故障时进行响应——Home Assistant自己的代理负责照明、加热和定时器，无需任何AI.",
+     "offline_answers": "当AI代理失败时，“房子锁起来了吗？”，“我的下一个警报是什么时候？”以及“有人过来吗？”在尝试备用代理之前，直接从家里用简单的语言回答。只有问题，只有人们可能看到的内容；在访客模式下只有安全问题。关：所有内容都转到备份代理。",
+     "animal_sensors": "鸡舍、狗舍、鸡舍或水箱温度传感器。",
+     "away_lights_on": "天黑后每个人都出去时，灯光会复制上周同一时间的使用方式（来自 Home Assistant 的历史记录），无论哪种方式都是几分钟。如果有人在家或最近内部有移动，对于没有跟踪电话的人，则不会启动（或停止），并恢复打开的功能。还有一个“远灯”开关。",
+     "away_people": "空：每个人都有一个人进入。您可以选择手机（设备跟踪器）而不是人。",
+     "away_lights": "空：房间里的每一盏灯，留下屏幕、LED 环、背光和灯组。只有上周当时使用的灯才会亮起。",
+     "holiday_mode": "假期模式”切换，并通过语音提示“我们将放假到周日”。当它打开时，除了安全警报之外，不会大声说出任何内容——本来会说的内容会发送到选择用于通知的电话，有访客和包裹；即使平时关闭，客场灯也会亮起；下面的恒温器被调低。关：语音无开关、无假期。",
+     "holiday_thermostats": "当您离开时，将其调至防霜状态，并在假期模式结束时完全恢复原状。空：未触及加热装置。",
+     "holiday_frost": "当您离开时，上面的恒温器设置为多少。",
+     "holiday_end_on_return": "一旦所有人都出去了，第一个人回家就会结束假期模式并恢复供暖。关闭：它在指定日期或关闭时结束。",
+     "away_after": "所以去商店并不会开始它。",
+     "animal_low": "当气温低于此值时会说一次（在安静的时间里保持到早晨），并在霜冻前的晚上发出警告。",
+     "animal_high": "当它超过这个值时说一次。",
+     "hutch_check": "日落后半小时，一个人工智能看着小屋：他们在里面吗？它关着吗？只说一些如果不说的话。",
+     "hutch_spot": "在“斑点”选项卡上围绕笼子绘制的斑点，例如'兔子笔'.",
+     "cat_watch": "天黑后，当小屋相机上的猫传感器启动时，人工智能会查看：小屋里或旁边有猫吗？最多每 15 分钟一次，并且图片没有变化时不会。",
+     "cat_sensors": "空：家中摄像头上的猫传感器（例如 Frigate 的猫占用情况).",
+     "cat_loud": "关闭：保留在早上（“凌晨 2:14 一只猫在笼子旁边”）。On：通过守夜扬声器立即说出。",
+     "rain_warnings": "当一小时内下雨并且窗户或门打开时：“下一个小时就会下雨，卧室的窗户打开。”阅读每小时天气预报——没有人工智能。每阵雨一次。",
+     "rain_entities": "空：每个门窗传感器。",
+     "self_test": "一夜之间，语音会被询问一些日常问题（室外温度、打开的东西、提醒、闹钟、时间），并根据房子检查其答案。任何问题都会通过所使用的工具显示出房屋健康状况。大约有 5 个 AI 叫跑。仅提问——没有任何改变。",
+     "self_test_household": "添加了由您自己的设备构建的大约 7 个问题：门窗上次关闭的时间、灯是否亮着、摄像头在过去两个小时内是否看到任何人、今天是否有人到门口、它不知道的事情（发明的答案失败）、任何设备都无法做的事情，以及一个太模糊而无法在不询问的情况下回答的问题。在提问过程中改变任何内容都是失败的。分数及其趋势在 Mind 页面上。大约还有 7 个 AI 叫跑。",
+     "screen": "Sentient 屏幕卡上的警报、通知和早间卡（自定义：sentient-屏幕卡）。关闭：仅显示房屋一目了然。",
+     "screen_actions": "例如唤醒平板并切换到有屏卡的页面。",
+     "screen_clear_actions": "例如将平板电脑切换回正常页面。",
+     "conversation_sessions": "将 Sentient 与备份代理一起使用。除非口头答复以问题结束，否则单个命令将停止监听。信息、安全、健康和系统讨论会询问是否还有其他问题，并保持开放状态，直到您说“仅此而已”、“足够了”或“停止收听”，或者不活动超时到期。说“回到…”可在 24 小时内从此设备恢复未完成的主题，而无需恢复操作权限。Mind 面板显示最近的对话决策。后续聆听需要兼容的辅助设备。",
+     "room_conversation_handoff": "说继续并命名另一个设备上的主题。两个请求必须来自同一标识的 Home Assistant 用户。检查新的读数，之前的操作和确认不会延续。",
+     "verified_bedtime": "假设就寝时间跑下楼关闭选定的灯并检查选定的联系人。要求楼下就寝时间状态重新检查，或者说取消楼下就寝时间以停止跟踪。",
+     "verified_bedtime_lights": "选择最多二十个单独的辅助曝光灯。组已被排除，并且“永不接触”列表仍然适用。",
+     "verified_bedtime_contacts": "选择最多二十个辅助暴露的门、窗或其他打开触点进行检查。它们是只读的。",
+     "session_seconds": "在这么多秒后丢弃会话上下文和挂起的操作，不再轮流。您的语音设备控制自己的静音超时。确认也会在 60 秒后过期。",
+     "guarded_control": "选择使用受支持的专用 AI 代理：仅选择在控制 Home Assistant 下保护的 Sentient，然后在管道中使用带有备份的 Sentient。关闭本地首选处理命令并删除在此代理之前运行的冲突句子触发器。错误的代理 API 配置会停止请求。没有不受限制的后备、脚本、场景或警报操作。门、电器启动和重大供暖变化需要单独的“是。",
+     "routine_verify": "打开：在语音例程（晚安，离开……）运行后，几秒钟后检查更换的每个灯、开关、锁和盖子，并回答说没有发生什么（\"完成，除了着陆灯，它仍然亮着\"）。它无法检查的步骤（脚本、场景）将被报告为未检查，而不是已完成。没有任何事情会自行重试或撤消。关闭：例程像以前一样运行，未检查。",
+     "voice_unlock": "让我们在单独说“是”后强制进行语音确认来解锁门。Off（默认）保持锁定和关闭，但拒绝通过语音解锁或打开，因为Sentient无法分辨谁在说话。",
+     "voice_undo": "通过防护控制，说“撤消该操作”即可请求恢复最近验证的灯光设置。跳过此后更改的灯光，随会话过期，并且永远不会松开锁、暖气或电器。",
+     "evidence_awareness": "让声音区分观察结果、推论、尝试的操作和经过验证的设备报告。不可用的安全传感器总是会阻止完全安全的索赔。",
+     "security_incidents": "对配置的摄像头安全人员传感器和进入联系人进行分组，并提供警报和剪辑摘要。当地保留7天。时间接近是一种可能的联系，而不是同一个人的证明；仅重复升级警报。",
+     "incident_front": "房子前面的摄像头和传感器（门铃、前门）。这里的任何事情都不会与其他安全事件归为一个安全事件，反之亦然：同时有人在前门和有人在后门是两个事件。留空以单独按时间分组。",
+     "live_voice_check": "在 Mind 面板中显示用户启动的语音检查。关闭此功能会清除当前检查并停止记录检查轮次。需要对话会话才能开始检查。",
+     "speech_delivery_history": "将最近的每个发言人的公告结果保留在 Mind 面板中。关闭此功能会清除此历史记录。扬声器故障检测和安全重试处理保持活动状态。",
+     "alexa_tts_only": "如果公告不可靠，请使用纯 TTS 代替 Alexa 公告。这会绕过 Alexa 公告铃声；其他发言人不变。",
+     "update_checker": "启用后、启动时以及每六个小时检查 GitHub 是否有稳定版本。没有AI调用，自动安装或自动重启。禁用停止检查。",
+     "contextual_followups": "需要对话会话和带有备份代理的 Sentient。保持主题进行简短的跟进，刷新暴露的设备读数，并澄清不明确的调整。不授予操作权限或更改侦听规则。默认关闭；关闭它会清除临时对话上下文。",
+     "conversation_recovery": "需要对话会话和带有备份代理的 Sentient。取消来自同一对话/设备/用户的待处理或正在运行的请求，并避免在 AI 故障后重播不确定的设备命令。无法撤消已发送的操作或使硬件在忙碌时接受语音。默认关闭；禁用会停止此额外处理。",
+     "speech_failure_notification": "当发言者传送失败或不确定时显示 Home Assistant 通知。默认关闭。不包括口头内容或重复讲话。在访客模式下禁用；现有通知将保留直至被驳回。",
+     "recent_followup_context": "在对同一发言者和用户发出新的唤醒词后，使用最近完成的主题。需要对话会话和上下文跟进。使用会话超时；永远不会恢复确认或聆听。默认关闭。结束或忘记可以清除上下文。",
+     "conversation_cues": "在对话中：当没有什么具体的问题等待答案时，日常的结束语（“干杯”、“完美，谢谢”、“那就行了”）结束对话； “抱歉，我的意思是……”、“错误的灯光”和“不是灯，是天花板灯”是更正；以及“另一方面……”或“其他：”开始一个新的主题，没有携带任何设备。没有人工智能。关：仅识别简单的结尾和更正。",
+     "vary_replies": "该声音会显示过去一天的最后几个回复，并被告知不要重复使用他们的句子或开头，因此相同的答案不会被逐字逐句给出两次。不在私人房间或访客模式下。无论哪种方式，重复的回复都会被计数（Mind 选项卡，带有语音计时）。默认关闭。",
+     "behaviour_explanations": "直接回答有关收听和记录设备结果的简短问题，无需 AI 通话。需要对话会话。使用现有会话记录，尊重访客模式和设备访问，并且从不重复操作。默认关闭；不存储额外的历史记录。",
+     "current_house_context": "为对话提供公开设备报告、最近更改和当前未完成任务的紧凑相关快照。默认关闭。无后台人工智能调用。访客模式会抑制它。最近的更改将在 30 分钟后过期；禁用或忘记会清除仅记忆的上下文。",
+     "moment_awareness": "每个语音回复都会收到 Sentient 已保存的简短“现在”图片：谁在家、从什么时候开始、有动静的房间、过去 45 分钟发生的事情以及今天的任何异常情况。没有人工智能，也没有存储任何内容。在私人房间或访客模式下，仅给出移动。Off：不添加任何内容。",
+     "room_memory": "房间中的每个语音回复都会显示过去一小时内发生的情况：该房间中早些时候的对话、通过语音切换的内容以及在那里宣布的内容。如果几分钟前有人刚刚在另一个房间说话，此后这里就没有再说过任何话，那么谈话也会随之而来，这样他们就可以从上次中断的地方继续进行。没有存储任何新内容。私人房间和访客模式只获取自己房间的记录。Off：不添加任何内容。",
+     "know_people": "当语音识别尚未命名说话者时，Sentient 会从它可以信任的事物中找出可能是谁：在 Home Assistant 应用程序中输入的消息来自该人的帐户，或者他们的电话是房间中唯一的房间跟踪电话。声音被告知可能是谁，并将那个人告诉它的关于他们自己的事情放在第一位。猜测永远不会允许任何需要确认的事情，因此没有任何东西会保存在他们的名下。不在访客模式或私人房间中。关：不猜测。",
+     "instant_answers": "在人工智能之前，每天的问题都可以直接从房子里得到回答：时间、外面的天气、指定设备是否打开、关闭、打开或锁定、房间温度、下一个警报或提醒、访客以及房子是否上锁。只有问题，只有一个明确匹配并暴露给语音助手的设备；其他的一切都像往常一样交给人工智能。交流被添加到对话中，以便后续人员仍然知道所问的内容。客人和私人房间只能获取时间、天气和设备状态。关：每个问题都交给人工智能。",
+     "capability_awareness": "声音被告知它可以通过语音控制这个房子里的哪些东西（从向语音助手公开的东西，每个有多少个）以及房子没有哪些常见的东西，例如智能锁或电动百叶窗，因此它永远不会提供任何设备无法做到的事情。无论如何都会漏掉的提议（关上窗户、锁上门）会在说出之前从回复中删除。每五分钟锻炼一次，没有人工智能。关闭：没有添加或删除任何内容。",
+     "house_context_entities": "包含在一般房屋摘要中的设备，以及自动气候和打开/存在报告。仅共享当前公开且可访问的设备；每个请求最多八个相关读数。",
+     "house_context_updates": "需要当前的房屋环境。在验证受保护的加热请求后，可以选择在恒温器报告请求的温度时说一次。一小时后过期，如果目标发生变化则取消，最多每 15 分钟更新一次。尊重正常的讲话规则和访客模式。默认关闭。关闭会清除挂起的更新。",
+     "security_event_evidence": "在配置的摄像机上使用 Frigate 事件 ID、快照和剪辑。唯一的摄像机/时间匹配是候选链接，而不是传感器识别该事件的证据。在本地保存多达 3,000 条事件记录 7 天。默认关闭。禁用隐藏链接并停止匹配；保留的记录过期或可能被遗忘。",
+     "security_event_zones": "仅进入区域的物体：在具有 Frigate 区域的摄像机上，仅当对象进入其中一个区域时才会列出事件（并且可以引发安全事件），Frigate 用于其警报的规则相同。没有区域的相机会列出一切。检测到的任何内容：Frigate 在所选摄像机上跟踪的每个对象。Frigate自己的设置从来没有改变过。",
+     "security_event_hidden_zones": "每行一个作为摄像机/区域，例如大门/车道。仅在这些区域中发生的事件不会列出，也不会引发安全事件。在“安全”页面上进行一些“非个人”更正后，使用“隐藏此区域”，或者删除一行以再次列出该区域。Frigate 未更改。",
+     "security_coverage": "显示哪些配置的摄像机提供了保留的证据以及与现场事件一起记录的任何不可用的报告。当前相机报告单独显示。关闭此功能可以清除保留的覆盖范围差距。",
+     "frigate_pipeline_health": "读取 Frigate MQTT 可用性、每个摄像机的处理速率以及 Sentient 最后接收事件的时间。缺失数据显示为未知。相机设置未更改。",
+     "security_conversation_context": "在同一对话、设备和用户中记住所选事件最多五分钟。后续问题使用该事件和最新的入住报告；不假定任何身份或持续存在。跟踪配置的摄像机事件。默认关闭。禁用清除对话引用；事件记录保留其正常有效期。",
+     "security_event_feedback": "管理员可以将一次访问标记为一次良好的访问，而不是一个人或一个要忽略的人。已审查的访问会移至折叠的已审查列表中，并且“不是一个人”也算作仅由该访问造成的安全事件的已审查错误检测。更正停留期为 7 天。没有自动检测器、警报或通知规则更改。禁用隐藏反馈并停止新的更正；使用忘记最近的数据来删除保留的记录。",
+     "share_clip_analysis": "跨自动剪辑观看和事件剪辑问题共享同一完成的 Frigate 事件的兼容通用分析。提供者、镜头覆盖范围和身份设置必须匹配。自定义问题单独分析。最多可在内存中保留 100 个结果 6 小时。默认关闭。禁用、更改设置或忘记清除缓存。"
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient 已设置。"
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "设置",
+     "briefing": "状态摘要",
+     "memories": "回忆"
+    }
+   },
+   "settings": {
+    "title": "设置",
+    "data": {
+     "persona": "姓名",
+     "speakers": "扬声器",
+     "default_speaker": "默认发言人",
+     "quiet_start": "安静时间开始",
+     "quiet_end": "安静时间结束",
+     "busy_entities": "忙碌时保持安静",
+     "motion_window": "房间意识窗口",
+     "banned_words": "切勿使用这些词（逗号分隔)",
+     "suppress_entities": "在这些自动化或脚本之后保持安静",
+     "suppress_seconds": "保持安静",
+     "prompt_memories": "与语音助手分享回忆",
+     "pass_through_areas": "通行区域",
+     "all_occupied": "在每个有人的房间里说话",
+     "room_tracking": "使用房间追踪器（Bluetooth)",
+     "room_trackers": "房间追踪器",
+     "ai_task_entity": "AI 后台工作",
+     "camera_cooldown": "相机检查之间的最小间隙",
+     "fallback_speakers": "仅备用扬声器",
+     "daily_ai_limit": "AI 每日通话次数",
+     "prompt_recent": "现在和最后一个小时在声音的背景下",
+     "rules": "规则，并通过语音制定规则",
+     "relevant_memories": "选择与要求相符的记忆",
+     "look_cache_minutes": "重复使用相机答案",
+     "camera_prefilter": "当没有任何变化时跳过相机外观",
+     "budget_drive": "每天的 AI 通话次数：驱动力",
+     "budget_noticing": "每天的 AI 通话次数：注意",
+     "budget_cameras": "每天的 AI 通话：摄像头检查和手表",
+     "routine_evidence": "说出例行公事的出现频率",
+     "notice_entities": "注意事项",
+     "remark_repeat_hours": "请勿重复备注",
+     "chattiness": "多么健谈啊",
+     "conversation_style": "它是如何说话的",
+     "carry_on_minutes": "进行对话",
+     "focused_tools": "专注的语音工具",
+     "ask_later": "询问事情进展如何",
+     "put_right": "一次性纠正错误",
+     "music": "询问音乐",
+     "music_alexa": "音乐通过Alexa（Echos)",
+     "music_alexa_service": "Echos 的音乐服务",
+     "house_rules": "入住须知",
+     "no_security_offers": "切勿提出布防、撤防或解锁",
+     "learn_entities": "学习日常习惯",
+     "learn_anchors": "当天的习惯",
+     "trust_lights": "灯",
+     "trust_switches": "开关、插头和风扇",
+     "trust_covers": "百叶窗和窗帘",
+     "trust_heating": "加热",
+     "offer_together": "提供一起养成的习惯",
+     "link_triggers": "还可以了解以下内容",
+     "suggest_routines": "主动提出接管日常事务",
+     "prove_routines": "习惯在被提供之前就证明了自己",
+     "routine_fading": "询问不再需要的例程",
+     "door_camera": "门口摄像头",
+     "door_triggers": "门铃",
+     "announce_visitors": "说谁在门口",
+     "faces": "人脸识别姓名",
+     "face_people": "只有这些人",
+     "face_teach": "打电话询问哪些未透露姓名的面孔",
+     "face_teach_cameras": "从这些相机中学习面孔",
+     "face_cameras": "仅来自这些相机的名称",
+     "face_forget_hours": "之后忘记无名面孔",
+     "clip_watch": "观看活动片段",
+     "clip_cameras": "相机",
+     "clip_scope": "哪些事件",
+     "clip_when": "什么时候",
+     "clip_notify": "发送至手机",
+     "clip_source": "谁写总结",
+     "clip_whose": "说出是哪位家庭成员",
+     "clip_looks": "当人们看不到脸时，他们会是什么样子",
+     "budget_clips": "观看了一天的剪辑（最多)",
+     "clip_days": "保留摘要",
+     "clip_keep": "保留剪辑文件",
+     "parcel_alerts": "说一下包裹何时被留下",
+     "doorstep_sensors": "拜访后检查包裹",
+     "zone_visits": "将前门摄像头区域的人员算作访客",
+     "zone_door_sensors": "前门传感器（如果先打开，则该区域将被忽略)",
+     "face_sensor": "公认的名字来自",
+     "sidebar_panel": "在侧边栏中显示",
+     "page_admin_only": "只有管​​理员才能打开此页面",
+     "custom_pages": "重新排列Sentient页面",
+     "suggestions": "Sentient 页面上的建议",
+     "whats_new": "更新后有什么新变化",
+     "simple_settings": "更简单的设置页面",
+     "auto_backup": "每周备份一次",
+     "backup_keep": "保留多少个",
+     "confirm_kinds": "问\"我可以吗？\"前",
+     "chat_agent": "侧边栏页面的聊天代理",
+     "battery_threshold": "下面电池电量低",
+     "battery_forecast": "说出电池何时耗尽",
+     "health_ignore": "忽略房屋健康",
+     "hide_substreams": "隐藏额外的相机视图",
+     "ignore_cameras": "需要忽略的相机",
+     "never_entities": "永远不要碰这些",
+     "self_check": "每晚检查自己",
+     "learn_corrections": "了解何时撤消它所做的事情",
+     "normal_day": "注意不寻常的一天",
+     "thoughts": "显示它在想什么",
+     "share_learning": "说说它学到了什么",
+     "self_adjust": "自行调整",
+     "proposals": "建议更改其设置",
+     "privacy_log": "记录离开房屋的物品",
+     "goals": "目标",
+     "manuals": "从文件中得到答案",
+     "manuals_folder": "文件文件夹",
+     "manuals_local_text": "查看文本文档内部",
+     "manuals_pages": "一页一页地阅读 PDF",
+     "games": "故事游戏",
+     "voice_id": "知道谁在说话",
+     "voice_id_unknown": "像对待客人一样对待无法匹配的声音",
+     "speaker_memories": "保留每个人的记忆",
+     "books": "图书",
+     "books_folder": "书籍文件夹",
+     "reading_tts": "读声：服务",
+     "reading_voice": "朗读语音",
+     "read_ahead": "边阅读边准备下一部分",
+     "recipes": "食谱",
+     "recipes_folder": "食谱文件夹",
+     "recipes_list": "配料购物清单",
+     "voice_lists": "通过语音显示购物和待办事项列表",
+     "ready_tonight": "准备今晚",
+     "ready_tonight_lights": "今晚准备好：灯可能会关闭",
+     "ready_tonight_follow": "今晚准备好：安排好后告诉我",
+     "tandoor_url": "泥炉地址",
+     "tandoor_token": "Tandoor API 令牌",
+     "second_opinion_ai": "提供第二意见的 AI",
+     "smart_ai_task": "更强大的人工智能安全和隔夜思考",
+     "event_clips": "观看 Frigate 的活动剪辑",
+     "notify_targets": "通知电话",
+     "notify_when": "发送至手机",
+     "phone_buttons": "电话通知上的按钮",
+     "phone_apps": "按钮配套应用程序",
+     "bins_check": "检查垃圾箱",
+     "bins_calendar": "宾历",
+     "bins_spot": "垃圾箱的摄像点",
+     "bins_time": "看看",
+     "chime": "说话前先鸣响",
+     "welcome_home": "欢迎人们回家",
+     "welcome_people": "人们欢迎",
+     "welcome_min_away": "离开至少",
+     "welcome_until": "欢迎晚上直到",
+     "speak_volume": "说话音量",
+     "night_volume": "安静时说话的音量",
+     "duck_media": "说话时将音乐和电视声音调小",
+     "critical_alerts": "安全警示",
+     "critical_ignore": "切勿将这些视为安全警报",
+     "energy_insight": "能源洞察",
+     "energy_price": "电价",
+     "energy_currency": "货币",
+     "price_entity": "分时电价（便宜电建议)",
+     "search_hints": "讲述有关搜索工具的声音",
+     "web_search": "Sentient自己的网络搜索",
+     "searxng_url": "SearXNG 地址",
+     "alexa_skill": "回答通过Alexa提出的问题",
+     "alexa_wait": "Alexa放弃前最长的等待",
+     "alexa_late_answers": "说Echo上的缓慢答案",
+     "left_open_minutes": "提及之后保持打开的门窗",
+     "left_open_ignore": "别提这些",
+     "leaving_check": "查看大家何时外出",
+     "critical_extra": "也将这些视为安全警报",
+     "heating_entities": "供暖学习",
+     "preheat": "在人们起床之前进行热身",
+     "heating_schedule": "供暖时间表（在“房屋”选项卡上设置)",
+     "comfort_temp": "预热温度",
+     "inside_sensors": "内部运动传感器",
+     "weekly_report": "周报",
+     "night_watch": "守夜人",
+     "night_watch_entities": "值得观看的门和大门",
+     "night_watch_announce": "即使在安静的时间，也要大声说出警报",
+     "night_watch_speakers": "说警报",
+     "warm_by_weekdays": "温暖（平日)",
+     "warm_by_weekends": "温暖（周末)",
+     "heating_limit": "之后重新加热",
+     "heating_night_temp": "夜间温度",
+     "heating_revert_day_hours": "之后返回（白天)",
+     "heating_revert_night_hours": "返回后（晚上)",
+     "personality": "性格",
+     "personality_notes": "个性笔记",
+     "style_feedback": "\"对它所说的事情说不同的话",
+     "style_notes": "事情应该怎样说",
+     "camera_security": "摄像头安全",
+     "camera_security_sensors": "相机的人体传感器",
+     "camera_security_inside": "边界内",
+     "camera_security_entries": "途径",
+     "camera_security_describe": "描述一下是谁",
+     "security_reasoning": "将警报与房子的其他部分进行权衡",
+     "party_lights": "秀灯",
+     "party_style": "风格",
+     "party_minutes": "之后自行停止",
+     "party_whole_house": "使用房子里的每一盏灯",
+     "party_exclude": "切勿使用这些灯",
+     "party_sound": "跟随声音从",
+     "party_show": "概览上的按钮",
+     "party_sound_switch": "边听边打开",
+     "room_volume": "在吵闹的房间里大声说话",
+     "follow_you": "消息跟随人",
+     "follow_minutes": "保留消息以供传递",
+     "conversation_memory": "记住对话",
+     "follow_ups": "回来检查一下事情",
+     "curiosity": "好奇心",
+     "reflection": "一夜反思",
+     "reflection_time": "反映在",
+     "drive_spot": "驾驶点",
+     "drive_camera": "驱动摄像头",
+     "drive_triggers": "看看这些什么时候解决",
+     "camera_wake": "查看之前，请使用以下命令唤醒相机",
+     "camera_wake_cameras": "仅适用于这些相机",
+     "camera_wake_seconds": "然后等待",
+     "known_cars": "家用汽车",
+     "full_volume_speakers": "这些扬声器的最大音量",
+     "tts_entity": "其他发言者的声音",
+     "house_language_text": "Sentient 用房子的语言自己说的话",
+     "speak_house_language": "用房子的语言说出内置句子",
+     "media_speakers": "使用Echos等媒体播放器",
+     "media_important_only": "Echos：仅限警报和提醒",
+     "foresight": "展望明天",
+     "foresight_time": "向前看",
+     "sleep_detection": "知道房子什么时候睡觉",
+     "sleep_minutes": "没有任何动静后就睡着了",
+     "sleep_ignore_sensors": "就寝时间忽略的传感器",
+     "bedtime_routines": "就寝时间",
+     "sleep_actions": "当房子睡觉时，做",
+     "wake_actions": "当某人起床时，做",
+     "appliances": "遵循的电器",
+     "appliance_announce": "说他们什么时候完成",
+     "appliance_watts": "上面运行",
+     "voice_agent": "主要AI语音代理",
+     "backup_agent": "备用助手",
+     "offline_answers": "无需人工智能即可回答常见问题",
+     "animal_sensors": "动物的温度传感器",
+     "away_lights_on": "远灯",
+     "holiday_mode": "假期模式",
+     "holiday_thermostats": "节假日恒温器将关闭",
+     "holiday_frost": "防冻温度",
+     "holiday_end_on_return": "当有人在家时结束假期模式",
+     "away_people": "当所有这些都结束时离开",
+     "away_lights": "使用的灯",
+     "away_after": "等大家都出去后开始",
+     "animal_low": "下面太冷了",
+     "animal_high": "上面太热了",
+     "hutch_check": "晚上检查动物笼子",
+     "hutch_spot": "小屋的拍照点",
+     "cat_watch": "夜猫守望",
+     "cat_sensors": "卡特彼勒传感器",
+     "cat_loud": "晚上直接说",
+     "rain_warnings": "降雨警告",
+     "rain_entities": "值得观看的窗户和门",
+     "self_test": "自检",
+     "self_test_household": "家庭自测题",
+     "screen": "使用平板电脑屏幕",
+     "screen_actions": "当某物出现时",
+     "screen_clear_actions": "当一切都清空的时候",
+     "conversation_sessions": "对话会",
+     "room_conversation_handoff": "房间到房间的对话切换",
+     "verified_bedtime": "楼下已核实就寝时间",
+     "verified_bedtime_lights": "楼下的睡前灯",
+     "verified_bedtime_contacts": "楼下睡前打开联系方式",
+     "session_seconds": "会话不活动超时",
+     "guarded_control": "强制语音确认",
+     "routine_verify": "检查例程是否有效",
+     "voice_unlock": "允许语音解锁",
+     "voice_undo": "撤消最近的灯光变化",
+     "evidence_awareness": "解释证据和不确定性",
+     "security_incidents": "集团安全事件",
+     "incident_front": "房子前面",
+     "live_voice_check": "现场语音检查",
+     "speech_delivery_history": "演讲者交付历史",
+     "alexa_tts_only": "仅在 Alexa 上使用 TTS",
+     "update_checker": "检查 Sentient 更新",
+     "contextual_followups": "关联的跟进和纠正",
+     "conversation_recovery": "通话取消并谨慎恢复",
+     "automatic_language": "自动语言支持",
+     "voice_language": "言语和会话语言",
+     "remember_language_phrases": "记住常用语言短语",
+     "stream_voice_replies": "说出所写的语音回复（试用)",
+     "voice_timing_diagnostics": "语音响应时序诊断",
+     "reliability_log": "注意声音哪里出错了",
+     "unified_evidence": "统一家庭证据查找",
+     "specific_clarification": "特定设备和价值问题",
+     "action_recovery": "设备结果和谨慎恢复",
+     "recheck_unconfirmed": "再次查看未报告回来的更改",
+     "speech_failure_notification": "通知发言人传送失败",
+     "recent_followup_context": "新的唤醒词后的简短后续行动",
+     "conversation_cues": "了解主题的签署、更正和变更",
+     "vary_replies": "每次说的话都不一样",
+     "behaviour_explanations": "解释倾听和行动决定",
+     "current_house_context": "当前房屋环境",
+     "moment_awareness": "当下的意识",
+     "room_memory": "每个房间的短期记忆",
+     "know_people": "知道谁可能在说话",
+     "instant_answers": "即时解答",
+     "capability_awareness": "知道房子能做什么",
+     "house_context_entities": "附加上下文实体",
+     "house_context_updates": "当达到要求的供暖时告诉我",
+     "security_event_evidence": "将安全警报链接到 Frigate 事件",
+     "security_event_zones": "列出了哪些相机事件",
+     "security_event_hidden_zones": "未列出事件的区域",
+     "security_coverage": "解释相机覆盖范围的差距",
+     "frigate_pipeline_health": "显示Frigate管道健康状况",
+     "security_conversation_context": "将安全事件保留在对话中",
+     "security_event_feedback": "记录相机事件的反馈",
+     "share_clip_analysis": "重复使用匹配剪辑分析",
+     "heating_graph": "加热卡上的温度图",
+     "heating_revert": "手动更改后返回时间表",
+     "window_heating": "当窗户打开时将房间的暖气调低",
+     "window_heating_minutes": "行动前窗口打开的分钟数",
+     "rooms_view": "房间一览（“房屋”选项卡和概述)",
+     "outdoor_areas": "室外区域",
+     "knowledge_card": "思维”选项卡上的“我所知道的”卡",
+     "day_chart": "迄今为止的一天图表概述",
+     "house_ledger": "家庭活动日志",
+     "unexplained_changes": "提及无法解释的变化",
+     "unexplained_entities": "观察无法解释的变化的设备",
+     "expectations": "期待与惊喜",
+     "surprise_gating": "跳过有关常见内容的评论",
+     "situations": "告诉声音现在发生了什么",
+     "beliefs": "形成并检验信念",
+     "learn_reactions": "从反应中学习",
+     "ai_case_memory": "保存AI调用（案例内存)",
+     "memory_tags": "按意思回忆",
+     "memory_upkeep": "一段可以自我保存的记忆",
+     "watch_actions": "手表和提醒器可以发挥作用",
+     "memory_time": "理解时间的记忆",
+     "who_where": "知道谁在哪里",
+     "big_plans": "应对大请求的计划",
+     "self_grading": "对自己的答案进行评分",
+     "voice_speed_watchdog": "语音速度看门狗",
+     "voice_speed_restart": "自行重启慢速扬声器",
+     "incident_stages": "安全事件阶段",
+     "cognitive_shadow": "比较安全事件（测试)",
+     "cognitive_decides": "一旦获得认可，就让认知核心决定事件阶段",
+     "cognitive_quiet_heads_up": "仅测试：评估夜间平视决策（无警报抑制)",
+     "weather_warnings": "天气和洪水警报",
+     "warnings_country": "国家",
+     "warnings_region": "地区（可选)",
+     "warnings_speak": "说严重警告",
+     "email_read": "只读电子邮件",
+     "calendar_clashes": "日历冲突",
+     "security_audit": "安全检查",
+     "automation_builder": "构建自动化",
+     "pronounce_names": "按照名字的发音说出名字",
+     "pronunciations": "发音（每行一个)",
+     "health_duplicates": "Spot 设备列出两次",
+     "manuals_local_ocr": "使用本地 OCR 读取扫描的 PDF 页面",
+     "memory_semantic_enabled": "局部语义记忆排名",
+     "memory_semantic_url": "本地嵌入服务器地址",
+     "memory_semantic_model": "局部嵌入模型",
+     "ai_routing_enabled": "自动选择更便宜的 AI 来执行文本任务",
+     "ai_routing_alternative": "替代AI任务实体",
+     "ai_routing_primary_cost": "通常 AI 预估每次通话费用",
+     "ai_routing_alternative_cost": "替代人工智能估计每次通话的成本",
+     "ai_routing_max_p95_ms": "最大替代 AI 响应时间（毫秒)",
+     "heating_energy_sensor": "供暖电能表（kWh)",
+     "heating_measurement_date": "比较供暖能源使用的日期",
+     "heating_energy_price_kwh": "每千瓦时供暖价格",
+     "autooff_respect_recent_voice": "让自动关闭尊重最近的语音命令"
+    },
+    "data_description": {
+     "motion_window": "在决定人们所在位置时需要权衡多少分钟的运动历史。",
+     "suppress_entities": "例如你的门铃通知，所以背景评论不会谈论它。",
+     "busy_entities": "当其中任何一个打开时（会议日历、焦点开关、请勿打扰模式中的电话），Sentient 都会抑制可以等待的讲话，就像安静一样。您要求的安全警报和回复仍然会出现。留空以关闭此功能。",
+     "prompt_memories": "预先给了语音助手多少记忆。剩下的还是可以搜的。",
+     "pass_through_areas": "走廊、平台和楼梯。走过这些地方的意义要小得多，因此路人不会窃取公告。",
+     "all_occupied": "开：家里的每个人都能听到。关闭：仅最繁忙的房间。",
+     "room_tracking": "默认关闭。当房间跟踪器（例如百慕大的电话\"区域\"传感器）说有人在一个有扬声器的房间里时，就会说\"无论人们在哪里\"。当没有跟踪器知道时——没有看到电话、在外面或者房间里没有扬声器——像以前一样使用基于动作的猜测。只用来选择在哪里发言，从不决定是否有人在场。没有存储任何内容。",
+     "room_trackers": "状态为某物所在房间的传感器，例如百慕大\"区域\"传感器（每个电话或标签一个）。每个人都需要房间来匹配 Home Assistant 区域。",
+     "ai_task_entity": "人工智能任务用于摄像机观察、简报、夜间思考和展望明天。Empty使用Home Assistant的首选AI任务。",
+     "camera_cooldown": "带摄像头的手表最多会重复查看一次，以降低人工智能成本。",
+     "fallback_speakers": "仅当没有人在任何其他发言者的房间中时使用，例如一个你不想打扰的客厅。",
+     "daily_ai_limit": "后台人工智能呼叫（摄像头检查、简报、夜间思考、门铃……）在这么多次之后的第二天停止，并使用简单的文字代替。您提出的问题仍然会得到解答。0表示无限制。",
+     "prompt_recent": "现在有几行（睡觉、安静或安静的时间、客人、任何打开的东西、几个小时没有听到读数，所以它们不是最新的）、过去一小时发生了什么以及有什么动静，所以“我应该知道什么？”以及“刚刚发生了什么？”立即得到答复。免费：无需额外的AI调用。",
+     "rules": "\"当发生这种情况时，执行“规则”（“规则”页面），并且声音可以制定规则：它会读回规则，并仅在“是”后保存它。规则永远不能布防、撤防或解锁任何内容。关闭：没有规则运行。",
+     "relevant_memories": "一旦记忆的数量超出了声音上下文的范围，它就会获取与问题共享单词的记忆，然后是最新的记忆。免费，没有人工智能。关闭：始终是最新的。",
+     "look_cache_minutes": "在这段时间内对同一台摄像机提出相同的问题会得到最后的答案，而不是新的 AI 外观。0 总是再看一遍。",
+     "camera_prefilter": "相机检查和手表首先比较一张小图片（在这台机器上，免费），只有当相机或其位置看起来与上次看起来不同时才询问人工智能。",
+     "budget_drive": "自己每天的津贴在总体限额之内。0 表示仅共享总体限制。",
+     "budget_noticing": "自己每天的津贴在总体限额之内。0 表示仅共享总体限制。",
+     "budget_cameras": "自己每天的津贴在总体限额之内。0 表示它仅共享总体限制。安全，门铃和你提出的问题永远不会被阻止。",
+     "routine_evidence": "主动提出接管日常事务，并说明该事务发生的频率，例如'过去 4 个周末中的 4 天'.",
+     "notice_entities": "当这些发生变化时，人工智能会决定是否值得说些什么（或询问）。例如洗衣机、门、天气、垃圾箱。",
+     "remark_repeat_hours": "注意到同样的事情（\"水壶已经煮沸了。\"）这么长时间都没有再说过。0：无限制。",
+     "chattiness": "每小时限制评论数：安静 2、正常 4、闲聊 8。关闭则停止注意。",
+     "conversation_style": "简短：简短、切题的答案。自然：命令很短，但问题和聊天会得到一些自然的句子，当有人问一个问题时会出现后续问题，从而使麦克风保持监听状态。",
+     "carry_on_minutes": "通话后不久再次说出唤醒词会从同一个扬声器中进行相同的对话，所以\"楼上呢？\"还是有道理的。0 关闭此功能； Home Assistant 在安静五分钟后忘记了对话。",
+     "focused_tools": "仅向语音提供符合要求的 Sentient 工具（摄像头、加热、提醒……）以及内存和安全性。更小的选择使得更便宜的模型更快、更准确。任何不明显匹配的东西仍然可以获得所有工具。",
+     "ask_later": "当有人提到即将发生的事情（一次旅行、一场比赛、兽医）时，这个声音会记得在下次有人与它交谈时询问情况如何——一次，从来没有在安静的时间或有客人在场的时候，也从来没有谈论过任何私人的事情。它从来不会突然说出来。关闭此功能会忘记任何等待询问的内容。",
+     "put_right": "当您说\"不，是另一盏灯\"或\"不是那盏灯，是那盏灯\"时，语音会切换回刚刚打开或关闭的内容（在几分钟内打开或关闭），并仅使用更正的部分再次执行请求 — 无需再说一遍。关闭此功能后，将其直接交给语音代理。",
+     "music": "设置音乐助手（或通过 Alexa 开启音乐）：\"在厨房里播放平静的音乐\"从您自己的播放列表和广播电台中挑选，并在该房间的音乐助手播放器上播放（或询问该房间的 Echo） — 在安静时间的夜间音量，而不是在房间自己的安静时间播放，除非您在房间里。关闭：无音乐工具。",
+     "music_alexa": "没有音乐助手：\"在厨房里播放一些平静的东西\"要求该房间的 Echo（Alexa 媒体播放器）从下面的服务中按名称（播放列表、艺术家、歌曲或心情）播放该音乐，并在安静的时间以夜间音量播放，而不是在房间自己的安静时间播放，除非您在其中。该服务必须在 Alexa 应用程序中链接。关闭：Echos 不会被要求播放音乐。",
+     "music_alexa_service": "Echos 从哪个服务播放。Spotify 使用免费帐户，但 Alexa 可能会随机播放类似的音乐，而不是确切的歌曲； Premium 完全满足您的要求。",
+     "house_rules": "每个声音都必须遵循简单的句子，每行一个，例如“永远不要说房子是空的.'",
+     "no_security_offers": "从声音的回复中删除任何提出布防或解除警报或解锁门的句子（\"我要布防它吗？\"）——即使它是按书面说法说的。对要求布防、撤防、锁定或解锁的人的回复将被保留，因此仍会询问他们的确认。默认关闭。",
+     "learn_entities": "人们用手使用的灯、开关、风扇和百叶窗。过去两周的每天晚上都会检查大多数日子在同一时间完成的事情，以及在其他事情之后立即完成的事情（门打开，另一盏灯亮了).",
+     "learn_anchors": "通过日落、日出或起床而不是时钟（黄昏时的灯，日出时的百叶窗，起床后的水壶）来保持时间的习惯是通过这种方式学会的，因此房子为您做的例行工作会随着季节而变化。起床需要睡眠和清醒的环境。关：一切都是像以前一样争分夺秒地学习。",
+     "offer_together": "当一些事情通常在同一天的同一时间发生时（灯亮着，百叶窗关上，电视在晚上 8 点左右打开），它们会一起提供一次 — 是的，房子会做所有这些事情。关闭：每项均单独提供。",
+     "trust_lights": "当你让房子接管的例行公事打开灯时：就这样做，先说出来，或者问并且只在“是”的情况下才这样做（如果没有人回答，什么也不会发生).",
+     "trust_switches": "开关、智能插头和风扇也是如此。",
+     "trust_covers": "百叶窗和窗帘也是如此。车库门和大门总是问。",
+     "trust_heating": "人们起床之前加热暖气也是如此。首先询问意味着当每个人都在睡觉时它无法预热。",
+     "link_triggers": "可选：更多可能引发习惯的事物（电视启动、床传感器……）。门、窗和所学的灯光始终被考虑。",
+     "suggest_routines": "每次新例行公事，白天有人在家时，询问房子是否应该从现在开始这样做。",
+     "prove_routines": "首先观察新习得的习惯：习得后的每一天，Sentient 都会检查一个人是否真的在平时的 45 分钟内做到了这一点。仅当其适用的 4 天中至少 3 天（工作日、周末或每天）正确时，才会提供该服务。设置 › 学习显示每个人的表现。关闭：一旦养成习惯就立即提供。",
+     "routine_fading": "上：当房子为你做的例行公事在两周内的第 5 天到期时已经完成（现在有人自己做），Sentient 询问一次是否保留它，如果你说不，则停止。只保留日期，最多两周。关闭：保留房子的日常活动，直到您另有说明为止。",
+     "door_camera": "门铃一响就看一眼，记录谁来了。",
+     "door_triggers": "门铃按钮（二进制传感器或事件），或任何其他表示有人在门口的东西。",
+     "announce_visitors": "关闭会将其保存在一个安静的日志中，语音助手可以从中接听。",
+     "faces": "当 Frigate（或门铃）识别出某人时，它会出现在时间线上，并且声音可以回答\"Sam 回家了吗？\"。名字永远不会被公布或猜测——只有当有人问起时才会说出来。默认关闭。",
+     "face_people": "Frigate 等名字都认识他们。空：它认识的每个人。",
+     "face_teach": "帮助Frigate的人脸识别变得更好。当有人离开选定的摄像头并且 Frigate 保留一张无法命名的面孔时，手机会收到一条私人信息\"这是谁？\"带有家庭用的脸部和按钮（手机最多显示三个）。敲击一教Frigate； \"其他人……\"为新认识的人输入姓名，或者\"不\"删除陌生人的面孔。从来没有说过话，从来没有使用过平板电脑，最多每十分钟一次。需要启用 Frigate 人脸识别并选择用于通知的手机。默认关闭。",
+     "face_teach_cameras": "脸部清晰的特写镜头，例如门铃。空：门摄像头。",
+     "face_cameras": "空：每个相机。选择特写的（门铃、前门），这样繁忙的街道就不会报假名。",
+     "face_forget_hours": "每天晚上，Frigate 的面孔都会被保留，但没有人点名——大多数是陌生人——一旦到了这么老的年纪，就会从 Frigate 中删除。已命名的面孔将被保留。0：留给Frigate（它保留最后200).",
+     "clip_watch": "当 Frigate 在选定的摄像机上完成一个事件时，人工智能会观看该段录制一次，时间线和 Sentient 页面上会出现一句话：\"14:10 门——一个男人遛狗经过\"。那个声音回答：\"门口发生了什么事？\"无需再次进行 AI 呼叫即可从他们那里获得。从来没有说过话。默认关闭。",
+     "clip_cameras": "从一个开始，例如门。",
+     "clip_scope": "Frigate 的警报是您根据需要标记的区域中的人员 - 繁忙街道上最安静的选择。如果摄像机从不发出警报（Frigate 中没有设置所需区域），请选择\"区域中的任何内容\"——剪辑卡会显示跳过的内容以及原因。",
+     "clip_when": "只在这些时间观看。离开意味着在离开灯下选择的每个人都已退出。",
+     "clip_notify": "仅适用于手机，带有图片和播放按钮。",
+     "clip_source": "Frigate自带的AI审稿摘要需要在Frigate中开启；那么这里就没有进行AI调用。",
+     "clip_whose": "在同一个人工智能调用中，包含了 Frigate 面部库中的家庭面部照片（以及下面的长相），并且只有在明显是某人的情况下，它才会说出某人的名字 — \"可能是 Sam\"。陌生人从来不会被点名。只在被问到时才说，从未公开。",
+     "clip_looks": "每行一个，例如\"山姆：红色自行车头盔和黄色外套，骑自行车\"。当头盔或头罩遮住脸部时有帮助。",
+     "budget_clips": "也计入每日总体人工智能限制。0：本身没有限制。",
+     "clip_days": "总结只是文字，然后删除。",
+     "clip_keep": "关闭：每个剪辑在观看后立即删除。",
+     "parcel_alerts": "交货后，几分钟后再次查看并询问是否有包裹被留下。",
+     "doorstep_sensors": "可选：用于门口或前花园的人员传感器（例如 Frigate 区域的人员占用）。当访问结束而没有铃声响起时，会检查门口摄像头是否有遗留的包裹或邮件。",
+     "zone_visits": "使用上面的门阶传感器（例如 Frigate 区域的人员占用）。当没有人按铃时，到达该区域的人将被视为访客：查看门口摄像头并宣布。无论铃声还是区域，无论哪个先出现，都会进行访问，而另一个则被忽略。关：只有铃声开始访问。",
+     "zone_door_sensors": "可选：前门的打开/关闭传感器。如果门在最后一分半钟被打开（或正在打开），则该区域将被忽略，因为那是有人离开或回家。",
+     "face_sensor": "可选：面部识别传感器，其状态是它刚刚识别的名称（例如来自 Frigate）。在日志和公告中使用（如果已启用。",
+     "sidebar_panel": "侧边栏中的页面显示记忆、例行公事、手表、访客和所说内容。",
+     "page_admin_only": "对除管理员之外的所有人隐藏该页面及其读取的内容。关闭使其对整个家庭开放。打开它不会删除任何内容。",
+     "custom_pages": "打开：概览、房屋、思维和安全选项卡使用您保存的布局，管理员可以在此处编辑页面布局以在列之间移动卡片、隐藏它们、再次显示它们或重置选项卡。选项卡本身没有编辑按钮，仅在您进行编辑时才显示。布局保存在Sentient中，因此每个屏幕显示相同。关闭：选项卡返回标准布局；当您再次打开它时，您保存的布局将被保留。",
+     "confirm_kinds": "要求人工智能描述这些动作并等待“是”。这是提示指令，而不是强制操作块：您的对话代理控制设备执行。关闭东西不需要询问。空：没有额外的确认指令。对于强制检查，请使用所需的代理设置启用受保护的控制。",
+     "auto_backup": "周日晚上，记忆、地点、例程、运动灯、嘘声和设置的备份，保存在 sentient_backups 下的 config 文件夹中。",
+     "backup_keep": "较旧的已删除。",
+     "suggestions": "Sentient 可以使用但不能使用的东西——一个新的扬声器、洗衣机上的功率传感器、一个厨房温度计——一次只提供一条线。是的，添加它；不意味着它再也不会被提供。免费，无人工智能。",
+     "whats_new": "Sentient 更新后，Sentient 页面上会出现一张简短的卡片，用简单的文字说明新内容，直到您点击知道了。",
+     "simple_settings": "设置列表显示了基本功能，并显示了可选功能的所有内容。新安装以这种方式开始。不改变 Sentient 所做的事情。",
+     "chat_agent": "谁回答页面的询问框 — 选择一个勾选了 Sentient 的语音代理。清空使用您首选的辅助管道。",
+     "health_ignore": "不应视为问题的实体（及其设备），例如一些本该关闭的东西。",
+     "hide_substreams": "在计算和检查摄像头时，忽略了高清和标清流、屏幕截图和地图，因此一个门铃并不是多个摄像头。Home Assistant 中没有删除任何内容。",
+     "ignore_cameras": "相机 Sentient 不应计数、检查或提供，例如平板电脑的相机。他们原封不动地留在Home Assistant；再次选择带一个回来。",
+     "never_entities": "Sentient 永远不会切换、调暗或改变这些：不在规则、例行公事、优惠、自动关闭、离开或运动灯、灯光显示、加热或受保护的语音控制中，并且语音被告知不要打扰它们。它仍然可以阅读它们并谈论它们。任何会改变的事情都会被跳过并注明。",
+     "self_check": "每天晚上，它都会回顾自己的记录——它说了些什么，是如何发生的，失败的演讲者，被搁置的事情，一次又一次提出的问题，人工智能仪表——并记录下它对自己的注意到，以及背后的数字。没有人工智能。问\"你惹恼我们了吗？\"或\"你意识到了什么?\".",
+     "learn_corrections": "当有人改变房子刚才所做的事情（它亮起一盏灯，它接管了一个例程）时，它会记录下更正。你不断撤消的例行公事被交还（关闭），时间线也是如此。关闭此功能会停止观看；已注明的更正将被保留。",
+     "normal_day": "将今天与平常的情况进行比较，并在“思维”页面上进行记录：例如，当某人通常现在已经起床时，却没有人起床。规则很简单，不大声说话，也不交换任何内容。关闭此功能会停止检查并隐藏发现的内容。",
+     "thoughts": "思维页面上有一个简短的第一人称列表（\"人们不断地关闭着陆灯，所以我停了下来\"），再加上猜测某人接下来会去哪个房间并检查正确的频率。没有人工智能。关闭此功能会停止猜测并隐藏列表；它学到的东西会被保留。",
+     "share_learning": "每天晚上（17:00-20:30）一次，当有人在附近且不是安静的时间时，它会说出过去两天中它学到的或改变了主意的一件事：它发回的例程、它更新的事实、它发现的习惯、它现在猜测你下一步要去哪里的程度。永远不要做两次同样的事情。关闭此功能会将所有内容保留在“思维”页面上，但保持沉默。",
+     "self_adjust": "当自检发现某种评论时，房子里一直保持安静，让它安静一点（与大拇指向下相同；它再次消失）。绝不触及安全、安保或任何其控制的事物。",
+     "proposals": "当自我检查发现有问题时，建议在“思维”页面上进行一个小改变——减少评论，不要经常重复，在简报中添加一个部分，更高的人工智能限制——并附上原因。除非你说“是”，否则一切都不会改变；一个月内没有人再问“不”。关闭此功能会清除任何等待的建议。",
+     "privacy_log": "Sentient 进行的每次人工智能通话和网络搜索都会被记录下来——哪些功能、有多少图片、剪辑或文档，以及哪些服务——而不是所说或显示的内容。请在“大脑与系统”→“什么离开了家”下查看，并有一个按钮可以忘记过去 48 小时。关闭此功能会清除记录。",
+     "goals": "让声音设定几天或几周的目标（\"帮助我们本月减少使用暖气\"）。目标可以跟随传感器：它将每天与前一周进行比较，并在合适时提及进展。房子里什么都没有改变。",
+     "manuals": "回答下面文件夹中文档中的问题（每个 AI 调用一次）。关闭：文档保持不变。",
+     "manuals_folder": "Home Assistant 媒体中的文件夹（例如手册 = media/manuals）。根据每个文件的用途来命名，例如\"航空purifier.pdf\".",
+     "manuals_local_text": "当没有文件名与问题匹配时，请在 .txt 和 .md 文档中查找正确的文件名，如果无法联系到 AI，请读出最接近的段落，而不是什么也不读出。两者都没有使用人工智能。关：仅匹配文件名。",
+     "manuals_pages": "开启：每个 PDF（和文本文档）都被逐页读取一次到 Sentient 自己的数据库中——在这台计算机上，没有人工智能。然后，一个问题只会向人工智能发送匹配的几页，而不是整个文档，因此成本要低得多，而且答案会说明它在哪一页（\"在第 14 页\"）。名称不匹配的文档仍然可以通过其中的内容找到，如果无法到达人工智能，则会读出最近的段落及其页面。扫描的 PDF（页面图片）仍然由 AI 完整阅读。关：每次都读取整个文档，已读取的内容被清除。",
+     "games": "玩语音主导的故事游戏，例如与助手作为游戏大师一起逃离平坦的冒险。每个游戏都会在会话和助手之间保留自己保存的记忆（玩家在哪里、​​他们携带什么、他们发现和选择什么）。它仅在玩游戏时以声音显示，游戏主持人可以读取房子的普通内存，但永远不会改变它。打开“设置”→“故事游戏”来编写游戏并编辑其记忆。关闭：隐藏游戏工具和页面；保存的游戏会被保留，不会被清除。",
+     "voice_id": "使用本地发言人匹配此请求。要让 AI 模型个性化回复或按名称归属新记忆，还可以在语音识别中启用与对话代理共享匹配的名称。单独的本地“谁在说话？”语音识别中设置回复。",
+     "voice_id_unknown": "当辅助扬声器没有语音匹配时，请将该回合的家庭历史记录和保存的记忆保密。关：不匹配的声音被视为正常声音。",
+     "speaker_memories": "随着语音识别的运行：匹配的声音首先获得自己的记忆（“亚历克斯：喜欢茶”）——始终包括在内，即使更新的家庭事实会填满列表——而不是任何其他人的个人记忆；一个它无法匹配的声音无法获得任何人的个人记忆。家庭事实总是被分享。类型化请求和 Echos 保持不变。默认关闭。",
+     "books": "大声播放有声读物和阅读电子书，保持每个房间的位置。\"读我的书\"、\"继续读这本书\"、\"读 20 分钟\"、\"停止\"、\"下一章\"、\"向后退一点\"。没有人工智能（除了可选的回顾）。在 Echo 上：通过 Alexa 技能按请求电子书一篇文章；有声读物需要另一个扬声器。",
+     "books_folder": "Home Assistant 媒体中的文件夹（书籍=媒体/书籍）。无 DRM 的 .epub 或 .txt 电子书；有声读物为一个 .mp3/.m4b/.m4a 文件，或以该书命名的部分文件夹。",
+     "reading_tts": "专门针对书籍和故事的不同文本转语音服务 — Gemini 或 ElevenLabs 的声音通常是更好的讲故事者。将其留空，以便以平常的声音朗读。Echos始终使用Alexa自己的声音。",
+     "reading_voice": "从该服务中选择语音。保存前使用“尝试下面的声音”在默认扬声器上听到它。",
+     "read_ahead": "使用朗读语音时，故事的下一部分是在朗读这一部分的同时制作的，因此缓慢的语音（自由语音或云语音）不会在各部分之间留下间隙。更早地使用该声音，从不更频繁地使用该声音。",
+     "recipes": "\"让我们做烤宽面条\"：配料，然后一次一步——\"下一步\"、\"重复\"、\"返回\"、\"下一步是什么？\"——记住每个发言者的步骤。\"做 6 份\"可以衡量它；配料可以列在购物清单上。",
+     "recipes_folder": "Home Assistant 媒体中的文件夹（食谱 = 媒体/食谱），包含 PDF、照片、文本或 Markdown。每个步骤第一次都会由一个人工智能调用整理成步骤，然后保留。如果设置了集成，Mealie 将自动使用。",
+     "recipes_list": "将成分添加到购物清单”中放置它们的位置。空：名称中包含“购物”的列表。",
+     "voice_lists": "关于：“勾掉牛奶”、“购物清单上有什么？”、“把垃圾袋拿掉”——不管怎么说，都会找到物品（无论​​如何，复数，清单上唯一的牛奶），询问两个可能的匹配项，Sentient 仅在清单显示后才说已完成。使用向“协助”公开的列表（如果没有则为所有列表）和购物列表，除非指定了另一个列表。没有自己的人工智能。关闭：语音使用Home Assistant自己的列表命令。没有存储任何内容。",
+     "ready_tonight": "\"确保今晚一切准备就绪\"：检查门窗和锁，Assistance 可以看到，仅关闭下面选择的灯，查看暖气，并说出哪些部分仍然打开、未上锁、未打开或无法确认。锁、警报器和暖气永远不会改变，也永远不会发出警报。没有自己的人工智能。关闭：声音仍然可以检查房屋，但不提供此功能。没有存储任何内容。",
+     "ready_tonight_lights": "唯一\"为今晚做好准备\"的灯可能会熄灭。之后每一项都会被检查。空：没有关灯，只报告。",
+     "ready_tonight_follow": "当某些内容仍处于打开或解锁状态时，请密切关注该内容最多三个小时，并在一切都已解决时对您询问的扬声器说一次。重启后继续。",
+     "tandoor_url": "可选：您的 Tandoor Recipes 地址，例如http://192.168.1.20:8080.",
+     "tandoor_token": "可选：来自 Tandoor 的 API 令牌（设置 → API）。仅保存在 Home Assistant 中。",
+     "second_opinion_ai": "可选：只有当通常的模型说图片太暗或不清楚时，才会询问更大的模型。计入每日限额。",
+     "smart_ai_task": "选修的。仅用于相机安全外观和夜间思考，其中更智能的模型最有帮助。空：通常的AI，所以成本不会改变。",
+     "event_clips": "获取 Frigate 的事件短片并让 AI 观看，这样它就可以说出实际发生的情况（“留下包裹并离开”）。在摄像头安全警报后以及被问到“门口发生了什么？”时使用。需要 Frigate 集成。每个剪辑一次 AI 调用。默认关闭。",
+     "notify_targets": "通知实体，例如每部手机或手表上的 Home Assistant 应用程序。",
+     "notify_when": "每种十分钟最多发送一次。",
+     "phone_buttons": "通过配套应用程序：在门口 — 相机图片和显示相机按钮；提醒——小睡 10 分钟即可完成；问题——当房子想要问某件事（一个提议，“想要我为你做这件事吗？”，或者做某事之前先问）并且没有人靠近发言者时，它会在电话上询问“是”和“否”（不在安静的时间）。空：像现在一样简单的通知。",
+     "phone_apps": "例如notify.mobile_app_pixel_8。空：上面选择的每部手机背后的配套应用程序（notify.my_phone → mobile_app_my_phone） — 绝不是平板电脑。",
+     "bins_check": "收集前一天晚上，一台摄像机会观察垃圾箱的去向。只有在他们没有出去时才会说：“明天回收，垃圾箱还没有出去。”一个小时后再看一次。",
+     "bins_calendar": "空：简报日历中的废物收集日历。",
+     "bins_spot": "在垃圾箱出去的“地点”选项卡上绘制，例如'垃圾箱'.",
+     "bins_time": "集合前一天晚上，安静时间之前。",
+     "chime": "关闭：公告和问题立即开始，无需扬声器提示音。",
+     "welcome_home": "当有人在 20 分钟或更长时间后回来时，在他们所在的房间里说\"欢迎回来\"——加上他们外出时值得了解的内容（访客、已完成的事情、问题）。切勿在安静时间、安静或访客模式下。",
+     "welcome_people": "空意味着每个人都有一个人条目。您可以选择手机（设备跟踪器）——当一个人设置为始终在家时很方便。",
+     "welcome_min_away": "某人必须外出多久才能被欢迎回来（以分钟为单位。",
+     "welcome_until": "安静的时间通常会阻碍人们的欢迎。设定一个时间，任何在晚上之前到达的人仍然受到欢迎。留空以保持安静的时间。",
+     "speak_volume": "可选：Sentient 通话时扬声器的音量，稍后放回。空了就留下它。",
+     "night_volume": "可选：在安静的时间里所说的任何事情的安静级别（仅限紧急消息).",
+     "duck_media": "Sentient 说话时，同一个房间内播放的任何内容都会被调低，然后再调高。",
+     "critical_alerts": "自动发现烟雾、一氧化碳、气体、漏水和篡改传感器，并发出警报。在每个扬声器上说，在安静的时间、安静和访客模式下，在仍然打开的情况下重复两次，然后发送到手机。",
+     "energy_insight": "今天与过去一周相比，能源仪表板上的设备使用情况：能源卡、简报部分、语音工具和异常使用说明。关闭隐藏并停止所有这一切。",
+     "energy_price": "可选：每千瓦时的单位费率，以显示能源仪表板设备今天的成本 — 以便士或美分 (24.5) 或英镑、美元或欧元 (0.245) 为单位；要么有效。",
+     "energy_currency": "货币成本显示在。清空：Home Assistant自己的货币（设置→系统→常规).",
+     "price_entity": "您现在的电价，来自供应商的集成（Octopus Energy、Nordpool…）。如果它列出了他们使用的即将到来的费率；否则，每小时的通常价格是从上周得知的。每台电器（洗衣机、洗碗机、烘干机）都会在晚上询问您是否愿意在夜间最便宜时使用延迟启动。空：关闭。",
+     "search_hints": "当语音卫星LLM工具（或Sentient自己的搜索）设置完毕后，声音会被告知搜索工具已经存在，并且可以将它们用于屋外的任何事情——扬声器上的文字，平板电脑上的图片。没有自己的人工智能调用。",
+     "web_search": "通过您自己的 SearXNG（例如 SearXNG 插件）进行纯语音网络搜索。仅在未安装语音卫星 LLM 工具的网络搜索时使用，因此语音永远不会出现两个。默认关闭。",
+     "searxng_url": "例如 http://localhost:8080 或附加组件的地址。SearXNG 必须允许 json 格式（在其设置中：搜索 → 格式).",
+     "alexa_skill": "在技​​能使用之前不添加任何内容：将 Alexa 技能（例如社区“Home Assistant Assist”技能）指向“For Alexa”代理，然后说“Alexa，询问”和您的技能名称。默认关闭。",
+     "alexa_wait": "Alexa 大约 8 秒后挂断，所以答案肯定比这更快。",
+     "alexa_late_answers": "当人工智能需要更长的时间时，Alexa 会说“给我一点时间”，当准备好时，答案会在同一个 Echo 上说出。",
+     "left_open_minutes": "说过一次（然后在营业期间每半小时说一次），在安静的时间内，像往常一样保持安静。0 将其关闭。",
+     "leaving_check": "当最后一个人离开时，任何打开或解锁的内容都会出现在时间线上和手机上（\"左开\").",
+     "critical_extra": "当它打开时，任何其他地方都应该说的话，例如紧急按钮或冷冻室过热传感器。警报面板始终包含在内。",
+     "heating_entities": "值得学习的恒温器。为房子里的每个人留空。它了解每次预热的速度以及通常设置的温度。",
+     "preheat": "尽早开始供暖，以便人们正常起床时温度达到正常水平。一个有自己时间表的恒温器随后会被放回，而关闭的恒温器则不会被关闭。",
+     "heating_schedule": "打开：在“房屋”选项卡上运行的加热时间（将恒温器设置为某个温度，或在选定日期的某个时间关闭），并且仅在此处选择的恒温器上进行。关闭：不运行并且隐藏时间表；您保存的时间将被保留，并在重新打开时再次运行。",
+     "comfort_temp": "可选：要预热的温度。留空以使用白天通常设置的值。",
+     "inside_sensors": "可选：哪些运动传感器意味着有人在里面。留空以使用与扬声器位于同一楼层的传感器（花园和摄像头传感器不计算在内）。用于夜间值班和起床时间。",
+     "weekly_report": "周日晚上，将本周学院学到的和注意到的内容放在时间线上（如果摘要已发送到手机).",
+     "night_watch": "了解每扇门、大门和窗户何时正常打开。平时从来没有出现过的空缺，没有人先进去，这是一种警报。如果有人在里面（比如去上班），只会被注意到。",
+     "night_watch_entities": "每个门、窗、大门和车库门传感器留空。",
+     "night_watch_announce": "在没有人在场的情况下，通过安静的时间、安静和访客模式，立即说出一个不寻常的开场白——可能是某个不应该在那里的人。",
+     "night_watch_speakers": "为每个发言者留空。",
+     "warm_by_weekdays": "可选：工作日应该温暖的时候。留空以使用学到的起床时间。",
+     "warm_by_weekends": "可选：周六周日同样。",
+     "heating_limit": "当有人通过语音或应用程序打开或打开上面选择的供暖恒温器之一时，请在几个小时后将其放回去：没有时间表的恒温器会恢复到原来的状态（甚至关闭）。供暖计划中的恒温器改为遵循计划自己的时间（更改后返回：白天和晚上），然后转到计划所需的任何时间。只有那些恒温器； 0（默认值）从不这样做。",
+     "heating_night_temp": "供暖计划下降到一段时间结束时，并保持夜间水平。时间表永远不会关闭恒温器。您可以随时在此处更改（5–28°C).",
+     "heating_revert_day_hours": "在供暖期运行期间所做的更改在计划再次接管之前保留多长时间。",
+     "heating_revert_night_hours": "在供暖期之外进行的更改（包括关闭供暖）可以保留多长时间。晚上暖气恢复到夜间温度，永不关闭。",
+     "personality": "房子的声音如何——在评论、简报、欢迎词和每个语音助手中。",
+     "personality_notes": "可选，用你自己的话来说，例如'喜欢猫。温和地调侃泡了多少茶.'",
+     "style_feedback": "拇指旁边的按钮可以显示任何内容：选择“更短”、“更简单”、“不那么厚颜无耻”、“更详细”，或者说出具体方式。然后，无论它说到哪里，都遵循下面的注释。关闭：无按钮，且不使用音符。",
+     "style_notes": "每行一个；从按钮添加，然后由您进行编辑。最新8个已使用。",
+     "camera_security": "从一个摄像头跟踪到另一个摄像头，并在门未打开时提醒花园里有人，或者在晚上没人睡觉时提醒有人。如果夜间值班，则会在安静的时间大声发出警报。",
+     "camera_security_sensors": "每个摄像机（或区域）的人员传感器，例如Frigate的“门人占用'.",
+     "camera_security_inside": "人员感应门或栅栏后面的地方——花园、棚屋。有人出现在那里而无法打开是一个警报。",
+     "camera_security_entries": "人们应该通过的门和门（例如后门和后门).",
+     "camera_security_describe": "每次警报时，一个人工智能都会看着摄像头（“一个穿着深色连帽衫的男人试图打开棚门').",
+     "security_reasoning": "在大声说出摄像头安全警报之前，请查看警报、是否每个人都外出、入口门或之前打开的大门、室内运动、Frigate 事件以及摄像头发出警报的频率。可能有人出去了，或者半小时内再次使用同一个相机，保持安静。警报仍然会出现在时间线上和手机上，并附有原因。闹钟响了或者所有人都出去了：总是这么说。没有人工智能。默认关闭。",
+     "party_lights": "不使用整个房子时加入的灯光。留空以使用任何人要求的房间（或说一个房间：“客厅里的迪斯科模式').",
+     "party_style": "迪斯科：快速变色。派对：色彩鲜艳，褪色时间短。彩虹：色轮。寒冷：缓慢、暗淡的颜色。万圣节：闪烁的橙色、紫色和绿色。圣诞：红、绿、暖白，闪烁。",
+     "party_minutes": "然后每盏灯都恢复原样。0 持续运行直至关闭。",
+     "party_whole_house": "所有可以调暗或改变颜色的灯光都会加入（灯光组、屏幕和背光不会）。说“无处不在的迪斯科模式”即可执行此操作一次。",
+     "party_exclude": "被排除在每场演出之外，甚至“无处不在”——平板电脑屏幕、投影仪、有人睡觉的卧室。",
+     "party_sound": "可选：以 dB 为单位的响度传感器，例如通过 ESPHome 的 sound_level 传感器实现语音扬声器的麦克风。迪斯科、派对、彩虹和万圣节随后跟随音乐 — 声音越大越亮，每个节拍都会改变颜色。",
+     "party_show": "其中显示了获得概述的按钮。不留空；每个节目仍然通过语音进行。",
+     "party_sound_switch": "可选：一个使响度传感器报告的开关（因此它不会整天发送读数）。当节目跟随声音播放时，它会打开，然后关闭。如果它位于同一设备上并且名称中包含“响度”，则会自动找到。",
+     "room_volume": "可以听到房间声音的扬声器（同一设备上的响度传感器）会先听一秒钟，然后通过电视或聊天大声说话。不在安静的时间。",
+     "follow_you": "下次有人走进有扬声器的房间时，有人在说什么——或者在安静的时间里被困住了——就会被传递出去。",
+     "follow_minutes": "经过这么长时间，一条未曾听到的消息被丢弃。",
+     "conversation_memory": "保留每个发言者的提问和发言内容的简短记录，以便另一个房间可以接续某人留下的内容。保留两周；客人入住期间私密。",
+     "follow_ups": "声音可以设置后续行动（\"我会在一小时内检查房间是否已预热\"），并且手表耗尽而没有看到任何东西会大声关闭。",
+     "curiosity": "每天最多一次，当有人在附近时，它会询问一些它无法解释的事情——一个经常打电话的人，它在一夜之间注意到的模式——并记住答案。",
+     "reflection": "人工智能每天晚上都会对当天的日志和对话进行通话：值得记住的新事物、早上的一两个想法以及要问的问题。",
+     "reflection_time": "最好在凌晨时分。",
+     "drive_spot": "显示驱动器的相机点（将其绘制在“点”选项卡上).",
+     "drive_camera": "仅当不止一台摄像机具有该名称的位置时才需要。",
+     "drive_triggers": "查看驱动器的运动或汽车传感器。空：相机自身的运动和汽车传感器。",
+     "camera_wake": "将相机从待机状态唤醒的操作（唤醒或刷新按钮、流切换、脚本）。{{ camera }} 是我们即将看到的相机。空：相机按原样查看。",
+     "camera_wake_cameras": "空：人工智能查看的每个摄像头。",
+     "camera_wake_seconds": "醒来后等待几秒钟，以获得新鲜的照片。",
+     "known_cars": "每行一个，例如“山姆：深灰色掀背车”。同样的方式查看车道，然后说谁的车到达了（“山姆的车到达了车道”）——没有额外的人工智能。空：汽车未命名。",
+     "full_volume_speakers": "关于这些的公告据说是 100%，然后音量就会回落——对于平板电脑来说，其他一切都被拒绝了。不在安静时段（此时使用安静时段音量).",
+     "tts_entity": "扬声器可以是辅助扬声器或媒体播放器。通过 Alexa 媒体播放器与 Echos 对话；任何其他媒体播放器（智能扬声器、Cast 设备）都使用此文本转语音语音。",
+     "house_language_text": "On：Sentient 为您撰写的内容——时间线、House health、Mind 选项卡、每日摘要、每日故事、剪辑描述和电话通知——遵循 Home Assistant 的语言。固定句子被翻译成波兰语、德语、荷兰语、意大利语、葡萄牙语、西班牙语、法语和匈牙利语；人工智能所写的内容遵循任何语言。说出的单词遵循用房屋语言说内置句子。无需额外的AI调用；没有存储任何内容。关闭：全部保留英文。",
+     "speak_house_language": "使用现有的AI任务翻译普通英语句子，有时间限制、临时句子缓存和原文回退。紧急警报永远不会等待人工智能。使用自动语言支持准备好的短语和对话结尾；选择下面的语言。修复了涵盖通用语言的确切是/否标记。个人句子翻译永远不会在重新启动时保存。",
+     "speakers": "辅助扬声器或媒体播放器（Echos 至 Alexa 媒体播放器).",
+     "media_speakers": "关闭：仅使用语音扬声器，即使警报或公告命名为 Echo（它会转到有人所在的地方）。还有一个用于自动化和仪表板的“Echo 扬声器”开关。",
+     "media_important_only": "开：Echos只说报警、提醒和安全警示；公告、通知和聊天将转至语音扬声器。还有一个“Echos：仅限警报和提醒”开关。",
+     "foresight": "每天晚上，人工智能都会查看明天的日历、天气、闹钟和提醒。只在今晚有事可做时才说些话——早起前霜冻，洗衣日下雨。平时沉默寡言。",
+     "foresight_time": "在安静时间开始之前。",
+     "sleep_detection": "在就寝时间结束后入睡，或者在一段时间内体内没有任何动静的安静时间内入睡。早上醒来时，两个房间有动静（或用手打开灯）。房屋传感器显示它。",
+     "bedtime_routines": "例行公事意味着每个人都去睡觉了，用逗号分隔。空：任何名称中带有“夜晚”或“床”的例程。",
+     "sleep_actions": "例如平板电脑屏幕关闭，Echo 扬声器关闭。",
+     "wake_actions": "例如Echo 扬声器重新打开，走廊灯调暗。",
+     "appliances": "洗衣机、烘干机、洗碗机、吸尘器——它们的功率传感器或状态。留空以跟踪每个机器人真空吸尘器和任何名为洗衣机、烘干机或洗碗机的功率传感器。",
+     "appliance_announce": "当人们在的地方，以及人们花费的时间比平时长得多时，就会说“洗衣机已经完成了”。简单的文字，没有人工智能。",
+     "appliance_watts": "对于功率传感器：在高于此值时运行，在低于此值五分钟后完成。",
+     "voice_agent": "通常应答的人工智能代理（例如 Google AI）。空使用页面的聊天代理。",
+     "backup_agent": "当主代理出现故障时进行响应——Home Assistant自己的代理负责照明、加热和定时器，无需任何AI.",
+     "offline_answers": "当AI代理失败时，“房子锁起来了吗？”，“我的下一个警报是什么时候？”以及“有人过来吗？”在尝试备用代理之前，直接从家里用简单的语言回答。只有问题，只有人们可能看到的内容；在访客模式下只有安全问题。关：所有内容都转到备份代理。",
+     "animal_sensors": "鸡舍、狗舍、鸡舍或水箱温度传感器。",
+     "away_lights_on": "天黑后每个人都出去时，灯光会复制上周同一时间的使用方式（来自 Home Assistant 的历史记录），无论哪种方式都是几分钟。如果有人在家或最近内部有移动，对于没有跟踪电话的人，则不会启动（或停止），并恢复打开的功能。还有一个“远灯”开关。",
+     "away_people": "空：每个人都有一个人进入。您可以选择手机（设备跟踪器）而不是人。",
+     "away_lights": "空：房间里的每一盏灯，留下屏幕、LED 环、背光和灯组。只有上周当时使用的灯才会亮起。",
+     "holiday_mode": "假期模式”切换，并通过语音提示“我们将放假到周日”。当它打开时，除了安全警报之外，不会大声说出任何内容——本来会说的内容会发送到选择用于通知的电话，有访客和包裹；即使平时关闭，客场灯也会亮起；下面的恒温器被调低。关：语音无开关、无假期。",
+     "holiday_thermostats": "当您离开时，将其调至防霜状态，并在假期模式结束时完全恢复原状。空：未触及加热装置。",
+     "holiday_frost": "当您离开时，上面的恒温器设置为多少。",
+     "holiday_end_on_return": "一旦所有人都出去了，第一个人回家就会结束假期模式并恢复供暖。关闭：它在指定日期或关闭时结束。",
+     "away_after": "所以去商店并不会开始它。",
+     "animal_low": "当气温低于此值时会说一次（在安静的时间里保持到早晨），并在霜冻前的晚上发出警告。",
+     "animal_high": "当它超过这个值时说一次。",
+     "hutch_check": "日落后半小时，一个人工智能看着小屋：他们在里面吗？它关着吗？只说一些如果不说的话。",
+     "hutch_spot": "在“斑点”选项卡上围绕笼子绘制的斑点，例如'兔子笔'.",
+     "cat_watch": "天黑后，当小屋相机上的猫传感器启动时，人工智能会查看：小屋里或旁边有猫吗？最多每 15 分钟一次，并且图片没有变化时不会。",
+     "cat_sensors": "空：家中摄像头上的猫传感器（例如 Frigate 的猫占用情况).",
+     "cat_loud": "关闭：保留在早上（“凌晨 2:14 一只猫在笼子旁边”）。On：通过守夜扬声器立即说出。",
+     "rain_warnings": "当一小时内下雨并且窗户或门打开时：“下一个小时就会下雨，卧室的窗户打开。”阅读每小时天气预报——没有人工智能。每阵雨一次。",
+     "rain_entities": "空：每个门窗传感器。",
+     "self_test": "一夜之间，语音会被询问一些日常问题（室外温度、打开的东西、提醒、闹钟、时间），并根据房子检查其答案。任何问题都会通过所使用的工具显示出房屋健康状况。大约有 5 个 AI 叫跑。仅提问——没有任何改变。",
+     "self_test_household": "添加了由您自己的设备构建的大约 7 个问题：门窗上次关闭的时间、灯是否亮着、摄像头在过去两个小时内是否看到任何人、今天是否有人到门口、它不知道的事情（发明的答案失败）、任何设备都无法做的事情，以及一个太模糊而无法在不询问的情况下回答的问题。在提问过程中改变任何内容都是失败的。分数及其趋势在 Mind 页面上。大约还有 7 个 AI 叫跑。",
+     "screen": "Sentient 屏幕卡上的警报、通知和早间卡（自定义：sentient-屏幕卡）。关闭：仅显示房屋一目了然。",
+     "screen_actions": "例如唤醒平板并切换到有屏卡的页面。",
+     "screen_clear_actions": "例如将平板电脑切换回正常页面。",
+     "conversation_sessions": "将 Sentient 与备份代理一起使用。除非口头答复以问题结束，否则单个命令将停止监听。信息、安全、健康和系统讨论会询问是否还有其他问题，并保持开放状态，直到您说“仅此而已”、“足够了”或“停止收听”，或者不活动超时到期。说“回到…”可在 24 小时内从此设备恢复未完成的主题，而无需恢复操作权限。Mind 面板显示最近的对话决策。后续聆听需要兼容的辅助设备。",
+     "room_conversation_handoff": "说继续并命名另一个设备上的主题。两个请求必须来自同一标识的 Home Assistant 用户。检查新的读数，之前的操作和确认不会延续。",
+     "verified_bedtime": "假设就寝时间跑下楼关闭选定的灯并检查选定的联系人。要求楼下就寝时间状态重新检查，或者说取消楼下就寝时间以停止跟踪。",
+     "verified_bedtime_lights": "选择最多二十个单独的辅助曝光灯。组已被排除，并且“永不接触”列表仍然适用。",
+     "verified_bedtime_contacts": "选择最多二十个辅助暴露的门、窗或其他打开触点进行检查。它们是只读的。",
+     "session_seconds": "在这么多秒后丢弃会话上下文和挂起的操作，不再轮流。您的语音设备控制自己的静音超时。确认也会在 60 秒后过期。",
+     "guarded_control": "选择使用受支持的专用 AI 代理：仅选择在控制 Home Assistant 下保护的 Sentient，然后在管道中使用带有备份的 Sentient。关闭本地首选处理命令并删除在此代理之前运行的冲突句子触发器。错误的代理 API 配置会停止请求。没有不受限制的后备、脚本、场景或警报操作。门、电器启动和重大供暖变化需要单独的“是。",
+     "routine_verify": "打开：在语音例程（晚安，离开……）运行后，几秒钟后检查更换的每个灯、开关、锁和盖子，并回答说没有发生什么（\"完成，除了着陆灯，它仍然亮着\"）。它无法检查的步骤（脚本、场景）将被报告为未检查，而不是已完成。没有任何事情会自行重试或撤消。关闭：例程像以前一样运行，未检查。",
+     "voice_unlock": "让我们在单独说“是”后强制进行语音确认来解锁门。Off（默认）保持锁定和关闭，但拒绝通过语音解锁或打开，因为Sentient无法分辨谁在说话。",
+     "voice_undo": "通过防护控制，说“撤消该操作”即可请求恢复最近验证的灯光设置。跳过此后更改的灯光，随会话过期，并且永远不会松开锁、暖气或电器。",
+     "evidence_awareness": "让声音区分观察结果、推论、尝试的操作和经过验证的设备报告。不可用的安全传感器总是会阻止完全安全的索赔。",
+     "security_incidents": "对配置的摄像头安全人员传感器和进入联系人进行分组，并提供警报和剪辑摘要。当地保留7天。时间接近是一种可能的联系，而不是同一个人的证明；仅重复升级警报。",
+     "incident_front": "房子前面的摄像头和传感器（门铃、前门）。这里的任何事情都不会与其他安全事件归为一个安全事件，反之亦然：同时有人在前门和有人在后门是两个事件。留空以单独按时间分组。",
+     "live_voice_check": "在 Mind 面板中显示用户启动的语音检查。关闭此功能会清除当前检查并停止记录检查轮次。需要对话会话才能开始检查。",
+     "speech_delivery_history": "将最近的每个发言人的公告结果保留在 Mind 面板中。关闭此功能会清除此历史记录。扬声器故障检测和安全重试处理保持活动状态。",
+     "alexa_tts_only": "如果公告不可靠，请使用纯 TTS 代替 Alexa 公告。这会绕过 Alexa 公告铃声；其他发言人不变。",
+     "update_checker": "启用后、启动时以及每六个小时检查 GitHub 是否有稳定版本。没有AI调用，自动安装或自动重启。禁用停止检查。",
+     "contextual_followups": "需要对话会话和带有备份代理的 Sentient。保持主题进行简短的跟进，刷新暴露的设备读数，并澄清不明确的调整。不授予操作权限或更改侦听规则。默认关闭；关闭它会清除临时对话上下文。",
+     "conversation_recovery": "需要对话会话和带有备份代理的 Sentient。取消来自同一对话/设备/用户的待处理或正在运行的请求，并避免在 AI 故障后重播不确定的设备命令。无法撤消已发送的操作或使硬件在忙碌时接受语音。默认关闭；禁用会停止此额外处理。",
+     "automatic_language": "需要用家庭语言说内置句子。使用现有的人工智能和预算准备常用短语、对话结尾和安全标签。默认关闭。除非启用“记住常用语言短语”，否则短语会保留在内存中。禁用会清除它们。紧急警报永远不会等待人工智能；生成的回复永远不会授权关键操作。",
+     "voice_language": "对 Home Assistant 的语言使用 auto，或使用 es、de 或 pt-BR 等语言代码。需要语音语言选项。您的 Assist 语音识别和 TTS 语音也必须支持该语言；这不会重新配置它们。",
+     "remember_language_phrases": "需要两种语音语言选项。在重新启动和不相关的设置更改时仅保存通用短语包，绝不保存个人公告。默认关闭。禁用、更改语言/提供商或忘记数据会清除它。",
+     "stream_voice_replies": "在人工智能仍在撰写回复时开始说出长回复，即使对话会话正在进行，因此答案会更快开始。如果 Sentient 之后更改回复（例如确认问题），则更改会在已经说过的内容之后说出。默认关闭；关闭它会返回等待整个回复。没有存储任何内容。",
+     "voice_timing_diagnostics": "将最后 20 个语音响应时间保留在内存中，无需文字记录或设备/用户 ID。在 Mind 中显示代理、工具、翻译和公告时间。阶段可以重叠；不测量麦克风捕获和最终管道播放。默认关闭；设置更改并忘记清除历史记录。它还计算对话的进行情况（跟进、更正、答案的速度有多快——而不是文字），并在重新启动时保持；关闭此功能会清除这些计数。",
+     "reliability_log": "使用简单的规则（无人工智能）检查每个语音轮流，并在“思维”页面上进行注释：工具失败、设备未执行此操作、它在什么都没有执行时表示已完成某些操作、它提供了设备无法执行的操作、它无法回答，或者它在没有查找任何内容的情况下回答了过去的情况。保留简短的问题和答案 14 天。关闭它会停止它并清除保留的内容。",
+     "unified_evidence": "默认关闭。为语音提供一种额外的只读工具，当您询问发生了什么或为什么时，它可以一起查看房屋记录、时间线和摄像机历史记录。它无法改变任何事情，并且它会在无法检查来源时说，而不是声称什么也没发生。关闭它只会删除该工具；没有存储任何内容。",
+     "specific_clarification": "需要对话会话。提供命名设备选择并在本地识别确切名称、英文序数词、两者/全部以及简单温度。重试一次，然后停止而不是重复。选择永远不会确认一个动作。默认关闭；禁用会清除待处理的选择。使用保护控制来强制执行操作限制。",
+     "action_recovery": "需要对话会话以及对设备结果和重试的保护控制。当您说不起作用时，提供指定的部分结果并检查最后一个受保护的请求。只有从未发送过的操作才能再次提供并进行新的确认。不确定或成功的操作不会重播。默认关闭；记录在两分钟后过期，并在设置更改或忘记时清除。",
+     "recheck_unconfirmed": "当通过受保护的语音控制控制的设备在回复时尚未报告其新状态（车库门、慢速云插头）时，20 秒后再次查看并更新记录，那么“这有效吗？”从设备现在所说的内容中回答。没有再发送任何内容。关：记录保持回复时的状态。",
+     "speech_failure_notification": "当发言者传送失败或不确定时显示 Home Assistant 通知。默认关闭。不包括口头内容或重复讲话。在访客模式下禁用；现有通知将保留直至被驳回。",
+     "recent_followup_context": "在对同一发言者和用户发出新的唤醒词后，使用最近完成的主题。需要对话会话和上下文跟进。使用会话超时；永远不会恢复确认或聆听。默认关闭。结束或忘记可以清除上下文。",
+     "conversation_cues": "在对话中：当没有什么具体的问题等待答案时，日常的结束语（“干杯”、“完美，谢谢”、“那就行了”）结束对话； “抱歉，我的意思是……”、“错误的灯光”和“不是灯，是天花板灯”是更正；以及“另一方面……”或“其他：”开始一个新的主题，没有携带任何设备。没有人工智能。关：仅识别简单的结尾和更正。",
+     "vary_replies": "该声音会显示过去一天的最后几个回复，并被告知不要重复使用他们的句子或开头，因此相同的答案不会被逐字逐句给出两次。不在私人房间或访客模式下。无论哪种方式，重复的回复都会被计数（Mind 选项卡，带有语音计时）。默认关闭。",
+     "behaviour_explanations": "直接回答有关收听和记录设备结果的简短问题，无需 AI 通话。需要对话会话。使用现有会话记录，尊重访客模式和设备访问，并且从不重复操作。默认关闭；不存储额外的历史记录。",
+     "current_house_context": "为对话提供公开设备报告、最近更改和当前未完成任务的紧凑相关快照。默认关闭。无后台人工智能调用。访客模式会抑制它。最近的更改将在 30 分钟后过期；禁用或忘记会清除仅记忆的上下文。",
+     "moment_awareness": "每个语音回复都会收到 Sentient 已保存的简短“现在”图片：谁在家、从什么时候开始、有动静的房间、过去 45 分钟发生的事情以及今天的任何异常情况。没有人工智能，也没有存储任何内容。在私人房间或访客模式下，仅给出移动。Off：不添加任何内容。",
+     "room_memory": "房间中的每个语音回复都会显示过去一小时内发生的情况：该房间中早些时候的对话、通过语音切换的内容以及在那里宣布的内容。如果几分钟前有人刚刚在另一个房间说话，此后这里就没有再说过任何话，那么谈话也会随之而来，这样他们就可以从上次中断的地方继续进行。没有存储任何新内容。私人房间和访客模式只获取自己房间的记录。Off：不添加任何内容。",
+     "know_people": "当语音识别尚未命名说话者时，Sentient 会从它可以信任的事物中找出可能是谁：在 Home Assistant 应用程序中输入的消息来自该人的帐户，或者他们的电话是房间中唯一的房间跟踪电话。声音被告知可能是谁，并将那个人告诉它的关于他们自己的事情放在第一位。猜测永远不会允许任何需要确认的事情，因此没有任何东西会保存在他们的名下。不在访客模式或私人房间中。关：不猜测。",
+     "instant_answers": "在人工智能之前，每天的问题都可以直接从房子里得到回答：时间、外面的天气、指定设备是否打开、关闭、打开或锁定、房间温度、下一个警报或提醒、访客以及房子是否上锁。只有问题，只有一个明确匹配并暴露给语音助手的设备；其他的一切都像往常一样交给人工智能。交流被添加到对话中，以便后续人员仍然知道所问的内容。客人和私人房间只能获取时间、天气和设备状态。关：每个问题都交给人工智能。",
+     "capability_awareness": "声音被告知它可以通过语音控制这个房子里的哪些东西（从向语音助手公开的东西，每个有多少个）以及房子没有哪些常见的东西，例如智能锁或电动百叶窗，因此它永远不会提供任何设备无法做到的事情。无论如何都会漏掉的提议（关上窗户、锁上门）会在说出之前从回复中删除。每五分钟锻炼一次，没有人工智能。关闭：没有添加或删除任何内容。",
+     "house_context_entities": "包含在一般房屋摘要中的设备，以及自动气候和打开/存在报告。仅共享当前公开且可访问的设备；每个请求最多八个相关读数。",
+     "house_context_updates": "需要当前的房屋环境。在验证受保护的加热请求后，可以选择在恒温器报告请求的温度时说一次。一小时后过期，如果目标发生变化则取消，最多每 15 分钟更新一次。尊重正常的讲话规则和访客模式。默认关闭。关闭会清除挂起的更新。",
+     "security_event_evidence": "在配置的摄像机上使用 Frigate 事件 ID、快照和剪辑。唯一的摄像机/时间匹配是候选链接，而不是传感器识别该事件的证据。在本地保存多达 3,000 条事件记录 7 天。默认关闭。禁用隐藏链接并停止匹配；保留的记录过期或可能被遗忘。",
+     "security_event_zones": "仅进入区域的物体：在具有 Frigate 区域的摄像机上，仅当对象进入其中一个区域时才会列出事件（并且可以引发安全事件），Frigate 用于其警报的规则相同。没有区域的相机会列出一切。检测到的任何内容：Frigate 在所选摄像机上跟踪的每个对象。Frigate自己的设置从来没有改变过。",
+     "security_event_hidden_zones": "每行一个作为摄像机/区域，例如大门/车道。仅在这些区域中发生的事件不会列出，也不会引发安全事件。在“安全”页面上进行一些“非个人”更正后，使用“隐藏此区域”，或者删除一行以再次列出该区域。Frigate 未更改。",
+     "security_coverage": "显示哪些配置的摄像机提供了保留的证据以及与现场事件一起记录的任何不可用的报告。当前相机报告单独显示。关闭此功能可以清除保留的覆盖范围差距。",
+     "frigate_pipeline_health": "读取 Frigate MQTT 可用性、每个摄像机的处理速率以及 Sentient 最后接收事件的时间。缺失数据显示为未知。相机设置未更改。",
+     "security_conversation_context": "在同一对话、设备和用户中记住所选事件最多五分钟。后续问题使用该事件和最新的入住报告；不假定任何身份或持续存在。跟踪配置的摄像机事件。默认关闭。禁用清除对话引用；事件记录保留其正常有效期。",
+     "security_event_feedback": "管理员可以将一次访问标记为一次良好的访问，而不是一个人或一个要忽略的人。已审查的访问会移至折叠的已审查列表中，并且“不是一个人”也算作仅由该访问造成的安全事件的已审查错误检测。更正停留期为 7 天。没有自动检测器、警报或通知规则更改。禁用隐藏反馈并停止新的更正；使用忘记最近的数据来删除保留的记录。",
+     "share_clip_analysis": "跨自动剪辑观看和事件剪辑问题共享同一完成的 Frigate 事件的兼容通用分析。提供者、镜头覆盖范围和身份设置必须匹配。自定义问题单独分析。最多可在内存中保留 100 个结果 6 小时。默认关闭。禁用、更改设置或忘记清除缓存。",
+     "sleep_ignore_sensors": "运动传感器会在人们睡觉时触发，例如卧室中的传感器。等待以上时间没有任何动静就去睡觉；当有人翻身时触发的卧室传感器会让房子整夜保持\"清醒\"，所以把它列在这里。他们仍然对其他一切都很重要。",
+     "heating_graph": "开启：“房屋”选项卡上的供暖卡显示每个恒温器最近 24 小时的温度与设置值的对比，并以阴影显示预定时间。阅读Home Assistant的历史；没有存储任何额外的内容。关：图表隐藏。",
+     "heating_revert": "开：如果手动打开、关闭或关闭恒温器（或自行更改）并且没有回到时间表，Sentient 会将其放置一段时间，然后将其恢复：白天的时段温度，夜间的夜间温度。仅供暖计划中的恒温器。即使一段时间同时开始或结束，手动或语音所做的更改也会持续整个时间；然后日程表就开始了。关闭：手动更改会一直保留到下一个预定时间。无论哪种方式都不会存储任何内容。",
+     "window_heating": "开启：当窗户或门打开几分钟并且该房间有自己的加热器时，Sentient 会将加热器调低至夜间温度，并在窗户关闭时将其恢复原状，但前提是同时没有人更改它。全屋恒温器永远不会关闭一个窗户：Sentient 只是说一次窗户打开并且暖气打开。3小时后放弃。关闭：没有任何改变或说明；它拒绝的任何内容都会被放回去（如果没有人更改它）并且它的小记录被清除。",
+     "window_heating_minutes": "在 Sentient 起作用之前，窗口必须保持打开状态多长时间。默认 5 分钟。",
+     "rooms_view": "打开：“房屋”选项卡显示每个房间的图块 — 温度、湿度、灯光打开、门窗打开、最后一次搬到那里的时间以及正在播放的内容 — 并且概览会显示一个简短的房屋周围卡片。从您所在的地区建造；没有存储任何内容。关闭：两者均隐藏。",
+     "outdoor_areas": "屋外的区域，例如兔舍、棚屋或温室。他们仍然在“房屋”选项卡上有自己的图块，标记为“外部”，并且他们的温度在概览上显示在自己的线上，但他们被排除在最温暖和最凉爽的房间之外，并且那里的移动（摄像机看到人们走过）不算作有人在房子里。留空以将每个区域都算作房屋的一部分。",
+     "knowledge_card": "开启：“思维”选项卡总结了它对房子的了解——通常的就寝时间和起床时间、放置的传感器、暖气加热的速度、隔壁房间的猜测、惯例和记忆。它只显示已知的内容；没有存储任何额外的内容。灭：卡片隐藏。",
+     "day_chart": "开启：概览显示今天每小时的动态、内容、外面发生的事情以及您问的内容，以及某人最先起床的时间和最繁忙的时间。从时间线算起；没有存储任何额外的内容。关闭：图表隐藏。",
+     "house_ledger": "打开：每台设备的每次更改都会记录其原因（人、语音请求、自动化、Sentient 或 Home Assistant 中的任何内容，即设备本身、其应用程序或操作人员），因此您可以询问“暖气何时关闭，为什么？”。快速变化的数字被保留为显着变化。在Sentient自己的数据库中保存90天，然后按天汇总。关：没有记录任何新内容；保留的内容将一直保留，直到您在“思维”选项卡上将其清除为止。",
+     "unexplained_changes": "打开：当受监视的设备（默认情况下为暖气、热水器和阀门）在不寻常的时间发生变化且 Home Assistant 中没有任何内容时，会说一次并放在时间线上，并链接重复：\"本周第三次，总是上午 11 点左右\"。当它仍在学习一种设备时，或者一旦重复成为常态，它只会在时间线上进行。关闭：仍然记录，从未提及。",
+     "unexplained_entities": "为暖气、热水器和阀门留空。锁、门和大门每天都是用手使用的，因此仅当您想了解它们时才添加它们。",
+     "expectations": "打开：了解每个设备在每个小时、工作日和周末的变化频率（从过去三周的历史记录中预热），并对从正常到非常不寻常的每个变化进行评分。Mind 选项卡显示了每天的预期时间。简单的计数，没有人工智能。关：无分数；清除 Mind 选项卡上学到的内容。",
+     "surprise_gating": "观察：记下将跳过哪些注释，因为更改在当时是常见的，而不跳过任何内容。打开：跳过它们，这也节省了 AI 调用。绝不适用于安全警报、警报或您要求的任何内容。",
+     "situations": "开：用几句简单的话告诉声音现在正在发生的事情（刚到家、过去 15 分钟内的动静、过去一小时内发生的任何异常情况）。不与客人共享或在私人房间内。关闭：不发送任何额外内容。",
+     "beliefs": "开启：每天晚上，它都会寻找几乎同时发生的事情，根据刚刚过去的一天来测试每一件事情，询问其中是否成立，并丢弃那些不成立的。没有人工智能。关闭：没有新的信念，也没有测试；通过“心灵”选项卡上的学习可以清除现有的内容。",
+     "learn_reactions": "开：Sentient 改变的某件事直接放回去就不算再做一次，而某人采取的评论则对其有利。关闭：不对反应进行评分。",
+     "ai_case_memory": "开启：与过去六个小时内的任务相同的后台 AI 任务会重复使用该应答，而不是另一个呼叫。切勿用于图片或剪辑。关：每个作业都会调用AI，并清除已保存的答案。",
+     "memory_tags": "对于每个记忆，晚上的一个小型人工智能调用会添加一些人们可能会使用的相关单词（“kettle”→brew、tea、cuppa），所以“想喝杯cuppa吗？”找到水壶记忆。每晚最多 40 个回忆；无需嵌入服务器。关闭它会停止夜间通话，并且回忆会忽略这些单词（它们会被保留，因此可以立即重新打开）。默认关闭。",
+     "memory_upkeep": "在过夜的反思中（没有额外的人工智能调用），一个人当天所说的话显示已经过时的记忆被纠正，并保留为猜测直到得到确认。每天一次，一个猜测（它做出来的而不是被告知的东西）会被添加到它的问题中，这样它就可以询问它是否正确。一个人确认或固定的记忆永远不会改变。需要通宵反思。关闭：仅添加记忆，从不修正记忆。",
+     "watch_actions": "手表和提醒器既能说也能做事，先检查情况，然后等待事情持续：“如果后门打开了十分钟，请关闭大厅灯并告诉我”，“洗涤完成后，打开走廊灯”，“11点时，如果后门仍然打开，请告诉我”。声音会读出每个选项，并且只有在下一回合回答“是”后才会设置。仅使用语音助手的设备，绝不使用警报、锁定、脚本或禁止触摸列表中的任何内容；之后检查每个设备，答案表明没有发生什么。关闭：手表和提醒和以前一样只会说话，而已经设置的则不会执行。",
+     "memory_time": "那些只在一段时间内属实的事情本身就有一个结束日期：\"现在\"、\"此刻\"、\"本周\"、\"直到周五\"以及一次性的事情（\"我打开了暖气\"）会被保留一天并写下日期，而不是成为永久的事实。每天都会与您核对三个月内没有人确认或使用过的事实。通宵反思还写了每天的小故事（没有额外的AI调用），保留60天，所以\"上周六我们做了什么？\"或\"锅炉上次启动是什么时候？\"可以回答。需要连夜反思故事和检查。关闭：记忆仅保留其命名的日期，不保留任何故事（已保留的将被删除).",
+     "who_where": "将每个消息来源所知道的信息（电话室跟踪器（设置在“语音”下）、最后一次识别出谁在说话、在哪里，以及只有一个人在家时的活动）汇总到每个人的最佳猜测中：哪个房间、确定程度以及何时开始。声音是给它的，而不是普通的房间追踪线，说明它是多么确定，并且永远不会说任何关于不在家的人的事情。没有存储任何内容。关闭：声音只有房间追踪器的线路，和以前一样。",
+     "big_plans": "\"让房子为电影之夜做好准备”或“整理房子，我们要走了”：声音制定出设备步骤的简短计划，将其读回，只有在下一轮回答“是”后才执行。然后在设备上检查每个步骤，答案表明没有发生什么。仅使用语音助手的设备；从不报警、锁定、脚本或永不接触列表；最多 12 个步骤。关闭：像以前一样一次处理一台设备上的大请求。",
+     "self_grading": "每天晚上，声音当天所说的关于某些东西是否打开、关闭、打开或关闭的内容都会与房子当时记录的内容进行检查。错误的就在Mind页面的\"声音哪里出了问题\"中添加，成为教训（\"先检查一下后门再说是否开着\"），所以在不改正的情况下有所改善。没有人工智能。需要可靠性日志。关闭：未检查任何内容。",
+     "voice_speed_watchdog": "开启：注意到发言者听您说话的时间比您说话的时间长得多（其音频到达速度比实时慢），并将其放入时间线中并提供重新启动建议。关闭：不检查。",
+     "voice_speed_restart": "开：持续滞后的扬声器通过其自己的重启按钮重新启动。关闭：仅建议。",
+     "incident_stages": "上：每起安全事件都显示了事件的发生程度（观察到的、调查的、可能的家庭、关注或解决的）与记录的内容相比，而不是某人是谁。关闭：列出事件时不带阶段。",
+     "cognitive_shadow": "开启：第二种更严格的判断每个安全事件的方法与通常的阶段并驾齐驱，计算两者一致的频率，以及语音操作的结果，仅在心灵传感器上显示为总数（没有名称、图片或设备）。它用于测试：它永远不会改变警报、阶段、所说的内容或声音所讲述的内容。关闭：不进行任何比较，并重新开始计数。",
+     "cognitive_decides": "开启：一旦您对安全事件的评论（“心灵”选项卡上每个事件下方的按钮）显示每种事件都正确 — 至少审查了 10 个家庭事件，90% 的人同意，至少有 10 个几乎从未被称为家庭事件的其他事件，并且没有任何相关事件被称为不太严重 — 认知核心决定每个事件的阶段：“心灵”选项卡和声音所说的事件是什么。如果后来的审查不合格，它会自行停止，并在时间表上如此说明。它永远不会改变或阻止警报，也永远不会将事件称为比通常规则“关注”更严重的事件。在它赢得它之前，什么都不会改变。关：通常规则决定；您的评论会被保留。",
+     "cognitive_quiet_heads_up": "仅测试：根据事件审核记录资格，但绝不会抑制口头或电话安全警报。开门后进行摄像头检测并不能确定家庭身份。在实施和测试独立验证的身份证据之前，该功能无法消除任何声音。",
+     "weather_warnings": "开启：每 30 分钟检查一次您所在国家/地区的官方警告（英国气象局和环境局、欧洲各地的 MeteoAlarm、美国国家气象局），使用 Home Assistant 的位置。关：不检查，发现的内容被遗忘。",
+     "warnings_country": "留空以使用 Home Assistant 的国家。",
+     "warnings_region": "仅警告命名该区域，例如英格兰西北部。全国各地留空（洪水和美国警告总是在家附近).",
+     "warnings_speak": "亮起：发出一次新的琥珀色、红色或严重警告。关闭：警告仅出现在时间线上。",
+     "email_read": "打开：保留发件人、主题以及最近 20 封邮件的简短预览 Home Assistant 的 IMAP 集成报告，以便您可以询问\"有新电子邮件吗？\"。只读，无密码，绝不与客人共享。关：不保留任何内容，保留的内容被清除。",
+     "calendar_clashes": "上：\"明天有冲突吗？\"查找简报日历（或所有日历）中重叠的事件或间隔时间不超过 15 分钟的事件。关闭：不提供。",
+     "security_audit": "开启：管理员可以询问\"我的设置安全吗？\"对于普通 http 远程访问、锁定和警报的只读检查，语音无需确认即可到达，长期令牌和管理员无需两步登录。关闭：不提供。",
+     "automation_builder": "开启：管理员可以用简单的英语要求自动化；每一个设备和操作都会被检查，如果是的话，它会被读回，然后像编辑器中的那样保存到 automations.yaml 中。关：不提供；自动化已经留下来。",
+     "pronounce_names": "开启：声音从拼写中读出错误的名字，仅在扬声器上按其发音方式说出 — 聊天、时间线和电话保留真实的拼写。摘自以下几行以及诸如\"Siobhan 发音为 Shivawn\"之类的记忆。关闭：名称按拼写读取。",
+     "pronunciations": "书面=说，每行一个，例如西沃恩=希瓦恩。按照语音朗读的方式拼写所述版本。",
+     "health_duplicates": "开启：在一个名称下出现两次的设备，其中一个副本为空（涂鸦本地的插件，再次来自涂鸦云的插件）会显示在 House health 中，并带有一个用于禁用空副本的按钮。关闭：未勾选。",
+     "manuals_local_ocr": "可选且默认关闭。如果 Home Assistant 主机上已安装 Tesseract，则从每个文件最多 20 个仅图像 PDF 页面读取文本。没有云请求或下载。在标准Home Assistant操作系统上，Tesseract可能不可用；原来的 PDF 后备仍然存在。",
+     "memory_semantic_enabled": "默认关闭。通过显式配置的本地 Ollama 嵌入服务，仅重新排序已允许该用户的内存结果。私人文本被发送到配置的 LAN 主机，不会自动发送到互联网。配置的主机接收选定的内存片段，因此在您控制的受信任机器上运行它。",
+     "memory_semantic_url": "HTTP URL 例如 http://192.168.1.20:11434。仅接受数字私有 LAN/环回地址（使用 127.0.0.1 而不是 localhost）。服务器必须公开 /api/embed 并且已经安装了该模型。",
+     "memory_semantic_model": "Ollama中已安装的嵌入模型的名称，例如nomic-embed-text。Sentient不会下载模型。不可用或缓慢的服务会回退到正常搜索。",
+     "ai_routing_enabled": "默认关闭。只有在两个提供商都有超过 20 个已测量的呼叫和足够的服务级别可靠性后，符合条件的后台文本作业才可以使用配置的替代方案。无需切换图片、结构化输出或显式 AI 选择。",
+     "ai_routing_alternative": "要考虑合适的后台文本任务的第二个 Home Assistant ai_task 实体。它必须存在于本地，并且在没有测量的服务历史记录和成本估算的情况下永远不会使用。",
+     "ai_routing_primary_cost": "您自己的一份类似文本作业的大概价格；不是提供商计费。在考虑更便宜的提供商之前，您必须提供并验证这两个价格。",
+     "ai_routing_alternative_cost": "您自己对替代 AI 任务实体的价格估算。这不是实时计费，可能与实际令牌费用不同。",
+     "ai_routing_max_p95_ms": "仅当测量的 95% 服务时间在此限制内时才考虑辅助提供商。默认为 4000 毫秒。语音回复继续通过现有管道进行。",
+     "heating_energy_sensor": "累积千瓦时能量传感器测量供暖系统，而不是整个房子。使用 Recorder 保留的具有足够长历史记录的传感器。",
+     "heating_measurement_date": "您要检查的更改日期。Sentient 最多可将前后 14 天与同一工作日进行比较；不能证明Sentient造成差异。",
+     "heating_energy_price_kwh": "可选估算仅用于将观察到的千瓦时差异转换为近似的每日货币变化，而不是实际账单或经证实的节省。",
+     "autooff_respect_recent_voice": "默认关闭。启用后，在发出更高优先级的受保护语音命令后，灯或开关的自动关闭将保持最多两分钟。不适用于手动停止请求、加热、锁定或警报。"
+    }
+   },
+   "memories": {
+    "title": "回忆",
+    "description": "房子记得{count}的事情。选择一个进行编辑，勾选任何一个以忘记，或添加一个新的。",
+    "data": {
+     "edit": "编辑记忆",
+     "forget": "忘记",
+     "add": "添加内存",
+     "category": "新内存的类别"
+    }
+   },
+   "edit_memory": {
+    "title": "编辑记忆",
+    "data": {
+     "text": "记忆",
+     "category": "类别"
+    }
+   },
+   "briefing": {
+    "title": "状态摘要",
+    "description": "简报涵盖的内容 — 通过简报按钮、通过语音或在每天的设定时间。",
+    "data": {
+     "briefings": "简报",
+     "briefing_sections": "包括",
+     "briefing_weather": "天气从",
+     "briefing_todo": "待办事项列表",
+     "briefing_calendars": "日历",
+     "briefing_system": "系统传感器报告",
+     "outside_info": "外部信息",
+     "parcel_trackers": "包裹追踪器",
+     "briefing_time": "每日简报于",
+     "digest_time": "每日摘要于",
+     "morning_briefing": "当某人第一次来时进行简报",
+     "morning_briefing_areas": "上午简报室",
+     "morning_briefing_quiet": "在安静的时间进行早间简报"
+    },
+    "data_description": {
+     "briefings": "Off 关闭按钮、语音工具和服务。",
+     "briefing_weather": "留空以使用第一个天气实体。",
+     "briefing_system": "例如CPU 温度、磁盘使用、NAS。始终计算待定更新。",
+     "outside_info": "来自其他集成的传感器会读取简报，并在晚间展望明天：今天的电价、天气警报、在路上的包裹、下一个开学日。空、零和“关闭”读数被忽略。这些文本仅被视为信息。",
+     "parcel_trackers": "当有人说包裹要送达时，它会说一次，并整天守着门（即使包裹警报已关闭）；如果上面写着“在门口看到任何东西之前就已送达”，它也会这么说。空：关闭。",
+     "briefing_time": "选修的。仅当有人在家且非安静时间时才说话。",
+     "digest_time": "可选：每天一次，人工智能会用几句话总结时间线。它会出现在时间线上（如果选择的话也会出现在手机上）。没有说话。",
+     "morning_briefing": "每天中午之前一次，在有人所在的房间里，一旦房子看到他们起床走动（或者，如果没有，安静时间结束后第一次有人搬家).",
+     "morning_briefing_areas": "可选：仅在早上有人第一次进入其中一个房间时，通过该房间的扬声器发出声音 — 起床、洗澡和穿衣，然后在厨房或客厅听到它。空：无论他们在哪里。",
+     "morning_briefing_quiet": "关闭：在安静时间结束之前起床走动的人在结束后第一次看到他们移动时会收到简报（如果选择的话，在早上的简报室），并且过夜的任何东西都被折叠到其中。开启：只要他们一出现，即使是在安静的时间，也会通过房间的扬声器发出声音。"
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "回忆"
+   },
+   "last_spoken": {
+    "name": "最后发言"
+   },
+   "likely_room": {
+    "name": "可能的房间"
+   },
+   "watches": {
+    "name": "手表"
+   },
+   "routines": {
+    "name": "例程"
+   },
+   "visitors": {
+    "name": "访客"
+   },
+   "health": {
+    "name": "房屋健康"
+   },
+   "drive": {
+    "name": "驾驶"
+   },
+   "mind": {
+    "name": "想法"
+   },
+   "house": {
+    "name": "房子",
+    "state": {
+     "awake": "醒",
+     "asleep": "睡着了"
+    }
+   },
+   "screen": {
+    "name": "屏幕",
+    "state": {
+     "idle": "闲置的",
+     "morning": "早晨",
+     "notice": "注意",
+     "alert": "警报"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "嘘"
+   },
+   "guest_mode": {
+    "name": "访客模式"
+   },
+   "chime": {
+    "name": "编钟"
+   },
+   "party_mode": {
+    "name": "灯光秀"
+   },
+   "media_speakers": {
+    "name": "Echo 扬声器"
+   },
+   "media_important_only": {
+    "name": "Echos：仅限警报和提醒"
+   },
+   "away_lights": {
+    "name": "远灯"
+   },
+   "screen": {
+    "name": "平板电脑屏幕"
+   },
+   "holiday": {
+    "name": "假期模式"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "有备份"
+   },
+   "alexa": {
+    "name": "对于Alexa"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "低的",
+    "normal": "普通的",
+    "urgent": "紧急（忽略安静时间)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "事实",
+    "preference": "偏爱",
+    "person": "人",
+    "routine": "常规",
+    "note": "笔记",
+    "correction": "更正"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "离开",
+    "quiet": "安静的",
+    "normal": "普通的",
+    "chatty": "健谈"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "时间",
+    "weather": "天气",
+    "reminders": "今天到期的提醒",
+    "watches": "正在观看什么",
+    "routines": "例程即将到来",
+    "open": "门窗打开",
+    "visitors": "今天的访客",
+    "said": "最近说了什么",
+    "system": "系统健康状况",
+    "todo": "待办事项列表",
+    "calendar": "日历（未来 24 小时)",
+    "energy": "今天使用的电力（以及任何不寻常的)",
+    "security": "任何打开或解锁的东西"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "紧急公告",
+    "held_quiet": "事情在安静的时刻被搁置",
+    "unheard": "没人能听到的事情（没有扬声器)",
+    "visitors": "门铃访客和包裹",
+    "watches": "手表和提醒功能关闭",
+    "health": "房屋健康问题",
+    "digest": "每日文摘",
+    "critical": "安全警报（烟雾、一氧化碳、气体、泄漏)",
+    "security": "当每个人都出去时，东西都保持开放状态"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "冷静且切题",
+    "dry": "干机智",
+    "warm": "热情友好",
+    "cheeky": "厚脸皮",
+    "composed": "镇定自若，像管家一样"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "迪斯科",
+    "party": "派对",
+    "rainbow": "彩虹",
+    "chill": "寒意",
+    "halloween": "万圣节",
+    "christmas": "圣诞节"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "锁具",
+    "garage": "车库门和大门",
+    "covers": "百叶窗、窗帘和百叶窗",
+    "heating": "把暖气调高很多",
+    "appliances": "启动电器"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "去做就对了",
+    "tell": "这么说，然后做",
+    "ask": "先问"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "离开",
+    "nightly": "每晚",
+    "weekly": "每周一次（周日晚上)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "自检",
+    "rain": "降雨警告",
+    "hutch": "检查动物笼子",
+    "cat": "猫表",
+    "bins": "检查垃圾箱",
+    "faces": "这是谁？ （面对教学)",
+    "faces_forget": "现在忘记无名面孔",
+    "clip_watch": "立即观看最新剪辑"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "仅 Frigate 警报",
+    "zones": "区域内的任何事物",
+    "all": "每次检测"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "总是",
+    "quiet": "安静时间",
+    "away": "当大家都出去的时候",
+    "quiet_or_away": "安静的时间或所有人都外出时"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "离开",
+    "worth": "值得一看的",
+    "suspicious": "仅可疑",
+    "all": "每个剪辑"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient（一个AI调用剪辑)",
+    "frigate": "Frigate自己的AI总结"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "在门口",
+    "reminders": "提醒事项",
+    "questions": "问题（是/否)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "简短的",
+    "natural": "自然的"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "离开",
+    "watch": "仅供观看",
+    "on": "在"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "仅进入区域的内容",
+    "all": "检测到任何东西"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "说",
+   "description": "在安静的时间和房间意识之后在房子里说话。",
+   "fields": {
+    "message": {
+     "name": "信息",
+     "description": "说什么。"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "紧急忽略安静时间和安静时段；低永不中断。"
+    },
+    "speaker": {
+     "name": "扬声器",
+     "description": "发言者、房间名称或实体 ID。留空以跟随此人。"
+    }
+   }
+  },
+  "remember": {
+   "name": "记住",
+   "description": "为房子的长期记忆添加一些东西。",
+   "fields": {
+    "text": {
+     "name": "文本",
+     "description": "短短一句话。"
+    },
+    "category": {
+     "name": "类别",
+     "description": "这是怎样的记忆。"
+    }
+   }
+  },
+  "forget": {
+   "name": "忘记",
+   "description": "通过 id 或匹配文本删除内存。",
+   "fields": {
+    "what": {
+     "name": "什么",
+     "description": "内存 ID 或其中的单词。"
+    }
+   }
+  },
+  "watch": {
+   "name": "手表",
+   "description": "密切关注设备、传感器或摄像头，并在发生情况时大声说出来。",
+   "fields": {
+    "what": {
+     "name": "什么",
+     "description": "简短描述，例如'兔子圈附近的猫'."
+    },
+    "entity": {
+     "name": "实体",
+     "description": "实体 ID、名称或摄像机的区域名称。"
+    },
+    "to_state": {
+     "name": "声明",
+     "description": "当实体达到此状态时触发。"
+    },
+    "above": {
+     "name": "多于",
+     "description": "当值高于此值时触发。"
+    },
+    "below": {
+     "name": "以下",
+     "description": "当值低于此值时触发。"
+    },
+    "question": {
+     "name": "问题",
+     "description": "相机手表：关于图片的是/否问题。"
+    },
+    "look_for": {
+     "name": "寻找",
+     "description": "相机手表：唤醒的对象，例如人、猫、车。"
+    },
+    "message": {
+     "name": "信息",
+     "description": "说什么。自动句子留空。"
+    },
+    "until": {
+     "name": "直到",
+     "description": "时钟时间，例如18:00 或下午 6 点。"
+    },
+    "minutes": {
+     "name": "分钟",
+     "description": "或者观看多少分钟。"
+    },
+    "repeat": {
+     "name": "重复",
+     "description": "起火后继续观察。"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "紧急情况忽略安静时间。"
+    },
+    "speaker": {
+     "name": "扬声器",
+     "description": "哪里说呢。留空以关注人。"
+    },
+    "wake_on": {
+     "name": "唤醒",
+     "description": "相机手表：唤醒区域或物体传感器，而不是相机自己的传感器。"
+    },
+    "spot": {
+     "name": "点",
+     "description": "相机手表：仅检查该指定地点（通过语音教授，例如“兔子圈')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "取消观看",
+   "description": "停止手表。",
+   "fields": {
+    "what": {
+     "name": "什么",
+     "description": "观看 ID 或其中的单词。"
+    }
+   }
+  },
+  "remind": {
+   "name": "提醒",
+   "description": "在有人的房间里一次说点什么。",
+   "fields": {
+    "message": {
+     "name": "信息",
+     "description": "说什么，例如'是时候打开烤箱了.'"
+    },
+    "at": {
+     "name": "在",
+     "description": "时钟时间，例如18:00 或下午 6 点。"
+    },
+    "minutes": {
+     "name": "分钟",
+     "description": "或者多少分钟后。"
+    },
+    "speaker": {
+     "name": "扬声器",
+     "description": "哪里说呢。留空以关注人。"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "紧急（默认）在安静时间仍然会说话。"
+    }
+   }
+  },
+  "ask": {
+   "name": "问",
+   "description": "在人们所在的房间里大声提出问题并聆听答案。",
+   "fields": {
+    "question": {
+     "name": "问题",
+     "description": "例如'想喝一杯吗？我可以把水壶放上吗?'"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "紧急忽略安静时间和安静时间。"
+    },
+    "speaker": {
+     "name": "扬声器",
+     "description": "去哪里询问。留空以关注人。"
+    },
+    "extra_prompt": {
+     "name": "额外说明",
+     "description": "语音代理处理回复的额外指导。"
+    },
+    "preannounce": {
+     "name": "先鸣响",
+     "description": "提问前先鸣响铃声。"
+    }
+   }
+  },
+  "learn": {
+   "name": "立即学习",
+   "description": "立即寻找近代历史中的惯例，而不是等到今晚。"
+  },
+  "briefing": {
+   "name": "状态总结",
+   "description": "在人们所在的地方进行简短的介绍，介绍当前重要的事情。",
+   "fields": {
+    "speak": {
+     "name": "说出来",
+     "description": "Off 无需说话或使用 AI 即可返回事实。"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "即使在安静的时间也会有紧急的讲话，例如当有人按下按钮时。"
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "整洁的回忆",
+   "description": "现在合并重复项并从内存中删除无意义的内容（也每周日晚上运行)."
+  },
+  "forget_routine": {
+   "name": "删除习得的例程",
+   "description": "永久删除学到的例程或习惯——房子不再这样做，再也不会学习或提供它。启用“恢复”后，恢复已删除的内容（如果例程为空，则恢复一个或全部).",
+   "fields": {
+    "routine": {
+     "name": "常规",
+     "description": "例程 ID 或其中的单词。"
+    },
+    "restore": {
+     "name": "恢复",
+     "description": "将已删除的恢复回来。"
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "采取常规",
+   "description": "让房子自己做一套习得的例行公事，或者停下来。将“采用”留空以进行切换。",
+   "fields": {
+    "routine": {
+     "name": "常规",
+     "description": "例程 ID 或其中的单词。"
+    },
+    "adopt": {
+     "name": "采纳",
+     "description": "On 开始，Off 停止。"
+    }
+   }
+  },
+  "hush": {
+   "name": "嘘",
+   "description": "暂时不紧急的事情就不要说。0分钟停止喧嚣。",
+   "fields": {
+    "minutes": {
+     "name": "分钟",
+     "description": "保持沉默多久。"
+    }
+   }
+  },
+  "run_routine": {
+   "name": "运行例程",
+   "description": "运行命名例程（在侧边栏页面的“设置”→“例程”中设置).",
+   "fields": {
+    "name": {
+     "name": "姓名",
+     "description": "例程的名称或其他名称之一。"
+    },
+    "speak": {
+     "name": "说话",
+     "description": "说出人在哪里的结果。"
+    },
+    "details": {
+     "name": "细节",
+     "description": "对于需要细节的例程，例如哪些房间。"
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "周报",
+   "description": "将上周学习和注意到的内容汇总起来，并将其保留在时间表上。"
+  },
+  "party": {
+   "name": "灯光秀",
+   "description": "开始或停止灯光秀（迪斯科、万圣节、圣诞节……）。灯光完全恢复到停止时的状态。",
+   "fields": {
+    "on": {
+     "name": "在",
+     "description": "关闭停止它并恢复灯光。"
+    },
+    "style": {
+     "name": "风格",
+     "description": "迪斯科、派对、彩虹、寒冷、万圣节或圣诞节。空用设置。"
+    },
+    "minutes": {
+     "name": "分钟",
+     "description": "经过这么长时间后自行停止（0 = 直到关闭）。空用设置。"
+    },
+    "area": {
+     "name": "房间",
+     "description": "使用这个房间的灯（或“任何地方”的每个灯)."
+    },
+    "lights": {
+     "name": "灯",
+     "description": "准确使用这些灯。"
+    }
+   }
+  },
+  "reflect": {
+   "name": "现在反思",
+   "description": "现在回想一下最后一天，就像一夜之间一样：新的记忆、早晨的想法和一个问题。"
+  },
+  "grade_answers": {
+   "name": "立即对自己的答案进行评分",
+   "description": "检查声音对门、灯、开关和锁的描述与房屋记录的内容，就像每天晚上打开\"对自己的答案进行评分\"时所做的那样。返回已检查的内容、错误的内容以及任何教训。",
+   "fields": {
+    "hours": {
+     "name": "时间",
+     "description": "回溯多久查看。"
+    }
+   }
+  },
+  "check_drive": {
+   "name": "检查驱动器",
+   "description": "立即使用人工智能查看驾驶位并更新那里停放的车辆。"
+  },
+  "wonder": {
+   "name": "想知道",
+   "description": "添加一个出于好奇而提出的问题、删除一个问题或立即询问下一个问题。",
+   "fields": {
+    "question": {
+     "name": "问题",
+     "description": "有事向家里询问一次。"
+    },
+    "ask_now": {
+     "name": "立即询问",
+     "description": "立即询问下一个问题。"
+    },
+    "dismiss": {
+     "name": "解雇",
+     "description": "终究不要问的问题中的话。"
+    }
+   }
+  },
+  "follow_up": {
+   "name": "跟进",
+   "description": "稍后再查看并说明进展如何。",
+   "fields": {
+    "minutes": {
+     "name": "分钟",
+     "description": "何时检查。"
+    },
+    "about": {
+     "name": "关于",
+     "description": "关于它的内容的几句话。"
+    },
+    "entity": {
+     "name": "实体",
+     "description": "然后检查设备。"
+    },
+    "state": {
+     "name": "状态",
+     "description": "表示它有效的状态。"
+    },
+    "above": {
+     "name": "多于",
+     "description": "如果值至少是这个值，则有效。"
+    },
+    "below": {
+     "name": "以下",
+     "description": "如果值最多是这个，则有效。"
+    },
+    "if_done": {
+     "name": "如果完成",
+     "description": "如果有效的话该说什么。"
+    },
+    "if_not": {
+     "name": "如果不",
+     "description": "如果没有的话该怎么说。"
+    },
+    "speaker": {
+     "name": "扬声器",
+     "description": "在哪里说（默认：人们在哪里)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "取消后续",
+   "description": "停止检查某些事情。",
+   "fields": {
+    "about": {
+     "name": "关于",
+     "description": "它的 ID，或者它的内容的单词。"
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "维护完成",
+   "description": "将维护工作标记为已完成（更换过滤器、机器除垢），以便重新开始计数。",
+   "fields": {
+    "job": {
+     "name": "工作",
+     "description": "维护页面上的名称。"
+    }
+   }
+  },
+  "notice": {
+   "name": "注意",
+   "description": "通过 Sentient 传递发生的事情 — 同样的安静时间、安静、访客和假期规则，以及（默认情况下）自己决定是否值得说以及如何说。",
+   "fields": {
+    "message": {
+     "name": "发生了什么",
+     "description": "用简单的话来说，例如“洗碗机已经完成了'."
+    },
+    "entity_id": {
+     "name": "设备",
+     "description": "其相关设备（可选）——给出房间及其状态。"
+    },
+    "decide": {
+     "name": "让它决定",
+     "description": "开：人工智能决定是否值得说，以及如何说（算作注意到）。关闭：按给定的方式说出来。"
+    },
+    "priority": {
+     "name": "优先事项",
+     "description": "安静的时刻仍然有紧急的声音；低永不中断。"
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "展望",
+   "description": "现在看看明天，说是否有什么值得提醒的。",
+   "fields": {
+    "speak": {
+     "name": "说出来",
+     "description": "如果有请大声说出来。"
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "睡着了",
+   "description": "告诉房子它睡着了还是醒着（运行就寝时间或早晨的行动).",
+   "fields": {
+    "asleep": {
+     "name": "睡着了",
+     "description": "睡觉时开启，清醒时关闭。"
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "在屏幕上显示",
+   "description": "在Sentient屏卡上放一张卡。",
+   "fields": {
+    "message": {
+     "name": "信息",
+     "description": "展示什么。"
+    },
+    "camera": {
+     "name": "相机",
+     "description": "一个用来展示的相机。"
+    },
+    "minutes": {
+     "name": "为了",
+     "description": "多长时间（空的话10分钟)."
+    },
+    "alert": {
+     "name": "警报",
+     "description": "将其显示为警报。"
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "清除屏幕",
+   "description": "从Sentient屏幕卡上取下一张卡，或者所有东西。",
+   "fields": {
+    "card_id": {
+     "name": "卡片",
+     "description": "卡的 ID、“早上”或全部为空。"
+    }
+   }
+  },
+  "morning_card": {
+   "name": "晨卡",
+   "description": "现在将今天早上的卡片放在 Sentient 屏幕上。"
+  },
+  "check_now": {
+   "name": "立即查看",
+   "description": "立即运行一项可选检查——自检、雨天检查、厨房检查、猫表、垃圾箱检查、\"这是谁？\"对于门摄像机无法命名的最后一张面孔，忘记未命名的面孔，或观看第一个剪辑摄像机的最新剪辑。",
+   "fields": {
+    "what": {
+     "name": "哪个",
+     "description": "要运行哪个检查。"
+    }
+   }
+  },
+  "game": {
+   "name": "开始或停止故事游戏",
+   "description": "开始一个故事游戏（然后可以使用任何语音助手来玩）或放弃当前的游戏。游戏保存的内存被保留。",
+   "fields": {
+    "action": {
+     "name": "行动",
+     "description": "开始游戏或停止正在玩的游戏。"
+    },
+    "game": {
+     "name": "游戏",
+     "description": "开始游戏时的游戏名称。"
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "停止阅读",
+   "description": "停止大声朗读任何故事或有声读物，并使扬声器保持安静，保持原状。无需语音即可工作，适合平板电脑听不到您讲故事的情况。",
+   "fields": {
+    "speaker": {
+     "name": "扬声器",
+     "description": "说话者沉默。留空以停止阅读每个故事。"
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} 可用",
+   "description": "你有{installed}。从“设置”→“更新”安装（Sentient 来自 Home Assistant 2026.11 及更高版本的市场；在旧版本上，在 HACS 中打开 Sentient 并选择“下载”），然后重新启动 Home Assistant。如果 Sentient 是手动复制而不是从 Marketplace 或 HACS 安装，则它永远不会自行更新：而是从 Marketplace 安装它。"
+  }
+ }
+}

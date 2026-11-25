@@ -15,6 +15,11 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.22.0": [
+        "Fourteen more languages: Simplified and Traditional Chinese, Japanese, Korean, Russian, Ukrainian, Arabic, Hebrew, Hindi, Bengali, Indonesian, Vietnamese, Thai and Brazilian Portuguese. That's 31 in all.",
+        "Spoken safety alerts now have proper wording in every language (\"Обнаружен дым: kitchen!\"), where before only Finnish and French did and the rest could mix in English words.",
+        "Chinese and Japanese sentences end with 。 rather than an English full stop, and the Greek and Hebrew word for an alarm is fixed.",
+    ],
     "1.21.0": [
         "Eight more languages: Swedish, Danish, Norwegian, Finnish, Czech, Romanian, Greek and Turkish. The page, cards, Settings and Sentient's own sentences (timeline, House health, the Mind tab, notifications, voice replies and spoken alerts) follow your Home Assistant language, with no AI used.",
         "Spoken safety alerts always use their own fixed wording (\"Smoke detected: kitchen!\") before any general sentence, in every language.",

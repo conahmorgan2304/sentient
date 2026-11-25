@@ -80,8 +80,26 @@ ALERTS = {
 }
 
 
+LABELS = ('Smoke detected', 'Carbon monoxide detected', 'Gas detected', 'Water leak detected',
+          'Safety alarm', 'Tamper alarm', 'Alert', 'Alarm')
+
+
+def _alert_words(language):
+    """The alert labels for *language*: its own table here, else Sentient's sentence list once it's loaded."""
+    code = language.lower().replace('_', '-')
+    if catalog := ALERTS.get(code.split('-')[0]):
+        return catalog
+    from .phrases import loaded
+
+    exact = getattr(loaded(code), 'exact', {})
+    catalog = {label: exact[label] for label in LABELS if label in exact}
+    if 'Smoke detected' in catalog:
+        catalog['Smoke'] = catalog['Smoke detected']
+    return catalog if 'Alarm' in catalog else {}
+
+
 def safety_sentence(text, language):
-    catalog = ALERTS.get(language.lower().replace('_', '-').split('-')[0], {})
+    catalog = _alert_words(language)
     for original, translated in catalog.items():
         match = re.fullmatch(re.escape(original) + r'(?: in the |: )(.+?)[.!]*', text)
         if match:

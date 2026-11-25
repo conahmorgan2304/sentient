@@ -35,7 +35,8 @@ async def test_pack_is_prepared_once_and_shared_by_concurrent_requests(hass):
 
 async def test_cold_urgent_alert_does_not_prepare_pack(hass):
     rt, calls = await setup(hass)
-    assert await language.async_in_house_language(hass, rt.options, 'Smoke detected: Kitchen!', urgent=True) == 'Smoke detected: Kitchen!'
+    # the fixed alert wording, not the AI's pack
+    assert await language.async_in_house_language(hass, rt.options, 'Smoke detected: Kitchen!', urgent=True) == 'Humo detectado: Kitchen!'
     assert not calls
 
 
@@ -97,7 +98,7 @@ async def test_language_change_does_not_use_old_pack_for_urgent_alert(hass):
     with patch.object(language, 'async_generate', AsyncMock(return_value={'data': PACK})):
         await language.async_prepare_language(hass, rt.options)
     rt.options['voice_language'] = 'de'
-    assert await language.async_in_house_language(hass, rt.options, 'Smoke detected: Kitchen!', urgent=True) == 'Smoke detected: Kitchen!'
+    assert await language.async_in_house_language(hass, rt.options, 'Smoke detected: Kitchen!', urgent=True) == 'Rauch erkannt: Kitchen!'
 
 
 async def test_translated_generic_end_closes_without_calling_conversation_model(hass):

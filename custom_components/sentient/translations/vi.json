@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Gặp gỡ bộ não của ngôi nhà của bạn",
+    "description": "Đặt cho nó một cái tên. Đây là tên nó tự gọi và cách nó xuất hiện trong Home Assistant.",
+    "data": {
+     "persona": "Tên"
+    }
+   },
+   "speech": {
+    "title": "Nhà nên nói thế nào?",
+    "description": "Chọn các vệ tinh thoại mà nó có thể nói chuyện qua. Nó cho biết mọi người đang ở đâu (chuyển động hoặc ai đó đang nói chuyện với một diễn giả), nếu không thì trên loa mặc định.",
+    "data": {
+     "speakers": "Loa",
+     "default_speaker": "Loa mặc định",
+     "quiet_start": "Giờ yên tĩnh bắt đầu",
+     "quiet_end": "Giờ yên tĩnh kết thúc",
+     "busy_entities": "Im lặng khi bận rộn",
+     "motion_window": "Cửa sổ nhận biết phòng",
+     "banned_words": "Đừng bao giờ sử dụng những từ này (cách nhau bằng dấu phẩy)",
+     "suppress_entities": "Giữ im lặng sau những tự động hóa hoặc tập lệnh này",
+     "suppress_seconds": "Im lặng cho",
+     "prompt_memories": "Những kỷ niệm để chia sẻ với trợ lý giọng nói",
+     "pass_through_areas": "Khu vực đi qua",
+     "all_occupied": "Nói chuyện trong mỗi phòng có người",
+     "room_tracking": "Sử dụng trình theo dõi phòng (Bluetooth)",
+     "room_trackers": "Trình theo dõi phòng",
+     "ai_task_entity": "AI cho các công việc nền",
+     "camera_cooldown": "Khoảng cách tối thiểu giữa các lần kiểm tra camera",
+     "fallback_speakers": "Loa chỉ dự phòng",
+     "daily_ai_limit": "Cuộc gọi AI mỗi ngày",
+     "prompt_recent": "Ngay bây giờ và giờ cuối cùng trong bối cảnh của giọng nói",
+     "rules": "Quy tắc và thực hiện chúng bằng giọng nói",
+     "relevant_memories": "Chọn những kỷ niệm phù hợp với những gì được hỏi",
+     "look_cache_minutes": "Sử dụng lại câu trả lời của máy ảnh cho",
+     "camera_prefilter": "Bỏ qua giao diện của camera khi không có gì thay đổi",
+     "budget_drive": "Cuộc gọi AI mỗi ngày: ổ đĩa",
+     "budget_noticing": "Cuộc gọi AI mỗi ngày: chú ý",
+     "budget_cameras": "Cuộc gọi AI mỗi ngày: kiểm tra camera và theo dõi",
+     "routine_evidence": "Nói tần suất một quy trình được nhìn thấy",
+     "notice_entities": "Những điều cần chú ý",
+     "remark_repeat_hours": "Đừng lặp lại một nhận xét cho",
+     "chattiness": "Trò chuyện thế nào",
+     "conversation_style": "Nó nói chuyện như thế nào",
+     "carry_on_minutes": "Tiến hành một cuộc trò chuyện cho",
+     "focused_tools": "Công cụ giọng nói tập trung",
+     "ask_later": "Hỏi mọi việc diễn ra như thế nào",
+     "put_right": "Sửa lỗi ngay trong một lần",
+     "music": "Âm nhạc bằng cách hỏi",
+     "music_alexa": "Âm nhạc thông qua Alexa (Echos)",
+     "music_alexa_service": "Dịch vụ âm nhạc cho Echos",
+     "house_rules": "Nội quy nhà",
+     "no_security_offers": "Không bao giờ đề nghị trang bị vũ khí, giải giáp hoặc mở khóa",
+     "learn_entities": "Tìm hiểu các thói quen từ",
+     "learn_anchors": "Thói quen theo ngày",
+     "trust_lights": "đèn",
+     "trust_switches": "Công tắc, phích cắm và quạt",
+     "trust_covers": "Rèm và rèm cửa",
+     "trust_heating": "sưởi ấm",
+     "offer_together": "Đưa ra những thói quen được thực hiện cùng nhau như một",
+     "link_triggers": "Đồng thời tìm hiểu những gì tiếp theo",
+     "suggest_routines": "Đề nghị tiếp quản các thói quen",
+     "prove_routines": "Thói quen tự chứng minh trước khi chúng được đưa ra",
+     "routine_fading": "Hỏi về những thói quen không còn cần thiết nữa",
+     "door_camera": "Camera cửa",
+     "door_triggers": "Chuông cửa",
+     "announce_visitors": "Nói xem ai đang ở cửa",
+     "faces": "Tên từ nhận dạng khuôn mặt",
+     "face_people": "Chỉ có những người này",
+     "face_teach": "Hỏi qua điện thoại những khuôn mặt không tên là ai",
+     "face_teach_cameras": "Tìm hiểu khuôn mặt từ những máy ảnh này",
+     "face_cameras": "Chỉ có tên từ những máy ảnh này",
+     "face_forget_hours": "Quên đi những gương mặt không tên sau",
+     "clip_watch": "Xem clip sự kiện",
+     "clip_cameras": "Máy ảnh",
+     "clip_scope": "Sự kiện nào",
+     "clip_when": "Khi",
+     "clip_notify": "Gửi tới điện thoại",
+     "clip_source": "Ai viết tóm tắt",
+     "clip_whose": "Cho biết đó là thành viên nào trong gia đình",
+     "clip_looks": "Mọi người trông như thế nào khi không thể nhìn thấy khuôn mặt của họ",
+     "budget_clips": "Clip được xem trong ngày (hầu hết)",
+     "clip_days": "Giữ các bản tóm tắt cho",
+     "clip_keep": "Giữ các tập tin clip",
+     "parcel_alerts": "Nói khi một bưu kiện còn lại",
+     "doorstep_sensors": "Kiểm tra bưu kiện sau khi ghé thăm",
+     "zone_visits": "Tính ai đó ở khu vực camera cửa trước là khách",
+     "zone_door_sensors": "Cảm biến cửa trước (vùng này sẽ bị bỏ qua nếu nó mở trước)",
+     "face_sensor": "Tên được công nhận từ",
+     "sidebar_panel": "Hiển thị trong thanh bên",
+     "page_admin_only": "Chỉ quản trị viên mới có thể mở trang này",
+     "custom_pages": "Sắp xếp lại trang Sentient",
+     "suggestions": "Gợi ý trên trang Sentient",
+     "whats_new": "Có gì mới sau khi cập nhật",
+     "simple_settings": "Trang cài đặt đơn giản hơn",
+     "auto_backup": "Sao lưu hàng tuần",
+     "backup_keep": "Giữ được bao nhiêu",
+     "confirm_kinds": "Hỏi \"tôi có nên không?\" trước",
+     "chat_agent": "Tác nhân trò chuyện cho trang thanh bên",
+     "battery_threshold": "Pin yếu bên dưới",
+     "battery_forecast": "Nói khi nào pin sẽ hết",
+     "health_ignore": "Bỏ qua sức khỏe gia đình",
+     "hide_substreams": "Ẩn chế độ xem camera bổ sung",
+     "ignore_cameras": "Máy ảnh để bỏ qua",
+     "never_entities": "Đừng bao giờ chạm vào những thứ này",
+     "self_check": "Tự kiểm tra mỗi đêm",
+     "learn_corrections": "Tìm hiểu khi bạn hoàn tác những gì nó đã làm",
+     "normal_day": "Chú ý một ngày bất thường",
+     "thoughts": "Hiển thị những gì nó đang nghĩ",
+     "share_learning": "Nói những gì nó đã học được",
+     "self_adjust": "Tự điều chỉnh",
+     "proposals": "Đề xuất thay đổi cài đặt của nó",
+     "privacy_log": "Ghi lại những gì rời khỏi nhà",
+     "goals": "Bàn thắng",
+     "manuals": "Câu trả lời từ tài liệu",
+     "manuals_folder": "Thư mục tài liệu",
+     "manuals_local_text": "Nhìn vào bên trong tài liệu văn bản",
+     "manuals_pages": "Đọc từng trang PDF",
+     "games": "Trò chơi kể chuyện",
+     "voice_id": "Biết ai đang nói",
+     "voice_id_unknown": "Hãy đối xử với những giọng nói không thể sánh được như một vị khách",
+     "speaker_memories": "Hãy giữ kỷ niệm của mỗi người cho họ",
+     "books": "Sách",
+     "books_folder": "Thư mục sách",
+     "reading_tts": "Giọng đọc: dịch vụ",
+     "reading_voice": "Giọng đọc",
+     "read_ahead": "Chuẩn bị sẵn sàng phần tiếp theo trong khi đọc",
+     "recipes": "Công thức nấu ăn",
+     "recipes_folder": "Thư mục công thức nấu ăn",
+     "recipes_list": "Danh sách mua sắm nguyên liệu",
+     "voice_lists": "Danh sách mua sắm và việc cần làm bằng giọng nói",
+     "ready_tonight": "Sẵn sàng cho tối nay",
+     "ready_tonight_lights": "Sẵn sàng cho đêm nay: đèn có thể tắt",
+     "ready_tonight_follow": "Sẵn sàng cho tối nay: cho tôi biết khi nào xong việc",
+     "tandoor_url": "Địa chỉ Tandoor",
+     "tandoor_token": "Mã thông báo API Tandoor",
+     "second_opinion_ai": "Ý kiến ​​thứ hai AI",
+     "smart_ai_task": "AI mạnh hơn để bảo mật và suy nghĩ qua đêm",
+     "event_clips": "Xem clip sự kiện của Frigate",
+     "chime": "Kêu vang trước khi nói",
+     "voice_agent": "Tác nhân giọng nói AI chính",
+     "backup_agent": "Trợ lý dự phòng",
+     "offline_answers": "Trả lời các câu hỏi phổ biến mà không cần AI",
+     "animal_sensors": "Cảm biến nhiệt độ của động vật",
+     "away_lights_on": "Đèn sân khách",
+     "holiday_mode": "Chế độ nghỉ lễ",
+     "holiday_thermostats": "Máy điều nhiệt sẽ tắt vào kỳ nghỉ",
+     "holiday_frost": "Nhiệt độ chống sương giá",
+     "holiday_end_on_return": "Kết thúc chế độ nghỉ lễ khi có người ở nhà",
+     "away_people": "Đi khi tất cả những điều này đã hết",
+     "away_lights": "Đèn sử dụng",
+     "away_after": "Bắt đầu sau khi mọi người đã ra ngoài",
+     "animal_low": "Bên dưới lạnh quá",
+     "animal_high": "Ở trên quá nóng",
+     "hutch_check": "Kiểm tra chuồng thú vào buổi tối",
+     "hutch_spot": "Vị trí chụp ảnh của Hutch",
+     "cat_watch": "Đêm canh mèo",
+     "cat_sensors": "Cảm biến mèo",
+     "cat_loud": "Nói ngay vào ban đêm",
+     "rain_warnings": "Cảnh báo mưa",
+     "rain_entities": "Cửa sổ và cửa ra vào để xem",
+     "self_test": "Tự kiểm tra",
+     "self_test_household": "Câu hỏi hộ gia đình trong phần tự kiểm tra",
+     "screen": "Sử dụng màn hình máy tính bảng",
+     "screen_actions": "Khi một cái gì đó xuất hiện",
+     "screen_clear_actions": "Khi mọi chuyện đã rõ ràng",
+     "conversation_sessions": "Phiên trò chuyện",
+     "room_conversation_handoff": "Chuyển giao cuộc trò chuyện giữa các phòng",
+     "verified_bedtime": "Đã xác minh giờ đi ngủ ở tầng dưới",
+     "verified_bedtime_lights": "Đèn ngủ ở tầng dưới",
+     "verified_bedtime_contacts": "Ở tầng dưới mở liên lạc trước khi đi ngủ",
+     "session_seconds": "Hết thời gian không hoạt động của phiên",
+     "guarded_control": "Bắt buộc xác nhận bằng giọng nói",
+     "routine_verify": "Kiểm tra các thói quen đã hoạt động",
+     "voice_unlock": "Cho phép mở khóa bằng giọng nói",
+     "voice_undo": "Hoàn tác các thay đổi ánh sáng gần đây",
+     "evidence_awareness": "Giải thích bằng chứng và sự không chắc chắn",
+     "security_incidents": "Sự cố bảo mật nhóm",
+     "incident_front": "Mặt trước của ngôi nhà",
+     "live_voice_check": "Kiểm tra giọng nói trực tiếp",
+     "speech_delivery_history": "Lịch sử phân phối loa",
+     "alexa_tts_only": "Chỉ sử dụng TTS trên Alexa",
+     "update_checker": "Kiểm tra các bản cập nhật Sentient",
+     "contextual_followups": "Kết nối theo dõi và sửa chữa",
+     "conversation_recovery": "Hủy cuộc trò chuyện và phục hồi thận trọng",
+     "speech_failure_notification": "Thông báo về lỗi phân phối loa",
+     "recent_followup_context": "Những lượt theo dõi ngắn sau một lời đánh thức mới",
+     "conversation_cues": "Hiểu việc đăng xuất, chỉnh sửa và thay đổi chủ đề",
+     "vary_replies": "Nói những điều khác nhau mỗi lần",
+     "behaviour_explanations": "Giải thích các quyết định lắng nghe và hành động",
+     "current_house_context": "Bối cảnh ngôi nhà hiện nay",
+     "moment_awareness": "Nhận thức về thời điểm này",
+     "room_memory": "Bộ nhớ ngắn hạn cho mỗi phòng",
+     "know_people": "Biết ai có thể đang nói",
+     "instant_answers": "Câu trả lời tức thì",
+     "capability_awareness": "Biết nhà có thể làm gì",
+     "house_context_entities": "Thực thể bối cảnh bổ sung",
+     "house_context_updates": "Hãy cho tôi biết khi nào đạt được yêu cầu sưởi ấm",
+     "security_event_evidence": "Liên kết cảnh báo bảo mật với các sự kiện Frigate",
+     "security_event_zones": "Những sự kiện máy ảnh nào được liệt kê",
+     "security_event_hidden_zones": "Các khu vực có sự kiện không được liệt kê",
+     "security_coverage": "Giải thích những khoảng trống trong phạm vi phủ sóng của camera",
+     "frigate_pipeline_health": "Hiển thị tình trạng đường ống Frigate",
+     "security_conversation_context": "Giữ sự kiện bảo mật trong cuộc trò chuyện",
+     "security_event_feedback": "Ghi lại phản hồi về các sự kiện của camera",
+     "share_clip_analysis": "Tái sử dụng các phân tích clip phù hợp"
+    },
+    "data_description": {
+     "motion_window": "Cần cân nhắc bao nhiêu phút lịch sử chuyển động khi quyết định mọi người đang ở đâu.",
+     "suppress_entities": "ví dụ. thông báo chuông cửa của bạn nên những nhận xét cơ bản sẽ không lấn át thông báo đó.",
+     "busy_entities": "Khi bất kỳ tính năng nào trong số này được bật (lịch họp, công tắc Tập trung, điện thoại ở chế độ Không làm phiền), Sentient sẽ giữ lại lời nói có thể chờ đợi, như thể bị im lặng. Cảnh báo an toàn và câu trả lời bạn yêu cầu vẫn được thông qua. Để trống để tắt cái này.",
+     "prompt_memories": "Bao nhiêu kỷ niệm được trao cho trợ lý giọng nói phía trước. Phần còn lại vẫn có thể được tìm kiếm.",
+     "pass_through_areas": "Hành lang, chiếu nghỉ và cầu thang. Đi qua những con số này với chi phí thấp hơn nhiều để người qua đường không lấy trộm thông báo.",
+     "all_occupied": "Bật: mọi người ở nhà đều nghe thấy. Tắt: chỉ phòng bận rộn nhất.",
+     "room_tracking": "Tắt theo mặc định. Khi thiết bị theo dõi phòng (ví dụ: cảm biến \"Khu vực\" dành cho điện thoại của Bermuda) cho biết ai đó đang ở trong phòng có loa, những điều về \"mọi người ở đâu\" sẽ được nói ở đó. Khi không có người theo dõi nào biết — không thấy điện thoại, không có điện thoại hoặc phòng không có loa — tính năng phỏng đoán dựa trên chuyển động sẽ được sử dụng như trước. Chỉ được sử dụng để chọn nơi để phát biểu, không bao giờ quyết định xem có ai lên tiếng hay không. Không có gì được lưu trữ.",
+     "room_trackers": "Cảm biến có trạng thái là phòng có thứ gì đó trong đó, chẳng hạn như cảm biến \"Khu vực\" Bermuda (một cảm biến cho mỗi điện thoại hoặc thẻ). Mỗi phòng cần có diện tích phù hợp với một khu vực Home Assistant.",
+     "ai_task_entity": "Nhiệm vụ AI được sử dụng cho giao diện camera, cuộc họp giao ban, suy nghĩ hàng đêm và tầm nhìn về ngày mai. Empty sử dụng tác vụ AI ưa thích của Home Assistant.",
+     "camera_cooldown": "Đồng hồ máy ảnh thường xuyên xem lại điều này để giảm chi phí cho AI.",
+     "fallback_speakers": "Chỉ được sử dụng khi không có ai ở trong phòng của bất kỳ người nói nào khác, ví dụ: một phòng khách mà bạn không muốn làm phiền.",
+     "daily_ai_limit": "Các cuộc gọi AI trong nền (kiểm tra camera, giao ban, suy nghĩ hàng đêm, chuông cửa…) sẽ dừng lại trong nhiều ngày sau đó và thay vào đó, nó sử dụng các từ đơn giản. Những câu hỏi bạn hỏi vẫn được trả lời. 0 có nghĩa là không có giới hạn.",
+     "prompt_recent": "Hiện tại có một vài dòng (đang ngủ, im lặng hoặc yên tĩnh, khách, bất cứ thứ gì đang mở và các bài đọc không được nghe trong nhiều giờ nên chúng không được cập nhật như hiện tại), chuyện gì đã xảy ra trong giờ qua và nơi nào có chuyển động, vậy 'có điều gì tôi nên biết không?' và 'chuyện gì vừa xảy ra vậy?' được giải đáp ngay lập tức. Miễn phí: không có cuộc gọi AI bổ sung.",
+     "rules": "\"Khi điều này xảy ra, hãy thực hiện các quy tắc đó\" (trang Quy tắc) và giọng nói có thể tạo ra chúng: nó đọc lại quy tắc và chỉ lưu quy tắc đó sau khi đồng ý. Quy tắc không bao giờ có thể kích hoạt, giải giáp hoặc mở khóa bất cứ thứ gì. Tắt: không có quy tắc nào chạy.",
+     "relevant_memories": "Khi có nhiều ký ức hơn mức phù hợp với ngữ cảnh của giọng nói, nó sẽ nhận được những ký ức có cùng từ với câu hỏi, sau đó là ký ức mới nhất. Miễn phí, không có AI. Tắt: luôn mới nhất.",
+     "look_cache_minutes": "Câu hỏi tương tự dành cho cùng một máy ảnh trong thời gian này sẽ nhận được câu trả lời cuối cùng thay vì giao diện AI mới. 0 luôn nhìn lại.",
+     "camera_prefilter": "Kiểm tra máy ảnh và đồng hồ trước tiên so sánh một bức ảnh nhỏ (trên máy này, miễn phí) và chỉ hỏi AI khi máy ảnh — hoặc vị trí của nó — trông khác với lần xem cuối cùng.",
+     "budget_drive": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể.",
+     "budget_noticing": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể.",
+     "budget_cameras": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể. An toàn, chuông cửa và những câu hỏi bạn hỏi không bao giờ bị giữ lại.",
+     "routine_evidence": "Đề nghị tiếp quản một thói quen cho biết tần suất nó xảy ra, ví dụ: '4 trong 4 ngày cuối tuần vừa qua'.",
+     "notice_entities": "Khi những điều này thay đổi, AI sẽ quyết định xem có đáng để nói điều gì đó (hoặc hỏi) hay không. ví dụ. máy giặt, cửa ra vào, thời tiết, thùng rác.",
+     "remark_repeat_hours": "Điều tương tự được nhận thấy (\"Ấm đun nước đã sôi xong.\") đã không được nhắc lại trong thời gian dài như vậy. 0: không giới hạn.",
+     "chattiness": "Giới hạn nhận xét mỗi giờ: im lặng 2, bình thường 4, tán gẫu 8. Tắt không để ý.",
+     "conversation_style": "Tóm tắt: câu trả lời ngắn gọn, đúng trọng tâm. Tự nhiên: các lệnh vẫn ngắn gọn nhưng các câu hỏi và trò chuyện sẽ có một vài câu tự nhiên và một câu hỏi tiếp theo khi một người hỏi, điều này giúp micrô luôn lắng nghe.",
+     "carry_on_minutes": "Việc nói lại từ đánh thức ngay sau khi nói chuyện sẽ tiếp tục cuộc trò chuyện tương tự từ cùng một người nói, vậy \"và trên lầu?\" vẫn có ý nghĩa. 0 tắt cái này đi; Home Assistant quên cuộc trò chuyện sau năm phút yên tĩnh.",
+     "focused_tools": "Chỉ cung cấp giọng nói cho các công cụ của Sentient phù hợp với những gì được yêu cầu (máy ảnh, hệ thống sưởi, lời nhắc…), cùng với bộ nhớ và sự an toàn. Sự lựa chọn nhỏ hơn làm cho các mô hình rẻ hơn nhanh hơn và chính xác hơn. Bất cứ điều gì không khớp rõ ràng vẫn có được mọi công cụ.",
+     "ask_later": "Khi ai đó đề cập đến điều gì đó sắp xảy ra (một chuyến đi, một trận đấu, bác sĩ thú y), giọng nói có thể nhớ hỏi xem mọi chuyện diễn ra như thế nào vào lần tiếp theo có người nói chuyện với nó — một lần, không bao giờ trong những giờ yên tĩnh hoặc có khách đến thăm và không bao giờ về bất cứ điều gì riêng tư. Nó không bao giờ nói bất ngờ. Tắt tính năng này sẽ quên mọi thứ đang chờ được hỏi.",
+     "put_right": "Khi bạn nói \"không, cái kia\" hoặc \"không phải cái đèn đó, cái đèn đó\", giọng nói sẽ chuyển trở lại những gì nó vừa bật (bật hoặc tắt, trong vòng vài phút) và thực hiện lại yêu cầu chỉ với phần đã sửa — không cần phải nói lại tất cả. Tắt tính năng này sẽ chuyển nó ngay cho tác nhân thoại.",
+     "music": "Khi thiết lập Trợ lý âm nhạc (hoặc bật Nhạc thông qua Alexa): \"chơi thứ gì đó êm dịu trong nhà bếp\" sẽ chọn từ danh sách phát và đài phát thanh của riêng bạn rồi phát trên trình phát Trợ lý âm nhạc trong phòng đó (hoặc hỏi Echo của phòng đó) — ở mức âm lượng ban đêm trong những giờ yên tĩnh và không ở trong phòng trong thời gian yên tĩnh riêng trừ khi bạn ở trong đó. Tắt: không có công cụ âm nhạc.",
+     "music_alexa": "Bật: \"chơi thứ gì đó yên tĩnh trong nhà bếp\" yêu cầu Echo trong phòng đó (Alexa Media Player) phát nội dung đó từ dịch vụ bên dưới, theo tên — danh sách phát, nghệ sĩ, bài hát hoặc tâm trạng — ở mức âm lượng ban đêm trong những giờ yên tĩnh và không phát trong phòng vào thời gian yên tĩnh trừ khi bạn ở trong đó. Dịch vụ phải được liên kết trong ứng dụng Alexa. Được sử dụng thay cho Trợ lý âm nhạc khi cả hai đều được thiết lập (Trợ lý âm nhạc không thể phát Spotify nếu không có Premium). Tắt: Echos không bao giờ được yêu cầu phát nhạc.",
+     "music_alexa_service": "Echos phát từ dịch vụ nào. Spotify hoạt động với tài khoản miễn phí, nhưng Alexa có thể phát ngẫu nhiên các bản nhạc tương tự thay vì bài hát chính xác; Premium chơi chính xác những gì được yêu cầu.",
+     "house_rules": "Những câu đơn giản mà mọi giọng nói đều phải tuân theo, mỗi câu một dòng, ví dụ: 'Đừng bao giờ nói nhà trống.'",
+     "no_security_offers": "Loại bỏ khỏi câu trả lời của giọng nói bất kỳ câu nào đề nghị kích hoạt hoặc tắt báo động hoặc mở khóa cửa (\"Tôi có nên kích hoạt nó không?\") — ngay cả khi nó được nói như được viết. Câu trả lời cho người đã yêu cầu kích hoạt, giải giáp, khóa hoặc mở khóa sẽ được giữ nguyên nên xác nhận của họ vẫn được yêu cầu. Tắt theo mặc định.",
+     "learn_entities": "Đèn, công tắc, quạt và rèm người ta sử dụng bằng tay. Mỗi đêm, hai tuần qua được kiểm tra những việc được thực hiện vào cùng thời điểm trong hầu hết các ngày và những việc được thực hiện ngay sau một việc khác (một cánh cửa mở, một ngọn đèn khác bật sáng).",
+     "learn_anchors": "Thói quen giữ thời gian theo hoàng hôn, bình minh hoặc thức dậy thay vì đồng hồ (đèn lúc hoàng hôn, rèm lúc bình minh, ấm đun nước sau khi thức dậy) được học theo cách đó, vì vậy một thói quen trong nhà dành cho bạn sẽ thay đổi theo mùa. Thức dậy cần thiết lập chế độ ngủ và thức. Tắt: mọi thứ đều được học ngược thời gian, như trước đây.",
+     "offer_together": "Khi một số việc thường xảy ra vào cùng thời điểm trong cùng ngày (đèn bật, rèm đóng, bật TV vào khoảng 8 giờ tối), chúng sẽ được đề nghị một lần, cùng nhau — một là có và ngôi nhà sẽ thực hiện tất cả những việc đó. Tắt: mỗi cái được cung cấp riêng.",
+     "trust_lights": "Khi một thói quen mà bạn để ngôi nhà tiếp quản là bật đèn: cứ làm, nói như vậy trước hoặc hỏi và chỉ làm khi có (không có gì xảy ra nếu không có ai trả lời).",
+     "trust_switches": "Tương tự đối với công tắc, phích cắm thông minh và quạt.",
+     "trust_covers": "Điều tương tự đối với rèm và rèm cửa. Cửa gara và cổng luôn hỏi.",
+     "trust_heating": "Tương tự đối với việc hâm nóng lò sưởi trước khi mọi người thức dậy. Hỏi trước có nghĩa là nó không thể ấm lên khi mọi người đang ngủ.",
+     "link_triggers": "Tùy chọn: nhiều thứ khác có thể hình thành thói quen (khởi động TV, cảm biến trên giường…). Cửa ra vào, cửa sổ và đèn học luôn được quan tâm.",
+     "suggest_routines": "Mỗi lần theo thói quen mới, trong ngày có người ở nhà, hãy hỏi xem từ nay nhà có nên làm việc đó không.",
+     "prove_routines": "Đầu tiên, một thói quen mới học được sẽ được theo dõi: mỗi ngày sau khi học được thói quen đó, Sentient sẽ kiểm tra xem một người có thực sự làm điều đó trong vòng 45 phút kể từ thời gian thông thường hay không. Nó chỉ được cung cấp khi nó hoạt động đúng trong ít nhất 3 trong 4 ngày được áp dụng (các ngày trong tuần, cuối tuần hoặc hàng ngày). Cài đặt > Học tập cho thấy mỗi người đang làm như thế nào. Tắt: thói quen được đưa ra ngay khi học được.",
+     "routine_fading": "Bật: khi một công việc mà ngôi nhà làm cho bạn đã được thực hiện trước thời hạn 5 ngày trong hai tuần (bây giờ đã có người tự làm), Sentient sẽ hỏi một lần xem có nên giữ nó hay không và dừng lại nếu bạn nói không. Chỉ có ngày tháng được giữ lại, nhiều nhất là hai tuần. Tắt: các thói quen trong nhà được giữ nguyên cho đến khi bạn nói khác.",
+     "door_camera": "Nhìn một lúc khi chuông cửa reo, để ghi lại ai đã đến.",
+     "door_triggers": "Nút chuông cửa (cảm biến hoặc sự kiện nhị phân) hoặc bất cứ thứ gì khác có nghĩa là có ai đó đang ở cửa.",
+     "announce_visitors": "Tắt giữ nó ở chế độ nhật ký yên tĩnh để trợ lý giọng nói có thể trả lời.",
+     "faces": "Khi Frigate (hoặc chuông cửa) nhận ra ai đó, nó sẽ đi theo dòng thời gian và giọng nói có thể trả lời \"Sam đã về nhà chưa?\". Tên không bao giờ được công bố hoặc đoán — chỉ được nói khi có ai đó hỏi. Tắt theo mặc định.",
+     "face_people": "Những cái tên như Frigate đều biết chúng. Trống: tất cả mọi người nó nhận ra.",
+     "face_teach": "Giúp khả năng nhận diện khuôn mặt của Frigate tốt hơn. Khi ai đó rời khỏi máy ảnh đã chọn và Frigate vẫn giữ một khuôn mặt không thể gọi tên, điện thoại sẽ nhận được thông báo riêng tư \"Đây là ai?\" với mặt đồng hồ và các nút bấm dành cho hộ gia đình (điện thoại hiển thị nhiều nhất là ba). Nhấn vào một cái sẽ dạy Frigate; \"Ai đó khác…\" lấy tên đã gõ cho bất kỳ ai mới hoặc \"không\" để xóa khuôn mặt của người lạ. Không bao giờ nói, không bao giờ dùng máy tính bảng, nhiều nhất là mười phút một lần. Cần bật tính năng nhận dạng khuôn mặt Frigate và điện thoại được chọn để nhận thông báo. Tắt theo mặc định.",
+     "face_teach_cameras": "Máy ảnh cận cảnh có khuôn mặt rõ ràng, ví dụ: chuông cửa. Trống: camera cửa.",
+     "face_cameras": "Trống: mọi camera. Chọn những cái cận cảnh (chuông cửa, cửa trước) để đường phố đông đúc không thể đặt tên sai.",
+     "face_forget_hours": "Mỗi đêm, những khuôn mặt Frigate được giữ lại nhưng không ai có tên — hầu hết là người lạ — sẽ bị xóa khỏi Frigate khi chúng đã cũ đến mức này. Những khuôn mặt được đặt tên sẽ được giữ lại. 0: để nó cho Frigate (nó giữ 200 cuối cùng).",
+     "clip_watch": "Khi Frigate kết thúc một sự kiện trên một máy ảnh đã chọn, AI sẽ xem đoạn ghi âm đó một lần và một câu sẽ xuất hiện trên dòng thời gian và trang Sentient: \"Cổng 14:10 — một người đàn ông dắt chó đi ngang qua\". Giọng nói trả lời \"chuyện gì đã xảy ra ở cổng?\" từ họ mà không cần một cuộc gọi AI nào khác. Chưa bao giờ nói chuyện. Tắt theo mặc định.",
+     "clip_cameras": "Bắt đầu với một, ví dụ: cánh cổng.",
+     "clip_scope": "Cảnh báo của Frigate là những người ở khu vực bạn đã đánh dấu là bắt buộc — sự lựa chọn yên tĩnh nhất cho đường phố đông đúc. Nếu máy ảnh không bao giờ đưa ra cảnh báo (không có vùng bắt buộc nào được đặt trong Frigate), hãy chọn \"Mọi thứ trong vùng\" — thẻ Clip hiển thị nội dung nào đã bị bỏ qua và lý do.",
+     "clip_when": "Chỉ xem vào những thời điểm này. Đi vắng có nghĩa là tất cả những người được chọn trong đèn Sân khách đều đã ra ngoài.",
+     "clip_notify": "Chỉ dành cho điện thoại, có hình ảnh và nút phát.",
+     "clip_source": "Bản tóm tắt đánh giá AI của riêng Frigate cần được bật trong Frigate; thì không có cuộc gọi AI nào được thực hiện ở đây.",
+     "clip_whose": "Trong cùng một cuộc gọi AI, ảnh khuôn mặt của hộ gia đình từ thư viện khuôn mặt của Frigate (và các hình ảnh bên dưới) được đưa vào và nó chỉ nêu tên ai đó khi đó rõ ràng là họ — \"có thể là Sam\". Người lạ không bao giờ được nêu tên. Chỉ nói khi được hỏi, không bao giờ công bố.",
+     "clip_looks": "Một trên mỗi dòng, ví dụ: \"Sam: mũ bảo hiểm đi xe đạp màu đỏ và áo khoác màu vàng, đi xe đạp\". Giúp ích khi đội mũ bảo hiểm hoặc mũ trùm đầu che khuất khuôn mặt.",
+     "budget_clips": "Cũng được tính vào tổng giới hạn AI hàng ngày. 0: không có giới hạn riêng.",
+     "clip_days": "Tóm tắt chỉ là lời nói rồi xóa.",
+     "clip_keep": "Tắt: mỗi clip sẽ bị xóa ngay khi xem xong.",
+     "parcel_alerts": "Sau khi giao hàng, vài phút sau hãy kiểm tra lại và biết liệu bưu kiện có còn sót lại không.",
+     "doorstep_sensors": "Tùy chọn: cảm biến người ở ngưỡng cửa hoặc khu vườn phía trước (ví dụ: sức chứa người của khu vực Frigate). Khi chuyến tham quan kết thúc mà không có chuông, camera ở cửa sẽ được kiểm tra một lần để tìm bưu kiện hoặc bưu phẩm bị bỏ quên.",
+     "zone_visits": "Sử dụng các cảm biến trước cửa ở trên (ví dụ: sức chứa người của khu vực Frigate). Khi không có ai đổ chuông, ai đó đến khu vực này được coi là khách: camera ở cửa sẽ được xem và thông báo. Cái nào đến trước, chuông hay khu vực, là lượt truy cập và cái kia bị bỏ qua. Tắt: chỉ có tiếng chuông bắt đầu lượt truy cập.",
+     "zone_door_sensors": "Tùy chọn: cảm biến đóng/mở cửa trước. Nếu cửa được mở (hoặc đang mở) trong một phút rưỡi cuối cùng, khu vực này sẽ bị bỏ qua vì đó là người đang rời đi hoặc đang về nhà.",
+     "face_sensor": "Tùy chọn: cảm biến nhận dạng khuôn mặt có trạng thái là tên mà nó vừa nhận dạng (ví dụ: từ Frigate). Được sử dụng trong nhật ký và trong thông báo nếu tính năng này được bật.",
+     "sidebar_panel": "Một trang trong thanh bên hiển thị những kỷ niệm, thói quen, đồng hồ, khách truy cập và những gì đã được nói.",
+     "page_admin_only": "Ẩn trang và nội dung trang đó đọc với mọi người ngoại trừ quản trị viên. Tắt giữ cho nó mở cho cả gia đình. Bật nó lên cũng không xóa được gì.",
+     "custom_pages": "Bật: các tab Tổng quan, Nội bộ, Tâm trí và Bảo mật sử dụng bố cục đã lưu của bạn và quản trị viên nhận BỐ CỤC TRANG CHỈNH SỬA tại đây để di chuyển thẻ giữa các cột, ẩn chúng, hiển thị lại hoặc đặt lại tab. Không có nút chỉnh sửa trên các tab, chỉ khi bạn đang chỉnh sửa. Bố cục được lưu trong Sentient nên mọi màn hình đều hiển thị giống nhau. Tắt: các tab quay lại bố cục tiêu chuẩn; bố cục đã lưu của bạn được giữ lại khi bạn bật lại.",
+     "confirm_kinds": "Yêu cầu AI mô tả những hành động này và chờ đồng ý. Đây là hướng dẫn nhắc nhở, không phải khối hành động bắt buộc: tác nhân hội thoại của bạn kiểm soát việc thực thi thiết bị. Tắt mọi thứ không cần phải hỏi. Trống: không có hướng dẫn xác nhận bổ sung. Để thực thi kiểm tra, hãy bật kiểm soát được bảo vệ bằng thiết lập tác nhân được yêu cầu.",
+     "auto_backup": "Tối Chủ nhật, bản sao lưu các kỷ niệm, điểm, thói quen, đèn chuyển động, màn trập và cài đặt, được lưu trong thư mục cấu hình trong sentient_backups.",
+     "backup_keep": "Những cái cũ hơn sẽ bị xóa.",
+     "suggestions": "Những thứ mà Sentient có thể sử dụng nhưng không phải — một chiếc loa mới, một cảm biến công suất trên máy giặt, một nhiệt kế Hutch — được cung cấp từng dòng một. Có thêm nó; không có nghĩa là nó không bao giờ được cung cấp nữa. Miễn phí, không có AI.",
+     "whats_new": "Sau khi Sentient được cập nhật, một thẻ ngắn trên trang Sentient cho biết có gì mới, bằng những từ ngữ đơn giản, cho đến khi bạn nhấn vào ĐÃ HIỂU.",
+     "simple_settings": "Danh sách cài đặt hiển thị các tính năng cần thiết, với HIỂN THỊ MỌI THỨ cho các tính năng tùy chọn. Cài đặt mới bắt đầu theo cách này. Không thay đổi gì về những gì Sentient làm.",
+     "chat_agent": "Ai trả lời hộp Hỏi của trang — chọn một tác nhân thoại có Sentient được đánh dấu. Trống sử dụng đường dẫn Hỗ trợ ưa thích của bạn.",
+     "health_ignore": "Các thực thể (và thiết bị của chúng) không được coi là sự cố, ví dụ: một cái gì đó có nghĩa là phải tắt.",
+     "hide_substreams": "Loại bỏ các luồng HD và SD, ảnh chụp màn hình và bản đồ khi đếm và kiểm tra camera, vì vậy một chuông cửa không phải là nhiều camera. Không có gì bị xóa khỏi Home Assistant.",
+     "ignore_cameras": "Máy ảnh Sentient không nên đếm, kiểm tra hoặc cung cấp, chẳng hạn như máy ảnh của máy tính bảng. Họ ở lại Home Assistant mà không bị ảnh hưởng; chọn lại để mang một người trở lại.",
+     "never_entities": "Sentient không bao giờ chuyển đổi, làm mờ hoặc thay đổi những điều này: không có trong các quy tắc, thói quen, ưu đãi, tự động tắt, đèn đi hoặc đèn chuyển động, màn trình diễn ánh sáng, hệ thống sưởi hoặc điều khiển bằng giọng nói được bảo vệ và giọng nói được yêu cầu để chúng yên. Nó vẫn có thể đọc chúng và nói về chúng. Bất cứ điều gì có thể thay đổi đều được bỏ qua và ghi chú.",
+     "self_check": "Mỗi đêm, nó nhìn lại các hồ sơ của chính mình — những gì nó nói và nó diễn ra như thế nào, những chiếc loa bị hỏng, mọi thứ bị giữ lại, những câu hỏi được hỏi đi hỏi lại, đồng hồ đo AI — và ghi lại những gì nó nhận thấy về chính nó, với những con số đằng sau nó. Không có AI. Hỏi \"bạn có làm phiền chúng tôi không?\" hoặc \"bạn đã nhận ra điều gì?\".",
+     "learn_corrections": "Khi ai đó thay đổi lại một điều gì đó mà ngôi nhà đã làm cách đây một lúc (đèn được bật lên, một thói quen được thực hiện), nó sẽ ghi lại sự điều chỉnh. Một thói quen bạn tiếp tục hoàn tác sẽ được đưa trở lại (tắt) và dòng thời gian cho biết như vậy. Tắt tính năng này sẽ dừng việc xem; những chỉnh sửa đã được ghi nhận sẽ được giữ lại.",
+     "normal_day": "So sánh ngày hôm nay với những gì thường lệ và ghi chú vào trang Tâm trí: ví dụ: chưa có ai dậy trong khi bình thường bây giờ vẫn có người. Quy tắc đơn giản, không được nói to và không được chuyển đổi. Việc tắt tính năng này sẽ dừng việc kiểm tra và ẩn những gì nó tìm thấy.",
+     "thoughts": "Một danh sách ngắn gọn ở góc nhìn thứ nhất trên trang Tâm trí (\"mọi người liên tục tắt đèn hạ cánh nên tôi đã dừng lại\"), cùng với việc đoán xem ai đó sẽ đến phòng nào tiếp theo và kiểm tra xem tần suất họ có đúng hay không. Không có AI. Việc tắt tính năng này sẽ dừng việc đoán và ẩn danh sách; những gì nó đã học được sẽ được lưu giữ.",
+     "share_learning": "Một lần vào một buổi tối (17:00–20:30), khi ai đó ở gần và không phải là thời gian yên tĩnh, nó sẽ nói lên một điều nó đã học được hoặc đã thay đổi suy nghĩ trong hai ngày qua: một thói quen mà nó đã truyền lại, một sự thật mà nó đã cập nhật, một thói quen mà nó đã phát hiện, bây giờ nó đoán chính xác nơi bạn sẽ đi tiếp theo. Không bao giờ điều tương tự hai lần. Tắt tính năng này sẽ giữ tất cả trên trang Tâm trí nhưng im lặng.",
+     "self_adjust": "Khi tự kiểm tra phát hiện một loại nhận xét nào đó, ngôi nhà tiếp tục im lặng, hãy im lặng một chút (giống như không thích; nó lại mờ đi). Không bao giờ chạm vào sự an toàn, bảo mật hoặc bất cứ thứ gì nó kiểm soát.",
+     "proposals": "Khi quá trình tự kiểm tra phát hiện có điều gì đó không ổn, hãy đề xuất một thay đổi nhỏ trên trang Tâm trí — ít nhận xét hơn, không lặp lại thường xuyên, một phần được thêm vào phần tóm tắt, giới hạn AI cao hơn — kèm theo lý do. Không có gì thay đổi cho đến khi bạn nói đồng ý; không được hỏi lại trong một tháng. Việc tắt tính năng này sẽ xóa mọi đề xuất đang chờ.",
+     "privacy_log": "Mỗi cuộc gọi AI và tìm kiếm trên web mà Sentient thực hiện đều được ghi chú — tính năng nào, số lượng hình ảnh, clip hoặc tài liệu và dịch vụ nào — không bao giờ được nói hoặc hiển thị. Xem nó trong Brain & system → Những gì rời khỏi nhà, với một nút bấm để quên đi 48 giờ qua. Tắt tính năng này sẽ xóa bản ghi.",
+     "goals": "Hãy để giọng nói đặt ra mục tiêu theo ngày hoặc tuần (\"giúp chúng tôi sử dụng ít máy sưởi hơn trong tháng này\"). Mục tiêu có thể tuân theo cảm biến: nó so sánh mỗi ngày với tuần thông thường trước đó và đề cập đến tiến độ khi phù hợp. Trong nhà không có gì thay đổi.",
+     "manuals": "Trả lời các câu hỏi từ các tài liệu trong thư mục bên dưới (mỗi cuộc gọi AI). Tắt: tài liệu được để yên.",
+     "manuals_folder": "Một thư mục trong phương tiện của Home Assistant (ví dụ: hướng dẫn sử dụng = media/manuals). Đặt tên cho mỗi tệp theo mục đích của nó, ví dụ: \"Không khí purifier.pdf\".",
+     "manuals_local_text": "Khi không có tên tệp nào khớp với câu hỏi, hãy xem bên trong tài liệu .txt và .md để tìm tên phù hợp và nếu không thể liên lạc được với AI, hãy đọc đoạn văn gần nhất thay vì không đọc gì. Không có AI nào được sử dụng cho cả hai việc này. Tắt: chỉ tên tệp được khớp.",
+     "manuals_pages": "Bật: mỗi PDF (và tài liệu văn bản) được đọc một lần, từng trang, vào cơ sở dữ liệu riêng của Sentient — trên máy tính này, không có AI. Sau đó, một câu hỏi sẽ chỉ gửi cho AI một vài trang phù hợp chứ không phải toàn bộ tài liệu, do đó chi phí sẽ thấp hơn nhiều và câu trả lời cho biết nó nằm ở trang nào (\"nó ở trang 14\"). Một tài liệu có tên không khớp vẫn có thể được tìm thấy bằng nội dung trong đó và nếu không thể truy cập được AI thì đoạn văn gần nhất sẽ được đọc cùng với trang của nó. Các tệp PDF được quét (hình ảnh của các trang) vẫn được AI đọc toàn bộ. Tắt: tài liệu luôn được đọc toàn bộ và nội dung đã đọc sẽ bị xóa.",
+     "games": "Chơi các trò chơi có cốt truyện có giọng nói, chẳng hạn như cuộc phiêu lưu thoát khỏi căn hộ với sự trợ giúp của trợ lý là người điều khiển trò chơi. Mỗi trò chơi giữ bộ nhớ đã lưu riêng (người chơi đang ở đâu, họ mang theo những gì, họ đã tìm thấy và chọn gì) trong các phiên và trợ lý. Nó chỉ được hiển thị bằng giọng nói khi trò chơi đang được chơi và người quản lý trò chơi có thể đọc ký ức thông thường của ngôi nhà nhưng không bao giờ thay đổi nó. Mở Cài đặt → Trò chơi câu chuyện để viết trò chơi và chỉnh sửa bộ nhớ của chúng. Tắt: trang và công cụ trò chơi bị ẩn; trò chơi đã lưu được giữ lại, không bị xóa.",
+     "voice_id": "Sử dụng đối sánh loa địa phương cho yêu cầu này. Để cho phép mô hình AI cá nhân hóa các câu trả lời hoặc gán những kỷ niệm mới theo tên, hãy bật Chia sẻ tên trùng khớp với tác nhân trò chuyện trong Nhận dạng giọng nói. Câu hỏi địa phương riêng biệt “Ai đang nói?” trả lời được thiết lập trong Nhận dạng giọng nói.",
+     "voice_id_unknown": "Khi loa Hỗ trợ không khớp giọng nói, hãy giữ lịch sử gia đình và các kỷ niệm đã lưu ở chế độ riêng tư cho lượt đó. Tắt: các giọng không khớp được coi là bình thường.",
+     "speaker_memories": "Với tính năng nhận dạng giọng nói đang chạy: một giọng nói phù hợp sẽ nhận được ký ức của riêng họ (“Alex: thích trà”) trước tiên — luôn được đưa vào, ngay cả khi các thông tin gia đình mới hơn sẽ lấp đầy danh sách — chứ không bao giờ là thông tin cá nhân của bất kỳ ai khác; một giọng nói không thể sánh được sẽ không có ký ức cá nhân của bất kỳ ai. Sự kiện gia đình luôn được chia sẻ. Yêu cầu đã nhập và Echos không thay đổi. Tắt theo mặc định.",
+     "books": "Chơi sách nói và đọc sách điện tử thành tiếng, giữ nguyên vị trí của mỗi phòng. \"Đọc sách của tôi\", \"tiếp tục đọc sách\", \"đọc trong 20 phút\", \"dừng lại\", \"chương tiếp theo\", \"quay lại một chút\". Không có AI (ngoại trừ bản tóm tắt tùy chọn). Trên Echo: sách điện tử một đoạn cho mỗi yêu cầu thông qua kỹ năng Alexa; sách nói cần một người nói khác.",
+     "books_folder": "Một thư mục trong phương tiện của Home Assistant (sách = phương tiện/sách). Sách điện tử .epub hoặc .txt không có DRM; sách nói dưới dạng một tệp .mp3/.m4b/.m4a hoặc một thư mục gồm các phần được đặt tên theo sách.",
+     "reading_tts": "Một dịch vụ chuyển văn bản thành giọng nói khác chỉ dành cho sách và truyện — giọng nói của Gemini hoặc ElevenLabs thường là những người kể chuyện hay hơn. Để trống để đọc bằng giọng thông thường. Echos luôn sử dụng giọng nói của Alexa.",
+     "reading_voice": "Chọn giọng nói từ dịch vụ đó. Sử dụng THỬ VOICE bên dưới để nghe trên loa mặc định trước khi lưu.",
+     "read_ahead": "Với giọng đọc, phần tiếp theo của câu chuyện sẽ được thực hiện trong khi phần này được đọc, do đó, giọng nói chậm rãi (giọng tự do hoặc giọng khàn) không để lại khoảng trống giữa các phần. Sử dụng giọng nói đó sớm hơn một chút, không bao giờ thường xuyên hơn.",
+     "recipes": "\"Hãy làm món lasagne\": các nguyên liệu, sau đó từng bước một — \"tiếp theo\", \"lặp lại\", \"quay lại\", \"tiếp theo là gì?\" — ghi nhớ từng bước cho mỗi người nói. \"Làm cho 6\" tỷ lệ; nguyên liệu có thể có trong danh sách mua sắm.",
+     "recipes_folder": "Một thư mục trong phương tiện của Home Assistant (công thức nấu ăn = phương tiện/công thức nấu ăn) có tệp PDF, ảnh, văn bản hoặc Markdown. Mỗi lệnh được sắp xếp thành các bước bằng một lệnh gọi AI lần đầu tiên, sau đó được giữ lại. Mealie được sử dụng tự động nếu tích hợp nó được thiết lập.",
+     "recipes_list": "Nơi \"thêm các thành phần vào danh sách mua sắm\" đặt chúng. Trống: danh sách có tên \"mua sắm.",
+     "voice_lists": "Bật: \"đánh dấu sữa\", \"có gì trong danh sách mua sắm?\", \"bỏ túi rác\" — các mặt hàng được tìm thấy theo cách chúng được nói (bất kỳ trường hợp nào, số nhiều, loại sữa duy nhất trong danh sách), hai kết quả phù hợp có thể được hỏi và Sentient chỉ cho biết việc đó đã hoàn tất khi danh sách hiển thị. Sử dụng các danh sách được hiển thị cho Hỗ trợ (tất cả các danh sách nếu không có) và danh sách mua sắm trừ khi có tên khác. Không có AI của riêng mình. Tắt: giọng nói sử dụng các lệnh danh sách riêng của Home Assistant. Không có gì được lưu trữ.",
+     "ready_tonight": "\"Hãy đảm bảo mọi thứ đã sẵn sàng cho tối nay\": kiểm tra cửa ra vào, cửa sổ và ổ khóa mà Hỗ trợ có thể nhìn thấy, chỉ tắt những đèn được chọn bên dưới, nhìn vào hệ thống sưởi và cho biết những gì vẫn mở, không khóa, vẫn bật hoặc không thể xác nhận. Ổ khóa, báo động và hệ thống sưởi không bao giờ được thay đổi và báo động không bao giờ được đưa ra. Không có AI của riêng mình. Tắt: giọng nói vẫn có thể kiểm tra ngôi nhà, nhưng tính năng này không được cung cấp. Không có gì được lưu trữ.",
+     "ready_tonight_lights": "Những ngọn đèn duy nhất \"sẵn sàng cho tối nay\" có thể tắt. Mỗi cái được kiểm tra sau đó. Trống: không tắt đèn, chỉ báo.",
+     "ready_tonight_follow": "Khi nội dung nào đó vẫn mở hoặc được mở khóa, hãy theo dõi nội dung đó trong tối đa ba giờ và nói một lần trên loa bạn đã hỏi khi mọi việc đã được sắp xếp. Tiếp tục sau khi khởi động lại.",
+     "tandoor_url": "Tùy chọn: địa chỉ Tandoor Recipes của bạn, ví dụ: http://192.168.1.20:8080.",
+     "tandoor_token": "Tùy chọn: mã thông báo API từ Tandoor (Cài đặt → API). Chỉ được giữ trong Home Assistant.",
+     "voice_agent": "Tác nhân AI thường trả lời (ví dụ: Google AI). Trống sử dụng tác nhân trò chuyện của trang.",
+     "backup_agent": "Trả lời khi tác nhân chính bị lỗi — Tác nhân riêng của Home Assistant thực hiện chiếu sáng, sưởi ấm và hẹn giờ mà không cần bất kỳ AI nào.",
+     "offline_answers": "Khi tác nhân AI thất bại, “ngôi nhà có bị khóa không?”, “khi nào là lần báo thức tiếp theo của tôi?” và “có ai đến đây không?” được trả lời trực tiếp từ nhà, nói một cách đơn giản, trước khi tác nhân dự phòng được thử. Chỉ những câu hỏi, chỉ những gì người ta có thể nhìn thấy; ở chế độ khách chỉ có câu hỏi bảo mật. Tắt: mọi thứ sẽ được chuyển đến tác nhân dự phòng.",
+     "animal_sensors": "Cảm biến nhiệt độ chuồng, cũi, chuồng hoặc bể.",
+     "away_lights_on": "Khi mọi người ra ngoài sau khi trời tối, đèn sẽ sao chép cách họ sử dụng vào cùng thời điểm này vào tuần trước (từ lịch sử của Home Assistant), cách đó vài phút. Không bắt đầu (hoặc dừng) nếu có ai ở nhà hoặc gần đây có chuyển động bên trong, đối với những người không có điện thoại theo dõi và đặt lại những gì nó đã bật. Ngoài ra còn có công tắc 'Đèn sân khách.",
+     "away_people": "Trống: tất cả mọi người có một mục nhập người. Bạn có thể chọn điện thoại (trình theo dõi thiết bị) thay vì người.",
+     "away_lights": "Trống: mọi đèn trong phòng, không có màn hình, vòng đèn LED, đèn nền và nhóm. Chỉ có những ngọn đèn được sử dụng vào thời điểm đó tuần trước mới bật sáng.",
+     "holiday_mode": "Chuyển đổi 'Chế độ nghỉ lễ' và 'chúng tôi sẽ đi nghỉ cho đến Chủ nhật' bằng giọng nói. Trong khi nó được bật, không có gì được nói to ngoại trừ các cảnh báo an toàn — những gì đáng lẽ được nói sẽ được chuyển đến các điện thoại được chọn để thông báo, có khách và bưu kiện; đèn vắng vẫn chạy ngay cả khi chúng thường tắt; và bộ điều nhiệt bên dưới bị tắt. Tắt: không có công tắc và không nghỉ bằng giọng nói.",
+     "holiday_thermostats": "Chuyển sang chế độ chống sương giá khi bạn đi vắng và đặt lại chính xác như cũ khi chế độ nghỉ lễ kết thúc. Trống rỗng: hệ thống sưởi không được chạm vào.",
+     "holiday_frost": "Bộ điều nhiệt ở trên được đặt ở chế độ nào khi bạn đi vắng.",
+     "holiday_end_on_return": "Khi mọi người đã ra ngoài, người đầu tiên về nhà sẽ kết thúc chế độ nghỉ lễ và đặt máy sưởi trở lại. Tắt: nó kết thúc vào ngày của nó hoặc khi tắt.",
+     "away_after": "Vì vậy, việc đến cửa hàng không bắt đầu được.",
+     "animal_low": "Nói một lần khi nó giảm xuống dưới mức này (được giữ cho đến sáng trong những giờ yên tĩnh) và cảnh báo vào buổi tối trước khi có sương giá.",
+     "animal_high": "Nói một lần khi nó vượt lên trên này.",
+     "hutch_check": "Nửa giờ sau khi mặt trời lặn, một AI nhìn vào cái chuồng: họ có ở trong không và nó có đóng cửa không? Chỉ nói điều gì đó nếu không.",
+     "hutch_spot": "Điểm được vẽ quanh cái chuồng trên tab Điểm, ví dụ: 'bút thỏ'.",
+     "cat_watch": "Sau khi trời tối, khi cảm biến mèo trên máy ảnh của chuồng bật sáng, AI sẽ nhìn: con mèo ở hay ở gần chuồng? Nhiều nhất là 15 phút một lần chứ không phải khi hình ảnh không thay đổi.",
+     "cat_sensors": "Trống: cảm biến mèo trên máy ảnh của Hutch (ví dụ: tỷ lệ sử dụng mèo của Frigate).",
+     "cat_loud": "Tắt: giữ cho buổi sáng (\"Một con mèo ở trong chuồng lúc 2:14 sáng\"). Bật: nói ngay qua loa gác đêm.",
+     "rain_warnings": "Khi sắp mưa trong vòng một giờ nữa và cửa sổ hoặc cửa ra vào đang mở: 'Sắp có mưa trong giờ tới và cửa sổ phòng ngủ sẽ mở.' Đọc dự báo hàng giờ — không có AI. Một lần trong mỗi cơn mưa.",
+     "rain_entities": "Trống: mọi cảm biến cửa sổ và cửa ra vào.",
+     "self_test": "Qua đêm, giọng nói được hỏi một số câu hỏi hàng ngày (nhiệt độ bên ngoài, bất cứ thứ gì mở, lời nhắc, báo thức, thời gian) và câu trả lời của nó sẽ được kiểm tra trong nhà. Bất cứ điều gì sai trái đều thể hiện rõ ràng về sức khỏe ngôi nhà bằng công cụ mà nó sử dụng. Khoảng 5 AI gọi một lượt chạy. Chỉ câu hỏi — không có gì được chuyển đổi.",
+     "self_test_household": "Thêm khoảng 7 câu hỏi được xây dựng từ thiết bị của riêng bạn: thời điểm cửa hoặc cửa sổ đóng lần cuối, đèn có bật hay không, camera có nhìn thấy ai trong hai giờ qua không, hôm nay có ai đến cửa không, điều gì đó không thể biết (một câu trả lời được phát minh ra không thành công), điều gì đó không thiết bị nào có thể làm được và một câu hỏi quá mơ hồ để trả lời nếu không hỏi câu hỏi nào. Chuyển đổi bất cứ điều gì trong một câu hỏi là không thành công. Điểm số và xu hướng của nó nằm trên trang Tâm trí. Khoảng 7 AI nữa kêu gọi chạy.",
+     "screen": "Cảnh báo, thông báo và thẻ buổi sáng trên thẻ màn hình Sentient (tùy chỉnh:sentient-screen-card). Tắt: nó chỉ hiển thị ngôi nhà trong nháy mắt.",
+     "screen_actions": "ví dụ. đánh thức máy tính bảng và chuyển nó sang trang bằng thẻ màn hình.",
+     "screen_clear_actions": "ví dụ. chuyển máy tính bảng trở lại trang bình thường.",
+     "conversation_sessions": "Sử dụng Sentient với tác nhân dự phòng. Các lệnh đơn sẽ ngừng nghe trừ khi câu trả lời bằng giọng nói kết thúc bằng một câu hỏi. Các cuộc thảo luận về thông tin, bảo mật, sức khỏe và hệ thống sẽ hỏi xem còn điều gì khác không và vẫn mở cho đến khi bạn nói “thế thôi”, “đủ” hoặc “ngừng nghe” hoặc hết thời gian chờ không hoạt động. Nói “quay lại…” để tiếp tục một chủ đề còn dang dở từ thiết bị này trong vòng 24 giờ mà không cần khôi phục quyền hành động. Bảng Tâm trí hiển thị các quyết định hội thoại gần đây. Nghe tiếp theo cần có thiết bị Hỗ trợ tương thích.",
+     "room_conversation_handoff": "Nói tiếp tục và đặt tên chủ đề từ một thiết bị khác. Cả hai yêu cầu phải đến từ cùng một người dùng Home Assistant đã được xác định. Các bài đọc mới được kiểm tra và các hành động và xác nhận trước đó không được chuyển tiếp.",
+     "verified_bedtime": "Giả sử chạy xuống cầu thang đi ngủ để tắt đèn đã chọn và kiểm tra danh bạ đã chọn. Yêu cầu kiểm tra lại trạng thái giờ đi ngủ ở tầng dưới hoặc nói hủy giờ đi ngủ ở tầng dưới để ngừng theo dõi.",
+     "verified_bedtime_lights": "Chọn tối đa 20 đèn hỗ trợ riêng lẻ. Các nhóm bị loại trừ và danh sách Không bao giờ chạm vẫn được áp dụng.",
+     "verified_bedtime_contacts": "Chọn tối đa hai mươi địa chỉ liên hệ mở cửa, cửa sổ hoặc các địa chỉ liên hệ mở khác có Hỗ trợ để kiểm tra. Chúng chỉ được đọc.",
+     "session_seconds": "Loại bỏ bối cảnh phiên và các hành động đang chờ xử lý sau nhiều giây này mà không có lượt khác. Thiết bị giọng nói của bạn sẽ kiểm soát thời gian chờ im lặng của chính nó. Xác nhận cũng hết hạn sau 60 giây.",
+     "guarded_control": "Chọn tham gia với tác nhân AI được hỗ trợ chuyên dụng: chỉ chọn Sentient được bảo vệ trong Kiểm soát Home Assistant, sau đó sử dụng Sentient có bản sao lưu trong quy trình. Tắt Ưu tiên xử lý các lệnh cục bộ và loại bỏ các trình kích hoạt câu xung đột chạy trước tác nhân này. Cấu hình API tác nhân sai sẽ dừng yêu cầu. Không có dự phòng, tập lệnh, cảnh hoặc hành động cảnh báo không hạn chế. Cửa, khởi động thiết bị và những thay đổi đáng kể về hệ thống sưởi cần có sự đồng ý riêng.",
+     "routine_verify": "Bật: sau khi quy trình bằng giọng nói (chúc ngủ ngon, rời đi…) chạy, mỗi đèn, công tắc, khóa và nắp được thay đổi sẽ được kiểm tra vài giây sau đó và câu trả lời cho biết điều gì đã không xảy ra (\"Xong, ngoại trừ đèn hạ cánh, vẫn sáng\"). Các bước không thể kiểm tra (kịch bản, cảnh) được báo cáo là chưa được kiểm tra, chưa bao giờ hoàn thành. Không có gì được thử lại hoặc hoàn tác. Tắt: các quy trình chạy như trước, không được chọn.",
+     "voice_unlock": "Cho phép xác nhận bằng giọng nói bắt buộc mở khóa cửa sau khi có riêng biệt. Tắt (mặc định) vẫn khóa và đóng nhưng từ chối mở khóa hoặc mở bằng giọng nói, vì Sentient không thể biết ai đang nói.",
+     "voice_undo": "Với quyền kiểm soát được bảo vệ, hãy nói “hoàn tác điều đó” để yêu cầu khôi phục cài đặt ánh sáng đã được xác minh gần đây. Bỏ qua đèn đã thay đổi kể từ đó, hết hạn theo phiên và không bao giờ mở khóa, sưởi ấm hoặc các thiết bị.",
+     "evidence_awareness": "Yêu cầu giọng nói phân biệt các quan sát, suy luận, hành động đã thử và báo cáo thiết bị đã được xác minh. Cảm biến bảo mật không khả dụng luôn ngăn chặn yêu cầu hoàn toàn an toàn.",
+     "security_incidents": "Nhóm các cảm biến người bảo vệ camera được cấu hình và các liên hệ truy cập với các cảnh báo và tóm tắt clip. Giữ bảy ngày tại địa phương. Khoảng cách thời gian có thể là một mối liên kết, không phải bằng chứng của cùng một người; chỉ lặp lại cảnh báo leo thang.",
+     "incident_front": "Camera và cảm biến trước nhà (chuông cửa, cửa trước). Bất cứ điều gì ở đây không bao giờ được nhóm lại thành một sự cố an ninh với bất kỳ điều gì không phải như vậy, và ngược lại: ai đó ở cửa trước và ai đó ở cổng sau cùng một lúc là hai sự cố. Để trống để nhóm theo thời gian riêng.",
+     "live_voice_check": "Hiển thị kiểm tra giọng nói do người dùng bắt đầu trong bảng Mind. Việc tắt tính năng này sẽ xóa lượt kiểm tra hiện tại và ngừng ghi lượt kiểm tra. Yêu cầu phiên Hội thoại để bắt đầu kiểm tra.",
+     "speech_delivery_history": "Lưu giữ kết quả thông báo gần đây của mỗi người phát biểu trong bảng Tâm trí. Tắt tính năng này sẽ xóa lịch sử này. Phát hiện lỗi loa và xử lý thử lại an toàn vẫn hoạt động.",
+     "alexa_tts_only": "Sử dụng TTS đơn giản thay vì thông báo Alexa nếu thông báo không đáng tin cậy. Điều này bỏ qua chuông thông báo Alexa; các loa khác không thay đổi.",
+     "update_checker": "Kiểm tra GitHub để biết các bản phát hành ổn định khi được bật, khi khởi động và sáu giờ một lần. Không có cuộc gọi AI, cài đặt tự động hoặc tự động khởi động lại. Vô hiệu hóa để dừng kiểm tra.",
+     "contextual_followups": "Yêu cầu phiên Hội thoại và Sentient với tác nhân dự phòng. Giữ chủ đề để theo dõi trong thời gian ngắn, làm mới các thông số đọc trên thiết bị được hiển thị và làm rõ các điều chỉnh không rõ ràng. Không cấp quyền hành động hoặc thay đổi quy tắc nghe. Tắt theo mặc định; tắt nó sẽ xóa bối cảnh cuộc trò chuyện tạm thời.",
+     "conversation_recovery": "Yêu cầu phiên Hội thoại và Sentient với tác nhân dự phòng. Hủy yêu cầu đang chờ xử lý hoặc đang chạy từ cùng một cuộc trò chuyện/thiết bị/người dùng và tránh phát lại các lệnh thiết bị không chắc chắn sau khi AI bị lỗi. Không thể hoàn tác một hành động đã gửi hoặc khiến phần cứng chấp nhận lời nói khi đang bận. Tắt theo mặc định; việc vô hiệu hóa sẽ dừng việc xử lý bổ sung này.",
+     "speech_failure_notification": "Hiển thị thông báo Home Assistant khi việc truyền loa không thành công hoặc không chắc chắn. Tắt theo mặc định. Không bao gồm nội dung nói hoặc lời nói lặp lại. Bị tắt ở chế độ khách; thông báo hiện có vẫn còn cho đến khi bị loại bỏ.",
+     "recent_followup_context": "Sử dụng một chủ đề đã hoàn thành gần đây sau lời đánh thức mới trên cùng một diễn giả và người dùng. Yêu cầu các phiên trò chuyện và theo dõi theo ngữ cảnh. Sử dụng thời gian chờ của phiên; không bao giờ khôi phục lại xác nhận hoặc lắng nghe. Tắt theo mặc định. Kết thúc hoặc quên xóa bối cảnh.",
+     "conversation_cues": "Trong một cuộc trò chuyện: những lời kết thúc hàng ngày (“chúc mừng”, “hoàn hảo, cảm ơn”, “được rồi”) kết thúc cuộc trò chuyện khi không có gì cụ thể chờ đợi câu trả lời; “xin lỗi, ý tôi là…”, “nhầm đèn” và “không phải đèn, đèn trần” là những chỉnh sửa; và “trên một ghi chú khác…” hoặc “điều gì khác:” bắt đầu một chủ đề mới mà không có thiết bị nào được chuyển sang. Không có AI. Tắt: chỉ nhận dạng được phần cuối và phần chỉnh sửa đơn giản.",
+     "vary_replies": "Giọng nói đó sẽ hiển thị một số câu trả lời cuối cùng của ngày hôm qua và được yêu cầu không sử dụng lại các câu hoặc phần mở đầu của họ, vì vậy, cùng một câu trả lời sẽ không được đưa ra từng từ hai lần. Không ở phòng riêng hoặc chế độ khách. Các câu trả lời lặp lại đều được tính theo cả hai cách (tab Tâm trí, có thời gian bằng giọng nói). Tắt theo mặc định.",
+     "behaviour_explanations": "Trả lời các câu hỏi ngắn về việc nghe và ghi lại kết quả của thiết bị một cách trực tiếp mà không cần cuộc gọi AI. Yêu cầu các buổi trò chuyện. Sử dụng các bản ghi phiên hiện có, tôn trọng quyền truy cập của chế độ khách và thiết bị và không bao giờ lặp lại một hành động. Tắt theo mặc định; không có lịch sử bổ sung được lưu trữ.",
+     "current_house_context": "Cung cấp cho các cuộc hội thoại một ảnh chụp nhanh nhỏ gọn có liên quan về các báo cáo thiết bị được hiển thị, những thay đổi gần đây và nhiệm vụ hiện tại chưa hoàn thành. Tắt theo mặc định. Không có cuộc gọi AI nền. Chế độ khách ngăn chặn nó. Những thay đổi gần đây sẽ hết hạn sau 30 phút; vô hiệu hóa hoặc quên xóa bối cảnh chỉ có bộ nhớ.",
+     "moment_awareness": "Mỗi câu trả lời bằng giọng nói sẽ nhận được một hình ảnh ngắn 'ngay bây giờ' từ những gì Sentient đã lưu giữ: ai ở nhà và từ khi nào, các phòng có chuyển động, điều gì đã xảy ra trong 45 phút qua và bất cứ điều gì bất thường cho ngày hôm nay. Không có AI và không có gì được lưu trữ. Trong phòng riêng hoặc chế độ khách, chỉ có chuyển động được đưa ra. Tắt: không có gì được thêm vào.",
+     "room_memory": "Mỗi câu trả lời bằng giọng nói trong một phòng sẽ nhận được những gì đã diễn ra trong một giờ qua: các cuộc trò chuyện trước đó trong phòng đó, những gì đã được chuyển đổi bằng giọng nói ở đó và những gì đã được thông báo ở đó. Nếu ai đó vừa nói chuyện trong một phòng khác cách đây vài phút và kể từ đó không có gì được nói ở đây thì cuộc trò chuyện đó cũng diễn ra để họ có thể tiếp tục nơi họ đã dừng lại. Không có gì mới được lưu trữ. Phòng riêng và chế độ khách chỉ lấy bản ghi phòng riêng. Tắt: không có gì được thêm vào.",
+     "know_people": "Khi tính năng nhận dạng giọng nói chưa đặt tên cho người nói, Sentient sẽ xác định xem đó có thể là ai từ những thứ mà nó có thể tin cậy: một tin nhắn được nhập trong ứng dụng Home Assistant đến từ tài khoản của người đó hoặc của họ là chiếc điện thoại duy nhất được theo dõi trong phòng. Giọng nói sẽ cho biết đó có thể là ai và đặt những gì người đó đã nói về bản thân họ lên đầu tiên. Việc đoán không bao giờ cho phép bất kỳ điều gì cần xác nhận và không có gì được lưu dưới tên của họ vì điều đó. Không ở chế độ khách hoặc phòng riêng. Tắt: không cần đoán.",
+     "instant_answers": "Các câu hỏi hàng ngày được trả lời ngay từ trong nhà, trước AI: thời gian, thời tiết bên ngoài, thiết bị được đặt tên đang bật, tắt, mở hay khóa, nhiệt độ phòng, báo thức hoặc lời nhắc tiếp theo, khách đến thăm và liệu ngôi nhà có bị khóa hay không. Chỉ những câu hỏi, chỉ một thiết bị duy nhất phù hợp rõ ràng và được tiếp xúc với trợ lý giọng nói; mọi thứ khác sẽ được chuyển đến AI như bình thường. Nội dung trao đổi được thêm vào cuộc trò chuyện để người theo dõi vẫn biết nội dung được hỏi. Khách và phòng riêng chỉ nhận được thông tin về thời gian, thời tiết và trạng thái thiết bị. Tắt: mọi câu hỏi sẽ được chuyển đến AI.",
+     "capability_awareness": "Giọng nói sẽ cho biết nó có thể điều khiển những thứ gì trong ngôi nhà này bằng giọng nói (từ những gì được tiếp xúc với trợ lý giọng nói, với số lượng mỗi thứ) và những thứ thông thường mà ngôi nhà không có, chẳng hạn như khóa thông minh hoặc rèm có động cơ, vì vậy nó không bao giờ cung cấp những thứ mà không thiết bị nào có thể làm được. Một lời đề nghị được bỏ qua (đóng cửa sổ, khóa cửa) sẽ bị loại khỏi câu trả lời trước khi nó được nói ra. Làm việc cứ năm phút một lần, không có AI. Tắt: không có gì được thêm hoặc bớt.",
+     "house_context_entities": "Các thiết bị được đưa vào bản tóm tắt chung về ngôi nhà, cùng với các báo cáo về khí hậu và mở cửa/hiện diện tự động. Chỉ những thiết bị hiện có và có thể truy cập được mới được chia sẻ; tối đa tám bài đọc có liên quan cho mỗi yêu cầu.",
+     "house_context_updates": "Yêu cầu bối cảnh ngôi nhà hiện tại. Sau khi yêu cầu sưởi ấm được bảo vệ đã được xác minh, bạn có thể tùy ý nói một lần khi bộ điều nhiệt đó báo cáo nhiệt độ được yêu cầu. Hết hạn sau một giờ, hủy nếu mục tiêu của nó thay đổi, tối đa một lần cập nhật mỗi 15 phút. Tôn trọng các quy tắc phát biểu thông thường và chế độ khách. Tắt theo mặc định. Tắt xóa các bản cập nhật đang chờ xử lý.",
+     "security_event_evidence": "Sử dụng ID sự kiện, ảnh chụp nhanh và clip Frigate trên máy ảnh đã định cấu hình. Sự trùng khớp về camera/thời gian duy nhất là một liên kết ứng viên, không phải là bằng chứng cho thấy cảm biến đã xác định được sự kiện đó. Lưu giữ tới 3.000 bản ghi sự kiện trong bảy ngày tại địa phương. Tắt theo mặc định. Vô hiệu hóa ẩn liên kết và ngừng khớp; hồ sơ được giữ lại hết hạn hoặc có thể bị lãng quên.",
+     "security_event_zones": "Chỉ những gì đi vào một vùng: trên camera có vùng Frigate, một sự kiện chỉ được liệt kê (và có thể bắt đầu một sự cố bảo mật) khi đối tượng đã vào một trong các vùng đó, quy tắc tương tự mà Frigate sử dụng cho các cảnh báo của nó. Một máy ảnh không có vùng liệt kê mọi thứ. Phát hiện được mọi thứ: mọi đối tượng Frigate đều theo dõi trên các camera đã chọn. Cài đặt riêng của Frigate không bao giờ thay đổi.",
+     "security_event_hidden_zones": "Mỗi dòng một cái dùng làm camera/khu vực, ví dụ như cổng/đường lái xe. Các sự kiện chỉ có ở những vùng này sẽ không được liệt kê và không gây ra sự cố bảo mật. Sử dụng ẨN KHU NÀY trên trang Bảo mật sau một vài lần chỉnh sửa 'không phải người' ở đó hoặc xóa một dòng để liệt kê lại khu vực đó. Frigate không thay đổi.",
+     "security_coverage": "Hiển thị những camera được định cấu hình nào đã đóng góp bằng chứng được giữ lại và mọi báo cáo không có sẵn được ghi lại cùng với các sự cố trực tiếp. Báo cáo camera hiện tại được hiển thị riêng biệt. Tắt tính năng này sẽ xóa các khoảng trống bảo hiểm được giữ lại.",
+     "frigate_pipeline_health": "Đọc tính khả dụng của Frigate MQTT, tốc độ xử lý trên mỗi camera và thời điểm Sentient nhận được sự kiện lần cuối. Dữ liệu bị thiếu được hiển thị dưới dạng không xác định. Không có cài đặt máy ảnh nào được thay đổi.",
+     "security_conversation_context": "Ghi nhớ sự kiện đã chọn trong tối đa năm phút trong cùng một cuộc trò chuyện, thiết bị và người dùng. Các câu hỏi tiếp theo sử dụng sự kiện đó và báo cáo tỷ lệ lấp đầy mới; không có danh tính hoặc sự hiện diện tiếp tục được giả định. Theo dõi các sự kiện camera được cấu hình. Tắt theo mặc định. Tắt sẽ xóa tham chiếu cuộc trò chuyện; hồ sơ sự kiện vẫn giữ nguyên thời hạn sử dụng thông thường của chúng.",
+     "security_event_feedback": "Quản trị viên có thể đánh dấu một lượt truy cập là một sản phẩm tốt chứ không phải một người hoặc một người để bỏ qua. Các lượt truy cập đã xem xét sẽ chuyển vào danh sách Đã xem xét gấp lại và 'không phải một người' cũng được tính là phát hiện sai đã được xem xét đối với một sự cố bảo mật chỉ xảy ra trong lượt truy cập đó. Việc sửa chữa sẽ tồn tại trong bảy ngày. Không có thay đổi quy tắc phát hiện, cảnh báo hoặc thông báo tự động. Việc tắt sẽ ẩn phản hồi và dừng các chỉnh sửa mới; sử dụng Quên dữ liệu gần đây để xóa các bản ghi được giữ lại.",
+     "share_clip_analysis": "Chia sẻ các phân tích chung tương thích của cùng một sự kiện Frigate đã hoàn thành trên các câu hỏi xem clip tự động và clip sự kiện. Nhà cung cấp, phạm vi phủ sóng của cảnh quay và cài đặt danh tính phải khớp nhau. Các câu hỏi tùy chỉnh được phân tích riêng. Lưu giữ tối đa 100 kết quả trong bộ nhớ trong sáu giờ. Tắt theo mặc định. Vô hiệu hóa, thay đổi cài đặt hoặc quên xóa bộ nhớ đệm."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient đã được thiết lập."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Cài đặt",
+     "briefing": "Tóm tắt trạng thái",
+     "memories": "Ký ức"
+    }
+   },
+   "settings": {
+    "title": "Cài đặt",
+    "data": {
+     "persona": "Tên",
+     "speakers": "Loa",
+     "default_speaker": "Loa mặc định",
+     "quiet_start": "Giờ yên tĩnh bắt đầu",
+     "quiet_end": "Giờ yên tĩnh kết thúc",
+     "busy_entities": "Im lặng khi bận rộn",
+     "motion_window": "Cửa sổ nhận biết phòng",
+     "banned_words": "Đừng bao giờ sử dụng những từ này (cách nhau bằng dấu phẩy)",
+     "suppress_entities": "Giữ im lặng sau những tự động hóa hoặc tập lệnh này",
+     "suppress_seconds": "Im lặng cho",
+     "prompt_memories": "Những kỷ niệm để chia sẻ với trợ lý giọng nói",
+     "pass_through_areas": "Khu vực đi qua",
+     "all_occupied": "Nói chuyện trong mỗi phòng có người",
+     "room_tracking": "Sử dụng trình theo dõi phòng (Bluetooth)",
+     "room_trackers": "Trình theo dõi phòng",
+     "ai_task_entity": "AI cho các công việc nền",
+     "camera_cooldown": "Khoảng cách tối thiểu giữa các lần kiểm tra camera",
+     "fallback_speakers": "Loa chỉ dự phòng",
+     "daily_ai_limit": "Cuộc gọi AI mỗi ngày",
+     "prompt_recent": "Ngay bây giờ và giờ cuối cùng trong bối cảnh của giọng nói",
+     "rules": "Quy tắc và thực hiện chúng bằng giọng nói",
+     "relevant_memories": "Chọn những kỷ niệm phù hợp với những gì được hỏi",
+     "look_cache_minutes": "Sử dụng lại câu trả lời của máy ảnh cho",
+     "camera_prefilter": "Bỏ qua giao diện của camera khi không có gì thay đổi",
+     "budget_drive": "Cuộc gọi AI mỗi ngày: ổ đĩa",
+     "budget_noticing": "Cuộc gọi AI mỗi ngày: chú ý",
+     "budget_cameras": "Cuộc gọi AI mỗi ngày: kiểm tra camera và theo dõi",
+     "routine_evidence": "Nói tần suất một quy trình được nhìn thấy",
+     "notice_entities": "Những điều cần chú ý",
+     "remark_repeat_hours": "Đừng lặp lại một nhận xét cho",
+     "chattiness": "Trò chuyện thế nào",
+     "conversation_style": "Nó nói chuyện như thế nào",
+     "carry_on_minutes": "Tiến hành một cuộc trò chuyện cho",
+     "focused_tools": "Công cụ giọng nói tập trung",
+     "ask_later": "Hỏi mọi việc diễn ra như thế nào",
+     "put_right": "Sửa lỗi ngay trong một lần",
+     "music": "Âm nhạc bằng cách hỏi",
+     "music_alexa": "Âm nhạc thông qua Alexa (Echos)",
+     "music_alexa_service": "Dịch vụ âm nhạc cho Echos",
+     "house_rules": "Nội quy nhà",
+     "no_security_offers": "Không bao giờ đề nghị trang bị vũ khí, giải giáp hoặc mở khóa",
+     "learn_entities": "Tìm hiểu các thói quen từ",
+     "learn_anchors": "Thói quen theo ngày",
+     "trust_lights": "đèn",
+     "trust_switches": "Công tắc, phích cắm và quạt",
+     "trust_covers": "Rèm và rèm cửa",
+     "trust_heating": "sưởi ấm",
+     "offer_together": "Đưa ra những thói quen được thực hiện cùng nhau như một",
+     "link_triggers": "Đồng thời tìm hiểu những gì tiếp theo",
+     "suggest_routines": "Đề nghị tiếp quản các thói quen",
+     "prove_routines": "Thói quen tự chứng minh trước khi chúng được đưa ra",
+     "routine_fading": "Hỏi về những thói quen không còn cần thiết nữa",
+     "door_camera": "Camera cửa",
+     "door_triggers": "Chuông cửa",
+     "announce_visitors": "Nói xem ai đang ở cửa",
+     "faces": "Tên từ nhận dạng khuôn mặt",
+     "face_people": "Chỉ có những người này",
+     "face_teach": "Hỏi qua điện thoại những khuôn mặt không tên là ai",
+     "face_teach_cameras": "Tìm hiểu khuôn mặt từ những máy ảnh này",
+     "face_cameras": "Chỉ có tên từ những máy ảnh này",
+     "face_forget_hours": "Quên đi những gương mặt không tên sau",
+     "clip_watch": "Xem clip sự kiện",
+     "clip_cameras": "Máy ảnh",
+     "clip_scope": "Sự kiện nào",
+     "clip_when": "Khi",
+     "clip_notify": "Gửi tới điện thoại",
+     "clip_source": "Ai viết tóm tắt",
+     "clip_whose": "Cho biết đó là thành viên nào trong gia đình",
+     "clip_looks": "Mọi người trông như thế nào khi không thể nhìn thấy khuôn mặt của họ",
+     "budget_clips": "Clip được xem trong ngày (hầu hết)",
+     "clip_days": "Giữ các bản tóm tắt cho",
+     "clip_keep": "Giữ các tập tin clip",
+     "parcel_alerts": "Nói khi một bưu kiện còn lại",
+     "doorstep_sensors": "Kiểm tra bưu kiện sau khi ghé thăm",
+     "zone_visits": "Tính ai đó ở khu vực camera cửa trước là khách",
+     "zone_door_sensors": "Cảm biến cửa trước (vùng này sẽ bị bỏ qua nếu nó mở trước)",
+     "face_sensor": "Tên được công nhận từ",
+     "sidebar_panel": "Hiển thị trong thanh bên",
+     "page_admin_only": "Chỉ quản trị viên mới có thể mở trang này",
+     "custom_pages": "Sắp xếp lại trang Sentient",
+     "suggestions": "Gợi ý trên trang Sentient",
+     "whats_new": "Có gì mới sau khi cập nhật",
+     "simple_settings": "Trang cài đặt đơn giản hơn",
+     "auto_backup": "Sao lưu hàng tuần",
+     "backup_keep": "Giữ được bao nhiêu",
+     "confirm_kinds": "Hỏi \"tôi có nên không?\" trước",
+     "chat_agent": "Tác nhân trò chuyện cho trang thanh bên",
+     "battery_threshold": "Pin yếu bên dưới",
+     "battery_forecast": "Nói khi nào pin sẽ hết",
+     "health_ignore": "Bỏ qua sức khỏe gia đình",
+     "hide_substreams": "Ẩn chế độ xem camera bổ sung",
+     "ignore_cameras": "Máy ảnh để bỏ qua",
+     "never_entities": "Đừng bao giờ chạm vào những thứ này",
+     "self_check": "Tự kiểm tra mỗi đêm",
+     "learn_corrections": "Tìm hiểu khi bạn hoàn tác những gì nó đã làm",
+     "normal_day": "Chú ý một ngày bất thường",
+     "thoughts": "Hiển thị những gì nó đang nghĩ",
+     "share_learning": "Nói những gì nó đã học được",
+     "self_adjust": "Tự điều chỉnh",
+     "proposals": "Đề xuất thay đổi cài đặt của nó",
+     "privacy_log": "Ghi lại những gì rời khỏi nhà",
+     "goals": "Bàn thắng",
+     "manuals": "Câu trả lời từ tài liệu",
+     "manuals_folder": "Thư mục tài liệu",
+     "manuals_local_text": "Nhìn vào bên trong tài liệu văn bản",
+     "manuals_pages": "Đọc từng trang PDF",
+     "games": "Trò chơi kể chuyện",
+     "voice_id": "Biết ai đang nói",
+     "voice_id_unknown": "Hãy đối xử với những giọng nói không thể sánh được như một vị khách",
+     "speaker_memories": "Hãy giữ kỷ niệm của mỗi người cho họ",
+     "books": "Sách",
+     "books_folder": "Thư mục sách",
+     "reading_tts": "Giọng đọc: dịch vụ",
+     "reading_voice": "Giọng đọc",
+     "read_ahead": "Chuẩn bị sẵn sàng phần tiếp theo trong khi đọc",
+     "recipes": "Công thức nấu ăn",
+     "recipes_folder": "Thư mục công thức nấu ăn",
+     "recipes_list": "Danh sách mua sắm nguyên liệu",
+     "voice_lists": "Danh sách mua sắm và việc cần làm bằng giọng nói",
+     "ready_tonight": "Sẵn sàng cho tối nay",
+     "ready_tonight_lights": "Sẵn sàng cho đêm nay: đèn có thể tắt",
+     "ready_tonight_follow": "Sẵn sàng cho tối nay: cho tôi biết khi nào xong việc",
+     "tandoor_url": "Địa chỉ Tandoor",
+     "tandoor_token": "Mã thông báo API Tandoor",
+     "second_opinion_ai": "Ý kiến ​​thứ hai AI",
+     "smart_ai_task": "AI mạnh hơn để bảo mật và suy nghĩ qua đêm",
+     "event_clips": "Xem clip sự kiện của Frigate",
+     "notify_targets": "Điện thoại để thông báo",
+     "notify_when": "Gửi tới điện thoại",
+     "phone_buttons": "Các nút thông báo trên điện thoại",
+     "phone_apps": "Ứng dụng đồng hành cho các nút",
+     "bins_check": "Kiểm tra thùng rác",
+     "bins_calendar": "lịch thùng",
+     "bins_spot": "Vị trí camera của thùng rác",
+     "bins_time": "Nhìn vào",
+     "chime": "Kêu vang trước khi nói",
+     "welcome_home": "Chào mừng mọi người về nhà",
+     "welcome_people": "Mọi người chào đón",
+     "welcome_min_away": "Ít nhất là đi xa",
+     "welcome_until": "Chào mừng vào buổi tối cho đến khi",
+     "speak_volume": "Âm lượng nói",
+     "night_volume": "Âm lượng nói trong giờ yên tĩnh",
+     "duck_media": "Tắt nhạc và TV trong khi nói",
+     "critical_alerts": "Cảnh báo an toàn",
+     "critical_ignore": "Không bao giờ coi đây là cảnh báo an toàn",
+     "energy_insight": "Hiểu biết sâu sắc về năng lượng",
+     "energy_price": "Giá điện",
+     "energy_currency": "Tiền tệ",
+     "price_entity": "Giá theo thời gian sử dụng (gợi ý điện giá rẻ)",
+     "search_hints": "Nói lên tiếng nói về các công cụ tìm kiếm",
+     "web_search": "Tìm kiếm trên web riêng của Sentient",
+     "searxng_url": "Địa chỉ SearXNG",
+     "alexa_skill": "Trả lời các câu hỏi được hỏi qua Alexa",
+     "alexa_wait": "Chờ đợi lâu nhất trước khi Alexa bỏ cuộc",
+     "alexa_late_answers": "Nói câu trả lời chậm trên Echo đó",
+     "left_open_minutes": "Đề cập đến cửa ra vào và cửa sổ để mở sau",
+     "left_open_ignore": "Đừng đề cập đến những điều này",
+     "leaving_check": "Kiểm tra khi mọi người ra ngoài",
+     "critical_extra": "Đồng thời coi đây là những cảnh báo an toàn",
+     "heating_entities": "Sưởi ấm để học",
+     "preheat": "Khởi động trước khi mọi người thức dậy",
+     "heating_schedule": "Lịch sưởi ấm (đặt trên tab Nhà)",
+     "comfort_temp": "Nhiệt độ khởi động",
+     "inside_sensors": "Cảm biến chuyển động bên trong",
+     "weekly_report": "Báo cáo hàng tuần",
+     "night_watch": "Canh đêm",
+     "night_watch_entities": "Cửa và cổng để xem",
+     "night_watch_announce": "Nói to cảnh báo, ngay cả trong những giờ yên tĩnh",
+     "night_watch_speakers": "Bật thông báo nói",
+     "warm_by_weekdays": "Ấm áp vào (các ngày trong tuần)",
+     "warm_by_weekends": "Ấm áp vào (cuối tuần)",
+     "heating_limit": "Bật hệ thống sưởi trở lại sau",
+     "heating_night_temp": "Nhiệt độ ban đêm",
+     "heating_revert_day_hours": "Về sau (trong ngày)",
+     "heating_revert_night_hours": "Trở về sau (vào ban đêm)",
+     "personality": "Nhân cách",
+     "personality_notes": "Ghi chú cá tính",
+     "style_feedback": "\"Hãy nói khác đi\" về những điều nó nói",
+     "style_notes": "Mọi thứ nên được nói như thế nào",
+     "camera_security": "Bảo mật camera",
+     "camera_security_sensors": "Cảm biến người của máy ảnh",
+     "camera_security_inside": "Bên trong ranh giới",
+     "camera_security_entries": "Đường vào",
+     "camera_security_describe": "Mô tả đó là ai",
+     "security_reasoning": "Cảnh báo cân nặng đối với phần còn lại của ngôi nhà",
+     "party_lights": "Hiển thị đèn",
+     "party_style": "Phong cách",
+     "party_minutes": "Tự dừng lại sau",
+     "party_whole_house": "Tận dụng mọi ánh sáng trong nhà",
+     "party_exclude": "Không bao giờ sử dụng những đèn này",
+     "party_sound": "Theo dõi âm thanh từ",
+     "party_show": "Các nút trên tổng quan",
+     "party_sound_switch": "Bật trong khi nghe",
+     "room_volume": "Lên tiếng trong căn phòng ồn ào",
+     "follow_you": "Tin nhắn theo dõi mọi người",
+     "follow_minutes": "Giữ tin nhắn để chuyển tiếp cho",
+     "conversation_memory": "Ghi nhớ cuộc trò chuyện",
+     "follow_ups": "Kiểm tra lại mọi thứ",
+     "curiosity": "Tò mò",
+     "reflection": "Phản ánh qua đêm",
+     "reflection_time": "Suy ngẫm tại",
+     "drive_spot": "điểm lái xe",
+     "drive_camera": "Lái xe máy ảnh",
+     "drive_triggers": "Hãy nhìn xem khi những điều này ổn định",
+     "camera_wake": "Trước khi nhìn, hãy đánh thức máy ảnh bằng",
+     "camera_wake_cameras": "Chỉ dành cho những máy ảnh này",
+     "camera_wake_seconds": "Sau đó đợi",
+     "known_cars": "Xe gia đình",
+     "full_volume_speakers": "Âm lượng đầy đủ trên các loa này",
+     "tts_entity": "Giọng nói cho các diễn giả khác",
+     "house_language_text": "Lời của Sentient bằng ngôn ngữ của nhà",
+     "speak_house_language": "Nói những câu có sẵn bằng ngôn ngữ của ngôi nhà",
+     "media_speakers": "Sử dụng Echos và các trình phát đa phương tiện khác",
+     "media_important_only": "Echos: chỉ báo thức và nhắc nhở",
+     "foresight": "Nhìn vào ngày mai",
+     "foresight_time": "Nhìn về phía trước",
+     "sleep_detection": "Biết khi nào ngôi nhà đang ngủ",
+     "sleep_minutes": "Ngủ sau khi không có gì chuyển động",
+     "sleep_ignore_sensors": "Các cảm biến cần bỏ qua khi đi ngủ",
+     "bedtime_routines": "Thói quen đi ngủ",
+     "sleep_actions": "Khi cả nhà đi ngủ, hãy làm",
+     "wake_actions": "Khi ai đó thức dậy, hãy làm",
+     "appliances": "Các thiết bị đi theo",
+     "appliance_announce": "Nói khi họ kết thúc",
+     "appliance_watts": "Chạy phía trên",
+     "voice_agent": "Tác nhân giọng nói AI chính",
+     "backup_agent": "Trợ lý dự phòng",
+     "offline_answers": "Trả lời các câu hỏi phổ biến mà không cần AI",
+     "animal_sensors": "Cảm biến nhiệt độ của động vật",
+     "away_lights_on": "Đèn sân khách",
+     "holiday_mode": "Chế độ nghỉ lễ",
+     "holiday_thermostats": "Máy điều nhiệt sẽ tắt vào kỳ nghỉ",
+     "holiday_frost": "Nhiệt độ chống sương giá",
+     "holiday_end_on_return": "Kết thúc chế độ nghỉ lễ khi có người ở nhà",
+     "away_people": "Đi khi tất cả những điều này đã hết",
+     "away_lights": "Đèn sử dụng",
+     "away_after": "Bắt đầu sau khi mọi người đã ra ngoài",
+     "animal_low": "Bên dưới lạnh quá",
+     "animal_high": "Ở trên quá nóng",
+     "hutch_check": "Kiểm tra chuồng thú vào buổi tối",
+     "hutch_spot": "Vị trí chụp ảnh của Hutch",
+     "cat_watch": "Đêm canh mèo",
+     "cat_sensors": "Cảm biến mèo",
+     "cat_loud": "Nói ngay vào ban đêm",
+     "rain_warnings": "Cảnh báo mưa",
+     "rain_entities": "Cửa sổ và cửa ra vào để xem",
+     "self_test": "Tự kiểm tra",
+     "self_test_household": "Câu hỏi hộ gia đình trong phần tự kiểm tra",
+     "screen": "Sử dụng màn hình máy tính bảng",
+     "screen_actions": "Khi một cái gì đó xuất hiện",
+     "screen_clear_actions": "Khi mọi chuyện đã rõ ràng",
+     "conversation_sessions": "Phiên trò chuyện",
+     "room_conversation_handoff": "Chuyển giao cuộc trò chuyện giữa các phòng",
+     "verified_bedtime": "Đã xác minh giờ đi ngủ ở tầng dưới",
+     "verified_bedtime_lights": "Đèn ngủ ở tầng dưới",
+     "verified_bedtime_contacts": "Ở tầng dưới mở liên lạc trước khi đi ngủ",
+     "session_seconds": "Hết thời gian không hoạt động của phiên",
+     "guarded_control": "Bắt buộc xác nhận bằng giọng nói",
+     "routine_verify": "Kiểm tra các thói quen đã hoạt động",
+     "voice_unlock": "Cho phép mở khóa bằng giọng nói",
+     "voice_undo": "Hoàn tác các thay đổi ánh sáng gần đây",
+     "evidence_awareness": "Giải thích bằng chứng và sự không chắc chắn",
+     "security_incidents": "Sự cố bảo mật nhóm",
+     "incident_front": "Mặt trước của ngôi nhà",
+     "live_voice_check": "Kiểm tra giọng nói trực tiếp",
+     "speech_delivery_history": "Lịch sử phân phối loa",
+     "alexa_tts_only": "Chỉ sử dụng TTS trên Alexa",
+     "update_checker": "Kiểm tra các bản cập nhật Sentient",
+     "contextual_followups": "Kết nối theo dõi và sửa chữa",
+     "conversation_recovery": "Hủy cuộc trò chuyện và phục hồi thận trọng",
+     "automatic_language": "Hỗ trợ ngôn ngữ tự động",
+     "voice_language": "Ngôn ngữ nói và hội thoại",
+     "remember_language_phrases": "Ghi nhớ các cụm từ ngôn ngữ thông dụng",
+     "stream_voice_replies": "Nói câu trả lời bằng giọng nói khi chúng được viết (dùng thử)",
+     "voice_timing_diagnostics": "Chẩn đoán thời gian phản hồi bằng giọng nói",
+     "reliability_log": "Lưu ý giọng nói bị sai ở đâu",
+     "unified_evidence": "Tra cứu bằng chứng hộ gia đình thống nhất",
+     "specific_clarification": "Câu hỏi về thiết bị và giá trị cụ thể",
+     "action_recovery": "Kết quả thiết bị và phục hồi thận trọng",
+     "recheck_unconfirmed": "Xem lại những thay đổi không được báo cáo lại",
+     "speech_failure_notification": "Thông báo về lỗi phân phối loa",
+     "recent_followup_context": "Những lượt theo dõi ngắn sau một lời đánh thức mới",
+     "conversation_cues": "Hiểu việc đăng xuất, chỉnh sửa và thay đổi chủ đề",
+     "vary_replies": "Nói những điều khác nhau mỗi lần",
+     "behaviour_explanations": "Giải thích các quyết định lắng nghe và hành động",
+     "current_house_context": "Bối cảnh ngôi nhà hiện nay",
+     "moment_awareness": "Nhận thức về thời điểm này",
+     "room_memory": "Bộ nhớ ngắn hạn cho mỗi phòng",
+     "know_people": "Biết ai có thể đang nói",
+     "instant_answers": "Câu trả lời tức thì",
+     "capability_awareness": "Biết nhà có thể làm gì",
+     "house_context_entities": "Thực thể bối cảnh bổ sung",
+     "house_context_updates": "Hãy cho tôi biết khi nào đạt được yêu cầu sưởi ấm",
+     "security_event_evidence": "Liên kết cảnh báo bảo mật với các sự kiện Frigate",
+     "security_event_zones": "Những sự kiện máy ảnh nào được liệt kê",
+     "security_event_hidden_zones": "Các khu vực có sự kiện không được liệt kê",
+     "security_coverage": "Giải thích những khoảng trống trong phạm vi phủ sóng của camera",
+     "frigate_pipeline_health": "Hiển thị tình trạng đường ống Frigate",
+     "security_conversation_context": "Giữ sự kiện bảo mật trong cuộc trò chuyện",
+     "security_event_feedback": "Ghi lại phản hồi về các sự kiện của camera",
+     "share_clip_analysis": "Tái sử dụng các phân tích clip phù hợp",
+     "heating_graph": "Biểu đồ nhiệt độ trên thẻ sưởi",
+     "heating_revert": "Quay lại lịch trình sau khi thay đổi bằng tay",
+     "window_heating": "Tắt máy sưởi trong phòng khi cửa sổ đang mở",
+     "window_heating_minutes": "Phút mở cửa sổ trước khi hành động",
+     "rooms_view": "Tổng quan về phòng (tab Nhà và tổng quan)",
+     "outdoor_areas": "Khu vực ngoài trời",
+     "knowledge_card": "Thẻ NHỮNG GÌ TÔI BIẾT trên tab Tâm trí",
+     "day_chart": "Biểu đồ THE DAY SO FAR về tổng quan",
+     "house_ledger": "Nhật ký hoạt động tại nhà",
+     "unexplained_changes": "Đề cập đến những thay đổi không giải thích được",
+     "unexplained_entities": "Các thiết bị cần theo dõi những thay đổi không giải thích được",
+     "expectations": "Kỳ vọng và bất ngờ",
+     "surprise_gating": "Bỏ qua những nhận xét về những gì bình thường",
+     "situations": "Nói với giọng nói những gì đang xảy ra bây giờ",
+     "beliefs": "Hình thành và kiểm tra niềm tin",
+     "learn_reactions": "Học hỏi từ các phản ứng",
+     "ai_case_memory": "Lưu cuộc gọi AI (bộ nhớ trường hợp)",
+     "memory_tags": "Nhớ lại theo ý nghĩa",
+     "memory_upkeep": "Một kỷ niệm giữ riêng mình",
+     "watch_actions": "Đồng hồ và lời nhắc có thể hoạt động",
+     "memory_time": "Trí nhớ hiểu được thời gian",
+     "who_where": "Biết ai ở đâu",
+     "big_plans": "Kế hoạch cho những yêu cầu lớn",
+     "self_grading": "Chấm điểm câu trả lời của riêng mình",
+     "voice_speed_watchdog": "Cơ quan giám sát tốc độ giọng nói",
+     "voice_speed_restart": "Tự khởi động lại loa chậm",
+     "incident_stages": "Các giai đoạn sự cố bảo mật",
+     "cognitive_shadow": "So sánh các sự cố bảo mật (kiểm tra)",
+     "cognitive_decides": "Hãy để lõi nhận thức quyết định các giai đoạn sự cố sau khi nó đã đạt được nó",
+     "cognitive_quiet_heads_up": "Chỉ kiểm tra: đánh giá các quyết định cảnh báo ban đêm (không ngăn chặn cảnh báo)",
+     "weather_warnings": "Cảnh báo thời tiết và lũ lụt",
+     "warnings_country": "Quốc gia",
+     "warnings_region": "Khu vực (tùy chọn)",
+     "warnings_speak": "Nói những lời cảnh báo nghiêm trọng",
+     "email_read": "Email chỉ đọc",
+     "calendar_clashes": "Xung đột lịch",
+     "security_audit": "Kiểm tra an ninh",
+     "automation_builder": "Xây dựng tự động hóa",
+     "pronounce_names": "Nói tên khi chúng được phát âm",
+     "pronunciations": "Cách phát âm (một trên mỗi dòng)",
+     "health_duplicates": "Thiết bị tại chỗ được liệt kê hai lần",
+     "manuals_local_ocr": "Đọc các trang PDF được quét bằng OCR cục bộ",
+     "memory_semantic_enabled": "Xếp hạng bộ nhớ ngữ nghĩa cục bộ",
+     "memory_semantic_url": "Địa chỉ máy chủ nhúng cục bộ",
+     "memory_semantic_model": "Mô hình nhúng cục bộ",
+     "ai_routing_enabled": "Tự động chọn AI rẻ hơn cho tác vụ văn bản",
+     "ai_routing_alternative": "Thực thể nhiệm vụ AI thay thế",
+     "ai_routing_primary_cost": "Chi phí ước tính AI thông thường cho mỗi cuộc gọi",
+     "ai_routing_alternative_cost": "Chi phí ước tính AI thay thế cho mỗi cuộc gọi",
+     "ai_routing_max_p95_ms": "Thời gian phản hồi AI thay thế tối đa (ms)",
+     "heating_energy_sensor": "Đồng hồ đo năng lượng sưởi ấm (kWh)",
+     "heating_measurement_date": "Ngày so sánh việc sử dụng năng lượng sưởi ấm",
+     "heating_energy_price_kwh": "Giá sưởi ấm mỗi kWh",
+     "autooff_respect_recent_voice": "Cho phép tính năng tự động tắt tuân theo các lệnh bật giọng nói gần đây"
+    },
+    "data_description": {
+     "motion_window": "Cần cân nhắc bao nhiêu phút lịch sử chuyển động khi quyết định mọi người đang ở đâu.",
+     "suppress_entities": "ví dụ. thông báo chuông cửa của bạn nên những nhận xét cơ bản sẽ không lấn át thông báo đó.",
+     "busy_entities": "Khi bất kỳ tính năng nào trong số này được bật (lịch họp, công tắc Tập trung, điện thoại ở chế độ Không làm phiền), Sentient sẽ giữ lại lời nói có thể chờ đợi, như thể bị im lặng. Cảnh báo an toàn và câu trả lời bạn yêu cầu vẫn được thông qua. Để trống để tắt cái này.",
+     "prompt_memories": "Bao nhiêu kỷ niệm được trao cho trợ lý giọng nói phía trước. Phần còn lại vẫn có thể được tìm kiếm.",
+     "pass_through_areas": "Hành lang, chiếu nghỉ và cầu thang. Đi qua những con số này với chi phí thấp hơn nhiều để người qua đường không lấy trộm thông báo.",
+     "all_occupied": "Bật: mọi người ở nhà đều nghe thấy. Tắt: chỉ phòng bận rộn nhất.",
+     "room_tracking": "Tắt theo mặc định. Khi thiết bị theo dõi phòng (ví dụ: cảm biến \"Khu vực\" dành cho điện thoại của Bermuda) cho biết ai đó đang ở trong phòng có loa, những điều về \"mọi người ở đâu\" sẽ được nói ở đó. Khi không có người theo dõi nào biết — không thấy điện thoại, không có điện thoại hoặc phòng không có loa — tính năng phỏng đoán dựa trên chuyển động sẽ được sử dụng như trước. Chỉ được sử dụng để chọn nơi để phát biểu, không bao giờ quyết định xem có ai lên tiếng hay không. Không có gì được lưu trữ.",
+     "room_trackers": "Cảm biến có trạng thái là phòng có thứ gì đó trong đó, chẳng hạn như cảm biến \"Khu vực\" Bermuda (một cảm biến cho mỗi điện thoại hoặc thẻ). Mỗi phòng cần có diện tích phù hợp với một khu vực Home Assistant.",
+     "ai_task_entity": "Nhiệm vụ AI được sử dụng cho giao diện camera, cuộc họp giao ban, suy nghĩ hàng đêm và tầm nhìn về ngày mai. Empty sử dụng tác vụ AI ưa thích của Home Assistant.",
+     "camera_cooldown": "Đồng hồ máy ảnh thường xuyên xem lại điều này để giảm chi phí cho AI.",
+     "fallback_speakers": "Chỉ được sử dụng khi không có ai ở trong phòng của bất kỳ người nói nào khác, ví dụ: một phòng khách mà bạn không muốn làm phiền.",
+     "daily_ai_limit": "Các cuộc gọi AI trong nền (kiểm tra camera, giao ban, suy nghĩ hàng đêm, chuông cửa…) sẽ dừng lại trong nhiều ngày sau đó và thay vào đó, nó sử dụng các từ đơn giản. Những câu hỏi bạn hỏi vẫn được trả lời. 0 có nghĩa là không có giới hạn.",
+     "prompt_recent": "Hiện tại có một vài dòng (đang ngủ, im lặng hoặc yên tĩnh, khách, bất cứ thứ gì đang mở và các bài đọc không được nghe trong nhiều giờ nên chúng không được cập nhật như hiện tại), chuyện gì đã xảy ra trong giờ qua và nơi nào có chuyển động, vậy 'có điều gì tôi nên biết không?' và 'chuyện gì vừa xảy ra vậy?' được giải đáp ngay lập tức. Miễn phí: không có cuộc gọi AI bổ sung.",
+     "rules": "\"Khi điều này xảy ra, hãy thực hiện các quy tắc đó\" (trang Quy tắc) và giọng nói có thể tạo ra chúng: nó đọc lại quy tắc và chỉ lưu quy tắc đó sau khi đồng ý. Quy tắc không bao giờ có thể kích hoạt, giải giáp hoặc mở khóa bất cứ thứ gì. Tắt: không có quy tắc nào chạy.",
+     "relevant_memories": "Khi có nhiều ký ức hơn mức phù hợp với ngữ cảnh của giọng nói, nó sẽ nhận được những ký ức có cùng từ với câu hỏi, sau đó là ký ức mới nhất. Miễn phí, không có AI. Tắt: luôn mới nhất.",
+     "look_cache_minutes": "Câu hỏi tương tự dành cho cùng một máy ảnh trong thời gian này sẽ nhận được câu trả lời cuối cùng thay vì giao diện AI mới. 0 luôn nhìn lại.",
+     "camera_prefilter": "Kiểm tra máy ảnh và đồng hồ trước tiên so sánh một bức ảnh nhỏ (trên máy này, miễn phí) và chỉ hỏi AI khi máy ảnh — hoặc vị trí của nó — trông khác với lần xem cuối cùng.",
+     "budget_drive": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể.",
+     "budget_noticing": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể.",
+     "budget_cameras": "Trợ cấp hàng ngày của riêng mình trong giới hạn tổng thể. 0 có nghĩa là nó chỉ chia sẻ giới hạn tổng thể. An toàn, chuông cửa và những câu hỏi bạn hỏi không bao giờ bị giữ lại.",
+     "routine_evidence": "Đề nghị tiếp quản một thói quen cho biết tần suất nó xảy ra, ví dụ: '4 trong 4 ngày cuối tuần vừa qua'.",
+     "notice_entities": "Khi những điều này thay đổi, AI sẽ quyết định xem có đáng để nói điều gì đó (hoặc hỏi) hay không. ví dụ. máy giặt, cửa ra vào, thời tiết, thùng rác.",
+     "remark_repeat_hours": "Điều tương tự được nhận thấy (\"Ấm đun nước đã sôi xong.\") đã không được nhắc lại trong thời gian dài như vậy. 0: không giới hạn.",
+     "chattiness": "Giới hạn nhận xét mỗi giờ: im lặng 2, bình thường 4, tán gẫu 8. Tắt không để ý.",
+     "conversation_style": "Tóm tắt: câu trả lời ngắn gọn, đúng trọng tâm. Tự nhiên: các lệnh vẫn ngắn gọn nhưng các câu hỏi và trò chuyện sẽ có một vài câu tự nhiên và một câu hỏi tiếp theo khi một người hỏi, điều này giúp micrô luôn lắng nghe.",
+     "carry_on_minutes": "Việc nói lại từ đánh thức ngay sau khi nói chuyện sẽ tiếp tục cuộc trò chuyện tương tự từ cùng một người nói, vậy \"và trên lầu?\" vẫn có ý nghĩa. 0 tắt cái này đi; Home Assistant quên cuộc trò chuyện sau năm phút yên tĩnh.",
+     "focused_tools": "Chỉ cung cấp giọng nói cho các công cụ của Sentient phù hợp với những gì được yêu cầu (máy ảnh, hệ thống sưởi, lời nhắc…), cùng với bộ nhớ và sự an toàn. Sự lựa chọn nhỏ hơn làm cho các mô hình rẻ hơn nhanh hơn và chính xác hơn. Bất cứ điều gì không khớp rõ ràng vẫn có được mọi công cụ.",
+     "ask_later": "Khi ai đó đề cập đến điều gì đó sắp xảy ra (một chuyến đi, một trận đấu, bác sĩ thú y), giọng nói có thể nhớ hỏi xem mọi chuyện diễn ra như thế nào vào lần tiếp theo có người nói chuyện với nó — một lần, không bao giờ trong những giờ yên tĩnh hoặc có khách đến thăm và không bao giờ về bất cứ điều gì riêng tư. Nó không bao giờ nói bất ngờ. Tắt tính năng này sẽ quên mọi thứ đang chờ được hỏi.",
+     "put_right": "Khi bạn nói \"không, cái kia\" hoặc \"không phải cái đèn đó, cái đèn đó\", giọng nói sẽ chuyển trở lại những gì nó vừa bật (bật hoặc tắt, trong vòng vài phút) và thực hiện lại yêu cầu chỉ với phần đã sửa — không cần phải nói lại tất cả. Tắt tính năng này sẽ chuyển nó ngay cho tác nhân thoại.",
+     "music": "Khi thiết lập Trợ lý âm nhạc (hoặc bật Nhạc thông qua Alexa): \"chơi thứ gì đó êm dịu trong nhà bếp\" sẽ chọn từ danh sách phát và đài phát thanh của riêng bạn rồi phát trên trình phát Trợ lý âm nhạc trong phòng đó (hoặc hỏi Echo của phòng đó) — ở mức âm lượng ban đêm trong những giờ yên tĩnh và không ở trong phòng trong thời gian yên tĩnh riêng trừ khi bạn ở trong đó. Tắt: không có công cụ âm nhạc.",
+     "music_alexa": "Không có Trợ lý âm nhạc: \"chơi thứ gì đó yên tĩnh trong nhà bếp\" yêu cầu Echo trong phòng đó (Alexa Media Player) phát nội dung đó từ dịch vụ bên dưới, theo tên — danh sách phát, nghệ sĩ, bài hát hoặc tâm trạng — ở mức âm lượng ban đêm trong những giờ yên tĩnh và không phát trong phòng vào thời gian yên tĩnh trừ khi bạn ở trong đó. Dịch vụ phải được liên kết trong ứng dụng Alexa. Tắt: Echos không bao giờ được yêu cầu phát nhạc.",
+     "music_alexa_service": "Echos phát từ dịch vụ nào. Spotify hoạt động với tài khoản miễn phí, nhưng Alexa có thể phát ngẫu nhiên các bản nhạc tương tự thay vì bài hát chính xác; Premium chơi chính xác những gì được yêu cầu.",
+     "house_rules": "Những câu đơn giản mà mọi giọng nói đều phải tuân theo, mỗi câu một dòng, ví dụ: 'Đừng bao giờ nói nhà trống.'",
+     "no_security_offers": "Loại bỏ khỏi câu trả lời của giọng nói bất kỳ câu nào đề nghị kích hoạt hoặc tắt báo động hoặc mở khóa cửa (\"Tôi có nên kích hoạt nó không?\") — ngay cả khi nó được nói như được viết. Câu trả lời cho người đã yêu cầu kích hoạt, giải giáp, khóa hoặc mở khóa sẽ được giữ nguyên nên xác nhận của họ vẫn được yêu cầu. Tắt theo mặc định.",
+     "learn_entities": "Đèn, công tắc, quạt và rèm người ta sử dụng bằng tay. Mỗi đêm, hai tuần qua được kiểm tra những việc được thực hiện vào cùng thời điểm trong hầu hết các ngày và những việc được thực hiện ngay sau một việc khác (một cánh cửa mở, một ngọn đèn khác bật sáng).",
+     "learn_anchors": "Thói quen giữ thời gian theo hoàng hôn, bình minh hoặc thức dậy thay vì đồng hồ (đèn lúc hoàng hôn, rèm lúc bình minh, ấm đun nước sau khi thức dậy) được học theo cách đó, vì vậy một thói quen trong nhà dành cho bạn sẽ thay đổi theo mùa. Thức dậy cần thiết lập chế độ ngủ và thức. Tắt: mọi thứ đều được học ngược thời gian, như trước đây.",
+     "offer_together": "Khi một số việc thường xảy ra vào cùng thời điểm trong cùng ngày (đèn bật, rèm đóng, bật TV vào khoảng 8 giờ tối), chúng sẽ được đề nghị một lần, cùng nhau — một là có và ngôi nhà sẽ thực hiện tất cả những việc đó. Tắt: mỗi cái được cung cấp riêng.",
+     "trust_lights": "Khi một thói quen mà bạn để ngôi nhà tiếp quản là bật đèn: cứ làm, nói như vậy trước hoặc hỏi và chỉ làm khi có (không có gì xảy ra nếu không có ai trả lời).",
+     "trust_switches": "Tương tự đối với công tắc, phích cắm thông minh và quạt.",
+     "trust_covers": "Điều tương tự đối với rèm và rèm cửa. Cửa gara và cổng luôn hỏi.",
+     "trust_heating": "Tương tự đối với việc hâm nóng lò sưởi trước khi mọi người thức dậy. Hỏi trước có nghĩa là nó không thể ấm lên khi mọi người đang ngủ.",
+     "link_triggers": "Tùy chọn: nhiều thứ khác có thể hình thành thói quen (khởi động TV, cảm biến trên giường…). Cửa ra vào, cửa sổ và đèn học luôn được quan tâm.",
+     "suggest_routines": "Mỗi lần theo thói quen mới, trong ngày có người ở nhà, hãy hỏi xem từ nay nhà có nên làm việc đó không.",
+     "prove_routines": "Đầu tiên, một thói quen mới học được sẽ được theo dõi: mỗi ngày sau khi học được thói quen đó, Sentient sẽ kiểm tra xem một người có thực sự làm điều đó trong vòng 45 phút kể từ thời gian thông thường hay không. Nó chỉ được cung cấp khi nó hoạt động đúng trong ít nhất 3 trong 4 ngày được áp dụng (các ngày trong tuần, cuối tuần hoặc hàng ngày). Cài đặt > Học tập cho thấy mỗi người đang làm như thế nào. Tắt: thói quen được đưa ra ngay khi học được.",
+     "routine_fading": "Bật: khi một công việc mà ngôi nhà làm cho bạn đã được thực hiện trước thời hạn 5 ngày trong hai tuần (bây giờ đã có người tự làm), Sentient sẽ hỏi một lần xem có nên giữ nó hay không và dừng lại nếu bạn nói không. Chỉ có ngày tháng được giữ lại, nhiều nhất là hai tuần. Tắt: các thói quen trong nhà được giữ nguyên cho đến khi bạn nói khác.",
+     "door_camera": "Nhìn một lúc khi chuông cửa reo, để ghi lại ai đã đến.",
+     "door_triggers": "Nút chuông cửa (cảm biến hoặc sự kiện nhị phân) hoặc bất cứ thứ gì khác có nghĩa là có ai đó đang ở cửa.",
+     "announce_visitors": "Tắt giữ nó ở chế độ nhật ký yên tĩnh để trợ lý giọng nói có thể trả lời.",
+     "faces": "Khi Frigate (hoặc chuông cửa) nhận ra ai đó, nó sẽ đi theo dòng thời gian và giọng nói có thể trả lời \"Sam đã về nhà chưa?\". Tên không bao giờ được công bố hoặc đoán — chỉ được nói khi có ai đó hỏi. Tắt theo mặc định.",
+     "face_people": "Những cái tên như Frigate đều biết chúng. Trống: tất cả mọi người nó nhận ra.",
+     "face_teach": "Giúp khả năng nhận diện khuôn mặt của Frigate tốt hơn. Khi ai đó rời khỏi máy ảnh đã chọn và Frigate vẫn giữ một khuôn mặt không thể gọi tên, điện thoại sẽ nhận được thông báo riêng tư \"Đây là ai?\" với mặt đồng hồ và các nút bấm dành cho hộ gia đình (điện thoại hiển thị nhiều nhất là ba). Nhấn vào một cái sẽ dạy Frigate; \"Ai đó khác…\" lấy tên đã gõ cho bất kỳ ai mới hoặc \"không\" để xóa khuôn mặt của người lạ. Không bao giờ nói, không bao giờ dùng máy tính bảng, nhiều nhất là mười phút một lần. Cần bật tính năng nhận dạng khuôn mặt Frigate và điện thoại được chọn để nhận thông báo. Tắt theo mặc định.",
+     "face_teach_cameras": "Máy ảnh cận cảnh có khuôn mặt rõ ràng, ví dụ: chuông cửa. Trống: camera cửa.",
+     "face_cameras": "Trống: mọi camera. Chọn những cái cận cảnh (chuông cửa, cửa trước) để đường phố đông đúc không thể đặt tên sai.",
+     "face_forget_hours": "Mỗi đêm, những khuôn mặt Frigate được giữ lại nhưng không ai có tên — hầu hết là người lạ — sẽ bị xóa khỏi Frigate khi chúng đã cũ đến mức này. Những khuôn mặt được đặt tên sẽ được giữ lại. 0: để nó cho Frigate (nó giữ 200 cuối cùng).",
+     "clip_watch": "Khi Frigate kết thúc một sự kiện trên một máy ảnh đã chọn, AI sẽ xem đoạn ghi âm đó một lần và một câu sẽ xuất hiện trên dòng thời gian và trang Sentient: \"Cổng 14:10 — một người đàn ông dắt chó đi ngang qua\". Giọng nói trả lời \"chuyện gì đã xảy ra ở cổng?\" từ họ mà không cần một cuộc gọi AI nào khác. Chưa bao giờ nói chuyện. Tắt theo mặc định.",
+     "clip_cameras": "Bắt đầu với một, ví dụ: cánh cổng.",
+     "clip_scope": "Cảnh báo của Frigate là những người ở khu vực bạn đã đánh dấu là bắt buộc — sự lựa chọn yên tĩnh nhất cho đường phố đông đúc. Nếu máy ảnh không bao giờ đưa ra cảnh báo (không có vùng bắt buộc nào được đặt trong Frigate), hãy chọn \"Mọi thứ trong vùng\" — thẻ Clip hiển thị nội dung nào đã bị bỏ qua và lý do.",
+     "clip_when": "Chỉ xem vào những thời điểm này. Đi vắng có nghĩa là tất cả những người được chọn trong đèn Sân khách đều đã ra ngoài.",
+     "clip_notify": "Chỉ dành cho điện thoại, có hình ảnh và nút phát.",
+     "clip_source": "Bản tóm tắt đánh giá AI của riêng Frigate cần được bật trong Frigate; thì không có cuộc gọi AI nào được thực hiện ở đây.",
+     "clip_whose": "Trong cùng một cuộc gọi AI, ảnh khuôn mặt của hộ gia đình từ thư viện khuôn mặt của Frigate (và các hình ảnh bên dưới) được đưa vào và nó chỉ nêu tên ai đó khi đó rõ ràng là họ — \"có thể là Sam\". Người lạ không bao giờ được nêu tên. Chỉ nói khi được hỏi, không bao giờ công bố.",
+     "clip_looks": "Một trên mỗi dòng, ví dụ: \"Sam: mũ bảo hiểm đi xe đạp màu đỏ và áo khoác màu vàng, đi xe đạp\". Giúp ích khi đội mũ bảo hiểm hoặc mũ trùm đầu che khuất khuôn mặt.",
+     "budget_clips": "Cũng được tính vào tổng giới hạn AI hàng ngày. 0: không có giới hạn riêng.",
+     "clip_days": "Tóm tắt chỉ là lời nói rồi xóa.",
+     "clip_keep": "Tắt: mỗi clip sẽ bị xóa ngay khi xem xong.",
+     "parcel_alerts": "Sau khi giao hàng, vài phút sau hãy kiểm tra lại và biết liệu bưu kiện có còn sót lại không.",
+     "doorstep_sensors": "Tùy chọn: cảm biến người ở ngưỡng cửa hoặc khu vườn phía trước (ví dụ: sức chứa người của khu vực Frigate). Khi chuyến tham quan kết thúc mà không có chuông, camera ở cửa sẽ được kiểm tra một lần để tìm bưu kiện hoặc bưu phẩm bị bỏ quên.",
+     "zone_visits": "Sử dụng các cảm biến trước cửa ở trên (ví dụ: sức chứa người của khu vực Frigate). Khi không có ai đổ chuông, ai đó đến khu vực này được coi là khách: camera ở cửa sẽ được xem và thông báo. Cái nào đến trước, chuông hay khu vực, là lượt truy cập và cái kia bị bỏ qua. Tắt: chỉ có tiếng chuông bắt đầu lượt truy cập.",
+     "zone_door_sensors": "Tùy chọn: cảm biến đóng/mở cửa trước. Nếu cửa được mở (hoặc đang mở) trong một phút rưỡi cuối cùng, khu vực này sẽ bị bỏ qua vì đó là người đang rời đi hoặc đang về nhà.",
+     "face_sensor": "Tùy chọn: cảm biến nhận dạng khuôn mặt có trạng thái là tên mà nó vừa nhận dạng (ví dụ: từ Frigate). Được sử dụng trong nhật ký và trong thông báo nếu tính năng này được bật.",
+     "sidebar_panel": "Một trang trong thanh bên hiển thị những kỷ niệm, thói quen, đồng hồ, khách truy cập và những gì đã được nói.",
+     "page_admin_only": "Ẩn trang và nội dung trang đó đọc với mọi người ngoại trừ quản trị viên. Tắt giữ cho nó mở cho cả gia đình. Bật nó lên cũng không xóa được gì.",
+     "custom_pages": "Bật: các tab Tổng quan, Nội bộ, Tâm trí và Bảo mật sử dụng bố cục đã lưu của bạn và quản trị viên nhận BỐ CỤC TRANG CHỈNH SỬA tại đây để di chuyển thẻ giữa các cột, ẩn chúng, hiển thị lại hoặc đặt lại tab. Không có nút chỉnh sửa trên các tab, chỉ khi bạn đang chỉnh sửa. Bố cục được lưu trong Sentient nên mọi màn hình đều hiển thị giống nhau. Tắt: các tab quay lại bố cục tiêu chuẩn; bố cục đã lưu của bạn được giữ lại khi bạn bật lại.",
+     "confirm_kinds": "Yêu cầu AI mô tả những hành động này và chờ đồng ý. Đây là hướng dẫn nhắc nhở, không phải khối hành động bắt buộc: tác nhân hội thoại của bạn kiểm soát việc thực thi thiết bị. Tắt mọi thứ không cần phải hỏi. Trống: không có hướng dẫn xác nhận bổ sung. Để thực thi kiểm tra, hãy bật kiểm soát được bảo vệ bằng thiết lập tác nhân được yêu cầu.",
+     "auto_backup": "Tối Chủ nhật, bản sao lưu các kỷ niệm, điểm, thói quen, đèn chuyển động, màn trập và cài đặt, được lưu trong thư mục cấu hình trong sentient_backups.",
+     "backup_keep": "Những cái cũ hơn sẽ bị xóa.",
+     "suggestions": "Những thứ mà Sentient có thể sử dụng nhưng không phải — một chiếc loa mới, một cảm biến công suất trên máy giặt, một nhiệt kế Hutch — được cung cấp từng dòng một. Có thêm nó; không có nghĩa là nó không bao giờ được cung cấp nữa. Miễn phí, không có AI.",
+     "whats_new": "Sau khi Sentient được cập nhật, một thẻ ngắn trên trang Sentient cho biết có gì mới, bằng những từ ngữ đơn giản, cho đến khi bạn nhấn vào ĐÃ HIỂU.",
+     "simple_settings": "Danh sách cài đặt hiển thị các tính năng cần thiết, với HIỂN THỊ MỌI THỨ cho các tính năng tùy chọn. Cài đặt mới bắt đầu theo cách này. Không thay đổi gì về những gì Sentient làm.",
+     "chat_agent": "Ai trả lời hộp Hỏi của trang — chọn một tác nhân thoại có Sentient được đánh dấu. Trống sử dụng đường dẫn Hỗ trợ ưa thích của bạn.",
+     "health_ignore": "Các thực thể (và thiết bị của chúng) không được coi là sự cố, ví dụ: một cái gì đó có nghĩa là phải tắt.",
+     "hide_substreams": "Loại bỏ các luồng HD và SD, ảnh chụp màn hình và bản đồ khi đếm và kiểm tra camera, vì vậy một chuông cửa không phải là nhiều camera. Không có gì bị xóa khỏi Home Assistant.",
+     "ignore_cameras": "Máy ảnh Sentient không nên đếm, kiểm tra hoặc cung cấp, chẳng hạn như máy ảnh của máy tính bảng. Họ ở lại Home Assistant mà không bị ảnh hưởng; chọn lại để mang một người trở lại.",
+     "never_entities": "Sentient không bao giờ chuyển đổi, làm mờ hoặc thay đổi những điều này: không có trong các quy tắc, thói quen, ưu đãi, tự động tắt, đèn đi hoặc đèn chuyển động, màn trình diễn ánh sáng, hệ thống sưởi hoặc điều khiển bằng giọng nói được bảo vệ và giọng nói được yêu cầu để chúng yên. Nó vẫn có thể đọc chúng và nói về chúng. Bất cứ điều gì có thể thay đổi đều được bỏ qua và ghi chú.",
+     "self_check": "Mỗi đêm, nó nhìn lại các hồ sơ của chính mình — những gì nó nói và nó diễn ra như thế nào, những chiếc loa bị hỏng, mọi thứ bị giữ lại, những câu hỏi được hỏi đi hỏi lại, đồng hồ đo AI — và ghi lại những gì nó nhận thấy về chính nó, với những con số đằng sau nó. Không có AI. Hỏi \"bạn có làm phiền chúng tôi không?\" hoặc \"bạn đã nhận ra điều gì?\".",
+     "learn_corrections": "Khi ai đó thay đổi lại một điều gì đó mà ngôi nhà đã làm cách đây một lúc (đèn được bật lên, một thói quen được thực hiện), nó sẽ ghi lại sự điều chỉnh. Một thói quen bạn tiếp tục hoàn tác sẽ được đưa trở lại (tắt) và dòng thời gian cho biết như vậy. Tắt tính năng này sẽ dừng việc xem; những chỉnh sửa đã được ghi nhận sẽ được giữ lại.",
+     "normal_day": "So sánh ngày hôm nay với những gì thường lệ và ghi chú vào trang Tâm trí: ví dụ: chưa có ai dậy trong khi bình thường bây giờ vẫn có người. Quy tắc đơn giản, không được nói to và không được chuyển đổi. Việc tắt tính năng này sẽ dừng việc kiểm tra và ẩn những gì nó tìm thấy.",
+     "thoughts": "Một danh sách ngắn gọn ở góc nhìn thứ nhất trên trang Tâm trí (\"mọi người liên tục tắt đèn hạ cánh nên tôi đã dừng lại\"), cùng với việc đoán xem ai đó sẽ đến phòng nào tiếp theo và kiểm tra xem tần suất họ có đúng hay không. Không có AI. Việc tắt tính năng này sẽ dừng việc đoán và ẩn danh sách; những gì nó đã học được sẽ được lưu giữ.",
+     "share_learning": "Một lần vào một buổi tối (17:00–20:30), khi ai đó ở gần và không phải là thời gian yên tĩnh, nó sẽ nói lên một điều nó đã học được hoặc đã thay đổi suy nghĩ trong hai ngày qua: một thói quen mà nó đã truyền lại, một sự thật mà nó đã cập nhật, một thói quen mà nó đã phát hiện, bây giờ nó đoán chính xác nơi bạn sẽ đi tiếp theo. Không bao giờ điều tương tự hai lần. Tắt tính năng này sẽ giữ tất cả trên trang Tâm trí nhưng im lặng.",
+     "self_adjust": "Khi tự kiểm tra phát hiện một loại nhận xét nào đó, ngôi nhà tiếp tục im lặng, hãy im lặng một chút (giống như không thích; nó lại mờ đi). Không bao giờ chạm vào sự an toàn, bảo mật hoặc bất cứ thứ gì nó kiểm soát.",
+     "proposals": "Khi quá trình tự kiểm tra phát hiện có điều gì đó không ổn, hãy đề xuất một thay đổi nhỏ trên trang Tâm trí — ít nhận xét hơn, không lặp lại thường xuyên, một phần được thêm vào phần tóm tắt, giới hạn AI cao hơn — kèm theo lý do. Không có gì thay đổi cho đến khi bạn nói đồng ý; không được hỏi lại trong một tháng. Việc tắt tính năng này sẽ xóa mọi đề xuất đang chờ.",
+     "privacy_log": "Mỗi cuộc gọi AI và tìm kiếm trên web mà Sentient thực hiện đều được ghi chú — tính năng nào, số lượng hình ảnh, clip hoặc tài liệu và dịch vụ nào — không bao giờ được nói hoặc hiển thị. Xem nó trong Brain & system → Những gì rời khỏi nhà, với một nút bấm để quên đi 48 giờ qua. Tắt tính năng này sẽ xóa bản ghi.",
+     "goals": "Hãy để giọng nói đặt ra mục tiêu theo ngày hoặc tuần (\"giúp chúng tôi sử dụng ít máy sưởi hơn trong tháng này\"). Mục tiêu có thể tuân theo cảm biến: nó so sánh mỗi ngày với tuần thông thường trước đó và đề cập đến tiến độ khi phù hợp. Trong nhà không có gì thay đổi.",
+     "manuals": "Trả lời các câu hỏi từ các tài liệu trong thư mục bên dưới (mỗi cuộc gọi AI). Tắt: tài liệu được để yên.",
+     "manuals_folder": "Một thư mục trong phương tiện của Home Assistant (ví dụ: hướng dẫn sử dụng = media/manuals). Đặt tên cho mỗi tệp theo mục đích của nó, ví dụ: \"Không khí purifier.pdf\".",
+     "manuals_local_text": "Khi không có tên tệp nào khớp với câu hỏi, hãy xem bên trong tài liệu .txt và .md để tìm tên phù hợp và nếu không thể liên lạc được với AI, hãy đọc đoạn văn gần nhất thay vì không đọc gì. Không có AI nào được sử dụng cho cả hai việc này. Tắt: chỉ tên tệp được khớp.",
+     "manuals_pages": "Bật: mỗi PDF (và tài liệu văn bản) được đọc một lần, từng trang, vào cơ sở dữ liệu riêng của Sentient — trên máy tính này, không có AI. Sau đó, một câu hỏi sẽ chỉ gửi cho AI một vài trang phù hợp chứ không phải toàn bộ tài liệu, do đó chi phí sẽ thấp hơn nhiều và câu trả lời cho biết nó nằm ở trang nào (\"nó ở trang 14\"). Một tài liệu có tên không khớp vẫn có thể được tìm thấy bằng nội dung trong đó và nếu không thể truy cập được AI thì đoạn văn gần nhất sẽ được đọc cùng với trang của nó. Các tệp PDF được quét (hình ảnh của các trang) vẫn được AI đọc toàn bộ. Tắt: tài liệu luôn được đọc toàn bộ và nội dung đã đọc sẽ bị xóa.",
+     "games": "Chơi các trò chơi có cốt truyện có giọng nói, chẳng hạn như cuộc phiêu lưu thoát khỏi căn hộ với sự trợ giúp của trợ lý là người điều khiển trò chơi. Mỗi trò chơi giữ bộ nhớ đã lưu riêng (người chơi đang ở đâu, họ mang theo những gì, họ đã tìm thấy và chọn gì) trong các phiên và trợ lý. Nó chỉ được hiển thị bằng giọng nói khi trò chơi đang được chơi và người quản lý trò chơi có thể đọc ký ức thông thường của ngôi nhà nhưng không bao giờ thay đổi nó. Mở Cài đặt → Trò chơi câu chuyện để viết trò chơi và chỉnh sửa bộ nhớ của chúng. Tắt: trang và công cụ trò chơi bị ẩn; trò chơi đã lưu được giữ lại, không bị xóa.",
+     "voice_id": "Sử dụng đối sánh loa địa phương cho yêu cầu này. Để cho phép mô hình AI cá nhân hóa các câu trả lời hoặc gán những kỷ niệm mới theo tên, hãy bật Chia sẻ tên trùng khớp với tác nhân trò chuyện trong Nhận dạng giọng nói. Câu hỏi địa phương riêng biệt “Ai đang nói?” trả lời được thiết lập trong Nhận dạng giọng nói.",
+     "voice_id_unknown": "Khi loa Hỗ trợ không khớp giọng nói, hãy giữ lịch sử gia đình và các kỷ niệm đã lưu ở chế độ riêng tư cho lượt đó. Tắt: các giọng không khớp được coi là bình thường.",
+     "speaker_memories": "Với tính năng nhận dạng giọng nói đang chạy: một giọng nói phù hợp sẽ nhận được ký ức của riêng họ (“Alex: thích trà”) trước tiên — luôn được đưa vào, ngay cả khi các thông tin gia đình mới hơn sẽ lấp đầy danh sách — chứ không bao giờ là thông tin cá nhân của bất kỳ ai khác; một giọng nói không thể sánh được sẽ không có ký ức cá nhân của bất kỳ ai. Sự kiện gia đình luôn được chia sẻ. Yêu cầu đã nhập và Echos không thay đổi. Tắt theo mặc định.",
+     "books": "Chơi sách nói và đọc sách điện tử thành tiếng, giữ nguyên vị trí của mỗi phòng. \"Đọc sách của tôi\", \"tiếp tục đọc sách\", \"đọc trong 20 phút\", \"dừng lại\", \"chương tiếp theo\", \"quay lại một chút\". Không có AI (ngoại trừ bản tóm tắt tùy chọn). Trên Echo: sách điện tử một đoạn cho mỗi yêu cầu thông qua kỹ năng Alexa; sách nói cần một người nói khác.",
+     "books_folder": "Một thư mục trong phương tiện của Home Assistant (sách = phương tiện/sách). Sách điện tử .epub hoặc .txt không có DRM; sách nói dưới dạng một tệp .mp3/.m4b/.m4a hoặc một thư mục gồm các phần được đặt tên theo sách.",
+     "reading_tts": "Một dịch vụ chuyển văn bản thành giọng nói khác chỉ dành cho sách và truyện — giọng nói của Gemini hoặc ElevenLabs thường là những người kể chuyện hay hơn. Để trống để đọc bằng giọng thông thường. Echos luôn sử dụng giọng nói của Alexa.",
+     "reading_voice": "Chọn giọng nói từ dịch vụ đó. Sử dụng THỬ VOICE bên dưới để nghe trên loa mặc định trước khi lưu.",
+     "read_ahead": "Với giọng đọc, phần tiếp theo của câu chuyện sẽ được thực hiện trong khi phần này được đọc, do đó, giọng nói chậm rãi (giọng tự do hoặc giọng khàn) không để lại khoảng trống giữa các phần. Sử dụng giọng nói đó sớm hơn một chút, không bao giờ thường xuyên hơn.",
+     "recipes": "\"Hãy làm món lasagne\": các nguyên liệu, sau đó từng bước một — \"tiếp theo\", \"lặp lại\", \"quay lại\", \"tiếp theo là gì?\" — ghi nhớ từng bước cho mỗi người nói. \"Làm cho 6\" tỷ lệ; nguyên liệu có thể có trong danh sách mua sắm.",
+     "recipes_folder": "Một thư mục trong phương tiện của Home Assistant (công thức nấu ăn = phương tiện/công thức nấu ăn) có tệp PDF, ảnh, văn bản hoặc Markdown. Mỗi lệnh được sắp xếp thành các bước bằng một lệnh gọi AI lần đầu tiên, sau đó được giữ lại. Mealie được sử dụng tự động nếu tích hợp nó được thiết lập.",
+     "recipes_list": "Nơi \"thêm các thành phần vào danh sách mua sắm\" đặt chúng. Trống: danh sách có tên \"mua sắm.",
+     "voice_lists": "Bật: \"đánh dấu sữa\", \"có gì trong danh sách mua sắm?\", \"bỏ túi rác\" — các mặt hàng được tìm thấy theo cách chúng được nói (bất kỳ trường hợp nào, số nhiều, loại sữa duy nhất trong danh sách), hai kết quả phù hợp có thể được hỏi và Sentient chỉ cho biết việc đó đã hoàn tất khi danh sách hiển thị. Sử dụng các danh sách được hiển thị cho Hỗ trợ (tất cả các danh sách nếu không có) và danh sách mua sắm trừ khi có tên khác. Không có AI của riêng mình. Tắt: giọng nói sử dụng các lệnh danh sách riêng của Home Assistant. Không có gì được lưu trữ.",
+     "ready_tonight": "\"Hãy đảm bảo mọi thứ đã sẵn sàng cho tối nay\": kiểm tra cửa ra vào, cửa sổ và ổ khóa mà Hỗ trợ có thể nhìn thấy, chỉ tắt những đèn được chọn bên dưới, nhìn vào hệ thống sưởi và cho biết những gì vẫn mở, không khóa, vẫn bật hoặc không thể xác nhận. Ổ khóa, báo động và hệ thống sưởi không bao giờ được thay đổi và báo động không bao giờ được đưa ra. Không có AI của riêng mình. Tắt: giọng nói vẫn có thể kiểm tra ngôi nhà, nhưng tính năng này không được cung cấp. Không có gì được lưu trữ.",
+     "ready_tonight_lights": "Những ngọn đèn duy nhất \"sẵn sàng cho tối nay\" có thể tắt. Mỗi cái được kiểm tra sau đó. Trống: không tắt đèn, chỉ báo.",
+     "ready_tonight_follow": "Khi nội dung nào đó vẫn mở hoặc được mở khóa, hãy theo dõi nội dung đó trong tối đa ba giờ và nói một lần trên loa bạn đã hỏi khi mọi việc đã được sắp xếp. Tiếp tục sau khi khởi động lại.",
+     "tandoor_url": "Tùy chọn: địa chỉ Tandoor Recipes của bạn, ví dụ: http://192.168.1.20:8080.",
+     "tandoor_token": "Tùy chọn: mã thông báo API từ Tandoor (Cài đặt → API). Chỉ được giữ trong Home Assistant.",
+     "second_opinion_ai": "Tùy chọn: mô hình lớn hơn chỉ được hỏi khi mô hình thông thường cho biết hình ảnh quá tối hoặc không rõ ràng để có thể chắc chắn. Tính vào giới hạn hàng ngày.",
+     "smart_ai_task": "Không bắt buộc. Chỉ được sử dụng cho giao diện bảo mật camera và suy nghĩ qua đêm, trong đó mô hình thông minh hơn sẽ giúp ích nhiều nhất. Trống: AI thông thường nên chi phí không thay đổi.",
+     "event_clips": "Tìm nạp đoạn clip ngắn về một sự kiện của Frigate và yêu cầu AI xem đoạn clip đó để có thể biết điều gì đã thực sự xảy ra (\"để lại một bưu kiện và rời đi\"). Được sử dụng sau cảnh báo an ninh của camera và khi được hỏi 'chuyện gì đã xảy ra ở cửa?'. Cần tích hợp Frigate. Một cuộc gọi AI cho mỗi clip. Tắt theo mặc định.",
+     "notify_targets": "Thông báo cho các thực thể, ví dụ: ứng dụng Home Assistant trên mỗi điện thoại hoặc đồng hồ.",
+     "notify_when": "Mỗi loại được gửi tối đa một lần trong mười phút.",
+     "phone_buttons": "Thông qua ứng dụng đồng hành: ở cửa — hình ảnh camera và nút Hiển thị camera; lời nhắc — Báo lại 10 phút và xong; câu hỏi — khi cả nhà muốn hỏi điều gì đó (một lời đề nghị, \"bạn có muốn tôi làm điều đó cho bạn không?\" hoặc hỏi trước khi làm điều gì đó) và không có ai ở gần loa, nó sẽ hỏi trên điện thoại với Có và Không (không phải trong những giờ yên tĩnh). Trống: thông báo đơn giản như bây giờ.",
+     "phone_apps": "ví dụ. notify.mobile_app_pixel_8. Trống: ứng dụng đồng hành đằng sau mỗi điện thoại được chọn ở trên (notify.my_phone → mobile_app_my_phone) — không bao giờ là máy tính bảng.",
+     "bins_check": "Buổi tối trước khi thu gom, một camera sẽ quan sát nơi đổ rác. Chỉ nói điều gì đó nếu họ không vứt đi: 'Ngày mai tái chế và thùng vẫn chưa hết.' Nhìn lại một giờ sau.",
+     "bins_calendar": "Trống: lịch thu gom rác từ lịch họp.",
+     "bins_spot": "Được vẽ trên tab Điểm nơi các thùng được đưa ra ngoài, ví dụ: 'thùng rác'.",
+     "bins_time": "Buổi tối trước khi thu thập, trước giờ yên tĩnh.",
+     "chime": "Tắt: thông báo và câu hỏi bắt đầu ngay lập tức mà không cần người phát biểu kêu vang.",
+     "welcome_home": "Khi ai đó quay lại sau 20 phút hoặc hơn, hãy nói \"Chào mừng trở lại\" trong phòng họ đang ở — cộng với những điều đáng biết khi họ ra ngoài (khách, việc đã hoàn thành, vấn đề). Không bao giờ trong những giờ yên tĩnh, im lặng hoặc chế độ khách.",
+     "welcome_people": "Trống có nghĩa là tất cả mọi người đều có mục nhập một người. Thay vào đó, bạn có thể chọn điện thoại (trình theo dõi thiết bị) — tiện dụng khi một người được đặt ở nhà luôn.",
+     "welcome_min_away": "Một người nào đó phải ra ngoài bao lâu trước khi họ được chào đón trở lại, tính bằng phút.",
+     "welcome_until": "Giờ yên tĩnh thường giữ sự chào đón trở lại. Đặt thời gian và bất kỳ ai đến vào buổi tối trước thời điểm đó vẫn được chào đón. Để trống để giữ những giờ phút yên tĩnh như hiện tại.",
+     "speak_volume": "Tùy chọn: âm lượng của loa trong khi Sentient nói, đặt lại sau đó. Trống rỗng để nó một mình.",
+     "night_volume": "Tùy chọn: mức độ yên tĩnh hơn cho bất kỳ điều gì được nói trong giờ yên tĩnh (chỉ những tin nhắn khẩn cấp).",
+     "duck_media": "Mọi nội dung đang phát trong cùng phòng đều bị tắt trong khi Sentient nói, sau đó được bật lại.",
+     "critical_alerts": "Các cảm biến khói, carbon monoxide, gas, rò rỉ nước và giả mạo được phát hiện tự động và báo động cũng sẽ tắt. Nói trên mọi loa, qua những giờ yên tĩnh, chế độ im lặng và khách, lặp lại hai lần trong khi vẫn bật và gửi đến điện thoại.",
+     "energy_insight": "Mức độ sử dụng các thiết bị trên Bảng điều khiển Năng lượng hôm nay so với tuần trước: thẻ Năng lượng, phần tóm tắt, công cụ giọng nói và ghi chú về việc sử dụng bất thường. Tắt ẩn và dừng tất cả của nó.",
+     "energy_price": "Tùy chọn: giá đơn vị trên mỗi kWh của bạn, để hiển thị chi phí ngày hôm nay của các thiết bị trong Bảng điều khiển năng lượng — bằng pence hoặc xu (24,5) hoặc bằng bảng Anh, đô la hoặc euro (0,245); hoặc hoạt động.",
+     "energy_currency": "Chi phí tiền tệ được hiển thị trong. Trống: Tiền tệ riêng của Home Assistant (Cài đặt → Hệ thống → Chung).",
+     "price_entity": "Giá điện của bạn bây giờ, từ sự tích hợp của nhà cung cấp của bạn (Octopus Energy, Nordpool…). Nếu nó liệt kê các mức giá sắp tới thì chúng sẽ được sử dụng; nếu không thì giá thông thường ở mỗi giờ sẽ được học từ tuần trước. Một lần cho mỗi thiết bị (máy giặt, máy rửa bát, máy sấy), nó sẽ hỏi vào buổi tối xem bạn có muốn sử dụng chế độ khởi động trễ khi giá rẻ nhất qua đêm hay không. Trống: tắt.",
+     "search_hints": "Khi Công cụ LLM vệ tinh bằng giọng nói (hoặc tìm kiếm riêng của Sentient) được thiết lập, giọng nói sẽ được thông báo rằng các công cụ tìm kiếm ở đó và sử dụng chúng cho mọi mục đích bên ngoài ngôi nhà — từ trên loa, chỉ hình ảnh trên máy tính bảng. Không có cuộc gọi AI nào của riêng nó.",
+     "web_search": "Tìm kiếm trên web chỉ bằng giọng nói thông qua SearXNG của riêng bạn (ví dụ: tiện ích bổ sung SearXNG). Chỉ được sử dụng khi tính năng tìm kiếm trên web của Công cụ LLM Vệ tinh Thoại chưa được cài đặt, vì vậy giọng nói không bao giờ có hai giọng nói. Tắt theo mặc định.",
+     "searxng_url": "Ví dụ: http://localhost:8080 hoặc địa chỉ của tiện ích bổ sung. SearXNG phải cho phép định dạng json (trong cài đặt của nó: tìm kiếm → định dạng).",
+     "alexa_skill": "Không thêm gì cho đến khi một kỹ năng sử dụng nó: chỉ kỹ năng Alexa (ví dụ: kỹ năng 'Hỗ trợ Home Assistant' của cộng đồng) vào nhân viên 'Đối với Alexa', sau đó nói “Alexa, hỏi” và tên kỹ năng của bạn. Tắt theo mặc định.",
+     "alexa_wait": "Alexa cúp máy sau khoảng 8 giây nên câu trả lời phải đến nhanh hơn thế này.",
+     "alexa_late_answers": "Khi AI mất nhiều thời gian hơn, Alexa sẽ nói “Hãy cho tôi một chút” và câu trả lời sẽ được nói trên cùng một Echo khi nó sẵn sàng.",
+     "left_open_minutes": "Nói một lần (sau đó cứ nửa giờ một lần khi vẫn mở cửa), trong những giờ yên tĩnh và im lặng như thường lệ. 0 tắt nó đi.",
+     "leaving_check": "Khi người cuối cùng rời đi, mọi thứ đang mở hoặc đã mở khóa sẽ đi vào dòng thời gian và tới điện thoại (\"Còn mở\").",
+     "critical_extra": "Bất cứ điều gì khác phải luôn được nói ở mọi nơi khi nó bật, ví dụ: nút báo động hoặc cảm biến tủ đông quá ấm. Luôn có bảng báo động tắt.",
+     "heating_entities": "Máy điều nhiệt để học hỏi. Để trống cho mọi người trong nhà. Nó tìm hiểu tốc độ nóng lên của mỗi loại và nhiệt độ thường được đặt thành.",
+     "preheat": "Bắt đầu sưởi ấm sớm để nhiệt độ ở mức bình thường vào thời điểm mọi người thường thức dậy. Sau đó, bộ điều nhiệt có lịch trình riêng sẽ được bật lại và bộ điều nhiệt đã tắt sẽ bị tắt.",
+     "heating_schedule": "Bật: thời gian sưởi ấm được thực hiện trên tab Nhà chạy (bộ điều nhiệt được đặt ở nhiệt độ hoặc tắt, tại một thời điểm vào những ngày đã chọn) và chỉ trên các bộ điều nhiệt được chọn ở đó. Tắt: không chạy và lịch trình bị ẩn; số lần bạn đã lưu sẽ được giữ lại và chạy lại khi tính năng này được bật lại.",
+     "comfort_temp": "Tùy chọn: nhiệt độ để làm nóng. Để trống để sử dụng cái thường được đặt trong ngày.",
+     "inside_sensors": "Tùy chọn: cảm biến chuyển động nào cho biết có người ở bên trong. Để trống để sử dụng những cái ở cùng tầng với loa (không tính cảm biến sân vườn và camera). Dùng để canh đêm và thức dậy.",
+     "weekly_report": "Vào các tối Chủ Nhật, hãy đưa những gì cả nhà đã học được và chú ý trong tuần này lên dòng thời gian (gửi tới điện thoại nếu có thông báo).",
+     "night_watch": "Tìm hiểu thời điểm mỗi cửa, cổng và cửa sổ thường mở. Việc mở cửa vào thời điểm thường không bao giờ xảy ra và không có ai di chuyển vào bên trong trước, là một cảnh báo. Nếu ai đó ở trong nhà (chẳng hạn như đi làm), điều đó chỉ được ghi chú.",
+     "night_watch_entities": "Để trống cho mọi cảm biến cửa ra vào, cửa sổ, cổng và cửa gara.",
+     "night_watch_announce": "Một lời mở đầu bất thường mà không có ai đứng dậy được nói ngay lập tức, trong những giờ yên tĩnh, im lặng và chế độ khách — đó có thể là một người không nên có mặt ở đó.",
+     "night_watch_speakers": "Để trống cho mỗi loa.",
+     "warm_by_weekdays": "Tùy chọn: khi trời ấm áp vào các ngày trong tuần. Để trống để sử dụng thời gian thức dậy đã học.",
+     "warm_by_weekends": "Tùy chọn: thứ bảy và chủ nhật tương tự.",
+     "heating_limit": "Khi ai đó bật hoặc bật một trong các bộ điều nhiệt sưởi ấm đã chọn ở trên, bằng giọng nói hoặc trong ứng dụng, hãy đặt nó trở lại sau nhiều giờ: một bộ điều nhiệt không có lịch trình sẽ trở lại như cũ (thậm chí đã tắt). Thay vào đó, bộ điều chỉnh nhiệt trong lịch trình sưởi ấm tuân theo thời gian riêng của lịch trình (Quay lại sau khi thay đổi: theo ngày và đêm), sau đó chuyển sang bất cứ điều gì mà lịch trình muốn vào thời điểm đó. Chỉ có những máy điều nhiệt đó thôi; 0 (mặc định) không bao giờ có.",
+     "heating_night_temp": "Khi lịch trình sưởi ấm giảm xuống khi kỳ kinh kết thúc và mức độ ban đêm vẫn được giữ nguyên. Lịch trình không bao giờ tắt bộ điều nhiệt. Thay đổi nó ở đây bất cứ khi nào bạn muốn (5–28°C).",
+     "heating_revert_day_hours": "Khoảng thời gian thay đổi được thực hiện trong khi thời gian gia nhiệt đang diễn ra sẽ được giữ nguyên trước khi lịch trình tiếp tục lại.",
+     "heating_revert_night_hours": "Khoảng thời gian mà một thay đổi được thực hiện ngoài thời gian sưởi ấm (bao gồm cả việc tắt hệ thống sưởi) sẽ được giữ nguyên trong bao lâu. Vào ban đêm, hệ thống sưởi trở lại nhiệt độ ban đêm, không bao giờ tắt.",
+     "personality": "Ngôi nhà phát ra âm thanh như thế nào — trong các bài phát biểu, cuộc họp giao ban, lời chào mừng và mọi trợ lý giọng nói.",
+     "personality_notes": "Tùy chọn, theo cách nói của bạn, ví dụ: 'Thích mèo. Trêu chọc nhẹ nhàng về số lượng trà được pha.'",
+     "style_feedback": "Một nút bên cạnh dấu hiệu không thích trên bất kỳ nội dung nào có nội dung: chọn Ngắn hơn, Đơn giản hơn, Ít táo bạo hơn, Chi tiết hơn hoặc nói cách thức. Sau đó, các ghi chú bên dưới sẽ được tuân theo ở mọi nơi nó nói. Tắt: không có nút và ghi chú không được sử dụng.",
+     "style_notes": "Một trên mỗi dòng; được thêm từ nút và của bạn để chỉnh sửa. 8 cái mới nhất được sử dụng.",
+     "camera_security": "Theo dõi mọi người từ camera này sang camera khác và cảnh báo ai đó trong vườn khi cổng và cửa không mở hoặc bất kỳ ai về đêm mà không có ai thức. Cảnh báo được nói to trong những giờ yên tĩnh nếu có hoạt động canh đêm.",
+     "camera_security_sensors": "Cảm biến người của mỗi máy ảnh (hoặc vùng), ví dụ: 'Sức chứa người ở cổng của Frigate'.",
+     "camera_security_inside": "Con người cảm biến những nơi phía sau cổng hoặc hàng rào — khu vườn, nhà kho. Có người xuất hiện ở đó mà không có cách nào mở được là cảnh báo.",
+     "camera_security_entries": "Cổng và cửa mà mọi người nên đi qua (ví dụ: cổng sau và cửa sau).",
+     "camera_security_describe": "Một AI nhìn vào camera để tìm từng cảnh báo ('một người đàn ông mặc áo hoodie tối màu đang thử mở cửa nhà kho').",
+     "security_reasoning": "Trước khi cảnh báo an ninh camera được phát ra, hãy xem cảnh báo, xem mọi người có ra ngoài không, cửa ra vào hoặc cổng đã mở ngay trước đó, chuyển động trong nhà, sự kiện Frigate và tần suất camera đó đã cảnh báo. Có lẽ ai đó sẽ ra ngoài hoặc quay lại chiếc máy ảnh đó trong vòng nửa giờ, được giữ im lặng. Cảnh báo vẫn đi theo dòng thời gian và tới điện thoại, kèm theo lý do. Báo thức đã đặt hoặc mọi người ra ngoài: luôn nói. Không có AI. Tắt theo mặc định.",
+     "party_lights": "Các đèn tham gia khi không sử dụng cả nhà. Để trống để sử dụng phòng của bất cứ ai yêu cầu (hoặc nói một phòng: 'chế độ disco trong phòng khách').",
+     "party_style": "Disco: thay đổi màu sắc nhanh chóng. Tiệc tùng: màu sắc tươi sáng, phai màu ngắn. Cầu vồng: bánh xe màu sắc. Lạnh: màu sắc chậm, mờ. Halloween: nhấp nháy màu cam, tím và xanh lá cây. Giáng sinh: đỏ, xanh và trắng ấm, lấp lánh.",
+     "party_minutes": "Sau đó mọi ánh sáng sẽ trở lại đúng như cũ. 0 tiếp tục hoạt động cho đến khi nó tắt.",
+     "party_whole_house": "Mọi ánh sáng có thể mờ đi hoặc thay đổi màu sắc đều tham gia (nhóm ánh sáng, màn hình và đèn nền thì không). Nói 'chế độ disco ở mọi nơi' để thực hiện việc này chỉ một lần.",
+     "party_exclude": "Bị loại khỏi mọi chương trình, thậm chí ở 'khắp mọi nơi' — màn hình máy tính bảng, máy chiếu, phòng ngủ nơi ai đó ngủ.",
+     "party_sound": "Tùy chọn: cảm biến âm lượng tính bằng dB, chẳng hạn như micrô của người nói thông qua cảm biến sound_level của ESPHome. Disco, bữa tiệc, cầu vồng và Halloween rồi theo điệu nhạc — to hơn thì sáng hơn và mỗi nhịp đều thay đổi màu sắc.",
+     "party_show": "Chương trình nào có nút tổng quan. Để trống cho không; mọi chương trình vẫn hoạt động bằng giọng nói.",
+     "party_sound_switch": "Tùy chọn: một công tắc tạo báo cáo cảm biến âm lượng (để nó không gửi kết quả đọc cả ngày). Nó được bật trong khi chương trình phát ra âm thanh và tắt sau đó. Được tìm thấy tự động nếu nó ở trên cùng một thiết bị và có 'độ ồn' trong tên của nó.",
+     "room_volume": "Những loa có thể nghe thấy trong phòng (cảm biến âm lượng trên cùng một thiết bị) sẽ lắng nghe trong một giây trước và nói to hơn qua TV hoặc cuộc trò chuyện. Không phải trong những giờ yên tĩnh.",
+     "follow_you": "Điều gì đó được nói ra khi không có ai xung quanh — hoặc được giữ lại trong những giờ yên tĩnh — sẽ được truyền lại vào lần tiếp theo khi ai đó bước vào phòng với một chiếc loa.",
+     "follow_minutes": "Sau một thời gian dài, một tin nhắn chưa được nghe được gửi đi.",
+     "conversation_memory": "Giữ một bản ghi ngắn về những gì được hỏi và nói trên mỗi diễn giả để phòng khác có thể tiếp tục phần còn lại. Giữ hai tuần; riêng tư khi khách đang ở.",
+     "follow_ups": "Giọng nói có thể thiết lập các bước tiếp theo (\"Tôi sẽ kiểm tra xem căn phòng đã ấm lên sau một giờ nữa\") và một chiếc đồng hồ chạy hết giờ mà không thấy gì sẽ bị đóng cửa ầm ĩ.",
+     "curiosity": "Nhiều nhất là một lần trong ngày, khi có ai đó đến, nó sẽ hỏi về điều gì đó mà nó không thể giải thích được — một người gọi thường xuyên, một hình mẫu mà nó nhận thấy qua đêm — và ghi nhớ câu trả lời.",
+     "reflection": "Một cuộc gọi AI mỗi đêm qua nhật ký và các cuộc trò chuyện trong ngày: những điều mới đáng ghi nhớ, một hoặc hai suy nghĩ cho buổi sáng và một câu hỏi để hỏi.",
+     "reflection_time": "Tốt nhất trong những giờ nhỏ.",
+     "drive_spot": "Vị trí camera hiển thị ổ đĩa (vẽ nó trên tab Spots).",
+     "drive_camera": "Chỉ cần thiết nếu có nhiều hơn một camera có vị trí có tên đó.",
+     "drive_triggers": "Cảm biến chuyển động hoặc ô tô nhìn thấy ổ đĩa. Trống: cảm biến chuyển động và cảm biến ô tô của chính camera.",
+     "camera_wake": "Các hành động đánh thức máy ảnh từ chế độ chờ (nút đánh thức hoặc làm mới, chuyển đổi luồng, tập lệnh). {{ camera }} là chiếc máy ảnh sắp được xem xét. Trống: máy ảnh được xem như hiện tại.",
+     "camera_wake_cameras": "Trống: mọi camera mà AI nhìn vào.",
+     "camera_wake_seconds": "Vài giây chờ đợi sau khi thức dậy để có một bức ảnh mới.",
+     "known_cars": "Một trên mỗi dòng, ví dụ: 'Sam: hatchback màu xám đậm'. Sau đó, cái nhìn tương tự về ổ đĩa sẽ cho biết xe của ai đã đến (\"Xe của Sam đã đến\") — không có AI bổ sung. Trống: ô tô không được đặt tên.",
+     "full_volume_speakers": "Thông báo về những điều này được cho là ở mức 100%, sau đó âm lượng sẽ giảm trở lại — đối với máy tính bảng bị tắt đối với mọi thứ khác. Không phải trong những giờ yên tĩnh (khi đó âm lượng của những giờ yên tĩnh sẽ được sử dụng).",
+     "tts_entity": "Loa có thể là loa Hỗ trợ hoặc trình phát đa phương tiện. Echos được nói thông qua Alexa Media Player; bất kỳ trình phát đa phương tiện nào khác (loa thông minh, thiết bị Truyền) đều sử dụng giọng nói chuyển văn bản thành giọng nói này.",
+     "house_language_text": "Bật: những gì Sentient viết để bạn đọc — dòng thời gian, sức khỏe gia đình, tab Tâm trí, thông báo hàng ngày, câu chuyện trong ngày, mô tả clip và thông báo qua điện thoại — tuân theo ngôn ngữ của Home Assistant. Các câu cố định được dịch sang tiếng Ba Lan, tiếng Đức, tiếng Hà Lan, tiếng Ý, tiếng Bồ Đào Nha, tiếng Tây Ban Nha, tiếng Pháp và tiếng Hungary; những gì AI viết tuân theo bất kỳ ngôn ngữ nào. Thay vào đó, những từ được nói hãy nói những câu có sẵn bằng ngôn ngữ của ngôi nhà. Không có cuộc gọi AI bổ sung; không có gì được lưu trữ Tắt: tất cả vẫn bằng tiếng Anh.",
+     "speak_house_language": "Dịch các câu tiếng Anh thông thường bằng tác vụ AI hiện có, có giới hạn thời gian, bộ đệm câu tạm thời và dự phòng văn bản gốc. Cảnh báo khẩn cấp không bao giờ chờ đợi AI. Sử dụng tính năng hỗ trợ ngôn ngữ Tự động cho các cụm từ đã chuẩn bị sẵn và phần kết thúc cuộc trò chuyện; chọn ngôn ngữ bên dưới. Đã sửa lỗi chính xác các mã thông báo có/không bao gồm các ngôn ngữ phổ biến. Bản dịch câu cá nhân không bao giờ được lưu khi khởi động lại.",
+     "speakers": "Hỗ trợ loa hoặc trình phát đa phương tiện (Echos thông qua Alexa Media Player).",
+     "media_speakers": "Tắt: chỉ sử dụng loa thoại, ngay cả khi cảnh báo hoặc thông báo có tên Echo (thay vào đó, nó sẽ phát ra ở nơi có người). Đồng thời là công tắc 'loa Echo' dành cho tự động hóa và bảng điều khiển.",
+     "media_important_only": "Bật: Echos chỉ nói báo động, nhắc nhở và cảnh báo an toàn; thay vào đó, các thông báo, thông báo và trò chuyện sẽ được chuyển đến loa thoại. Đồng thời là nút chuyển 'Echos: chỉ báo thức và nhắc nhở.",
+     "foresight": "Mỗi buổi tối, một AI sẽ xem lịch, thời tiết, báo thức và lời nhắc của ngày mai. Chỉ nói điều gì đó khi có việc gì đó phải làm tối nay — sương giá trước khi bắt đầu sớm, mưa vào ngày giặt giũ. Thường im lặng.",
+     "foresight_time": "Trước khi giờ yên tĩnh bắt đầu.",
+     "sleep_detection": "Ngủ sau thói quen đi ngủ hoặc trong những giờ yên tĩnh khi bên trong không có gì chuyển động trong một thời gian. Thức dậy vào buổi sáng khi có chuyển động trong hai phòng (hoặc bật đèn bằng tay). Cảm biến của Ngôi nhà cho thấy điều đó.",
+     "bedtime_routines": "Các thói quen có nghĩa là mọi người đều đã đi ngủ, được phân tách bằng dấu phẩy. Trống: mọi quy trình có 'đêm' hoặc 'giường' trong tên.",
+     "sleep_actions": "ví dụ. màn hình máy tính bảng tắt, loa Echo tắt.",
+     "wake_actions": "ví dụ. loa Echo bật lại, đèn hành lang tắt.",
+     "appliances": "Máy giặt, máy sấy, máy rửa bát, máy hút bụi — cảm biến nguồn điện hoặc trạng thái của chúng. Để trống để theo dõi mọi robot hút bụi và bất kỳ cảm biến nguồn nào có tên máy giặt, máy sấy hoặc máy rửa chén.",
+     "appliance_announce": "Thông báo “máy giặt đã xong” ở nơi có người và khi một người mất nhiều thời gian hơn bình thường. Từ ngữ đơn giản, không có AI.",
+     "appliance_watts": "Đối với cảm biến nguồn: chạy khi ở trên mức này, kết thúc khi nó ở dưới mức này trong năm phút.",
+     "voice_agent": "Tác nhân AI thường trả lời (ví dụ: Google AI). Trống sử dụng tác nhân trò chuyện của trang.",
+     "backup_agent": "Trả lời khi tác nhân chính bị lỗi — Tác nhân riêng của Home Assistant thực hiện chiếu sáng, sưởi ấm và hẹn giờ mà không cần bất kỳ AI nào.",
+     "offline_answers": "Khi tác nhân AI thất bại, “ngôi nhà có bị khóa không?”, “khi nào là lần báo thức tiếp theo của tôi?” và “có ai đến đây không?” được trả lời trực tiếp từ nhà, nói một cách đơn giản, trước khi tác nhân dự phòng được thử. Chỉ những câu hỏi, chỉ những gì người ta có thể nhìn thấy; ở chế độ khách chỉ có câu hỏi bảo mật. Tắt: mọi thứ sẽ được chuyển đến tác nhân dự phòng.",
+     "animal_sensors": "Cảm biến nhiệt độ chuồng, cũi, chuồng hoặc bể.",
+     "away_lights_on": "Khi mọi người ra ngoài sau khi trời tối, đèn sẽ sao chép cách họ sử dụng vào cùng thời điểm này vào tuần trước (từ lịch sử của Home Assistant), cách đó vài phút. Không bắt đầu (hoặc dừng) nếu có ai ở nhà hoặc gần đây có chuyển động bên trong, đối với những người không có điện thoại theo dõi và đặt lại những gì nó đã bật. Ngoài ra còn có công tắc 'Đèn sân khách.",
+     "away_people": "Trống: tất cả mọi người có một mục nhập người. Bạn có thể chọn điện thoại (trình theo dõi thiết bị) thay vì người.",
+     "away_lights": "Trống: mọi đèn trong phòng, không có màn hình, vòng đèn LED, đèn nền và nhóm. Chỉ có những ngọn đèn được sử dụng vào thời điểm đó tuần trước mới bật sáng.",
+     "holiday_mode": "Chuyển đổi 'Chế độ nghỉ lễ' và 'chúng tôi sẽ đi nghỉ cho đến Chủ nhật' bằng giọng nói. Trong khi nó được bật, không có gì được nói to ngoại trừ các cảnh báo an toàn — những gì đáng lẽ được nói sẽ được chuyển đến các điện thoại được chọn để thông báo, có khách và bưu kiện; đèn vắng vẫn chạy ngay cả khi chúng thường tắt; và bộ điều nhiệt bên dưới bị tắt. Tắt: không có công tắc và không nghỉ bằng giọng nói.",
+     "holiday_thermostats": "Chuyển sang chế độ chống sương giá khi bạn đi vắng và đặt lại chính xác như cũ khi chế độ nghỉ lễ kết thúc. Trống rỗng: hệ thống sưởi không được chạm vào.",
+     "holiday_frost": "Bộ điều nhiệt ở trên được đặt ở chế độ nào khi bạn đi vắng.",
+     "holiday_end_on_return": "Khi mọi người đã ra ngoài, người đầu tiên về nhà sẽ kết thúc chế độ nghỉ lễ và đặt máy sưởi trở lại. Tắt: nó kết thúc vào ngày của nó hoặc khi tắt.",
+     "away_after": "Vì vậy, việc đến cửa hàng không bắt đầu được.",
+     "animal_low": "Nói một lần khi nó giảm xuống dưới mức này (được giữ cho đến sáng trong những giờ yên tĩnh) và cảnh báo vào buổi tối trước khi có sương giá.",
+     "animal_high": "Nói một lần khi nó vượt lên trên này.",
+     "hutch_check": "Nửa giờ sau khi mặt trời lặn, một AI nhìn vào cái chuồng: họ có ở trong không và nó có đóng cửa không? Chỉ nói điều gì đó nếu không.",
+     "hutch_spot": "Điểm được vẽ quanh cái chuồng trên tab Điểm, ví dụ: 'bút thỏ'.",
+     "cat_watch": "Sau khi trời tối, khi cảm biến mèo trên máy ảnh của chuồng bật sáng, AI sẽ nhìn: con mèo ở hay ở gần chuồng? Nhiều nhất là 15 phút một lần chứ không phải khi hình ảnh không thay đổi.",
+     "cat_sensors": "Trống: cảm biến mèo trên máy ảnh của Hutch (ví dụ: tỷ lệ sử dụng mèo của Frigate).",
+     "cat_loud": "Tắt: giữ cho buổi sáng (\"Một con mèo ở trong chuồng lúc 2:14 sáng\"). Bật: nói ngay qua loa gác đêm.",
+     "rain_warnings": "Khi sắp mưa trong vòng một giờ nữa và cửa sổ hoặc cửa ra vào đang mở: 'Sắp có mưa trong giờ tới và cửa sổ phòng ngủ sẽ mở.' Đọc dự báo hàng giờ — không có AI. Một lần trong mỗi cơn mưa.",
+     "rain_entities": "Trống: mọi cảm biến cửa sổ và cửa ra vào.",
+     "self_test": "Qua đêm, giọng nói được hỏi một số câu hỏi hàng ngày (nhiệt độ bên ngoài, bất cứ thứ gì mở, lời nhắc, báo thức, thời gian) và câu trả lời của nó sẽ được kiểm tra trong nhà. Bất cứ điều gì sai trái đều thể hiện rõ ràng về sức khỏe ngôi nhà bằng công cụ mà nó sử dụng. Khoảng 5 AI gọi một lượt chạy. Chỉ câu hỏi — không có gì được chuyển đổi.",
+     "self_test_household": "Thêm khoảng 7 câu hỏi được xây dựng từ thiết bị của riêng bạn: thời điểm cửa hoặc cửa sổ đóng lần cuối, đèn có bật hay không, camera có nhìn thấy ai trong hai giờ qua không, hôm nay có ai đến cửa không, điều gì đó không thể biết (một câu trả lời được phát minh ra không thành công), điều gì đó không thiết bị nào có thể làm được và một câu hỏi quá mơ hồ để trả lời nếu không hỏi câu hỏi nào. Chuyển đổi bất cứ điều gì trong một câu hỏi là không thành công. Điểm số và xu hướng của nó nằm trên trang Tâm trí. Khoảng 7 AI nữa kêu gọi chạy.",
+     "screen": "Cảnh báo, thông báo và thẻ buổi sáng trên thẻ màn hình Sentient (tùy chỉnh:sentient-screen-card). Tắt: nó chỉ hiển thị ngôi nhà trong nháy mắt.",
+     "screen_actions": "ví dụ. đánh thức máy tính bảng và chuyển nó sang trang bằng thẻ màn hình.",
+     "screen_clear_actions": "ví dụ. chuyển máy tính bảng trở lại trang bình thường.",
+     "conversation_sessions": "Sử dụng Sentient với tác nhân dự phòng. Các lệnh đơn sẽ ngừng nghe trừ khi câu trả lời bằng giọng nói kết thúc bằng một câu hỏi. Các cuộc thảo luận về thông tin, bảo mật, sức khỏe và hệ thống sẽ hỏi xem còn điều gì khác không và vẫn mở cho đến khi bạn nói “thế thôi”, “đủ” hoặc “ngừng nghe” hoặc hết thời gian chờ không hoạt động. Nói “quay lại…” để tiếp tục một chủ đề còn dang dở từ thiết bị này trong vòng 24 giờ mà không cần khôi phục quyền hành động. Bảng Tâm trí hiển thị các quyết định hội thoại gần đây. Nghe tiếp theo cần có thiết bị Hỗ trợ tương thích.",
+     "room_conversation_handoff": "Nói tiếp tục và đặt tên chủ đề từ một thiết bị khác. Cả hai yêu cầu phải đến từ cùng một người dùng Home Assistant đã được xác định. Các bài đọc mới được kiểm tra và các hành động và xác nhận trước đó không được chuyển tiếp.",
+     "verified_bedtime": "Giả sử chạy xuống cầu thang đi ngủ để tắt đèn đã chọn và kiểm tra danh bạ đã chọn. Yêu cầu kiểm tra lại trạng thái giờ đi ngủ ở tầng dưới hoặc nói hủy giờ đi ngủ ở tầng dưới để ngừng theo dõi.",
+     "verified_bedtime_lights": "Chọn tối đa 20 đèn hỗ trợ riêng lẻ. Các nhóm bị loại trừ và danh sách Không bao giờ chạm vẫn được áp dụng.",
+     "verified_bedtime_contacts": "Chọn tối đa hai mươi địa chỉ liên hệ mở cửa, cửa sổ hoặc các địa chỉ liên hệ mở khác có Hỗ trợ để kiểm tra. Chúng chỉ được đọc.",
+     "session_seconds": "Loại bỏ bối cảnh phiên và các hành động đang chờ xử lý sau nhiều giây này mà không có lượt khác. Thiết bị giọng nói của bạn sẽ kiểm soát thời gian chờ im lặng của chính nó. Xác nhận cũng hết hạn sau 60 giây.",
+     "guarded_control": "Chọn tham gia với tác nhân AI được hỗ trợ chuyên dụng: chỉ chọn Sentient được bảo vệ trong Kiểm soát Home Assistant, sau đó sử dụng Sentient có bản sao lưu trong quy trình. Tắt Ưu tiên xử lý các lệnh cục bộ và loại bỏ các trình kích hoạt câu xung đột chạy trước tác nhân này. Cấu hình API tác nhân sai sẽ dừng yêu cầu. Không có dự phòng, tập lệnh, cảnh hoặc hành động cảnh báo không hạn chế. Cửa, khởi động thiết bị và những thay đổi đáng kể về hệ thống sưởi cần có sự đồng ý riêng.",
+     "routine_verify": "Bật: sau khi quy trình bằng giọng nói (chúc ngủ ngon, rời đi…) chạy, mỗi đèn, công tắc, khóa và nắp được thay đổi sẽ được kiểm tra vài giây sau đó và câu trả lời cho biết điều gì đã không xảy ra (\"Xong, ngoại trừ đèn hạ cánh, vẫn sáng\"). Các bước không thể kiểm tra (kịch bản, cảnh) được báo cáo là chưa được kiểm tra, chưa bao giờ hoàn thành. Không có gì được thử lại hoặc hoàn tác. Tắt: các quy trình chạy như trước, không được chọn.",
+     "voice_unlock": "Cho phép xác nhận bằng giọng nói bắt buộc mở khóa cửa sau khi có riêng biệt. Tắt (mặc định) vẫn khóa và đóng nhưng từ chối mở khóa hoặc mở bằng giọng nói, vì Sentient không thể biết ai đang nói.",
+     "voice_undo": "Với quyền kiểm soát được bảo vệ, hãy nói “hoàn tác điều đó” để yêu cầu khôi phục cài đặt ánh sáng đã được xác minh gần đây. Bỏ qua đèn đã thay đổi kể từ đó, hết hạn theo phiên và không bao giờ mở khóa, sưởi ấm hoặc các thiết bị.",
+     "evidence_awareness": "Yêu cầu giọng nói phân biệt các quan sát, suy luận, hành động đã thử và báo cáo thiết bị đã được xác minh. Cảm biến bảo mật không khả dụng luôn ngăn chặn yêu cầu hoàn toàn an toàn.",
+     "security_incidents": "Nhóm các cảm biến người bảo vệ camera được cấu hình và các liên hệ truy cập với các cảnh báo và tóm tắt clip. Giữ bảy ngày tại địa phương. Khoảng cách thời gian có thể là một mối liên kết, không phải bằng chứng của cùng một người; chỉ lặp lại cảnh báo leo thang.",
+     "incident_front": "Camera và cảm biến trước nhà (chuông cửa, cửa trước). Bất cứ điều gì ở đây không bao giờ được nhóm lại thành một sự cố an ninh với bất kỳ điều gì không phải như vậy, và ngược lại: ai đó ở cửa trước và ai đó ở cổng sau cùng một lúc là hai sự cố. Để trống để nhóm theo thời gian riêng.",
+     "live_voice_check": "Hiển thị kiểm tra giọng nói do người dùng bắt đầu trong bảng Mind. Việc tắt tính năng này sẽ xóa lượt kiểm tra hiện tại và ngừng ghi lượt kiểm tra. Yêu cầu phiên Hội thoại để bắt đầu kiểm tra.",
+     "speech_delivery_history": "Lưu giữ kết quả thông báo gần đây của mỗi người phát biểu trong bảng Tâm trí. Tắt tính năng này sẽ xóa lịch sử này. Phát hiện lỗi loa và xử lý thử lại an toàn vẫn hoạt động.",
+     "alexa_tts_only": "Sử dụng TTS đơn giản thay vì thông báo Alexa nếu thông báo không đáng tin cậy. Điều này bỏ qua chuông thông báo Alexa; các loa khác không thay đổi.",
+     "update_checker": "Kiểm tra GitHub để biết các bản phát hành ổn định khi được bật, khi khởi động và sáu giờ một lần. Không có cuộc gọi AI, cài đặt tự động hoặc tự động khởi động lại. Vô hiệu hóa để dừng kiểm tra.",
+     "contextual_followups": "Yêu cầu phiên Hội thoại và Sentient với tác nhân dự phòng. Giữ chủ đề để theo dõi trong thời gian ngắn, làm mới các thông số đọc trên thiết bị được hiển thị và làm rõ các điều chỉnh không rõ ràng. Không cấp quyền hành động hoặc thay đổi quy tắc nghe. Tắt theo mặc định; tắt nó sẽ xóa bối cảnh cuộc trò chuyện tạm thời.",
+     "conversation_recovery": "Yêu cầu phiên Hội thoại và Sentient với tác nhân dự phòng. Hủy yêu cầu đang chờ xử lý hoặc đang chạy từ cùng một cuộc trò chuyện/thiết bị/người dùng và tránh phát lại các lệnh thiết bị không chắc chắn sau khi AI bị lỗi. Không thể hoàn tác một hành động đã gửi hoặc khiến phần cứng chấp nhận lời nói khi đang bận. Tắt theo mặc định; việc vô hiệu hóa sẽ dừng việc xử lý bổ sung này.",
+     "automatic_language": "Yêu cầu Nói các câu có sẵn bằng ngôn ngữ trong nhà. Chuẩn bị các cụm từ phổ biến, kết thúc cuộc trò chuyện và nhãn an toàn bằng AI và ngân sách hiện có của bạn. Tắt theo mặc định. Các cụm từ sẽ được lưu trong bộ nhớ trừ khi tính năng Ghi nhớ các cụm từ ngôn ngữ phổ biến được bật. Vô hiệu hóa sẽ xóa chúng. Cảnh báo khẩn cấp không bao giờ chờ đợi AI; các câu trả lời được tạo ra không bao giờ cho phép các hành động quan trọng.",
+     "voice_language": "Sử dụng tự động cho ngôn ngữ của Home Assistant hoặc mã ngôn ngữ như es, de hoặc pt-BR. Yêu cầu tùy chọn ngôn ngữ giọng nói. Tính năng nhận dạng giọng nói Trợ lý và giọng nói TTS của bạn cũng phải hỗ trợ ngôn ngữ này; điều này không cấu hình lại chúng.",
+     "remember_language_phrases": "Yêu cầu cả hai tùy chọn ngôn ngữ nói. Chỉ lưu gói cụm từ chung khi khởi động lại và thay đổi Cài đặt không liên quan, không bao giờ lưu thông báo cá nhân. Tắt theo mặc định. Vô hiệu hóa, thay đổi ngôn ngữ/nhà cung cấp hoặc quên dữ liệu sẽ xóa nó.",
+     "stream_voice_replies": "Bắt đầu nói một câu trả lời dài trong khi AI vẫn đang viết nó, ngay cả khi đang bật phiên trò chuyện, vì vậy câu trả lời sẽ bắt đầu sớm hơn. Nếu Sentient thay đổi câu trả lời sau đó (ví dụ: câu hỏi xác nhận), thì thay đổi sẽ được nói sau những gì đã được nói. Tắt theo mặc định; tắt nó sẽ quay lại chờ toàn bộ câu trả lời. Không có gì được lưu trữ.",
+     "voice_timing_diagnostics": "Giữ 20 thời gian phản hồi bằng giọng nói cuối cùng trong bộ nhớ mà không có bản ghi hoặc ID thiết bị/người dùng. Hiển thị thời gian đại lý, công cụ, dịch thuật và thông báo trong Tâm trí. Các giai đoạn có thể chồng chéo lên nhau; việc thu âm micrô và phát lại đường dẫn cuối cùng không được đo. Tắt theo mặc định; Thay đổi cài đặt và quên xóa lịch sử. Nó cũng tính toán diễn biến của các cuộc trò chuyện (theo dõi, sửa chữa, tốc độ đưa ra câu trả lời — không bao giờ là từ), liên tục khởi động lại; tắt cái này đi sẽ xóa những số đếm đó.",
+     "reliability_log": "Kiểm tra từng lượt giọng nói bằng các quy tắc đơn giản (không có AI) và ghi chú trên trang Tâm trí khi một công cụ bị lỗi, một thiết bị không thực hiện được, nó cho biết điều gì đó đã được thực hiện khi không có gì, nó đưa ra điều gì đó mà không thiết bị nào có thể làm được, nó không thể trả lời hoặc nó trả lời về quá khứ mà không tra cứu bất cứ điều gì. Giữ một dòng ngắn gọn của câu hỏi và câu trả lời trong 14 ngày. Tắt nó sẽ dừng nó và xóa những gì đã được giữ.",
+     "unified_evidence": "Tắt theo mặc định. Cung cấp cho giọng nói một công cụ chỉ đọc bổ sung để cùng nhau xem qua bản ghi nội bộ, dòng thời gian và lịch sử camera khi bạn hỏi điều gì đã xảy ra hoặc tại sao. Nó không thể chuyển đổi bất cứ thứ gì và nó cho biết khi không thể kiểm tra nguồn thay vì khẳng định không có gì xảy ra. Tắt nó đi chỉ cần gỡ bỏ công cụ; không có gì được lưu trữ.",
+     "specific_clarification": "Yêu cầu phiên hội thoại. Cung cấp các lựa chọn thiết bị được đặt tên và nhận dạng tên chính xác, thứ tự tiếng Anh, cả hai/tất cả và nhiệt độ đơn giản cục bộ. Thử lại một lần rồi dừng lại thay vì lặp lại. Lựa chọn không bao giờ xác nhận một hành động. Tắt theo mặc định; vô hiệu hóa các lựa chọn đang chờ xử lý. Sử dụng kiểm soát được bảo vệ để hạn chế hành động được thực thi.",
+     "action_recovery": "Yêu cầu các phiên Hội thoại và quyền kiểm soát được bảo vệ đối với kết quả và số lần thử lại của thiết bị. Đưa ra kết quả một phần được đặt tên và kiểm tra yêu cầu được bảo vệ cuối cùng khi bạn nói rằng yêu cầu đó không hiệu quả. Chỉ những hành động không bao giờ được gửi đi mới có thể được đưa ra lại với xác nhận mới. Các hành động không chắc chắn hoặc thành công sẽ không được thực hiện lại. Tắt theo mặc định; hồ sơ hết hạn sau hai phút và xóa các thay đổi hoặc quên Cài đặt.",
+     "recheck_unconfirmed": "Khi một thiết bị được điều khiển thông qua tính năng điều khiển bằng giọng nói được bảo vệ chưa báo cáo trạng thái mới tại thời điểm phản hồi (cửa gara, phích cắm đám mây chậm), hãy xem lại 20 giây sau và cập nhật bản ghi, vậy “điều đó có hiệu quả không?” được trả lời từ những gì thiết bị nói bây giờ. Không có gì được gửi lại. Tắt: bản ghi vẫn giữ nguyên như lúc trả lời.",
+     "speech_failure_notification": "Hiển thị thông báo Home Assistant khi việc truyền loa không thành công hoặc không chắc chắn. Tắt theo mặc định. Không bao gồm nội dung nói hoặc lời nói lặp lại. Bị tắt ở chế độ khách; thông báo hiện có vẫn còn cho đến khi bị loại bỏ.",
+     "recent_followup_context": "Sử dụng một chủ đề đã hoàn thành gần đây sau lời đánh thức mới trên cùng một diễn giả và người dùng. Yêu cầu các phiên trò chuyện và theo dõi theo ngữ cảnh. Sử dụng thời gian chờ của phiên; không bao giờ khôi phục lại xác nhận hoặc lắng nghe. Tắt theo mặc định. Kết thúc hoặc quên xóa bối cảnh.",
+     "conversation_cues": "Trong một cuộc trò chuyện: những lời kết thúc hàng ngày (“chúc mừng”, “hoàn hảo, cảm ơn”, “được rồi”) kết thúc cuộc trò chuyện khi không có gì cụ thể chờ đợi câu trả lời; “xin lỗi, ý tôi là…”, “nhầm đèn” và “không phải đèn, đèn trần” là những chỉnh sửa; và “trên một ghi chú khác…” hoặc “điều gì khác:” bắt đầu một chủ đề mới mà không có thiết bị nào được chuyển sang. Không có AI. Tắt: chỉ nhận dạng được phần cuối và phần chỉnh sửa đơn giản.",
+     "vary_replies": "Giọng nói đó sẽ hiển thị một số câu trả lời cuối cùng của ngày hôm qua và được yêu cầu không sử dụng lại các câu hoặc phần mở đầu của họ, vì vậy, cùng một câu trả lời sẽ không được đưa ra từng từ hai lần. Không ở phòng riêng hoặc chế độ khách. Các câu trả lời lặp lại đều được tính theo cả hai cách (tab Tâm trí, có thời gian bằng giọng nói). Tắt theo mặc định.",
+     "behaviour_explanations": "Trả lời các câu hỏi ngắn về việc nghe và ghi lại kết quả của thiết bị một cách trực tiếp mà không cần cuộc gọi AI. Yêu cầu các buổi trò chuyện. Sử dụng các bản ghi phiên hiện có, tôn trọng quyền truy cập của chế độ khách và thiết bị và không bao giờ lặp lại một hành động. Tắt theo mặc định; không có lịch sử bổ sung được lưu trữ.",
+     "current_house_context": "Cung cấp cho các cuộc hội thoại một ảnh chụp nhanh nhỏ gọn có liên quan về các báo cáo thiết bị được hiển thị, những thay đổi gần đây và nhiệm vụ hiện tại chưa hoàn thành. Tắt theo mặc định. Không có cuộc gọi AI nền. Chế độ khách ngăn chặn nó. Những thay đổi gần đây sẽ hết hạn sau 30 phút; vô hiệu hóa hoặc quên xóa bối cảnh chỉ có bộ nhớ.",
+     "moment_awareness": "Mỗi câu trả lời bằng giọng nói sẽ nhận được một hình ảnh ngắn 'ngay bây giờ' từ những gì Sentient đã lưu giữ: ai ở nhà và từ khi nào, các phòng có chuyển động, điều gì đã xảy ra trong 45 phút qua và bất cứ điều gì bất thường cho ngày hôm nay. Không có AI và không có gì được lưu trữ. Trong phòng riêng hoặc chế độ khách, chỉ có chuyển động được đưa ra. Tắt: không có gì được thêm vào.",
+     "room_memory": "Mỗi câu trả lời bằng giọng nói trong một phòng sẽ nhận được những gì đã diễn ra trong một giờ qua: các cuộc trò chuyện trước đó trong phòng đó, những gì đã được chuyển đổi bằng giọng nói ở đó và những gì đã được thông báo ở đó. Nếu ai đó vừa nói chuyện trong một phòng khác cách đây vài phút và kể từ đó không có gì được nói ở đây thì cuộc trò chuyện đó cũng diễn ra để họ có thể tiếp tục nơi họ đã dừng lại. Không có gì mới được lưu trữ. Phòng riêng và chế độ khách chỉ lấy bản ghi phòng riêng. Tắt: không có gì được thêm vào.",
+     "know_people": "Khi tính năng nhận dạng giọng nói chưa đặt tên cho người nói, Sentient sẽ xác định xem đó có thể là ai từ những thứ mà nó có thể tin cậy: một tin nhắn được nhập trong ứng dụng Home Assistant đến từ tài khoản của người đó hoặc của họ là chiếc điện thoại duy nhất được theo dõi trong phòng. Giọng nói sẽ cho biết đó có thể là ai và đặt những gì người đó đã nói về bản thân họ lên đầu tiên. Việc đoán không bao giờ cho phép bất kỳ điều gì cần xác nhận và không có gì được lưu dưới tên của họ vì điều đó. Không ở chế độ khách hoặc phòng riêng. Tắt: không cần đoán.",
+     "instant_answers": "Các câu hỏi hàng ngày được trả lời ngay từ trong nhà, trước AI: thời gian, thời tiết bên ngoài, thiết bị được đặt tên đang bật, tắt, mở hay khóa, nhiệt độ phòng, báo thức hoặc lời nhắc tiếp theo, khách đến thăm và liệu ngôi nhà có bị khóa hay không. Chỉ những câu hỏi, chỉ một thiết bị duy nhất phù hợp rõ ràng và được tiếp xúc với trợ lý giọng nói; mọi thứ khác sẽ được chuyển đến AI như bình thường. Nội dung trao đổi được thêm vào cuộc trò chuyện để người theo dõi vẫn biết nội dung được hỏi. Khách và phòng riêng chỉ nhận được thông tin về thời gian, thời tiết và trạng thái thiết bị. Tắt: mọi câu hỏi sẽ được chuyển đến AI.",
+     "capability_awareness": "Giọng nói sẽ cho biết nó có thể điều khiển những thứ gì trong ngôi nhà này bằng giọng nói (từ những gì được tiếp xúc với trợ lý giọng nói, với số lượng mỗi thứ) và những thứ thông thường mà ngôi nhà không có, chẳng hạn như khóa thông minh hoặc rèm có động cơ, vì vậy nó không bao giờ cung cấp những thứ mà không thiết bị nào có thể làm được. Một lời đề nghị được bỏ qua (đóng cửa sổ, khóa cửa) sẽ bị loại khỏi câu trả lời trước khi nó được nói ra. Làm việc cứ năm phút một lần, không có AI. Tắt: không có gì được thêm hoặc bớt.",
+     "house_context_entities": "Các thiết bị được đưa vào bản tóm tắt chung về ngôi nhà, cùng với các báo cáo về khí hậu và mở cửa/hiện diện tự động. Chỉ những thiết bị hiện có và có thể truy cập được mới được chia sẻ; tối đa tám bài đọc có liên quan cho mỗi yêu cầu.",
+     "house_context_updates": "Yêu cầu bối cảnh ngôi nhà hiện tại. Sau khi yêu cầu sưởi ấm được bảo vệ đã được xác minh, bạn có thể tùy ý nói một lần khi bộ điều nhiệt đó báo cáo nhiệt độ được yêu cầu. Hết hạn sau một giờ, hủy nếu mục tiêu của nó thay đổi, tối đa một lần cập nhật mỗi 15 phút. Tôn trọng các quy tắc phát biểu thông thường và chế độ khách. Tắt theo mặc định. Tắt xóa các bản cập nhật đang chờ xử lý.",
+     "security_event_evidence": "Sử dụng ID sự kiện, ảnh chụp nhanh và clip Frigate trên máy ảnh đã định cấu hình. Sự trùng khớp về camera/thời gian duy nhất là một liên kết ứng viên, không phải là bằng chứng cho thấy cảm biến đã xác định được sự kiện đó. Lưu giữ tới 3.000 bản ghi sự kiện trong bảy ngày tại địa phương. Tắt theo mặc định. Vô hiệu hóa ẩn liên kết và ngừng khớp; hồ sơ được giữ lại hết hạn hoặc có thể bị lãng quên.",
+     "security_event_zones": "Chỉ những gì đi vào một vùng: trên camera có vùng Frigate, một sự kiện chỉ được liệt kê (và có thể bắt đầu một sự cố bảo mật) khi đối tượng đã vào một trong các vùng đó, quy tắc tương tự mà Frigate sử dụng cho các cảnh báo của nó. Một máy ảnh không có vùng liệt kê mọi thứ. Phát hiện được mọi thứ: mọi đối tượng Frigate đều theo dõi trên các camera đã chọn. Cài đặt riêng của Frigate không bao giờ thay đổi.",
+     "security_event_hidden_zones": "Mỗi dòng một cái dùng làm camera/khu vực, ví dụ như cổng/đường lái xe. Các sự kiện chỉ có ở những vùng này sẽ không được liệt kê và không gây ra sự cố bảo mật. Sử dụng ẨN KHU NÀY trên trang Bảo mật sau một vài lần chỉnh sửa 'không phải người' ở đó hoặc xóa một dòng để liệt kê lại khu vực đó. Frigate không thay đổi.",
+     "security_coverage": "Hiển thị những camera được định cấu hình nào đã đóng góp bằng chứng được giữ lại và mọi báo cáo không có sẵn được ghi lại cùng với các sự cố trực tiếp. Báo cáo camera hiện tại được hiển thị riêng biệt. Tắt tính năng này sẽ xóa các khoảng trống bảo hiểm được giữ lại.",
+     "frigate_pipeline_health": "Đọc tính khả dụng của Frigate MQTT, tốc độ xử lý trên mỗi camera và thời điểm Sentient nhận được sự kiện lần cuối. Dữ liệu bị thiếu được hiển thị dưới dạng không xác định. Không có cài đặt máy ảnh nào được thay đổi.",
+     "security_conversation_context": "Ghi nhớ sự kiện đã chọn trong tối đa năm phút trong cùng một cuộc trò chuyện, thiết bị và người dùng. Các câu hỏi tiếp theo sử dụng sự kiện đó và báo cáo tỷ lệ lấp đầy mới; không có danh tính hoặc sự hiện diện tiếp tục được giả định. Theo dõi các sự kiện camera được cấu hình. Tắt theo mặc định. Tắt sẽ xóa tham chiếu cuộc trò chuyện; hồ sơ sự kiện vẫn giữ nguyên thời hạn sử dụng thông thường của chúng.",
+     "security_event_feedback": "Quản trị viên có thể đánh dấu một lượt truy cập là một sản phẩm tốt chứ không phải một người hoặc một người để bỏ qua. Các lượt truy cập đã xem xét sẽ chuyển vào danh sách Đã xem xét gấp lại và 'không phải một người' cũng được tính là phát hiện sai đã được xem xét đối với một sự cố bảo mật chỉ xảy ra trong lượt truy cập đó. Việc sửa chữa sẽ tồn tại trong bảy ngày. Không có thay đổi quy tắc phát hiện, cảnh báo hoặc thông báo tự động. Việc tắt sẽ ẩn phản hồi và dừng các chỉnh sửa mới; sử dụng Quên dữ liệu gần đây để xóa các bản ghi được giữ lại.",
+     "share_clip_analysis": "Chia sẻ các phân tích chung tương thích của cùng một sự kiện Frigate đã hoàn thành trên các câu hỏi xem clip tự động và clip sự kiện. Nhà cung cấp, phạm vi phủ sóng của cảnh quay và cài đặt danh tính phải khớp nhau. Các câu hỏi tùy chỉnh được phân tích riêng. Lưu giữ tối đa 100 kết quả trong bộ nhớ trong sáu giờ. Tắt theo mặc định. Vô hiệu hóa, thay đổi cài đặt hoặc quên xóa bộ nhớ đệm.",
+     "sleep_ignore_sensors": "Cảm biến chuyển động kích hoạt khi mọi người đang ngủ, chẳng hạn như cảm biến trong phòng ngủ. Đi ngủ chờ không có gì động đậy trong khoảng thời gian trên; một cảm biến phòng ngủ kích hoạt khi có người lật người sẽ giữ cho ngôi nhà \"tỉnh táo\" suốt đêm, vì vậy hãy liệt kê nó ở đây. Họ vẫn tính cho mọi thứ khác.",
+     "heating_graph": "Bật: thẻ sưởi ấm trên tab Nhà hiển thị nhiệt độ trong 24 giờ qua của mỗi bộ điều nhiệt so với nhiệt độ đã đặt, với thời gian đã lên lịch được tô bóng. Đọc từ lịch sử của Home Assistant; không có gì bổ sung được lưu trữ. Tắt: biểu đồ bị ẩn.",
+     "heating_revert": "Bật: nếu bộ điều nhiệt được tăng, giảm hoặc tắt bằng tay (hoặc tự thay đổi) và không trở lại theo lịch trình, Sentient sẽ để nó một lúc rồi đặt lại: nhiệt độ trong khoảng thời gian trong ngày, nhiệt độ ban đêm vào ban đêm. Chỉ có bộ điều nhiệt trong lịch trình sưởi ấm. Một thay đổi được thực hiện bằng tay hoặc bằng giọng nói sẽ kéo dài toàn bộ thời gian ngay cả khi một khoảng thời gian bắt đầu hoặc kết thúc trong thời gian đó; sau đó lịch trình sẽ tiếp tục. Tắt: thay đổi thủ công sẽ ở lại cho đến thời gian đã lên lịch tiếp theo. Không có gì được lưu trữ theo cả hai cách.",
+     "window_heating": "Bật: khi cửa sổ hoặc cửa ra vào đã mở được vài phút và căn phòng đó có máy sưởi riêng, Sentient sẽ giảm máy sưởi đó xuống nhiệt độ ban đêm và đặt nó trở lại khi cửa sổ đóng, nhưng chỉ khi không có ai thay máy sưởi trong thời gian đó. Bộ điều nhiệt cho cả nhà không bao giờ được tắt cho một cửa sổ: Sentient chỉ thông báo khi cửa sổ đang mở và hệ thống sưởi đang bật. Bỏ cuộc sau 3 giờ. Tắt: không có gì thay đổi hoặc nói; bất cứ thứ gì nó đã từ chối sẽ được đặt lại (nếu không có ai thay đổi nó) và bản ghi nhỏ của nó sẽ bị xóa.",
+     "window_heating_minutes": "Cửa sổ phải mở trong bao lâu trước khi Sentient hoạt động. Mặc định 5 phút.",
+     "rooms_view": "Bật: tab Nhà hiển thị ô cho từng phòng — nhiệt độ, độ ẩm, đèn bật, cửa ra vào và cửa sổ mở, thời điểm ai đó di chuyển đến đó lần cuối và nội dung đang phát — và phần tổng quan nhận được một thẻ ngắn xung quanh nhà. Được xây dựng từ khu vực của bạn; không có gì được lưu trữ Tắt: cả hai đều bị ẩn.",
+     "outdoor_areas": "Các khu vực bên ngoài ngôi nhà, chẳng hạn như chuồng thỏ, nhà kho hoặc nhà kính. Họ vẫn nhận được ô riêng của mình trên tab Nhà, được đánh dấu BÊN NGOÀI và nhiệt độ của họ được hiển thị trên dòng riêng trên phần tổng quan, nhưng họ bị đưa ra khỏi căn phòng ấm nhất và mát nhất, và chuyển động ở đó (một camera nhìn thấy mọi người đi ngang qua) không được tính là có người ở trong nhà. Để trống để tính mọi khu vực là một phần của ngôi nhà.",
+     "knowledge_card": "Bật: tab Tâm trí tóm tắt những gì nó đã tìm hiểu được về ngôi nhà — thời gian đi ngủ và thức dậy thông thường, các cảm biến được đặt sang một bên, hệ thống sưởi ấm lên nhanh như thế nào, đoán phòng bên cạnh, thói quen và ký ức. Nó chỉ cho thấy những gì đã được biết; không có gì bổ sung được lưu trữ. Tắt: thẻ bị ẩn.",
+     "day_chart": "Bật: phần tổng quan hiển thị ngày hôm nay theo từng giờ — chuyển động, nội dung, điều gì đã xảy ra bên ngoài và điều bạn đã hỏi — với thời điểm ai đó thức dậy lần đầu và giờ bận rộn nhất. Tính từ dòng thời gian; không có gì bổ sung được lưu trữ. Tắt: biểu đồ bị ẩn.",
+     "house_ledger": "Bật: mọi thay đổi đối với mọi thiết bị đều được ghi lại nguyên nhân gây ra nó (một người, một yêu cầu bằng giọng nói, tự động hóa, Sentient hoặc không có gì trong Home Assistant, nghĩa là chính thiết bị, ứng dụng của nó hoặc ai đó ở đó), vì vậy bạn có thể hỏi \"khi nào hệ thống sưởi tắt và tại sao?\". Những con số thay đổi nhanh được giữ lại như những thay đổi đáng chú ý. Được lưu giữ 90 ngày trong cơ sở dữ liệu riêng của Sentient, sau đó được tóm tắt theo ngày. Tắt: không có gì mới được ghi lại; những gì đã được giữ nguyên cho đến khi bạn xóa nó trên tab Tâm trí.",
+     "unexplained_changes": "Bật: khi một thiết bị được theo dõi (theo mặc định là hệ thống sưởi, máy nước nóng và van) thay đổi mà không có gì trong Home Assistant phía sau vào thời điểm bất thường đối với thiết bị đó, nó sẽ được nói một lần và đưa vào dòng thời gian, và các lần lặp lại được liên kết: \"lần thứ ba trong tuần này, luôn vào khoảng 11 giờ sáng\". Mặc dù nó vẫn đang học một thiết bị hoặc khi việc lặp lại trở nên bình thường, nó chỉ đi theo dòng thời gian. Tắt: vẫn được ghi lại, chưa bao giờ được đề cập.",
+     "unexplained_entities": "Để trống cho hệ thống sưởi, máy nước nóng và van. Khóa, cửa và cổng được sử dụng thủ công hàng ngày, vì vậy chỉ thêm chúng nếu bạn muốn nghe về chúng.",
+     "expectations": "Bật: tìm hiểu tần suất mỗi thiết bị thay đổi vào mỗi giờ, vào các ngày trong tuần và cuối tuần (được khởi động từ ba tuần lịch sử gần đây nhất) và chấm điểm mọi thay đổi từ bình thường đến rất bất thường. Tab Tâm trí hiển thị mức độ mong đợi của mỗi ngày. Đếm đơn giản, không có AI. Tắt: không có điểm; làm rõ những gì nó đã học được trên tab Tâm trí.",
+     "surprise_gating": "Watch: ghi chú những nhận xét nào nó sẽ bỏ qua vì sự thay đổi là bình thường vào thời điểm đó, không bỏ qua bất kỳ nhận xét nào. Bật: bỏ qua chúng, thao tác này cũng lưu cuộc gọi AI. Không bao giờ áp dụng cho cảnh báo an toàn, báo động hoặc bất cứ điều gì bạn yêu cầu.",
+     "situations": "Bật: giọng nói được kể một vài dòng đơn giản về những gì đang diễn ra (vừa về đến nhà, có chuyển động trong 15 phút qua, có điều gì bất thường trong một giờ qua). Không dùng chung với khách hoặc ở phòng riêng. Tắt: không có gì được gửi thêm.",
+     "beliefs": "Bật: mỗi đêm, nó tìm kiếm những thứ cứ tự xảy ra vào cùng một thời điểm, kiểm tra từng thứ với ngày vừa trôi qua, hỏi xem cái nào giữ được và loại bỏ những cái không. Không có AI. Tắt: không có niềm tin mới và không có thử nghiệm; những cái hiện có sẽ được xóa bằng việc học trên tab Tâm trí.",
+     "learn_reactions": "Bật: một cái gì đó Sentient đã chuyển đổi được đặt lại ngay lập tức được tính là không thể thực hiện lại và nhận xét rằng ai đó hành động dựa trên số lượng có lợi cho nó. Tắt: phản ứng không được tính điểm.",
+     "ai_case_memory": "Bật: tác vụ AI nền giống hệt với tác vụ trong sáu giờ qua sẽ sử dụng lại câu trả lời đó thay vì một cuộc gọi khác. Không bao giờ được sử dụng cho hình ảnh hoặc clip. Tắt: mọi công việc đều gọi AI và các câu trả lời đã lưu sẽ bị xóa.",
+     "memory_tags": "Một lần cho mỗi ký ức, một cuộc gọi nhỏ của AI vào ban đêm sẽ thêm một số từ liên quan mà mọi người có thể sử dụng thay thế (“ấm đun nước” → pha, trà, cốc), vì vậy “bạn có thích một tách trà không?” tìm thấy những kỷ niệm ấm đun nước. Lên đến 40 kỷ niệm một đêm; không cần máy chủ nhúng. Tắt nó sẽ dừng cuộc gọi hàng đêm và thu hồi sẽ bỏ qua các từ (chúng được giữ lại nên việc bật lại sẽ diễn ra ngay lập tức). Tắt theo mặc định.",
+     "memory_upkeep": "Trong quá trình phản ánh qua đêm (không có cuộc gọi AI bổ sung), những ký ức mà một người đã nói vào ngày hôm đó cho thấy đã lỗi thời sẽ được đưa ra đúng và được lưu giữ như một dự đoán cho đến khi được xác nhận. Mỗi ngày một lần, một lần đoán (điều gì đó nó diễn ra thay vì được nói) sẽ được thêm vào câu hỏi của nó, để nó có thể hỏi liệu điều đó có đúng hay không. Ký ức mà một người đã xác nhận hoặc ghim sẽ không bao giờ thay đổi. Cần sự phản ánh qua đêm. Tắt: ký ức chỉ được thêm vào, không bao giờ được sửa chữa.",
+     "watch_actions": "Đồng hồ và lời nhắc có thể làm cũng như nói, kiểm tra tình trạng trước và đợi điều gì đó kéo dài: \"nếu cửa sau mở trong mười phút, hãy tắt đèn hành lang và cho tôi biết\", \"khi giặt xong, hãy bật đèn hành lang\", \"lúc 11 giờ, nếu cửa sau vẫn mở, hãy cho tôi biết\". Giọng nói sẽ đọc lại từng thông tin và nó chỉ được thiết lập sau khi bạn đồng ý ở lượt tiếp theo. Chỉ các thiết bị được tiếp xúc với trợ lý giọng nói, không bao giờ có báo thức, khóa, tập lệnh hoặc bất kỳ thứ gì trong danh sách không bao giờ chạm vào; mỗi thiết bị sẽ được kiểm tra sau đó và câu trả lời cho biết điều gì đã không xảy ra. Tắt: đồng hồ và lời nhắc chỉ phát biểu như trước đây và những đồng hồ đã đặt sẽ không hoạt động.",
+     "memory_time": "Những điều được nói chỉ đúng trong một thời gian, hãy tự mình xác định ngày kết thúc: \"bây giờ\", \"vào lúc này\", \"tuần này\", \"cho đến thứ Sáu\" và những thứ chỉ xảy ra một lần (\"Tôi đã bật máy sưởi\") được lưu giữ trong một ngày với ngày được ghi vào, thay vì trở thành sự thật vĩnh viễn. Mỗi ngày một lần, một thông tin chưa ai xác nhận hoặc sử dụng trong ba tháng sẽ được kiểm tra với bạn. Phản ánh qua đêm cũng viết một câu chuyện ngắn mỗi ngày (không có cuộc gọi AI bổ sung), được lưu giữ trong 60 ngày, vậy \"thứ Bảy tuần trước chúng ta đã làm gì?\" hoặc \"Lần cuối cùng nồi hơi hoạt động là khi nào?\" có thể được trả lời Cần sự phản ánh qua đêm cho các câu chuyện và kiểm tra. Tắt: ký ức chỉ giữ lại ngày tháng mà chúng đặt tên và không có câu chuyện nào được lưu giữ (những câu chuyện đã lưu sẽ bị xóa).",
+     "who_where": "Tổng hợp những gì mỗi nguồn biết — trình theo dõi phòng điện thoại (đặt trong Giọng nói), người được nhận ra lần cuối đang nói chuyện và ở đâu cũng như chuyển động khi chỉ có một người ở nhà — thành một dự đoán tốt nhất cho mỗi người: phòng nào, mức độ chắc chắn và kể từ khi nào. Giọng nói được đưa ra thay vì dòng theo dõi phòng đơn giản, cho biết mức độ chắc chắn của nó và không bao giờ nói bất cứ điều gì về người không có nhà. Không có gì được lưu trữ. Tắt: giọng nói chỉ có dòng theo dõi phòng như trước.",
+     "big_plans": "\"Chuẩn bị sẵn sàng cho buổi tối xem phim ở nhà\" hoặc \"sắp xếp nhà cửa, chúng ta sẽ đi xa\": giọng nói lập ra một kế hoạch ngắn gồm các bước của thiết bị, đọc lại và chỉ thực hiện việc đó sau khi đồng ý ở lượt tiếp theo. Sau đó, mỗi bước sẽ được kiểm tra trên thiết bị và câu trả lời cho biết điều gì đã không xảy ra. Chỉ những thiết bị được tiếp xúc với trợ lý giọng nói; không bao giờ báo động, khóa, tập lệnh hoặc danh sách không bao giờ chạm; lên đến 12 bước. Tắt: các yêu cầu lớn được xử lý từng thiết bị một, như trước đây.",
+     "self_grading": "Mỗi đêm, giọng nói nói ngày hôm đó về việc thứ gì đó đang bật, tắt, mở hay đóng sẽ được đối chiếu với những gì ngôi nhà ghi lại vào thời điểm đó. Một lỗi sai sẽ được thêm vào \"Nơi giọng nói bị sai\" trên trang Tâm trí và trở thành một bài học (\"kiểm tra cửa sau trước khi nói xem nó có mở không\"), vì vậy nó sẽ cải thiện mà không cần sửa chữa. Không có AI. Cần nhật ký độ tin cậy. Tắt: không có gì được kiểm tra.",
+     "voice_speed_watchdog": "Bật: thông báo khi người nói mất nhiều thời gian để nghe bạn hơn so với thời gian bạn nói (âm thanh của loa đến chậm hơn thời gian thực) và đưa vào dòng thời gian kèm theo đề xuất khởi động lại. Tắt: không kiểm tra.",
+     "voice_speed_restart": "Bật: loa liên tục bị lag được khởi động lại bằng nút khởi động lại của chính nó. Tắt: nó chỉ được đề xuất.",
+     "incident_stages": "Bật: mỗi sự cố an ninh cho thấy nó đã đi được bao xa — được quan sát, điều tra, có thể là gia đình, liên quan hoặc giải quyết — từ những gì được ghi lại, chứ không bao giờ là ai. Tắt: sự cố được liệt kê không có giai đoạn.",
+     "cognitive_shadow": "Bật: cách thứ hai, chặt chẽ hơn để đánh giá từng sự cố bảo mật diễn ra song song với các giai đoạn thông thường và tính tần suất cả hai đồng ý, với mức độ diễn ra của các hành động bằng giọng nói, chỉ hiển thị trên cảm biến Tâm trí dưới dạng tổng số (không có tên, hình ảnh hoặc thiết bị). Nó dùng để thử nghiệm: nó không bao giờ thay đổi cảnh báo, giai đoạn, nội dung được nói hoặc giọng nói được thông báo. Tắt: không có gì được so sánh và việc đếm bắt đầu lại.",
+     "cognitive_decides": "Bật: khi đánh giá của bạn về các sự cố bảo mật (các nút bên dưới mỗi sự cố trên tab Tâm trí) cho thấy nó đúng từng loại — ít nhất 10 sự cố gia đình được đánh giá với 90% đồng ý, ít nhất 10 sự cố khác hầu như không bao giờ gọi là gia đình và không có sự cố liên quan nào được gọi là ít nghiêm trọng hơn — cốt lõi nhận thức quyết định giai đoạn của mỗi sự cố: tab Tâm trí và giọng nói nói lên một sự cố là gì. Nó sẽ tự dừng lại nếu các lần đánh giá sau đó không đạt yêu cầu và ghi rõ như vậy trên dòng thời gian. Nó không bao giờ thay đổi hoặc giữ lại cảnh báo và không bao giờ gọi một sự cố là ít nghiêm trọng hơn mức \"liên quan\" của các quy tắc thông thường. Cho đến khi nó kiếm được nó, không có gì thay đổi. Tắt: các quy tắc thông thường quyết định; đánh giá của bạn được lưu giữ.",
+     "cognitive_quiet_heads_up": "Chỉ kiểm tra: ghi lại tính đủ điều kiện dựa trên đánh giá sự cố nhưng không bao giờ chặn cảnh báo bảo mật bằng giọng nói hoặc qua điện thoại. Việc mở cổng sau đó phát hiện người qua camera không xác định được danh tính hộ gia đình. Tính năng này không thể tắt bất cứ điều gì cho đến khi bằng chứng nhận dạng được xác minh độc lập đã được triển khai và thử nghiệm.",
+     "weather_warnings": "Bật: các cảnh báo chính thức cho quốc gia của bạn được kiểm tra 30 phút một lần (Cơ quan Khí tượng và Môi trường ở Vương quốc Anh, MeteoAlarm trên khắp Châu Âu, Dịch vụ Thời tiết Quốc gia ở Hoa Kỳ), sử dụng vị trí của Home Assistant. Tắt: không kiểm tra và những gì tìm thấy sẽ bị lãng quên.",
+     "warnings_country": "Để trống để sử dụng quốc gia của Home Assistant.",
+     "warnings_region": "Chỉ cảnh báo đặt tên khu vực này, ví dụ: Tây Bắc nước Anh. Để trống toàn quốc (lũ lụt và cảnh báo của Mỹ luôn ở gần nhà).",
+     "warnings_speak": "Bật: cảnh báo màu hổ phách, đỏ hoặc nghiêm trọng mới được nói một lần. Tắt: cảnh báo chỉ xuất hiện trên dòng thời gian.",
+     "email_read": "Bật: giữ nguyên người gửi, chủ đề và bản xem trước ngắn gọn của 20 tin nhắn gần nhất Báo cáo tích hợp IMAP của Home Assistant, vì vậy bạn có thể hỏi \"có email mới nào không?\". Chỉ đọc, không có mật khẩu, không bao giờ chia sẻ với khách. Tắt: không có gì được giữ và những gì được giữ sẽ bị xóa.",
+     "calendar_clashes": "Bật: \"ngày mai có đụng độ không?\" tìm thấy các sự kiện trùng lặp hoặc cách nhau dưới 15 phút trong lịch của cuộc họp (hoặc tất cả các lịch). Tắt: không được cung cấp.",
+     "security_audit": "Bật: quản trị viên có thể hỏi \"thiết lập của tôi có an toàn không?\" để kiểm tra chỉ đọc đối với quyền truy cập từ xa http đơn giản, khóa và cảnh báo mà giọng nói có thể tiếp cận mà không cần xác nhận, mã thông báo tồn tại lâu dài và quản trị viên mà không cần đăng nhập hai yếu tố. Tắt: không được cung cấp.",
+     "automation_builder": "Bật: quản trị viên có thể yêu cầu tự động hóa bằng tiếng Anh đơn giản; mọi thiết bị và hành động đều được kiểm tra, nó sẽ được đọc lại để xác nhận có, sau đó được lưu vào automations.yaml giống như lưu từ trình chỉnh sửa. Tắt: không được cung cấp; tự động hóa đã được thực hiện ở lại.",
+     "pronounce_names": "Bật: tên mà giọng nói đọc sai chính tả sẽ được đọc theo cách phát âm, chỉ trên loa — cuộc trò chuyện, dòng thời gian và điện thoại vẫn giữ nguyên chính tả thực. Lấy từ những dòng bên dưới và từ những ký ức như \"Siobhan được phát âm là Shivawn\". Tắt: tên được đọc theo chính tả.",
+     "pronunciations": "Đã viết = đã nói, mỗi dòng một dòng, ví dụ: Siobhan = Shivawn. Đánh vần phiên bản đã nói theo cách giọng nói sẽ đọc.",
+     "health_duplicates": "Bật: một thiết bị xuất hiện hai lần dưới một tên trong đó một bản sao trống (một phích cắm Tuya Local và một lần nữa từ đám mây của Tuya) được hiển thị trong Tình trạng nội bộ, với một nút để tắt bản sao trống. Tắt: chưa được kiểm tra.",
+     "manuals_local_ocr": "Tùy chọn và tắt theo mặc định. Nếu Tesseract đã được cài đặt trên máy chủ Home Assistant, hãy đọc văn bản từ tối đa 20 trang PDF chỉ có hình ảnh trên mỗi tệp. Không có yêu cầu hoặc tải xuống trên đám mây. Trên hệ điều hành Home Assistant tiêu chuẩn, Tesseract có thể không khả dụng; dự phòng PDF ban đầu vẫn còn.",
+     "memory_semantic_enabled": "Tắt theo mặc định. Với dịch vụ nhúng Ollama cục bộ được định cấu hình rõ ràng, chỉ xếp hạng lại các kết quả bộ nhớ đã được phép cho người dùng này. Văn bản riêng tư được gửi đến máy chủ LAN đã định cấu hình, không bao giờ tự động được gửi tới internet. Máy chủ được định cấu hình sẽ nhận các đoạn bộ nhớ đã chọn, vì vậy hãy chạy nó trên máy đáng tin cậy mà bạn kiểm soát.",
+     "memory_semantic_url": "Một HTTP URL chẳng hạn như http://192.168.1.20:11434. Chỉ chấp nhận các địa chỉ LAN/loopback riêng bằng số (sử dụng 127.0.0.1 thay vì localhost). Máy chủ phải hiển thị /api/embed và đã cài đặt mô hình.",
+     "memory_semantic_model": "Tên của mô hình nhúng đã được cài đặt trong Ollama, chẳng hạn như nomic-embed-text. Sentient sẽ không tải xuống mô hình. Các dịch vụ không khả dụng hoặc chậm sẽ quay trở lại tìm kiếm thông thường.",
+     "ai_routing_enabled": "Tắt theo mặc định. Chỉ các tác vụ văn bản nền đủ điều kiện mới có thể sử dụng giải pháp thay thế đã định cấu hình sau khi cả hai nhà cung cấp đều có hơn 20 cuộc gọi được đo lường và có đủ độ tin cậy ở cấp độ dịch vụ. Không chuyển đổi hình ảnh, đầu ra có cấu trúc hoặc lựa chọn AI rõ ràng.",
+     "ai_routing_alternative": "Thực thể Home Assistant ai_task thứ hai để xem xét các tác vụ văn bản nền phù hợp. Nó phải tồn tại cục bộ và không bao giờ được sử dụng nếu không có lịch sử dịch vụ và ước tính chi phí được đo lường.",
+     "ai_routing_primary_cost": "Giá gần đúng của riêng bạn cho một công việc văn bản có thể so sánh được; không phải là thanh toán của nhà cung cấp. Cả hai mức giá phải được bạn cung cấp và xác minh trước khi xem xét nhà cung cấp rẻ hơn.",
+     "ai_routing_alternative_cost": "Ước tính giá của riêng bạn cho thực thể Nhiệm vụ AI thay thế. Đây không phải là thanh toán trực tiếp và có thể khác với phí mã thông báo thực.",
+     "ai_routing_max_p95_ms": "Chỉ xem xét nhà cung cấp thứ cấp khi thời gian phục vụ ở phân vị thứ 95 được đo nằm trong giới hạn này. Mặc định là 4000 ms. Trả lời bằng giọng nói tiếp tục thông qua hệ thống hiện có của họ.",
+     "heating_energy_sensor": "Cảm biến năng lượng kWh tích lũy đo hệ thống sưởi, không phải toàn bộ ngôi nhà. Sử dụng cảm biến được Recorder lưu giữ với lịch sử đủ lâu.",
+     "heating_measurement_date": "Ngày thay đổi mà bạn muốn kiểm tra. Sentient so sánh tới 14 ngày trước và sau với cùng ngày trong tuần; nó không thể chứng minh Sentient gây ra sự khác biệt.",
+     "heating_energy_price_kwh": "Ước tính tùy chọn chỉ được sử dụng để chuyển những khác biệt kWh quan sát được thành những thay đổi tiền tệ gần đúng hàng ngày, không phải hóa đơn thực tế hoặc khoản tiết kiệm đã được chứng minh.",
+     "autooff_respect_recent_voice": "Tắt theo mặc định. Khi được bật, tính năng tự động tắt đèn hoặc công tắc sẽ được giữ trong tối đa hai phút sau khi có lệnh bật bằng giọng nói được bảo vệ ở mức ưu tiên cao hơn. Không áp dụng cho các yêu cầu dừng thủ công, sưởi ấm, khóa hoặc báo động."
+    }
+   },
+   "memories": {
+    "title": "Ký ức",
+    "description": "Ngôi nhà nhớ những điều {count}. Chọn một cái để chỉnh sửa, đánh dấu vào cái nào đó để quên hoặc thêm cái mới.",
+    "data": {
+     "edit": "Chỉnh sửa kỷ niệm",
+     "forget": "Quên",
+     "add": "Thêm một kỷ niệm",
+     "category": "Thể loại cho bộ nhớ mới"
+    }
+   },
+   "edit_memory": {
+    "title": "Chỉnh sửa bộ nhớ",
+    "data": {
+     "text": "Ký ức",
+     "category": "Loại"
+    }
+   },
+   "briefing": {
+    "title": "Tóm tắt trạng thái",
+    "description": "Nội dung của bản tóm tắt — từ nút TÓM TẮT, bằng giọng nói hoặc vào một thời điểm nhất định mỗi ngày.",
+    "data": {
+     "briefings": "Tóm tắt về",
+     "briefing_sections": "Bao gồm",
+     "briefing_weather": "Thời tiết từ",
+     "briefing_todo": "Danh sách việc cần làm",
+     "briefing_calendars": "Lịch",
+     "briefing_system": "Cảm biến hệ thống để báo cáo",
+     "outside_info": "Thông tin bên ngoài",
+     "parcel_trackers": "Máy theo dõi bưu kiện",
+     "briefing_time": "Báo cáo hàng ngày tại",
+     "digest_time": "Thông báo hàng ngày lúc",
+     "morning_briefing": "Tóm tắt khi ai đó lần đầu tiên đến",
+     "morning_briefing_areas": "Phòng họp buổi sáng",
+     "morning_briefing_quiet": "Cuộc họp buổi sáng trong giờ yên tĩnh"
+    },
+    "data_description": {
+     "briefings": "Tắt tắt nút, công cụ thoại và dịch vụ.",
+     "briefing_weather": "Để trống để sử dụng thực thể thời tiết đầu tiên.",
+     "briefing_system": "ví dụ. Nhiệt độ CPU, sử dụng đĩa, NAS. Cập nhật đang chờ xử lý luôn được tính.",
+     "outside_info": "Các cảm biến từ các tổ hợp tích hợp khác đọc thông tin về cuộc họp và buổi tối vào ngày mai: giá điện hôm nay, cảnh báo thời tiết, bưu kiện đang trên đường đến, ngày khai giảng tiếp theo. Các số đọc trống, số 0 và 'tắt' bị bỏ qua. Văn bản từ những điều này chỉ được coi là thông tin.",
+     "parcel_trackers": "Khi một người nói rằng một bưu kiện đã được giao, nó sẽ nói như vậy một lần và trông chừng cửa cả ngày (ngay cả khi cảnh báo bưu kiện đã tắt); nếu nó nói đã giao hàng trước khi có thứ gì đó được nhìn thấy ở cửa thì nó cũng nói như vậy. Trống: tắt.",
+     "briefing_time": "Không bắt buộc. Chỉ nói khi có người ở nhà và không phải là giờ yên tĩnh.",
+     "digest_time": "Tùy chọn: mỗi ngày một lần AI tóm tắt dòng thời gian trong một vài câu. Nó đi theo dòng thời gian (và đến điện thoại nếu được chọn). không nói.",
+     "morning_briefing": "Mỗi ngày một lần, trước buổi trưa, trong phòng có người vào, ngay khi ngôi nhà nhìn thấy họ đi lại (hoặc nếu không có điều đó thì đó là lần đầu tiên có người di chuyển sau khi kết thúc giờ yên tĩnh).",
+     "morning_briefing_areas": "Tùy chọn: chỉ đưa ra thông báo này khi có người lần đầu tiên bước vào một trong những phòng này vào buổi sáng, trên loa của phòng đó — thức dậy, tắm rửa và mặc quần áo, sau đó nghe thấy nó trong nhà bếp hoặc phòng khách. Trống rỗng: dù họ ở đâu.",
+     "morning_briefing_quiet": "Tắt: ai đó thức dậy trước khi kết thúc giờ yên tĩnh sẽ nhận được bản tóm tắt sau khi họ kết thúc, lần đầu tiên họ được nhìn thấy đang di chuyển (trong phòng họp buổi sáng, nếu được chọn) và mọi thứ được giữ qua đêm sẽ được gấp vào đó. Bật: nó được phát ngay khi họ xuất hiện, ngay cả trong những giờ yên tĩnh, chỉ trên loa của căn phòng đó."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Ký ức"
+   },
+   "last_spoken": {
+    "name": "Nói lần cuối"
+   },
+   "likely_room": {
+    "name": "Phòng có khả năng"
+   },
+   "watches": {
+    "name": "Đồng hồ"
+   },
+   "routines": {
+    "name": "Thói quen"
+   },
+   "visitors": {
+    "name": "Du khách"
+   },
+   "health": {
+    "name": "Sức khỏe ngôi nhà"
+   },
+   "drive": {
+    "name": "Lái xe"
+   },
+   "mind": {
+    "name": "Suy nghĩ"
+   },
+   "house": {
+    "name": "Căn nhà",
+    "state": {
+     "awake": "Thức giấc",
+     "asleep": "Ngủ"
+    }
+   },
+   "screen": {
+    "name": "Màn hình",
+    "state": {
+     "idle": "Nhàn rỗi",
+     "morning": "Buổi sáng",
+     "notice": "Để ý",
+     "alert": "Báo động"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "im lặng"
+   },
+   "guest_mode": {
+    "name": "Chế độ khách"
+   },
+   "chime": {
+    "name": "Kêu vang"
+   },
+   "party_mode": {
+    "name": "Trình diễn ánh sáng"
+   },
+   "media_speakers": {
+    "name": "loa Echo"
+   },
+   "media_important_only": {
+    "name": "Echos: chỉ báo thức và nhắc nhở"
+   },
+   "away_lights": {
+    "name": "Đèn sân khách"
+   },
+   "screen": {
+    "name": "Màn hình máy tính bảng"
+   },
+   "holiday": {
+    "name": "Chế độ nghỉ lễ"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Với bản sao lưu"
+   },
+   "alexa": {
+    "name": "Dành cho Alexa"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Thấp",
+    "normal": "Bình thường",
+    "urgent": "Khẩn cấp (bỏ qua những giờ yên tĩnh)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Sự thật",
+    "preference": "Sự ưa thích",
+    "person": "Người",
+    "routine": "Lịch trình",
+    "note": "Ghi chú",
+    "correction": "Sửa chữa"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Tắt",
+    "quiet": "Im lặng",
+    "normal": "Bình thường",
+    "chatty": "trò chuyện"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Thời gian",
+    "weather": "Thời tiết",
+    "reminders": "Lời nhắc đến hạn hôm nay",
+    "watches": "Nội dung đang được xem",
+    "routines": "Các thói quen sắp diễn ra",
+    "open": "Cửa sổ và cửa ra vào mở",
+    "visitors": "Khách thăm hôm nay",
+    "said": "Những gì đã được nói gần đây",
+    "system": "Tình trạng hệ thống",
+    "todo": "Danh sách việc cần làm",
+    "calendar": "Lịch (24 giờ tới)",
+    "energy": "Điện được sử dụng ngày nay (và bất cứ điều gì bất thường)",
+    "security": "Bất cứ thứ gì mở hoặc mở khóa"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Thông báo khẩn cấp",
+    "held_quiet": "Mọi thứ được giữ lại trong những giờ yên tĩnh",
+    "unheard": "Những điều không ai có thể nghe thấy (không có loa)",
+    "visitors": "Chuông cửa có khách và bưu kiện",
+    "watches": "Đồng hồ và lời nhắc đang tắt",
+    "health": "Vấn đề sức khỏe gia đình",
+    "digest": "Bản tóm tắt hàng ngày",
+    "critical": "Cảnh báo an toàn (khói, CO, gas, rò rỉ)",
+    "security": "Mọi thứ còn bỏ ngỏ khi mọi người ra ngoài"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "Bình tĩnh và đi vào vấn đề",
+    "dry": "Khô khan",
+    "warm": "Ấm áp và thân thiện",
+    "cheeky": "Táo bạo",
+    "composed": "Sáng tác, giống như một quản gia"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "vũ trường",
+    "party": "Buổi tiệc",
+    "rainbow": "cầu vồng",
+    "chill": "Sự ớn lạnh",
+    "halloween": "Halloween",
+    "christmas": "Giáng sinh"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Ổ khóa",
+    "garage": "Cửa và cổng gara",
+    "covers": "Rèm, rèm cửa và cửa chớp",
+    "heating": "Tăng nhiệt độ lên rất nhiều",
+    "appliances": "Thiết bị khởi động"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "cứ làm đi",
+    "tell": "Nói vậy thì làm đi",
+    "ask": "Hỏi trước"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Tắt",
+    "nightly": "Mỗi đêm",
+    "weekly": "Mỗi tuần một lần (tối chủ nhật)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Tự kiểm tra",
+    "rain": "Cảnh báo mưa",
+    "hutch": "Kiểm tra chuồng thú",
+    "cat": "Đồng hồ mèo",
+    "bins": "Kiểm tra thùng rác",
+    "faces": "Đây là ai? (dạy mặt)",
+    "faces_forget": "Hãy quên đi những gương mặt không tên",
+    "clip_watch": "Xem clip mới nhất ngay"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Chỉ cảnh báo Frigate",
+    "zones": "Bất cứ điều gì trong một khu vực",
+    "all": "Mỗi lần phát hiện"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Luôn luôn",
+    "quiet": "Giờ yên tĩnh",
+    "away": "Khi mọi người đã ra ngoài",
+    "quiet_or_away": "Giờ yên tĩnh hoặc khi mọi người ra ngoài"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Tắt",
+    "worth": "Những cái đáng xem",
+    "suspicious": "Chỉ đáng ngờ",
+    "all": "Mỗi clip"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (một AI gọi một clip)",
+    "frigate": "Tóm tắt AI của Frigate"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "Ở cửa",
+    "reminders": "Lời nhắc",
+    "questions": "Câu hỏi (Có / Không)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Ngắn gọn",
+    "natural": "Tự nhiên"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Tắt",
+    "watch": "Chỉ xem",
+    "on": "TRÊN"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Chỉ những gì đi vào một khu vực",
+    "all": "Bất cứ điều gì được phát hiện"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Nói",
+   "description": "Nói chuyện trong nhà, theo dõi những giờ yên tĩnh và nhận thức về căn phòng.",
+   "fields": {
+    "message": {
+     "name": "Tin nhắn",
+     "description": "Nói gì."
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Khẩn cấp bỏ qua những giờ yên tĩnh và những khoảng thời gian im lặng; thấp không bao giờ bị gián đoạn."
+    },
+    "speaker": {
+     "name": "Loa",
+     "description": "Người phát biểu, tên phòng hoặc id tổ chức. Để trống để theo dõi người đó."
+    }
+   }
+  },
+  "remember": {
+   "name": "Nhớ",
+   "description": "Thêm điều gì đó vào ký ức lâu dài của ngôi nhà.",
+   "fields": {
+    "text": {
+     "name": "Chữ",
+     "description": "Một câu ngắn."
+    },
+    "category": {
+     "name": "Loại",
+     "description": "Đây là loại ký ức gì."
+    }
+   }
+  },
+  "forget": {
+   "name": "Quên",
+   "description": "Xóa bộ nhớ theo id hoặc bằng văn bản phù hợp.",
+   "fields": {
+    "what": {
+     "name": "Cái gì",
+     "description": "Id bộ nhớ hoặc các từ trong đó."
+    }
+   }
+  },
+  "watch": {
+   "name": "Đồng hồ",
+   "description": "Để mắt đến thiết bị, cảm biến hoặc máy ảnh và lên tiếng khi có sự cố xảy ra.",
+   "fields": {
+    "what": {
+     "name": "Cái gì",
+     "description": "Mô tả ngắn, ví dụ: 'những con mèo gần chuồng thỏ'."
+    },
+    "entity": {
+     "name": "thực thể",
+     "description": "Id thực thể, tên hoặc tên khu vực của camera."
+    },
+    "to_state": {
+     "name": "Để nêu",
+     "description": "Cháy khi thực thể đạt đến trạng thái này."
+    },
+    "above": {
+     "name": "Bên trên",
+     "description": "Kích hoạt khi giá trị vượt quá mức này."
+    },
+    "below": {
+     "name": "Dưới",
+     "description": "Kích hoạt khi giá trị xuống dưới mức này."
+    },
+    "question": {
+     "name": "Câu hỏi",
+     "description": "Đồng hồ máy ảnh: câu hỏi có/không về bức ảnh."
+    },
+    "look_for": {
+     "name": "tìm kiếm",
+     "description": "Đồng hồ máy ảnh: đối tượng cần đánh thức, ví dụ: người, con mèo, xe hơi."
+    },
+    "message": {
+     "name": "Tin nhắn",
+     "description": "Phải nói gì đây? Để trống cho một câu tự động."
+    },
+    "until": {
+     "name": "Cho đến khi",
+     "description": "Đồng hồ thời gian, ví dụ: 18:00 hoặc 6 giờ chiều."
+    },
+    "minutes": {
+     "name": "Phút",
+     "description": "Hoặc xem trong bao nhiêu phút."
+    },
+    "repeat": {
+     "name": "Lặp lại",
+     "description": "Tiếp tục theo dõi sau khi nó cháy."
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Khẩn trương bỏ qua giờ yên tĩnh."
+    },
+    "speaker": {
+     "name": "Loa",
+     "description": "Nói ở đâu vậy. Để trống để theo dõi mọi người."
+    },
+    "wake_on": {
+     "name": "thức dậy đi",
+     "description": "Đồng hồ máy ảnh: cảm biến vùng hoặc đối tượng để đánh thức thay vì cảm biến của chính máy ảnh."
+    },
+    "spot": {
+     "name": "Điểm",
+     "description": "Đồng hồ máy ảnh: chỉ đánh dấu vào vị trí được đặt tên này (được dạy bằng giọng nói, ví dụ: 'chuồng thỏ')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "Hủy xem",
+   "description": "Dừng đồng hồ.",
+   "fields": {
+    "what": {
+     "name": "Cái gì",
+     "description": "Xem id hoặc các từ từ nó."
+    }
+   }
+  },
+  "remind": {
+   "name": "Nhắc lại",
+   "description": "Nói điều gì đó tại một thời điểm, trong phòng nơi mọi người đang ở.",
+   "fields": {
+    "message": {
+     "name": "Tin nhắn",
+     "description": "Những gì để nói, ví dụ. 'Đã đến lúc bật lò nướng.'"
+    },
+    "at": {
+     "name": "Tại",
+     "description": "Đồng hồ thời gian, ví dụ: 18:00 hoặc 6 giờ chiều."
+    },
+    "minutes": {
+     "name": "Phút",
+     "description": "Hoặc trong bao nhiêu phút."
+    },
+    "speaker": {
+     "name": "Loa",
+     "description": "Nói ở đâu vậy. Để trống để theo dõi mọi người."
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Khẩn cấp (mặc định) vẫn nói trong giờ yên tĩnh."
+    }
+   }
+  },
+  "ask": {
+   "name": "Hỏi",
+   "description": "Đặt câu hỏi thành tiếng và lắng nghe câu trả lời trong căn phòng nơi mọi người đang ở.",
+   "fields": {
+    "question": {
+     "name": "Câu hỏi",
+     "description": "ví dụ. 'Thích uống bia không? Tôi có nên đặt ấm đun nước lên không?'"
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Khẩn cấp bỏ qua những giờ yên tĩnh và những khoảng thời gian im lặng."
+    },
+    "speaker": {
+     "name": "Loa",
+     "description": "Hỏi ở đâu. Để trống để theo dõi mọi người."
+    },
+    "extra_prompt": {
+     "name": "Hướng dẫn bổ sung",
+     "description": "Hướng dẫn bổ sung dành cho tác nhân thoại xử lý câu trả lời."
+    },
+    "preannounce": {
+     "name": "Chuông đầu tiên",
+     "description": "Chơi chuông trước khi hỏi."
+    }
+   }
+  },
+  "learn": {
+   "name": "Tìm hiểu ngay bây giờ",
+   "description": "Tìm kiếm các thói quen trong lịch sử gần đây ngay lập tức thay vì chờ đợi tối nay."
+  },
+  "briefing": {
+   "name": "Tóm tắt trạng thái",
+   "description": "Tóm tắt ngắn gọn về những vấn đề quan trọng hiện nay, được nói ở nơi mọi người đang ở.",
+   "fields": {
+    "speak": {
+     "name": "Nói nó",
+     "description": "Tắt trả về sự thật mà không cần nói hoặc sử dụng AI."
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Nói chuyện khẩn cấp ngay cả trong những giờ yên tĩnh, ví dụ: khi ai đó nhấn nút cho nó."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Kỷ niệm gọn gàng",
+   "description": "Hợp nhất các bản sao và loại bỏ những thứ vô nghĩa khỏi bộ nhớ ngay bây giờ (cũng chạy vào mỗi tối Chủ nhật)."
+  },
+  "forget_routine": {
+   "name": "Xóa thói quen đã học",
+   "description": "Xóa vĩnh viễn một thói quen hoặc thói quen đã học được — ngôi nhà sẽ ngừng thực hiện nó và không bao giờ học hoặc cung cấp nó nữa. Khi bật Khôi phục, hãy khôi phục những mục đã xóa (một hoặc tất cả nếu Quy trình trống).",
+   "fields": {
+    "routine": {
+     "name": "Lịch trình",
+     "description": "Id thường lệ hoặc các từ từ nó."
+    },
+    "restore": {
+     "name": "Khôi phục",
+     "description": "Thay vào đó hãy mang những cái đã xóa trở lại."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Áp dụng thói quen",
+   "description": "Yêu cầu ngôi nhà tự thực hiện một thói quen đã học hoặc dừng lại. Để trống Áp dụng để chuyển đổi.",
+   "fields": {
+    "routine": {
+     "name": "Lịch trình",
+     "description": "Id thường lệ hoặc các từ từ nó."
+    },
+    "adopt": {
+     "name": "Nhận nuôi",
+     "description": "Bật để bắt đầu, tắt để dừng."
+    }
+   }
+  },
+  "hush": {
+   "name": "im lặng",
+   "description": "Không nói gì nếu không khẩn cấp trong một thời gian. 0 phút ngừng im lặng.",
+   "fields": {
+    "minutes": {
+     "name": "Phút",
+     "description": "Im lặng được bao lâu."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Chạy quy trình",
+   "description": "Chạy một quy trình được đặt tên (được thiết lập trên Cài đặt → Quy trình của trang thanh bên).",
+   "fields": {
+    "name": {
+     "name": "Tên",
+     "description": "Tên của quy trình hoặc một trong các tên khác của nó."
+    },
+    "speak": {
+     "name": "Nói chuyện",
+     "description": "Nói kết quả ở đâu mọi người."
+    },
+    "details": {
+     "name": "Chi tiết",
+     "description": "Đối với các quy trình có thông tin chi tiết, ví dụ: phòng nào."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Báo cáo hàng tuần",
+   "description": "Tập hợp những gì cả nhà đã học được và nhận thấy trong tuần trước và giữ nó đúng tiến độ."
+  },
+  "party": {
+   "name": "Trình diễn ánh sáng",
+   "description": "Bắt đầu hoặc dừng chương trình ánh sáng (disco, Halloween, Christmas…). Đèn trở lại chính xác như khi nó dừng lại.",
+   "fields": {
+    "on": {
+     "name": "TRÊN",
+     "description": "Tắt nó đi và bật đèn trở lại."
+    },
+    "style": {
+     "name": "Phong cách",
+     "description": "Disco, tiệc tùng, cầu vồng, thư giãn, Halloween hoặc Giáng sinh. Trống sử dụng cài đặt."
+    },
+    "minutes": {
+     "name": "Phút",
+     "description": "Tự dừng sau một thời gian dài (0 = cho đến khi tắt). Trống sử dụng cài đặt."
+    },
+    "area": {
+     "name": "Phòng",
+     "description": "Sử dụng đèn của phòng này (hoặc 'mọi nơi' cho mọi ánh sáng)."
+    },
+    "lights": {
+     "name": "đèn",
+     "description": "Sử dụng chính xác những đèn này."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Hãy suy ngẫm ngay bây giờ",
+   "description": "Bây giờ hãy nghĩ về ngày vừa qua, giống như trong một đêm: những kỷ niệm mới, những suy nghĩ buổi sáng và một câu hỏi."
+  },
+  "grade_answers": {
+   "name": "Chấm điểm câu trả lời của riêng mình ngay bây giờ",
+   "description": "Kiểm tra xem giọng nói nói gì về cửa, đèn, công tắc và ổ khóa so với những gì ngôi nhà ghi lại, giống như mỗi đêm khi bật \"Chấm điểm câu trả lời của chính nó\". Trả về những gì đã được kiểm tra, những gì sai và bất kỳ bài học nào.",
+   "fields": {
+    "hours": {
+     "name": "Giờ",
+     "description": "Còn bao lâu nữa để kiểm tra."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Kiểm tra ổ đĩa",
+   "description": "Hãy để AI xem xét vị trí lái xe ngay bây giờ và cập nhật những gì đang đỗ ở đó."
+  },
+  "wonder": {
+   "name": "Thắc mắc",
+   "description": "Thêm câu hỏi để tò mò hỏi, bỏ một câu hoặc hỏi câu tiếp theo ngay bây giờ.",
+   "fields": {
+    "question": {
+     "name": "Câu hỏi",
+     "description": "Có điều muốn hỏi người nhà một lần."
+    },
+    "ask_now": {
+     "name": "Hỏi ngay bây giờ",
+     "description": "Đặt câu hỏi tiếp theo ngay lập tức."
+    },
+    "dismiss": {
+     "name": "Miễn nhiệm",
+     "description": "Những từ trong câu hỏi rốt cuộc không nên hỏi."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Theo dõi",
+   "description": "Kiểm tra lại điều gì đó sau và cho biết nó diễn ra như thế nào.",
+   "fields": {
+    "minutes": {
+     "name": "Phút",
+     "description": "Khi nào cần kiểm tra."
+    },
+    "about": {
+     "name": "Về",
+     "description": "Một vài lời về nội dung của nó."
+    },
+    "entity": {
+     "name": "thực thể",
+     "description": "Thiết bị để kiểm tra sau đó."
+    },
+    "state": {
+     "name": "Tình trạng",
+     "description": "Trạng thái có nghĩa là nó đã hoạt động."
+    },
+    "above": {
+     "name": "Bên trên",
+     "description": "Đã hoạt động nếu giá trị ít nhất là thế này."
+    },
+    "below": {
+     "name": "Dưới",
+     "description": "Đã hoạt động nếu giá trị tối đa là thế này."
+    },
+    "if_done": {
+     "name": "Nếu xong",
+     "description": "Phải nói gì nếu nó hiệu quả."
+    },
+    "if_not": {
+     "name": "Nếu không",
+     "description": "Phải nói gì nếu không."
+    },
+    "speaker": {
+     "name": "Loa",
+     "description": "Nói ở đâu (mặc định: mọi người đang ở đâu)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Hủy theo dõi",
+   "description": "Dừng việc kiểm tra lại thứ gì đó.",
+   "fields": {
+    "about": {
+     "name": "Về",
+     "description": "Id của nó hoặc các từ trong nội dung của nó."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Bảo trì xong",
+   "description": "Đánh dấu công việc bảo trì đã hoàn tất (bộ lọc đã thay đổi, máy đã được tẩy cặn) để quá trình đếm bắt đầu lại.",
+   "fields": {
+    "job": {
+     "name": "Công việc",
+     "description": "Tên của nó trên trang Bảo trì."
+    }
+   }
+  },
+  "notice": {
+   "name": "Để ý",
+   "description": "Chuyển điều gì đó đã xảy ra thông qua Sentient — cùng các quy tắc về giờ yên tĩnh, im lặng, khách và ngày lễ, và (theo mặc định) quyết định của chính nó liệu điều đó có đáng nói hay không và nói như thế nào.",
+   "fields": {
+    "message": {
+     "name": "Chuyện gì đã xảy ra thế",
+     "description": "Nói một cách dễ hiểu, ví dụ: 'Máy rửa chén đã xong'."
+    },
+    "entity_id": {
+     "name": "Thiết bị",
+     "description": "Thiết bị hướng tới (tùy chọn) — cung cấp phòng và trạng thái của phòng."
+    },
+    "decide": {
+     "name": "Hãy để nó quyết định",
+     "description": "Bật: AI quyết định xem điều đó có đáng nói hay không và nói như thế nào (được tính là nhận thấy). Tắt: nói như đã cho."
+    },
+    "priority": {
+     "name": "Sự ưu tiên",
+     "description": "Khẩn cấp vẫn vang lên trong giờ yên tĩnh; thấp không bao giờ bị gián đoạn."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "Nhìn về phía trước",
+   "description": "Bây giờ hãy nhìn vào ngày mai và nói liệu có điều gì đáng để quan tâm không.",
+   "fields": {
+    "speak": {
+     "name": "Nói đi",
+     "description": "Hãy nói to nếu có."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Ngủ đi",
+   "description": "Nói cho ngôi nhà biết nó đang ngủ hay thức (chạy hành động đi ngủ hoặc buổi sáng).",
+   "fields": {
+    "asleep": {
+     "name": "Ngủ",
+     "description": "Bật để ngủ, tắt để thức."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Hiển thị trên màn hình",
+   "description": "Đặt card vào card màn hình Sentient.",
+   "fields": {
+    "message": {
+     "name": "Tin nhắn",
+     "description": "Những gì để hiển thị."
+    },
+    "camera": {
+     "name": "Máy ảnh",
+     "description": "Một máy ảnh để hiển thị với nó."
+    },
+    "minutes": {
+     "name": "Vì",
+     "description": "Bao lâu (10 phút nếu trống)."
+    },
+    "alert": {
+     "name": "Báo động",
+     "description": "Hiển thị nó dưới dạng cảnh báo."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Xóa màn hình",
+   "description": "Lấy card màn hình Sentient ra, hay gì cũng được.",
+   "fields": {
+    "card_id": {
+     "name": "Thẻ",
+     "description": "Id của thẻ, 'buổi sáng' hoặc trống cho mọi thứ."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Thẻ buổi sáng",
+   "description": "Đặt thiệp sáng nay lên màn hình Sentient ngay."
+  },
+  "check_now": {
+   "name": "Kiểm tra ngay",
+   "description": "Thực hiện ngay một trong các bước kiểm tra tùy chọn — tự kiểm tra, kiểm tra mưa, kiểm tra chuồng trại, quan sát mèo, kiểm tra thùng rác, \"đây là ai?\" đối với khuôn mặt cuối cùng camera cửa không gọi tên được, quên những khuôn mặt chưa đặt tên hoặc xem clip mới nhất từ ​​camera clip đầu tiên.",
+   "fields": {
+    "what": {
+     "name": "Cái mà",
+     "description": "Kiểm tra nào để chạy."
+    }
+   }
+  },
+  "game": {
+   "name": "Bắt đầu hoặc dừng trò chơi kể chuyện",
+   "description": "Bắt đầu trò chơi theo câu chuyện (sau đó có thể chơi với bất kỳ trợ lý giọng nói nào) hoặc đặt trò chơi hiện tại sang một bên. Bộ nhớ đã lưu của trò chơi được giữ nguyên.",
+   "fields": {
+    "action": {
+     "name": "Hoạt động",
+     "description": "Bắt đầu trò chơi hoặc dừng trò chơi đang chơi."
+    },
+    "game": {
+     "name": "Trò chơi",
+     "description": "Tên của trò chơi, khi bắt đầu."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Dừng đọc",
+   "description": "Dừng đọc to bất kỳ câu chuyện hoặc sách nói nào và tắt tiếng người nói, giữ nguyên vị trí. Hoạt động mà không cần giọng nói khi máy tính bảng không thể nghe thấy bạn kể chuyện.",
+   "fields": {
+    "speaker": {
+     "name": "Loa",
+     "description": "Người nói im lặng. Để trống để ngừng đọc mọi câu chuyện."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} có sẵn",
+   "description": "Bạn có {installed}. Cài đặt nó từ Cài đặt → Cập nhật (Sentient đến từ Marketplace trên Home Assistant 2026.11 trở lên; trên các phiên bản cũ hơn, hãy mở Sentient trong HACS và chọn Tải xuống), sau đó khởi động lại Home Assistant. Nếu Sentient được sao chép thủ công thay vì cài đặt từ Marketplace hoặc HACS, nó sẽ không bao giờ tự cập nhật: thay vào đó hãy cài đặt nó từ Marketplace."
+  }
+ }
+}
