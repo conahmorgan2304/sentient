@@ -208,7 +208,7 @@
       ];
       const t = this._today || {};
       const hz = ((t.heating || {}).zones || [])[0];
-      if (hz && hz.now != null) tiles.splice(1, 0, { icon: hz.action === "heating" ? "mdi:radiator" : "mdi:thermometer", val: `${Math.round(hz.now * 10) / 10}°`, label: hz.state === "off" ? "INSIDE · HEATING OFF" : `INSIDE · SET ${hz.target ?? "–"}°`, cls: hz.action === "heating" ? "warm" : "" });
+      if (hz && hz.now != null) tiles.splice(1, 0, { icon: hz.action === "heating" ? "mdi:radiator" : "mdi:thermometer", val: `${Math.round(hz.now * 10) / 10}°`, label: hz.state === "off" ? "INSIDE · HEATING OFF" : "INSIDE · " + "SET {a}°".replace("{a}", hz.target ?? "–"), cls: hz.action === "heating" ? "warm" : "" });
       const nh = (t.heating || {}).next;
       const ev = (mind.security_events || []).find((e) => e.has_snapshot && !e.parked);
       const people = (t.people || []);
