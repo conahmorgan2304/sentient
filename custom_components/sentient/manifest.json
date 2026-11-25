@@ -25,7 +25,8 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [
-    "pypdf>=5.1.0"
+    "pypdf>=5.1.0",
+    "num2words==0.5.14"
   ],
-  "version": "1.22.0"
+  "version": "1.23.0"
 }
