@@ -29,6 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DIR = Path(__file__).parent / "frontend" / "i18n" / "house"
 _SLOT = re.compile(r"(\{[a-z]+\})")
+_CLOCK = re.compile(r"(1[0-2]|[1-9])(?::([0-5][0-9]))?([ap])m", re.I)
 # a template that starts with one of these is an ending; one that ends with one of these is an opening
 _ENDING_START = (" ", ",", ";", ".", ":", "!", "?", "—", "(")
 _OPENING_END = (" ", ":", "—")
@@ -54,7 +55,11 @@ def _pattern(template: str, caps: bool, anchor: str) -> tuple[re.Pattern, list[s
             names.append(part[1:-1])
             # a slot straight after a letter is a word ending ("thing{b}" for "s"), which may be empty
             before = parts[i - 1] if i else ""
-            body += f"({any_}*?)" if before[-1:].isalpha() else f"({any_}+?)"
+            if template == "{a} {b} at {c}":
+                # The house's state-change summary has a one-word raw state and a clock time.
+                body += {"a": f"({any_}+)", "b": r"(\S+)", "c": r"(\d{2}:\d{2})"}[names[-1]]
+            else:
+                body += f"({any_}*?)" if before[-1:].isalpha() else f"({any_}+?)"
         else:
             body += re.escape(part.upper() if caps else part)
     if anchor == "whole":
@@ -99,8 +104,11 @@ def _caps(text: str) -> bool:
 def _fill(tr: str, names: list[str], values: tuple[str, ...], d: Dictionary, caps: bool) -> str:
     out = tr.upper() if caps else tr
     for name, got in zip(names, values):
-        inner = _one(got, d, split=False, depth=1) if got and any(c.isalpha() for c in got) else None
-        value = inner if inner is not None else got
+        if clock := _CLOCK.fullmatch(got):
+            hour = int(clock[1]) % 12 + (12 if clock[3].lower() == "p" else 0)
+            value = f"{hour:02d}:{clock[2] or '00'}"
+        else:
+            value = (_one(got, d, split=False, depth=1) if got and any(c.isalpha() for c in got) else None) or got
         for token in ("{" + name + "}", "{" + name.upper() + "}"):
             out = out.replace(token, value)
     return out

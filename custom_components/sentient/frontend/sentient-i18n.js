@@ -23,6 +23,7 @@ const ready = new Map();   // language -> dict | null, once loaded
 const originals = new WeakMap();   // node -> its English
 const ATTRS = ["title", "placeholder", "aria-label"];
 const SKIP = new Set(["STYLE", "SCRIPT", "TEXTAREA", "CODE", "PRE"]);  // (inputs have no text; their placeholders are swapped)
+const CLOCK = /^(1[0-2]|[1-9])(?::([0-5][0-9]))?([ap])m$/i;
 const NUM = /\d+(?:[.,:]\d+)*/g;
 
 const norm = (lang) => String(lang || "en").toLowerCase().replace("_", "-");
@@ -39,6 +40,7 @@ export function localeOf(hass) {
 
 function slotRe(parts, caps, anchor = "whole") {
   const names = [];
+  const stateChange = parts.join("") === "{a} {b} at {c}";
   // a slot doesn't reach across " · " (a list of separate pieces) unless the piece itself has one
   const dotted = parts.some((p) => p.includes(" · "));
   const any = dotted ? "." : "(?:(?! · ).)";
@@ -47,6 +49,8 @@ function slotRe(parts, caps, anchor = "whole") {
     if (!m) return (caps ? part.toUpperCase() : part).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     names.push(m[1]);
     if (/^\d+$/.test(m[1])) return "(\\d+(?:[.,:]\\d+)*)";
+    // The house's state-change summary has a one-word raw state and a clock time.
+    if (stateChange) return { a: "(" + any + "+)", b: "(\\S+)", c: "(\\d{2}:\\d{2})" }[m[1]];
     // a slot straight after a letter is a word ending ("thing{b}" for "s"), which may be empty
     return "(" + any + (/[A-Za-z]$/.test(parts[i - 1] || "") ? "*?)" : "+?)");
   }).join("");
@@ -129,6 +133,15 @@ function numbered(text, d) {
   return tr == null ? null : tr.replace(/\{(\d+)\}/g, (m, n) => (nums[+n] != null ? nums[+n] : m));
 }
 
+function slotValue(value, d) {
+  const clock = CLOCK.exec(value);
+  if (clock) {
+    const hour = Number(clock[1]) % 12 + (clock[3].toLowerCase() === "p" ? 12 : 0);
+    return `${String(hour).padStart(2, "0")}:${clock[2] || "00"}`;
+  }
+  return one(value, d, false) || value;
+}
+
 function slotted(text, d) {
   const caps = isCaps(text);
   for (const s of d.slots) {
@@ -137,7 +150,7 @@ function slotted(text, d) {
     let out = caps ? s.tr.toUpperCase() : s.tr;
     s.names.forEach((name, k) => {
       const got = m[k + 1];
-      const inner = /^\d+$/.test(name) ? got : (one(got, d, false) || got);
+      const inner = /^\d+$/.test(name) ? got : slotValue(got, d);
       out = out.split(`{${caps ? name.toUpperCase() : name}}`).join(inner).split(`{${name}}`).join(inner);
     });
     return out;
@@ -149,7 +162,7 @@ function filled(tr, names, m, d) {
   let out = tr;
   names.forEach((name, k) => {
     const got = m[k + 1] || "";
-    const inner = /^\d+$/.test(name) || !/[A-Za-z]/.test(got) ? got : (one(got, d, false) || got);
+    const inner = /^\d+$/.test(name) || !/[A-Za-z]/.test(got) ? got : slotValue(got, d);
     out = out.split(`{${name}}`).join(inner);
   });
   return out;
@@ -248,8 +261,8 @@ export function attach(root, hass) {
         if (r.type === "characterData") walk(r.target, dict);
         else if (r.type === "attributes") swapAttrs(r.target, dict);
         else for (const n of r.addedNodes) if (n.nodeType === 3 || n.nodeType === 1) {
-          const p = n.parentElement;
-          if (!(p && (SKIP.has(p.tagName) || p.closest("[data-no-i18n]")))) walk(n, dict);
+          const el = n.nodeType === 1 ? n : n.parentElement;
+          if (!(el && (SKIP.has(el.tagName) || el.closest("[data-no-i18n]")))) walk(n, dict);
         }
       }
     } finally {
