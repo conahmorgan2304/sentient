@@ -124,6 +124,7 @@ class Notifier:
         self.on_sent = None  # set by the runtime: (timeline item time, title) — marks it on the timeline as sent
         self.holiday = None  # set by the runtime: on holiday, what it would have said and visitors go to phones
         self._unsubs: list = []
+        self._generation = 0
 
     @callback
     def async_start(self) -> None:
@@ -140,6 +141,7 @@ class Notifier:
 
     def invalidate_questions(self) -> None:
         """Old notification buttons cannot authorise work after settings change or unload."""
+        self._generation += 1
         self._questions.clear()
         self._pending.clear()
 
@@ -184,22 +186,27 @@ class Notifier:
         self._questions = {k: v for k, v in self._questions.items() if v["until"] > now}
         self._questions[token] = {"on_answer": on_answer, "until": now + PHONE_QUESTION_OPEN, "tag": f"sentient-q-{token}", "apps": set(apps)}
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
-        await self._send_app(apps, f"{persona} · A question", question, {"tag": f"sentient-q-{token}", "actions": [
+        sent = await self._send_app(apps, f"{persona} · A question", question, {"tag": f"sentient-q-{token}", "actions": [
             {"action": f"{ACTION}_YES_{token}", "title": "Yes"},
             {"action": f"{ACTION}_NO_{token}", "title": "No"},
         ]})
-        return True
+        if not sent:
+            self._questions.pop(token, None)
+        return bool(sent)
 
     async def _async_answer(self, token: str, kind: str) -> None:
         question = self._questions.pop(token, None)
         if (question is None or question["until"] <= dt_util.utcnow() or kind not in ("yes", "no")
                 or not self.can_ask() or question["apps"] != set(phone_apps(self.hass, self.options))):
             return
+        generation = self._generation
         try:
             reply = await question["on_answer"](kind)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Sentient couldn't act on a phone answer: %s", err)
             reply = "That didn't work."
+        if generation != self._generation:
+            return
         persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         await self._send_app(phone_apps(self.hass, self.options), persona, reply or "Okay.", {"tag": question["tag"]})
 
@@ -272,7 +279,10 @@ class Notifier:
     async def _send(self, targets: list[str], title: str, message: str) -> None:
         from .phrases import async_written
 
-        title, message = await async_written(self.hass, self.options, title), await async_written(self.hass, self.options, message)
+        generation, options = self._generation, self.options
+        title, message = await async_written(self.hass, options, title), await async_written(self.hass, options, message)
+        if generation != self._generation or self.options is not options:
+            return
         try:
             await self.hass.services.async_call(
                 "notify", "send_message", {"entity_id": targets, "title": title, "message": message}, blocking=True
@@ -280,15 +290,21 @@ class Notifier:
         except Exception as err:  # noqa: BLE001 - a failed notification must never break anything else
             _LOGGER.warning("Sentient couldn't send a notification: %s", err)
 
-    async def _send_app(self, apps: list[str], title: str, message: str, data: dict[str, Any]) -> None:
+    async def _send_app(self, apps: list[str], title: str, message: str, data: dict[str, Any]) -> bool:
         from .phrases import async_written, async_written_data
 
-        title, message = await async_written(self.hass, self.options, title), await async_written(self.hass, self.options, message)
-        data = await async_written_data(self.hass, self.options, data)
+        generation, options = self._generation, self.options
+        title, message = await async_written(self.hass, options, title), await async_written(self.hass, options, message)
+        data = await async_written_data(self.hass, options, data)
+        sent = False
         for app in apps:
+            if generation != self._generation or self.options is not options:
+                break
             try:
                 await self.hass.services.async_call(
                     "notify", app, {"title": title, "message": message, "data": data}, blocking=True
                 )
+                sent = True
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Sentient couldn't send a notification with buttons to %s: %s", app, err)
+        return sent
