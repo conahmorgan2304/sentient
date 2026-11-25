@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Faceți cunoștință cu creierul casei dvs",
+    "description": "Da-i un nume. Acesta este cum se numește și cum apare în Home Assistant.",
+    "data": {
+     "persona": "Nume"
+    }
+   },
+   "speech": {
+    "title": "Cum ar trebui să vorbească casa?",
+    "description": "Alege sateliții de voce prin care poate vorbi. Vorbește unde sunt oamenii (mișcare sau cineva care vorbește cu un difuzor), altfel pe difuzorul implicit.",
+    "data": {
+     "speakers": "Difuzoare",
+     "default_speaker": "Difuzor implicit",
+     "quiet_start": "Încep orele de liniște",
+     "quiet_end": "Se termină orele liniștite",
+     "busy_entities": "Stai liniștit când ești ocupat",
+     "motion_window": "Fereastra de conștientizare a camerei",
+     "banned_words": "Nu folosește niciodată aceste cuvinte (separate prin virgulă)",
+     "suppress_entities": "Stai liniștit după aceste automatizări sau scripturi",
+     "suppress_seconds": "Stai liniştit pentru",
+     "prompt_memories": "Amintiri de împărtășit cu asistenții vocali",
+     "pass_through_areas": "Zone de trecere",
+     "all_occupied": "Vorbește în fiecare cameră ocupată",
+     "room_tracking": "Folosește instrumente de urmărire a camerei (Bluetooth)",
+     "room_trackers": "Trackere de cameră",
+     "ai_task_entity": "AI pentru joburi de fundal",
+     "camera_cooldown": "Distanța minimă între verificările camerei",
+     "fallback_speakers": "Difuzoare de rezervă",
+     "daily_ai_limit": "Apeluri AI pe zi",
+     "prompt_recent": "Chiar acum și ultima oră în contextul vocii",
+     "rules": "Reguli și realizarea lor prin voce",
+     "relevant_memories": "Alege amintirile care se potrivesc cu ceea ce a fost cerut",
+     "look_cache_minutes": "Reutilizați un răspuns de cameră pentru",
+     "camera_prefilter": "Omiteți privirile camerei când nimic nu sa schimbat",
+     "budget_drive": "Apeluri AI pe zi: drive-ul",
+     "budget_noticing": "Apeluri AI pe zi: observarea",
+     "budget_cameras": "Apeluri AI pe zi: verificări ale camerei și ceasuri",
+     "routine_evidence": "Spune cât de des a fost văzută o rutină",
+     "notice_entities": "Lucruri de observat",
+     "remark_repeat_hours": "Nu repeta o remarcă pentru",
+     "chattiness": "Cât de vorbăreț",
+     "conversation_style": "Cum vorbește",
+     "carry_on_minutes": "Purtați o conversație pentru",
+     "focused_tools": "Instrumente vocale concentrate",
+     "ask_later": "Întreabă cum au mers lucrurile",
+     "put_right": "Remediați greșelile dintr-o singură mișcare",
+     "music": "Muzică întrebând",
+     "music_alexa": "Muzică prin Alexa (Echos)",
+     "music_alexa_service": "Serviciu de muzică pentru Echos",
+     "house_rules": "Regulile casei",
+     "no_security_offers": "Nu oferi niciodată armarea, dezarmarea sau deblocarea",
+     "learn_entities": "Învață rutine de la",
+     "learn_anchors": "Obiceiuri care urmează zilei",
+     "trust_lights": "Lumini",
+     "trust_switches": "Întrerupătoare, prize și ventilatoare",
+     "trust_covers": "Jaluzele și perdele",
+     "trust_heating": "Încălzire",
+     "offer_together": "Oferă obiceiuri făcute împreună ca una singură",
+     "link_triggers": "Învață, de asemenea, ce urmează",
+     "suggest_routines": "Oferă să preia rutinele",
+     "prove_routines": "Obiceiurile se dovedesc înainte de a fi oferite",
+     "routine_fading": "Întreabă despre rutine de care nu mai sunt necesare",
+     "door_camera": "Camera usii",
+     "door_triggers": "Soneria",
+     "announce_visitors": "Spune cine este la uşă",
+     "faces": "Nume din recunoașterea feței",
+     "face_people": "Doar acești oameni",
+     "face_teach": "Întreabă la telefon cine sunt fețele fără nume",
+     "face_teach_cameras": "Învață chipuri de la aceste camere",
+     "face_cameras": "Nume numai de la aceste camere",
+     "face_forget_hours": "Uită după chipuri fără nume",
+     "clip_watch": "Urmărește clipuri de evenimente",
+     "clip_cameras": "Camere de luat vederi",
+     "clip_scope": "Care evenimente",
+     "clip_when": "Când",
+     "clip_notify": "Trimite la telefoane",
+     "clip_source": "Cine scrie rezumatul",
+     "clip_whose": "Spune ce membru al gospodăriei a fost",
+     "clip_looks": "Cum arată oamenii când fața lor nu poate fi văzută",
+     "budget_clips": "Clipuri vizionate pe zi (cele mai multe)",
+     "clip_days": "Păstrează rezumatele pentru",
+     "clip_keep": "Păstrează fișierele clip",
+     "parcel_alerts": "Spune când a rămas un pachet",
+     "doorstep_sensors": "Verifică pachetele după vizitele văzute de",
+     "zone_visits": "Numără pe cineva din zona camerei ușii din față drept vizitator",
+     "zone_door_sensors": "Senzor ușă din față (zona este ignorată dacă s-a deschis prima)",
+     "face_sensor": "Nume recunoscut de la",
+     "sidebar_panel": "Afișează în bara laterală",
+     "page_admin_only": "Numai administratorii pot deschide această pagină",
+     "custom_pages": "Rearanjați pagina Sentient",
+     "suggestions": "Sugestii pe pagina Sentient",
+     "whats_new": "Ce este nou după o actualizare",
+     "simple_settings": "Pagina de setări mai simplă",
+     "auto_backup": "Faceți backup în fiecare săptămână",
+     "backup_keep": "Câte de păstrat",
+     "confirm_kinds": "Întreabă \"trebuie?\" înainte",
+     "chat_agent": "Agent de chat pentru pagina din bara laterală",
+     "battery_threshold": "Bateria descărcată mai jos",
+     "battery_forecast": "Spune când se vor epuiza bateriile",
+     "health_ignore": "Ignorați pentru sănătatea casei",
+     "hide_substreams": "Ascundeți vizualizări suplimentare ale camerei",
+     "ignore_cameras": "Camere de luat în considerare",
+     "never_entities": "Nu atinge niciodată acestea",
+     "self_check": "Autoverificare în fiecare noapte",
+     "learn_corrections": "Învață când anulezi ceea ce a făcut",
+     "normal_day": "Observați o zi neobișnuită",
+     "thoughts": "Arată ce gândește",
+     "share_learning": "Spune ce a învățat",
+     "self_adjust": "Reglare automată",
+     "proposals": "Sugerați modificări ale setărilor sale",
+     "privacy_log": "Păstrează o evidență a ceea ce iese din casă",
+     "goals": "Goluri",
+     "manuals": "Răspuns din documente",
+     "manuals_folder": "Dosarul de documente",
+     "manuals_local_text": "Caută în documentele text",
+     "manuals_pages": "Citește PDF-uri pagină cu pagină",
+     "games": "Jocuri de poveste",
+     "voice_id": "Afla cine vorbeste",
+     "voice_id_unknown": "Tratează vocile pe care nu le pot potrivi ca pe un oaspete",
+     "speaker_memories": "Păstrează-i amintirile fiecăruia",
+     "books": "Cărți",
+     "books_folder": "Dosarul cărți",
+     "reading_tts": "Citirea vocii: serviciu",
+     "reading_voice": "Citirea vocii",
+     "read_ahead": "Pregătește următoarea parte în timp ce citești",
+     "recipes": "Rețete",
+     "recipes_folder": "Dosarul cu rețete",
+     "recipes_list": "Lista de cumpărături pentru ingrediente",
+     "voice_lists": "Liste de cumpărături și de făcut prin voce",
+     "ready_tonight": "Gata pentru seara asta",
+     "ready_tonight_lights": "Gata pentru seara asta: luminile se pot stinge",
+     "ready_tonight_follow": "Gata pentru seara asta: spune-mi când este sortată",
+     "tandoor_url": "Adresa Tandoor",
+     "tandoor_token": "Token API Tandoor",
+     "second_opinion_ai": "IA pentru o a doua opinie",
+     "smart_ai_task": "AI mai puternică pentru securitate și gândirea peste noapte",
+     "event_clips": "Urmărește clipurile evenimentului Frigate",
+     "chime": "Sună înainte de a vorbi",
+     "voice_agent": "Agent vocal principal AI",
+     "backup_agent": "Asistent de rezervă",
+     "offline_answers": "Răspunde la întrebări frecvente fără AI",
+     "animal_sensors": "Senzori de temperatură pentru animale",
+     "away_lights_on": "Lumini departe",
+     "holiday_mode": "Modul vacanță",
+     "holiday_thermostats": "Termostate de oprit în vacanță",
+     "holiday_frost": "Temperatura de protecție împotriva înghețului",
+     "holiday_end_on_return": "Închide modul vacanță când cineva este acasă",
+     "away_people": "Pleacă când toate acestea sunt disponibile",
+     "away_lights": "Lumini de folosit",
+     "away_after": "Începe după ce toată lumea a plecat",
+     "animal_low": "Prea frig dedesubt",
+     "animal_high": "Prea cald deasupra",
+     "hutch_check": "Verificarea adăpostului seara",
+     "hutch_spot": "Locul camerei din colibă",
+     "cat_watch": "Ceas pentru pisici de noapte",
+     "cat_sensors": "Senzori pentru pisici",
+     "cat_loud": "Spune-o imediat noaptea",
+     "rain_warnings": "Avertismente de ploaie",
+     "rain_entities": "Ferestre și uși de urmărit",
+     "self_test": "Autotestare",
+     "self_test_household": "Întrebări casnice în autotest",
+     "screen": "Folosește ecranul tabletei",
+     "screen_actions": "Când apare ceva",
+     "screen_clear_actions": "Când totul este curățat",
+     "conversation_sessions": "Sesiuni de conversație",
+     "room_conversation_handoff": "Transfer de conversație de la o cameră la alta",
+     "verified_bedtime": "Verificat la parter ora de culcare",
+     "verified_bedtime_lights": "La parter lumini de culcare",
+     "verified_bedtime_contacts": "Jos ora de culcare deschiderea contactelor",
+     "session_seconds": "Timp de inactivitate a sesiunii",
+     "guarded_control": "Confirmare vocală forțată",
+     "routine_verify": "Verifică rutinele funcționale",
+     "voice_unlock": "Permite deblocarea prin voce",
+     "voice_undo": "Anulează modificările recente ale luminii",
+     "evidence_awareness": "Explicați dovezile și incertitudinea",
+     "security_incidents": "Incidente de securitate de grup",
+     "incident_front": "Fața casei",
+     "live_voice_check": "Verificare vocală în direct",
+     "speech_delivery_history": "Istoricul livrării difuzoarelor",
+     "alexa_tts_only": "Folosește TTS numai pe Alexa",
+     "update_checker": "Verifică actualizările Sentient",
+     "contextual_followups": "Urmăriri și corecții conectate",
+     "conversation_recovery": "Anularea conversației și recuperarea precaută",
+     "speech_failure_notification": "Notificați despre erorile de livrare a difuzoarelor",
+     "recent_followup_context": "Scurte urmăriri după un cuvânt proaspăt",
+     "conversation_cues": "Înțelegeți semnările, corecțiile și schimbările de subiect",
+     "vary_replies": "Spune lucrurile diferit de fiecare dată",
+     "behaviour_explanations": "Explicați deciziile de ascultare și acțiune",
+     "current_house_context": "Contextul actual al casei",
+     "moment_awareness": "Conștientizarea momentului",
+     "room_memory": "Memoria pe termen scurt per cameră",
+     "know_people": "Știi cine probabil vorbește",
+     "instant_answers": "Răspunsuri instantanee",
+     "capability_awareness": "Afli ce poate face casa",
+     "house_context_entities": "Entități suplimentare de context",
+     "house_context_updates": "Spune-mi când se ajunge la încălzirea solicitată",
+     "security_event_evidence": "Conectează alertele de securitate la evenimentele Frigate",
+     "security_event_zones": "Ce evenimente ale camerei sunt listate",
+     "security_event_hidden_zones": "Zone ale căror evenimente nu sunt listate",
+     "security_coverage": "Explicați golurile de acoperire a camerei",
+     "frigate_pipeline_health": "Afișează starea conductei Frigate",
+     "security_conversation_context": "Păstrează evenimentul de securitate în conversație",
+     "security_event_feedback": "Înregistrați feedback despre evenimentele camerei",
+     "share_clip_analysis": "Reutilizați analizele de clipuri potrivite"
+    },
+    "data_description": {
+     "motion_window": "Câte minute de istoric al mișcării să cântăriți atunci când decideți unde sunt oamenii.",
+     "suppress_entities": "e.g. anunțul dvs. de sonerie, astfel încât remarcile de fundal nu vorbesc despre el.",
+     "busy_entities": "În timp ce oricare dintre acestea este activat (un calendar de întâlniri, un comutator Focus, un telefon în Nu deranja), Sentient reține vorbirea care poate aștepta, ca și cum ar fi oprit. Alertele de siguranță și răspunsurile pe care le ceri încă apar. Lasă gol pentru a dezactiva acest lucru.",
+     "prompt_memories": "Câte amintiri sunt oferite asistentului vocal în față. Restul se mai pot căuta.",
+     "pass_through_areas": "Holuri, palier și scări. Mersul prin acestea contează mult mai puțin, așa că un trecător nu fură un anunț.",
+     "all_occupied": "On: toți cei care sunt acasă îl aude. Oprit: doar camera cea mai aglomerată.",
+     "room_tracking": "Oprit implicit. Când un instrument de urmărire a camerei (de exemplu, senzorul \"Zona\" din Bermuda pentru un telefon) spune că cineva se află într-o cameră cu un difuzor, acolo se spun lucruri pentru \"oriunde sunt oamenii\". Când niciun instrument de urmărire nu știe — telefonul nu este văzut, afară sau o cameră fără difuzor — presupunerea bazată pe mișcare este folosită ca înainte. Obișnuiam doar să alegi unde să vorbești, niciodată să decizi dacă e cineva treaz. Nimic nu este stocat.",
+     "room_trackers": "Senzori a căror stare este camera în care se află ceva, cum ar fi senzorii \"Zona\" din Bermuda (unul pentru telefon sau etichetă). Fiecare are nevoie de cameră pentru a se potrivi cu o zonă Home Assistant.",
+     "ai_task_entity": "Sarcina de inteligență artificială utilizată pentru privirile camerei, briefing-urile, gândirea de noapte și privirea asupra zilei de mâine. Empty folosește sarcina AI preferată de Home Assistant.",
+     "camera_cooldown": "Un ceas cu cameră se uită din nou cel mult atât de des, pentru a reduce costurile AI.",
+     "fallback_speakers": "Folosit numai atunci când nimeni nu este în camera altui difuzor, e.g. o cameră de zi pe care preferați să nu deranjați.",
+     "daily_ai_limit": "Apelurile AI de fundal (verificări ale camerei, ședințe de informare, gândire de noapte, sonerie…) se opresc a doua zi după atâtea și folosește în schimb cuvinte simple. Întrebările pe care le pui încă primesc răspuns. 0 înseamnă fără limită.",
+     "prompt_recent": "Câteva rânduri în acest moment (orele de adormit, liniștit sau liniștit, oaspeți, orice lucru deschis și citiri care nu s-au auzit ore întregi, astfel încât să nu fie date ca actuale), ce s-a întâmplat în ultima oră și unde a fost mișcare, deci „ce ar trebui să știu?” și „ce tocmai sa întâmplat?” li se răspunde imediat. Gratuit: fără apeluri AI suplimentare.",
+     "rules": "\"Când se întâmplă acest lucru, fă ​​asta\" reguli (pagina Reguli), iar vocea le poate face: citește regula înapoi și o salvează doar după un da. Regulile nu pot arma, dezarma sau debloca nimic. Dezactivat: nu există reguli.",
+     "relevant_memories": "Odată ce există mai multe amintiri decât se potrivesc în contextul vocii, apar cele care împart cuvintele cu întrebarea, apoi cele mai noi. Gratuit, fără AI. Off: întotdeauna cel mai nou.",
+     "look_cache_minutes": "Aceeași întrebare adresată aceleiași camere în acest timp primește ultimul răspuns în loc de un nou aspect AI. 0 se uită mereu din nou.",
+     "camera_prefilter": "Verificările camerei și ceasurile compară mai întâi o imagine mică (pe această mașină, gratuită) și întreabă AI numai atunci când camera — sau locul ei — arată diferit față de ultima privire.",
+     "budget_drive": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală.",
+     "budget_noticing": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală.",
+     "budget_cameras": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală. Siguranța, soneria și întrebările pe care le pui nu sunt niciodată reținute.",
+     "routine_evidence": "Ofertele pentru a prelua o rutină spun cât de des s-a întâmplat, e.g. '4 din ultimele 4 zile de weekend'.",
+     "notice_entities": "Când acestea se schimbă, AI decide dacă merită să spună ceva (sau să întrebe). e.g. masina de spalat rufe, usi, vreme, pubele.",
+     "remark_repeat_hours": "Același lucru observat (\"Ibricul a terminat de fiert\") nu se mai spune de atâta vreme. 0: fără limită.",
+     "chattiness": "Limitează observațiile pe oră: liniștit 2, normal 4, vorbăreț 8. Oprit nu mai observă.",
+     "conversation_style": "Scurt: răspunsuri scurte, la obiect. Natural: comenzile rămân scurte, dar întrebările și chatul primesc câteva propoziții naturale și o întrebare ulterioară atunci când o persoană ar pune una, ceea ce menține microfonul să asculte.",
+     "carry_on_minutes": "A rosti din nou cuvântul de trezire la scurt timp după ce ai vorbit duce la aceeași conversație de la același vorbitor, deci \"și sus?\" încă mai are sens. 0 o dezactivează; Home Assistant uită o conversație după cinci minute de liniște.",
+     "focused_tools": "Oferă vocii doar instrumentele lui Sentient care se potrivesc cu ceea ce a fost cerut (camere foto, încălzire, mementouri…), plus memorie și siguranță. O alegere mai mică face ca modelele mai ieftine să fie mai rapide și mai precise. Orice lucru care nu se potrivește clar primește totuși fiecare instrument.",
+     "ask_later": "Când cineva menționează ceva ce urmează (o excursie, un meci, medicul veterinar), vocea își poate aminti să întrebe cum a mers data viitoare când cineva vorbește cu el — o dată, niciodată în orele de liniște sau cu oaspeți și niciodată despre ceva privat. Nu vorbește niciodată din senin. Dezactivarea acestei opțiuni uită orice așteaptă să fie întrebat.",
+     "put_right": "Când spui \"nu, celălalt\" sau \"nu acea lumină, lampa\", vocea comută înapoi ceea ce tocmai a pornit (pornit sau stins, în câteva minute) și face cererea din nou doar cu partea corectată — nu este nevoie să spui totul din nou. Dacă dezactivează această opțiune, îl puneți direct agentului vocal.",
+     "music": "Cu Music Assistant configurat (sau Muzică prin Alexa activat): \"redă ceva calm în bucătărie\" alege din propriile liste de redare și posturi de radio și îl redă pe playerul Music Assistant din camera respectivă (sau întreabă Echo a acelei camere) — la volumul de noapte în orele de liniște, și nu într-o cameră în timpul ei de liniște, dacă nu vă afli în ea. Oprit: fără instrument muzical.",
+     "music_alexa": "Activat: \"joacă ceva calm în bucătărie\" îi cere Echo în acea cameră (Alexa Media Player) să îl redea de la serviciul de mai jos, după nume — o listă de redare, un artist, o melodie sau o stare de spirit — la volumul de noapte, în orele de liniște, și nu într-o cameră în timpul ei de liniște, dacă nu te afli în ea. Serviciul trebuie să fie conectat în aplicația Alexa. Folosit în loc de Music Assistant atunci când ambele sunt configurate (Music Assistant nu poate reda Spotify fără Premium). Oprit: Echos nu li se cere niciodată să redea muzică.",
+     "music_alexa_service": "Din ce serviciu joacă Echos. Spotify funcționează cu un cont gratuit, dar Alexa poate amesteca muzică similară în loc de melodia exactă; Premium redă exact ceea ce este cerut.",
+     "house_rules": "Propoziții simple trebuie să urmeze fiecare voce, una pe rând, e.g. „Nu spune niciodată că casa este goală.'",
+     "no_security_offers": "Scoateți din răspunsurile vocii orice propoziție care oferă armarea sau dezarmarea alarmei sau deblocarea unei uși (\"Shau să o armez?\") — chiar și atunci când este rostită așa cum este scrisă. Răspunsurile către cineva care a cerut să înarmeze, să dezarmeze, să blocheze sau să deblocheze sunt lăsate singure, așa că se cere confirmarea lor. Oprit implicit.",
+     "learn_entities": "Lumini, întrerupătoare, ventilatoare și jaluzele folosite de oameni cu mâna. În fiecare noapte, ultimele două săptămâni sunt verificate pentru lucruri făcute aproximativ la aceeași oră în majoritatea zilelor și pentru lucruri făcute imediat după altceva (o ușă care se deschide, o altă lumină aprinsă).",
+     "learn_anchors": "Un obicei care ține timpul cu apusul, răsăritul sau cu ridicarea soarelui mai degrabă decât cu ceasul (lampa la amurg, jaluzelele la răsărit, ibricul după trezire) se învață așa, așa că o rutină pe care o face casa pentru tine se mișcă odată cu anotimpurile. Trezirea are nevoie de un cadru adormit și treaz. Off: totul se învață contra cronometru, ca înainte.",
+     "offer_together": "Când câteva lucruri se întâmplă de obicei cam la aceeași oră în aceleași zile (lampa aprinsă, jaluzelele închise, televizorul aprins în jurul orei 20:00), acestea sunt oferite o dată, împreună — unul da și casa le face pe toate. Off: fiecare este oferit pe cont propriu.",
+     "trust_lights": "Când o rutină pe care ai lăsat casa să preia controlul luminează: doar fă-o, spune-o mai întâi sau întreabă și fă-o doar pe un da (nu se întâmplă nimic dacă nimeni nu răspunde).",
+     "trust_switches": "Același lucru pentru întrerupătoare, prize inteligente și ventilatoare.",
+     "trust_covers": "La fel si pentru jaluzele si perdele. Ușile și porțile de garaj cer mereu.",
+     "trust_heating": "Același lucru pentru încălzirea încălzirii înainte ca oamenii să se trezească. A întreba mai întâi înseamnă că nu se poate încălzi în timp ce toată lumea doarme.",
+     "link_triggers": "Opțional: mai multe lucruri care ar putea declanșa un obicei (pornirea televizorului, senzorul de pat…). Ușile, ferestrele și luminile învățate sunt întotdeauna luate în considerare.",
+     "suggest_routines": "O dată pe rutină nouă, în timpul zilei când cineva este acasă, întreabă dacă casa ar trebui să o facă de acum înainte.",
+     "prove_routines": "Un obicei nou învățat este urmărit mai întâi: în fiecare zi după ce a fost învățat, Sentient verifică dacă o persoană a făcut-o într-adevăr în 45 de minute de la ora obișnuită. Este oferit doar după ce a fost corect în cel puțin 3 din 4 zile în care s-a aplicat (în zilele lucrătoare, în weekend sau în fiecare zi). Setări › Învățare arată cum se descurcă fiecare. Off: obiceiurile sunt oferite imediat ce sunt învățate.",
+     "routine_fading": "Activat: când o rutină pe care o face casa pentru tine a fost deja făcută până la momentul scadenței în 5 zile în două săptămâni (cineva o face singur acum), Sentient întreabă o dată dacă o păstrează și se oprește dacă spui nu. Se păstrează doar datele, cel mult două săptămâni. Off: rutinele pe care le face casa sunt păstrate până când spui contrariul.",
+     "door_camera": "M-am uitat imediat când sună soneria, să înregistrez cine a venit.",
+     "door_triggers": "Butonul soneriei (un senzor binar sau un eveniment) sau orice altceva care înseamnă că cineva este la ușă.",
+     "announce_visitors": "Off menține un jurnal silențios de la care asistenții vocali pot răspunde.",
+     "faces": "Când Frigate (sau soneria de la ușă) recunoaște pe cineva, trece pe cronologia și vocea poate răspunde \"a venit Sam acasă?\". Numele nu sunt niciodată anunțate sau ghicite — spuse doar atunci când cineva întreabă. Oprit implicit.",
+     "face_people": "Numele așa cum le cunoaște Frigate. Gol: toți cei pe care îi recunoaște.",
+     "face_teach": "Ajută recunoașterea feței Frigate să se îmbunătățească. Când cineva părăsește o cameră aleasă și Frigate a păstrat o față pe care nu o putea numi, telefoanele primesc un mesaj privat \"Cine este acesta?\" cu fața și butoane pentru gospodărie (telefoanele arată cel mult trei). Atingerea unuia învață Frigate; \"Altcineva…\" ia un nume tastat pentru oricine nou, sau \"nu\" pentru a șterge fața unui străin. Niciodată vorbit, niciodată pe tablete, cel mult la fiecare zece minute. Necesita recunoașterea feței Frigate activată și telefoanele alese pentru notificări. Oprit implicit.",
+     "face_teach_cameras": "Camere de prim-plan unde fețele sunt clare, e.g. soneria. Gol: camera ușii.",
+     "face_cameras": "Gol: fiecare cameră. Alege-le pe cele din apropiere (soneria, ușa de la intrare) pentru ca o stradă aglomerată să nu poată da nume false.",
+     "face_forget_hours": "În fiecare noapte, fețele Frigate păstrate, dar nimeni nu este numit — străini, în mare parte — sunt șterse din Frigate odată ce sunt atât de bătrâni. Se păstrează fețele numite. 0: lasă-l pe Frigate (își păstrează ultimele 200).",
+     "clip_watch": "Când Frigate termină un eveniment pe o cameră aleasă, AI urmărește această porțiune de înregistrare o dată și o propoziție trece pe cronologia și pagina Sentient: \"Poarta 14:10 — un om a trecut un câine pe lângă\". Vocea răspunde \"ce s-a întâmplat la poartă?\" de la ei fără un alt apel AI. Niciodată vorbit. Oprit implicit.",
+     "clip_cameras": "Începeți cu unul, e.g. poarta.",
+     "clip_scope": "Alertele Frigate sunt persoane din zonele pe care le-ai marcat ca fiind necesare — cea mai silențioasă alegere pentru o stradă aglomerată. Dacă o cameră nu face niciodată alerte (nu sunt stabilite zone necesare în Frigate), alege \"Orice într-o zonă\" — cardul Clipuri arată ce a fost omis și de ce.",
+     "clip_when": "Vizionați doar în aceste momente. Deplasare înseamnă că toți cei aleși în luminile Away sunt stinse.",
+     "clip_notify": "Merge doar la telefoane, cu o poză și un buton de redare.",
+     "clip_source": "Rezumatele de revizuire AI ale Frigate trebuie activate în Frigate; atunci nu se face niciun apel AI aici.",
+     "clip_whose": "În același apel AI, sunt incluse fotografiile de față ale gospodăriei din biblioteca de fețe a lui Frigate (și aspectul de mai jos) și numește pe cineva numai atunci când este clar ei — \"probabil Sam\". Străinii nu sunt niciodată numește. S-a spus doar când a fost întrebat, nu a fost niciodată anunțat.",
+     "clip_looks": "Unul pe linie, e.g. \"Sam: cască roșie de ciclism și o haină galbenă, pe bicicletă\". Ajută atunci când o cască sau glugă ascunde fața.",
+     "budget_clips": "Contează și pentru limita generală zilnică de AI. 0: fără limită proprie.",
+     "clip_days": "Rezumatele sunt doar cuvinte, apoi sunt șterse.",
+     "clip_keep": "Dezactivat: fiecare clip este șters imediat ce a fost vizionat.",
+     "parcel_alerts": "După o livrare, priviți din nou câteva minute mai târziu și spune dacă a rămas un colet.",
+     "doorstep_sensors": "Opțional: senzori de persoană pentru pragul ușii sau grădina din față (e.g. ocuparea persoanei unei zone Frigate). Când o vizită acolo se termină fără sonerie, camera ușii este verificată o dată pentru un colet sau o poștă lăsată în urmă.",
+     "zone_visits": "Utilizează senzorii de prag de mai sus (e.g. ocuparea persoanei unei zone Frigate). Când nimeni nu sună, cineva care ajunge în zonă este tratat ca un vizitator: se privește camera ușii și se anunță. Oricare vine mai întâi, clopotul sau zona, este vizita și celălalt este ignorat. Oprit: doar soneria începe o vizită.",
+     "zone_door_sensors": "Opțional: senzorul de deschidere/închis al ușii din față. Dacă ușa a fost deschisă (sau este deschisă) în ultimul minut și jumătate, zona este ignorată, pentru că este cineva care pleacă sau se întoarce acasă.",
+     "face_sensor": "Opțional: un senzor de recunoaștere a feței a cărui stare este numele pe care tocmai l-a recunoscut (e.g. din Frigate). Folosit în jurnal și în anunț, dacă este activat.",
+     "sidebar_panel": "O pagină din bara laterală care arată amintiri, rutine, ceasuri, vizitatori și ceea ce s-a spus.",
+     "page_admin_only": "Ascunde pagina și ceea ce citește pentru toată lumea, cu excepția administratorilor. Off îl menține deschis pentru întreaga gospodărie. Pornirea acestuia nu șterge nimic.",
+     "custom_pages": "Activat: filele Prezentare generală, Casă, Minte și Securitate folosesc aspectul salvat, iar administratorii primesc aici EDIȚI AZARUL PAGINEI pentru a muta cardurile între coloane, a le ascunde, a le arăta din nou sau a reseta o filă. Nu există niciun buton de editare pe file, doar în timp ce editează. Aspectul este salvat în Sentient, astfel încât fiecare ecran arată la fel. Dezactivat: filele revin la aspectul standard; aspectul salvat este păstrat pentru când îl repornește.",
+     "confirm_kinds": "Cere AI să descrie aceste acțiuni și să aștepte un da. Aceasta este o instrucțiune promptă, nu un bloc de acțiune forțat: agentul dvs. de conversație controlează execuția dispozitivului. Oprirea lucrurilor nu trebuie întrebat. Gol: fără instrucțiuni suplimentare de confirmare. Pentru verificări forțate, activează controlul protejat cu configurarea agentului necesară.",
+     "auto_backup": "Duminică seara, o copie de rezervă a amintirilor, spoturilor, rutinelor, luminilor de mișcare, shush-urilor și setărilor, salvate în folderul de configurare sub sentient_backups.",
+     "backup_keep": "Cele mai vechi sunt șterse.",
+     "suggestions": "Lucruri pe care Sentient le-ar putea folosi, dar nu este — un difuzor nou, un senzor de putere pe mașina de spălat, un termometru cu hutch — oferite câte o linie. Da îl adaugă; nu înseamnă că nu se mai oferă niciodată. Gratuit, fără AI.",
+     "whats_new": "După ce Sentient este actualizat, un card scurt de pe pagina Sentient spune ce este nou, în cuvinte simple, până când atinge ÎNȚIAT.",
+     "simple_settings": "Lista de setări arată elementele esențiale, cu AFIȚI TOTUL pentru caracteristicile opționale. Instalările noi încep astfel. Nu schimbă nimic în ceea ce face Sentient.",
+     "chat_agent": "Cine răspunde la caseta Întrebare a paginii — alege un agent vocal care are bifat Sentient. Empty folosește canalul de asistență preferat.",
+     "health_ignore": "Entități (și dispozitivele lor) care nu ar trebui să fie considerate probleme, e.g. ceva care este menit să fie oprit.",
+     "hide_substreams": "Oferă fluxuri HD și SD, capturi de ecran și hărți atunci când numărați și verifică camerele, astfel încât o singură sonerie nu este mai multe camere. Nimic nu este șters din Home Assistant.",
+     "ignore_cameras": "Camerele Sentient nu ar trebui să conteze, să verifice sau să ofere, cum ar fi camera unei tablete. Ei rămân în Home Assistant neatinse; alege din nou să aduci unul înapoi.",
+     "never_entities": "Sentient nu comută, atenuează sau modifică niciodată acestea: nu în reguli, rutine, oferte, lumini de oprire automată, lumini de deplasare sau de mișcare, spectacole de lumini, control vocal pentru încălzire sau pazit, iar vocea i se spune să le lase în pace. Încă le poate citi și vorbi despre ele. Orice lucru care ar schimba unul este omis și notat.",
+     "self_check": "În fiecare noapte, se uită înapoi la propriile înregistrări — ce a spus și cum s-a defectat, difuzoarele care au eșuat, lucrurile reținute, întrebările puse din nou și din nou, contorul AI — și notează ce observă despre sine, cu numerele din spate. Fără AI. Întreabă \"ne-ai enervat?\" sau \"ce ai realizat?\".",
+     "learn_corrections": "Când cineva schimbă ceva ce a făcut casa cu un moment în urmă (o lumină pe care a aprins-o, o rutină pe care a preluat-o), notează corectarea. O rutină pe care o tot anulează este returnată (dezactivată) și cronologia spune așa. Oprirea acestei opțiuni oprește vizionarea; corecțiile deja notate sunt păstrate.",
+     "normal_day": "Compară astăzi cu ceea ce este obișnuit și notează acest lucru pe pagina Mind: de exemplu, nimeni nu s-a trezit încă când cineva este de obicei până acum. Reguli simple, nimic nu se spune cu voce tare și nimic nu se schimbă. Dezactivarea acestei opțiuni oprește verificarea și ascunde ceea ce a găsit.",
+     "thoughts": "O listă scurtă la persoana întâi pe pagina Mind (\"oamenii continuă să stingă lumina de aterizare, așa că m-am oprit\"), plus să ghicească în ce cameră merge cineva și să verifice cât de des a fost corect. Fără AI. Dezactivarea acestei opțiuni oprește ghicitul și ascunde lista; ceea ce a învățat se păstrează.",
+     "share_learning": "O dată pe seară (17:00–20:30), când cineva este pe-aproape și nu este timp liniștit, spune un lucru despre care a învățat sau s-a răzgândit în ultimele două zile: o rutină pe care l-a întors, un fapt pe care l-a actualizat, un obicei pe care l-a observat, cât de bine ghicește acum unde vei merge mai departe. Niciodată același lucru de două ori. Dezactivarea acestei opțiuni păstrează totul pe pagina Mind, dar tăcut.",
+     "self_adjust": "Când autoverificarea găsește un fel de remarcă, casa continuă să tacă, liniștiți-o puțin (la fel ca un degetul mare în jos; se estompează din nou). Nu atinge niciodată siguranța, securitatea sau orice lucru pe care îl controlează.",
+     "proposals": "Când autoverificarea găsește ceva care a greșit, sugerați o mică schimbare pe pagina Mind — mai puține remarci, să nu repetă una atât de des, o secțiune adăugată la briefing, o limită mai mare de AI — cu motivul. Nimic nu se schimbă până nu spui da; un nu nu se mai cere timp de o lună. Dezactivarea acestei opțiuni șterge orice sugestie în așteptare.",
+     "privacy_log": "Fiecare apel AI și căutare pe web pe care îl face Sentient este notat — ce caracteristică, câte imagini, clipuri sau documente și ce serviciu — niciodată ce a fost spus sau afișat. Vezi-l sub Brain & system → Ce iese din casă, cu un buton pentru a uita ultimele 48 de ore. Dezactivarea acestei opțiuni șterge înregistrarea.",
+     "goals": "Lasă vocea să stabilească obiective peste zile sau săptămâni (\"ajutați-ne să folosim mai puțină încălzire în această lună\"). Un obiectiv poate urmări un senzor: compară fiecare zi cu săptămâna obișnuită înainte și menționează progresul când se potrivește. Nu se schimba nimic in casa.",
+     "manuals": "Răspunde la întrebări din documentele din dosarul de mai jos (un apel AI fiecare). Oprit: documentele sunt lăsate singure.",
+     "manuals_folder": "Un folder în media lui Home Assistant (e.g. manuale = media/manuals). Denumiți fiecare fișier după ceea ce este, e.g. \"Aer purifier.pdf\".",
+     "manuals_local_text": "Când niciun nume de fișier nu se potrivește cu întrebarea, căutați în documentele .txt și .md cel potrivit, iar dacă AI nu poate fi accesat, citește cel mai apropiat pasaj în loc de nimic. Nicio IA nu este folosită pentru nici unul. Dezactivat: numai numele fișierelor sunt potrivite.",
+     "manuals_pages": "Activat: fiecare PDF (și document text) este citit o dată, pagină cu pagină, în propria bază de date a Sentient — pe acest computer, fără AI. O întrebare trimite apoi AI doar câteva pagini care se potrivesc, nu întregul document, deci costă mult mai puțin și răspunsul spune pe ce pagină se află (\"este la pagina 14\"). Un document al cărui nume nu se potrivește poate fi găsit în continuare după ceea ce este în el, iar dacă AI nu poate fi accesat, cel mai apropiat pasaj este citit cu pagina sa. PDF-urile scanate (imaginile paginilor) sunt încă citite întreg de AI. Dezactivat: documentele sunt citite întregi de fiecare dată, iar ceea ce a fost citit este șters.",
+     "games": "Joacă jocuri de poveste cu voce, cum ar fi o aventură de evadare din plat cu asistenții ca maestru de joc. Fiecare joc își păstrează propria memorie salvată (unde sunt jucătorii, ce poartă, ce au găsit și ce au ales) în sesiuni și asistenți. Este afișat unei voci numai în timp ce se joacă un joc, iar maestrul jocului poate citi memoria obișnuită a casei, dar nu o poate schimba niciodată. Deschide Setări → Jocuri cu povești pentru a scrie jocuri și a le edita memoria. Dezactivat: instrumentele de joc și pagina sunt ascunse; jocurile salvate sunt păstrate, nu șters.",
+     "voice_id": "Folosește potrivirea difuzorului local pentru această solicitare. Pentru a permite modelului AI să personalizeze răspunsurile sau să atribuie noi amintiri după nume, activează și Partajați nume potrivite cu agentul de conversație în Recunoașterea vocală. Localul separat “Cine vorbește?” răspunsul este configurat în Recunoașterea vocală.",
+     "voice_id_unknown": "Când un difuzor de asistență nu are o potrivire vocală, păstrează istoricul gospodăriei și amintirile salvate private pentru acel turn. Oprit: vocile nepotrivite sunt tratate ca normal.",
+     "speaker_memories": "Cu funcția de recunoaștere a vocii: o voce potrivită își primește mai întâi propriile amintiri (“Alex: îi place ceaiul”) — întotdeauna incluse, chiar și atunci când faptele mai noi din gospodărie ar umple lista — și niciodată pe cele personale ale nimănui altcuiva; o voce pe care nu o poate egala nu primește amintirile personale ale nimănui. Faptele casnice sunt întotdeauna împărtășite. Solicitările tastate și Echos sunt neschimbate. Oprit implicit.",
+     "books": "Redă cărți audio și citește cărți electronice cu voce tare, păstrând locul fiecărei camere. \"Citește-mi cartea\", \"continuă cu cartea\", \"citește 20 de minute\", \"oprește-te\", \"capitolul următor\", \"întoarce-te puțin\". Fără AI (cu excepția unei recapitulări opționale). Pe un Echo: ebooks un pasaj per solicitare prin abilitate Alexa; cărțile audio au nevoie de un alt difuzor.",
+     "books_folder": "Un folder în media lui Home Assistant (cărți = media/cărți). Cărți electronice .epub sau .txt fără DRM; cărți audio ca un fișier .mp3/.m4b/.m4a sau un folder cu părți numite după carte.",
+     "reading_tts": "Un alt serviciu text-to-speech doar pentru cărți și povești — vocile Gemini sau ElevenLabs sunt adesea povestitori mai buni. Lasă necompletat pentru a citi cu vocea obișnuită. Echos folosește întotdeauna propria voce a lui Alexa.",
+     "reading_voice": "Alege vocea din acel serviciu. Folosește TRY THE VOICE de mai jos pentru a o auzi pe difuzorul implicit înainte de a salva.",
+     "read_ahead": "Cu o voce de citire, următoarea parte a poveștii este făcută în timp ce această parte este citită, astfel încât o voce lentă (una liberă sau cea tulbure) nu lasă un spațiu între părți. Folosește acea voce puțin mai devreme, niciodată mai des.",
+     "recipes": "\"Să facem lasagna\": ingredientele, apoi un pas pe rând — \"următorul\", \"repetă asta\", \"întoarce-te\", \"ce urmează?\" — amintindu-ne pasul pentru fiecare difuzor. \"Fă-l pentru 6\" îl scalează; ingredientele pot intra pe lista de cumpărături.",
+     "recipes_folder": "Un folder în media lui Home Assistant (rețete = media/rețete) cu PDF-uri, fotografii, text sau Markdown. Fiecare este ordonat în pași de un apel AI prima dată, apoi păstrat. Mealie este utilizat automat dacă integrarea sa este configurată.",
+     "recipes_list": "Unde le pune \"adaugă ingredientele la lista de cumpărături\". Golă: lista cu \"cumpărături\" în nume.",
+     "voice_lists": "Pe: \"bifați laptele\", \"ce este pe lista de cumpărături?\", \"scoateți sacii de gunoi\" — articolele sunt găsite oricum sunt spuse (orice caz, plural, singurul lapte de pe listă), sunt întrebat două potriviri posibile, iar Sentient spune că s-a făcut doar odată ce lista îl arată. Utilizează listele expuse la Asistență (toate listele dacă nu există) și lista de cumpărături, cu excepția cazului în care este denumită alta. Fără AI propriu. Oprit: vocea folosește comenzile de listă proprii ale lui Home Assistant. Nimic nu este stocat.",
+     "ready_tonight": "\"Asigură-te că totul este gata pentru seara asta\": verifică ușile, geamurile și încuietorile Assist poate vedea, stinge doar luminile alese mai jos, se uită la încălzire și spune ce este încă deschis, deblocat, lăsat aprins sau nu poate fi confirmat. Încuietorile, alarma și încălzirea nu sunt schimbate niciodată, iar alarma nu este niciodată oferită. Fără AI propriu. Oprit: vocea poate verifica în continuare casa, dar acest lucru nu este oferit. Nimic nu este stocat.",
+     "ready_tonight_lights": "Singurele lumini \"gata pentru seara asta\" se pot stinge. Fiecare este verificat ulterior. Gol: nicio lumină nu este stinsă, doar raportată.",
+     "ready_tonight_follow": "Când ceva este încă deschis sau deblocat, urmăriți-l timp de până la trei ore și spune o dată, pe difuzorul pe care l-ai întrebat, când totul este rezolvat. Continuă după o repornire.",
+     "tandoor_url": "Opțional: adresa dvs. Tandoor Recipes, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Opțional: un token API de la Tandoor (Setări → API). Păstrată numai în Home Assistant.",
+     "voice_agent": "Agentul AI care răspunde în mod normal (e.g. Google AI). Empty folosește agentul de chat al paginii.",
+     "backup_agent": "Răspunde atunci când agentul principal eșuează — agentul propriu al lui Home Assistant face lumini, încălzire și temporizatoare fără AI.",
+     "offline_answers": "Când agentul AI eșuează, “casa este închisă?”, “când este următoarea mea alarmă?” și “a venit cineva?” primesc răspuns direct din casă, în cuvinte simple, înainte ca agentul de rezervă să fie judecat. Doar întrebări, doar ceea ce poate vedea persoana; în modul invitat doar întrebarea de securitate. Oprit: totul merge la agentul de rezervă.",
+     "animal_sensors": "Senzori de temperatură pentru colibă, canisa, coop sau rezervor.",
+     "away_lights_on": "Când toată lumea iese după lăsarea întunericului, luminile copiază modul în care au fost folosite în același timp săptămâna trecută (din istoria Home Assistant), în câteva minute în orice caz. Nu pornește (sau se oprește) dacă este cineva acasă sau s-a produs mișcare înăuntru în ultima vreme, pentru persoanele fără telefon urmărite și pune înapoi ceea ce a pornit. De asemenea, un comutator „Away lights.",
+     "away_people": "Gol: toată lumea cu o intrare de persoană. Poți alege telefoane (device trackers) în loc de persoane.",
+     "away_lights": "Gol: fiecare lumină dintr-o cameră, lăsând afară ecrane, inele LED, lumini de fundal și grupuri. Se aprind doar luminile care erau folosite la acel moment săptămâna trecută.",
+     "holiday_mode": "Un comutator „Mod vacanță” și „plecăm în vacanță până duminică” prin voce. Cât timp este pornit, nimic nu se spune cu voce tare, cu excepția alertelor de siguranță — ceea ce s-ar fi spus se referă la telefoanele alese pentru notificări, cu vizitatori și pachete; luminile de deplasare pornesc chiar dacă sunt în mod normal stinse; iar termostatele de mai jos sunt oprite. Oprit: fără comutator și fără vacanță prin voce.",
+     "holiday_thermostats": "Reduceți protecția împotriva înghețului în timp ce ești plecat și puneți la loc exact așa cum erau când se termină modul vacanță. Gol: încălzirea nu este atinsă.",
+     "holiday_frost": "La ce sunt setate termostatele de mai sus când ești plecat.",
+     "holiday_end_on_return": "Odată ce toată lumea a ieșit afară, prima persoană acasă se oprește din modul vacanță și readuce încălzirea. Oprit: se termină la data sa sau când este oprit.",
+     "away_after": "Așa că să mergi la magazin nu pornește.",
+     "animal_low": "Spune o dată când scade sub aceasta (se menține până dimineața în ore liniștite) și avertizează seara înainte de îngheț.",
+     "animal_high": "Spune o dată când se ridică peste aceasta.",
+     "hutch_check": "La jumătate de oră după apusul soarelui, o IA se uită la colibă: sunt înăuntru și este închisă? Spune doar ceva dacă nu.",
+     "hutch_spot": "Locul desenat în jurul colibei din fila Spots, e.g. 'pentru iepure'.",
+     "cat_watch": "După lăsarea întunericului, când se aprinde un senzor de pisică de pe camera colibei, o privire AI: o pisică este la sau lângă colibă? Cel mult la fiecare 15 minute, și nu când imaginea nu s-a schimbat.",
+     "cat_sensors": "Gol: senzorii pentru pisici de pe camera colibei (e.g. ocuparea pisicii Frigate).",
+     "cat_loud": "Oprit: păstrat pentru dimineața („O pisică era lângă colibă ​​la 2:14”). Pornit: rostit deodată prin difuzoarele de veghe de noapte.",
+     "rain_warnings": "Când va ploua în decurs de o oră și o fereastră sau o ușă este deschisă: „Ploaia vine în următoarea oră și fereastra dormitorului este deschisă”. Citește prognoza orară — fără AI. O dată pe vrajă de ploaie.",
+     "rain_entities": "Gol: fiecare senzor de fereastră și ușă.",
+     "self_test": "Peste noapte, vocii i se pun câteva întrebări zilnice (temperatura de afară, orice lucru deschis, mementouri, alarma, ora) și răspunsurile ei sunt verificate în raport cu casa. Orice lucru greșit se arată în sănătatea casei cu instrumentul pe care l-a folosit. Aproximativ 5 AI apelează la alergare. Numai întrebări — nimic nu este schimbat.",
+     "self_test_household": "Adaugă aproximativ 7 întrebări construite din propriile dispozitive: când s-a închis ultima dată o ușă sau o fereastră, dacă o lumină este aprinsă, dacă o cameră a văzut pe cineva în ultimele două ore, dacă cineva a venit astăzi la ușă, ceva ce nu poate ști (un răspuns inventat nu reușește), ceva ce niciun dispozitiv nu poate face și o întrebare prea vagă pentru a răspunde fără a întreba la care. Schimbarea a ceva în timpul unei întrebări este un eșec. Scorul și tendința sa sunt pe pagina Mind. Încă aproximativ 7 AI solicită o alergare.",
+     "screen": "Alerte, notificări și un card de dimineață pe cardul de ecran Sentient (personalizat:sentient-card-ecran). Off: arată casa doar dintr-o privire.",
+     "screen_actions": "e.g. treziți o tabletă și comută-o la pagina cu cardul de ecran.",
+     "screen_clear_actions": "e.g. comută tableta înapoi la pagina normală.",
+     "conversation_sessions": "Folosește Sentient cu agentul de rezervă. Comenzile individuale nu mai sunt ascultate decât dacă răspunsul rostit se termină cu o întrebare. Discuțiile privind informațiile, securitatea, sănătatea și sistemul întreabă dacă mai este ceva și rămâneți deschis până când spune “asta e tot”, “destul” sau “nu mai ascultați”, sau expiră expirarea timpului de inactivitate. Spune “înapoi la…” pentru a relua un subiect neterminat de pe acest dispozitiv în decurs de 24 de ore, fără a restabili permisiunile de acțiune. Panoul Mind afișează deciziile recente de conversație. Ascultarea ulterioară necesită un dispozitiv de asistență compatibil.",
+     "room_conversation_handoff": "Spune continuă și denumește un subiect de pe alt dispozitiv. Ambele solicitări trebuie să provină de la același utilizator Home Assistant identificat. Citirile noi sunt verificate, iar acțiunile și confirmările anterioare nu sunt reportate.",
+     "verified_bedtime": "Spune fugiți jos ora de culcare pentru a stinge luminile selectate și verifică contactele selectate. Cere starea orei de culcare de la parter să verifică din nou sau spune Anulează ora de culcare de la parter pentru a opri urmărirea acesteia.",
+     "verified_bedtime_lights": "Alege până la douăzeci de lumini individuale expuse Assist. Grupurile sunt excluse, iar lista Niciodată nu atinge se aplică în continuare.",
+     "verified_bedtime_contacts": "Alege până la douăzeci de uși, ferestre sau alte contacte de deschidere expuse la asistent pentru a verifica. Sunt doar citite.",
+     "session_seconds": "Renunță la contextul sesiunii și acțiunile în așteptare după atâtea secunde fără o altă tură. Dispozitivul dvs. vocal își controlează propriul timp de expirare a silenționării. Confirmarea expiră și după 60 de secunde.",
+     "guarded_control": "Înscrie-te cu un agent AI compatibil: selectează numai Sentient păzit sub Control Home Assistant, apoi folosește Sentient cu backup în curs. Dezactivează Preferă gestionarea comenzilor local și elimină declanșatoarele de propoziții conflictuale, care rulează înaintea acestui agent. Configurația greșită a agentului API oprește solicitările. Fără rezervă nerestricționată, scenarii, scene sau acțiuni de alarmă. Ușile, pornirile aparatului și schimbările semnificative de încălzire necesită un da separat.",
+     "routine_verify": "Pornit: după o rutină vocală (noapte bună, plecare…), fiecare lumină, întrerupător, lacăt și capac schimbat este verificat câteva secunde mai târziu, iar răspunsul spune ce nu s-a întâmplat (\"Gata, cu excepția luminii de aterizare, care este încă aprinsă\"). Pașii pe care nu îi poate verifica (scripturi, scene) sunt raportați ca nebifați, niciodată ca fiind finalizați. Nimic nu este reîncercat sau anulat de la sine. Off: rutinele rulează ca înainte, nebifate.",
+     "voice_unlock": "Permite confirmarea vocală forțată să deblocheze o ușă după un da separat. Dezactivat (prestabilit) continuă să se blocheze și să se închidă, dar refuză să deblocheze sau să deschidă prin voce, deoarece Sentient nu poate spune cine vorbește.",
+     "voice_undo": "Cu controlul protejat, spune “Anulează asta” pentru a solicita restaurarea setărilor recente de lumină verificate. Omite luminile schimbate de atunci, expiră odată cu sesiunea și nu dezactivează niciodată încuietorile, încălzirea sau electrocasnicele.",
+     "evidence_awareness": "Spune vocii să distingă observațiile, inferențe, acțiunile încercate și rapoartele verificate ale dispozitivului. Senzorii de securitate indisponibili împiedică întotdeauna o revendicare complet sigură.",
+     "security_incidents": "Grupați senzori de persoană pentru securitatea camerei și contacte de intrare configurate cu alerte și rezumate ale clipurilor. Păstrează șapte zile la nivel local. Proximitatea timpului este o posibilă legătură, nu o dovadă a aceleiași persoane; doar alertele crescătoare se repetă.",
+     "incident_front": "Camere și senzori din fața casei (soneria, ușa din față). Orice aici nu este niciodată grupat într-un singur incident de securitate cu ceva ce nu este, și invers: cineva la ușa din față și cineva la poarta din spate în același moment sunt două incidente. Lasă gol pentru a grupa singuri.",
+     "live_voice_check": "Afișează verificarea vocală începută de utilizator în panoul Mind. Dezactivarea acestei opțiuni șterge verificarea curentă și oprește înregistrarea turelor de verificare. Necesită sesiuni de conversație pentru a începe o verificare.",
+     "speech_delivery_history": "Păstrează rezultatele anunțurilor recente pentru fiecare difuzor în panoul Mind. Dezactivarea acestei opțiuni șterge acest istoric. Detectarea eșecului difuzorului și gestionarea sigură a reîncercării rămân active.",
+     "alexa_tts_only": "Folosește TTS simplu în loc de anunțuri Alexa dacă anunțurile nu sunt de încredere. Acest lucru ocolește soneria de anunț Alexa; celelalte difuzoare sunt neschimbate.",
+     "update_checker": "Verifică GitHub pentru versiuni stabile atunci când este activat, la pornire și la fiecare șase ore. Fără apeluri AI, instalare automată sau reporniri automate. Dezactivează pentru a opri verificările.",
+     "contextual_followups": "Necesită sesiuni de conversație și Sentient cu agent de rezervă. Păstrează subiectul pentru urmăriri scurte, reîmprospătați citirile dispozitivului expus și clarificați ajustările ambigue. Nu acordă permisiuni de acțiune și nu modifică regulile de ascultare. Oprit implicit; dezactivarea acesteia șterge contextul conversației temporare.",
+     "conversation_recovery": "Necesită sesiuni de conversație și Sentient cu agent de rezervă. Anulează o solicitare în așteptare sau în curs de desfășurare de la aceeași conversație/dispozitiv/utilizator și evitați reluarea comenzilor incerte ale dispozitivului după o defecțiune a AI. Nu se poate anula o acțiune deja trimisă sau se poate face ca hardware-ul să accepte vorbirea când este ocupat. Oprit implicit; dezactivarea oprește această manipulare suplimentară.",
+     "speech_failure_notification": "Afișează o notificare Home Assistant când livrarea difuzorului eșuează sau este incertă. Oprit implicit. Nu include conținut vorbit sau vorbire repetă. Dezactivat în modul invitat; notificările existente rămân până la respingere.",
+     "recent_followup_context": "Folosește un subiect finalizat recent după un cuvânt proaspăt de trezire pe același vorbitor și utilizator. Necesită sesiuni de conversație și urmăriri contextuale. Utilizează timpul de expirare a sesiunii; nu restabilește niciodată confirmarea sau ascultarea. Oprit implicit. Terminarea sau uitarea clarifică contextul.",
+     "conversation_cues": "În cadrul unei conversații: semnele de zi cu zi (“norații”, “perfect, mulțumesc”, “așa va fi”) o încheie atunci când nimic anume nu așteaptă un răspuns; “îmi pare rău, am vrut să spun…”, “lumină greșită” și “nu lampa, plafoniera” sunt corecții; și “în altă notă…” sau “altceva:” începe un subiect nou, fără dispozitive transportate. Fără AI. Dezactivat: sunt recunoscute numai terminațiile simple și corecțiile.",
+     "vary_replies": "Vocii i se arată ultimele răspunsuri din ziua trecută și i se spune să nu-și refolosească propozițiile sau deschiderile, astfel încât același răspuns nu este dat cuvânt cu cuvânt de două ori. Nu în camere private sau în modul oaspeți. Răspunsurile repetate sunt socotite în orice mod (fila Mind, cu sincronizarea vocii). Oprit implicit.",
+     "behaviour_explanations": "Răspunde la întrebări scurte despre ascultarea și rezultatele înregistrate de dispozitive direct, fără un apel AI. Necesită sesiuni de conversație. Utilizează înregistrările de sesiune existente, respectă modul invitat și accesul la dispozitiv și nu repetă niciodată o acțiune. Oprit implicit; nu este stocat niciun istoric suplimentar.",
+     "current_house_context": "Oferă conversațiilor un instantaneu compact și relevant al rapoartelor dispozitivelor expuse, modificărilor recente și sarcinii curente neterminate. Oprit implicit. Fără apeluri AI de fundal. Modul invitat îl suprimă. Modificările recente expiră după 30 de minute; dezactivarea sau uitarea șterge contextul doar pentru memorie.",
+     "moment_awareness": "Fiecare răspuns vocal primește o scurtă imagine „chiar acum” din ceea ce Sentient păstrează deja: cine este acasă și de când, camerele cu mișcare, ce s-a întâmplat în ultimele 45 de minute și ceva neobișnuit pentru astăzi. Fără AI și nimic stocat. Într-o cameră privată sau în modul oaspeți este dată doar mișcarea. Oprit: nu este adăugat nimic.",
+     "room_memory": "Fiecare răspuns vocal dintr-o cameră primește ceea ce s-a întâmplat acolo în ultima oră: conversații anterioare în camera respectivă, ce a fost comutat acolo prin voce și ce a fost anunțat acolo. Dacă cineva vorbea într-o altă cameră acum câteva minute și nu s-a mai spus nimic aici de atunci, vine și acea conversație, ca să poată continua de unde a rămas. Nu este stocat nimic nou. Camerele private și modul pentru oaspeți obțin doar înregistrarea propriei camere. Oprit: nu este adăugat nimic.",
+     "know_people": "Când recunoașterea vocală nu a numit difuzorul, Sentient află cine este probabil din lucruri în care poate avea încredere: un mesaj introdus în aplicația Home Assistant vine din contul acelei persoane sau al ei este singurul telefon urmărit în cameră din cameră. Vocii i se spune cine este probabil și pune pe primul loc ceea ce a spus persoana respectivă despre ea însăși. O presupunere nu permite niciodată nimic care are nevoie de o confirmare și nimic nu este salvat sub numele lor din cauza asta. Nu în modul oaspeți sau în camere private. Off: nu ghicim.",
+     "instant_answers": "Întrebările de zi cu zi primesc răspuns direct din casă, înainte de AI: ora, vremea de afară, dacă un dispozitiv numit este pornit, oprit, deschis sau încuiat, temperatura unei camere, următoarea alarmă sau memento, vizitatori și dacă casa este închisă. Doar întrebări, doar un singur dispozitiv care se potrivește clar și este expus asistenților vocali; orice altceva merge la AI ca de obicei. Schimbul este adăugat la conversație, astfel încât o persoană de urmărire încă știe ce a fost întrebat. Oaspeții și camerele private primesc doar ora, vremea și starea dispozitivului. Dezactivat: fiecare întrebare merge către AI.",
+     "capability_awareness": "Vocii i se spune ce fel de lucruri poate controla în această casă prin voce (din ceea ce este expus asistenților vocali, cu câte din fiecare) și care dintre ele comune nu are casa, cum ar fi încuietori inteligente sau jaluzele motorizate, astfel încât să nu ofere niciodată ceva ce niciun dispozitiv nu poate face. O ofertă care se strecoară oricum (închiderea unei ferestre, încuierea unei uși) este eliminată din răspuns înainte de a fi rostită. Am lucrat la fiecare cinci minute, fără AI. Dezactivat: nimic nu este adăugat sau eliminat.",
+     "house_context_entities": "Dispozitive care trebuie incluse în rezumatele generale ale casei, alături de rapoartele automate de climă și deschidere/prezență. Numai dispozitivele expuse și accesibile în prezent sunt partajate; cel mult opt ​​citiri relevante per cerere.",
+     "house_context_updates": "Necesită contextul actual al casei. După o solicitare de încălzire supravegheată verificată, opțional spune o dată când acel termostat raportează temperatura solicitată. Expiră după o oră, se anulează dacă ținta se modifică, cel mult o actualizare la 15 minute. Respectă regulile normale de vorbire și modul invitat. Oprit implicit. Dezactivarea șterge actualizările în așteptare.",
+     "security_event_evidence": "Folosește ID-uri de eveniment Frigate, instantanee și clipuri pe camerele configurate. O potrivire unică cameră/timp este o legătură candidată, nu o dovadă că un senzor a identificat acel eveniment. Păstrează până la 3.000 de înregistrări de evenimente timp de șapte zile, la nivel local. Oprit implicit. Dezactivarea ascunde linkurile și oprește potrivirea; înregistrările păstrate expiră sau pot fi uitate.",
+     "security_event_zones": "Doar ceea ce intră într-o zonă: pe o cameră cu zone Frigate, un eveniment este listat (și poate declanșa un incident de securitate) numai după ce obiectul a intrat într-una dintre ele, aceeași regulă pe care Frigate o folosește pentru alertele sale. O cameră fără zone listează totul. Orice a detectat: fiecare obiect Frigate urmărește pe camerele alese. Setările proprii ale lui Frigate nu sunt niciodată modificate.",
+     "security_event_hidden_zones": "Una pe linie ca cameră/zonă, de exemplu poarta/calea de acces. Evenimentele care sunt doar în aceste zone nu sunt listate și nu declanșează incidente de securitate. Folosește HIDE THIS ZONE pe pagina Securitate după câteva corecții „nu este o persoană” acolo sau elimină o linie pentru a lista din nou acea zonă. Frigate nu este schimbat.",
+     "security_coverage": "Arată ce camere configurate au contribuit cu dovezi reținute și orice rapoarte indisponibile înregistrate alături de incidente în direct. Rapoartele actuale ale camerei sunt afișate separat. Dezactivarea acestei opțiuni elimină golurile de acoperire reținute.",
+     "frigate_pipeline_health": "Citește disponibilitatea Frigate MQTT, ratele de procesare per cameră și când Sentient a primit ultima dată un eveniment. Datele lipsă sunt afișate ca necunoscute. Nu se modifică setările camerei.",
+     "security_conversation_context": "Rețineți evenimentul selectat timp de până la cinci minute în cadrul aceleiași conversații, dispozitiv și utilizator. Întrebările ulterioare folosesc acel eveniment și rapoarte noi de ocupare; nu se presupune identitate sau prezență continuă. Urmărește evenimentele configurate ale camerei. Oprit implicit. Dezactivarea șterge referințele la conversație; înregistrările evenimentelor își păstrează expirarea normală.",
+     "security_event_feedback": "Administratorii pot marca o vizită ca o captură bună, nu o persoană sau una de ignorat. Vizitele revizuite se mută într-o listă de recenzii pliată, iar „nu o persoană” contează, de asemenea, ca o detecție falsă revizuită pentru un incident de securitate făcut numai pentru acea vizită. Corecțiile rămân șapte zile. Niciun detector automat, alarmă sau modificări ale regulilor de notificare. Dezactivarea ascunde feedback-ul și oprește noi corecții; folosește Uitați datele recente pentru a șterge înregistrările reținute.",
+     "share_clip_analysis": "Partajați analize generice compatibile ale aceluiași eveniment Frigate finalizat prin vizionarea automată a clipurilor și întrebări despre clipuri de eveniment. Furnizorul, acoperirea filmării și setările de identitate trebuie să se potrivească. Întrebările personalizate sunt analizate separat. Păstrează cel mult 100 de rezultate în memorie timp de șase ore. Oprit implicit. Dezactivarea, modificarea setărilor sau uitarea șterge memoria cache."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient este deja configurat."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Setări",
+     "briefing": "Rezumate",
+     "memories": "Amintiri"
+    }
+   },
+   "settings": {
+    "title": "Setări",
+    "data": {
+     "persona": "Nume",
+     "speakers": "Difuzoare",
+     "default_speaker": "Difuzor implicit",
+     "quiet_start": "Încep orele de liniște",
+     "quiet_end": "Se termină orele liniștite",
+     "busy_entities": "Stai liniștit când ești ocupat",
+     "motion_window": "Fereastra de conștientizare a camerei",
+     "banned_words": "Nu folosește niciodată aceste cuvinte (separate prin virgulă)",
+     "suppress_entities": "Stai liniștit după aceste automatizări sau scripturi",
+     "suppress_seconds": "Stai liniştit pentru",
+     "prompt_memories": "Amintiri de împărtășit cu asistenții vocali",
+     "pass_through_areas": "Zone de trecere",
+     "all_occupied": "Vorbește în fiecare cameră ocupată",
+     "room_tracking": "Folosește instrumente de urmărire a camerei (Bluetooth)",
+     "room_trackers": "Trackere de cameră",
+     "ai_task_entity": "AI pentru joburi de fundal",
+     "camera_cooldown": "Distanța minimă între verificările camerei",
+     "fallback_speakers": "Difuzoare de rezervă",
+     "daily_ai_limit": "Apeluri AI pe zi",
+     "prompt_recent": "Chiar acum și ultima oră în contextul vocii",
+     "rules": "Reguli și realizarea lor prin voce",
+     "relevant_memories": "Alege amintirile care se potrivesc cu ceea ce a fost cerut",
+     "look_cache_minutes": "Reutilizați un răspuns de cameră pentru",
+     "camera_prefilter": "Omiteți privirile camerei când nimic nu sa schimbat",
+     "budget_drive": "Apeluri AI pe zi: drive-ul",
+     "budget_noticing": "Apeluri AI pe zi: observarea",
+     "budget_cameras": "Apeluri AI pe zi: verificări ale camerei și ceasuri",
+     "routine_evidence": "Spune cât de des a fost văzută o rutină",
+     "notice_entities": "Lucruri de observat",
+     "remark_repeat_hours": "Nu repeta o remarcă pentru",
+     "chattiness": "Cât de vorbăreț",
+     "conversation_style": "Cum vorbește",
+     "carry_on_minutes": "Purtați o conversație pentru",
+     "focused_tools": "Instrumente vocale concentrate",
+     "ask_later": "Întreabă cum au mers lucrurile",
+     "put_right": "Remediați greșelile dintr-o singură mișcare",
+     "music": "Muzică întrebând",
+     "music_alexa": "Muzică prin Alexa (Echos)",
+     "music_alexa_service": "Serviciu de muzică pentru Echos",
+     "house_rules": "Regulile casei",
+     "no_security_offers": "Nu oferi niciodată armarea, dezarmarea sau deblocarea",
+     "learn_entities": "Învață rutine de la",
+     "learn_anchors": "Obiceiuri care urmează zilei",
+     "trust_lights": "Lumini",
+     "trust_switches": "Întrerupătoare, prize și ventilatoare",
+     "trust_covers": "Jaluzele și perdele",
+     "trust_heating": "Încălzire",
+     "offer_together": "Oferă obiceiuri făcute împreună ca una singură",
+     "link_triggers": "Învață, de asemenea, ce urmează",
+     "suggest_routines": "Oferă să preia rutinele",
+     "prove_routines": "Obiceiurile se dovedesc înainte de a fi oferite",
+     "routine_fading": "Întreabă despre rutine de care nu mai sunt necesare",
+     "door_camera": "Camera usii",
+     "door_triggers": "Soneria",
+     "announce_visitors": "Spune cine este la uşă",
+     "faces": "Nume din recunoașterea feței",
+     "face_people": "Doar acești oameni",
+     "face_teach": "Întreabă la telefon cine sunt fețele fără nume",
+     "face_teach_cameras": "Învață chipuri de la aceste camere",
+     "face_cameras": "Nume numai de la aceste camere",
+     "face_forget_hours": "Uită după chipuri fără nume",
+     "clip_watch": "Urmărește clipuri de evenimente",
+     "clip_cameras": "Camere de luat vederi",
+     "clip_scope": "Care evenimente",
+     "clip_when": "Când",
+     "clip_notify": "Trimite la telefoane",
+     "clip_source": "Cine scrie rezumatul",
+     "clip_whose": "Spune ce membru al gospodăriei a fost",
+     "clip_looks": "Cum arată oamenii când fața lor nu poate fi văzută",
+     "budget_clips": "Clipuri vizionate pe zi (cele mai multe)",
+     "clip_days": "Păstrează rezumatele pentru",
+     "clip_keep": "Păstrează fișierele clip",
+     "parcel_alerts": "Spune când a rămas un pachet",
+     "doorstep_sensors": "Verifică pachetele după vizitele văzute de",
+     "zone_visits": "Numără pe cineva din zona camerei ușii din față drept vizitator",
+     "zone_door_sensors": "Senzor ușă din față (zona este ignorată dacă s-a deschis prima)",
+     "face_sensor": "Nume recunoscut de la",
+     "sidebar_panel": "Afișează în bara laterală",
+     "page_admin_only": "Numai administratorii pot deschide această pagină",
+     "custom_pages": "Rearanjați pagina Sentient",
+     "suggestions": "Sugestii pe pagina Sentient",
+     "whats_new": "Ce este nou după o actualizare",
+     "simple_settings": "Pagina de setări mai simplă",
+     "auto_backup": "Faceți backup în fiecare săptămână",
+     "backup_keep": "Câte de păstrat",
+     "confirm_kinds": "Întreabă \"trebuie?\" înainte",
+     "chat_agent": "Agent de chat pentru pagina din bara laterală",
+     "battery_threshold": "Bateria descărcată mai jos",
+     "battery_forecast": "Spune când se vor epuiza bateriile",
+     "health_ignore": "Ignorați pentru sănătatea casei",
+     "hide_substreams": "Ascundeți vizualizări suplimentare ale camerei",
+     "ignore_cameras": "Camere de luat în considerare",
+     "never_entities": "Nu atinge niciodată acestea",
+     "self_check": "Autoverificare în fiecare noapte",
+     "learn_corrections": "Învață când anulezi ceea ce a făcut",
+     "normal_day": "Observați o zi neobișnuită",
+     "thoughts": "Arată ce gândește",
+     "share_learning": "Spune ce a învățat",
+     "self_adjust": "Reglare automată",
+     "proposals": "Sugerați modificări ale setărilor sale",
+     "privacy_log": "Păstrează o evidență a ceea ce iese din casă",
+     "goals": "Goluri",
+     "manuals": "Răspuns din documente",
+     "manuals_folder": "Dosarul de documente",
+     "manuals_local_text": "Caută în documentele text",
+     "manuals_pages": "Citește PDF-uri pagină cu pagină",
+     "games": "Jocuri de poveste",
+     "voice_id": "Afla cine vorbeste",
+     "voice_id_unknown": "Tratează vocile pe care nu le pot potrivi ca pe un oaspete",
+     "speaker_memories": "Păstrează-i amintirile fiecăruia",
+     "books": "Cărți",
+     "books_folder": "Dosarul cărți",
+     "reading_tts": "Citirea vocii: serviciu",
+     "reading_voice": "Citirea vocii",
+     "read_ahead": "Pregătește următoarea parte în timp ce citești",
+     "recipes": "Rețete",
+     "recipes_folder": "Dosarul cu rețete",
+     "recipes_list": "Lista de cumpărături pentru ingrediente",
+     "voice_lists": "Liste de cumpărături și de făcut prin voce",
+     "ready_tonight": "Gata pentru seara asta",
+     "ready_tonight_lights": "Gata pentru seara asta: luminile se pot stinge",
+     "ready_tonight_follow": "Gata pentru seara asta: spune-mi când este sortată",
+     "tandoor_url": "Adresa Tandoor",
+     "tandoor_token": "Token API Tandoor",
+     "second_opinion_ai": "IA pentru o a doua opinie",
+     "smart_ai_task": "AI mai puternică pentru securitate și gândirea peste noapte",
+     "event_clips": "Urmărește clipurile evenimentului Frigate",
+     "notify_targets": "Telefoane de notificat",
+     "notify_when": "Trimite pe telefoane",
+     "phone_buttons": "Butoane de pe notificările telefonului",
+     "phone_apps": "Aplicații însoțitoare pentru butoane",
+     "bins_check": "Verificarea pubelelor",
+     "bins_calendar": "Calendarul de coș",
+     "bins_spot": "Locul camerei de gunoi",
+     "bins_time": "Uită-te la",
+     "chime": "Sună înainte de a vorbi",
+     "welcome_home": "Bun venit oamenii acasă",
+     "welcome_people": "Oameni de bun venit",
+     "welcome_min_away": "Deplasare cel puțin",
+     "welcome_until": "Bine ati venit seara pana",
+     "speak_volume": "Volumul vorbirii",
+     "night_volume": "Volumul vorbirii în ore liniștite",
+     "duck_media": "Oprește muzica și televizorul în timp ce vorbiți",
+     "critical_alerts": "Alerte de siguranță",
+     "critical_ignore": "Nu le tratați niciodată ca alerte de siguranță",
+     "energy_insight": "Perspectivă energetică",
+     "energy_price": "Pretul energiei electrice",
+     "energy_currency": "Valută",
+     "price_entity": "Prețul timpului de utilizare (sugestii de energie electrică ieftină)",
+     "search_hints": "Spune vocii despre instrumentele de căutare",
+     "web_search": "Căutarea proprie pe web a lui Sentient",
+     "searxng_url": "adresa SearXNG",
+     "alexa_skill": "Răspunde la întrebările adresate prin Alexa",
+     "alexa_wait": "Cea mai lungă așteptare înainte ca Alexa să renunțe",
+     "alexa_late_answers": "Spune răspunsuri lente pe acel Echo",
+     "left_open_minutes": "Menționați ușile și ferestrele lăsate deschise după",
+     "left_open_ignore": "Nu menționați acestea",
+     "leaving_check": "Verifică când toată lumea iese",
+     "critical_extra": "De asemenea, tratați-le ca alerte de siguranță",
+     "heating_entities": "Încălzire pentru a învăța",
+     "preheat": "Încălzește casa înainte să se trezească cineva",
+     "heating_schedule": "Programul de încălzire (setat în fila Casă)",
+     "comfort_temp": "Temperatura de încălzire",
+     "inside_sensors": "Senzori de mișcare în interior",
+     "weekly_report": "Raport săptămânal",
+     "night_watch": "Veghe de noapte",
+     "night_watch_entities": "Uși și porți de urmărit",
+     "night_watch_announce": "Spune alerte cu voce tare, chiar și în orele de liniște",
+     "night_watch_speakers": "Spune alerte activate",
+     "warm_by_weekdays": "Călduț până (zile lucrătoare)",
+     "warm_by_weekends": "Încălziți până la (weekend)",
+     "heating_limit": "Întoarceți încălzirea după",
+     "heating_night_temp": "Temperatura de noapte",
+     "heating_revert_day_hours": "Reveniți după (în timpul zilei)",
+     "heating_revert_night_hours": "Întoarce-te după (noaptea)",
+     "personality": "Personalitate",
+     "personality_notes": "Note de personalitate",
+     "style_feedback": "\"Spune-o altfel\" despre lucrurile pe care le spunea",
+     "style_notes": "Cum ar trebui spuse lucrurile",
+     "camera_security": "Securitatea camerei",
+     "camera_security_sensors": "Senzorii de persoană ai camerelor",
+     "camera_security_inside": "În interiorul graniței",
+     "camera_security_entries": "Căi de intrare",
+     "camera_security_describe": "Descrie cine este",
+     "security_reasoning": "Alertele de cântărire față de restul casei",
+     "party_lights": "Arată lumini",
+     "party_style": "Stil",
+     "party_minutes": "Oprește-te de la sine după",
+     "party_whole_house": "Folosește fiecare lumină din casă",
+     "party_exclude": "Nu folosește niciodată aceste lumini",
+     "party_sound": "Urmăriți sunetul de la",
+     "party_show": "Butoane pe imaginea de ansamblu",
+     "party_sound_switch": "Pornește în timp ce ascultați",
+     "room_volume": "Vorbește într-o cameră zgomotoasă",
+     "follow_you": "Mesajele urmăresc oamenii",
+     "follow_minutes": "Păstrează mesajele pentru a le transmite",
+     "conversation_memory": "Reține conversațiile",
+     "follow_ups": "Verifică din nou lucrurile",
+     "curiosity": "Curiozitate",
+     "reflection": "Reflecție peste noapte",
+     "reflection_time": "Reflectați la",
+     "drive_spot": "Locul de conducere",
+     "drive_camera": "Conduceți camera",
+     "drive_triggers": "Uită-te când acestea se stabilesc",
+     "camera_wake": "Înainte de a privi, treziți camera cu",
+     "camera_wake_cameras": "Doar pentru aceste camere",
+     "camera_wake_seconds": "Apoi așteaptă",
+     "known_cars": "Mașini de uz casnic",
+     "full_volume_speakers": "Volum maxim la aceste difuzoare",
+     "tts_entity": "Voce pentru alte difuzoare",
+     "house_language_text": "Cuvintele proprii ale lui Sentient în limba casei",
+     "speak_house_language": "Spune propoziții încorporate în limba casei",
+     "media_speakers": "Folosește Echos și alte playere media",
+     "media_important_only": "Echos: numai alarme și memento-uri",
+     "foresight": "O privire spre ziua de mâine",
+     "foresight_time": "Privește înainte la",
+     "sleep_detection": "Afli când doarme casa",
+     "sleep_minutes": "Adormit după ce nimic nu s-a mișcat",
+     "sleep_ignore_sensors": "Senzori de ignorat la culcare",
+     "bedtime_routines": "Rutine de culcare",
+     "sleep_actions": "Când casa se duce la culcare, fă",
+     "wake_actions": "Când cineva se trezește, fă",
+     "appliances": "Aparate de urmat",
+     "appliance_announce": "Spune când termină",
+     "appliance_watts": "Alergând deasupra",
+     "voice_agent": "Agent vocal principal AI",
+     "backup_agent": "Asistent de rezervă",
+     "offline_answers": "Răspunde la întrebări frecvente fără AI",
+     "animal_sensors": "Senzori de temperatură pentru animale",
+     "away_lights_on": "Lumini departe",
+     "holiday_mode": "Modul vacanță",
+     "holiday_thermostats": "Termostate de oprit în vacanță",
+     "holiday_frost": "Temperatura de protecție împotriva înghețului",
+     "holiday_end_on_return": "Închide modul vacanță când cineva este acasă",
+     "away_people": "Pleacă când toate acestea sunt disponibile",
+     "away_lights": "Lumini de folosit",
+     "away_after": "Începe după ce toată lumea a plecat",
+     "animal_low": "Prea frig dedesubt",
+     "animal_high": "Prea cald deasupra",
+     "hutch_check": "Verificarea adăpostului seara",
+     "hutch_spot": "Locul camerei din colibă",
+     "cat_watch": "Ceas pentru pisici de noapte",
+     "cat_sensors": "Senzori pentru pisici",
+     "cat_loud": "Spune-o imediat noaptea",
+     "rain_warnings": "Avertismente de ploaie",
+     "rain_entities": "Ferestre și uși de urmărit",
+     "self_test": "Autotestare",
+     "self_test_household": "Întrebări casnice în autotest",
+     "screen": "Folosește ecranul tabletei",
+     "screen_actions": "Când apare ceva",
+     "screen_clear_actions": "Când totul este curățat",
+     "conversation_sessions": "Sesiuni de conversație",
+     "room_conversation_handoff": "Transfer de conversație de la o cameră la alta",
+     "verified_bedtime": "Verificat la parter ora de culcare",
+     "verified_bedtime_lights": "La parter lumini de culcare",
+     "verified_bedtime_contacts": "Jos ora de culcare deschiderea contactelor",
+     "session_seconds": "Timp de inactivitate a sesiunii",
+     "guarded_control": "Confirmare vocală forțată",
+     "routine_verify": "Verifică rutinele funcționale",
+     "voice_unlock": "Permite deblocarea prin voce",
+     "voice_undo": "Anulează modificările recente ale luminii",
+     "evidence_awareness": "Explicați dovezile și incertitudinea",
+     "security_incidents": "Incidente de securitate de grup",
+     "incident_front": "Fața casei",
+     "live_voice_check": "Verificare vocală în direct",
+     "speech_delivery_history": "Istoricul livrării difuzoarelor",
+     "alexa_tts_only": "Folosește TTS numai pe Alexa",
+     "update_checker": "Verifică actualizările Sentient",
+     "contextual_followups": "Urmăriri și corecții conectate",
+     "conversation_recovery": "Anularea conversației și recuperarea precaută",
+     "automatic_language": "Suport automat pentru limbaj",
+     "voice_language": "Limbajul vorbirii și conversației",
+     "remember_language_phrases": "Reține expresiile uzuale",
+     "stream_voice_replies": "Rostiți răspunsurile vocale pe măsură ce sunt scrise (probă)",
+     "voice_timing_diagnostics": "Diagnosticare sincronizare a răspunsului vocal",
+     "reliability_log": "Observați unde vocea merge prost",
+     "unified_evidence": "Căutare unificată a dovezilor pentru gospodărie",
+     "specific_clarification": "Întrebări specifice despre dispozitiv și valoare",
+     "action_recovery": "Rezultate dispozitiv și recuperare precaută",
+     "recheck_unconfirmed": "Priviți din nou modificările care nu au raportat",
+     "speech_failure_notification": "Notificați despre erorile de livrare a difuzoarelor",
+     "recent_followup_context": "Scurte urmăriri după un cuvânt proaspăt",
+     "conversation_cues": "Înțelegeți semnările, corecțiile și schimbările de subiect",
+     "vary_replies": "Spune lucrurile diferit de fiecare dată",
+     "behaviour_explanations": "Explicați deciziile de ascultare și acțiune",
+     "current_house_context": "Contextul actual al casei",
+     "moment_awareness": "Conștientizarea momentului",
+     "room_memory": "Memoria pe termen scurt per cameră",
+     "know_people": "Știi cine probabil vorbește",
+     "instant_answers": "Răspunsuri instantanee",
+     "capability_awareness": "Afli ce poate face casa",
+     "house_context_entities": "Entități suplimentare de context",
+     "house_context_updates": "Spune-mi când se ajunge la încălzirea solicitată",
+     "security_event_evidence": "Conectează alertele de securitate la evenimentele Frigate",
+     "security_event_zones": "Ce evenimente ale camerei sunt listate",
+     "security_event_hidden_zones": "Zone ale căror evenimente nu sunt listate",
+     "security_coverage": "Explicați golurile de acoperire a camerei",
+     "frigate_pipeline_health": "Afișează starea conductei Frigate",
+     "security_conversation_context": "Păstrează evenimentul de securitate în conversație",
+     "security_event_feedback": "Înregistrați feedback despre evenimentele camerei",
+     "share_clip_analysis": "Reutilizați analizele de clipuri potrivite",
+     "heating_graph": "Graficul temperaturii pe cardul de încălzire",
+     "heating_revert": "Reveniți la program după o modificare manuală",
+     "window_heating": "Oprește încălzirea unei camere în timp ce fereastra este deschisă",
+     "window_heating_minutes": "Câteva minute este deschisă o fereastră înainte de a acționa",
+     "rooms_view": "Camerele dintr-o privire (fila Casă și prezentare generală)",
+     "outdoor_areas": "Zone exterioare",
+     "knowledge_card": "cardul CE ȘTIU din fila Minte",
+     "day_chart": "Graficul ZIUA PÂNĂ ACUM din prezentarea generală",
+     "house_ledger": "Jurnalul casei",
+     "unexplained_changes": "Menționați modificări inexplicabile",
+     "unexplained_entities": "Dispozitive de urmărit pentru modificări inexplicabile",
+     "expectations": "Așteptări și surpriză",
+     "surprise_gating": "Omite observații despre ceea ce este obișnuit",
+     "situations": "Spune vocii ce se întâmplă acum",
+     "beliefs": "Formează și testează credințele",
+     "learn_reactions": "Învață din reacții",
+     "ai_case_memory": "Salvează apelurile AI (memoria cazului)",
+     "memory_tags": "Caută amintiri după sens",
+     "memory_upkeep": "O amintire care se păstrează singură",
+     "watch_actions": "Ceasurile și mementourile pot acționa",
+     "memory_time": "O memorie care înțelege timpul",
+     "who_where": "Afla cine e unde",
+     "big_plans": "Planuri pentru cereri mari",
+     "self_grading": "Notați propriile răspunsuri",
+     "voice_speed_watchdog": "Câinele de pază al vitezei vocii",
+     "voice_speed_restart": "Repornește singur un difuzor lent",
+     "incident_stages": "Etapele incidentului de securitate",
+     "cognitive_shadow": "Comparați incidentele de securitate (testare)",
+     "cognitive_decides": "Lasă nucleul cognitiv să decidă etapele incidentului odată ce l-a câștigat",
+     "cognitive_quiet_heads_up": "Numai testare: evaluați deciziile heads-up nocturne (fără suprimare a alertelor)",
+     "weather_warnings": "Avertismente meteo și inundații",
+     "warnings_country": "Ţară",
+     "warnings_region": "Regiune (opțional)",
+     "warnings_speak": "Spune avertismente severe",
+     "email_read": "E-mail numai pentru citire",
+     "calendar_clashes": "Ciocniri din calendar",
+     "security_audit": "Verificare de securitate",
+     "automation_builder": "Construiți automatizări",
+     "pronounce_names": "Spune numele pe măsură ce sunt pronunțate",
+     "pronunciations": "Pronunții (una pe linie)",
+     "health_duplicates": "Dispozitivele spot enumerate de două ori",
+     "manuals_local_ocr": "Citește pagini PDF scanate cu OCR local",
+     "memory_semantic_enabled": "Clasamentul memoriei semantice locale",
+     "memory_semantic_url": "Adresă locală a serverului de încorporare",
+     "memory_semantic_model": "Model de încorporare locală",
+     "ai_routing_enabled": "Alege automat AI mai ieftină pentru sarcinile text",
+     "ai_routing_alternative": "Entitate alternativă AI Task",
+     "ai_routing_primary_cost": "Costul obișnuit estimat AI pe apel",
+     "ai_routing_alternative_cost": "Costul estimat al AI alternativ pe apel",
+     "ai_routing_max_p95_ms": "Timp maxim de răspuns AI alternativ (ms)",
+     "heating_energy_sensor": "Contor de energie termică (kWh)",
+     "heating_measurement_date": "Data pentru a compara consumul de energie termică",
+     "heating_energy_price_kwh": "Pretul incalzirii pe kWh",
+     "autooff_respect_recent_voice": "Permite oprirea automată să respecte comenzile vocale recente"
+    },
+    "data_description": {
+     "motion_window": "Câte minute de istoric al mișcării să cântăriți atunci când decideți unde sunt oamenii.",
+     "suppress_entities": "e.g. anunțul dvs. de sonerie, astfel încât remarcile de fundal nu vorbesc despre el.",
+     "busy_entities": "În timp ce oricare dintre acestea este activat (un calendar de întâlniri, un comutator Focus, un telefon în Nu deranja), Sentient reține vorbirea care poate aștepta, ca și cum ar fi oprit. Alertele de siguranță și răspunsurile pe care le ceri încă apar. Lasă gol pentru a dezactiva acest lucru.",
+     "prompt_memories": "Câte amintiri sunt oferite asistentului vocal în față. Restul se mai pot căuta.",
+     "pass_through_areas": "Holuri, palier și scări. Mersul prin acestea contează mult mai puțin, așa că un trecător nu fură un anunț.",
+     "all_occupied": "On: toți cei care sunt acasă îl aude. Oprit: doar camera cea mai aglomerată.",
+     "room_tracking": "Oprit implicit. Când un instrument de urmărire a camerei (de exemplu, senzorul \"Zona\" din Bermuda pentru un telefon) spune că cineva se află într-o cameră cu un difuzor, acolo se spun lucruri pentru \"oriunde sunt oamenii\". Când niciun instrument de urmărire nu știe — telefonul nu este văzut, afară sau o cameră fără difuzor — presupunerea bazată pe mișcare este folosită ca înainte. Obișnuiam doar să alegi unde să vorbești, niciodată să decizi dacă e cineva treaz. Nimic nu este stocat.",
+     "room_trackers": "Senzori a căror stare este camera în care se află ceva, cum ar fi senzorii \"Zona\" din Bermuda (unul pentru telefon sau etichetă). Fiecare are nevoie de cameră pentru a se potrivi cu o zonă Home Assistant.",
+     "ai_task_entity": "Sarcina de inteligență artificială utilizată pentru privirile camerei, briefing-urile, gândirea de noapte și privirea asupra zilei de mâine. Empty folosește sarcina AI preferată de Home Assistant.",
+     "camera_cooldown": "Un ceas cu cameră se uită din nou cel mult atât de des, pentru a reduce costurile AI.",
+     "fallback_speakers": "Folosit numai atunci când nimeni nu este în camera altui difuzor, e.g. o cameră de zi pe care preferați să nu deranjați.",
+     "daily_ai_limit": "Apelurile AI de fundal (verificări ale camerei, ședințe de informare, gândire de noapte, sonerie…) se opresc a doua zi după atâtea și folosește în schimb cuvinte simple. Întrebările pe care le pui încă primesc răspuns. 0 înseamnă fără limită.",
+     "prompt_recent": "Câteva rânduri în acest moment (orele de adormit, liniștit sau liniștit, oaspeți, orice lucru deschis și citiri care nu s-au auzit ore întregi, astfel încât să nu fie date ca actuale), ce s-a întâmplat în ultima oră și unde a fost mișcare, deci „ce ar trebui să știu?” și „ce tocmai sa întâmplat?” li se răspunde imediat. Gratuit: fără apeluri AI suplimentare.",
+     "rules": "\"Când se întâmplă acest lucru, fă ​​asta\" reguli (pagina Reguli), iar vocea le poate face: citește regula înapoi și o salvează doar după un da. Regulile nu pot arma, dezarma sau debloca nimic. Dezactivat: nu există reguli.",
+     "relevant_memories": "Odată ce există mai multe amintiri decât se potrivesc în contextul vocii, apar cele care împart cuvintele cu întrebarea, apoi cele mai noi. Gratuit, fără AI. Off: întotdeauna cel mai nou.",
+     "look_cache_minutes": "Aceeași întrebare adresată aceleiași camere în acest timp primește ultimul răspuns în loc de un nou aspect AI. 0 se uită mereu din nou.",
+     "camera_prefilter": "Verificările camerei și ceasurile compară mai întâi o imagine mică (pe această mașină, gratuită) și întreabă AI numai atunci când camera — sau locul ei — arată diferit față de ultima privire.",
+     "budget_drive": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală.",
+     "budget_noticing": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală.",
+     "budget_cameras": "Diurna proprie în limita totală. 0 înseamnă că doar împarte limita totală. Siguranța, soneria și întrebările pe care le pui nu sunt niciodată reținute.",
+     "routine_evidence": "Ofertele pentru a prelua o rutină spun cât de des s-a întâmplat, e.g. '4 din ultimele 4 zile de weekend'.",
+     "notice_entities": "Când acestea se schimbă, AI decide dacă merită să spună ceva (sau să întrebe). e.g. masina de spalat rufe, usi, vreme, pubele.",
+     "remark_repeat_hours": "Același lucru observat (\"Ibricul a terminat de fiert\") nu se mai spune de atâta vreme. 0: fără limită.",
+     "chattiness": "Limitează observațiile pe oră: liniștit 2, normal 4, vorbăreț 8. Oprit nu mai observă.",
+     "conversation_style": "Scurt: răspunsuri scurte, la obiect. Natural: comenzile rămân scurte, dar întrebările și chatul primesc câteva propoziții naturale și o întrebare ulterioară atunci când o persoană ar pune una, ceea ce menține microfonul să asculte.",
+     "carry_on_minutes": "A rosti din nou cuvântul de trezire la scurt timp după ce ai vorbit duce la aceeași conversație de la același vorbitor, deci \"și sus?\" încă mai are sens. 0 o dezactivează; Home Assistant uită o conversație după cinci minute de liniște.",
+     "focused_tools": "Oferă vocii doar instrumentele lui Sentient care se potrivesc cu ceea ce a fost cerut (camere foto, încălzire, mementouri…), plus memorie și siguranță. O alegere mai mică face ca modelele mai ieftine să fie mai rapide și mai precise. Orice lucru care nu se potrivește clar primește totuși fiecare instrument.",
+     "ask_later": "Când cineva menționează ceva ce urmează (o excursie, un meci, medicul veterinar), vocea își poate aminti să întrebe cum a mers data viitoare când cineva vorbește cu el — o dată, niciodată în orele de liniște sau cu oaspeți și niciodată despre ceva privat. Nu vorbește niciodată din senin. Dezactivarea acestei opțiuni uită orice așteaptă să fie întrebat.",
+     "put_right": "Când spui \"nu, celălalt\" sau \"nu acea lumină, lampa\", vocea comută înapoi ceea ce tocmai a pornit (pornit sau stins, în câteva minute) și face cererea din nou doar cu partea corectată — nu este nevoie să spui totul din nou. Dacă dezactivează această opțiune, îl puneți direct agentului vocal.",
+     "music": "Cu Music Assistant configurat (sau Muzică prin Alexa activat): \"redă ceva calm în bucătărie\" alege din propriile liste de redare și posturi de radio și îl redă pe playerul Music Assistant din camera respectivă (sau întreabă Echo a acelei camere) — la volumul de noapte în orele de liniște, și nu într-o cameră în timpul ei de liniște, dacă nu vă afli în ea. Oprit: fără instrument muzical.",
+     "music_alexa": "Fără Music Assistant: \"reda ceva calm în bucătărie\" îi cere lui Echo în acea cameră (Alexa Media Player) să îl redea de la serviciul de mai jos, după nume — o listă de redare, un artist, o melodie sau o stare de spirit — la volumul nopții în ore liniștite și nu într-o cameră în timpul său liniștit, dacă nu te afli în ea. Serviciul trebuie să fie conectat în aplicația Alexa. Oprit: Echos nu li se cere niciodată să redea muzică.",
+     "music_alexa_service": "Din ce serviciu joacă Echos. Spotify funcționează cu un cont gratuit, dar Alexa poate amesteca muzică similară în loc de melodia exactă; Premium redă exact ceea ce este cerut.",
+     "house_rules": "Propoziții simple trebuie să urmeze fiecare voce, una pe rând, e.g. „Nu spune niciodată că casa este goală.'",
+     "no_security_offers": "Scoateți din răspunsurile vocii orice propoziție care oferă armarea sau dezarmarea alarmei sau deblocarea unei uși (\"Shau să o armez?\") — chiar și atunci când este rostită așa cum este scrisă. Răspunsurile către cineva care a cerut să înarmeze, să dezarmeze, să blocheze sau să deblocheze sunt lăsate singure, așa că se cere confirmarea lor. Oprit implicit.",
+     "learn_entities": "Lumini, întrerupătoare, ventilatoare și jaluzele folosite de oameni cu mâna. În fiecare noapte, ultimele două săptămâni sunt verificate pentru lucruri făcute aproximativ la aceeași oră în majoritatea zilelor și pentru lucruri făcute imediat după altceva (o ușă care se deschide, o altă lumină aprinsă).",
+     "learn_anchors": "Un obicei care ține timpul cu apusul, răsăritul sau cu ridicarea soarelui mai degrabă decât cu ceasul (lampa la amurg, jaluzelele la răsărit, ibricul după trezire) se învață așa, așa că o rutină pe care o face casa pentru tine se mișcă odată cu anotimpurile. Trezirea are nevoie de un cadru adormit și treaz. Off: totul se învață contra cronometru, ca înainte.",
+     "offer_together": "Când câteva lucruri se întâmplă de obicei cam la aceeași oră în aceleași zile (lampa aprinsă, jaluzelele închise, televizorul aprins în jurul orei 20:00), acestea sunt oferite o dată, împreună — unul da și casa le face pe toate. Off: fiecare este oferit pe cont propriu.",
+     "trust_lights": "Când o rutină pe care ai lăsat casa să preia controlul luminează: doar fă-o, spune-o mai întâi sau întreabă și fă-o doar pe un da (nu se întâmplă nimic dacă nimeni nu răspunde).",
+     "trust_switches": "Același lucru pentru întrerupătoare, prize inteligente și ventilatoare.",
+     "trust_covers": "La fel si pentru jaluzele si perdele. Ușile și porțile de garaj cer mereu.",
+     "trust_heating": "Același lucru pentru încălzirea încălzirii înainte ca oamenii să se trezească. A întreba mai întâi înseamnă că nu se poate încălzi în timp ce toată lumea doarme.",
+     "link_triggers": "Opțional: mai multe lucruri care ar putea declanșa un obicei (pornirea televizorului, senzorul de pat…). Ușile, ferestrele și luminile învățate sunt întotdeauna luate în considerare.",
+     "suggest_routines": "O dată pe rutină nouă, în timpul zilei când cineva este acasă, întreabă dacă casa ar trebui să o facă de acum înainte.",
+     "prove_routines": "Un obicei nou învățat este urmărit mai întâi: în fiecare zi după ce a fost învățat, Sentient verifică dacă o persoană a făcut-o într-adevăr în 45 de minute de la ora obișnuită. Este oferit doar după ce a fost corect în cel puțin 3 din 4 zile în care s-a aplicat (în zilele lucrătoare, în weekend sau în fiecare zi). Setări › Învățare arată cum se descurcă fiecare. Off: obiceiurile sunt oferite imediat ce sunt învățate.",
+     "routine_fading": "Activat: când o rutină pe care o face casa pentru tine a fost deja făcută până la momentul scadenței în 5 zile în două săptămâni (cineva o face singur acum), Sentient întreabă o dată dacă o păstrează și se oprește dacă spui nu. Se păstrează doar datele, cel mult două săptămâni. Off: rutinele pe care le face casa sunt păstrate până când spui contrariul.",
+     "door_camera": "M-am uitat imediat când sună soneria, să înregistrez cine a venit.",
+     "door_triggers": "Butonul soneriei (un senzor binar sau un eveniment) sau orice altceva care înseamnă că cineva este la ușă.",
+     "announce_visitors": "Off menține un jurnal silențios de la care asistenții vocali pot răspunde.",
+     "faces": "Când Frigate (sau soneria de la ușă) recunoaște pe cineva, trece pe cronologia și vocea poate răspunde \"a venit Sam acasă?\". Numele nu sunt niciodată anunțate sau ghicite — spuse doar atunci când cineva întreabă. Oprit implicit.",
+     "face_people": "Numele așa cum le cunoaște Frigate. Gol: toți cei pe care îi recunoaște.",
+     "face_teach": "Ajută recunoașterea feței Frigate să se îmbunătățească. Când cineva părăsește o cameră aleasă și Frigate a păstrat o față pe care nu o putea numi, telefoanele primesc un mesaj privat \"Cine este acesta?\" cu fața și butoane pentru gospodărie (telefoanele arată cel mult trei). Atingerea unuia învață Frigate; \"Altcineva…\" ia un nume tastat pentru oricine nou, sau \"nu\" pentru a șterge fața unui străin. Niciodată vorbit, niciodată pe tablete, cel mult la fiecare zece minute. Necesita recunoașterea feței Frigate activată și telefoanele alese pentru notificări. Oprit implicit.",
+     "face_teach_cameras": "Camere de prim-plan unde fețele sunt clare, e.g. soneria. Gol: camera ușii.",
+     "face_cameras": "Gol: fiecare cameră. Alege-le pe cele din apropiere (soneria, ușa de la intrare) pentru ca o stradă aglomerată să nu poată da nume false.",
+     "face_forget_hours": "În fiecare noapte, fețele Frigate păstrate, dar nimeni nu este numit — străini, în mare parte — sunt șterse din Frigate odată ce sunt atât de bătrâni. Se păstrează fețele numite. 0: lasă-l pe Frigate (își păstrează ultimele 200).",
+     "clip_watch": "Când Frigate termină un eveniment pe o cameră aleasă, AI urmărește această porțiune de înregistrare o dată și o propoziție trece pe cronologia și pagina Sentient: \"Poarta 14:10 — un om a trecut un câine pe lângă\". Vocea răspunde \"ce s-a întâmplat la poartă?\" de la ei fără un alt apel AI. Niciodată vorbit. Oprit implicit.",
+     "clip_cameras": "Începeți cu unul, e.g. poarta.",
+     "clip_scope": "Alertele Frigate sunt persoane din zonele pe care le-ai marcat ca fiind necesare — cea mai silențioasă alegere pentru o stradă aglomerată. Dacă o cameră nu face niciodată alerte (nu sunt stabilite zone necesare în Frigate), alege \"Orice într-o zonă\" — cardul Clipuri arată ce a fost omis și de ce.",
+     "clip_when": "Vizionați doar în aceste momente. Deplasare înseamnă că toți cei aleși în luminile Away sunt stinse.",
+     "clip_notify": "Merge doar la telefoane, cu o poză și un buton de redare.",
+     "clip_source": "Rezumatele de revizuire AI ale Frigate trebuie activate în Frigate; atunci nu se face niciun apel AI aici.",
+     "clip_whose": "În același apel AI, sunt incluse fotografiile de față ale gospodăriei din biblioteca de fețe a lui Frigate (și aspectul de mai jos) și numește pe cineva numai atunci când este clar ei — \"probabil Sam\". Străinii nu sunt niciodată numește. S-a spus doar când a fost întrebat, nu a fost niciodată anunțat.",
+     "clip_looks": "Unul pe linie, e.g. \"Sam: cască roșie de ciclism și o haină galbenă, pe bicicletă\". Ajută atunci când o cască sau glugă ascunde fața.",
+     "budget_clips": "Contează și pentru limita generală zilnică de AI. 0: fără limită proprie.",
+     "clip_days": "Rezumatele sunt doar cuvinte, apoi sunt șterse.",
+     "clip_keep": "Dezactivat: fiecare clip este șters imediat ce a fost vizionat.",
+     "parcel_alerts": "După o livrare, priviți din nou câteva minute mai târziu și spune dacă a rămas un colet.",
+     "doorstep_sensors": "Opțional: senzori de persoană pentru pragul ușii sau grădina din față (e.g. ocuparea persoanei unei zone Frigate). Când o vizită acolo se termină fără sonerie, camera ușii este verificată o dată pentru un colet sau o poștă lăsată în urmă.",
+     "zone_visits": "Utilizează senzorii de prag de mai sus (e.g. ocuparea persoanei unei zone Frigate). Când nimeni nu sună, cineva care ajunge în zonă este tratat ca un vizitator: se privește camera ușii și se anunță. Oricare vine mai întâi, clopotul sau zona, este vizita și celălalt este ignorat. Oprit: doar soneria începe o vizită.",
+     "zone_door_sensors": "Opțional: senzorul de deschidere/închis al ușii din față. Dacă ușa a fost deschisă (sau este deschisă) în ultimul minut și jumătate, zona este ignorată, pentru că este cineva care pleacă sau se întoarce acasă.",
+     "face_sensor": "Opțional: un senzor de recunoaștere a feței a cărui stare este numele pe care tocmai l-a recunoscut (e.g. din Frigate). Folosit în jurnal și în anunț, dacă este activat.",
+     "sidebar_panel": "O pagină din bara laterală care arată amintiri, rutine, ceasuri, vizitatori și ceea ce s-a spus.",
+     "page_admin_only": "Ascunde pagina și ceea ce citește pentru toată lumea, cu excepția administratorilor. Off îl menține deschis pentru întreaga gospodărie. Pornirea acestuia nu șterge nimic.",
+     "custom_pages": "Activat: filele Prezentare generală, Casă, Minte și Securitate folosesc aspectul salvat, iar administratorii primesc aici EDIȚI AZARUL PAGINEI pentru a muta cardurile între coloane, a le ascunde, a le arăta din nou sau a reseta o filă. Nu există niciun buton de editare pe file, doar în timp ce editează. Aspectul este salvat în Sentient, astfel încât fiecare ecran arată la fel. Dezactivat: filele revin la aspectul standard; aspectul salvat este păstrat pentru când îl repornește.",
+     "confirm_kinds": "Cere AI să descrie aceste acțiuni și să aștepte un da. Aceasta este o instrucțiune promptă, nu un bloc de acțiune forțat: agentul dvs. de conversație controlează execuția dispozitivului. Oprirea lucrurilor nu trebuie întrebat. Gol: fără instrucțiuni suplimentare de confirmare. Pentru verificări forțate, activează controlul protejat cu configurarea agentului necesară.",
+     "auto_backup": "Duminică seara, o copie de rezervă a amintirilor, spoturilor, rutinelor, luminilor de mișcare, shush-urilor și setărilor, salvate în folderul de configurare sub sentient_backups.",
+     "backup_keep": "Cele mai vechi sunt șterse.",
+     "suggestions": "Lucruri pe care Sentient le-ar putea folosi, dar nu este — un difuzor nou, un senzor de putere pe mașina de spălat, un termometru cu hutch — oferite câte o linie. Da îl adaugă; nu înseamnă că nu se mai oferă niciodată. Gratuit, fără AI.",
+     "whats_new": "După ce Sentient este actualizat, un card scurt de pe pagina Sentient spune ce este nou, în cuvinte simple, până când atinge ÎNȚIAT.",
+     "simple_settings": "Lista de setări arată elementele esențiale, cu AFIȚI TOTUL pentru caracteristicile opționale. Instalările noi încep astfel. Nu schimbă nimic în ceea ce face Sentient.",
+     "chat_agent": "Cine răspunde la caseta Întrebare a paginii — alege un agent vocal care are bifat Sentient. Empty folosește canalul de asistență preferat.",
+     "health_ignore": "Entități (și dispozitivele lor) care nu ar trebui să fie considerate probleme, e.g. ceva care este menit să fie oprit.",
+     "hide_substreams": "Oferă fluxuri HD și SD, capturi de ecran și hărți atunci când numărați și verifică camerele, astfel încât o singură sonerie nu este mai multe camere. Nimic nu este șters din Home Assistant.",
+     "ignore_cameras": "Camerele Sentient nu ar trebui să conteze, să verifice sau să ofere, cum ar fi camera unei tablete. Ei rămân în Home Assistant neatinse; alege din nou să aduci unul înapoi.",
+     "never_entities": "Sentient nu comută, atenuează sau modifică niciodată acestea: nu în reguli, rutine, oferte, lumini de oprire automată, lumini de deplasare sau de mișcare, spectacole de lumini, control vocal pentru încălzire sau pazit, iar vocea i se spune să le lase în pace. Încă le poate citi și vorbi despre ele. Orice lucru care ar schimba unul este omis și notat.",
+     "self_check": "În fiecare noapte, se uită înapoi la propriile înregistrări — ce a spus și cum s-a defectat, difuzoarele care au eșuat, lucrurile reținute, întrebările puse din nou și din nou, contorul AI — și notează ce observă despre sine, cu numerele din spate. Fără AI. Întreabă \"ne-ai enervat?\" sau \"ce ai realizat?\".",
+     "learn_corrections": "Când cineva schimbă ceva ce a făcut casa cu un moment în urmă (o lumină pe care a aprins-o, o rutină pe care a preluat-o), notează corectarea. O rutină pe care o tot anulează este returnată (dezactivată) și cronologia spune așa. Oprirea acestei opțiuni oprește vizionarea; corecțiile deja notate sunt păstrate.",
+     "normal_day": "Compară astăzi cu ceea ce este obișnuit și notează acest lucru pe pagina Mind: de exemplu, nimeni nu s-a trezit încă când cineva este de obicei până acum. Reguli simple, nimic nu se spune cu voce tare și nimic nu se schimbă. Dezactivarea acestei opțiuni oprește verificarea și ascunde ceea ce a găsit.",
+     "thoughts": "O listă scurtă la persoana întâi pe pagina Mind (\"oamenii continuă să stingă lumina de aterizare, așa că m-am oprit\"), plus să ghicească în ce cameră merge cineva și să verifice cât de des a fost corect. Fără AI. Dezactivarea acestei opțiuni oprește ghicitul și ascunde lista; ceea ce a învățat se păstrează.",
+     "share_learning": "O dată pe seară (17:00–20:30), când cineva este pe-aproape și nu este timp liniștit, spune un lucru despre care a învățat sau s-a răzgândit în ultimele două zile: o rutină pe care l-a întors, un fapt pe care l-a actualizat, un obicei pe care l-a observat, cât de bine ghicește acum unde vei merge mai departe. Niciodată același lucru de două ori. Dezactivarea acestei opțiuni păstrează totul pe pagina Mind, dar tăcut.",
+     "self_adjust": "Când autoverificarea găsește un fel de remarcă, casa continuă să tacă, liniștiți-o puțin (la fel ca un degetul mare în jos; se estompează din nou). Nu atinge niciodată siguranța, securitatea sau orice lucru pe care îl controlează.",
+     "proposals": "Când autoverificarea găsește ceva care a greșit, sugerați o mică schimbare pe pagina Mind — mai puține remarci, să nu repetă una atât de des, o secțiune adăugată la briefing, o limită mai mare de AI — cu motivul. Nimic nu se schimbă până nu spui da; un nu nu se mai cere timp de o lună. Dezactivarea acestei opțiuni șterge orice sugestie în așteptare.",
+     "privacy_log": "Fiecare apel AI și căutare pe web pe care îl face Sentient este notat — ce caracteristică, câte imagini, clipuri sau documente și ce serviciu — niciodată ce a fost spus sau afișat. Vezi-l sub Brain & system → Ce iese din casă, cu un buton pentru a uita ultimele 48 de ore. Dezactivarea acestei opțiuni șterge înregistrarea.",
+     "goals": "Lasă vocea să stabilească obiective peste zile sau săptămâni (\"ajutați-ne să folosim mai puțină încălzire în această lună\"). Un obiectiv poate urmări un senzor: compară fiecare zi cu săptămâna obișnuită înainte și menționează progresul când se potrivește. Nu se schimba nimic in casa.",
+     "manuals": "Răspunde la întrebări din documentele din dosarul de mai jos (un apel AI fiecare). Oprit: documentele sunt lăsate singure.",
+     "manuals_folder": "Un folder în media lui Home Assistant (e.g. manuale = media/manuals). Denumiți fiecare fișier după ceea ce este, e.g. \"Aer purifier.pdf\".",
+     "manuals_local_text": "Când niciun nume de fișier nu se potrivește cu întrebarea, căutați în documentele .txt și .md cel potrivit, iar dacă AI nu poate fi accesat, citește cel mai apropiat pasaj în loc de nimic. Nicio IA nu este folosită pentru nici unul. Dezactivat: numai numele fișierelor sunt potrivite.",
+     "manuals_pages": "Activat: fiecare PDF (și document text) este citit o dată, pagină cu pagină, în propria bază de date a Sentient — pe acest computer, fără AI. O întrebare trimite apoi AI doar câteva pagini care se potrivesc, nu întregul document, deci costă mult mai puțin și răspunsul spune pe ce pagină se află (\"este la pagina 14\"). Un document al cărui nume nu se potrivește poate fi găsit în continuare după ceea ce este în el, iar dacă AI nu poate fi accesat, cel mai apropiat pasaj este citit cu pagina sa. PDF-urile scanate (imaginile paginilor) sunt încă citite întreg de AI. Dezactivat: documentele sunt citite întregi de fiecare dată, iar ceea ce a fost citit este șters.",
+     "games": "Joacă jocuri de poveste cu voce, cum ar fi o aventură de evadare din plat cu asistenții ca maestru de joc. Fiecare joc își păstrează propria memorie salvată (unde sunt jucătorii, ce poartă, ce au găsit și ce au ales) în sesiuni și asistenți. Este afișat unei voci numai în timp ce se joacă un joc, iar maestrul jocului poate citi memoria obișnuită a casei, dar nu o poate schimba niciodată. Deschide Setări → Jocuri cu povești pentru a scrie jocuri și a le edita memoria. Dezactivat: instrumentele de joc și pagina sunt ascunse; jocurile salvate sunt păstrate, nu șters.",
+     "voice_id": "Folosește potrivirea difuzorului local pentru această solicitare. Pentru a permite modelului AI să personalizeze răspunsurile sau să atribuie noi amintiri după nume, activează și Partajați nume potrivite cu agentul de conversație în Recunoașterea vocală. Localul separat “Cine vorbește?” răspunsul este configurat în Recunoașterea vocală.",
+     "voice_id_unknown": "Când un difuzor de asistență nu are o potrivire vocală, păstrează istoricul gospodăriei și amintirile salvate private pentru acel turn. Oprit: vocile nepotrivite sunt tratate ca normal.",
+     "speaker_memories": "Cu funcția de recunoaștere a vocii: o voce potrivită își primește mai întâi propriile amintiri (“Alex: îi place ceaiul”) — întotdeauna incluse, chiar și atunci când faptele mai noi din gospodărie ar umple lista — și niciodată pe cele personale ale nimănui altcuiva; o voce pe care nu o poate egala nu primește amintirile personale ale nimănui. Faptele casnice sunt întotdeauna împărtășite. Solicitările tastate și Echos sunt neschimbate. Oprit implicit.",
+     "books": "Redă cărți audio și citește cărți electronice cu voce tare, păstrând locul fiecărei camere. \"Citește-mi cartea\", \"continuă cu cartea\", \"citește 20 de minute\", \"oprește-te\", \"capitolul următor\", \"întoarce-te puțin\". Fără AI (cu excepția unei recapitulări opționale). Pe un Echo: ebooks un pasaj per solicitare prin abilitate Alexa; cărțile audio au nevoie de un alt difuzor.",
+     "books_folder": "Un folder în media lui Home Assistant (cărți = media/cărți). Cărți electronice .epub sau .txt fără DRM; cărți audio ca un fișier .mp3/.m4b/.m4a sau un folder cu părți numite după carte.",
+     "reading_tts": "Un alt serviciu text-to-speech doar pentru cărți și povești — vocile Gemini sau ElevenLabs sunt adesea povestitori mai buni. Lasă necompletat pentru a citi cu vocea obișnuită. Echos folosește întotdeauna propria voce a lui Alexa.",
+     "reading_voice": "Alege vocea din acel serviciu. Folosește TRY THE VOICE de mai jos pentru a o auzi pe difuzorul implicit înainte de a salva.",
+     "read_ahead": "Cu o voce de citire, următoarea parte a poveștii este făcută în timp ce această parte este citită, astfel încât o voce lentă (una liberă sau cea tulbure) nu lasă un spațiu între părți. Folosește acea voce puțin mai devreme, niciodată mai des.",
+     "recipes": "\"Să facem lasagna\": ingredientele, apoi un pas pe rând — \"următorul\", \"repetă asta\", \"întoarce-te\", \"ce urmează?\" — amintindu-ne pasul pentru fiecare difuzor. \"Fă-l pentru 6\" îl scalează; ingredientele pot intra pe lista de cumpărături.",
+     "recipes_folder": "Un folder în media lui Home Assistant (rețete = media/rețete) cu PDF-uri, fotografii, text sau Markdown. Fiecare este ordonat în pași de un apel AI prima dată, apoi păstrat. Mealie este utilizat automat dacă integrarea sa este configurată.",
+     "recipes_list": "Unde le pune \"adaugă ingredientele la lista de cumpărături\". Golă: lista cu \"cumpărături\" în nume.",
+     "voice_lists": "Pe: \"bifați laptele\", \"ce este pe lista de cumpărături?\", \"scoateți sacii de gunoi\" — articolele sunt găsite oricum sunt spuse (orice caz, plural, singurul lapte de pe listă), sunt întrebat două potriviri posibile, iar Sentient spune că s-a făcut doar odată ce lista îl arată. Utilizează listele expuse la Asistență (toate listele dacă nu există) și lista de cumpărături, cu excepția cazului în care este denumită alta. Fără AI propriu. Oprit: vocea folosește comenzile de listă proprii ale lui Home Assistant. Nimic nu este stocat.",
+     "ready_tonight": "\"Asigură-te că totul este gata pentru seara asta\": verifică ușile, geamurile și încuietorile Assist poate vedea, stinge doar luminile alese mai jos, se uită la încălzire și spune ce este încă deschis, deblocat, lăsat aprins sau nu poate fi confirmat. Încuietorile, alarma și încălzirea nu sunt schimbate niciodată, iar alarma nu este niciodată oferită. Fără AI propriu. Oprit: vocea poate verifica în continuare casa, dar acest lucru nu este oferit. Nimic nu este stocat.",
+     "ready_tonight_lights": "Singurele lumini \"gata pentru seara asta\" se pot stinge. Fiecare este verificat ulterior. Gol: nicio lumină nu este stinsă, doar raportată.",
+     "ready_tonight_follow": "Când ceva este încă deschis sau deblocat, urmăriți-l timp de până la trei ore și spune o dată, pe difuzorul pe care l-ai întrebat, când totul este rezolvat. Continuă după o repornire.",
+     "tandoor_url": "Opțional: adresa dvs. Tandoor Recipes, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Opțional: un token API de la Tandoor (Setări → API). Păstrată numai în Home Assistant.",
+     "second_opinion_ai": "Opțional: un model mai mare a întrebat doar atunci când cel obișnuit spune că imaginea este prea întunecată sau neclară pentru a fi sigur. Contează pentru limita zilnică.",
+     "smart_ai_task": "Opțional. Folosit numai pentru aspectul de securitate al camerei și pentru gândirea peste noapte, unde un model mai inteligent ajută cel mai mult. Gol: IA obișnuită, astfel încât costurile nu se modifică.",
+     "event_clips": "Preia clipul scurt al unui eveniment al lui Frigate și îl pune pe AI să îl urmărească, astfel încât să poată spune ce s-a întâmplat de fapt („a lăsat un pachet și a plecat”). Folosit după o alertă de securitate a camerei și la întrebarea „ce s-a întâmplat la ușă?”. Are nevoie de integrarea Frigate. Un apel AI per clip. Oprit implicit.",
+     "notify_targets": "Notifică entitățile, e.g. aplicația Home Assistant de pe fiecare telefon sau ceas.",
+     "notify_when": "Fiecare fel este trimis cel mult o dată în zece minute.",
+     "phone_buttons": "Prin aplicația însoțitoare: la ușă — imaginea camerei și un buton Afișare cameră; mementouri — Amânare 10 min și Terminat; întrebări — când casa vrea să întrebe ceva (o ofertă, \"vrei să fac asta pentru tine?\" sau întreabă-întâi înainte de a face ceva) și nu este nimeni lângă un difuzor, întreabă la telefoane cu Da și Nu (nu în orele de liniște). Gol: notificări simple ca acum.",
+     "phone_apps": "e.g. notify.mobile_app_pixel_8. Gol: aplicația însoțitoare din spatele fiecărui telefon ales mai sus (notify.my_phone → mobile_app_my_phone) — niciodată tabletele.",
+     "bins_check": "Cu o seară înainte de colectare, o cameră se uită la locul unde ies coșurile de gunoi. Spune ceva doar dacă nu sunt afară: „Mâine se reciclează, iar coșurile nu sunt încă scoase”. Mai arată o oră mai târziu.",
+     "bins_calendar": "Gol: un calendar de colectare a deșeurilor din calendarele de informare.",
+     "bins_spot": "Desenat în fila Spots unde ies coșurile, e.g. 'pubele'.",
+     "bins_time": "Seara înainte de colectare, înainte de orele de liniște.",
+     "chime": "Dezactivat: anunțurile și întrebările încep imediat, fără sunetul difuzorului.",
+     "welcome_home": "Când cineva se întoarce după 20 de minute sau mai mult, spune \"Bine ai revenit\" în camera în care se află — plus ceea ce merită să știi din când a fost afară (vizitatori, lucruri care s-au terminat, probleme). Niciodată în orele de liniște, în modul liniște sau în modul invitat.",
+     "welcome_people": "Gol înseamnă toată lumea cu o intrare de persoană. În schimb, poți alege telefoane (instrumente de urmărire a dispozitivelor) — la îndemână atunci când o persoană este setată să fie mereu acasă.",
+     "welcome_min_away": "Cât timp trebuie să fi fost cineva afară înainte de a fi primit înapoi, în câteva minute.",
+     "welcome_until": "Orele de liniște rețin în mod normal bun venit înapoi. Stabiliți o oră și oricine sosește seara înainte de aceasta este încă binevenit. Lasă gol pentru a păstra orele de liniște așa cum sunt.",
+     "speak_volume": "Opțional: volumul difuzorului în timp ce Sentient vorbește, repus după aceea. Golul o lasă în pace.",
+     "night_volume": "Opțional: un nivel mai silențios pentru orice spus în ore liniștite (doar mesaje urgente).",
+     "duck_media": "Orice redare în aceeași cameră este respinsă în timp ce Sentient vorbește, apoi revine în sus.",
+     "critical_alerts": "Senzorii de fum, monoxid de carbon, gaz, scurgeri de apă și manipulare sunt detectați automat și, la fel, se declanșează alarma. Anunțat pe fiecare difuzor, în orele de liniște, în modul liniște și în modul invitat, repetat de două ori când este încă pornit și trimis la telefoane.",
+     "energy_insight": "Utilizarea de astăzi a dispozitivelor de pe tabloul de bord Energie în comparație cu săptămâna trecută: cardul de energie, secțiunea de informare, instrumentul vocal și note despre utilizarea neobișnuită. Off ascunde și oprește totul.",
+     "energy_price": "Opțional: rata dvs. unitară pe kWh, pentru a afișa costul actual al dispozitivelor din tabloul de bord Energy — în pence sau cenți (24,5) sau în lire sterline, dolari sau euro (0,245); fie functioneaza.",
+     "energy_currency": "Costurile valutare sunt afișate în. Golit: propria monedă Home Assistant (Setări → Sistem → General).",
+     "price_entity": "Prețul dvs. de energie electrică acum, din integrarea furnizorului dvs. (Octopus Energy, Nordpool…). Dacă listează ratele viitoare, acestea sunt utilizate; în caz contrar, prețul obișnuit la fiecare oră se învață din ultima săptămână. O dată pe aparat (mașină de spălat, mașină de spălat vase, uscător) se întreabă seara dacă vrei să folosește pornirea întârziată când este cel mai ieftin peste noapte. Gol: oprit.",
+     "search_hints": "Când instrumentele Voice Satellite LLM (sau căutarea proprie a lui Sentient) sunt configurate, vocea i se spune că instrumentele de căutare sunt acolo și să le folosească pentru orice în afara casei — cuvinte pe difuzor, imagini doar pe o tabletă. Fără apeluri AI proprii.",
+     "web_search": "O căutare web doar vocală prin propriul dvs. SearXNG (de exemplu, suplimentul SearXNG). Folosit numai atunci când căutarea pe web a instrumentelor Voice Satellite LLM Tools nu este instalată, astfel încât vocea nu primește niciodată două. Oprit implicit.",
+     "searxng_url": "De exemplu, http://localhost:8080 sau adresa suplimentului. SearXNG trebuie să permită formatul json (în setările sale: căutare → formate).",
+     "alexa_skill": "Nu adaugă nimic până când o abilitate o folosește: îndreptați o abilitate Alexa (de exemplu, abilitate „Home Assistant Assist”) către agentul „Pentru Alexa”, apoi spune „Alexa, întreabă” și numele abilității dvs. Oprit implicit.",
+     "alexa_wait": "Alexa închide după aproximativ 8 secunde, așa că răspunsul trebuie să vină mai repede decât acesta.",
+     "alexa_late_answers": "Când AI durează mai mult, Alexa spune “Dă-mi un moment” și răspunsul este spus pe același Echo când este gata.",
+     "left_open_minutes": "A spus o dată (apoi la fiecare jumătate de oră când încă este deschis), în intervale de ore liniștite și tace ca de obicei. 0 îl oprește.",
+     "leaving_check": "Când ultima persoană pleacă, orice lucru deschis sau deblocat trece pe cronologie și pe telefoane (\"Lăsat deschis\").",
+     "critical_extra": "Orice altceva ar trebui spus întotdeauna peste tot când se pornește, e.g. un buton de panică sau un senzor de congelare prea cald. Un panou de alarmă care se stinge este întotdeauna inclus.",
+     "heating_entities": "Termostate de la care să înveți. Lasă gol pentru toți cei din casă. Învață cât de repede se încălzește fiecare și temperatura la care este setat de obicei.",
+     "preheat": "Începeți încălzirea devreme, astfel încât să fie la temperatura obișnuită până când oamenii se trezesc în mod normal. Un termostat cu program propriu este repus ulterior, iar unul care este oprit este oprit.",
+     "heating_schedule": "Pornit: rulează timpii de încălzire realizati în fila Casă (un termostat setat la o temperatură, sau oprit, la un moment dat în zilele alese), și numai pe termostatele alese acolo. Off: niciunul nu rulează și programul este ascuns; orele pe care le-ai salvat sunt păstrate și rulate din nou când aceasta este reactivată.",
+     "comfort_temp": "Opțional: temperatura la care se încălzi. Lasă gol pentru a-l folosi pe cel la care este setat de obicei în timpul zilei.",
+     "inside_sensors": "Opțional: ce senzori de mișcare înseamnă că este cineva înăuntru. Lasă gol pentru a le folosi pe cele de la aceleași etaje cu difuzoarele (senzorii de grădină și de cameră nu contează). Folosit pentru veghea de noapte și orele de trezire.",
+     "weekly_report": "Duminică seara, puneți pe cronologie ceea ce a învățat și a observat în această săptămână (trimis la telefoane dacă sunt).",
+     "night_watch": "Învață când fiecare ușă, poartă și fereastră se deschide în mod normal. O deschidere la un moment în care de obicei nu o face niciodată, fără ca nimeni să se deplaseze mai întâi înăuntru, este o alertă. Dacă cineva a fost sus înăuntru (plecat la serviciu, să zicem), este doar notat.",
+     "night_watch_entities": "Lasă gol pentru fiecare senzor de ușă, fereastră, poartă și ușă de garaj.",
+     "night_watch_announce": "O deschidere neobișnuită, fără nimeni în picioare, se spune imediat, prin ore liniștite, liniște și modul de invitat — ar putea fi cineva care nu ar trebui să fie acolo.",
+     "night_watch_speakers": "Lasă gol pentru fiecare difuzor.",
+     "warm_by_weekdays": "Opțional: când ar trebui să fie cald în zilele lucrătoare. Lasă gol pentru a folosi timpul de trezire învățat.",
+     "warm_by_weekends": "Opțional: același pentru sâmbăta și duminica.",
+     "heating_limit": "Când cineva apare sau pornește unul dintre termostatele de încălzire alese mai sus, prin voce sau în aplicație, puneți-l înapoi după atâtea ore: un termostat fără program revine la fel (chiar și oprit). Un termostat într-un program de încălzire urmează în schimb orele proprii ale programului (întoarcerea după o modificare: zi și noapte), apoi trece la orice dorește programul până atunci. Doar acele termostate; 0 (implicit) nu o face niciodată.",
+     "heating_night_temp": "Unde programul de încălzire scade până când se termină o perioadă și nivelul de noapte se menține. Programul nu oprește niciodată un termostat. Schimbați-l aici oricând vrei (5–28°C).",
+     "heating_revert_day_hours": "Cât timp o modificare efectuată în timpul unei perioade de încălzire este lăsată singură înainte ca programul să preia din nou controlul.",
+     "heating_revert_night_hours": "Cât timp se lasă în pace o modificare efectuată în afara perioadelor de încălzire (inclusiv oprirea încălzirii). Noaptea încălzirea revine la temperatura de noapte, niciodată oprită.",
+     "personality": "Cum sună casa — în remarci, briefing, bun venit și pentru fiecare asistent vocal.",
+     "personality_notes": "Opțional, în propriile cuvinte, e.g. — Pasionat de pisici. Se tachinează ușor despre cât de mult ceai se face.'",
+     "style_feedback": "Un buton de lângă degetele mari pe orice spunea: alege Mai scurt, Mai simplu, Mai puțin obraznic, Mai detaliat sau spune cum. Notele de mai jos sunt apoi urmate oriunde vorbește. Dezactivat: niciun buton și notele nu sunt folosite.",
+     "style_notes": "Una pe linie; adăugat din buton și al tău pentru a edita. Se folosesc ultimele 8.",
+     "camera_security": "Urmărește oamenii de la o cameră la alta și alertează-te pentru cineva din grădină când poarta și ușile nu s-au deschis, sau pe oricine se află noaptea fără nimeni treaz. Alertele sunt rostite cu voce tare în orele de liniște, dacă o face ceasul de noapte.",
+     "camera_security_sensors": "Senzorul de persoană al fiecărei camere (sau zonă), e.g. Frigate „Poartă ocupare persoane'.",
+     "camera_security_inside": "Senzorii de persoană pentru locurile din spatele porții sau ale gardului — grădină, șopron. Cineva care apare acolo fără o cale de deschidere este o alertă.",
+     "camera_security_entries": "Poarta și ușile pe care trebuie să treacă oamenii (e.g. poarta din spate și ușa din spate).",
+     "camera_security_describe": "O privire AI către cameră pentru fiecare alertă („un bărbat cu hanoraș întunecat care încearcă să ușească la magazie').",
+     "security_reasoning": "Înainte ca o alertă de securitate a camerei să fie rostită cu voce tare, uită-te la alarma, dacă toată lumea este afară, o ușă de intrare sau o poartă care s-a deschis chiar înainte, mișcarea în interior, evenimentele Frigate și cât de des a alertat deja camera respectivă. Probabil că cineva iese, sau aceeași cameră din nou într-o jumătate de oră, este tăcut. Alerta merge în continuare pe cronologie și pe telefoane, cu motivele. Alarma a pornit sau toată lumea a stins: mereu spus. Fără AI. Oprit implicit.",
+     "party_lights": "Luminile care se unesc atunci când nu folosește toată casa. Lasă gol pentru a folosi camera celui care întreabă (sau spune o cameră: „modul disco în sufragerie').",
+     "party_style": "Disco: schimbări rapide de culoare. Petrecere: culori strălucitoare, decolorări scurte. Curcubeu: o roată de culori. Chill: lent, culori slabe. Halloween: portocaliu pâlpâitor, violet și verde. Crăciun: roșu, verde și alb cald, sclipitor.",
+     "party_minutes": "Apoi fiecare lumină se întoarce exact așa cum a fost. 0 continuă până când este oprit.",
+     "party_whole_house": "Fiecare lumină care poate diminua sau schimba culoarea se alătură (grupurile de lumini, ecranele și luminile de fundal nu). Spune „modul disco peste tot” pentru a face asta o singură dată.",
+     "party_exclude": "Lăsat în afara fiecărei emisiuni, chiar și „pretutindeni” — ecrane de tabletă, un proiector, un dormitor în care cineva doarme.",
+     "party_sound": "Opțional: un senzor de volum în dB, cum ar fi microfonul unui difuzor de voce prin senzorul sound_level de la ESPHome. Disco, petrecere, curcubeu și Halloween urmează apoi muzica — mai tare este mai strălucitor și fiecare ritm își schimbă culoarea.",
+     "party_show": "Care arată obțineți un buton pe prezentarea generală. Lasă gol pentru nimeni; fiecare spectacol încă funcționează prin voce.",
+     "party_sound_switch": "Opțional: un comutator care face raportul senzorului de volum (deci nu trimite citiri toată ziua). Este pornit în timp ce un spectacol urmărește sunetul și se dezactivează ulterior. Găsit automat dacă se află pe același dispozitiv și are „loudness” în nume.",
+     "room_volume": "Difuzoarele care pot auzi camera (un senzor de sonoritate pe același dispozitiv) au mai întâi o secundă de ascultare și vorbesc mai tare la televizor sau la chat. Nu în orele de liniște.",
+     "follow_you": "Ceva spus acolo unde nimeni nu a fost aproape — sau reținut ore de liniște — este transmis data viitoare când cineva intră într-o cameră cu un difuzor.",
+     "follow_minutes": "După acest timp, un mesaj neauzit este aruncat.",
+     "conversation_memory": "Păstrează o scurtă înregistrare a ceea ce a fost întrebat și spus pe fiecare difuzor, astfel încât o altă cameră să poată relua de unde a rămas una. Păstrată două săptămâni; privat în timp ce oaspeții sunt înăuntru.",
+     "follow_ups": "Vocile pot seta urmări (\"Voi verifica că camera este încălzită într-o oră\"), iar un ceas care se epuizează fără să se vadă nimic este închis cu voce tare.",
+     "curiosity": "Cel mult o dată pe zi, atunci când cineva se adresează, întreabă despre ceva ce nu poate explica — un apelant obișnuit, un model pe care l-a observat peste noapte — și își amintește răspunsul.",
+     "reflection": "Un apel AI în fiecare seară peste jurnalul și conversațiile zilei: lucruri noi care merită reținute, un gând sau două pentru dimineața și o întrebare de pus.",
+     "reflection_time": "Cel mai bine la orele mici.",
+     "drive_spot": "Locul camerei care arată unitatea (desenați-l în fila Spoturi).",
+     "drive_camera": "Este necesar doar dacă mai multe camere au un loc cu acest nume.",
+     "drive_triggers": "Senzori de mișcare sau de mașină care văd unitatea. Gol: senzorii de mișcare și auto ai camerei.",
+     "camera_wake": "Acțiuni care trezesc o cameră din regimul de așteptare (un buton de activare sau de reîmprospătare, un comutator de flux, un script). {{ camera }} este camera care urmează să fie privită. Gol: camerele sunt privite așa cum sunt.",
+     "camera_wake_cameras": "Gol: fiecare cameră la care se uită AI.",
+     "camera_wake_seconds": "Secunde de așteptat după trezire, pentru o imagine proaspătă.",
+     "known_cars": "Unul pe linie, e.g. „Sam: hatchback gri închis”. Aceeași privire asupra mașinii spune apoi a cui mașină a sosit („Mașina lui Sam a sosit pe mașină”) — fără IA suplimentară. Gol: mașinile nu au nume.",
+     "full_volume_speakers": "Anunțurile cu privire la acestea sunt spuse la 100%, apoi volumul revine — pentru tabletele refuzate pentru orice altceva. Nu în orele de liniște (volumul orelor de liniște este folosit atunci).",
+     "tts_entity": "Difuzoarele pot fi difuzoare de asistență sau playere media. Cu Echos se vorbește prin Alexa Media Player; orice alt player media (un difuzor inteligent, un dispozitiv Cast) folosește această voce text-to-speech.",
+     "house_language_text": "Activat: ceea ce scrie Sentient pentru a le citi — cronologia, sănătatea casei, fila Mind, rezumatul zilnic, poveștile zilei, descrierile clipurilor și notificările de pe telefon — urmează limba Home Assistant. Propozițiile fixe sunt traduse în poloneză, germană, olandeză, italiană, portugheză, spaniolă, franceză și maghiară; ceea ce scrie AI urmează orice limbă. Cuvintele care sunt rostite urmează Spune propoziții încorporate în limba casei. Fără apeluri AI suplimentare; nimic nu este stocat. Off: totul rămâne în engleză.",
+     "speak_house_language": "Traduceți propoziții obișnuite în limba engleză utilizând sarcina AI existentă, cu o limită de timp, cache temporară de propoziții și alternativă a textului original. Alertele urgente nu așteaptă niciodată AI. Folosește suportul pentru limbaj automat pentru frazele pregătite și încheierile conversației; selectează limba de mai jos. Jetoanele exacte da/nu acoperă limbile comune. Traducerile personale ale propozițiilor nu sunt niciodată salvate după reporniri.",
+     "speakers": "Asistați difuzoarele sau playerele media (Echos prin Alexa Media Player).",
+     "media_speakers": "Dezactivat: sunt folosite doar difuzoarele vocale, chiar și acolo unde o alarmă sau un anunț denumește un Echo (în schimb merge acolo unde sunt oamenii). De asemenea, un comutator „difuzoare Echo” pentru automatizări și tablouri de bord.",
+     "media_important_only": "Pornit: Echos spun doar alarme, memento-uri și alerte de siguranță; anunțurile, notificările și chatul merg la difuzoarele vocale. De asemenea, un comutator „Echos: numai alarme și mementouri.",
+     "foresight": "În fiecare seară, un AI se uită la calendarele, vremea, alarmele și mementourile de mâine. Spune ceva doar atunci când este ceva de făcut în seara asta — îngheț înainte de începerea devreme, ploaie în ziua spălării. De obicei tăcut.",
+     "foresight_time": "Înainte de a începe orele de liniște.",
+     "sleep_detection": "Adormit după o rutină de culcare sau în ore liniștite, după ce nimic din interior nu s-a mișcat o vreme. Trezește-te dimineața când există mișcare în două camere (sau o lumină aprinsă manual). Un senzor House o arată.",
+     "bedtime_routines": "Rutine care înseamnă că toată lumea s-a culcat, separate prin virgulă. Gol: orice rutină cu „noapte” sau „pat” în nume.",
+     "sleep_actions": "e.g. ecranele tabletei sunt oprite, difuzoarele Echo se opresc.",
+     "wake_actions": "e.g. difuzoarele Echo aprinse din nou, lumina de la hol aprinsă scăzută.",
+     "appliances": "Mașină de spălat, uscător, mașină de spălat vase, hoover — senzorul de putere sau starea acestora. Lasă gol pentru a urmări fiecare robot aspirator și orice senzor de putere numit mașină de spălat, uscător sau mașină de spălat vase.",
+     "appliance_announce": "Spune “mașina de spălat s-a terminat” acolo unde sunt oamenii și când durează mult mai mult decât de obicei. Cuvinte simple, fără IA.",
+     "appliance_watts": "Pentru senzorii de putere: rulează în timp ce este deasupra acesteia, terminat odată ce a rămas dedesubt timp de cinci minute.",
+     "voice_agent": "Agentul AI care răspunde în mod normal (e.g. Google AI). Empty folosește agentul de chat al paginii.",
+     "backup_agent": "Răspunde atunci când agentul principal eșuează — agentul propriu al lui Home Assistant face lumini, încălzire și temporizatoare fără AI.",
+     "offline_answers": "Când agentul AI eșuează, “casa este închisă?”, “când este următoarea mea alarmă?” și “a venit cineva?” primesc răspuns direct din casă, în cuvinte simple, înainte ca agentul de rezervă să fie judecat. Doar întrebări, doar ceea ce poate vedea persoana; în modul invitat doar întrebarea de securitate. Oprit: totul merge la agentul de rezervă.",
+     "animal_sensors": "Senzori de temperatură pentru colibă, canisa, coop sau rezervor.",
+     "away_lights_on": "Când toată lumea iese după lăsarea întunericului, luminile copiază modul în care au fost folosite în același timp săptămâna trecută (din istoria Home Assistant), în câteva minute în orice caz. Nu pornește (sau se oprește) dacă este cineva acasă sau s-a produs mișcare înăuntru în ultima vreme, pentru persoanele fără telefon urmărite și pune înapoi ceea ce a pornit. De asemenea, un comutator „Away lights.",
+     "away_people": "Gol: toată lumea cu o intrare de persoană. Poți alege telefoane (device trackers) în loc de persoane.",
+     "away_lights": "Gol: fiecare lumină dintr-o cameră, lăsând afară ecrane, inele LED, lumini de fundal și grupuri. Se aprind doar luminile care erau folosite la acel moment săptămâna trecută.",
+     "holiday_mode": "Un comutator „Mod vacanță” și „plecăm în vacanță până duminică” prin voce. Cât timp este pornit, nimic nu se spune cu voce tare, cu excepția alertelor de siguranță — ceea ce s-ar fi spus se referă la telefoanele alese pentru notificări, cu vizitatori și pachete; luminile de deplasare pornesc chiar dacă sunt în mod normal stinse; iar termostatele de mai jos sunt oprite. Oprit: fără comutator și fără vacanță prin voce.",
+     "holiday_thermostats": "Reduceți protecția împotriva înghețului în timp ce ești plecat și puneți la loc exact așa cum erau când se termină modul vacanță. Gol: încălzirea nu este atinsă.",
+     "holiday_frost": "La ce sunt setate termostatele de mai sus când ești plecat.",
+     "holiday_end_on_return": "Odată ce toată lumea a ieșit afară, prima persoană acasă se oprește din modul vacanță și readuce încălzirea. Oprit: se termină la data sa sau când este oprit.",
+     "away_after": "Așa că să mergi la magazin nu pornește.",
+     "animal_low": "Spune o dată când scade sub aceasta (se menține până dimineața în ore liniștite) și avertizează seara înainte de îngheț.",
+     "animal_high": "Spune o dată când se ridică peste aceasta.",
+     "hutch_check": "La jumătate de oră după apusul soarelui, o IA se uită la colibă: sunt înăuntru și este închisă? Spune doar ceva dacă nu.",
+     "hutch_spot": "Locul desenat în jurul colibei din fila Spots, e.g. 'pentru iepure'.",
+     "cat_watch": "După lăsarea întunericului, când se aprinde un senzor de pisică de pe camera colibei, o privire AI: o pisică este la sau lângă colibă? Cel mult la fiecare 15 minute, și nu când imaginea nu s-a schimbat.",
+     "cat_sensors": "Gol: senzorii pentru pisici de pe camera colibei (e.g. ocuparea pisicii Frigate).",
+     "cat_loud": "Oprit: păstrat pentru dimineața („O pisică era lângă colibă ​​la 2:14”). Pornit: rostit deodată prin difuzoarele de veghe de noapte.",
+     "rain_warnings": "Când va ploua în decurs de o oră și o fereastră sau o ușă este deschisă: „Ploaia vine în următoarea oră și fereastra dormitorului este deschisă”. Citește prognoza orară — fără AI. O dată pe vrajă de ploaie.",
+     "rain_entities": "Gol: fiecare senzor de fereastră și ușă.",
+     "self_test": "Peste noapte, vocii i se pun câteva întrebări zilnice (temperatura de afară, orice lucru deschis, mementouri, alarma, ora) și răspunsurile ei sunt verificate în raport cu casa. Orice lucru greșit se arată în sănătatea casei cu instrumentul pe care l-a folosit. Aproximativ 5 AI apelează la alergare. Numai întrebări — nimic nu este schimbat.",
+     "self_test_household": "Adaugă aproximativ 7 întrebări construite din propriile dispozitive: când s-a închis ultima dată o ușă sau o fereastră, dacă o lumină este aprinsă, dacă o cameră a văzut pe cineva în ultimele două ore, dacă cineva a venit astăzi la ușă, ceva ce nu poate ști (un răspuns inventat nu reușește), ceva ce niciun dispozitiv nu poate face și o întrebare prea vagă pentru a răspunde fără a întreba la care. Schimbarea a ceva în timpul unei întrebări este un eșec. Scorul și tendința sa sunt pe pagina Mind. Încă aproximativ 7 AI solicită o alergare.",
+     "screen": "Alerte, notificări și un card de dimineață pe cardul de ecran Sentient (personalizat:sentient-card-ecran). Off: arată casa doar dintr-o privire.",
+     "screen_actions": "e.g. treziți o tabletă și comută-o la pagina cu cardul de ecran.",
+     "screen_clear_actions": "e.g. comută tableta înapoi la pagina normală.",
+     "conversation_sessions": "Folosește Sentient cu agentul de rezervă. Comenzile individuale nu mai sunt ascultate decât dacă răspunsul rostit se termină cu o întrebare. Discuțiile privind informațiile, securitatea, sănătatea și sistemul întreabă dacă mai este ceva și rămâneți deschis până când spune “asta e tot”, “destul” sau “nu mai ascultați”, sau expiră expirarea timpului de inactivitate. Spune “înapoi la…” pentru a relua un subiect neterminat de pe acest dispozitiv în decurs de 24 de ore, fără a restabili permisiunile de acțiune. Panoul Mind afișează deciziile recente de conversație. Ascultarea ulterioară necesită un dispozitiv de asistență compatibil.",
+     "room_conversation_handoff": "Spune continuă și denumește un subiect de pe alt dispozitiv. Ambele solicitări trebuie să provină de la același utilizator Home Assistant identificat. Citirile noi sunt verificate, iar acțiunile și confirmările anterioare nu sunt reportate.",
+     "verified_bedtime": "Spune fugiți jos ora de culcare pentru a stinge luminile selectate și verifică contactele selectate. Cere starea orei de culcare de la parter să verifică din nou sau spune Anulează ora de culcare de la parter pentru a opri urmărirea acesteia.",
+     "verified_bedtime_lights": "Alege până la douăzeci de lumini individuale expuse Assist. Grupurile sunt excluse, iar lista Niciodată nu atinge se aplică în continuare.",
+     "verified_bedtime_contacts": "Alege până la douăzeci de uși, ferestre sau alte contacte de deschidere expuse la asistent pentru a verifica. Sunt doar citite.",
+     "session_seconds": "Renunță la contextul sesiunii și acțiunile în așteptare după atâtea secunde fără o altă tură. Dispozitivul dvs. vocal își controlează propriul timp de expirare a silenționării. Confirmarea expiră și după 60 de secunde.",
+     "guarded_control": "Înscrie-te cu un agent AI compatibil: selectează numai Sentient păzit sub Control Home Assistant, apoi folosește Sentient cu backup în curs. Dezactivează Preferă gestionarea comenzilor local și elimină declanșatoarele de propoziții conflictuale, care rulează înaintea acestui agent. Configurația greșită a agentului API oprește solicitările. Fără rezervă nerestricționată, scenarii, scene sau acțiuni de alarmă. Ușile, pornirile aparatului și schimbările semnificative de încălzire necesită un da separat.",
+     "routine_verify": "Pornit: după o rutină vocală (noapte bună, plecare…), fiecare lumină, întrerupător, lacăt și capac schimbat este verificat câteva secunde mai târziu, iar răspunsul spune ce nu s-a întâmplat (\"Gata, cu excepția luminii de aterizare, care este încă aprinsă\"). Pașii pe care nu îi poate verifica (scripturi, scene) sunt raportați ca nebifați, niciodată ca fiind finalizați. Nimic nu este reîncercat sau anulat de la sine. Off: rutinele rulează ca înainte, nebifate.",
+     "voice_unlock": "Permite confirmarea vocală forțată să deblocheze o ușă după un da separat. Dezactivat (prestabilit) continuă să se blocheze și să se închidă, dar refuză să deblocheze sau să deschidă prin voce, deoarece Sentient nu poate spune cine vorbește.",
+     "voice_undo": "Cu controlul protejat, spune “Anulează asta” pentru a solicita restaurarea setărilor recente de lumină verificate. Omite luminile schimbate de atunci, expiră odată cu sesiunea și nu dezactivează niciodată încuietorile, încălzirea sau electrocasnicele.",
+     "evidence_awareness": "Spune vocii să distingă observațiile, inferențe, acțiunile încercate și rapoartele verificate ale dispozitivului. Senzorii de securitate indisponibili împiedică întotdeauna o revendicare complet sigură.",
+     "security_incidents": "Grupați senzori de persoană pentru securitatea camerei și contacte de intrare configurate cu alerte și rezumate ale clipurilor. Păstrează șapte zile la nivel local. Proximitatea timpului este o posibilă legătură, nu o dovadă a aceleiași persoane; doar alertele crescătoare se repetă.",
+     "incident_front": "Camere și senzori din fața casei (soneria, ușa din față). Orice aici nu este niciodată grupat într-un singur incident de securitate cu ceva ce nu este, și invers: cineva la ușa din față și cineva la poarta din spate în același moment sunt două incidente. Lasă gol pentru a grupa singuri.",
+     "live_voice_check": "Afișează verificarea vocală începută de utilizator în panoul Mind. Dezactivarea acestei opțiuni șterge verificarea curentă și oprește înregistrarea turelor de verificare. Necesită sesiuni de conversație pentru a începe o verificare.",
+     "speech_delivery_history": "Păstrează rezultatele anunțurilor recente pentru fiecare difuzor în panoul Mind. Dezactivarea acestei opțiuni șterge acest istoric. Detectarea eșecului difuzorului și gestionarea sigură a reîncercării rămân active.",
+     "alexa_tts_only": "Folosește TTS simplu în loc de anunțuri Alexa dacă anunțurile nu sunt de încredere. Acest lucru ocolește soneria de anunț Alexa; celelalte difuzoare sunt neschimbate.",
+     "update_checker": "Verifică GitHub pentru versiuni stabile atunci când este activat, la pornire și la fiecare șase ore. Fără apeluri AI, instalare automată sau reporniri automate. Dezactivează pentru a opri verificările.",
+     "contextual_followups": "Necesită sesiuni de conversație și Sentient cu agent de rezervă. Păstrează subiectul pentru urmăriri scurte, reîmprospătați citirile dispozitivului expus și clarificați ajustările ambigue. Nu acordă permisiuni de acțiune și nu modifică regulile de ascultare. Oprit implicit; dezactivarea acesteia șterge contextul conversației temporare.",
+     "conversation_recovery": "Necesită sesiuni de conversație și Sentient cu agent de rezervă. Anulează o solicitare în așteptare sau în curs de desfășurare de la aceeași conversație/dispozitiv/utilizator și evitați reluarea comenzilor incerte ale dispozitivului după o defecțiune a AI. Nu se poate anula o acțiune deja trimisă sau se poate face ca hardware-ul să accepte vorbirea când este ocupat. Oprit implicit; dezactivarea oprește această manipulare suplimentară.",
+     "automatic_language": "Necesită Spune propoziții încorporate în limba casei. Pregătește fraze obișnuite, încheieri ale conversațiilor și etichete de siguranță cu AI și bugetul existent. Oprit implicit. Expresiile rămân în memorie, cu excepția cazului în care este activată opțiunea Amintește-ți expresiile în limba comună. Dezactivarea le șterge. Alertele urgente nu așteaptă niciodată AI; răspunsurile generate nu autorizează niciodată acțiuni critice.",
+     "voice_language": "Folosește automat pentru limba lui Home Assistant sau un cod de limbă, cum ar fi es, de sau pt-BR. Necesită opțiunea de limbă vorbire. Recunoașterea vocală Assist și vocea TTS trebuie să accepte și această limbă; asta nu le reconfigurează.",
+     "remember_language_phrases": "Necesită ambele opțiuni de limbaj de vorbire. Salvează numai pachetul de fraze generice pentru reporniri și modificări de setări fără legătură, niciodată anunțuri personale. Oprit implicit. Dezactivarea, schimbarea limbii/furnizorului sau uitarea datelor le șterge.",
+     "stream_voice_replies": "Începe să rostească un răspuns lung în timp ce AI-ul încă îl scrie, chiar și cu sesiunile de conversație activate, astfel încât răspunsurile încep mai devreme. Dacă Sentient modifică răspunsul ulterior (o întrebare de confirmare, de exemplu), modificarea este rostită după ceea ce a fost deja spus. Oprit implicit; oprirea acestuia revine la așteptarea întregului răspuns. Nimic nu este stocat.",
+     "voice_timing_diagnostics": "Păstrează ultimele 20 de timpi de răspuns vocal în memorie, fără transcrieri sau ID-uri de dispozitiv/utilizator. Afișează agent, instrument, traducere și timpii de anunț în Mind. Etapele se pot suprapune; captarea microfonului și redarea finală a conductei nu sunt măsurate. Oprit implicit; Setările se modifică și uitarea șterge istoricul. De asemenea, contează cum decurg conversațiile (urmăriri, corecții, cât de repede vin răspunsurile — niciodată cuvintele), păstrate peste reporniri; dezactivarea acestei contorizări șterge aceste numărări.",
+     "reliability_log": "Verifică fiecare turneu de voce cu reguli simple (fără AI) și notați pe pagina Mind când un instrument a eșuat, un dispozitiv nu a făcut-o, a spus că ceva s-a făcut când nu a fost nimic, a oferit ceva ce niciun dispozitiv nu poate face, nu a putut răspunde sau a răspuns despre trecut fără a căuta nimic. Păstrează un scurt rând al întrebării și răspunsului timp de 14 zile. Oprirea acestuia oprește și șterge ceea ce a fost păstrat.",
+     "unified_evidence": "Oprit implicit. Oferă vocii un instrument suplimentar de doar citire care analizează împreună înregistrarea casei, cronologia și istoricul camerei atunci când întreabă ce s-a întâmplat sau de ce. Nu poate schimba nimic și spune când o sursă nu a putut fi verificată, în loc să pretindă că nu s-a întâmplat nimic. Oprirea acestuia elimină instrumentul; nimic nu este stocat.",
+     "specific_clarification": "Necesită sesiuni de conversație. Oferă opțiuni cu nume de dispozitive și recunoaște numele exacte, ordinale în engleză, ambele/toate și temperaturile simple la nivel local. O reîncercare, apoi oprește-vă în loc să repetă. Selectarea nu confirmă niciodată o acțiune. Oprit implicit; dezactivarea șterge alegerile în așteptare. Folosește controlul protejat pentru restricțiile de acțiune impusă.",
+     "action_recovery": "Necesită sesiuni de conversație și control protejat pentru rezultatele și reîncercările dispozitivului. Dați rezultate parțiale numite și inspectați ultima solicitare protejată când spune că nu a funcționat. Doar acțiunile niciodată expediate pot fi oferite din nou, cu o nouă confirmare. Acțiunile incerte sau de succes nu sunt reluate. Oprit implicit; înregistrările expiră după două minute și șterge modificările sau uitarea setărilor.",
+     "recheck_unconfirmed": "Când un dispozitiv controlat prin control vocal supravegheat nu și-a raportat noua stare până la momentul răspunsului (o ușă de garaj, o priză lent în cloud), mai uită-te încă o dată 20 de secunde mai târziu și actualizați înregistrarea, deci “a funcționat?” se răspunde din ceea ce spune aparatul acum. Nimic nu este trimis din nou. Off: înregistrarea rămâne așa cum era la răspuns.",
+     "speech_failure_notification": "Afișează o notificare Home Assistant când livrarea difuzorului eșuează sau este incertă. Oprit implicit. Nu include conținut vorbit sau vorbire repetă. Dezactivat în modul invitat; notificările existente rămân până la respingere.",
+     "recent_followup_context": "Folosește un subiect finalizat recent după un cuvânt proaspăt de trezire pe același vorbitor și utilizator. Necesită sesiuni de conversație și urmăriri contextuale. Utilizează timpul de expirare a sesiunii; nu restabilește niciodată confirmarea sau ascultarea. Oprit implicit. Terminarea sau uitarea clarifică contextul.",
+     "conversation_cues": "În cadrul unei conversații: semnele de zi cu zi (“norații”, “perfect, mulțumesc”, “așa va fi”) o încheie atunci când nimic anume nu așteaptă un răspuns; “îmi pare rău, am vrut să spun…”, “lumină greșită” și “nu lampa, plafoniera” sunt corecții; și “în altă notă…” sau “altceva:” începe un subiect nou, fără dispozitive transportate. Fără AI. Dezactivat: sunt recunoscute numai terminațiile simple și corecțiile.",
+     "vary_replies": "Vocii i se arată ultimele răspunsuri din ziua trecută și i se spune să nu-și refolosească propozițiile sau deschiderile, astfel încât același răspuns nu este dat cuvânt cu cuvânt de două ori. Nu în camere private sau în modul oaspeți. Răspunsurile repetate sunt socotite în orice mod (fila Mind, cu sincronizarea vocii). Oprit implicit.",
+     "behaviour_explanations": "Răspunde la întrebări scurte despre ascultarea și rezultatele înregistrate de dispozitive direct, fără un apel AI. Necesită sesiuni de conversație. Utilizează înregistrările de sesiune existente, respectă modul invitat și accesul la dispozitiv și nu repetă niciodată o acțiune. Oprit implicit; nu este stocat niciun istoric suplimentar.",
+     "current_house_context": "Oferă conversațiilor un instantaneu compact și relevant al rapoartelor dispozitivelor expuse, modificărilor recente și sarcinii curente neterminate. Oprit implicit. Fără apeluri AI de fundal. Modul invitat îl suprimă. Modificările recente expiră după 30 de minute; dezactivarea sau uitarea șterge contextul doar pentru memorie.",
+     "moment_awareness": "Fiecare răspuns vocal primește o scurtă imagine „chiar acum” din ceea ce Sentient păstrează deja: cine este acasă și de când, camerele cu mișcare, ce s-a întâmplat în ultimele 45 de minute și ceva neobișnuit pentru astăzi. Fără AI și nimic stocat. Într-o cameră privată sau în modul oaspeți este dată doar mișcarea. Oprit: nu este adăugat nimic.",
+     "room_memory": "Fiecare răspuns vocal dintr-o cameră primește ceea ce s-a întâmplat acolo în ultima oră: conversații anterioare în camera respectivă, ce a fost comutat acolo prin voce și ce a fost anunțat acolo. Dacă cineva vorbea într-o altă cameră acum câteva minute și nu s-a mai spus nimic aici de atunci, vine și acea conversație, ca să poată continua de unde a rămas. Nu este stocat nimic nou. Camerele private și modul pentru oaspeți obțin doar înregistrarea propriei camere. Oprit: nu este adăugat nimic.",
+     "know_people": "Când recunoașterea vocală nu a numit difuzorul, Sentient află cine este probabil din lucruri în care poate avea încredere: un mesaj introdus în aplicația Home Assistant vine din contul acelei persoane sau al ei este singurul telefon urmărit în cameră din cameră. Vocii i se spune cine este probabil și pune pe primul loc ceea ce a spus persoana respectivă despre ea însăși. O presupunere nu permite niciodată nimic care are nevoie de o confirmare și nimic nu este salvat sub numele lor din cauza asta. Nu în modul oaspeți sau în camere private. Off: nu ghicim.",
+     "instant_answers": "Întrebările de zi cu zi primesc răspuns direct din casă, înainte de AI: ora, vremea de afară, dacă un dispozitiv numit este pornit, oprit, deschis sau încuiat, temperatura unei camere, următoarea alarmă sau memento, vizitatori și dacă casa este închisă. Doar întrebări, doar un singur dispozitiv care se potrivește clar și este expus asistenților vocali; orice altceva merge la AI ca de obicei. Schimbul este adăugat la conversație, astfel încât o persoană de urmărire încă știe ce a fost întrebat. Oaspeții și camerele private primesc doar ora, vremea și starea dispozitivului. Dezactivat: fiecare întrebare merge către AI.",
+     "capability_awareness": "Vocii i se spune ce fel de lucruri poate controla în această casă prin voce (din ceea ce este expus asistenților vocali, cu câte din fiecare) și care dintre ele comune nu are casa, cum ar fi încuietori inteligente sau jaluzele motorizate, astfel încât să nu ofere niciodată ceva ce niciun dispozitiv nu poate face. O ofertă care se strecoară oricum (închiderea unei ferestre, încuierea unei uși) este eliminată din răspuns înainte de a fi rostită. Am lucrat la fiecare cinci minute, fără AI. Dezactivat: nimic nu este adăugat sau eliminat.",
+     "house_context_entities": "Dispozitive care trebuie incluse în rezumatele generale ale casei, alături de rapoartele automate de climă și deschidere/prezență. Numai dispozitivele expuse și accesibile în prezent sunt partajate; cel mult opt ​​citiri relevante per cerere.",
+     "house_context_updates": "Necesită contextul actual al casei. După o solicitare de încălzire supravegheată verificată, opțional spune o dată când acel termostat raportează temperatura solicitată. Expiră după o oră, se anulează dacă ținta se modifică, cel mult o actualizare la 15 minute. Respectă regulile normale de vorbire și modul invitat. Oprit implicit. Dezactivarea șterge actualizările în așteptare.",
+     "security_event_evidence": "Folosește ID-uri de eveniment Frigate, instantanee și clipuri pe camerele configurate. O potrivire unică cameră/timp este o legătură candidată, nu o dovadă că un senzor a identificat acel eveniment. Păstrează până la 3.000 de înregistrări de evenimente timp de șapte zile, la nivel local. Oprit implicit. Dezactivarea ascunde linkurile și oprește potrivirea; înregistrările păstrate expiră sau pot fi uitate.",
+     "security_event_zones": "Doar ceea ce intră într-o zonă: pe o cameră cu zone Frigate, un eveniment este listat (și poate declanșa un incident de securitate) numai după ce obiectul a intrat într-una dintre ele, aceeași regulă pe care Frigate o folosește pentru alertele sale. O cameră fără zone listează totul. Orice a detectat: fiecare obiect Frigate urmărește pe camerele alese. Setările proprii ale lui Frigate nu sunt niciodată modificate.",
+     "security_event_hidden_zones": "Una pe linie ca cameră/zonă, de exemplu poarta/calea de acces. Evenimentele care sunt doar în aceste zone nu sunt listate și nu declanșează incidente de securitate. Folosește HIDE THIS ZONE pe pagina Securitate după câteva corecții „nu este o persoană” acolo sau elimină o linie pentru a lista din nou acea zonă. Frigate nu este schimbat.",
+     "security_coverage": "Arată ce camere configurate au contribuit cu dovezi reținute și orice rapoarte indisponibile înregistrate alături de incidente în direct. Rapoartele actuale ale camerei sunt afișate separat. Dezactivarea acestei opțiuni elimină golurile de acoperire reținute.",
+     "frigate_pipeline_health": "Citește disponibilitatea Frigate MQTT, ratele de procesare per cameră și când Sentient a primit ultima dată un eveniment. Datele lipsă sunt afișate ca necunoscute. Nu se modifică setările camerei.",
+     "security_conversation_context": "Rețineți evenimentul selectat timp de până la cinci minute în cadrul aceleiași conversații, dispozitiv și utilizator. Întrebările ulterioare folosesc acel eveniment și rapoarte noi de ocupare; nu se presupune identitate sau prezență continuă. Urmărește evenimentele configurate ale camerei. Oprit implicit. Dezactivarea șterge referințele la conversație; înregistrările evenimentelor își păstrează expirarea normală.",
+     "security_event_feedback": "Administratorii pot marca o vizită ca o captură bună, nu o persoană sau una de ignorat. Vizitele revizuite se mută într-o listă de recenzii pliată, iar „nu o persoană” contează, de asemenea, ca o detecție falsă revizuită pentru un incident de securitate făcut numai pentru acea vizită. Corecțiile rămân șapte zile. Niciun detector automat, alarmă sau modificări ale regulilor de notificare. Dezactivarea ascunde feedback-ul și oprește noi corecții; folosește Uitați datele recente pentru a șterge înregistrările reținute.",
+     "share_clip_analysis": "Partajați analize generice compatibile ale aceluiași eveniment Frigate finalizat prin vizionarea automată a clipurilor și întrebări despre clipuri de eveniment. Furnizorul, acoperirea filmării și setările de identitate trebuie să se potrivească. Întrebările personalizate sunt analizate separat. Păstrează cel mult 100 de rezultate în memorie timp de șase ore. Oprit implicit. Dezactivarea, modificarea setărilor sau uitarea șterge memoria cache.",
+     "sleep_ignore_sensors": "Senzori de mișcare care se declanșează în timp ce oamenii dorm, cum ar fi unul într-un dormitor. Dormirea așteaptă să nu se miște nimic pentru timpul de mai sus; un senzor de dormitor care se declanșează când cineva se întoarce ar ține casa \"trează\" toată noaptea, așa că enumerați-l aici. Încă contează pentru orice altceva.",
+     "heating_graph": "Activat: cardul de încălzire din fila Casă arată ultimele 24 de ore ale temperaturii fiecărui termostat față de ceea ce a fost setat, cu orele programate umbrite. Citește din istoria Home Assistant; nimic în plus nu este stocat. Oprit: graficul este ascuns.",
+     "heating_revert": "Pornit: dacă un termostat este ridicat, coborât sau oprit manual (sau se schimbă singur) și nu este din nou în program, Sentient îl lasă un timp și apoi îl pune înapoi: temperatura perioadei ziua, temperatura nopții noaptea. Doar termostate într-un program de încălzire. O schimbare făcută manual sau prin voce durează întreagă, chiar dacă o perioadă începe sau se termină între timp; apoi programul preia. Oprit: modificările manual rămân până la următoarea oră programată. Nimic nu este stocat în niciun caz.",
+     "window_heating": "Pornit: atunci când o fereastră sau o ușă a fost deschisă de câteva minute și camera respectivă are propriul încălzitor, Sentient reduce acel încălzitor la temperatura de noapte și îl pune înapoi când fereastra se închide, dar numai dacă nimeni nu a schimbat-o între timp. Un termostat pentru întreaga casă nu este niciodată oprit pentru o singură fereastră: Sentient spune doar odată că fereastra este deschisă și încălzirea este pornită. Renunță după 3 ore. Off: nimic nu este schimbat sau spus; orice a refuzat este pus înapoi (dacă nimeni nu l-a schimbat) și micul său record este șters.",
+     "window_heating_minutes": "Cât timp trebuie să rămână deschisă o fereastră înainte ca Sentient să acționeze. Implicit 5 minute.",
+     "rooms_view": "Activat: fila Casă arată o țiglă pentru fiecare cameră — temperatură, umiditate, lumini aprinse, uși și ferestre deschise, când cineva s-a mutat ultima dată acolo și ce se joacă — iar prezentarea generală primește o scurtă carte în jurul casei. Construit din zonele tale; nimic nu este stocat. Off: ambele sunt ascunse.",
+     "outdoor_areas": "Zonele care se află în afara casei, cum ar fi o colibă ​​pentru iepuri, șopron sau seră. Încă își au propria țiglă în fila Casă, marcată în EXTERIOR, iar temperatura lor este afișată pe propria linie în prezentarea generală, dar sunt lasă în afara celei mai calde și mai răcoroase încăperi, iar mișcarea acolo (o cameră care vede oamenii trecând pe lângă) nu contează ca cineva care se află în casă. Lasă gol pentru a număra fiecare zonă ca parte a casei.",
+     "knowledge_card": "Activat: fila Mind rezumă ceea ce a învățat despre casă — ora obișnuită de culcare și de trezire, senzorii pe care îi pune deoparte, cât de repede se încălzește încălzirea, presupuneri din camera alăturată, rutine și amintiri. Arată doar ceea ce este deja cunoscut; nimic în plus nu este stocat. Oprit: cardul este ascuns.",
+     "day_chart": "Activat: prezentarea generală arată astăzi oră cu oră — mișcarea, ce a spus, ce s-a întâmplat afară și ce ai întrebat — cu când cineva a fost primul treaz și cea mai aglomerată oră. Numărate din cronologie; nimic în plus nu este stocat. Off: graficul este ascuns.",
+     "house_ledger": "Activat: fiecare modificare a fiecărui dispozitiv este înregistrată cu ceea ce a cauzat-o (o persoană, o solicitare vocală, o automatizare, Sentient sau nimic în Home Assistant, adică dispozitivul în sine, aplicația sa sau cineva de la el), astfel încât să poți întreba \"când s-a oprit încălzirea și de ce?\". Numerele care se schimbă rapid sunt păstrate ca modificări notabile. Păstrat 90 de zile în propria bază de date a Sentient, apoi rezumat pe zi. Off: nu este înregistrat nimic nou; ceea ce a fost păstrat rămâne până când îl șterge din fila Minte.",
+     "unexplained_changes": "Pornit: când un dispozitiv urmărit (în mod implicit încălzirea, încălzitoarele de apă și supapele) se schimbă fără nimic în Home Assistant în spate la o oră neobișnuită pentru el, se spune o dată și se pune pe cronologie, iar repetele sunt legate: \"a treia oară săptămâna aceasta, întotdeauna în jurul orei 11 dimineața\". În timp ce încă învață un dispozitiv sau odată ce repetarea devine obișnuită, merge doar pe linia temporală. Off: încă înregistrat, niciodată menționat.",
+     "unexplained_entities": "Lasă gol pentru încălzire, încălzitoare de apă și supape. Încuietorile, ușile și porțile sunt folosite manual în fiecare zi, așa că adaugă-le doar dacă vrei să afli despre ele.",
+     "expectations": "Activat: învață cât de des se schimbă fiecare dispozitiv la fiecare oră, în zilele lucrătoare și în weekend (încălzit din ultimele trei săptămâni de istorie) și notează fiecare schimbare de la obișnuit la foarte neobișnuit. Fila Mind arată cât de mult se aștepta din fiecare zi. Numărătoare simplă, fără AI. Off: fără scoruri; clar ce a învățat în fila Minte.",
+     "surprise_gating": "Watch: notează ce remarci ar sări peste, deoarece schimbarea este obișnuită pentru momentul respectiv, fără să omite niciuna. Activat: le omite, ceea ce salvează și apelul AI. Nu se aplică niciodată alertelor de siguranță, alarmelor sau orice ai cerut.",
+     "situations": "Activat: vocii i se spune câteva rânduri simple despre ceea ce se întâmplă acum (tocmai am ajuns acasă, mișcare în ultimele 15 minute, ceva neobișnuit în ultima oră). Nu este împărțit cu oaspeții sau într-o cameră privată. Oprit: nu se trimite nimic suplimentar.",
+     "beliefs": "Activat: în fiecare seară caută lucruri care se întâmplă de la sine în același timp, le testează pe fiecare față de ziua care tocmai a trecut, întreabă despre una care ține și renunță la cele care nu. Fără AI. Off: fără noi credințe și fără testare; cele existente sunt șterse cu învățarea din fila Minte.",
+     "learn_reactions": "Activat: ceva ce Sentient a schimbat, care a pus înapoi contează împotriva reluării, și o remarcă pe care cineva acționează în favoarea sa. Off: reacțiile nu sunt punctate.",
+     "ai_case_memory": "Activat: o lucrare AI de fundal identică cu una din ultimele șase ore reutiliza acel răspuns în loc de un alt apel. Nu a fost folosit niciodată pentru poze sau clipuri. Dezactivat: fiecare job apelează AI, iar răspunsurile salvate sunt șterse.",
+     "memory_tags": "O dată pentru fiecare amintire, un mic apel AI pe timp de noapte adaugă câteva cuvinte similare pe care oamenii le-ar putea folosi în schimb (“fierbător” → preparare, ceai, ceașcă), așa că “vreiesc o ceașcă?” găsește amintirile ibricului. Până la 40 de amintiri pe noapte; nu este nevoie de un server de încorporare. Oprirea acestuia oprește apelul de noapte și rechemarea ignoră cuvintele (sunt păstrate, așa că repornirea este instantanee). Oprit implicit.",
+     "memory_upkeep": "În reflecția de peste noapte (fără apel AI suplimentar), amintirile despre care o persoană a spus că emisiunile din ziua respectivă sunt depășite sunt remediate și păstrate ca o presupunere până la confirmare. O dată pe zi, la întrebările sale se adaugă o ghicire (ceva care a reușit mai degrabă decât a fost spus) pentru a putea întreba dacă este corect. Amintirile pe care o persoană le-a confirmat sau fixat nu sunt niciodată schimbate. Are nevoie de reflecție peste noapte. Off: amintirile sunt doar adăugate, niciodată corectate de acesta.",
+     "watch_actions": "Ceasurile și mementourile pot face ceva și pot spune, verifică mai întâi o stare și așteaptă ca ceva să dureze: \"dacă ușa din spate este deschisă zece minute, stinge lumina din hol și spune-mi\", \"când se termină spălarea, aprinde lumina din hol\", \"la 11, dacă ușa din spate este încă deschisă, spune-mi\". Vocea le citește pe fiecare înapoi și este configurată numai după un da la următoarea tură. Numai dispozitivele expuse asistenților vocali, niciodată alarme, încuietori, scripturi sau orice altceva de pe lista fără atingere; fiecare dispozitiv este verificat ulterior și răspunsul spune ce nu s-a întâmplat. Dezactivat: ceasurile și mementourile vorbesc doar, ca înainte, iar cele deja setate nu acționează.",
+     "memory_time": "Lucrurile spuse care sunt adevărate doar pentru o perioadă de timp au o dată de încheiere de la sine: \"deocamdată\", \"momentan\", \"săptămâna aceasta\", \"până vineri\", și lucruri unice (\"am pornit încălzirea\") sunt păstrate pentru o zi cu data scrisă, mai degrabă decât să devină fapte permanente. O dată pe zi, un fapt pe care nimeni nu l-a confirmat sau folosit în trei luni este verificat cu dvs. Reflecția peste noapte scrie și o scurtă poveste a fiecărei zile (fără apel AI suplimentar), păstrată timp de 60 de zile, așa că \"ce am făcut sâmbăta trecută?\" sau \"când s-a pornit ultima dată cazanul?\" se poate răspunde. Are nevoie de reflecția peste noapte pentru povești și verificări. Dezactivat: amintirile păstrează doar datele pe care le numesc și nu sunt păstrate povești (cele păstrate deja sunt șterse).",
+     "who_where": "Reunește ceea ce știe fiecare sursă — instrumente de urmărire a camerei de telefon (setate sub Voce), cine a fost recunoscut ultima dată vorbind și unde și mișcarea când o singură persoană este acasă — într-o singură ghicire pentru fiecare persoană: în ce cameră, cât de sigur și de când. Vocea este dată în loc de linia simplă de urmărire a camerei, spune cât de sigur este și nu spune niciodată nimic despre cineva care nu este acasă. Nimic nu este stocat. Dezactivat: vocea are doar linia de urmărire a camerei, ca înainte.",
+     "big_plans": "\"Pregătește casa pentru seara filmului\" sau \"sortează casa, plecăm\": vocea elaborează un scurt plan de pași ai dispozitivului, îl citește înapoi și o face doar după un da la următoarea tură. Fiecare pas este apoi verificat pe dispozitiv și răspunsul spune ce nu s-a întâmplat. Numai dispozitivele expuse asistenților vocali; niciodată alarme, încuietori, scripturi sau lista fără atingere; până la 12 pași. Dezactivat: cererile mari sunt tratate pe un dispozitiv la un moment dat, ca înainte.",
+     "self_grading": "În fiecare noapte, ceea ce a spus vocea în acea zi despre dacă ceva era pornit, oprit, deschis sau închis este verificat cu ceea ce a înregistrat casa în acel moment. Una greșită este adăugată la \"Unde vocea a mers prost\" pe pagina Mind și devine o lecție (\"verifică ușa din spate înainte de a spune dacă este deschisă\"), astfel încât se îmbunătățește fără a fi corectată. Fără AI. Are nevoie de jurnalul de fiabilitate. Oprit: nimic nu este verificat.",
+     "voice_speed_watchdog": "Activat: observă când un difuzor durează mult mai mult să te audă decât ai trebuit să vorbești (sunetul sosește mai lent decât în ​​timp real) și îl pune în cronologie cu o sugestie de repornire. Off: fără verificare.",
+     "voice_speed_restart": "Pornit: un difuzor care continuă să întârzie este repornit cu propriul buton de repornire. Off: este doar sugerat.",
+     "incident_stages": "Activat: fiecare incident de securitate arată cât de departe a ajuns — observat, investigat, gospodărie probabilă, în cauză sau rezolvat — de ceea ce a fost înregistrat, niciodată cine a fost cineva. Off: incidentele sunt listate fără etapă.",
+     "cognitive_shadow": "Activat: un al doilea mod, mai strict de a judeca fiecare incident de securitate, parcurge etapele obișnuite și contează cât de des sunt de acord cei doi, cu modul în care au rezultat acțiunile vocale, afișate pe senzorul Mind doar ca totaluri (fără nume, imagini sau dispozitive). Este pentru testare: nu schimbă niciodată o alertă, o etapă, ceea ce se spune sau ce i se spune vocea. Dezactivat: nu se compară nimic, iar numărătoarea încep din nou.",
+     "cognitive_decides": "Activat: odată ce recenziile dvs. ale incidentelor de securitate (butoanele de sub fiecare incident din fila Mind) arată că fiecare tip este corect — cel puțin 10 incidente casnice analizate cu 90% de acord, cel puțin alte 10 nu le sună aproape niciodată casnic și niciun incident îngrijorător numit mai puțin grav — nucleul cognitiv decide stadiul fiecărui incident: ce spune fila Mind și vocea. Se oprește de la sine dacă recenziile ulterioare sunt scurte, și spune acest lucru pe cronologie. Nu se schimbă niciodată sau nu reține o alertă și nu numește niciodată un incident mai puțin grav decât \"privind\" regulilor obișnuite. Până nu-l câștigă, nimic nu se schimbă. Off: regulile obișnuite decid; recenziile tale sunt păstrate.",
+     "cognitive_quiet_heads_up": "Numai testare: înregistrează eligibilitatea pe baza analizelor incidentelor, dar nu suprimă niciodată alertele de securitate vocale sau telefonice. Deschiderea porții urmată de detectarea unei persoane cu camera nu stabilește identitatea gospodăriei. Funcția nu poate reduce nimic până când dovezile de identitate verificate independent nu au fost implementate și testate.",
+     "weather_warnings": "Activat: avertismentele oficiale pentru țara dvs. sunt verificate la fiecare 30 de minute (Met Office și Agenția de Mediu din Marea Britanie, MeteoAlarm în toată Europa, Serviciul Național de Meteorologie din SUA), folosind locația Home Assistant. Off: nu se verifică, iar ceea ce a fost găsit este uitat.",
+     "warnings_country": "Lasă necompletat pentru a utiliza țara lui Home Assistant.",
+     "warnings_region": "Doar avertismente care denumesc această regiune, e.g. Nord-Vestul Angliei. Lasă gol pentru toată țara (avertismentele de inundații și SUA sunt întotdeauna aproape de casă).",
+     "warnings_speak": "Activat: o nouă avertizare chihlimbar, roșu sau sever este rostită o dată. Dezactivat: avertismentele apar doar pe cronologia.",
+     "email_read": "Activat: păstrează expeditorul, subiectul și o scurtă previzualizare a ultimelor 20 de mesaje rapoartele de integrare IMAP ale Home Assistant, astfel încât să poți întreba \"orice e-mail nou?\". Numai citire, fără parolă, niciodată partajată cu oaspeții. Oprit: nimic nu este păstrat și ceea ce a fost păstrat este șters.",
+     "calendar_clashes": "Pe: \"oare vreo ciocnire mâine?\" găsește evenimente care se suprapun, sau cu mai puțin de 15 minute între ele, în calendarele briefing-ului (sau în toate calendarele). Off: nu este oferit.",
+     "security_audit": "Activat: un administrator poate întreba \"este configurarea mea securizată?\" pentru o verificare numai în citire a accesului de la distanță simplu-http, încuietori și alarme la care vocea poate ajunge fără o confirmare, token-uri de lungă durată și administratori fără autentificare în doi factori. Off: nu este oferit.",
+     "automation_builder": "Activat: un administrator poate cere o automatizare în limba engleză simplă; fiecare dispozitiv și acțiune este verificată, este citit înapoi pentru un da, apoi salvat în automations.yaml ca unul din editor. Off: nu este oferit; automatizările deja făcute rămân.",
+     "pronounce_names": "Activat: un nume pe care vocea îl citește greșit din ortografie este rostit așa cum este pronunțat, numai în difuzoare — chatul, cronologia și telefoanele păstrează ortografia reală. Preluat din rândurile de mai jos și din amintiri precum \"Siobhan se pronunță Shivawn\". Off: numele sunt citite așa cum sunt scrise.",
+     "pronunciations": "Scris = spus, unul pe rând, e.g. Siobhan = Shivawn. Scrie versiunea menționată așa cum ar trebui să o citească vocea.",
+     "health_duplicates": "Pornit: un dispozitiv care apare de două ori sub un singur nume, unde o copie este goală (un plug în Tuya Local și din nou din cloud-ul lui Tuya) este afișat în sănătatea casei, cu un buton pentru a dezactiva copia goală. Oprit: nu este bifat.",
+     "manuals_local_ocr": "Opțional și dezactivat implicit. Dacă Tesseract este deja instalat pe gazda Home Assistant, citește textul de la până la 20 de pagini PDF numai imagini per fișier. Fără solicitări sau descărcări în cloud. Pe sistemul de operare Home Assistant standard, Tesseract poate fi indisponibil; rămâne rezerva originală PDF.",
+     "memory_semantic_enabled": "Oprit implicit. Cu un serviciu de încorporare Ollama local configurat în mod explicit, reclasificați numai rezultatele de memorie deja permise acestui utilizator. Textul privat este trimis către gazda LAN configurată, niciodată automat pe internet. Gazda configurată primește fragmente de memorie selectate, așa că rulați-l pe o mașină de încredere pe care o controlați.",
+     "memory_semantic_url": "Un HTTP URL, cum ar fi http://192.168.1.20:11434. Sunt acceptate numai adrese numerice private LAN/loopback (folosește 127.0.0.1 în loc de localhost). Serverul trebuie să expună /api/embed și să aibă deja modelul instalat.",
+     "memory_semantic_model": "Numele unui model de încorporare deja instalat în Ollama, cum ar fi nomic-embed-text. Sentient nu va descărca modelul. Serviciile indisponibile sau lente revin la căutarea normală.",
+     "ai_routing_enabled": "Oprit implicit. Numai joburile de text de fundal eligibile pot utiliza alternativa configurată după ce ambii furnizori au peste 20 de apeluri măsurate și o fiabilitate suficientă la nivel de serviciu. Fără comutare pentru imagini, ieșire structurată sau selecții explicite AI.",
+     "ai_routing_alternative": "O a doua entitate Home Assistant ai_task de luat în considerare pentru sarcini adecvate de text de fundal. Trebuie să existe la nivel local și nu este niciodată utilizat fără istoricul de service măsurat și estimarea costurilor.",
+     "ai_routing_primary_cost": "Prețul dvs. aproximativ pentru o lucrare text comparabilă; nu facturarea furnizorului. Ambele prețuri trebuie să fie furnizate și verificate de dvs. înainte de a lua în considerare un furnizor mai ieftin.",
+     "ai_routing_alternative_cost": "Propria estimare a prețului pentru entitatea alternativă AI Task. Aceasta nu este facturare live și poate diferi de taxele reale cu simboluri.",
+     "ai_routing_max_p95_ms": "Luați în considerare furnizorul secundar numai atunci când timpul de serviciu măsurat în percentila 95 este în această limită. Implicit la 4000 ms. Răspunsurile vocale continuă prin conducta lor existentă.",
+     "heating_energy_sensor": "Un senzor de energie kWh cumulat care măsoară sistemul de încălzire, nu întreaga casă. Folosește un senzor păstrat de Recorder cu un istoric suficient de lung.",
+     "heating_measurement_date": "Data modificării pe care vrei să o examinați. Sentient compară până la 14 zile înainte și după cu aceleași zile lucrătoare; nu poate dovedi că Sentient a cauzat diferența.",
+     "heating_energy_price_kwh": "Estimare opțională folosită numai pentru a traduce diferențele observate în kWh în schimbări zilnice aproximative ale monedei, nu facturi reale sau economii dovedite.",
+     "autooff_respect_recent_voice": "Oprit implicit. Când este activată, stingerea automată a unei lumini sau a unui comutator este menținută timp de până la două minute după o comandă vocală protejată cu prioritate mai mare. Nu se aplică solicitărilor de oprire manuală, încălzire, încuietori sau alarme."
+    }
+   },
+   "memories": {
+    "title": "Amintiri",
+    "description": "Casa își amintește lucruri {count}. Alege unul pentru a edita, bifați oricare pentru a uita sau adaugă unul nou.",
+    "data": {
+     "edit": "Editează o memorie",
+     "forget": "Uita",
+     "add": "Adaugă o amintire",
+     "category": "Categorie pentru noua memorie"
+    }
+   },
+   "edit_memory": {
+    "title": "Editează memoria",
+    "data": {
+     "text": "Memorie",
+     "category": "Categorie"
+    }
+   },
+   "briefing": {
+    "title": "Rezumate",
+    "description": "Ce acoperă un briefing — de la butonul BRIEFING, prin voce sau la o oră stabilită în fiecare zi.",
+    "data": {
+     "briefings": "Briefing-uri pe",
+     "briefing_sections": "Include",
+     "briefing_weather": "Vremea de la",
+     "briefing_todo": "Liste de lucruri de făcut",
+     "briefing_calendars": "Calendare",
+     "briefing_system": "Senzorii sistemului de raportat",
+     "outside_info": "Informații din exterior",
+     "parcel_trackers": "Trackere de colete",
+     "briefing_time": "Briefing zilnic la",
+     "digest_time": "Rezumat zilnic la",
+     "morning_briefing": "Briefing când cineva este primul",
+     "morning_briefing_areas": "Săli de briefing de dimineață",
+     "morning_briefing_quiet": "Briefing de dimineață în ore liniștite"
+    },
+    "data_description": {
+     "briefings": "Oprit dezactivează butonul, instrumentul vocal și serviciul.",
+     "briefing_weather": "Lasă gol pentru a utiliza prima entitate meteo.",
+     "briefing_system": "e.g. Temperatura CPU, utilizarea discului, NAS. Actualizările în așteptare sunt întotdeauna luate în considerare.",
+     "outside_info": "Senzorii din alte integrări au citit în briefing și se uită de mâine: prețul curentului de astăzi, o avertizare meteo, colete pe drum, următoarea zi de școală. Citirile goale, zero și „off” sunt omise. Textul din acestea este tratat doar ca informații.",
+     "parcel_trackers": "Când cineva spune că un colet este disponibil pentru livrare, o spune o dată și urmărește ușa pentru el toată ziua (chiar dacă alertele de coletă sunt dezactivate); dacă scrie livrat înainte de a se vedea ceva la ușă, scrie și asta. Gol: oprit.",
+     "briefing_time": "Opțional. Se vorbește doar dacă e cineva acasă și nu sunt ore liniștite.",
+     "digest_time": "Opțional: o dată pe zi, AI-ul rezumă cronologia în câteva propoziții. Merge pe cronologia (și pe telefoane dacă este ales). Nu vorbit.",
+     "morning_briefing": "O dată pe zi înainte de prânz, în cameră e cineva înăuntru, de îndată ce casa îi vede sus și în jur (sau, fără asta, prima dată când cineva se mișcă după terminarea orelor de liniște).",
+     "morning_briefing_areas": "Opțional: dă-l doar prima dată când cineva intră în una dintre aceste camere dimineața, pe difuzorul camerei respective — ridică-te, spală-te și îmbracă-te, apoi auzi-l în bucătărie sau în sufragerie. Gol: oriunde s-ar afla.",
+     "morning_briefing_quiet": "Dezactivat: cineva treaz înainte de sfârşitul orelor de linişte primeşte informaţia odată ce s-a terminat, prima dată când este văzut în mişcare (în sălile de informare de dimineaţă, dacă este ales), şi orice lucru păstrat peste noapte este pliat în el. Pornit: este dat de îndată ce sunt văzuți sus, chiar și în orele de liniște, doar pe difuzorul acelei camere."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Amintiri"
+   },
+   "last_spoken": {
+    "name": "Ultimul vorbit"
+   },
+   "likely_room": {
+    "name": "Cameră probabilă"
+   },
+   "watches": {
+    "name": "Ceasuri"
+   },
+   "routines": {
+    "name": "Rutine"
+   },
+   "visitors": {
+    "name": "Vizitatori"
+   },
+   "health": {
+    "name": "Sănătatea casei"
+   },
+   "drive": {
+    "name": "Conduce"
+   },
+   "mind": {
+    "name": "Gânduri"
+   },
+   "house": {
+    "name": "Casa",
+    "state": {
+     "awake": "Treaz",
+     "asleep": "adormit"
+    }
+   },
+   "screen": {
+    "name": "Ecran",
+    "state": {
+     "idle": "Inactiv",
+     "morning": "Dimineaţă",
+     "notice": "Observa",
+     "alert": "Alerta"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "Tăcere"
+   },
+   "guest_mode": {
+    "name": "Modul invitat"
+   },
+   "chime": {
+    "name": "Semnal sonor"
+   },
+   "party_mode": {
+    "name": "Spectacol de lumini"
+   },
+   "media_speakers": {
+    "name": "difuzoare Echo"
+   },
+   "media_important_only": {
+    "name": "Echos: numai alarme și memento-uri"
+   },
+   "away_lights": {
+    "name": "Lumini departe"
+   },
+   "screen": {
+    "name": "Ecranul tabletei"
+   },
+   "holiday": {
+    "name": "Modul vacanță"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Cu backup"
+   },
+   "alexa": {
+    "name": "Pentru Alexa"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Scăzut",
+    "normal": "Normal",
+    "urgent": "Urgent (ignoră orele de liniște)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Fapt",
+    "preference": "Preferinţă",
+    "person": "Persoană",
+    "routine": "Rutină",
+    "note": "Nota",
+    "correction": "Corecţie"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Oprit",
+    "quiet": "Linişti",
+    "normal": "Normal",
+    "chatty": "Flecar"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Timp",
+    "weather": "Vreme",
+    "reminders": "Mementouri datorate astăzi",
+    "watches": "Ce se urmărește",
+    "routines": "Rutinele apar",
+    "open": "Ferestrele și ușile se deschid",
+    "visitors": "Vizitatori astăzi",
+    "said": "Ce s-a spus recent",
+    "system": "Sănătatea sistemului",
+    "todo": "Liste de lucruri de făcut",
+    "calendar": "Calendar (următoarele 24 de ore)",
+    "energy": "Electricitate folosită astăzi (și orice lucru neobișnuit)",
+    "security": "Orice deschis sau deblocat"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Anunturi urgente",
+    "held_quiet": "Lucrurile s-au oprit în ore liniștite",
+    "unheard": "Lucruri pe care nimeni nu le putea auzi (niciun difuzor disponibil)",
+    "visitors": "Vizitatorii și pachetele de sonerie",
+    "watches": "Ceasuri și mementouri se declanșează",
+    "health": "Probleme de sănătate a casei",
+    "digest": "Rezumatul zilnic",
+    "critical": "Alerte de siguranță (fum, CO, gaz, scurgeri)",
+    "security": "Lucrurile rămân deschise când toată lumea iese"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "Calm și la obiect",
+    "dry": "Mintea uscată",
+    "warm": "Cald și prietenos",
+    "cheeky": "Obraznic",
+    "composed": "Compus, ca un majordom"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "Discotecă",
+    "party": "Parte",
+    "rainbow": "Curcubeu",
+    "chill": "Relaxat",
+    "halloween": "Halloween",
+    "christmas": "Crăciun"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Încuietori",
+    "garage": "Usi si porti de garaj",
+    "covers": "Jaluzele, perdele și obloane",
+    "heating": "Crește foarte mult încălzirea",
+    "appliances": "Pornirea aparatelor"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "Doar fă-o",
+    "tell": "Spune așa, apoi fă-o",
+    "ask": "Întreabă mai întâi"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Oprit",
+    "nightly": "În fiecare noapte",
+    "weekly": "O dată pe săptămână (duminică seara)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Autotestare",
+    "rain": "Avertizare de ploaie",
+    "hutch": "Verificarea adăpostului",
+    "cat": "Ceas de pisică",
+    "bins": "Verificarea pubelelor",
+    "faces": "Cine e asta? (predarea feței)",
+    "faces_forget": "Uitați acum fețele fără nume",
+    "clip_watch": "Urmărește cel mai recent clip acum"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Doar alerte Frigate",
+    "zones": "Orice într-o zonă",
+    "all": "Fiecare detectie"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Întotdeauna",
+    "quiet": "Ore liniștite",
+    "away": "Când toată lumea e afară",
+    "quiet_or_away": "Ore liniștite sau când toată lumea e afară"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Oprit",
+    "worth": "Cele care merită aruncate o privire",
+    "suspicious": "Doar suspect",
+    "all": "Fiecare clip"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (un AI apelează un clip)",
+    "frigate": "Rezumatele AI proprii ale Frigate"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "La usa",
+    "reminders": "Mementouri",
+    "questions": "Întrebări (Da/Nu)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Scurt",
+    "natural": "Natural"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Oprit",
+    "watch": "Vizionați numai",
+    "on": "Pe"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Doar ceea ce intră într-o zonă",
+    "all": "Orice a detectat"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Cuvânt",
+   "description": "Vorbește prin casă, urmând ore liniștite și conștientizarea camerei.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ce să spun."
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Urgent ignoră orele de liniște și perioadele de liniște; low nu întrerupe niciodată."
+    },
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Un difuzor, un nume de cameră sau un ID de entitate. Lasă gol pentru a urmări persoana."
+    }
+   }
+  },
+  "remember": {
+   "name": "Ține minte",
+   "description": "Adaugă ceva în memoria pe termen lung a casei.",
+   "fields": {
+    "text": {
+     "name": "Text",
+     "description": "O frază scurtă."
+    },
+    "category": {
+     "name": "Categorie",
+     "description": "Ce fel de amintire este asta."
+    }
+   }
+  },
+  "forget": {
+   "name": "Uita",
+   "description": "Elimină o memorie prin id sau prin potrivirea textului.",
+   "fields": {
+    "what": {
+     "name": "Ce",
+     "description": "Id-ul memoriei sau cuvintele din acesta."
+    }
+   }
+  },
+  "watch": {
+   "name": "Ceas",
+   "description": "Fii cu ochii pe un dispozitiv, senzor sau cameră și vorbește când se întâmplă ceva.",
+   "fields": {
+    "what": {
+     "name": "Ce",
+     "description": "Scurtă descriere, e.g. „pisicile de lângă țarc pentru iepuri'."
+    },
+    "entity": {
+     "name": "Entitate",
+     "description": "Id-ul entității, numele sau numele zonei camerei."
+    },
+    "to_state": {
+     "name": "A afirma",
+     "description": "Declanșează atunci când entitatea ajunge în această stare."
+    },
+    "above": {
+     "name": "Mai sus",
+     "description": "Declanșează când valoarea depășește aceasta."
+    },
+    "below": {
+     "name": "De mai jos",
+     "description": "Declanșează când valoarea scade sub aceasta."
+    },
+    "question": {
+     "name": "Întrebare",
+     "description": "Ceasuri cu aparatul foto: o întrebare da/nu despre imagine."
+    },
+    "look_for": {
+     "name": "Caută",
+     "description": "Ceasuri cu cameră: obiect de trezit, e.g. persoană, pisică, mașină."
+    },
+    "message": {
+     "name": "Mesaj",
+     "description": "Ce să spun. Lasă gol pentru o propoziție automată."
+    },
+    "until": {
+     "name": "Până",
+     "description": "Ora ceasului, e.g. 18:00 sau 18:00."
+    },
+    "minutes": {
+     "name": "Minute",
+     "description": "Sau câte minute să urmărești."
+    },
+    "repeat": {
+     "name": "Repeta",
+     "description": "Continuați să urmăriți după ce trage."
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Urgent ignoră orele de liniște."
+    },
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Unde să o spun. Lasă gol pentru a urmări oamenii."
+    },
+    "wake_on": {
+     "name": "Trezește-te",
+     "description": "Ceasuri de cameră: un senzor de zonă sau de obiect pe care să se trezească în locul senzorilor proprii ai camerei."
+    },
+    "spot": {
+     "name": "Loc",
+     "description": "Ceasuri cu cameră: verifică doar acest loc numit (predat prin voce, e.g. „the rabbit pen')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "Anulează ceasul",
+   "description": "Oprește un ceas.",
+   "fields": {
+    "what": {
+     "name": "Ce",
+     "description": "Urmăriți id-ul sau cuvintele din el."
+    }
+   }
+  },
+  "remind": {
+   "name": "Reaminti",
+   "description": "Spune câte ceva odată, în camera în care se află oamenii.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ce să spun, e.g. — E timpul să pornești cuptorul.'"
+    },
+    "at": {
+     "name": "La",
+     "description": "Ora ceasului, e.g. 18:00 sau 18:00."
+    },
+    "minutes": {
+     "name": "Minute",
+     "description": "Sau în câte minute."
+    },
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Unde să o spun. Lasă gol pentru a urmări oamenii."
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Urgent (implicit) vorbește în continuare în timpul orelor de liniște."
+    }
+   }
+  },
+  "ask": {
+   "name": "Întreabă",
+   "description": "Pune o întrebare cu voce tare și ascultă răspunsul, în camera în care se află oamenii.",
+   "fields": {
+    "question": {
+     "name": "Întrebare",
+     "description": "e.g. „Vrei o băutură? Să pun fierbătorul?'"
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Urgent ignoră orele de liniște și perioadele de liniște."
+    },
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Unde să întreb. Lasă gol pentru a urmări oamenii."
+    },
+    "extra_prompt": {
+     "name": "Instrucțiuni suplimentare",
+     "description": "Îndrumări suplimentare pentru agentul vocal care se ocupă de răspuns."
+    },
+    "preannounce": {
+     "name": "Sună mai întâi",
+     "description": "Redă clopoțelul înainte de a cere."
+    }
+   }
+  },
+  "learn": {
+   "name": "Învață acum",
+   "description": "Căutați imediat rutine din istoria recentă, în loc să așteaptă seara asta."
+  },
+  "briefing": {
+   "name": "Rezumat",
+   "description": "Un scurt briefing despre ceea ce contează acum, vorbit acolo unde sunt oamenii.",
+   "fields": {
+    "speak": {
+     "name": "Vorbește",
+     "description": "Off returnează faptele fără a vorbi sau a folosi AI."
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Vorbește urgent chiar și în orele de liniște, e.g. când cineva apăsa un buton pentru asta."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Amintiri ordonate",
+   "description": "Îmbinați duplicatele și elimină prostiile din memorie acum (se rulează și în fiecare duminică seara)."
+  },
+  "forget_routine": {
+   "name": "Șterge rutina învățată",
+   "description": "Șterge definitiv o rutină sau un obicei învățat — casa încetează să o facă și nu învață și nu o mai oferă niciodată. Cu Restaurare activată, aduceți-le înapoi pe cele șterse (una sau toate dacă Rutina este goală).",
+   "fields": {
+    "routine": {
+     "name": "Rutină",
+     "description": "Id de rutină sau cuvinte din el."
+    },
+    "restore": {
+     "name": "Restabili",
+     "description": "Aduceți-le înapoi pe cele șterse."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Adopta rutina",
+   "description": "Rugați casa să facă singură o rutină învățată sau oprește. Lasă Adopt necompletat pentru a comuta.",
+   "fields": {
+    "routine": {
+     "name": "Rutină",
+     "description": "Id de rutină sau cuvinte din el."
+    },
+    "adopt": {
+     "name": "Adopta",
+     "description": "Pornit pentru a începe, oprit pentru a opri."
+    }
+   }
+  },
+  "hush": {
+   "name": "Tăcere",
+   "description": "Nu spune nimic care să nu fie urgent pentru o vreme. 0 minute încetează să tacă.",
+   "fields": {
+    "minutes": {
+     "name": "Minute",
+     "description": "Cât timp să stai tăcut."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Executați rutina",
+   "description": "Rulați o rutină numită (configurată în pagina Setări → Rutine din bara laterală).",
+   "fields": {
+    "name": {
+     "name": "Nume",
+     "description": "Numele rutinei sau unul dintre celelalte nume ale acesteia."
+    },
+    "speak": {
+     "name": "Vorbi",
+     "description": "Spune rezultatul unde sunt oamenii."
+    },
+    "details": {
+     "name": "Detalii",
+     "description": "Pentru rutine care necesită detalii, e.g. care camere."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Raport săptămânal",
+   "description": "Reunește ceea ce a învățat și a observat casa în ultima săptămână și păstrează-l pe cronologie."
+  },
+  "party": {
+   "name": "Spectacol de lumini",
+   "description": "Începeți sau oprește un spectacol de lumini (discotecă, Halloween, Crăciun…). Luminile revin exact așa cum erau când se oprește.",
+   "fields": {
+    "on": {
+     "name": "Pe",
+     "description": "Oprit îl oprește și readuce luminile."
+    },
+    "style": {
+     "name": "Stil",
+     "description": "Disco, petrecere, curcubeu, chill, Halloween sau Crăciun. Golire folosește setarea."
+    },
+    "minutes": {
+     "name": "Minute",
+     "description": "Oprește-vă de la sine după acest timp (0 = până când este oprit). Golire folosește setarea."
+    },
+    "area": {
+     "name": "Cameră",
+     "description": "Folosește luminile acestei camere (sau „pretutindeni” pentru fiecare lumină)."
+    },
+    "lights": {
+     "name": "Lumini",
+     "description": "Folosește exact aceste lumini."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Reflectează acum",
+   "description": "Gândește-te acum la ultima zi, așa cum se întâmplă peste noapte: amintiri noi, gânduri de dimineață și o întrebare."
+  },
+  "grade_answers": {
+   "name": "Notați propriile răspunsuri acum",
+   "description": "Verifică ce a spus vocea despre uși, lumini, întrerupătoare și încuietori față de ceea ce a înregistrat casa, așa cum face în fiecare seară cu \"Notă propriile răspunsuri\" activat. Returnează ceea ce a fost verificat, ce a fost greșit și orice lecții.",
+   "fields": {
+    "hours": {
+     "name": "Ore",
+     "description": "Cât de departe înapoi pentru a verifica."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Verifică unitatea",
+   "description": "Aruncă o privire AI la locul de conducere acum și actualizează ceea ce este parcat acolo."
+  },
+  "wonder": {
+   "name": "Mirare",
+   "description": "Adaugă o întrebare pentru curiozitate, lasă-o pe una sau întreabă-o pe următoarea acum.",
+   "fields": {
+    "question": {
+     "name": "Întrebare",
+     "description": "Ceva de întrebat o dată în gospodărie."
+    },
+    "ask_now": {
+     "name": "Întreabă acum",
+     "description": "Pune imediat următoarea întrebare."
+    },
+    "dismiss": {
+     "name": "Respingeți",
+     "description": "Cuvinte dintr-o întrebare pentru a nu pune până la urmă."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Urmare",
+   "description": "Verifică ceva mai târziu și spune cum a mers.",
+   "fields": {
+    "minutes": {
+     "name": "Minute",
+     "description": "Când să verifică."
+    },
+    "about": {
+     "name": "Despre",
+     "description": "Câteva cuvinte despre ce este vorba."
+    },
+    "entity": {
+     "name": "Entitate",
+     "description": "Dispozitiv de verificat atunci."
+    },
+    "state": {
+     "name": "Stat",
+     "description": "Starea care înseamnă că a funcționat."
+    },
+    "above": {
+     "name": "Mai sus",
+     "description": "A funcționat dacă valoarea este cel puțin aceasta."
+    },
+    "below": {
+     "name": "De mai jos",
+     "description": "A funcționat dacă valoarea este cel mult aceasta."
+    },
+    "if_done": {
+     "name": "Dacă este făcută",
+     "description": "Ce să spun dacă a funcționat."
+    },
+    "if_not": {
+     "name": "Dacă nu",
+     "description": "Ce să spun dacă nu."
+    },
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Unde să o spui (implicit: unde sunt oamenii)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Anulează o continuare",
+   "description": "Nu mai verifică ceva.",
+   "fields": {
+    "about": {
+     "name": "Despre",
+     "description": "Id-ul sau sau cuvintele despre ce este vorba."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Întreținere făcută",
+   "description": "Marcați o lucrare de întreținere finalizată (un filtru schimbat, mașina detartrată) astfel încât numărarea acesteia să înceapă din nou.",
+   "fields": {
+    "job": {
+     "name": "Post",
+     "description": "Numele său pe pagina de întreținere."
+    }
+   }
+  },
+  "notice": {
+   "name": "Observa",
+   "description": "Transmite ceva ce s-a întâmplat prin Sentient — aceleași ore de liniște, liniște, reguli pentru oaspeți și vacanță și (în mod implicit) propria decizie dacă merită spus și cum.",
+   "fields": {
+    "message": {
+     "name": "Ce s-a întâmplat",
+     "description": "În cuvinte simple, e.g. — Mașina de spălat vase s-a terminat'."
+    },
+    "entity_id": {
+     "name": "Dispozitiv",
+     "description": "Dispozitivul despre care este vorba (opțional) — oferă camerei și starea acesteia."
+    },
+    "decide": {
+     "name": "Lasă-l să decidă",
+     "description": "Activat: AI decide dacă merită spus și cum (contează ca observare). Off: spune așa cum este dat."
+    },
+    "priority": {
+     "name": "Prioritate",
+     "description": "Urgent încă sună în orele de liniște; low nu întrerupe niciodată."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "Privește înainte",
+   "description": "Uită-te la ziua de mâine acum și spune dacă există ceva care merită un avertisment.",
+   "fields": {
+    "speak": {
+     "name": "Spune-o",
+     "description": "Spune-o cu voce tare dacă există."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Adormi",
+   "description": "Spune casei că este adormit sau treaz (se execută ora de culcare sau acțiunile de dimineață).",
+   "fields": {
+    "asleep": {
+     "name": "adormit",
+     "description": "Pornit pentru adormit, oprit pentru treaz."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Afișează pe ecran",
+   "description": "Puneți un card pe cardul de ecran Sentient.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ce să arăți."
+    },
+    "camera": {
+     "name": "Camera foto",
+     "description": "O cameră de filmat cu el."
+    },
+    "minutes": {
+     "name": "Pentru",
+     "description": "Cât timp (10 minute dacă este gol)."
+    },
+    "alert": {
+     "name": "Alerta",
+     "description": "Afișează-o ca alertă."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Șterge ecranul",
+   "description": "Scoateți un card de pe ecranul Sentient sau orice altceva.",
+   "fields": {
+    "card_id": {
+     "name": "Card",
+     "description": "ID-ul cardului, „dimineața” sau gol pentru tot."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Cartea de dimineață",
+   "description": "Pune cardul de azi dimineață pe ecranul Sentient acum."
+  },
+  "check_now": {
+   "name": "Verifică acum",
+   "description": "Efectuați imediat una dintre verificările opționale — autotestarea, verificarea ploii, verificarea colibei, ceasul pisicilor, verificarea coșelor de gunoi, un \"cine este acesta?\" pentru ultima față pe care camera nu a putut-o denumi, uitând fețe fără nume sau vizionarea celui mai recent clip de la prima cameră clipă.",
+   "fields": {
+    "what": {
+     "name": "Care",
+     "description": "Ce verificare să ruleze."
+    }
+   }
+  },
+  "game": {
+   "name": "Pornește sau oprește un joc de poveste",
+   "description": "Începeți un joc de poveste (poate fi apoi jucat cu orice asistent vocal) sau puneți jocul curent deoparte. Memoria salvată a jocului este păstrată.",
+   "fields": {
+    "action": {
+     "name": "Acţiune",
+     "description": "Începeți un joc sau oprește-l pe cel jucat."
+    },
+    "game": {
+     "name": "Joc",
+     "description": "Numele jocului, când începe unul."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Nu mai citi",
+   "description": "Oprește citirea oricărei povești sau cărți audio cu voce tare și reduceți la tăcere vorbitorul, păstrând locul. Funcționează fără voce, pentru atunci când o tabletă nu te poate auzi peste poveste.",
+   "fields": {
+    "speaker": {
+     "name": "Difuzor",
+     "description": "Vorbitorul să tacă. Lasă gol pentru a opri citirea fiecărei povești."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} este disponibil",
+   "description": "Ai {installed}. Instalează-l din Setări → Actualizări (Sentient e în Marketplace pe Home Assistant 2026.11 și versiunile mai noi; pe versiunile mai vechi, deschide Sentient în HACS și alege Descarcă), apoi repornește Home Assistant. Dacă ai copiat Sentient manual în loc să-l instalezi din Marketplace sau HACS, nu se va actualiza automat: instalează-l din Marketplace."
+  }
+ }
+}
