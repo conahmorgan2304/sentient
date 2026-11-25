@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Tapaa kotisi aivot",
+    "description": "Anna sille nimi. Näin se kutsuu itseään ja miten se näkyy Home Assistant:ssä.",
+    "data": {
+     "persona": "Nimi"
+    }
+   },
+   "speech": {
+    "title": "Miten talon pitäisi puhua?",
+    "description": "Valitse äänisatelliitit, joiden kautta se voi puhua. Se puhuu siellä, missä ihmiset ovat (liike tai joku puhuu kaiuttimelle), muuten oletuskaiuttimella.",
+    "data": {
+     "speakers": "Kaiuttimet",
+     "default_speaker": "Oletuskaiutin",
+     "quiet_start": "Hiljaiset tunnit alkavat",
+     "quiet_end": "Hiljaiset tunnit päättyvät",
+     "busy_entities": "Pysy hiljaa kiireisenä",
+     "motion_window": "Huonetietoisuusikkuna",
+     "banned_words": "Älä koskaan käytä näitä sanoja (pilkuilla erotettuna)",
+     "suppress_entities": "Pysy hiljaa näiden automatisointien tai komentosarjojen jälkeen",
+     "suppress_seconds": "Pysy hiljaa",
+     "prompt_memories": "Muistoja jaettavaksi ääniavustajien kanssa",
+     "pass_through_areas": "Läpikulkualueet",
+     "all_occupied": "Puhu jokaisessa huoneessa",
+     "room_tracking": "Käytä huoneseurantalaitteita (Bluetooth)",
+     "room_trackers": "Huoneen seurantalaitteet",
+     "ai_task_entity": "AI taustatöihin",
+     "camera_cooldown": "Minimiväli kameran tarkastusten välillä",
+     "fallback_speakers": "Vain varakaiuttimet",
+     "daily_ai_limit": "AI-puhelut päivässä",
+     "prompt_recent": "Juuri nyt ja viimeinen tunti äänen kontekstissa",
+     "rules": "Säännöt ja niiden teko äänellä",
+     "relevant_memories": "Valitse muistot, jotka vastaavat kysyttyä",
+     "look_cache_minutes": "Käytä kameravastausta uudelleen",
+     "camera_prefilter": "Ohita kamera näyttää, kun mikään ei ole muuttunut",
+     "budget_drive": "Tekoälypuhelut päivässä: ajo",
+     "budget_noticing": "Tekoälypuhelut päivässä: huomaaminen",
+     "budget_cameras": "Tekoälypuhelut päivässä: kamera tarkistaa ja tarkkailee",
+     "routine_evidence": "Kerro kuinka usein rutiini on nähty",
+     "notice_entities": "Huomioitavaa",
+     "remark_repeat_hours": "Älä toista huomautusta",
+     "chattiness": "Kuinka puhelias",
+     "conversation_style": "Miten se puhuu",
+     "carry_on_minutes": "Jatka keskustelua",
+     "focused_tools": "Kohdistetut äänityökalut",
+     "ask_later": "Kysy miten kävi",
+     "put_right": "Korjaa virheet kerralla",
+     "music": "Musiikkia kysymällä",
+     "music_alexa": "Musiikkia Alexa:n kautta (Echos)",
+     "music_alexa_service": "Musiikkipalvelu Echos:lle",
+     "house_rules": "Talon säännöt",
+     "no_security_offers": "Älä koskaan tarjoa viritystä, riisumista tai lukituksen avaamista",
+     "learn_entities": "Opi rutiineista",
+     "learn_anchors": "Tottumukset, jotka seuraavat päivää",
+     "trust_lights": "Valot",
+     "trust_switches": "Kytkimet, pistokkeet ja tuulettimet",
+     "trust_covers": "Kaihtimet ja verhot",
+     "trust_heating": "Lämmitys",
+     "offer_together": "Tarjoa yhdessä tehtyjä tapoja",
+     "link_triggers": "Opi myös, mitä näistä seuraa",
+     "suggest_routines": "Tarjoa rutiinien ottamista",
+     "prove_routines": "Tottumukset osoittavat itsensä ennen kuin niitä tarjotaan",
+     "routine_fading": "Kysy rutiineista, joita ei enää tarvita",
+     "door_camera": "Ovikamera",
+     "door_triggers": "Ovikello",
+     "announce_visitors": "Sano kuka on ovella",
+     "faces": "Nimet kasvojentunnistuksesta",
+     "face_people": "Vain nämä ihmiset",
+     "face_teach": "Kysy puhelimessa, ketkä ovat nimeämättömät kasvot",
+     "face_teach_cameras": "Opi kasvot näistä kameroista",
+     "face_cameras": "Nimet vain näistä kameroista",
+     "face_forget_hours": "Unohda nimettömät kasvot jälkeenpäin",
+     "clip_watch": "Katso tapahtumavideoita",
+     "clip_cameras": "Kamerat",
+     "clip_scope": "Mitkä tapahtumat",
+     "clip_when": "Kun",
+     "clip_notify": "Lähetä puhelimiin",
+     "clip_source": "Kuka kirjoittaa yhteenvedon",
+     "clip_whose": "Kerro kuka perheenjäsen se oli",
+     "clip_looks": "Miltä ihmiset näyttävät, kun heidän kasvojaan ei voi nähdä",
+     "budget_clips": "Päivänä katsotut leikkeet (useimmat)",
+     "clip_days": "Säilytä yhteenvedot",
+     "clip_keep": "Säilytä leiketiedostot",
+     "parcel_alerts": "Sano kun paketti on jäljellä",
+     "doorstep_sensors": "Tarkista paketit käyntien jälkeen",
+     "zone_visits": "Laske joku etuoven kameravyöhykkeestä vierailijaksi",
+     "zone_door_sensors": "Etuoven anturi (vyöhyke jätetään huomioimatta, jos se avataan ensin)",
+     "face_sensor": "Tunnistettu nimi kohteesta",
+     "sidebar_panel": "Näytä sivupalkissa",
+     "page_admin_only": "Vain järjestelmänvalvojat voivat avata tämän sivun",
+     "custom_pages": "Järjestä Sentient-sivu uudelleen",
+     "suggestions": "Ehdotuksia Sentient-sivulla",
+     "whats_new": "Mitä uutta päivityksen jälkeen",
+     "simple_settings": "Yksinkertaisempi asetussivu",
+     "auto_backup": "Varmuuskopioi joka viikko",
+     "backup_keep": "Kuinka monta pitää",
+     "confirm_kinds": "Kysy \"Saanko?\" ennen",
+     "chat_agent": "Chat-agentti sivupalkin sivulle",
+     "battery_threshold": "Alhainen akku",
+     "battery_forecast": "Sano kun paristot loppuvat",
+     "health_ignore": "Ohita kodin terveyden vuoksi",
+     "hide_substreams": "Piilota ylimääräiset kameranäkymät",
+     "ignore_cameras": "Kamerat huomioimatta",
+     "never_entities": "Älä koskaan koske näihin",
+     "self_check": "Tarkista itsesi joka ilta",
+     "learn_corrections": "Opi, kun kumoat sen, mitä se teki",
+     "normal_day": "Huomaa epätavallinen päivä",
+     "thoughts": "Näytä mitä se ajattelee",
+     "share_learning": "Kerro, mitä se on oppinut",
+     "self_adjust": "Säädä itseään",
+     "proposals": "Ehdota muutoksia sen asetuksiin",
+     "privacy_log": "Pidä kirjaa siitä, mitä talosta lähtee",
+     "goals": "Maalit",
+     "manuals": "Vastaus asiakirjoista",
+     "manuals_folder": "Asiakirjat-kansio",
+     "manuals_local_text": "Katso tekstidokumenttien sisään",
+     "manuals_pages": "Lue PDF-tiedostoja sivu sivulta",
+     "games": "Tarina pelit",
+     "voice_id": "Tiedä kuka puhuu",
+     "voice_id_unknown": "Kohtele ääniä, joihin se ei voi vastata kuin vieraana",
+     "speaker_memories": "Säilytä jokaisen henkilön muistot heille",
+     "books": "Kirjat",
+     "books_folder": "Kirjat-kansio",
+     "reading_tts": "Äänen lukeminen: palvelu",
+     "reading_voice": "Lukuääni",
+     "read_ahead": "Valmista seuraava osa lukemisen aikana",
+     "recipes": "Reseptit",
+     "recipes_folder": "Reseptit-kansio",
+     "recipes_list": "Ostoslista ainesosille",
+     "voice_lists": "Ostokset ja tehtävälistat äänellä",
+     "ready_tonight": "Valmiina iltaan",
+     "ready_tonight_lights": "Valmiina illaksi: valot, se saattaa sammua",
+     "ready_tonight_follow": "Valmiina iltaan: kerro minulle, kun se on järjestetty",
+     "tandoor_url": "Tandoori osoite",
+     "tandoor_token": "Tandoor API-tunnus",
+     "second_opinion_ai": "Tekoäly toista arviota varten",
+     "smart_ai_task": "Vahvempi tekoäly lisää turvallisuutta ja yhdessä yössä ajattelua",
+     "event_clips": "Katso Frigate:n tapahtumaleikkeet",
+     "chime": "Soita ennen puhumista",
+     "voice_agent": "AI-ääniagentti",
+     "backup_agent": "Vara-avustaja",
+     "offline_answers": "Vastaa yleisiin kysymyksiin ilman tekoälyä",
+     "animal_sensors": "Eläinten lämpötila-anturit",
+     "away_lights_on": "Pois valot",
+     "holiday_mode": "Lomatila",
+     "holiday_thermostats": "Termostaatit sammuvat lomalla",
+     "holiday_frost": "Jäätymissuojalämpötila",
+     "holiday_end_on_return": "Lopeta lomatila, kun joku on kotona",
+     "away_people": "Pois, kun nämä kaikki ovat poissa",
+     "away_lights": "Käytettävät valot",
+     "away_after": "Aloita sen jälkeen, kun kaikki ovat olleet ulkona",
+     "animal_low": "Liian kylmä alla",
+     "animal_high": "Liian kuuma ylhäällä",
+     "hutch_check": "Eläinhäkin iltatarkistus",
+     "hutch_spot": "Koton kamerapaikka",
+     "cat_watch": "Kissan yökello",
+     "cat_sensors": "Kissan anturit",
+     "cat_loud": "Sano se heti yöllä",
+     "rain_warnings": "Sadevaroitukset",
+     "rain_entities": "Ikkunat ja ovet katsottavaksi",
+     "self_test": "Itsetestaus",
+     "self_test_household": "Kotitalouskysymykset itsetestissä",
+     "screen": "Käytä tabletin näyttöä",
+     "screen_actions": "Kun jotain näkyy",
+     "screen_clear_actions": "Kun kaikki on puhdistettu",
+     "conversation_sessions": "Keskusteluistunnot",
+     "room_conversation_handoff": "Huoneesta huoneeseen keskustelun vaihto",
+     "verified_bedtime": "Vahvistettu alakerran nukkumaanmenoaika",
+     "verified_bedtime_lights": "Alakerran nukkumaanmenovalot",
+     "verified_bedtime_contacts": "Alakerran nukkumaanmenoajan avauskoskettimet",
+     "session_seconds": "Istunnon toimettomuuden aikakatkaisu",
+     "guarded_control": "Pakotettu äänivahvistus",
+     "routine_verify": "Tarkista rutiinit toimineet",
+     "voice_unlock": "Salli lukituksen avaaminen äänellä",
+     "voice_undo": "Kumoa viimeisimmät valomuutokset",
+     "evidence_awareness": "Selitä todisteet ja epävarmuus",
+     "security_incidents": "Ryhmän turvallisuushäiriöt",
+     "incident_front": "Talon edessä",
+     "live_voice_check": "Live-äänen tarkistus",
+     "speech_delivery_history": "Kaiuttimen toimitushistoria",
+     "alexa_tts_only": "Käytä TTS:ää vain Alexa:ssä",
+     "update_checker": "Tarkista Sentient-päivitykset",
+     "contextual_followups": "Yhdistetyt seurannat ja korjaukset",
+     "conversation_recovery": "Keskustelun peruuttaminen ja varovainen palautuminen",
+     "speech_failure_notification": "Ilmoita kaiuttimen toimitushäiriöistä",
+     "recent_followup_context": "Lyhyet seurannat uuden herätyssanan jälkeen",
+     "conversation_cues": "Ymmärrä allekirjoitukset, korjaukset ja aiheen muutokset",
+     "vary_replies": "Sano asiat joka kerta eri tavalla",
+     "behaviour_explanations": "Selitä kuuntelu- ja toimintapäätökset",
+     "current_house_context": "Nykyinen talokonteksti",
+     "moment_awareness": "Tietoisuus hetkestä",
+     "room_memory": "Lyhytaikainen muisti per huone",
+     "know_people": "Tiedä kuka luultavasti puhuu",
+     "instant_answers": "Välittömät vastaukset",
+     "capability_awareness": "Tiedä mitä talo voi tehdä",
+     "house_context_entities": "Muita kontekstikokonaisuuksia",
+     "house_context_updates": "Kerro kun pyydetty lämmitys on saavutettu",
+     "security_event_evidence": "Linkitä suojaushälytykset Frigate-tapahtumiin",
+     "security_event_zones": "Mitkä kameratapahtumat on lueteltu",
+     "security_event_hidden_zones": "Alueet, joiden tapahtumia ei ole listattu",
+     "security_coverage": "Selitä kameran peittovälit",
+     "frigate_pipeline_health": "Näytä Frigate-putkiston kunto",
+     "security_conversation_context": "Säilytä tietoturvatapahtuma keskustelussa",
+     "security_event_feedback": "Tallenna palautetta kameratapahtumista",
+     "share_clip_analysis": "Käytä uudelleen vastaavia leikkeen analyyseja"
+    },
+    "data_description": {
+     "motion_window": "Kuinka monta minuuttia liikehistoriaa on punnittava, kun päätetään, missä ihmiset ovat.",
+     "suppress_entities": "e.g. ovikelloilmoituksesi, joten taustahuomautukset eivät puhu siitä.",
+     "busy_entities": "Kun mikä tahansa näistä on päällä (kokouskalenteri, tarkennuskytkin, puhelin Älä häiritse -tilassa), Sentient pidättää puhetta, joka voi odottaa, kuin olisi hiljaa. Turvavaroitukset ja pyytämäsi vastaukset tulevat silti perille. Jätä tyhjäksi poistaaksesi tämän käytöstä.",
+     "prompt_memories": "Kuinka monta muistoa puheavustajalle annetaan etukäteen. Loput voidaan vielä etsiä.",
+     "pass_through_areas": "Käytävät, tasanteet ja portaat. Näiden läpi käveleminen maksaa paljon vähemmän, joten ohikulkija ei varasta ilmoitusta.",
+     "all_occupied": "Päällä: kaikki kotona olevat kuulevat sen. Pois: vain vilkkain huone.",
+     "room_tracking": "Oletuksena pois päältä. Kun huoneseurantalaite (esim. Bermudan \"alue\"-anturi puhelimelle) sanoo jonkun olevan huoneessa, jossa on kaiutin, siellä sanotaan asiat \"missä ihmiset ovat\". Kun mikään seurantalaite ei tiedä — puhelinta ei näy, ulos tai huone ilman kaiutinta — liikepohjaista arvausta käytetään kuten ennen. Ainoastaan ​​tapana valita, missä puhua, ei koskaan päättänyt, onko joku valmis. Mitään ei tallenneta.",
+     "room_trackers": "Anturit, joiden tila on huone, jossa jokin on, kuten Bermudan \"alue\"-anturit (yksi per puhelin tai tunniste). Jokainen tarvitsee huoneen, joka vastaa Home Assistant-aluetta.",
+     "ai_task_entity": "Tekoälytehtävä, jota käytetään kameran katseluun, tiedotustilaisuuksiin, öiseen ajatteluun ja huomiseen. Tyhjä käyttää Home Assistant:n ensisijaista tekoälytehtävää.",
+     "camera_cooldown": "Kamerakello katsoo uudelleen enintään näin usein pitääkseen tekoälykustannukset alhaisina.",
+     "fallback_speakers": "Käytetään vain, kun ketään ei ole minkään muun kaiuttimen huoneessa, e.g. olohuone, jota et halua häiritä.",
+     "daily_ai_limit": "Taustalla tehdyt tekoälypuhelut (kameratarkistukset, tiedotustilaisuudet, öinen pohdiskelu, ovikello…) pysähtyvät päiväksi tämän monien jälkeen, ja sen sijaan käytetään yksinkertaisia ​​sanoja. Kysymyksiisi vastataan silti. 0 tarkoittaa, että ei ole rajaa.",
+     "prompt_recent": "Muutama rivi tällä hetkellä (nukkuvat, hiljaiset tai hiljaiset ajat, vieraat, kaikki aukioloajat ja lukemat, joista ei ole kuulunut tuntikausiin, joten niitä ei anneta ajankohtaisina), mitä tapahtui viimeisen tunnin aikana ja missä on ollut liikettä, joten \"mitä minun pitäisi tietää?\" ja \"mitä juuri tapahtui?\" vastataan heti. Ilmainen: ei ylimääräisiä AI-puheluita.",
+     "rules": "\"Kun näin tapahtuu, tee se\" säännöt (Säännöt-sivu), ja ääni voi tehdä ne: se lukee säännön takaisin ja tallentaa sen vasta kyllä-lauseen jälkeen. Säännöt eivät voi koskaan virittää, poistaa aseista tai avata mitään. Pois: sääntöjä ei suoriteta.",
+     "relevant_memories": "Kun muistoja on enemmän kuin äänen kontekstiin mahtuu, se saa ne, jotka jakavat kysymyksen kanssa sanoja, sitten uusimmat. Ilmainen, ei tekoälyä. Off: aina uusin.",
+     "look_cache_minutes": "Sama kysymys samalle kameralle tänä aikana saa viimeisen vastauksen uuden tekoälyn sijaan. 0 näyttää aina uudelleen.",
+     "camera_prefilter": "Kamera tarkistaa ja katselee ensin pientä kuvaa (tässä koneessa, ilmainen) ja kysyy tekoälyltä vain, kun kamera tai sen kohta näyttää erilaiselta kuin viimeinen katse.",
+     "budget_drive": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan.",
+     "budget_noticing": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan.",
+     "budget_cameras": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan. Turvallisuutta, ovikelloa ja esittämiäsi kysymyksiä ei koskaan pidätetä.",
+     "routine_evidence": "Rutiinin haltuunottotarjouksissa kerrotaan, kuinka usein se tapahtui, e.g. '4 viimeisestä 4 viikonloppupäivästä'.",
+     "notice_entities": "Kun nämä muuttuvat, tekoäly päättää, kannattaako sanoa jotain (tai kysyä). e.g. pesukone, ovet, sää, roskakorit.",
+     "remark_repeat_hours": "Samaa huomattua asiaa (\"Kattila on kiehunut.\") ei toisteta uudelleen näin pitkään. 0: ei rajaa.",
+     "chattiness": "Rajoittaa huomautuksia tunnissa: hiljainen 2, normaali 4, puhelias 8. Pois lakkaa huomaamasta.",
+     "conversation_style": "Lyhyesti: lyhyet, ytimekkäät vastaukset. Luonnollinen: komennot pysyvät lyhyinä, mutta kysymykset ja chat saavat muutaman luonnollisen lauseen ja jatkokysymyksen, kun joku kysyy sellaisen, mikä pitää mikrofonin kuuntelemassa.",
+     "carry_on_minutes": "Herätyssanan sanominen uudelleen pian puhumisen jälkeen jatkaa samaa keskustelua samasta kaiuttimesta, joten \"ja yläkertaan?\" silti järkevää. 0 kytkee tämän pois päältä; Home Assistant unohtaa keskustelun viiden hiljaisen minuutin jälkeen.",
+     "focused_tools": "Anna äänelle vain Sentient:n työkalut, jotka sopivat siihen, mitä pyydettiin (kamerat, lämmitys, muistutukset…) sekä muisti ja turvallisuus. Pienempi valikoima tekee halvemmista malleista nopeampia ja tarkempia. Kaikki, mikä ei täsmää, saa silti kaikki työkalut.",
+     "ask_later": "Kun joku mainitsee jotain tulevasta (matkasta, ottelusta, eläinlääkäristä), ääni voi muistaa kysyä, kuinka meni, kun joku seuraavan kerran puhuu sille — kerran, ei koskaan hiljaisina tunteina tai vieraiden ollessa paikalla, eikä koskaan mistään yksityisestä. Se ei koskaan puhu tyhjästä. Tämän kytkeminen pois päältä unohtaa kaiken, mikä odottaa kysymistä.",
+     "put_right": "Kun sanot \"ei, se toinen\" tai \"ei se valo, lamppu\", ääni kytkee takaisin sen, minkä juuri sytytti (päälle tai pois päältä, muutaman minuutin sisällä) ja tekee pyynnön uudelleen vain korjatulla osalla — kaikkea ei tarvitse sanoa uudelleen. Tämän poistaminen jättää sen suoraan puheagentille.",
+     "music": "Kun Music Assistant on asetettu (tai musiikki Alexa:n kautta päällä): \"soita jotain rauhallista keittiössä\" poimii soittolistoistasi ja radioasemistasi ja toistaa sen kyseisen huoneen Music Assistant -soittimella (tai kysyy huoneen Echo) — yöäänenvoimakkuudella hiljaisina aikoina, etkä huoneessa omaan hiljaiseen aikaansa. Pois: ei musiikkityökalua.",
+     "music_alexa": "Päällä: \"soita jotain rauhallista keittiössä\" pyytää Echo:tä siinä huoneessa (Alexa Media Player) toistamaan sen alla olevasta palvelusta nimellä — soittolistan, artistin, kappaleen tai tunnelman mukaan — yöäänenvoimakkuudella hiljaisina aikoina eikä huoneessa omaan hiljaiseen aikaansa, ellet ole siinä. Palvelu on linkitettävä Alexa-sovelluksessa. Käytetään Music Assistantin sijaan, kun molemmat on määritetty (Music Assistant ei voi toistaa Spotifya ilman Premiumia). Pois päältä: Echos-laitteita ei koskaan pyydetä soittamaan musiikkia.",
+     "music_alexa_service": "Mistä palvelusta Echos soittaa. Spotify toimii ilmaisella tilillä, mutta Alexa voi sekoittaa samanlaista musiikkia tarkan kappaleen sijaan; Premium pelaa juuri sitä mitä pyydetään.",
+     "house_rules": "Yksinkertaisia ​​lauseita jokaisen äänen tulee seurata, yksi riviä kohden, e.g. 'Älä koskaan sano, että talo on tyhjä.'",
+     "no_security_offers": "Poista äänen vastauksista mikä tahansa virke, joka tarjoaa hälyttimen virittämisen tai poiskytkemisen tai oven lukituksen avaamisen (\"Pitäisikö se virittää?\") — myös silloin, kun se puhutaan niin kuin se on kirjoitettu. Vastaukset jollekulle, joka pyysi viritystä, poistamista, lukitsemista tai lukituksen avaamista, jätetään yksin, joten vahvistusta pyydetään edelleen. Oletuksena pois päältä.",
+     "learn_entities": "Valot, kytkimet, tuulettimet ja kaihtimet, joita ihmiset käyttävät käsin. Joka ilta viimeisten kahden viikon aikana tarkistetaan, onko tehty asioita suurin piirtein samaan aikaan useimpina päivinä ja onko tehty heti jonkin muun jälkeen (ovi aukeaa, toinen valo syttyy).",
+     "learn_anchors": "Tapa, joka pitää ajan auringonlaskun, auringonnousun tai ylösnousemisen kanssa kellon sijaan (lamppu hämärässä, kaihtimet auringonnousun aikaan, vedenkeitin ylösnousun jälkeen), opitaan sillä tavalla, joten talon puolestasi tekemä rutiini liikkuu vuodenaikojen mukaan. Herääminen vaatii nukkumis- ja hereilläoloasetuksen. Off: kaikki opitaan kelloa vasten, kuten ennenkin.",
+     "offer_together": "Kun muutama asia tapahtuu yleensä suunnilleen samaan aikaan samoina päivinä (lamppu päällä, kaihtimet kiinni, televisio päällä noin klo 20.00), ne tarjotaan kerran, yhdessä — yksi kyllä ​​ja talo hoitaa ne kaikki. Pois päältä: jokaista tarjotaan erikseen.",
+     "trust_lights": "Kun rutiini, jonka olet antanut talon ottaa haltuunsa, kytkee valot: tee se, sano ensin tai kysy ja tee se vain kyllä ​​(mitään ei tapahdu, jos kukaan ei vastaa).",
+     "trust_switches": "Sama koskee kytkimiä, älypistokkeita ja tuulettimia.",
+     "trust_covers": "Sama kaihtimet ja verhot. Autotallin ovet ja portit kysyvät aina.",
+     "trust_heating": "Sama koskee lämmityksen lämmittämistä ennen ihmisten heräämistä. Ensin kysyminen tarkoittaa, että se ei voi lämmetä, kun kaikki nukkuvat.",
+     "link_triggers": "Valinnainen: lisää asioita, jotka voivat saada tottumuksen (television käynnistys, sänkytunnistin…). Ovet, ikkunat ja opitut valot huomioidaan aina.",
+     "suggest_routines": "Kerran uutta rutiinia kohden, päivän aikana, kun joku on kotona, kysy, pitäisikö talon tehdä se tästä eteenpäin.",
+     "prove_routines": "Äskettäin opittua tapaa tarkkaillaan ensin: joka päivä sen oppimisen jälkeen Sentient tarkistaa, tekikö henkilö todella sen 45 minuutin kuluessa tavanomaisesta ajastaan. Sitä tarjotaan vain, kun se on ollut oikein vähintään 3 päivänä neljästä, jona se sovellettiin (arkipäivisin, viikonloppuisin tai joka päivä). Asetukset › Oppiminen näyttää, kuinka kukin pärjää. Off: Tottumukset tarjotaan heti, kun ne on opittu.",
+     "routine_fading": "Päällä: kun talon puolestasi tekemä rutiini oli jo suoritettu 5 päivänä kahdessa viikossa (joku tekee sen nyt itse), Sentient kysyy kerran, pidetäänkö se, ja lopettaa, jos sanot ei. Vain päivämäärät säilytetään, enintään kaksi viikkoa. Pois päältä: talon tekemät rutiinit säilytetään, kunnes toisin sanotaan.",
+     "door_camera": "Katsoin heti kun ovikello soi, kirjata kuka tuli.",
+     "door_triggers": "Ovikellon painike (binäärinen anturi tai tapahtuma) tai mikä tahansa muu, joka tarkoittaa, että joku on ovella.",
+     "announce_visitors": "Off pitää sen hiljaisessa lokissa, josta ääniavustajat voivat vastata.",
+     "faces": "Kun Frigate (tai ovikello) tunnistaa jonkun, se siirtyy aikajanalle ja ääni voi vastata \"onko Sam tullut kotiin?\". Nimiä ei koskaan julkisteta tai arvata — ne sanotaan vain, kun joku kysyy. Oletuksena pois päältä.",
+     "face_people": "Nimet sellaisina kuin Frigate ne tuntee. Tyhjä: kaikki, jotka se tunnistaa.",
+     "face_teach": "Auttaa Frigate:n kasvojentunnistusta parantamaan. Kun joku jättää valitun kameran ja Frigate säilytti kasvot, joita se ei voinut nimetä, puhelimet saavat yksityisen \"Kuka tämä?\" kasvot ja painikkeet kotitaloutta varten (puhelimissa on enintään kolme). Napauttamalla yhtä opettaa Frigate; \"Joku muu…\" ottaa kirjoitetun nimen kenelle tahansa uudelle tai \"ei\" poistaa vieraan kasvot. En koskaan puhunut, ei koskaan tableteilla, korkeintaan kymmenen minuutin välein. Tarvitsee Frigate-kasvontunnistuksen päälle ja puhelimet valitaan ilmoituksia varten. Oletuksena pois päältä.",
+     "face_teach_cameras": "Lähikuvakamerat, joissa kasvot ovat selkeät, e.g. ovikello. Tyhjä: ovikamera.",
+     "face_cameras": "Tyhjä: jokainen kamera. Valitse lähikuvat (ovikello, etuovi), jotta vilkas katu ei voi antaa vääriä nimiä.",
+     "face_forget_hours": "Joka ilta kasvot Frigate säilytetään, mutta ketään nimettyä — enimmäkseen tuntemattomia — poistetaan Frigate:stä, kun he ovat näin vanhoja. Nimetyt kasvot säilytetään. 0: jätä se Frigate:lle (se säilyttää viimeiset 200).",
+     "clip_watch": "Kun Frigate päättää tapahtuman valitulla kameralla, tekoäly katselee sitä tallennusosuutta kerran ja lause siirtyy aikajanalle ja Sentient-sivulle: \"Portti 14:10 — mies käveli koiran ohi\". Ääni vastaa \"mitä portilla tapahtui?\" heiltä ilman uutta tekoälykutsua. Ei koskaan puhunut. Oletuksena pois päältä.",
+     "clip_cameras": "Aloita yhdellä, e.g. portti.",
+     "clip_scope": "Frigate:n hälytykset ovat ihmisiä alueilla, jotka olet merkinnyt vaadituiksi — hiljaisin valinta vilkkaalle kadulle. Jos kamera ei koskaan anna hälytyksiä (ei vaadittuja vyöhykkeitä asetettu Frigate:ssä), valitse \"Kaikki vyöhykkeellä\" — Clips-kortti näyttää, mitä ohitettiin ja miksi.",
+     "clip_when": "Katso vain näinä aikoina. Poissa tarkoittaa, että kaikki Poissa-valojen alla valitut ovat sammuneet.",
+     "clip_notify": "Menee vain puhelimiin kuvan ja toistopainikkeen kanssa.",
+     "clip_source": "Frigate:n omat AI-tarkistusyhteenvedot on kytkettävä päälle Frigate:ssä; silloin täällä ei soiteta tekoälypuhelua.",
+     "clip_whose": "Samassa tekoälypuhelussa on mukana Frigate:n kasvokirjaston kotitalouden kasvokuvat (ja alla olevat ilmeet), ja se nimeää jonkun vain silloin, kun se on selvästi hän — \"todennäköisesti Sam\". Vieraita ei koskaan nimetä. Sanottiin vain kysyttäessä, ei kerrottu.",
+     "clip_looks": "Yksi riviä kohden, e.g. \"Sam: punainen pyöräilykypärä ja keltainen takki pyörällä\". Auttaa, kun kypärä tai huppu peittää kasvot.",
+     "budget_clips": "Lasketaan myös päivittäiseen tekoälyrajaan. 0: ei omaa rajaa.",
+     "clip_days": "Yhteenvedot ovat vain sanoja, ja ne poistetaan.",
+     "clip_keep": "Pois päältä: jokainen leike poistetaan heti, kun se on katsottu.",
+     "parcel_alerts": "Katso toimituksen jälkeen uudelleen muutaman minuutin kuluttua ja sano, onko paketti jätetty.",
+     "doorstep_sensors": "Valinnainen: henkilöanturit ovelle tai etupihalle (e.g. a Frigate-vyöhykkeen henkilöiden käyttöaste). Kun käynti siellä päättyy ilman kelloa, ovikamerasta tarkistetaan kerran, onko jäljellä jäänyt paketti tai posti.",
+     "zone_visits": "Käyttää yllä olevia kynnysantureita (e.g. a Frigate alueen henkilöiden läsnäolo). Kun kukaan ei soita, vyöhykkeelle saapunut kohdellaan vieraana: ovikameraa katsotaan ja siitä ilmoitetaan. Kumpi tulee ensin, kello vai vyöhyke, on käynti ja toinen jätetään huomiotta. Pois päältä: vain kello aloittaa vierailun.",
+     "zone_door_sensors": "Valinnainen: etuoven auki/kiinni anturi. Jos ovi avattiin (tai on auki) viimeisen puolentoista minuutin aikana, vyöhyke jätetään huomioimatta, koska joku lähtee tai tulee kotiin.",
+     "face_sensor": "Valinnainen: kasvojentunnistusanturi, jonka tila on nimi, jonka se juuri tunnisti (e.g. alkaen Frigate). Käytetään lokissa ja ilmoituksessa, jos se on päällä.",
+     "sidebar_panel": "Sivupalkin sivu, joka näyttää muistot, rutiinit, kellot, vierailijat ja mitä on sanottu.",
+     "page_admin_only": "Piilottaa sivun ja sen lukeman kaikilta paitsi ylläpitäjiltä. Off pitää sen avoinna koko kotitaloudelle. Sen käynnistäminen ei poista mitään.",
+     "custom_pages": "Päällä: Yleiskatsaus-, Talo-, Mieli- ja Turvallisuus-välilehdet käyttävät tallennettua asetteluasi, ja järjestelmänvalvojat saavat tästä MUOKKAA SIVUN ASETTELUA siirtääkseen kortteja sarakkeiden välillä, piilottaakseen ne, näyttääkseen ne uudelleen tai nollatakseen välilehden. Itse välilehdissä ei ole muokkauspainiketta, vain muokkauksen aikana. Asettelu on tallennettu muotoon Sentient, joten jokainen näyttö näyttää saman. Pois päältä: välilehdet palaavat vakioasetteluun; tallennettu asettelu säilyy, kun kytket sen uudelleen päälle.",
+     "confirm_kinds": "Pyytää tekoälyä kuvaamaan nämä toimet ja odottamaan kyllä-vastausta. Tämä on kehoteohje, ei pakotettu toimintolohko: keskusteluagenttisi ohjaa laitteen suorittamista. Asioiden sammuttaminen ei vaadi kysymistä. Tyhjä: ei ylimääräisiä vahvistusohjeita. Pakkotarkastuksia varten ota suojattu ohjaus käyttöön vaaditulla agenttiasetuksella.",
+     "auto_backup": "Sunnuntai-iltana varmuuskopio muistoista, pisteistä, rutiineista, liikevaloista, sammutuksista ja asetuksista, tallennettu asetuskansioon sentient_backups.",
+     "backup_keep": "Vanhemmat poistetaan.",
+     "suggestions": "Asiat, joita Sentient voisi käyttää, mutta ei — uusi kaiutin, pesukoneen tehoanturi, hutch-lämpömittari — tarjosivat rivi kerrallaan. Kyllä lisää sen; ei tarkoita sitä, että sitä ei enää koskaan tarjota. Ilmainen, ei tekoälyä.",
+     "whats_new": "Kun Sentient on päivitetty, Sentient-sivulla oleva lyhyt kortti kertoo, mikä on uutta, selkein sanoin, kunnes napautat OK.",
+     "simple_settings": "Asetusluettelossa näkyvät olennaiset tiedot, ja valinnaiset ominaisuudet ovat NÄYTÄ KAIKKI. Uudet asennukset alkavat tällä tavalla. Ei muuta mitään Sentient:n toiminnassa.",
+     "chat_agent": "Kuka vastaa sivun Kysy-ruutuun — valitse ääniagentti, johon Sentient on valittu. Tyhjä käyttää haluamaasi Assist-putkilinjaa.",
+     "health_ignore": "Entiteetit (ja niiden laitteet), joita ei pitäisi laskea ongelmiksi, e.g. jotain, jonka on tarkoitus olla pois päältä.",
+     "hide_substreams": "Jättää pois HD- ja SD-streamit, kuvakaappaukset ja kartat, kun lasketaan ja tarkistetaan kameroita, joten yksi ovikello ei ole useita kameroita. Home Assistant:stä ei poisteta mitään.",
+     "ignore_cameras": "Kamerat Sentient eivät saa laskea, tarkistaa tai tarjota, kuten tabletin kamera. Ne pysyvät Home Assistant:ssä koskemattomina; valitse uudelleen tuodaksesi yhden takaisin.",
+     "never_entities": "Sentient ei koskaan kytke, himmennä tai muuta näitä: ei säännöissä, rutiineissa, tarjouksissa, automaattisessa sammutuksessa, pois- tai liikevaloissa, valonäytöksissä, lämmityksessä tai vartioidussa ääniohjauksessa, ja ääntä kehotetaan jättämään ne rauhaan. Se voi silti lukea niitä ja puhua niistä. Kaikki mikä muuttaisi ihmisen ohitetaan ja huomioidaan.",
+     "self_check": "Joka ilta se katselee omia tietueitaan — mitä se sanoi ja miten se meni, kaiuttimet, jotka epäonnistuivat, asiat pidätettiin, kysymyksiä kysytään yhä uudelleen, tekoälymittari — ja panee merkille, mitä se havaitsee itsestään, ja sen takana olevat numerot. Ei AI. Kysy \"oletko ärsyttänyt meitä?\" tai \"mitä olet ymmärtänyt?\".",
+     "learn_corrections": "Kun joku muuttaa takaisin jotain, jonka talo teki hetki sitten (sytytti valon, sytytti rutiinin), se huomauttaa korjauksen. Rutiini, jonka kumoat jatkuvasti, palautetaan (sammutetaan) ja aikajanalla sanotaan niin. Tämän kytkeminen pois päältä pysäyttää katselun; jo havaitut korjaukset säilytetään.",
+     "normal_day": "Vertaa nykypäivää tavanomaiseen ja huomauttaa sen Mieli-sivulle: esimerkiksi kukaan ei ole vielä hereillä, kun joku yleensä on jo nyt. Selkeät säännöt, mitään ei sanota ääneen eikä mitään vaihdeta. Tämän poistaminen pysäyttää tarkistuksen ja piilottaa sen, mitä se löysi.",
+     "thoughts": "Lyhyt ensimmäisen persoonan lista Mind-sivulla (\"ihmiset sammuttavat laskeutumisvaloa, joten olen lopettanut\"), sekä arvailu, mihin huoneeseen joku menee seuraavaksi, ja tarkistaa, kuinka usein se oli oikein. Ei AI. Tämän poistaminen lopettaa arvailun ja piilottaa luettelon. se, mitä se on oppinut, säilytetään.",
+     "share_learning": "Kerran illalla (17.00–20.30), kun joku on paikalla eikä ole hiljaista, se kertoo yhden asian, jonka se on oppinut tai josta on muuttanut mieltään viimeisen kahden päivän aikana: rutiinin, jonka se antoi takaisin, faktan, jonka se päivitti, tapauksen, jonka se havaitsi, kuinka hyvin se nyt arvaa, minne menet seuraavaksi. Ei koskaan samaa asiaa kahdesti. Tämän kytkeminen pois päältä pitää kaiken Mieli-sivulla, mutta hiljaa.",
+     "self_adjust": "Kun itsetarkastuksessa havaitaan jonkinlainen huomautus, talo jatkaa hiljaisuutta, hiljennä sitä hieman (sama kuin peukku alaspäin; se haalistuu taas). Älä koskaan koske turvallisuuteen, turvatoimiin tai mihinkään, jota se hallitsee.",
+     "proposals": "Kun itsetarkistus löytää jotain, jossa se meni pieleen, ehdota yhtä pientä muutosta Mieli-sivulla — vähemmän huomautuksia, ei yhtäkään niin usein toistamista, tiedotukseen lisätty osio, korkeampi tekoälyraja — ja syy. Mikään ei muutu ennen kuin sanot kyllä; ei ei kysytä uudestaan ​​kuukauteen. Tämän poistaminen käytöstä poistaa kaikki odottavat ehdotukset.",
+     "privacy_log": "Jokainen Sentient:n tekemä tekoälypuhelu ja verkkohaku merkitään muistiin — mikä ominaisuus, kuinka monta kuvaa, leikettä tai dokumenttia ja mikä palvelu — ei koskaan mitä sanottiin tai näytettiin. Katso se kohdasta Aivot ja järjestelmä → Mitä lähtee kotoa, painikkeella, jolla voit unohtaa viimeiset 48 tuntia. Tämän poistaminen tyhjentää tietueen.",
+     "goals": "Anna äänen asettaa tavoitteita päivien tai viikkojen aikana (\"auta meitä käyttämään vähemmän lämmitystä tässä kuussa\"). Tavoite voi seurata anturia: se vertaa jokaista päivää tavalliseen edelliseen viikkoon ja mainitsee edistymisen, kun se sopii. Mikään ei ole muuttunut talossa.",
+     "manuals": "Vastaa kysymyksiin alla olevan kansion asiakirjoista (yksi AI-puhelu kullekin). Pois päältä: asiakirjat jätetään yksin.",
+     "manuals_folder": "Kansio Home Assistant:n mediassa (e.g. manuals = media/manuals). Nimeä jokainen tiedosto sen mukaan, mitä se on tarkoitettu, e.g. \"Air purifier.pdf\".",
+     "manuals_local_text": "Jos mikään tiedostonimi ei vastaa kysymystä, etsi oikea tiedosto .txt- ja .md-dokumenteista, ja jos tekoälyä ei tavoiteta, lue lähin kohta sen sijaan, että se ei mitään. Kummassakaan ei käytetä tekoälyä. Pois: vain tiedostojen nimet täsmäävät.",
+     "manuals_pages": "Päällä: jokainen PDF (ja tekstiasiakirja) luetaan kerran, sivu sivulta, Sentient:n omaan tietokantaan — tällä tietokoneella ilman tekoälyä. Kysymys lähettää sitten tekoälylle vain muutamat vastaavat sivut, ei koko asiakirjaa, joten se maksaa paljon vähemmän ja vastaus kertoo, millä sivulla se on (\"se on sivulla 14\"). Dokumentti, jonka nimi ei täsmää, löytyy silti sen sisällöstä, ja jos tekoälyä ei tavoiteta, lähin kohta luetaan sen sivulla. Tekoäly lukee edelleen skannatut PDF-tiedostot (sivukuvia) kokonaisina. Pois päältä: asiakirjat luetaan kokonaisuudessaan joka kerta, ja luettu tyhjennetään.",
+     "games": "Pelaa ääniohjattuja tarinapelejä, kuten pakoon seikkailua avustajien kanssa pelin päällikkönä. Jokainen peli säilyttää oman tallennetun muistinsa (missä pelaajat ovat, mitä he kantavat mukanaan, mitä he löysivät ja valitsivat) istuntojen ja avustajien välillä. Se näytetään äänelle vain pelin aikana, ja pelimestari voi lukea talon tavallisen muistin, mutta ei koskaan muuta sitä. Avaa Asetukset → Tarinapelit kirjoittaaksesi pelejä ja muokataksesi niiden muistia. Pois päältä: pelityökalut ja sivu on piilotettu; tallennetut pelit säilytetään, ei tyhjennetä.",
+     "voice_id": "Käytä tähän pyyntöön paikallista kaiutinvastinetta. Jos haluat antaa tekoälymallin mukauttaa vastauksia tai liittää uusia muistoja nimen perusteella, ota käyttöön myös Jaa täsmäävät nimet keskusteluagentin kanssa puheentunnistuksessa. Erillinen paikallinen “Kuka puhuu?” vastaus on asetettu äänentunnistukseen.",
+     "voice_id_unknown": "Kun apukaiuttimella ei ole vastaavaa ääntä, säilytä kotitalouden historia ja tallennetut muistot yksityisinä tätä vuoroa varten. Pois päältä: vertaansa vailla olevia ääniä käsitellään normaalisti.",
+     "speaker_memories": "Äänentunnistuksen ollessa käynnissä: yhteensopiva ääni saa ensin omat muistonsa (“Alex: pitää teestä”) — aina mukana, vaikka listan täyttäisivätkin uudemmat kotiseikat — eikä koskaan kenenkään muun henkilökohtaisia; ääni, johon se ei voi vastata, ei saa kenenkään henkilökohtaisia ​​muistoja. Kotitalousasiat jaetaan aina. Kirjoitetut pyynnöt ja Echos ovat ennallaan. Oletuksena pois päältä.",
+     "books": "Toista äänikirjoja ja lue e-kirjoja ääneen pitäen jokaisen huoneen paikkansa. \"Lue kirjani\", \"jatka kirjaa\", \"lue 20 minuuttia\", \"lopeta\", \"seuraava luku\", \"palaa hieman taaksepäin\". Ei tekoälyä (paitsi valinnainen yhteenveto). Echo: e-kirjat yhden kappaleen per pyyntö Alexa-taidon kautta; äänikirjat tarvitsevat toisen kaiuttimen.",
+     "books_folder": "Kansio Home Assistant:n mediassa (kirjat = media/kirjat). DRM-vapaat .epub- tai .txt-e-kirjat; äänikirjat yhtenä .mp3/.m4b/.m4a-tiedostona tai kirjan mukaan nimettyjen osien kansiossa.",
+     "reading_tts": "Erilainen tekstistä puheeksi -palvelu vain kirjoille ja tarinoille — Gemini- tai ElevenLabs-äänet ovat usein parempia tarinankertojia. Jätä se tyhjäksi lukeaksesi tavallisella äänellä. Echos käyttää aina Alexa:n omaa ääntä.",
+     "reading_voice": "Valitse ääni kyseisestä palvelusta. Käytä alla olevaa TRY THE VOICE -painiketta kuullaksesi sen oletuskaiuttimesta ennen tallentamista.",
+     "read_ahead": "Lukuäänellä tarinan seuraava osa tehdään tätä osaa luettaessa, joten hidas ääni (vapaa tai pilvinen) ei jätä aukkoa osien väliin. Käyttää sitä ääntä hieman aikaisemmin, ei koskaan useammin.",
+     "recipes": "\"Tehdään lasagne\": ainekset, sitten askel kerrallaan — \"seuraava\", \"toista tämä\", \"palaa\", \"mitä seuraavaksi?\" — Muista vaihe puhujaa kohti. \"Make it for 6\" mittaa sen; ainekset voivat mennä ostoslistalle.",
+     "recipes_folder": "Kansio Home Assistant:n mediassa (reseptit = media/reseptit), jossa on PDF-tiedostoja, valokuvia, tekstiä tai merkintöjä. Jokainen siivotaan vaiheiksi yhdellä tekoälykutsulla ensimmäisen kerran ja säilytetään sitten. Mealiea käytetään automaattisesti, jos sen integrointi on määritetty.",
+     "recipes_list": "Missä \"lisää ainekset ostoslistalle\" ne laittaa. Tyhjä: luettelo, jonka nimessä on \"shopping.",
+     "voice_lists": "Päällä: \"rasti maito\", \"mitä on ostoslistalla?\", \"Ota roskapussit pois\" — tuotteet löytyvät sanoista huolimatta (joka tapauksessa monikko, ainoa maito luettelossa), kahdesta mahdollisesta vastaavuudesta kysytään, ja Sentient sanoo, että se on tehty vain, kun se näkyy luettelossa. Käyttää Assistille altistettuja listoja (kaikki luettelot, jos niitä ei ole), ja ostoslistaa, ellei muuta ole nimetty. Ei omaa tekoälyä. Pois: ääni käyttää Home Assistant:n omia listakomentoja. Mitään ei tallenneta.",
+     "ready_tonight": "\"Varmista, että kaikki on valmiina illaksi\": tarkistaa ovet, ikkunat ja lukot Assist näkee, sammuttaa vain alla valitut valot, katsoo lämmitystä ja kertoo, mikä on vielä auki, lukitsematon, jätetty päälle tai mitä ei voida vahvistaa. Lukkoja, hälytintä ja lämmitystä ei koskaan vaihdeta, eikä hälytintä tarjota. Ei omaa tekoälyä. Pois päältä: ääni voi silti tarkistaa talon, mutta tätä ei tarjota. Mitään ei tallenneta.",
+     "ready_tonight_lights": "Ainoat \"täksi yöksi valmiit\" valot voivat sammua. Jokainen tarkistetaan jälkikäteen. Tyhjä: valoja ei sammuteta, vain raportoitu.",
+     "ready_tonight_follow": "Kun jokin on vielä auki tai lukitsematon, pidä sitä silmällä jopa kolme tuntia ja sano kerran kysymääsi kaiuttimeen, kun kaikki on järjestetty. Jatkuu uudelleenkäynnistyksen jälkeen.",
+     "tandoor_url": "Valinnainen: Tandoor Recipes-osoitteesi, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Valinnainen: API-tunnus Tandoorista (Asetukset → API). Säilytetty vain Home Assistant:ssä.",
+     "voice_agent": "Tekoälyagentti, joka vastaa normaalisti (e.g. Google AI). Tyhjä käyttää sivun chat-agenttia.",
+     "backup_agent": "Vastaa, kun pääagentti epäonnistuu — Home Assistant:n oma agentti tekee valot, lämmityksen ja ajastimet ilman tekoälyä.",
+     "offline_answers": "Kun tekoälyagentti epäonnistuu, “onko talo lukossa?”, “Milloin on seuraava hälytys?” ja “tuliko joku ympärille?” Vastataan suoraan kotoa, selkein sanoin, ennen kuin vara-agenttia kokeillaan. Vain kysymyksiä, vain mitä henkilö voi nähdä; vierastilassa vain turvakysymys. Pois päältä: kaikki menee vara-agentille.",
+     "animal_sensors": "Koton, kennelin, koukun tai säiliön lämpötila-anturit.",
+     "away_lights_on": "Kun kaikki ovat ulkona pimeän jälkeen, valot jäljittelevät sitä, miten niitä käytettiin samaan aikaan viime viikolla (Home Assistant:n historiasta), muutaman minuutin kumpaankin suuntaan. Ei käynnisty (tai pysähdy), jos joku on kotona tai sisällä on ollut liikettä viime aikoina, henkilöille, joilla ei ole puhelinta jäljitettynä, ja laittaa takaisin sen, minkä on kytkenyt päälle. Myös \"Away lights\" -kytkin.",
+     "away_people": "Tyhjä: kaikki, joilla on henkilömerkintä. Voit valita puhelimet (laiteseurantalaitteet) ihmisten sijasta.",
+     "away_lights": "Tyhjä: kaikki valot huoneessa, jättäen pois näytöt, LED-renkaat, taustavalot ja ryhmät. Vain viime viikolla tuolloin käytetyt valot syttyvät.",
+     "holiday_mode": "Lomatila\"-kytkin ja \"olemme lomalla sunnuntaihin\" äänellä. Kun se on päällä, mitään ei sanota ääneen paitsi turvallisuusvaroitukset — se, mitä olisi sanottu, koskee ilmoituksia varten valittuja puhelimia, vierailijoita ja paketteja; poistovalot palavat, vaikka ne olisivat normaalisti pois päältä; ja alla olevat termostaatit on kytketty alas. Pois päältä: ei kytkintä eikä lomaa äänellä.",
+     "holiday_thermostats": "Alennettu pakkassuojaksi, kun olet poissa, ja laita takaisin juuri sellaisiksi kuin ne olivat lomatilan päättyessä. Tyhjä: lämmitykseen ei kosketa.",
+     "holiday_frost": "Yllä olevat termostaatit on asetettu, kun olet poissa.",
+     "holiday_end_on_return": "Kun kaikki ovat menneet ulos, ensimmäinen asukas lopettaa lomatilan ja laittaa lämmityksen takaisin. Pois päältä: se päättyy päivämääränä tai kun se sammutetaan.",
+     "away_after": "Joten kauppaan poikkeaminen ei aloita sitä.",
+     "animal_low": "Sanoo kerran, kun se laskee tämän alapuolelle (pitää aamuun asti hiljaisina tunteina), ja varoittaa iltana ennen pakkasta.",
+     "animal_high": "Sanoo kerran, kun se nousee tämän yläpuolelle.",
+     "hutch_check": "Puoli tuntia auringonlaskun jälkeen yksi tekoäly katsoo kottiin: ovatko ne sisällä ja onko se kiinni? Sanoo vain jotain, jos ei.",
+     "hutch_spot": "Kovun ympärille piirretty täplä Spots-välilehdellä, e.g. 'kani kynä'.",
+     "cat_watch": "Pimeän jälkeen, kun kotan kameran kissasensori kytkeytyy päälle, yksi tekoälyn katse: onko kissa mökillä vai vieressä? Korkeintaan 15 minuutin välein, eikä silloin, kun kuva ei ole muuttunut.",
+     "cat_sensors": "Tyhjä: Koton kameran kissaanturit (e.g. Frigate:n kissan käyttöaste).",
+     "cat_loud": "Pois: säilytetty aamulla (\"Kissa oli mökillä klo 2.14\"). Päällä: sanoi heti yökellon kaiuttimista.",
+     "rain_warnings": "Kun sade tulee tunnin sisällä ja ikkuna tai ovi on auki: \"Seuraavan tunnin aikana sataa ja makuuhuoneen ikkuna on auki.\" Lukee tuntiennusteen — ei tekoälyä. Kerran per sade.",
+     "rain_entities": "Tyhjä: jokainen ikkuna- ja ovianturi.",
+     "self_test": "Yön aikana ääneltä kysytään muutama arkipäiväinen kysymys (lämpötila ulkona, kaikki auki, muistutukset, hälytys, kellonaika) ja sen vastauksia verrataan taloon. Kaikki viat näkyvät talon terveydessä käytetyllä työkalulla. Noin 5 tekoälyä kutsuu juoksua. Vain kysymykset — mitään ei vaihdeta.",
+     "self_test_household": "Lisää noin 7 kysymystä, jotka on rakennettu omilla laitteillasi: milloin ovi tai ikkuna viimeksi suljettiin, onko valo päällä, onko kamera nähnyt ketään viimeisen kahden tunnin aikana, tuliko kukaan ovelle tänään, jotain, jota se ei voi tietää (keksitty vastaus epäonnistuu), jotain, jota mikään laite ei voi tehdä, ja kysymys, joka on liian epämääräinen vastatakseen kysymättä kumpaa. Minkä tahansa vaihtaminen kysymyksen aikana on epäonnistumista. Pisteet ja sen trendi ovat Mieli-sivulla. Noin 7 muuta tekoälyä vaatii juoksua.",
+     "screen": "Hälytykset, ilmoitukset ja aamukortti Sentient-näyttökortilla (mukautettu:sentient-näyttökortti). Pois päältä: se näyttää talon vain yhdellä silmäyksellä.",
+     "screen_actions": "e.g. herätä tabletti ja vaihda se näyttökortin sisältävälle sivulle.",
+     "screen_clear_actions": "e.g. vaihda tabletti takaisin normaalille sivulleen.",
+     "conversation_sessions": "Käytä Sentient:tä vara-agentin kanssa. Yksittäiset komennot lopettavat kuuntelemisen, ellei puhuttu vastaus pääty kysymykseen. Tieto-, turvallisuus-, terveys- ja järjestelmäkeskusteluissa kysytään, onko jotain muuta, ja pysy auki, kunnes sanot “kaikki”, “riittää” tai “lopeta kuunteleminen” tai toimettomuuden aikakatkaisu umpeutuu. Sano “takaisin…” jatkaaksesi keskeneräistä aihetta tältä laitteelta 24 tunnin kuluessa palauttamatta toimintolupia. Mieli-paneeli näyttää viimeaikaiset keskustelupäätökset. Seurantakuuntelu vaatii yhteensopivan Assist-laitteen.",
+     "room_conversation_handoff": "Sano jatka ja nimeä aihe toisesta laitteesta. Molempien pyyntöjen on tultava samalta tunnistetulta Home Assistant-käyttäjältä. Tuoreet lukemat tarkistetaan, eivätkä aiemmat toimet ja vahvistukset siirry eteenpäin.",
+     "verified_bedtime": "Sano juokse alakertaan nukkumaanmenoaika sammuttaaksesi valitut valot ja tarkistaaksesi valitut kontaktit. Pyydä alakerran nukkumaanmenoaika tarkistaaksesi uudelleen tai sano peruuta alakerran nukkumaanmenoaika lopettaaksesi sen seuraamisen.",
+     "verified_bedtime_lights": "Valitse jopa kaksikymmentä yksittäistä Assist-valotettua valoa. Ryhmät suljetaan pois, ja Älä kosketa -luettelo on edelleen voimassa.",
+     "verified_bedtime_contacts": "Valitse enintään kaksikymmentä Assist-valotettua ovi-, ikkuna- tai muuta avautuvaa kosketinta tarkistettavaksi. Ne ovat vain luettavissa.",
+     "session_seconds": "Hylkää istunnon konteksti ja odottavat toiminnot tämän monen sekunnin jälkeen ilman uutta vuoroa. Äänilaitteesi hallitsee omaa hiljaisuuden aikakatkaisuaan. Vahvistus vanhenee myös 60 sekunnin kuluttua.",
+     "guarded_control": "Ota käyttöön tuettu tekoälyagentti: valitse vain Sentient, joka on suojattu Control Home Assistant -kohdassa, ja käytä sitten Sentient:tä varmuuskopion kanssa. Poista käytöstä Mieluummin käsittelykomennot paikallisesti ja poista ristiriitaiset virkkeen liipaisimet, jotka suoritetaan ennen tätä agenttia. Virheellinen agentin API-määritys pysäyttää pyynnöt. Ei rajoittamattomia varatoimia, skriptejä, kohtauksia tai hälytystoimintoja. Ovet, laitekäynnistykset ja merkittävät lämmitysmuutokset vaativat erillisen kyllä.",
+     "routine_verify": "Päällä: kun äänirutiini (hyvää yötä, lähtö…) on suoritettu, jokainen vaihdettu valo, kytkin, lukko ja kansi tarkistetaan muutaman sekunnin kuluttua, ja vastaus kertoo mitä ei tapahtunut (\"Valmis, paitsi laskuvalo, joka palaa edelleen\"). Vaiheet, joita se ei voi tarkistaa (skriptit, kohtaukset) raportoidaan tarkistamattomiksi, ei koskaan suoritetuiksi. Mitään ei yritetä uudelleen tai kumota itsestään. Pois päältä: rutiinit suoritetaan kuten ennen, valitsematta.",
+     "voice_unlock": "Antaa pakotetun äänivahvistuksen avata oven erillisen kyllä-lauseen jälkeen. Pois (oletus) lukitsee ja sulkeutuu jatkuvasti, mutta kieltäytyy avaamasta lukitusta tai avaamasta äänellä, koska Sentient ei tiedä kuka puhuu.",
+     "voice_undo": "Kun käytät suojattua ohjausta, sano “kumoa” pyytääksesi äskettäin vahvistettujen valoasetusten palauttamista. Ohittaa sen jälkeen vaihdetut valot, vanhenee istunnon yhteydessä eikä koskaan avaa lukkoja, lämmitystä tai laitteita.",
+     "evidence_awareness": "Kerro äänelle, että se erottaa havainnot, päätelmät, toimintayritykset ja vahvistetut laiteraportit. Turva-anturit estävät aina täysin suojatun vaatimuksen.",
+     "security_incidents": "Ryhmäkonfiguroidut kameran turvahenkilöanturit ja sisääntulokontaktit hälytyksillä ja leikeyhteenvedoilla. Pidä seitsemän päivää paikallisesti. Aikaläheisyys on mahdollinen linkki, ei todiste samasta henkilöstä; vain lisääntyvät hälytykset toistuvat.",
+     "incident_front": "Kamerat ja anturit talon edessä (ovikello, etuovi). Mitään täällä ei koskaan ryhmitetä yhdeksi tietoturvaloukkaukseksi muiden kanssa, ja päinvastoin: joku etuovella ja joku takaportissa samalla hetkellä ovat kaksi tapausta. Jätä tyhjäksi ryhmittelemään yksin ajan mukaan.",
+     "live_voice_check": "Näytä käyttäjän aloittama äänitarkistus Mieli-paneelissa. Tämän poistaminen poistaa nykyisen tarkistuksen ja lopettaa tarkistuskierrosten tallennuksen. Edellyttää keskusteluistuntoja tarkistuksen aloittamiseksi.",
+     "speech_delivery_history": "Säilytä viimeisimmät puhujakohtaisten ilmoitusten tulokset Mind-paneelissa. Tämän poistaminen käytöstä tyhjentää tämän historian. Kaiutinvian tunnistus ja turvallinen uudelleenyritysten käsittely pysyvät aktiivisina.",
+     "alexa_tts_only": "Käytä tavallista TTS:ää Alexa-ilmoitusten sijaan, jos ilmoitukset ovat epäluotettavia. Tämä ohittaa Alexa-ilmoituskellot; muut kaiuttimet ovat ennallaan.",
+     "update_checker": "Tarkista GitHubista vakaat julkaisut, kun se on käytössä, käynnistyksen yhteydessä ja kuuden tunnin välein. Ei AI-kutsuja, automaattista asennusta tai automaattisia uudelleenkäynnisyksiä. Lopeta tarkastukset poistamalla käytöstä.",
+     "contextual_followups": "Vaatii keskusteluistuntoja ja Sentient:n vara-agentin kanssa. Säilytä kohde lyhyitä seurantatoimia varten, päivitä paljastuneet laitelukemat ja selvennä epäselvät säädöt. Ei myönnä toimintaoikeuksia tai muuta kuuntelusääntöjä. Oletuksena pois päältä; sen poistaminen käytöstä tyhjentää tilapäisen keskustelukontekstin.",
+     "conversation_recovery": "Vaatii keskusteluistuntoja ja Sentient:n vara-agentin kanssa. Peru odottava tai käynnissä oleva pyyntö samalta keskustelulta/laitteelta/käyttäjältä ja vältä epävarmien laitekomentojen toistamista tekoälyvirheen jälkeen. Ei voi kumota jo lähetettyä toimintoa tai saada laitteistoa hyväksymään puhetta ollessaan varattu. Oletuksena pois päältä; poistaminen käytöstä lopettaa tämän ylimääräisen käsittelyn.",
+     "speech_failure_notification": "Näytä Home Assistant-ilmoitus, kun kaiuttimen toimitus epäonnistuu tai on epävarma. Oletuksena pois päältä. Ei sisällä puhuttua sisältöä tai toistuvaa puhetta. Ei käytössä vierastilassa; olemassa olevat ilmoitukset säilyvät, kunnes ne hylätään.",
+     "recent_followup_context": "Käytä äskettäin valmistunutta aihetta uuden herätyssanan jälkeen samalla kaiuttimella ja käyttäjällä. Edellyttää keskustelutilaisuuksia ja kontekstuaalista seurantaa. Käyttää istunnon aikakatkaisua; ei koskaan palauta vahvistusta tai kuuntelua. Oletuksena pois päältä. Lopettaminen tai unohtaminen selventää kontekstia.",
+     "conversation_cues": "Keskustelun sisällä: arkipäiväiset merkinnät (“kippis”, “täydellinen, kiitos”, “sitä käy”) lopettavat sen, kun mikään ei odota vastausta; “anteeksi, tarkoitin…”, “väärä valo” ja “ei lamppu, kattovalo” ovat korjauksia; ja “toisesta nuotista…” tai “jotain muuta:” aloittaa uuden aiheen ilman laitteita. Ei AI. Pois päältä: vain pelkät päätteet ja korjaukset tunnistetaan.",
+     "vary_replies": "Äänelle näytetään omat viimeiset vastauksensa kuluneelta päivästä ja käsketään olemaan käyttämättä heidän lauseitaan tai avauksiaan, joten samaa vastausta ei anneta sanasta sanaan kahdesti. Ei yksityisissä huoneissa tai vierastilassa. Toistuvat vastaukset lasketaan kumpaankin suuntaan (Mieli-välilehti ääniajoituksineen). Oletuksena pois päältä.",
+     "behaviour_explanations": "Vastaa lyhyisiin kysymyksiin kuuntelusta ja laitteen tallentamisesta suoraan ilman tekoälypuhelua. Edellyttää keskustelutilaisuuksia. Käyttää olemassa olevia istuntotietueita, kunnioittaa vierastilaa ja laitteen käyttöoikeutta eikä toista toimintoja. Oletuksena pois päältä; ylimääräistä historiaa ei tallenneta.",
+     "current_house_context": "Anna keskusteluille kompakti ja asianmukainen tilannekuva näkyvistä laiteraporteista, viimeaikaisista muutoksista ja nykyisestä keskeneräisestä tehtävästä. Oletuksena pois päältä. Ei taustaa AI-kutsuja. Vierastila estää sen. Viimeaikaiset muutokset vanhenevat 30 minuutin kuluttua; poistaminen käytöstä tai unohtaminen tyhjentää vain muistin sisältävän kontekstin.",
+     "moment_awareness": "Jokainen äänivastaus saa lyhyen \"tällä hetkellä\" kuvan siitä, mitä Sentient jo säilyttää: kuka on ollut kotona ja mistä lähtien, huoneet, joissa on liikettä, mitä tapahtui viimeisen 45 minuutin aikana ja mitä tahansa epätavallista tälle päivälle. Ei tekoälyä eikä mitään tallennettua. Yksityishuoneessa tai vierastilassa vain liike annetaan. Pois päältä: mitään ei ole lisätty.",
+     "room_memory": "Jokainen äänivastaus huoneessa saa mitä siellä tapahtui viimeisen tunnin aikana: aikaisemmat keskustelut siinä huoneessa, mitä siellä äänellä vaihdettiin ja mitä siellä ilmoitettiin. Jos joku juuri puhui toisessa huoneessa muutama minuutti sitten, eikä täällä ole sen jälkeen sanottu mitään, sekin keskustelu tulee, jotta he voivat jatkaa siitä, mihin jäivät. Mitään uutta ei tallenneta. Yksityishuoneet ja vierastila saavat vain oman huoneensa tietueen. Pois päältä: mitään ei ole lisätty.",
+     "know_people": "Kun puheentunnistus ei ole nimennyt kaiutinta, Sentient selvittää, kenen se luultavasti on, asioista, joihin se voi luottaa: Home Assistant-sovellukseen kirjoitettu viesti tulee kyseisen henkilön tililtä tai hänen oma on huoneen ainoa puhelin, jota seurataan. Äänelle kerrotaan, kuka se luultavasti on, ja se asettaa ensin sen, mitä tämä henkilö kertoi itsestään. Arvaus ei koskaan salli mitään, mikä vaatii vahvistusta, eikä heidän nimensä alle sen vuoksi tallenneta mitään. Ei vierastilassa tai yksityisissä huoneissa. Pois: ei arvauksia.",
+     "instant_answers": "Arkisiin kysymyksiin vastataan suoraan kotoa käsin ennen tekoälyä: kellonaika, sää ulkona, onko jokin nimetty laite päällä, pois päältä, auki vai lukittu, huoneen lämpötila, seuraava hälytys tai muistutus, vierailijat ja onko talo lukossa. Vain kysymyksiä, vain yksi laite, joka täsmää selvästi ja on alttiina ääniavustajalle; kaikki muu menee tekoälyyn tavalliseen tapaan. Vaihto lisätään keskusteluun, joten jatko tietää, mitä kysyttiin. Vieraat ja yksityishuoneet näkevät vain ajan, sään ja laitteen tilat. Pois päältä: jokainen kysymys menee tekoälylle.",
+     "capability_awareness": "Äänelle kerrotaan, millaisia ​​asioita se voi ohjata tässä talossa äänellä (mitä puheavustajille altistuu, kuinka monta kutakin) ja mitä yhteisiä talossa ei ole, kuten älylukot tai moottoroidut kaihtimet, joten se ei koskaan tarjoa mitään, mihin mikään laite ei pysty. Tarjous, joka lipsahtaa joka tapauksessa läpi (ikkunan sulkeminen, oven lukitseminen), poistetaan vastauksesta ennen kuin se puhutaan. Harjoiteltu viiden minuutin välein, ei tekoälyä. Pois päältä: mitään ei lisätä tai poisteta.",
+     "house_context_entities": "Laitteet, jotka sisällytetään yleisiin talon yhteenvedoihin automaattisten ilmasto- ja avaus-/läsnäoloraporttien ohella. Vain tällä hetkellä altistuvat ja käytettävissä olevat laitteet jaetaan; enintään kahdeksan asiaankuuluvaa lukemaa pyyntöä kohti.",
+     "house_context_updates": "Edellyttää nykyistä talokontekstia. Vahvistetun suojatun lämmityspyynnön jälkeen valinnaisesti sano kerran, kun termostaatti ilmoittaa pyydetyn lämpötilan. Vanhenee tunnin kuluttua, peruuntuu, jos sen tavoite muuttuu, enintään yksi päivitys 15 minuutissa. Noudattaa normaaleja puhesääntöjä ja vierastilaa. Oletuksena pois päältä. Pois päältä kytkeminen tyhjentää odottavat päivitykset.",
+     "security_event_evidence": "Käytä Frigate-tapahtumatunnuksia, tilannekuvia ja leikkeitä määritetyissä kameroissa. Ainutlaatuinen kamera/aika-osuma on ehdokaslinkki, ei todiste siitä, että anturi tunnisti kyseisen tapahtuman. Säilytä jopa 3 000 tapahtumatietuetta seitsemän päivän ajan paikallisesti. Oletuksena pois päältä. Poistaminen käytöstä piilottaa linkit ja lopettaa vastaavuuden. säilytetyt tietueet vanhenevat tai ne voidaan unohtaa.",
+     "security_event_zones": "Vain se, mikä tulee vyöhykkeelle: kamerassa, jossa on Frigate-vyöhykkeet, tapahtuma luetellaan (ja voi aloittaa tietoturvahäiriön) vasta, kun objekti on mennyt johonkin niistä, samaa sääntöä Frigate käyttää hälytyksiinsä. Kamera ilman vyöhykkeitä luettelee kaiken. Kaikki havaittu: jokainen kohde Frigate seuraa valituissa kameroissa. Frigate:n omia asetuksia ei muuteta koskaan.",
+     "security_event_hidden_zones": "Yksi per rivi kamerana/vyöhykkeenä, esimerkiksi portti/ajotieltä. Tapahtumat, jotka ovat vain näillä vyöhykkeillä, eivät ole luettelossa, eivätkä ne aloita tietoturvahäiriöitä. Käytä Suojaus-sivulla PIILOTA TÄMÄ VYÖHYKE -vaihtoehtoa muutaman \"ei henkilö\" -korjauksen jälkeen tai poista rivi listataksesi vyöhykkeen uudelleen. Frigate ei ole muuttunut.",
+     "security_coverage": "Näytä, mitkä määritetyt kamerat lisäsivät säilytettyjä todisteita ja mahdolliset raportit, jotka on tallennettu live-tapahtumien ohella. Nykyiset kameraraportit näytetään erikseen. Tämän poistaminen poistaa säilytetyt peittoaukot.",
+     "frigate_pipeline_health": "Lue Frigate MQTT:n saatavuus, kamerakohtaiset käsittelynopeudet ja milloin Sentient viimeksi vastaanotti tapahtuman. Puuttuvat tiedot näytetään tuntemattomina. Kameran asetuksia ei muuteta.",
+     "security_conversation_context": "Muista valitun tapahtuman enintään viiden minuutin ajan saman keskustelun, laitteen ja käyttäjän sisällä. Seurantakysymyksissä käytetään kyseistä tapahtumaa ja tuoreita käyttöasteraportteja; henkilöllisyyttä tai jatkuvaa läsnäoloa ei oletetaan. Seuraa määritettyjä kameratapahtumia. Oletuksena pois päältä. Poistaminen käytöstä poistaa keskusteluviitteet; tapahtumatiedot säilyttävät normaalin vanhenemispäivänsä.",
+     "security_event_feedback": "Järjestelmänvalvojat voivat merkitä käynnin hyväksi saaliiksi, eivät henkilöksi tai huomiotta jätettäväksi. Tarkistetut käynnit siirtyvät taitettuun Arvosteltu-luetteloon, ja \"ei henkilö\" lasketaan myös tarkistetuksi vääräksi havainnoksi vain kyseisestä käynnistä tehdyn tietoturvahäiriön osalta. Korjaukset ovat voimassa seitsemän päivää. Ei automaattisia tunnistimen, hälytyksen tai ilmoitussäännön muutoksia. Poistaminen käytöstä piilottaa palautteen ja pysäyttää uudet korjaukset; Käytä Unohda viimeisimmät tiedot poistaaksesi tallennetut tietueet.",
+     "share_clip_analysis": "Jaa yhteensopivia yleisiä analyyseja samasta valmiista Frigate-tapahtumasta automaattisen leikkeen katselun ja tapahtumaleikkeiden kysymyksiin. Palveluntarjoajan, materiaalin kattavuuden ja identiteettiasetusten on vastattava toisiaan. Mukautetut kysymykset analysoidaan erikseen. Pidä enintään 100 tulosta muistissa kuuden tunnin ajan. Oletuksena pois päältä. Poistaminen käytöstä, asetusten muuttaminen tai unohtaminen tyhjentää välimuistin."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient on jo määritetty."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Asetukset",
+     "briefing": "Tilannekatsaukset",
+     "memories": "Muistoja"
+    }
+   },
+   "settings": {
+    "title": "Asetukset",
+    "data": {
+     "persona": "Nimi",
+     "speakers": "Kaiuttimet",
+     "default_speaker": "Oletuskaiutin",
+     "quiet_start": "Hiljaiset tunnit alkavat",
+     "quiet_end": "Hiljaiset tunnit päättyvät",
+     "busy_entities": "Pysy hiljaa kiireisenä",
+     "motion_window": "Huonetietoisuusikkuna",
+     "banned_words": "Älä koskaan käytä näitä sanoja (pilkuilla erotettuna)",
+     "suppress_entities": "Pysy hiljaa näiden automatisointien tai komentosarjojen jälkeen",
+     "suppress_seconds": "Pysy hiljaa",
+     "prompt_memories": "Muistoja jaettavaksi ääniavustajien kanssa",
+     "pass_through_areas": "Läpikulkualueet",
+     "all_occupied": "Puhu jokaisessa huoneessa",
+     "room_tracking": "Käytä huoneseurantalaitteita (Bluetooth)",
+     "room_trackers": "Huoneen seurantalaitteet",
+     "ai_task_entity": "AI taustatöihin",
+     "camera_cooldown": "Minimiväli kameran tarkastusten välillä",
+     "fallback_speakers": "Vain varakaiuttimet",
+     "daily_ai_limit": "AI-puhelut päivässä",
+     "prompt_recent": "Juuri nyt ja viimeinen tunti äänen kontekstissa",
+     "rules": "Säännöt ja niiden teko äänellä",
+     "relevant_memories": "Valitse muistot, jotka vastaavat kysyttyä",
+     "look_cache_minutes": "Käytä kameravastausta uudelleen",
+     "camera_prefilter": "Ohita kamera näyttää, kun mikään ei ole muuttunut",
+     "budget_drive": "Tekoälypuhelut päivässä: ajo",
+     "budget_noticing": "Tekoälypuhelut päivässä: huomaaminen",
+     "budget_cameras": "Tekoälypuhelut päivässä: kamera tarkistaa ja tarkkailee",
+     "routine_evidence": "Kerro kuinka usein rutiini on nähty",
+     "notice_entities": "Huomioitavaa",
+     "remark_repeat_hours": "Älä toista huomautusta",
+     "chattiness": "Kuinka puhelias",
+     "conversation_style": "Miten se puhuu",
+     "carry_on_minutes": "Jatka keskustelua",
+     "focused_tools": "Kohdistetut äänityökalut",
+     "ask_later": "Kysy miten kävi",
+     "put_right": "Korjaa virheet kerralla",
+     "music": "Musiikkia kysymällä",
+     "music_alexa": "Musiikkia Alexa:n kautta (Echos)",
+     "music_alexa_service": "Musiikkipalvelu Echos:lle",
+     "house_rules": "Talon säännöt",
+     "no_security_offers": "Älä koskaan tarjoa viritystä, riisumista tai lukituksen avaamista",
+     "learn_entities": "Opi rutiineista",
+     "learn_anchors": "Tottumukset, jotka seuraavat päivää",
+     "trust_lights": "Valot",
+     "trust_switches": "Kytkimet, pistokkeet ja tuulettimet",
+     "trust_covers": "Kaihtimet ja verhot",
+     "trust_heating": "Lämmitys",
+     "offer_together": "Tarjoa yhdessä tehtyjä tapoja",
+     "link_triggers": "Opi myös, mitä näistä seuraa",
+     "suggest_routines": "Tarjoa rutiinien ottamista",
+     "prove_routines": "Tottumukset osoittavat itsensä ennen kuin niitä tarjotaan",
+     "routine_fading": "Kysy rutiineista, joita ei enää tarvita",
+     "door_camera": "Ovikamera",
+     "door_triggers": "Ovikello",
+     "announce_visitors": "Sano kuka on ovella",
+     "faces": "Nimet kasvojentunnistuksesta",
+     "face_people": "Vain nämä ihmiset",
+     "face_teach": "Kysy puhelimessa, ketkä ovat nimeämättömät kasvot",
+     "face_teach_cameras": "Opi kasvot näistä kameroista",
+     "face_cameras": "Nimet vain näistä kameroista",
+     "face_forget_hours": "Unohda nimettömät kasvot jälkeenpäin",
+     "clip_watch": "Katso tapahtumavideoita",
+     "clip_cameras": "Kamerat",
+     "clip_scope": "Mitkä tapahtumat",
+     "clip_when": "Kun",
+     "clip_notify": "Lähetä puhelimiin",
+     "clip_source": "Kuka kirjoittaa yhteenvedon",
+     "clip_whose": "Kerro kuka perheenjäsen se oli",
+     "clip_looks": "Miltä ihmiset näyttävät, kun heidän kasvojaan ei voi nähdä",
+     "budget_clips": "Päivänä katsotut leikkeet (useimmat)",
+     "clip_days": "Säilytä yhteenvedot",
+     "clip_keep": "Säilytä leiketiedostot",
+     "parcel_alerts": "Sano kun paketti on jäljellä",
+     "doorstep_sensors": "Tarkista paketit käyntien jälkeen",
+     "zone_visits": "Laske joku etuoven kameravyöhykkeestä vierailijaksi",
+     "zone_door_sensors": "Etuoven anturi (vyöhyke jätetään huomioimatta, jos se avataan ensin)",
+     "face_sensor": "Tunnistettu nimi kohteesta",
+     "sidebar_panel": "Näytä sivupalkissa",
+     "page_admin_only": "Vain järjestelmänvalvojat voivat avata tämän sivun",
+     "custom_pages": "Järjestä Sentient-sivu uudelleen",
+     "suggestions": "Ehdotuksia Sentient-sivulla",
+     "whats_new": "Mitä uutta päivityksen jälkeen",
+     "simple_settings": "Yksinkertaisempi asetussivu",
+     "auto_backup": "Varmuuskopioi joka viikko",
+     "backup_keep": "Kuinka monta pitää",
+     "confirm_kinds": "Kysy \"Saanko?\" ennen",
+     "chat_agent": "Chat-agentti sivupalkin sivulle",
+     "battery_threshold": "Alhainen akku",
+     "battery_forecast": "Sano kun paristot loppuvat",
+     "health_ignore": "Ohita kodin terveyden vuoksi",
+     "hide_substreams": "Piilota ylimääräiset kameranäkymät",
+     "ignore_cameras": "Kamerat huomioimatta",
+     "never_entities": "Älä koskaan koske näihin",
+     "self_check": "Tarkista itsesi joka ilta",
+     "learn_corrections": "Opi, kun kumoat sen, mitä se teki",
+     "normal_day": "Huomaa epätavallinen päivä",
+     "thoughts": "Näytä mitä se ajattelee",
+     "share_learning": "Kerro, mitä se on oppinut",
+     "self_adjust": "Säädä itseään",
+     "proposals": "Ehdota muutoksia sen asetuksiin",
+     "privacy_log": "Pidä kirjaa siitä, mitä talosta lähtee",
+     "goals": "Maalit",
+     "manuals": "Vastaus asiakirjoista",
+     "manuals_folder": "Asiakirjat-kansio",
+     "manuals_local_text": "Katso tekstidokumenttien sisään",
+     "manuals_pages": "Lue PDF-tiedostoja sivu sivulta",
+     "games": "Tarina pelit",
+     "voice_id": "Tiedä kuka puhuu",
+     "voice_id_unknown": "Kohtele ääniä, joihin se ei voi vastata kuin vieraana",
+     "speaker_memories": "Säilytä jokaisen henkilön muistot heille",
+     "books": "Kirjat",
+     "books_folder": "Kirjat-kansio",
+     "reading_tts": "Äänen lukeminen: palvelu",
+     "reading_voice": "Lukuääni",
+     "read_ahead": "Valmista seuraava osa lukemisen aikana",
+     "recipes": "Reseptit",
+     "recipes_folder": "Reseptit-kansio",
+     "recipes_list": "Ostoslista ainesosille",
+     "voice_lists": "Ostokset ja tehtävälistat äänellä",
+     "ready_tonight": "Valmiina iltaan",
+     "ready_tonight_lights": "Valmiina illaksi: valot, se saattaa sammua",
+     "ready_tonight_follow": "Valmiina iltaan: kerro minulle, kun se on järjestetty",
+     "tandoor_url": "Tandoori osoite",
+     "tandoor_token": "Tandoor API-tunnus",
+     "second_opinion_ai": "Tekoäly toista arviota varten",
+     "smart_ai_task": "Vahvempi tekoäly lisää turvallisuutta ja yhdessä yössä ajattelua",
+     "event_clips": "Katso Frigate:n tapahtumaleikkeet",
+     "notify_targets": "Ilmoitettavat puhelimet",
+     "notify_when": "Lähetä puhelimiin",
+     "phone_buttons": "Puhelimen ilmoitusten painikkeet",
+     "phone_apps": "Painikkeiden kumppanisovellukset",
+     "bins_check": "Roskisten tarkistus",
+     "bins_calendar": "Bin kalenteri",
+     "bins_spot": "Roskakorien kamerapaikka",
+     "bins_time": "Katso",
+     "chime": "Soita ennen puhumista",
+     "welcome_home": "Tervetuloa ihmiset kotiin",
+     "welcome_people": "Ihmiset tervetulleiksi",
+     "welcome_min_away": "Poissa ainakin",
+     "welcome_until": "Tervetuloa illalla asti",
+     "speak_volume": "Puhumisen äänenvoimakkuus",
+     "night_volume": "Äänenvoimakkuus hiljaisina tunteina",
+     "duck_media": "Sammuta musiikki ja televisio puhuessasi",
+     "critical_alerts": "Turvallisuusvaroitukset",
+     "critical_ignore": "Älä koskaan käsittele näitä turvallisuusvaroittimina",
+     "energy_insight": "Energian näkemys",
+     "energy_price": "Sähkön hinta",
+     "energy_currency": "Valuutta",
+     "price_entity": "Käyttöaikahinta (halpa-sähköehdotuksia)",
+     "search_hints": "Kerro äänelle hakutyökaluista",
+     "web_search": "Sentient:n oma verkkohaku",
+     "searxng_url": "SearXNG osoite",
+     "alexa_skill": "Vastaa Alexa:n kautta esitettyihin kysymyksiin",
+     "alexa_wait": "Pisin odotus ennen kuin Alexa luovuttaa",
+     "alexa_late_answers": "Sano hitaita vastauksia tuolle Echo:lle",
+     "left_open_minutes": "Mainitse sen jälkeen auki jääneet ovet ja ikkunat",
+     "left_open_ignore": "Älä mainitse näitä",
+     "leaving_check": "Tarkista, milloin kaikki lähtevät ulos",
+     "critical_extra": "Käsittele näitä myös turvallisuusvaroittimina",
+     "heating_entities": "Lämmitys oppia",
+     "preheat": "Lämmittele ennen kuin ihmiset heräävät",
+     "heating_schedule": "Lämmitysaikataulu (asetetaan Talo-välilehdellä)",
+     "comfort_temp": "Lämpenemislämpötila",
+     "inside_sensors": "Liiketunnistimet sisällä",
+     "weekly_report": "Viikkoraportti",
+     "night_watch": "Yövartio",
+     "night_watch_entities": "Ovet ja portit katsottavaksi",
+     "night_watch_announce": "Sano hälytykset ääneen, jopa hiljaisina aikoina",
+     "night_watch_speakers": "Sano hälytykset päälle",
+     "warm_by_weekdays": "Lämmin (arkisin)",
+     "warm_by_weekends": "Lämpöä (viikonloppuisin)",
+     "heating_limit": "Käännä lämmitys takaisin tämän jälkeen",
+     "heating_night_temp": "Yön lämpötila",
+     "heating_revert_day_hours": "Paluu jälkeen (päivän aikana)",
+     "heating_revert_night_hours": "Paluu jälkeen (yöllä)",
+     "personality": "Persoonallisuus",
+     "personality_notes": "Persoonallisuuden muistiinpanoja",
+     "style_feedback": "\"Sano se toisin\" siinä sanotuista asioista",
+     "style_notes": "Miten asiat pitäisi sanoa",
+     "camera_security": "Kameran turvallisuus",
+     "camera_security_sensors": "Kameroiden henkilöanturit",
+     "camera_security_inside": "Rajan sisällä",
+     "camera_security_entries": "Reittejä sisään",
+     "camera_security_describe": "Kuvaile kuka se on",
+     "security_reasoning": "Punnitse hälytykset muuhun taloon nähden",
+     "party_lights": "Näytä valot",
+     "party_style": "Tyyli",
+     "party_minutes": "Lopeta sen jälkeen itsekseen",
+     "party_whole_house": "Käytä talon jokaista valoa",
+     "party_exclude": "Älä koskaan käytä näitä valoja",
+     "party_sound": "Seuraa ääntä kohteesta",
+     "party_show": "Painikkeet yleiskatsauksessa",
+     "party_sound_switch": "Kytke päälle kuuntelun aikana",
+     "room_volume": "Puhu meluisassa huoneessa",
+     "follow_you": "Viestit seuraavat ihmisiä",
+     "follow_minutes": "Säilytä viestit välitettäväksi",
+     "conversation_memory": "Muista keskustelut",
+     "follow_ups": "Tarkista asiat uudelleen",
+     "curiosity": "Uteliaisuus",
+     "reflection": "Yön heijastus",
+     "reflection_time": "Heijastaa klo",
+     "drive_spot": "Ajopaikka",
+     "drive_camera": "Aja kamera",
+     "drive_triggers": "Katso kun nämä ratkeavat",
+     "camera_wake": "Ennen kuin katsot, herätä kamera painikkeella",
+     "camera_wake_cameras": "Vain näille kameroille",
+     "camera_wake_seconds": "Odota sitten",
+     "known_cars": "Kotitalousautot",
+     "full_volume_speakers": "Täysi äänenvoimakkuus näissä kaiuttimissa",
+     "tts_entity": "Ääni muille kaiuttimille",
+     "house_language_text": "Sentient:n omat sanat talon kielellä",
+     "speak_house_language": "Sano sisäänrakennetut lauseet talon kielellä",
+     "media_speakers": "Käytä Echos:tä ja muita mediasoittimia",
+     "media_important_only": "Echos: vain hälytykset ja muistutukset",
+     "foresight": "Katsaus huomiseen",
+     "foresight_time": "Katso eteenpäin",
+     "sleep_detection": "Tiedä milloin talo nukkuu",
+     "sleep_minutes": "Nukahtaa sen jälkeen, kun mitään ei ole siirretty",
+     "sleep_ignore_sensors": "Anturit, jotka jätetään huomioimatta nukkumaanmenoaikaan",
+     "bedtime_routines": "Nukkumaanmeno-rutiinit",
+     "sleep_actions": "Kun talo menee nukkumaan, tee",
+     "wake_actions": "Kun joku on hereillä, tee",
+     "appliances": "Kodinkoneet seurata",
+     "appliance_announce": "Sano kun ne loppuvat",
+     "appliance_watts": "Juokse ylhäällä",
+     "voice_agent": "AI-ääniagentti",
+     "backup_agent": "Vara-avustaja",
+     "offline_answers": "Vastaa yleisiin kysymyksiin ilman tekoälyä",
+     "animal_sensors": "Eläinten lämpötila-anturit",
+     "away_lights_on": "Pois valot",
+     "holiday_mode": "Lomatila",
+     "holiday_thermostats": "Termostaatit sammuvat lomalla",
+     "holiday_frost": "Jäätymissuojalämpötila",
+     "holiday_end_on_return": "Lopeta lomatila, kun joku on kotona",
+     "away_people": "Pois, kun nämä kaikki ovat poissa",
+     "away_lights": "Käytettävät valot",
+     "away_after": "Aloita sen jälkeen, kun kaikki ovat olleet ulkona",
+     "animal_low": "Liian kylmä alla",
+     "animal_high": "Liian kuuma ylhäällä",
+     "hutch_check": "Eläinhäkin iltatarkistus",
+     "hutch_spot": "Koton kamerapaikka",
+     "cat_watch": "Kissan yökello",
+     "cat_sensors": "Kissan anturit",
+     "cat_loud": "Sano se heti yöllä",
+     "rain_warnings": "Sadevaroitukset",
+     "rain_entities": "Ikkunat ja ovet katsottavaksi",
+     "self_test": "Itsetestaus",
+     "self_test_household": "Kotitalouskysymykset itsetestissä",
+     "screen": "Käytä tabletin näyttöä",
+     "screen_actions": "Kun jotain näkyy",
+     "screen_clear_actions": "Kun kaikki on puhdistettu",
+     "conversation_sessions": "Keskusteluistunnot",
+     "room_conversation_handoff": "Huoneesta huoneeseen keskustelun vaihto",
+     "verified_bedtime": "Vahvistettu alakerran nukkumaanmenoaika",
+     "verified_bedtime_lights": "Alakerran nukkumaanmenovalot",
+     "verified_bedtime_contacts": "Alakerran nukkumaanmenoajan avauskoskettimet",
+     "session_seconds": "Istunnon toimettomuuden aikakatkaisu",
+     "guarded_control": "Pakotettu äänivahvistus",
+     "routine_verify": "Tarkista rutiinit toimineet",
+     "voice_unlock": "Salli lukituksen avaaminen äänellä",
+     "voice_undo": "Kumoa viimeisimmät valomuutokset",
+     "evidence_awareness": "Selitä todisteet ja epävarmuus",
+     "security_incidents": "Ryhmän turvallisuushäiriöt",
+     "incident_front": "Talon edessä",
+     "live_voice_check": "Live-äänen tarkistus",
+     "speech_delivery_history": "Kaiuttimen toimitushistoria",
+     "alexa_tts_only": "Käytä TTS:ää vain Alexa:ssä",
+     "update_checker": "Tarkista Sentient-päivitykset",
+     "contextual_followups": "Yhdistetyt seurannat ja korjaukset",
+     "conversation_recovery": "Keskustelun peruuttaminen ja varovainen palautuminen",
+     "automatic_language": "Automaattinen kielituki",
+     "voice_language": "Puhe- ja keskustelukieli",
+     "remember_language_phrases": "Muista yleiset kielen lauseet",
+     "stream_voice_replies": "Puhu äänivastaukset, kun ne on kirjoitettu (kokeilu)",
+     "voice_timing_diagnostics": "Äänivasteen ajoituksen diagnostiikka",
+     "reliability_log": "Huomaa, missä ääni menee pieleen",
+     "unified_evidence": "Yhtenäinen kotitalouksien todisteiden haku",
+     "specific_clarification": "Tietyt laite- ja arvokysymykset",
+     "action_recovery": "Laitteen tulokset ja varovainen palautuminen",
+     "recheck_unconfirmed": "Katso uudelleen muutokset, jotka eivät raportoineet",
+     "speech_failure_notification": "Ilmoita kaiuttimen toimitushäiriöistä",
+     "recent_followup_context": "Lyhyet seurannat uuden herätyssanan jälkeen",
+     "conversation_cues": "Ymmärrä allekirjoitukset, korjaukset ja aiheen muutokset",
+     "vary_replies": "Sano asiat joka kerta eri tavalla",
+     "behaviour_explanations": "Selitä kuuntelu- ja toimintapäätökset",
+     "current_house_context": "Nykyinen talokonteksti",
+     "moment_awareness": "Tietoisuus hetkestä",
+     "room_memory": "Lyhytaikainen muisti per huone",
+     "know_people": "Tiedä kuka luultavasti puhuu",
+     "instant_answers": "Välittömät vastaukset",
+     "capability_awareness": "Tiedä mitä talo voi tehdä",
+     "house_context_entities": "Muita kontekstikokonaisuuksia",
+     "house_context_updates": "Kerro kun pyydetty lämmitys on saavutettu",
+     "security_event_evidence": "Linkitä suojaushälytykset Frigate-tapahtumiin",
+     "security_event_zones": "Mitkä kameratapahtumat on lueteltu",
+     "security_event_hidden_zones": "Alueet, joiden tapahtumia ei ole listattu",
+     "security_coverage": "Selitä kameran peittovälit",
+     "frigate_pipeline_health": "Näytä Frigate-putkiston kunto",
+     "security_conversation_context": "Säilytä tietoturvatapahtuma keskustelussa",
+     "security_event_feedback": "Tallenna palautetta kameratapahtumista",
+     "share_clip_analysis": "Käytä uudelleen vastaavia leikkeen analyyseja",
+     "heating_graph": "Lämmityskortin lämpötilakaavio",
+     "heating_revert": "Palaa aikatauluun muutoksen jälkeen käsin",
+     "window_heating": "Sammuta huoneen lämmitin, kun sen ikkuna on auki",
+     "window_heating_minutes": "Minuuttia ikkuna on auki ennen kuin toimitaan",
+     "rooms_view": "Huoneet yhdellä silmäyksellä (Talo-välilehti ja yleiskatsaus)",
+     "outdoor_areas": "Ulkoalueet",
+     "knowledge_card": "MITÄ TIEDÄN -kortti Mieli-välilehdellä",
+     "day_chart": "TÄNÄÄN PÄIVÄ -kaavio yleiskatsauksessa",
+     "house_ledger": "Kodin loki",
+     "unexplained_changes": "Mainitse selittämättömät muutokset",
+     "unexplained_entities": "Laitteet, joiden avulla voi seurata selittämättömiä muutoksia",
+     "expectations": "Odotuksia ja yllätyksiä",
+     "surprise_gating": "Ohita huomautukset siitä, mikä on tavallista",
+     "situations": "Kerro äänelle, mitä nyt tapahtuu",
+     "beliefs": "Muodosta ja testaa uskomuksia",
+     "learn_reactions": "Opi reaktioista",
+     "ai_case_memory": "Tallenna tekoälypuhelut (tapausmuisti)",
+     "memory_tags": "Muista merkityksen perusteella",
+     "memory_upkeep": "Muisto, joka säilyttää itsensä",
+     "watch_actions": "Kellot ja muistutukset voivat toimia",
+     "memory_time": "Muisti, joka ymmärtää aikaa",
+     "who_where": "Tiedä kuka on missä",
+     "big_plans": "Suunnitelmia suuria pyyntöjä varten",
+     "self_grading": "Arvioi omat vastauksensa",
+     "voice_speed_watchdog": "Äänen nopeuden vahtikoira",
+     "voice_speed_restart": "Käynnistä hidas kaiutin uudelleen itsestään",
+     "incident_stages": "Turvatapahtuman vaiheet",
+     "cognitive_shadow": "Vertaa tietoturvahäiriöitä (testaus)",
+     "cognitive_decides": "Anna kognitiivisen ytimen päättää tapahtuman vaiheet, kun se on ansainnut sen",
+     "cognitive_quiet_heads_up": "Vain testaus: arvioi yön heads-up-päätökset (ei hälytysten estämistä)",
+     "weather_warnings": "Sää- ja tulvavaroitukset",
+     "warnings_country": "Maa",
+     "warnings_region": "Alue (valinnainen)",
+     "warnings_speak": "Sano vakavia varoituksia",
+     "email_read": "Vain luku -sähköposti",
+     "calendar_clashes": "Kalenterin yhteenotot",
+     "security_audit": "Turvatarkastus",
+     "automation_builder": "Rakenna automaatioita",
+     "pronounce_names": "Sano nimet niin kuin ne lausutaan",
+     "pronunciations": "Ääntämiset (yksi per rivi)",
+     "health_duplicates": "Paikanna laitteet lueteltu kahdesti",
+     "manuals_local_ocr": "Lue skannatut PDF-sivut paikallisella OCR:llä",
+     "memory_semantic_enabled": "Paikallinen semanttinen muistiluokitus",
+     "memory_semantic_url": "Paikallisen upotuspalvelimen osoite",
+     "memory_semantic_model": "Paikallinen upotusmalli",
+     "ai_routing_enabled": "Valitse automaattisesti halvempi tekoäly tekstitehtäviin",
+     "ai_routing_alternative": "Vaihtoehtoinen AI Task -kokonaisuus",
+     "ai_routing_primary_cost": "Tavallinen tekoälyn arvioitu hinta per puhelu",
+     "ai_routing_alternative_cost": "Vaihtoehtoisen tekoälyn arvioitu hinta per puhelu",
+     "ai_routing_max_p95_ms": "Vaihtoehtoinen AI-vasteaika (ms)",
+     "heating_energy_sensor": "Lämmitysenergiamittari (kWh)",
+     "heating_measurement_date": "Päivämäärä lämmitysenergian käytön vertailuun",
+     "heating_energy_price_kwh": "Lämmön hinta per kWh",
+     "autooff_respect_recent_voice": "Anna automaattisen virrankatkaisun noudattaa viimeaikaisia ​​äänikomentoja"
+    },
+    "data_description": {
+     "motion_window": "Kuinka monta minuuttia liikehistoriaa on punnittava, kun päätetään, missä ihmiset ovat.",
+     "suppress_entities": "e.g. ovikelloilmoituksesi, joten taustahuomautukset eivät puhu siitä.",
+     "busy_entities": "Kun mikä tahansa näistä on päällä (kokouskalenteri, tarkennuskytkin, puhelin Älä häiritse -tilassa), Sentient pidättää puhetta, joka voi odottaa, kuin olisi hiljaa. Turvavaroitukset ja pyytämäsi vastaukset tulevat silti perille. Jätä tyhjäksi poistaaksesi tämän käytöstä.",
+     "prompt_memories": "Kuinka monta muistoa puheavustajalle annetaan etukäteen. Loput voidaan vielä etsiä.",
+     "pass_through_areas": "Käytävät, tasanteet ja portaat. Näiden läpi käveleminen maksaa paljon vähemmän, joten ohikulkija ei varasta ilmoitusta.",
+     "all_occupied": "Päällä: kaikki kotona olevat kuulevat sen. Pois: vain vilkkain huone.",
+     "room_tracking": "Oletuksena pois päältä. Kun huoneseurantalaite (esim. Bermudan \"alue\"-anturi puhelimelle) sanoo jonkun olevan huoneessa, jossa on kaiutin, siellä sanotaan asiat \"missä ihmiset ovat\". Kun mikään seurantalaite ei tiedä — puhelinta ei näy, ulos tai huone ilman kaiutinta — liikepohjaista arvausta käytetään kuten ennen. Ainoastaan ​​tapana valita, missä puhua, ei koskaan päättänyt, onko joku valmis. Mitään ei tallenneta.",
+     "room_trackers": "Anturit, joiden tila on huone, jossa jokin on, kuten Bermudan \"alue\"-anturit (yksi per puhelin tai tunniste). Jokainen tarvitsee huoneen, joka vastaa Home Assistant-aluetta.",
+     "ai_task_entity": "Tekoälytehtävä, jota käytetään kameran katseluun, tiedotustilaisuuksiin, öiseen ajatteluun ja huomiseen. Tyhjä käyttää Home Assistant:n ensisijaista tekoälytehtävää.",
+     "camera_cooldown": "Kamerakello katsoo uudelleen enintään näin usein pitääkseen tekoälykustannukset alhaisina.",
+     "fallback_speakers": "Käytetään vain, kun ketään ei ole minkään muun kaiuttimen huoneessa, e.g. olohuone, jota et halua häiritä.",
+     "daily_ai_limit": "Taustalla tehdyt tekoälypuhelut (kameratarkistukset, tiedotustilaisuudet, öinen pohdiskelu, ovikello…) pysähtyvät päiväksi tämän monien jälkeen, ja sen sijaan käytetään yksinkertaisia ​​sanoja. Kysymyksiisi vastataan silti. 0 tarkoittaa, että ei ole rajaa.",
+     "prompt_recent": "Muutama rivi tällä hetkellä (nukkuvat, hiljaiset tai hiljaiset ajat, vieraat, kaikki aukioloajat ja lukemat, joista ei ole kuulunut tuntikausiin, joten niitä ei anneta ajankohtaisina), mitä tapahtui viimeisen tunnin aikana ja missä on ollut liikettä, joten \"mitä minun pitäisi tietää?\" ja \"mitä juuri tapahtui?\" vastataan heti. Ilmainen: ei ylimääräisiä AI-puheluita.",
+     "rules": "\"Kun näin tapahtuu, tee se\" säännöt (Säännöt-sivu), ja ääni voi tehdä ne: se lukee säännön takaisin ja tallentaa sen vasta kyllä-lauseen jälkeen. Säännöt eivät voi koskaan virittää, poistaa aseista tai avata mitään. Pois: sääntöjä ei suoriteta.",
+     "relevant_memories": "Kun muistoja on enemmän kuin äänen kontekstiin mahtuu, se saa ne, jotka jakavat kysymyksen kanssa sanoja, sitten uusimmat. Ilmainen, ei tekoälyä. Off: aina uusin.",
+     "look_cache_minutes": "Sama kysymys samalle kameralle tänä aikana saa viimeisen vastauksen uuden tekoälyn sijaan. 0 näyttää aina uudelleen.",
+     "camera_prefilter": "Kamera tarkistaa ja katselee ensin pientä kuvaa (tässä koneessa, ilmainen) ja kysyy tekoälyltä vain, kun kamera tai sen kohta näyttää erilaiselta kuin viimeinen katse.",
+     "budget_drive": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan.",
+     "budget_noticing": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan.",
+     "budget_cameras": "Oma päiväraha kokonaisrajan sisällä. 0 tarkoittaa, että se jakaa vain kokonaisrajan. Turvallisuutta, ovikelloa ja esittämiäsi kysymyksiä ei koskaan pidätetä.",
+     "routine_evidence": "Rutiinin haltuunottotarjouksissa kerrotaan, kuinka usein se tapahtui, e.g. '4 viimeisestä 4 viikonloppupäivästä'.",
+     "notice_entities": "Kun nämä muuttuvat, tekoäly päättää, kannattaako sanoa jotain (tai kysyä). e.g. pesukone, ovet, sää, roskakorit.",
+     "remark_repeat_hours": "Samaa huomattua asiaa (\"Kattila on kiehunut.\") ei toisteta uudelleen näin pitkään. 0: ei rajaa.",
+     "chattiness": "Rajoittaa huomautuksia tunnissa: hiljainen 2, normaali 4, puhelias 8. Pois lakkaa huomaamasta.",
+     "conversation_style": "Lyhyesti: lyhyet, ytimekkäät vastaukset. Luonnollinen: komennot pysyvät lyhyinä, mutta kysymykset ja chat saavat muutaman luonnollisen lauseen ja jatkokysymyksen, kun joku kysyy sellaisen, mikä pitää mikrofonin kuuntelemassa.",
+     "carry_on_minutes": "Herätyssanan sanominen uudelleen pian puhumisen jälkeen jatkaa samaa keskustelua samasta kaiuttimesta, joten \"ja yläkertaan?\" silti järkevää. 0 kytkee tämän pois päältä; Home Assistant unohtaa keskustelun viiden hiljaisen minuutin jälkeen.",
+     "focused_tools": "Anna äänelle vain Sentient:n työkalut, jotka sopivat siihen, mitä pyydettiin (kamerat, lämmitys, muistutukset…) sekä muisti ja turvallisuus. Pienempi valikoima tekee halvemmista malleista nopeampia ja tarkempia. Kaikki, mikä ei täsmää, saa silti kaikki työkalut.",
+     "ask_later": "Kun joku mainitsee jotain tulevasta (matkasta, ottelusta, eläinlääkäristä), ääni voi muistaa kysyä, kuinka meni, kun joku seuraavan kerran puhuu sille — kerran, ei koskaan hiljaisina tunteina tai vieraiden ollessa paikalla, eikä koskaan mistään yksityisestä. Se ei koskaan puhu tyhjästä. Tämän kytkeminen pois päältä unohtaa kaiken, mikä odottaa kysymistä.",
+     "put_right": "Kun sanot \"ei, se toinen\" tai \"ei se valo, lamppu\", ääni kytkee takaisin sen, minkä juuri sytytti (päälle tai pois päältä, muutaman minuutin sisällä) ja tekee pyynnön uudelleen vain korjatulla osalla — kaikkea ei tarvitse sanoa uudelleen. Tämän poistaminen jättää sen suoraan puheagentille.",
+     "music": "Kun Music Assistant on asetettu (tai musiikki Alexa:n kautta päällä): \"soita jotain rauhallista keittiössä\" poimii soittolistoistasi ja radioasemistasi ja toistaa sen kyseisen huoneen Music Assistant -soittimella (tai kysyy huoneen Echo) — yöäänenvoimakkuudella hiljaisina aikoina, etkä huoneessa omaan hiljaiseen aikaansa. Pois: ei musiikkityökalua.",
+     "music_alexa": "Ilman Music Assistantia: \"soita jotain rauhallista keittiössä\" pyytää Echo:tä siinä huoneessa (Alexa Media Player) toistamaan sen alla olevasta palvelusta nimellä — soittolistan, artistin, kappaleen tai tunnelman mukaan — yöäänellä hiljaisina aikoina, ei huoneessa omalla hiljaisella hetkellä, ellet ole siinä. Palvelu on linkitettävä Alexa-sovelluksessa. Pois päältä: Echos-laitteita ei koskaan pyydetä soittamaan musiikkia.",
+     "music_alexa_service": "Mistä palvelusta Echos soittaa. Spotify toimii ilmaisella tilillä, mutta Alexa voi sekoittaa samanlaista musiikkia tarkan kappaleen sijaan; Premium pelaa juuri sitä mitä pyydetään.",
+     "house_rules": "Yksinkertaisia ​​lauseita jokaisen äänen tulee seurata, yksi riviä kohden, e.g. 'Älä koskaan sano, että talo on tyhjä.'",
+     "no_security_offers": "Poista äänen vastauksista mikä tahansa virke, joka tarjoaa hälyttimen virittämisen tai poiskytkemisen tai oven lukituksen avaamisen (\"Pitäisikö se virittää?\") — myös silloin, kun se puhutaan niin kuin se on kirjoitettu. Vastaukset jollekulle, joka pyysi viritystä, poistamista, lukitsemista tai lukituksen avaamista, jätetään yksin, joten vahvistusta pyydetään edelleen. Oletuksena pois päältä.",
+     "learn_entities": "Valot, kytkimet, tuulettimet ja kaihtimet, joita ihmiset käyttävät käsin. Joka ilta viimeisten kahden viikon aikana tarkistetaan, onko tehty asioita suurin piirtein samaan aikaan useimpina päivinä ja onko tehty heti jonkin muun jälkeen (ovi aukeaa, toinen valo syttyy).",
+     "learn_anchors": "Tapa, joka pitää ajan auringonlaskun, auringonnousun tai ylösnousemisen kanssa kellon sijaan (lamppu hämärässä, kaihtimet auringonnousun aikaan, vedenkeitin ylösnousun jälkeen), opitaan sillä tavalla, joten talon puolestasi tekemä rutiini liikkuu vuodenaikojen mukaan. Herääminen vaatii nukkumis- ja hereilläoloasetuksen. Off: kaikki opitaan kelloa vasten, kuten ennenkin.",
+     "offer_together": "Kun muutama asia tapahtuu yleensä suunnilleen samaan aikaan samoina päivinä (lamppu päällä, kaihtimet kiinni, televisio päällä noin klo 20.00), ne tarjotaan kerran, yhdessä — yksi kyllä ​​ja talo hoitaa ne kaikki. Pois päältä: jokaista tarjotaan erikseen.",
+     "trust_lights": "Kun rutiini, jonka olet antanut talon ottaa haltuunsa, kytkee valot: tee se, sano ensin tai kysy ja tee se vain kyllä ​​(mitään ei tapahdu, jos kukaan ei vastaa).",
+     "trust_switches": "Sama koskee kytkimiä, älypistokkeita ja tuulettimia.",
+     "trust_covers": "Sama kaihtimet ja verhot. Autotallin ovet ja portit kysyvät aina.",
+     "trust_heating": "Sama koskee lämmityksen lämmittämistä ennen ihmisten heräämistä. Ensin kysyminen tarkoittaa, että se ei voi lämmetä, kun kaikki nukkuvat.",
+     "link_triggers": "Valinnainen: lisää asioita, jotka voivat saada tottumuksen (television käynnistys, sänkytunnistin…). Ovet, ikkunat ja opitut valot huomioidaan aina.",
+     "suggest_routines": "Kerran uutta rutiinia kohden, päivän aikana, kun joku on kotona, kysy, pitäisikö talon tehdä se tästä eteenpäin.",
+     "prove_routines": "Äskettäin opittua tapaa tarkkaillaan ensin: joka päivä sen oppimisen jälkeen Sentient tarkistaa, tekikö henkilö todella sen 45 minuutin kuluessa tavanomaisesta ajastaan. Sitä tarjotaan vain, kun se on ollut oikein vähintään 3 päivänä neljästä, jona se sovellettiin (arkipäivisin, viikonloppuisin tai joka päivä). Asetukset › Oppiminen näyttää, kuinka kukin pärjää. Off: Tottumukset tarjotaan heti, kun ne on opittu.",
+     "routine_fading": "Päällä: kun talon puolestasi tekemä rutiini oli jo suoritettu 5 päivänä kahdessa viikossa (joku tekee sen nyt itse), Sentient kysyy kerran, pidetäänkö se, ja lopettaa, jos sanot ei. Vain päivämäärät säilytetään, enintään kaksi viikkoa. Pois päältä: talon tekemät rutiinit säilytetään, kunnes toisin sanotaan.",
+     "door_camera": "Katsoin heti kun ovikello soi, kirjata kuka tuli.",
+     "door_triggers": "Ovikellon painike (binäärinen anturi tai tapahtuma) tai mikä tahansa muu, joka tarkoittaa, että joku on ovella.",
+     "announce_visitors": "Off pitää sen hiljaisessa lokissa, josta ääniavustajat voivat vastata.",
+     "faces": "Kun Frigate (tai ovikello) tunnistaa jonkun, se siirtyy aikajanalle ja ääni voi vastata \"onko Sam tullut kotiin?\". Nimiä ei koskaan julkisteta tai arvata — ne sanotaan vain, kun joku kysyy. Oletuksena pois päältä.",
+     "face_people": "Nimet sellaisina kuin Frigate ne tuntee. Tyhjä: kaikki, jotka se tunnistaa.",
+     "face_teach": "Auttaa Frigate:n kasvojentunnistusta parantamaan. Kun joku jättää valitun kameran ja Frigate säilytti kasvot, joita se ei voinut nimetä, puhelimet saavat yksityisen \"Kuka tämä?\" kasvot ja painikkeet kotitaloutta varten (puhelimissa on enintään kolme). Napauttamalla yhtä opettaa Frigate; \"Joku muu…\" ottaa kirjoitetun nimen kenelle tahansa uudelle tai \"ei\" poistaa vieraan kasvot. En koskaan puhunut, ei koskaan tableteilla, korkeintaan kymmenen minuutin välein. Tarvitsee Frigate-kasvontunnistuksen päälle ja puhelimet valitaan ilmoituksia varten. Oletuksena pois päältä.",
+     "face_teach_cameras": "Lähikuvakamerat, joissa kasvot ovat selkeät, e.g. ovikello. Tyhjä: ovikamera.",
+     "face_cameras": "Tyhjä: jokainen kamera. Valitse lähikuvat (ovikello, etuovi), jotta vilkas katu ei voi antaa vääriä nimiä.",
+     "face_forget_hours": "Joka ilta kasvot Frigate säilytetään, mutta ketään nimettyä — enimmäkseen tuntemattomia — poistetaan Frigate:stä, kun he ovat näin vanhoja. Nimetyt kasvot säilytetään. 0: jätä se Frigate:lle (se säilyttää viimeiset 200).",
+     "clip_watch": "Kun Frigate päättää tapahtuman valitulla kameralla, tekoäly katselee sitä tallennusosuutta kerran ja lause siirtyy aikajanalle ja Sentient-sivulle: \"Portti 14:10 — mies käveli koiran ohi\". Ääni vastaa \"mitä portilla tapahtui?\" heiltä ilman uutta tekoälykutsua. Ei koskaan puhunut. Oletuksena pois päältä.",
+     "clip_cameras": "Aloita yhdellä, e.g. portti.",
+     "clip_scope": "Frigate:n hälytykset ovat ihmisiä alueilla, jotka olet merkinnyt vaadituiksi — hiljaisin valinta vilkkaalle kadulle. Jos kamera ei koskaan anna hälytyksiä (ei vaadittuja vyöhykkeitä asetettu Frigate:ssä), valitse \"Kaikki vyöhykkeellä\" — Clips-kortti näyttää, mitä ohitettiin ja miksi.",
+     "clip_when": "Katso vain näinä aikoina. Poissa tarkoittaa, että kaikki Poissa-valojen alla valitut ovat sammuneet.",
+     "clip_notify": "Menee vain puhelimiin kuvan ja toistopainikkeen kanssa.",
+     "clip_source": "Frigate:n omat AI-tarkistusyhteenvedot on kytkettävä päälle Frigate:ssä; silloin täällä ei soiteta tekoälypuhelua.",
+     "clip_whose": "Samassa tekoälypuhelussa on mukana Frigate:n kasvokirjaston kotitalouden kasvokuvat (ja alla olevat ilmeet), ja se nimeää jonkun vain silloin, kun se on selvästi hän — \"todennäköisesti Sam\". Vieraita ei koskaan nimetä. Sanottiin vain kysyttäessä, ei kerrottu.",
+     "clip_looks": "Yksi riviä kohden, e.g. \"Sam: punainen pyöräilykypärä ja keltainen takki pyörällä\". Auttaa, kun kypärä tai huppu peittää kasvot.",
+     "budget_clips": "Lasketaan myös päivittäiseen tekoälyrajaan. 0: ei omaa rajaa.",
+     "clip_days": "Yhteenvedot ovat vain sanoja, ja ne poistetaan.",
+     "clip_keep": "Pois päältä: jokainen leike poistetaan heti, kun se on katsottu.",
+     "parcel_alerts": "Katso toimituksen jälkeen uudelleen muutaman minuutin kuluttua ja sano, onko paketti jätetty.",
+     "doorstep_sensors": "Valinnainen: henkilöanturit ovelle tai etupihalle (e.g. a Frigate-vyöhykkeen henkilöiden käyttöaste). Kun käynti siellä päättyy ilman kelloa, ovikamerasta tarkistetaan kerran, onko jäljellä jäänyt paketti tai posti.",
+     "zone_visits": "Käyttää yllä olevia kynnysantureita (e.g. a Frigate alueen henkilöiden läsnäolo). Kun kukaan ei soita, vyöhykkeelle saapunut kohdellaan vieraana: ovikameraa katsotaan ja siitä ilmoitetaan. Kumpi tulee ensin, kello vai vyöhyke, on käynti ja toinen jätetään huomiotta. Pois päältä: vain kello aloittaa vierailun.",
+     "zone_door_sensors": "Valinnainen: etuoven auki/kiinni anturi. Jos ovi avattiin (tai on auki) viimeisen puolentoista minuutin aikana, vyöhyke jätetään huomioimatta, koska joku lähtee tai tulee kotiin.",
+     "face_sensor": "Valinnainen: kasvojentunnistusanturi, jonka tila on nimi, jonka se juuri tunnisti (e.g. alkaen Frigate). Käytetään lokissa ja ilmoituksessa, jos se on päällä.",
+     "sidebar_panel": "Sivupalkin sivu, joka näyttää muistot, rutiinit, kellot, vierailijat ja mitä on sanottu.",
+     "page_admin_only": "Piilottaa sivun ja sen lukeman kaikilta paitsi ylläpitäjiltä. Off pitää sen avoinna koko kotitaloudelle. Sen käynnistäminen ei poista mitään.",
+     "custom_pages": "Päällä: Yleiskatsaus-, Talo-, Mieli- ja Turvallisuus-välilehdet käyttävät tallennettua asetteluasi, ja järjestelmänvalvojat saavat tästä MUOKKAA SIVUN ASETTELUA siirtääkseen kortteja sarakkeiden välillä, piilottaakseen ne, näyttääkseen ne uudelleen tai nollatakseen välilehden. Itse välilehdissä ei ole muokkauspainiketta, vain muokkauksen aikana. Asettelu on tallennettu muotoon Sentient, joten jokainen näyttö näyttää saman. Pois päältä: välilehdet palaavat vakioasetteluun; tallennettu asettelu säilyy, kun kytket sen uudelleen päälle.",
+     "confirm_kinds": "Pyytää tekoälyä kuvaamaan nämä toimet ja odottamaan kyllä-vastausta. Tämä on kehoteohje, ei pakotettu toimintolohko: keskusteluagenttisi ohjaa laitteen suorittamista. Asioiden sammuttaminen ei vaadi kysymistä. Tyhjä: ei ylimääräisiä vahvistusohjeita. Pakkotarkastuksia varten ota suojattu ohjaus käyttöön vaaditulla agenttiasetuksella.",
+     "auto_backup": "Sunnuntai-iltana varmuuskopio muistoista, pisteistä, rutiineista, liikevaloista, sammutuksista ja asetuksista, tallennettu asetuskansioon sentient_backups.",
+     "backup_keep": "Vanhemmat poistetaan.",
+     "suggestions": "Asiat, joita Sentient voisi käyttää, mutta ei — uusi kaiutin, pesukoneen tehoanturi, hutch-lämpömittari — tarjosivat rivi kerrallaan. Kyllä lisää sen; ei tarkoita sitä, että sitä ei enää koskaan tarjota. Ilmainen, ei tekoälyä.",
+     "whats_new": "Kun Sentient on päivitetty, Sentient-sivulla oleva lyhyt kortti kertoo, mikä on uutta, selkein sanoin, kunnes napautat OK.",
+     "simple_settings": "Asetusluettelossa näkyvät olennaiset tiedot, ja valinnaiset ominaisuudet ovat NÄYTÄ KAIKKI. Uudet asennukset alkavat tällä tavalla. Ei muuta mitään Sentient:n toiminnassa.",
+     "chat_agent": "Kuka vastaa sivun Kysy-ruutuun — valitse ääniagentti, johon Sentient on valittu. Tyhjä käyttää haluamaasi Assist-putkilinjaa.",
+     "health_ignore": "Entiteetit (ja niiden laitteet), joita ei pitäisi laskea ongelmiksi, e.g. jotain, jonka on tarkoitus olla pois päältä.",
+     "hide_substreams": "Jättää pois HD- ja SD-streamit, kuvakaappaukset ja kartat, kun lasketaan ja tarkistetaan kameroita, joten yksi ovikello ei ole useita kameroita. Home Assistant:stä ei poisteta mitään.",
+     "ignore_cameras": "Kamerat Sentient eivät saa laskea, tarkistaa tai tarjota, kuten tabletin kamera. Ne pysyvät Home Assistant:ssä koskemattomina; valitse uudelleen tuodaksesi yhden takaisin.",
+     "never_entities": "Sentient ei koskaan kytke, himmennä tai muuta näitä: ei säännöissä, rutiineissa, tarjouksissa, automaattisessa sammutuksessa, pois- tai liikevaloissa, valonäytöksissä, lämmityksessä tai vartioidussa ääniohjauksessa, ja ääntä kehotetaan jättämään ne rauhaan. Se voi silti lukea niitä ja puhua niistä. Kaikki mikä muuttaisi ihmisen ohitetaan ja huomioidaan.",
+     "self_check": "Joka ilta se katselee omia tietueitaan — mitä se sanoi ja miten se meni, kaiuttimet, jotka epäonnistuivat, asiat pidätettiin, kysymyksiä kysytään yhä uudelleen, tekoälymittari — ja panee merkille, mitä se havaitsee itsestään, ja sen takana olevat numerot. Ei AI. Kysy \"oletko ärsyttänyt meitä?\" tai \"mitä olet ymmärtänyt?\".",
+     "learn_corrections": "Kun joku muuttaa takaisin jotain, jonka talo teki hetki sitten (sytytti valon, sytytti rutiinin), se huomauttaa korjauksen. Rutiini, jonka kumoat jatkuvasti, palautetaan (sammutetaan) ja aikajanalla sanotaan niin. Tämän kytkeminen pois päältä pysäyttää katselun; jo havaitut korjaukset säilytetään.",
+     "normal_day": "Vertaa nykypäivää tavanomaiseen ja huomauttaa sen Mieli-sivulle: esimerkiksi kukaan ei ole vielä hereillä, kun joku yleensä on jo nyt. Selkeät säännöt, mitään ei sanota ääneen eikä mitään vaihdeta. Tämän poistaminen pysäyttää tarkistuksen ja piilottaa sen, mitä se löysi.",
+     "thoughts": "Lyhyt ensimmäisen persoonan lista Mind-sivulla (\"ihmiset sammuttavat laskeutumisvaloa, joten olen lopettanut\"), sekä arvailu, mihin huoneeseen joku menee seuraavaksi, ja tarkistaa, kuinka usein se oli oikein. Ei AI. Tämän poistaminen lopettaa arvailun ja piilottaa luettelon. se, mitä se on oppinut, säilytetään.",
+     "share_learning": "Kerran illalla (17.00–20.30), kun joku on paikalla eikä ole hiljaista, se kertoo yhden asian, jonka se on oppinut tai josta on muuttanut mieltään viimeisen kahden päivän aikana: rutiinin, jonka se antoi takaisin, faktan, jonka se päivitti, tapauksen, jonka se havaitsi, kuinka hyvin se nyt arvaa, minne menet seuraavaksi. Ei koskaan samaa asiaa kahdesti. Tämän kytkeminen pois päältä pitää kaiken Mieli-sivulla, mutta hiljaa.",
+     "self_adjust": "Kun itsetarkastuksessa havaitaan jonkinlainen huomautus, talo jatkaa hiljaisuutta, hiljennä sitä hieman (sama kuin peukku alaspäin; se haalistuu taas). Älä koskaan koske turvallisuuteen, turvatoimiin tai mihinkään, jota se hallitsee.",
+     "proposals": "Kun itsetarkistus löytää jotain, jossa se meni pieleen, ehdota yhtä pientä muutosta Mieli-sivulla — vähemmän huomautuksia, ei yhtäkään niin usein toistamista, tiedotukseen lisätty osio, korkeampi tekoälyraja — ja syy. Mikään ei muutu ennen kuin sanot kyllä; ei ei kysytä uudestaan ​​kuukauteen. Tämän poistaminen käytöstä poistaa kaikki odottavat ehdotukset.",
+     "privacy_log": "Jokainen Sentient:n tekemä tekoälypuhelu ja verkkohaku merkitään muistiin — mikä ominaisuus, kuinka monta kuvaa, leikettä tai dokumenttia ja mikä palvelu — ei koskaan mitä sanottiin tai näytettiin. Katso se kohdasta Aivot ja järjestelmä → Mitä lähtee kotoa, painikkeella, jolla voit unohtaa viimeiset 48 tuntia. Tämän poistaminen tyhjentää tietueen.",
+     "goals": "Anna äänen asettaa tavoitteita päivien tai viikkojen aikana (\"auta meitä käyttämään vähemmän lämmitystä tässä kuussa\"). Tavoite voi seurata anturia: se vertaa jokaista päivää tavalliseen edelliseen viikkoon ja mainitsee edistymisen, kun se sopii. Mikään ei ole muuttunut talossa.",
+     "manuals": "Vastaa kysymyksiin alla olevan kansion asiakirjoista (yksi AI-puhelu kullekin). Pois päältä: asiakirjat jätetään yksin.",
+     "manuals_folder": "Kansio Home Assistant:n mediassa (e.g. manuals = media/manuals). Nimeä jokainen tiedosto sen mukaan, mitä se on tarkoitettu, e.g. \"Air purifier.pdf\".",
+     "manuals_local_text": "Jos mikään tiedostonimi ei vastaa kysymystä, etsi oikea tiedosto .txt- ja .md-dokumenteista, ja jos tekoälyä ei tavoiteta, lue lähin kohta sen sijaan, että se ei mitään. Kummassakaan ei käytetä tekoälyä. Pois: vain tiedostojen nimet täsmäävät.",
+     "manuals_pages": "Päällä: jokainen PDF (ja tekstiasiakirja) luetaan kerran, sivu sivulta, Sentient:n omaan tietokantaan — tällä tietokoneella ilman tekoälyä. Kysymys lähettää sitten tekoälylle vain muutamat vastaavat sivut, ei koko asiakirjaa, joten se maksaa paljon vähemmän ja vastaus kertoo, millä sivulla se on (\"se on sivulla 14\"). Dokumentti, jonka nimi ei täsmää, löytyy silti sen sisällöstä, ja jos tekoälyä ei tavoiteta, lähin kohta luetaan sen sivulla. Tekoäly lukee edelleen skannatut PDF-tiedostot (sivukuvia) kokonaisina. Pois päältä: asiakirjat luetaan kokonaisuudessaan joka kerta, ja luettu tyhjennetään.",
+     "games": "Pelaa ääniohjattuja tarinapelejä, kuten pakoon seikkailua avustajien kanssa pelin päällikkönä. Jokainen peli säilyttää oman tallennetun muistinsa (missä pelaajat ovat, mitä he kantavat mukanaan, mitä he löysivät ja valitsivat) istuntojen ja avustajien välillä. Se näytetään äänelle vain pelin aikana, ja pelimestari voi lukea talon tavallisen muistin, mutta ei koskaan muuta sitä. Avaa Asetukset → Tarinapelit kirjoittaaksesi pelejä ja muokataksesi niiden muistia. Pois päältä: pelityökalut ja sivu on piilotettu; tallennetut pelit säilytetään, ei tyhjennetä.",
+     "voice_id": "Käytä tähän pyyntöön paikallista kaiutinvastinetta. Jos haluat antaa tekoälymallin mukauttaa vastauksia tai liittää uusia muistoja nimen perusteella, ota käyttöön myös Jaa täsmäävät nimet keskusteluagentin kanssa puheentunnistuksessa. Erillinen paikallinen “Kuka puhuu?” vastaus on asetettu äänentunnistukseen.",
+     "voice_id_unknown": "Kun apukaiuttimella ei ole vastaavaa ääntä, säilytä kotitalouden historia ja tallennetut muistot yksityisinä tätä vuoroa varten. Pois päältä: vertaansa vailla olevia ääniä käsitellään normaalisti.",
+     "speaker_memories": "Äänentunnistuksen ollessa käynnissä: yhteensopiva ääni saa ensin omat muistonsa (“Alex: pitää teestä”) — aina mukana, vaikka listan täyttäisivätkin uudemmat kotiseikat — eikä koskaan kenenkään muun henkilökohtaisia; ääni, johon se ei voi vastata, ei saa kenenkään henkilökohtaisia ​​muistoja. Kotitalousasiat jaetaan aina. Kirjoitetut pyynnöt ja Echos ovat ennallaan. Oletuksena pois päältä.",
+     "books": "Toista äänikirjoja ja lue e-kirjoja ääneen pitäen jokaisen huoneen paikkansa. \"Lue kirjani\", \"jatka kirjaa\", \"lue 20 minuuttia\", \"lopeta\", \"seuraava luku\", \"palaa hieman taaksepäin\". Ei tekoälyä (paitsi valinnainen yhteenveto). Echo: e-kirjat yhden kappaleen per pyyntö Alexa-taidon kautta; äänikirjat tarvitsevat toisen kaiuttimen.",
+     "books_folder": "Kansio Home Assistant:n mediassa (kirjat = media/kirjat). DRM-vapaat .epub- tai .txt-e-kirjat; äänikirjat yhtenä .mp3/.m4b/.m4a-tiedostona tai kirjan mukaan nimettyjen osien kansiossa.",
+     "reading_tts": "Erilainen tekstistä puheeksi -palvelu vain kirjoille ja tarinoille — Gemini- tai ElevenLabs-äänet ovat usein parempia tarinankertojia. Jätä se tyhjäksi lukeaksesi tavallisella äänellä. Echos käyttää aina Alexa:n omaa ääntä.",
+     "reading_voice": "Valitse ääni kyseisestä palvelusta. Käytä alla olevaa TRY THE VOICE -painiketta kuullaksesi sen oletuskaiuttimesta ennen tallentamista.",
+     "read_ahead": "Lukuäänellä tarinan seuraava osa tehdään tätä osaa luettaessa, joten hidas ääni (vapaa tai pilvinen) ei jätä aukkoa osien väliin. Käyttää sitä ääntä hieman aikaisemmin, ei koskaan useammin.",
+     "recipes": "\"Tehdään lasagne\": ainekset, sitten askel kerrallaan — \"seuraava\", \"toista tämä\", \"palaa\", \"mitä seuraavaksi?\" — Muista vaihe puhujaa kohti. \"Make it for 6\" mittaa sen; ainekset voivat mennä ostoslistalle.",
+     "recipes_folder": "Kansio Home Assistant:n mediassa (reseptit = media/reseptit), jossa on PDF-tiedostoja, valokuvia, tekstiä tai merkintöjä. Jokainen siivotaan vaiheiksi yhdellä tekoälykutsulla ensimmäisen kerran ja säilytetään sitten. Mealiea käytetään automaattisesti, jos sen integrointi on määritetty.",
+     "recipes_list": "Missä \"lisää ainekset ostoslistalle\" ne laittaa. Tyhjä: luettelo, jonka nimessä on \"shopping.",
+     "voice_lists": "Päällä: \"rasti maito\", \"mitä on ostoslistalla?\", \"Ota roskapussit pois\" — tuotteet löytyvät sanoista huolimatta (joka tapauksessa monikko, ainoa maito luettelossa), kahdesta mahdollisesta vastaavuudesta kysytään, ja Sentient sanoo, että se on tehty vain, kun se näkyy luettelossa. Käyttää Assistille altistettuja listoja (kaikki luettelot, jos niitä ei ole), ja ostoslistaa, ellei muuta ole nimetty. Ei omaa tekoälyä. Pois: ääni käyttää Home Assistant:n omia listakomentoja. Mitään ei tallenneta.",
+     "ready_tonight": "\"Varmista, että kaikki on valmiina illaksi\": tarkistaa ovet, ikkunat ja lukot Assist näkee, sammuttaa vain alla valitut valot, katsoo lämmitystä ja kertoo, mikä on vielä auki, lukitsematon, jätetty päälle tai mitä ei voida vahvistaa. Lukkoja, hälytintä ja lämmitystä ei koskaan vaihdeta, eikä hälytintä tarjota. Ei omaa tekoälyä. Pois päältä: ääni voi silti tarkistaa talon, mutta tätä ei tarjota. Mitään ei tallenneta.",
+     "ready_tonight_lights": "Ainoat \"täksi yöksi valmiit\" valot voivat sammua. Jokainen tarkistetaan jälkikäteen. Tyhjä: valoja ei sammuteta, vain raportoitu.",
+     "ready_tonight_follow": "Kun jokin on vielä auki tai lukitsematon, pidä sitä silmällä jopa kolme tuntia ja sano kerran kysymääsi kaiuttimeen, kun kaikki on järjestetty. Jatkuu uudelleenkäynnistyksen jälkeen.",
+     "tandoor_url": "Valinnainen: Tandoor Recipes-osoitteesi, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Valinnainen: API-tunnus Tandoorista (Asetukset → API). Säilytetty vain Home Assistant:ssä.",
+     "second_opinion_ai": "Valinnainen: isompi malli kysyy vain, kun tavallinen sanoo, että kuva on liian tumma tai epäselvä ollakseen varma. Laskee päivittäiseen rajaan.",
+     "smart_ai_task": "Valinnainen. Käytetään vain kameran turvallisuuteen ja yössä ajatteluun, missä älykkäämpi malli auttaa eniten. Tyhjä: tavallinen tekoäly, joten kustannukset eivät muutu.",
+     "event_clips": "Hakee Frigate:n lyhyen leikkeen tapahtumasta ja antaa tekoälyn katsoa sitä, jotta se voi kertoa, mitä todella tapahtui (\"jätti paketin ja meni\"). Käytetään kameran turvahälytyksen jälkeen ja kysyttäessä \"mitä ovella tapahtui?\". Tarvitsee Frigate-integroinnin. Yksi tekoälykutsu per leike. Oletuksena pois päältä.",
+     "notify_targets": "Ilmoita yhteisöille, e.g. Home Assistant-sovellus jokaisessa puhelimessa tai kellossa.",
+     "notify_when": "Jokainen laji lähetetään enintään kerran kymmenessä minuutissa.",
+     "phone_buttons": "Seuran sovelluksen kautta: ovella — kamerakuva ja Näytä kamera -painike; muistutukset — Torkku 10 min ja Valmis; kysymykset — kun talo haluaa kysyä jotain (tarjous, \"haluatko, että teen sen sinulle?\" tai kysy ensin ennen kuin teet jotain) eikä ketään ole kaiuttimen lähellä, se kysyy puhelimissa Kyllä ja Ei (ei hiljaisina aikoina). Tyhjä: tavalliset ilmoitukset kuten nyt.",
+     "phone_apps": "e.g. notify.mobile_app_pixel_8. Tyhjä: kumppanisovellus jokaisen yllä valitun puhelimen takana (notify.my_phone → mobile_app_my_phone) — ei koskaan tabletteja.",
+     "bins_check": "Noutoa edeltävänä iltana yksi kamera katsoi, mistä roskakorit häviävät. Sanoo vain jotain, jos ne eivät ole ulkona: \"Kierrätystä huomenna, ja roskakorit eivät ole vielä ulkona.\" Näyttää vielä kerran tunnin kuluttua.",
+     "bins_calendar": "Tyhjä: jätteenkeräyskalenteri tiedotuskalentereista.",
+     "bins_spot": "Piirretty Spots-välilehdelle, jossa säiliöt menevät ulos, e.g. ' roskakorit'.",
+     "bins_time": "Noutoa edeltävänä iltana ennen hiljaisia ​​tunteja.",
+     "chime": "Pois päältä: ilmoitukset ja kysymykset alkavat heti ilman puhujan ääntä.",
+     "welcome_home": "Kun joku palaa 20 minuutin kuluttua tai enemmän, sano \"Tervetuloa takaisin\" huoneessa, jossa hän on — sekä mitä kannattaa tietää hänen ollessaan poissa (vieraat, valmiit asiat, ongelmat). Ei koskaan hiljaisina tunteina, hiljaisina tai vierastilassa.",
+     "welcome_people": "Tyhjä tarkoittaa kaikkia, joilla on henkilö sisäänpääsy. Voit valita sen sijaan puhelimet (laiteseurantalaitteet) — kätevää, kun henkilö on asetettu olemaan aina kotona.",
+     "welcome_min_away": "Kuinka kauan jonkun on täytynyt olla poissa, ennen kuin hänet toivotetaan tervetulleeksi, muutamassa minuutissa.",
+     "welcome_until": "Hiljaiset ajat pitävät yleensä tervetulleena. Aseta aika ja kaikki illalla ennen sitä saapuvat ovat edelleen tervetulleita. Jätä tyhjäksi, jotta tunnit pysyvät hiljaisina.",
+     "speak_volume": "Valinnainen: kaiuttimen äänenvoimakkuus Sentient:n puhuessa, aseta takaisin sen jälkeen. Tyhjä jättää sen rauhaan.",
+     "night_volume": "Valinnainen: hiljaisempi taso kaikille hiljaisina aikoina sanotuille (vain kiireelliset viestit).",
+     "duck_media": "Kaikki samassa huoneessa toistettavat toistot hiljennetään Sentient:n puhuessa ja käännetään sitten takaisin ylös.",
+     "critical_alerts": "Savu-, häkä-, kaasu-, vesivuoto- ja peukalointianturit havaitaan automaattisesti, ja samalla myös hälytys laukeaa. Sanotaan jokaisessa kaiuttimessa hiljaisten tuntien, hiljaisuuden ja vierastilan aikana, toistetaan kahdesti vielä päällä ja lähetetään puhelimiin.",
+     "energy_insight": "Tämän päivän laitteiden käyttö Energy-kojelaudalla viime viikkoon verrattuna: Energiakortti, tiedotusosio, äänityökalu ja muistiinpanot epätavallisesta käytöstä. Off piilottaa ja pysäyttää kaiken.",
+     "energy_price": "Valinnainen: yksikköhintasi kilowattituntia kohden, joka näyttää Energy Dashboardin laitteiden tämänhetkiset kustannukset — penneinä tai sentteinä (24,5) tai puntina, dollareina tai euroina (0,245); kumpikin toimii.",
+     "energy_currency": "Valuuttakustannukset näkyvät muodossa. Tyhjä: Home Assistant:n oma valuutta (Asetukset → Järjestelmä → Yleistä).",
+     "price_entity": "Sähkön hintasi nyt, toimittajasi integraatiosta (Octopus Energy, Nordpool…). Jos siinä luetellaan tulevat hinnat, niitä käytetään; muuten normaali hinta jokaiselta tunnilta on opittu viime viikolta. Kerran per laite (pesukone, astianpesukone, kuivausrumpu) kysyy illalla, haluatko käyttää viivekäynnistystä, kun se on halvin yön yli. Tyhjä: pois päältä.",
+     "search_hints": "Kun Voice Satellite LLM Tools (tai Sentient:n oma haku) on otettu käyttöön, äänelle kerrotaan, että hakutyökalut ovat olemassa ja että niitä voi käyttää kaikkeen kodin ulkopuolella — sanoihin kaiuttimessa, kuviin vain tabletissa. Ei omia tekoälykutsuja.",
+     "web_search": "Pelkkä puheverkkohaku oman SearXNG:n (esimerkiksi SearXNG-lisäosan) kautta. Käytetään vain, kun Voice Satellite LLM Toolsin verkkohakua ei ole asennettu, joten ääni ei koskaan saa kahta. Oletuksena pois päältä.",
+     "searxng_url": "Esimerkiksi http://localhost:8080 tai lisäosan osoite. SearXNG:n on sallittava json-muoto (asetuksissaan: haku → muodot).",
+     "alexa_skill": "Ei lisää mitään, ennen kuin taito käyttää sitä: osoita Alexa-taito (esimerkiksi yhteisön Home Assistant Assist -taito) For Alexa -agentille, sano sitten “Alexa, kysy” ja taitosi nimi. Oletuksena pois päältä.",
+     "alexa_wait": "Alexa katkaisee puhelun noin 8 sekunnin kuluttua, joten vastauksen on tultava tätä nopeammin.",
+     "alexa_late_answers": "Kun tekoäly kestää kauemmin, Alexa sanoo “Anna hetki” ja vastaus sanotaan samassa Echo:ssä, kun se on valmis.",
+     "left_open_minutes": "Sanoi kerran (sitten puolen tunnin välein, kun se on vielä auki), hiljaisina tunteina ja vaimentaa tavalliseen tapaan. 0 sammuttaa sen.",
+     "leaving_check": "Kun viimeinen henkilö lähtee, kaikki auki oleva tai lukitsematon menee aikajanalle ja puhelimiin (\"Jätetty auki\").",
+     "critical_extra": "Kaikki muu, mikä pitäisi aina sanoa kaikkialla, kun se käynnistyy, e.g. paniikkipainike tai pakastimen liian lämmin anturi. Hälytyspaneeli, joka sammuu, on aina mukana.",
+     "heating_entities": "Termostaatit, joista oppia. Jätä tyhjäksi jokaiselle talossa olevalle. Se oppii kuinka nopeasti kukin lämpenee ja lämpötila, johon se yleensä on asetettu.",
+     "preheat": "Aloita lämmitys ajoissa, jotta se on normaalilämpötilassa siihen mennessä, kun ihmiset normaalisti nousevat ylös. Termostaatti, jossa on oma aikataulu, laitetaan sen jälkeen takaisin päälle ja pois päältä kytketty jätetään pois päältä.",
+     "heating_schedule": "Päällä: Talo-välilehdellä tehdyt lämmitysajat (termostaatti asetettu lämpötilaan tai pois päältä, kerrallaan valittuina päivinä) ja vain siellä valituilla termostaateilla. Pois päältä: ei suorita ja aikataulu on piilotettu; tallentamasi ajat säilyvät ja toimivat uudelleen, kun tämä kytketään takaisin päälle.",
+     "comfort_temp": "Valinnainen: lämpötila, johon lämmitetään. Jätä tyhjäksi, jos haluat käyttää sitä, johon se tavallisesti on asetettu päivällä.",
+     "inside_sensors": "Valinnainen: mitkä liiketunnistimet tarkoittavat jonkun sisällä. Jätä tyhjäksi, jos haluat käyttää kaiuttimien kanssa samoissa kerroksissa olevia kaiuttimia (puutarha- ja kameraantureita ei lasketa). Käytetään yövartiointiin ja herätysaikaan.",
+     "weekly_report": "Laita sunnuntai-iltaisin aikajanalle, mitä talo oppi ja huomasi tällä viikolla (lähetetään puhelimiin, jos tiivistelmiä on).",
+     "night_watch": "Oppii milloin jokainen ovi, portti ja ikkuna normaalisti avautuu. Avaaminen kerrallaan, jota se ei yleensä tapahdu, kun kukaan ei liiku ensin, on hälytys. Jos joku oli sisällä (esim. lähdössä töihin), se vain huomioidaan.",
+     "night_watch_entities": "Jätä tyhjäksi jokaiselle ovelle, ikkunalle, portille ja autotallin ovelle.",
+     "night_watch_announce": "Epätavallinen avaus ilman ketään sanotaan heti hiljaisten tuntien, hiljaisuuden ja vierastilan kautta — se voi olla joku, jonka ei pitäisi olla paikalla.",
+     "night_watch_speakers": "Jätä tyhjäksi jokaiselle kaiuttimelle.",
+     "warm_by_weekdays": "Valinnainen: kun sen pitäisi olla lämmin arkisin. Jätä tyhjäksi käyttääksesi opittua nousemisaikaa.",
+     "warm_by_weekends": "Valinnainen: sama lauantaisin ja sunnuntaisin.",
+     "heating_limit": "Kun joku käynnistää tai kytkee päälle jonkin yllä valituista lämmitystermostaateista äänellä tai sovelluksessa, laita se takaisin tämän monen tunnin kuluttua: termostaatti, jolla ei ole aikataulua, palaa entiseen tapaan (jopa pois päältä). Lämmitysohjelman termostaatti noudattaa sen sijaan aikataulun omia aikoja (Paluu muutoksen jälkeen: päivällä ja yöllä) ja siirtyy sitten mihin tahansa aikatauluun mennessä. Vain ne termostaatit; 0 (oletus) ei koskaan tee.",
+     "heating_night_temp": "Missä lämmitysaikataulu laskee jakson päättyessä ja yötaso pysyy. Aikataulu ei koskaan kytke termostaattia pois päältä. Vaihda se täällä milloin haluat (5–28°C).",
+     "heating_revert_day_hours": "Kuinka kauan lämmitysjakson aikana tehty muutos jätetään rauhaan, ennen kuin aikataulu ottaa uudelleen vallan.",
+     "heating_revert_night_hours": "Kuinka kauan lämmitysjaksojen ulkopuolella tehty muutos (mukaan lukien lämmityksen poiskytkentä) jätetään yksin. Yöllä lämmitys palaa yölämpötilaan, ei koskaan pois päältä.",
+     "personality": "Miltä talo kuulostaa — huomautuksissa, tiedotustilaisuuksissa, tervetulotoivotuksissa ja jokaiselle ääniavustajalle.",
+     "personality_notes": "Valinnainen, omin sanoin, e.g. 'Kissojen ihastus. Kiusoittelee hellästi kuinka paljon teetä valmistetaan.'",
+     "style_feedback": "Peukaloiden vieressä oleva painike kaikessa siinä sanotussa: valitse Lyhyempi, Selkeämpi, Vähemmän röyhkeä, Tarkempia tietoja tai sano miten. Alla olevia huomautuksia noudatetaan sitten kaikkialla, missä se puhuu. Pois päältä: ei painiketta, eikä muistiinpanoja käytetä.",
+     "style_notes": "Yksi riviä kohden; lisätty painikkeesta ja sinun muokataksesi. 8 viimeisintä on käytössä.",
+     "camera_security": "Seuraa ihmisiä kamerasta kameraan ja varoita puutarhassa olevista, kun portti ja ovet eivät avautuneet, tai ketään yöllä ilman ketään. Hälytykset sanotaan ääneen hiljaisina aikoina, jos yövartio tekee.",
+     "camera_security_sensors": "Jokaisen kameran (tai alueen) henkilötunnistin, e.g. Frigate:n porttihenkilöiden käyttöaste'.",
+     "camera_security_inside": "Henkilötunnistimet portin tai aidan takana oleviin paikkoihin — puutarhaan, aitoon. Joku, joka ilmestyy sinne ilman tapaa avautua, on hälytys.",
+     "camera_security_entries": "Portti ja ovet, joista ihmisten tulisi mennä (e.g. takaportti ja takaovi).",
+     "camera_security_describe": "Yksi tekoälykatso kameraan kutakin hälytystä varten (\"mies tummassa hupparissa yrittämässä aidan ovea').",
+     "security_reasoning": "Ennen kuin kameran turvahälytys sanotaan ääneen, katso hälytystä, ovatko kaikki ulkona, sisäänkäynnin ovea tai porttia, joka avautui juuri ennen, liikettä sisätiloissa, Frigate-tapahtumia ja kuinka usein kamera on jo hälyttänyt. Joku, joka todennäköisesti lähtee ulos, tai sama kamera uudelleen puolen tunnin sisällä, pidetään hiljaa. Hälytys menee edelleen aikajanalle ja puhelimiin syiden kanssa. Herätys asetettu tai kaikki ulos: aina sanottu. Ei AI. Oletuksena pois päältä.",
+     "party_lights": "Valot, jotka yhdistyvät, kun ei käytetä koko taloa. Jätä tyhjäksi käyttääksesi kysyjän huonetta (tai sano huone: 'diskotila olohuoneessa').",
+     "party_style": "Disco: nopeat värinvaihdot. Juhla: kirkkaat värit, lyhyet haalistukset. Rainbow: väripyörä. Kylmä: hitaat, himmeät värit. Halloween: välkkyvä oranssi, violetti ja vihreä. Joulu: punainen, vihreä ja lämmin valkoinen, tuikkuva.",
+     "party_minutes": "Sitten jokainen valo palaa täsmälleen sellaisena kuin se oli. 0 jatkuu, kunnes se sammutetaan.",
+     "party_whole_house": "Jokainen valo, joka voi himmentää tai muuttaa väriä, liittyy (valoryhmät, näytöt ja taustavalot eivät). Sano \"disco-tila kaikkialla\" tehdäksesi tämän vain kerran.",
+     "party_exclude": "Jätetty pois jokaisesta esityksestä, jopa \"kaikkialla\" — tabletin näytöt, projektori, makuuhuone, jossa joku nukkuu.",
+     "party_sound": "Valinnainen: äänenvoimakkuusanturi dB, kuten äänikaiuttimen mikrofoni ESPHome:n sound_level-anturin kautta. Disco, bileet, sateenkaari ja Halloween seuraavat sitten musiikkia — kovempi on kirkkaampaa ja jokainen lyönti vaihtaa väriä.",
+     "party_show": "Mitkä näytöt saavat painikkeen yleiskatsaukseen. Jätä tyhjäksi kenellekään; jokainen esitys toimii edelleen äänellä.",
+     "party_sound_switch": "Valinnainen: kytkin, joka raportoi äänenvoimakkuusanturin (joten se ei lähetä lukemia koko päivän). Se on päällä, kun esitys seuraa ääntä, ja sammuu sen jälkeen. Löytyy automaattisesti, jos se on samassa laitteessa ja sen nimessä on \"loudness.",
+     "room_volume": "Kaiuttimet, jotka kuulevat huoneen (saman laitteen äänenvoimakkuusanturi), kuuntelevat ensin yhden sekunnin ja puhuvat kovemmin television tai chatterien kautta. Ei hiljaisina tunteina.",
+     "follow_you": "Jotain sanottua, jossa kukaan ei ollut paikalla — tai pidetty hiljaisena hetkenä — välitetään, kun seuraavan kerran joku kävelee huoneeseen kaiuttimen kanssa.",
+     "follow_minutes": "Tämän pitkän ajan kuluttua pudotetaan kuulematon viesti.",
+     "conversation_memory": "Pitää lyhyen kirjaa siitä, mitä jokaisessa kaiuttimessa kysyttiin ja sanottiin, jotta toinen huone voi jatkaa siitä, mihin yksi jäi. Säilytetty kaksi viikkoa; yksityinen, kun vieraat ovat sisällä.",
+     "follow_ups": "Voices voi asettaa seurannan (\"Tarkastan, että huone on lämmennyt tunnin kuluttua\"), ja kello, joka loppuu eikä mitään näy, suljetaan ääneen.",
+     "curiosity": "Korkeintaan kerran päivässä, kun joku puhuu, se kysyy jostakin, jota se ei voi selittää — tavallisesta soittajasta, kuviosta, jonka se huomasi yhdessä yössä — ja muistaa vastauksen.",
+     "reflection": "Yksi tekoälypuhelu joka ilta päivän lokin ja keskustelujen aikana: uusia asioita, jotka kannattaa muistaa, ajatus tai kaksi aamua varten ja kysyttävä kysymys.",
+     "reflection_time": "Parasta pienissä tunneissa.",
+     "drive_spot": "Kamerapiste, joka näyttää aseman (piirrä se Spots-välilehdelle).",
+     "drive_camera": "Tarvitaan vain, jos useammalla kuin yhdellä kameralla on samanniminen paikka.",
+     "drive_triggers": "Liike- tai autotunnistimet, jotka näkevät ajon. Tyhjä: kameran oma liike- ja autotunnistimet.",
+     "camera_wake": "Toiminnot, jotka herättävät kameran valmiustilasta (herätys- tai päivityspainike, suoratoistokytkin, skripti). {{ camera }} on kamera, johon katsotaan. Tyhjä: kameroita katsotaan sellaisina kuin ne ovat.",
+     "camera_wake_cameras": "Tyhjä: jokainen kamera, jota tekoäly katsoo.",
+     "camera_wake_seconds": "Sekuntia odottaa heräämisen jälkeen, jotta saadaan uusi kuva.",
+     "known_cars": "Yksi riviä kohden, e.g. \"Sam: tummanharmaa viistoperä\". Sama katse ajossa sanoo, kenen auto saapui (\"Samin auto saapui ajolle\") — ei ylimääräistä tekoälyä. Tyhjä: autoja ei ole nimetty.",
+     "full_volume_speakers": "Nämä ilmoitukset sanotaan 100 %:lla, sitten äänenvoimakkuus palautuu — tablettien kohdalla, jotka on hylätty kaiken muun takia. Ei hiljaisina aikoina (hiljaisten tuntien äänenvoimakkuutta käytetään silloin).",
+     "tts_entity": "Kaiuttimet voivat olla apu- tai mediasoittimia. Echos:lle puhutaan Alexa Media Playerin kautta; mikä tahansa muu mediasoitin (älykaiutin, Cast-laite) käyttää tätä tekstistä puheeksi -ääntä.",
+     "house_language_text": "Käytössä: mitä Sentient kirjoittaa sinulle luettavaksi — aikajana, talon terveys, Mind-välilehti, päivittäinen tiivistelmä, päivätarinat, leikkeiden kuvaukset ja puhelinilmoitukset — noudattaa Home Assistant:n kieltä. Kiinteät lauseet käännetään puolaksi, saksaksi, hollanniksi, italiaksi, portugaliksi, espanjaksi, ranskaksi ja unkariksi; mitä tekoäly kirjoittaa, seuraa mitä tahansa kieltä. Puhutut sanat seuraavat Sano sisäänrakennettuja lauseita talon kielellä. Ei ylimääräisiä AI-kutsuja; mitään ei tallenneta. Pois päältä: kaikki pysyy englanniksi.",
+     "speak_house_language": "Käännä tavallisia englanninkielisiä lauseita olemassa olevan tekoälytehtävän avulla aikarajoituksella, väliaikaisella lausevälimuistilla ja alkuperäisen tekstin varauksella. Kiireelliset hälytykset eivät koskaan odota tekoälyä. Käytä automaattista kielitukea valmiille lauseille ja keskustelun päätteille; valitse kieli alta. Kiinteät tarkat kyllä/ei-tunnukset kattavat yleiset kielet. Henkilökohtaisia ​​lausekäännöksiä ei koskaan tallenneta uudelleenkäynnistyksen yhteydessä.",
+     "speakers": "Avustavat kaiuttimet tai mediasoittimet (Echos Alexa Media Playerin kautta).",
+     "media_speakers": "Pois: vain äänikaiuttimia käytetään, vaikka hälytys tai ilmoitus nimeäisi Echo (se menee sinne, missä ihmiset ovat). Myös 'Echo-kaiuttimet' -kytkin automaatioille ja kojelaudoille.",
+     "media_important_only": "Päällä: Echos ilmoittaa vain hälytyksiä, muistutuksia ja turvavaroituksia; ilmoitukset, ilmoitukset ja chat menevät sen sijaan äänikaiuttimiin. Myös \"Echos: vain hälytykset ja muistutukset\" -kytkin.",
+     "foresight": "Joka ilta yksi tekoäly katsoo huomisen kalentereita, säätietoja, hälytyksiä ja muistutuksia. Sanoo jotain vain, kun tänä iltana on jotain tekemistä — pakkasta ennen aikaista aloitusta, sadetta pesupäivänä. Yleensä hiljaa.",
+     "foresight_time": "Ennen hiljaisten tuntien alkamista.",
+     "sleep_detection": "Nukahtaa nukkumaanmenorutiinin jälkeen tai hiljaisina tunteina, kun sisällä ei ole liikkunut vähään aikaan. Herää aamulla, kun kahdessa huoneessa on liikettä (tai käsin sytytetty valo). Talon anturi näyttää sen.",
+     "bedtime_routines": "Rutiinit, jotka tarkoittavat, että kaikki ovat menneet nukkumaan pilkuilla erotettuina. Tyhjä: mikä tahansa rutiini, jonka nimessä on \"yö\" tai \"sänky.",
+     "sleep_actions": "e.g. tablet-näytöt sammuvat, Echo-kaiuttimet sammuvat.",
+     "wake_actions": "e.g. Echo-kaiuttimet takaisin päälle, käytävän valot vähissä.",
+     "appliances": "Pesukone, kuivausrumpu, astianpesukone, tuuletin — niiden tehotunnistin tai tila. Jätä tyhjäksi seurataksesi jokaista robottiimuria ja mitä tahansa tehoanturia nimeltä pesukone, kuivausrumpu tai astianpesukone.",
+     "appliance_announce": "Sanoo, että “pesukone on valmis”, missä ihmiset ovat, ja milloin kestää tavallista kauemmin. Selkeitä sanoja, ei tekoälyä.",
+     "appliance_watts": "Tehoanturit: käynnissä tämän yläpuolella, lopetettu, kun se on pysynyt alapuolella viisi minuuttia.",
+     "voice_agent": "Tekoälyagentti, joka vastaa normaalisti (e.g. Google AI). Tyhjä käyttää sivun chat-agenttia.",
+     "backup_agent": "Vastaa, kun pääagentti epäonnistuu — Home Assistant:n oma agentti tekee valot, lämmityksen ja ajastimet ilman tekoälyä.",
+     "offline_answers": "Kun tekoälyagentti epäonnistuu, “onko talo lukossa?”, “Milloin on seuraava hälytys?” ja “tuliko joku ympärille?” Vastataan suoraan kotoa, selkein sanoin, ennen kuin vara-agenttia kokeillaan. Vain kysymyksiä, vain mitä henkilö voi nähdä; vierastilassa vain turvakysymys. Pois päältä: kaikki menee vara-agentille.",
+     "animal_sensors": "Koton, kennelin, koukun tai säiliön lämpötila-anturit.",
+     "away_lights_on": "Kun kaikki ovat ulkona pimeän jälkeen, valot jäljittelevät sitä, miten niitä käytettiin samaan aikaan viime viikolla (Home Assistant:n historiasta), muutaman minuutin kumpaankin suuntaan. Ei käynnisty (tai pysähdy), jos joku on kotona tai sisällä on ollut liikettä viime aikoina, henkilöille, joilla ei ole puhelinta jäljitettynä, ja laittaa takaisin sen, minkä on kytkenyt päälle. Myös \"Away lights\" -kytkin.",
+     "away_people": "Tyhjä: kaikki, joilla on henkilömerkintä. Voit valita puhelimet (laiteseurantalaitteet) ihmisten sijasta.",
+     "away_lights": "Tyhjä: kaikki valot huoneessa, jättäen pois näytöt, LED-renkaat, taustavalot ja ryhmät. Vain viime viikolla tuolloin käytetyt valot syttyvät.",
+     "holiday_mode": "Lomatila\"-kytkin ja \"olemme lomalla sunnuntaihin\" äänellä. Kun se on päällä, mitään ei sanota ääneen paitsi turvallisuusvaroitukset — se, mitä olisi sanottu, koskee ilmoituksia varten valittuja puhelimia, vierailijoita ja paketteja; poistovalot palavat, vaikka ne olisivat normaalisti pois päältä; ja alla olevat termostaatit on kytketty alas. Pois päältä: ei kytkintä eikä lomaa äänellä.",
+     "holiday_thermostats": "Alennettu pakkassuojaksi, kun olet poissa, ja laita takaisin juuri sellaisiksi kuin ne olivat lomatilan päättyessä. Tyhjä: lämmitykseen ei kosketa.",
+     "holiday_frost": "Yllä olevat termostaatit on asetettu, kun olet poissa.",
+     "holiday_end_on_return": "Kun kaikki ovat menneet ulos, ensimmäinen asukas lopettaa lomatilan ja laittaa lämmityksen takaisin. Pois päältä: se päättyy päivämääränä tai kun se sammutetaan.",
+     "away_after": "Joten kauppaan poikkeaminen ei aloita sitä.",
+     "animal_low": "Sanoo kerran, kun se laskee tämän alapuolelle (pitää aamuun asti hiljaisina tunteina), ja varoittaa iltana ennen pakkasta.",
+     "animal_high": "Sanoo kerran, kun se nousee tämän yläpuolelle.",
+     "hutch_check": "Puoli tuntia auringonlaskun jälkeen yksi tekoäly katsoo kottiin: ovatko ne sisällä ja onko se kiinni? Sanoo vain jotain, jos ei.",
+     "hutch_spot": "Kovun ympärille piirretty täplä Spots-välilehdellä, e.g. 'kani kynä'.",
+     "cat_watch": "Pimeän jälkeen, kun kotan kameran kissasensori kytkeytyy päälle, yksi tekoälyn katse: onko kissa mökillä vai vieressä? Korkeintaan 15 minuutin välein, eikä silloin, kun kuva ei ole muuttunut.",
+     "cat_sensors": "Tyhjä: Koton kameran kissaanturit (e.g. Frigate:n kissan käyttöaste).",
+     "cat_loud": "Pois: säilytetty aamulla (\"Kissa oli mökillä klo 2.14\"). Päällä: sanoi heti yökellon kaiuttimista.",
+     "rain_warnings": "Kun sade tulee tunnin sisällä ja ikkuna tai ovi on auki: \"Seuraavan tunnin aikana sataa ja makuuhuoneen ikkuna on auki.\" Lukee tuntiennusteen — ei tekoälyä. Kerran per sade.",
+     "rain_entities": "Tyhjä: jokainen ikkuna- ja ovianturi.",
+     "self_test": "Yön aikana ääneltä kysytään muutama arkipäiväinen kysymys (lämpötila ulkona, kaikki auki, muistutukset, hälytys, kellonaika) ja sen vastauksia verrataan taloon. Kaikki viat näkyvät talon terveydessä käytetyllä työkalulla. Noin 5 tekoälyä kutsuu juoksua. Vain kysymykset — mitään ei vaihdeta.",
+     "self_test_household": "Lisää noin 7 kysymystä, jotka on rakennettu omilla laitteillasi: milloin ovi tai ikkuna viimeksi suljettiin, onko valo päällä, onko kamera nähnyt ketään viimeisen kahden tunnin aikana, tuliko kukaan ovelle tänään, jotain, jota se ei voi tietää (keksitty vastaus epäonnistuu), jotain, jota mikään laite ei voi tehdä, ja kysymys, joka on liian epämääräinen vastatakseen kysymättä kumpaa. Minkä tahansa vaihtaminen kysymyksen aikana on epäonnistumista. Pisteet ja sen trendi ovat Mieli-sivulla. Noin 7 muuta tekoälyä vaatii juoksua.",
+     "screen": "Hälytykset, ilmoitukset ja aamukortti Sentient-näyttökortilla (mukautettu:sentient-näyttökortti). Pois päältä: se näyttää talon vain yhdellä silmäyksellä.",
+     "screen_actions": "e.g. herätä tabletti ja vaihda se näyttökortin sisältävälle sivulle.",
+     "screen_clear_actions": "e.g. vaihda tabletti takaisin normaalille sivulleen.",
+     "conversation_sessions": "Käytä Sentient:tä vara-agentin kanssa. Yksittäiset komennot lopettavat kuuntelemisen, ellei puhuttu vastaus pääty kysymykseen. Tieto-, turvallisuus-, terveys- ja järjestelmäkeskusteluissa kysytään, onko jotain muuta, ja pysy auki, kunnes sanot “kaikki”, “riittää” tai “lopeta kuunteleminen” tai toimettomuuden aikakatkaisu umpeutuu. Sano “takaisin…” jatkaaksesi keskeneräistä aihetta tältä laitteelta 24 tunnin kuluessa palauttamatta toimintolupia. Mieli-paneeli näyttää viimeaikaiset keskustelupäätökset. Seurantakuuntelu vaatii yhteensopivan Assist-laitteen.",
+     "room_conversation_handoff": "Sano jatka ja nimeä aihe toisesta laitteesta. Molempien pyyntöjen on tultava samalta tunnistetulta Home Assistant-käyttäjältä. Tuoreet lukemat tarkistetaan, eivätkä aiemmat toimet ja vahvistukset siirry eteenpäin.",
+     "verified_bedtime": "Sano juokse alakertaan nukkumaanmenoaika sammuttaaksesi valitut valot ja tarkistaaksesi valitut kontaktit. Pyydä alakerran nukkumaanmenoaika tarkistaaksesi uudelleen tai sano peruuta alakerran nukkumaanmenoaika lopettaaksesi sen seuraamisen.",
+     "verified_bedtime_lights": "Valitse jopa kaksikymmentä yksittäistä Assist-valotettua valoa. Ryhmät suljetaan pois, ja Älä kosketa -luettelo on edelleen voimassa.",
+     "verified_bedtime_contacts": "Valitse enintään kaksikymmentä Assist-valotettua ovi-, ikkuna- tai muuta avautuvaa kosketinta tarkistettavaksi. Ne ovat vain luettavissa.",
+     "session_seconds": "Hylkää istunnon konteksti ja odottavat toiminnot tämän monen sekunnin jälkeen ilman uutta vuoroa. Äänilaitteesi hallitsee omaa hiljaisuuden aikakatkaisuaan. Vahvistus vanhenee myös 60 sekunnin kuluttua.",
+     "guarded_control": "Ota käyttöön tuettu tekoälyagentti: valitse vain Sentient, joka on suojattu Control Home Assistant -kohdassa, ja käytä sitten Sentient:tä varmuuskopion kanssa. Poista käytöstä Mieluummin käsittelykomennot paikallisesti ja poista ristiriitaiset virkkeen liipaisimet, jotka suoritetaan ennen tätä agenttia. Virheellinen agentin API-määritys pysäyttää pyynnöt. Ei rajoittamattomia varatoimia, skriptejä, kohtauksia tai hälytystoimintoja. Ovet, laitekäynnistykset ja merkittävät lämmitysmuutokset vaativat erillisen kyllä.",
+     "routine_verify": "Päällä: kun äänirutiini (hyvää yötä, lähtö…) on suoritettu, jokainen vaihdettu valo, kytkin, lukko ja kansi tarkistetaan muutaman sekunnin kuluttua, ja vastaus kertoo mitä ei tapahtunut (\"Valmis, paitsi laskuvalo, joka palaa edelleen\"). Vaiheet, joita se ei voi tarkistaa (skriptit, kohtaukset) raportoidaan tarkistamattomiksi, ei koskaan suoritetuiksi. Mitään ei yritetä uudelleen tai kumota itsestään. Pois päältä: rutiinit suoritetaan kuten ennen, valitsematta.",
+     "voice_unlock": "Antaa pakotetun äänivahvistuksen avata oven erillisen kyllä-lauseen jälkeen. Pois (oletus) lukitsee ja sulkeutuu jatkuvasti, mutta kieltäytyy avaamasta lukitusta tai avaamasta äänellä, koska Sentient ei tiedä kuka puhuu.",
+     "voice_undo": "Kun käytät suojattua ohjausta, sano “kumoa” pyytääksesi äskettäin vahvistettujen valoasetusten palauttamista. Ohittaa sen jälkeen vaihdetut valot, vanhenee istunnon yhteydessä eikä koskaan avaa lukkoja, lämmitystä tai laitteita.",
+     "evidence_awareness": "Kerro äänelle, että se erottaa havainnot, päätelmät, toimintayritykset ja vahvistetut laiteraportit. Turva-anturit estävät aina täysin suojatun vaatimuksen.",
+     "security_incidents": "Ryhmäkonfiguroidut kameran turvahenkilöanturit ja sisääntulokontaktit hälytyksillä ja leikeyhteenvedoilla. Pidä seitsemän päivää paikallisesti. Aikaläheisyys on mahdollinen linkki, ei todiste samasta henkilöstä; vain lisääntyvät hälytykset toistuvat.",
+     "incident_front": "Kamerat ja anturit talon edessä (ovikello, etuovi). Mitään täällä ei koskaan ryhmitetä yhdeksi tietoturvaloukkaukseksi muiden kanssa, ja päinvastoin: joku etuovella ja joku takaportissa samalla hetkellä ovat kaksi tapausta. Jätä tyhjäksi ryhmittelemään yksin ajan mukaan.",
+     "live_voice_check": "Näytä käyttäjän aloittama äänitarkistus Mieli-paneelissa. Tämän poistaminen poistaa nykyisen tarkistuksen ja lopettaa tarkistuskierrosten tallennuksen. Edellyttää keskusteluistuntoja tarkistuksen aloittamiseksi.",
+     "speech_delivery_history": "Säilytä viimeisimmät puhujakohtaisten ilmoitusten tulokset Mind-paneelissa. Tämän poistaminen käytöstä tyhjentää tämän historian. Kaiutinvian tunnistus ja turvallinen uudelleenyritysten käsittely pysyvät aktiivisina.",
+     "alexa_tts_only": "Käytä tavallista TTS:ää Alexa-ilmoitusten sijaan, jos ilmoitukset ovat epäluotettavia. Tämä ohittaa Alexa-ilmoituskellot; muut kaiuttimet ovat ennallaan.",
+     "update_checker": "Tarkista GitHubista vakaat julkaisut, kun se on käytössä, käynnistyksen yhteydessä ja kuuden tunnin välein. Ei AI-kutsuja, automaattista asennusta tai automaattisia uudelleenkäynnisyksiä. Lopeta tarkastukset poistamalla käytöstä.",
+     "contextual_followups": "Vaatii keskusteluistuntoja ja Sentient:n vara-agentin kanssa. Säilytä kohde lyhyitä seurantatoimia varten, päivitä paljastuneet laitelukemat ja selvennä epäselvät säädöt. Ei myönnä toimintaoikeuksia tai muuta kuuntelusääntöjä. Oletuksena pois päältä; sen poistaminen käytöstä tyhjentää tilapäisen keskustelukontekstin.",
+     "conversation_recovery": "Vaatii keskusteluistuntoja ja Sentient:n vara-agentin kanssa. Peru odottava tai käynnissä oleva pyyntö samalta keskustelulta/laitteelta/käyttäjältä ja vältä epävarmien laitekomentojen toistamista tekoälyvirheen jälkeen. Ei voi kumota jo lähetettyä toimintoa tai saada laitteistoa hyväksymään puhetta ollessaan varattu. Oletuksena pois päältä; poistaminen käytöstä lopettaa tämän ylimääräisen käsittelyn.",
+     "automatic_language": "Vaatii Sano sisäänrakennetut lauseet kotikielellä. Valmistele yleisiä lauseita, keskustelun päätteitä ja turvallisuusmerkintöjä olemassa olevalla tekoälylläsi ja budjetillasi. Oletuksena pois päältä. Lauseet pysyvät muistissa, ellei Muista yleisiä kielilauseita ole käytössä. Poistaminen käytöstä poistaa ne. Kiireelliset hälytykset eivät koskaan odota tekoälyä; luodut vastaukset eivät koskaan valtuuta kriittisiä toimia.",
+     "voice_language": "Käytä automaattista Home Assistant:n kielelle tai kielikoodille, kuten es, de tai pt-BR. Vaatii puhekielen valinnan. Assist-puheentunnistuksen ja TTS-äänen on myös tuettava tätä kieltä. tämä ei määritä niitä uudelleen.",
+     "remember_language_phrases": "Edellyttää molempia puhekielivaihtoehtoja. Tallenna vain yleinen lausepaketti uudelleenkäynnistyksistä ja asiaankuulumattomista asetusmuutoksista, älä koskaan henkilökohtaisista ilmoituksista. Oletuksena pois päältä. Poistaminen käytöstä, kielen/palveluntarjoajan vaihtaminen tai tietojen unohtaminen tyhjentää sen.",
+     "stream_voice_replies": "Alkaa puhua pitkää vastausta, kun tekoäly vielä kirjoittaa sitä, vaikka keskusteluistunnot olisivat päällä, joten vastaukset alkavat aikaisemmin. Jos Sentient muuttaa vastausta jälkeenpäin (esimerkiksi vahvistuskysymys), muutos puhutaan jo sanotun jälkeen. Oletuksena pois päältä; sen sammuttaminen palaa odottamaan koko vastausta. Mitään ei tallenneta.",
+     "voice_timing_diagnostics": "Säilytä viimeiset 20 puhevastausajoitusta muistissa ilman transkriptioita tai laite-/käyttäjätunnuksia. Näytä agentti, työkalu, käännös ja ilmoitusten ajoitukset mielessä. Vaiheet voivat mennä päällekkäin; mikrofonin sieppausta ja lopullista liukuhihnan toistoa ei mitata. Oletuksena pois päältä; Asetukset muuttuvat ja historian tyhjentäminen unohtamatta. Se laskee myös kuinka keskustelut etenevät (seurannat, korjaukset, kuinka nopeasti vastaukset tulevat — ei koskaan sanoja), jatkuvat uudelleenkäynnistykset; tämän kytkeminen pois päältä tyhjentää nämä määrät.",
+     "reliability_log": "Tarkista jokainen äänikierros yksinkertaisilla säännöillä (ei tekoälyä) ja kirjoita Mind-sivulle, kun työkalu epäonnistui, laite ei tehnyt sitä, se sanoi, että jotain tehtiin, kun mitään ei ollut, se tarjosi jotain, jota mikään laite ei voi tehdä, se ei voinut vastata tai se vastasi menneisyydestä etsimättä mitään. Pitää lyhyen rivin kysymyksestä ja vastauksesta 14 päivän ajan. Sen sammuttaminen pysäyttää sen ja tyhjentää sen, mitä säilytettiin.",
+     "unified_evidence": "Oletuksena pois päältä. Antaa äänelle yhden ylimääräisen vain luku -työkalun, joka tarkastelee talon tietueita, aikajanaa ja kamerahistoriaa yhdessä, kun kysyt, mitä tapahtui tai miksi. Se ei voi vaihtaa mitään, ja se kertoo, milloin lähdettä ei voitu tarkistaa, sen sijaan, että väittäisi, ettei mitään tapahtunut. Sen sammuttaminen vain poistaa työkalun. mitään ei tallenneta.",
+     "specific_clarification": "Edellyttää keskustelutilaisuuksia. Tarjoa nimettyjä laitevaihtoehtoja ja tunnista tarkat nimet, englanninkieliset järjestysluvut, molemmat/kaikki ja yksinkertaiset lämpötilat paikallisesti. Yksi yritys uudelleen, lopeta sitten toistamisen sijaan. Valinta ei koskaan vahvista toimintaa. Oletuksena pois päältä; poistaminen käytöstä tyhjentää odottavat valinnat. Käytä suojattua ohjausta pakotettujen toimintojen rajoituksiin.",
+     "action_recovery": "Edellyttää keskusteluistuntoja ja suojattua ohjausta laitteen tuloksista ja uudelleenyrityksistä. Anna nimetyt osatulokset ja tarkasta viimeisin suojattu pyyntö, kun sanot, että se ei toiminut. Vain toimintoja, joita ei koskaan lähetetty, voidaan tarjota uudelleen uudella vahvistuksella. Epävarmoja tai onnistuneita toimia ei toisteta. Oletuksena pois päältä; tietueet vanhenevat kahden minuutin kuluttua ja tyhjennät asetusmuutokset tai unohtaminen.",
+     "recheck_unconfirmed": "Kun vartioidulla puheohjauksella ohjattu laite ei ole ilmoittanut uutta tilaansa vastaushetkeen mennessä (autotallin ovi, hidas pilvipistoke), katso vielä kerran 20 sekunnin kuluttua ja päivitä tietue, joten “toimiiko se?” vastataan siitä, mitä laite sanoo nyt. Mitään ei lähetetä uudelleen. Pois päältä: tietue pysyy sellaisena kuin se oli vastauksessa.",
+     "speech_failure_notification": "Näytä Home Assistant-ilmoitus, kun kaiuttimen toimitus epäonnistuu tai on epävarma. Oletuksena pois päältä. Ei sisällä puhuttua sisältöä tai toistuvaa puhetta. Ei käytössä vierastilassa; olemassa olevat ilmoitukset säilyvät, kunnes ne hylätään.",
+     "recent_followup_context": "Käytä äskettäin valmistunutta aihetta uuden herätyssanan jälkeen samalla kaiuttimella ja käyttäjällä. Edellyttää keskustelutilaisuuksia ja kontekstuaalista seurantaa. Käyttää istunnon aikakatkaisua; ei koskaan palauta vahvistusta tai kuuntelua. Oletuksena pois päältä. Lopettaminen tai unohtaminen selventää kontekstia.",
+     "conversation_cues": "Keskustelun sisällä: arkipäiväiset merkinnät (“kippis”, “täydellinen, kiitos”, “sitä käy”) lopettavat sen, kun mikään ei odota vastausta; “anteeksi, tarkoitin…”, “väärä valo” ja “ei lamppu, kattovalo” ovat korjauksia; ja “toisesta nuotista…” tai “jotain muuta:” aloittaa uuden aiheen ilman laitteita. Ei AI. Pois päältä: vain pelkät päätteet ja korjaukset tunnistetaan.",
+     "vary_replies": "Äänelle näytetään omat viimeiset vastauksensa kuluneelta päivästä ja käsketään olemaan käyttämättä heidän lauseitaan tai avauksiaan, joten samaa vastausta ei anneta sanasta sanaan kahdesti. Ei yksityisissä huoneissa tai vierastilassa. Toistuvat vastaukset lasketaan kumpaankin suuntaan (Mieli-välilehti ääniajoituksineen). Oletuksena pois päältä.",
+     "behaviour_explanations": "Vastaa lyhyisiin kysymyksiin kuuntelusta ja laitteen tallentamisesta suoraan ilman tekoälypuhelua. Edellyttää keskustelutilaisuuksia. Käyttää olemassa olevia istuntotietueita, kunnioittaa vierastilaa ja laitteen käyttöoikeutta eikä toista toimintoja. Oletuksena pois päältä; ylimääräistä historiaa ei tallenneta.",
+     "current_house_context": "Anna keskusteluille kompakti ja asianmukainen tilannekuva näkyvistä laiteraporteista, viimeaikaisista muutoksista ja nykyisestä keskeneräisestä tehtävästä. Oletuksena pois päältä. Ei taustaa AI-kutsuja. Vierastila estää sen. Viimeaikaiset muutokset vanhenevat 30 minuutin kuluttua; poistaminen käytöstä tai unohtaminen tyhjentää vain muistin sisältävän kontekstin.",
+     "moment_awareness": "Jokainen äänivastaus saa lyhyen \"tällä hetkellä\" kuvan siitä, mitä Sentient jo säilyttää: kuka on ollut kotona ja mistä lähtien, huoneet, joissa on liikettä, mitä tapahtui viimeisen 45 minuutin aikana ja mitä tahansa epätavallista tälle päivälle. Ei tekoälyä eikä mitään tallennettua. Yksityishuoneessa tai vierastilassa vain liike annetaan. Pois päältä: mitään ei ole lisätty.",
+     "room_memory": "Jokainen äänivastaus huoneessa saa mitä siellä tapahtui viimeisen tunnin aikana: aikaisemmat keskustelut siinä huoneessa, mitä siellä äänellä vaihdettiin ja mitä siellä ilmoitettiin. Jos joku juuri puhui toisessa huoneessa muutama minuutti sitten, eikä täällä ole sen jälkeen sanottu mitään, sekin keskustelu tulee, jotta he voivat jatkaa siitä, mihin jäivät. Mitään uutta ei tallenneta. Yksityishuoneet ja vierastila saavat vain oman huoneensa tietueen. Pois päältä: mitään ei ole lisätty.",
+     "know_people": "Kun puheentunnistus ei ole nimennyt kaiutinta, Sentient selvittää, kenen se luultavasti on, asioista, joihin se voi luottaa: Home Assistant-sovellukseen kirjoitettu viesti tulee kyseisen henkilön tililtä tai hänen oma on huoneen ainoa puhelin, jota seurataan. Äänelle kerrotaan, kuka se luultavasti on, ja se asettaa ensin sen, mitä tämä henkilö kertoi itsestään. Arvaus ei koskaan salli mitään, mikä vaatii vahvistusta, eikä heidän nimensä alle sen vuoksi tallenneta mitään. Ei vierastilassa tai yksityisissä huoneissa. Pois: ei arvauksia.",
+     "instant_answers": "Arkisiin kysymyksiin vastataan suoraan kotoa käsin ennen tekoälyä: kellonaika, sää ulkona, onko jokin nimetty laite päällä, pois päältä, auki vai lukittu, huoneen lämpötila, seuraava hälytys tai muistutus, vierailijat ja onko talo lukossa. Vain kysymyksiä, vain yksi laite, joka täsmää selvästi ja on alttiina ääniavustajalle; kaikki muu menee tekoälyyn tavalliseen tapaan. Vaihto lisätään keskusteluun, joten jatko tietää, mitä kysyttiin. Vieraat ja yksityishuoneet näkevät vain ajan, sään ja laitteen tilat. Pois päältä: jokainen kysymys menee tekoälylle.",
+     "capability_awareness": "Äänelle kerrotaan, millaisia ​​asioita se voi ohjata tässä talossa äänellä (mitä puheavustajille altistuu, kuinka monta kutakin) ja mitä yhteisiä talossa ei ole, kuten älylukot tai moottoroidut kaihtimet, joten se ei koskaan tarjoa mitään, mihin mikään laite ei pysty. Tarjous, joka lipsahtaa joka tapauksessa läpi (ikkunan sulkeminen, oven lukitseminen), poistetaan vastauksesta ennen kuin se puhutaan. Harjoiteltu viiden minuutin välein, ei tekoälyä. Pois päältä: mitään ei lisätä tai poisteta.",
+     "house_context_entities": "Laitteet, jotka sisällytetään yleisiin talon yhteenvedoihin automaattisten ilmasto- ja avaus-/läsnäoloraporttien ohella. Vain tällä hetkellä altistuvat ja käytettävissä olevat laitteet jaetaan; enintään kahdeksan asiaankuuluvaa lukemaa pyyntöä kohti.",
+     "house_context_updates": "Edellyttää nykyistä talokontekstia. Vahvistetun suojatun lämmityspyynnön jälkeen valinnaisesti sano kerran, kun termostaatti ilmoittaa pyydetyn lämpötilan. Vanhenee tunnin kuluttua, peruuntuu, jos sen tavoite muuttuu, enintään yksi päivitys 15 minuutissa. Noudattaa normaaleja puhesääntöjä ja vierastilaa. Oletuksena pois päältä. Pois päältä kytkeminen tyhjentää odottavat päivitykset.",
+     "security_event_evidence": "Käytä Frigate-tapahtumatunnuksia, tilannekuvia ja leikkeitä määritetyissä kameroissa. Ainutlaatuinen kamera/aika-osuma on ehdokaslinkki, ei todiste siitä, että anturi tunnisti kyseisen tapahtuman. Säilytä jopa 3 000 tapahtumatietuetta seitsemän päivän ajan paikallisesti. Oletuksena pois päältä. Poistaminen käytöstä piilottaa linkit ja lopettaa vastaavuuden. säilytetyt tietueet vanhenevat tai ne voidaan unohtaa.",
+     "security_event_zones": "Vain se, mikä tulee vyöhykkeelle: kamerassa, jossa on Frigate-vyöhykkeet, tapahtuma luetellaan (ja voi aloittaa tietoturvahäiriön) vasta, kun objekti on mennyt johonkin niistä, samaa sääntöä Frigate käyttää hälytyksiinsä. Kamera ilman vyöhykkeitä luettelee kaiken. Kaikki havaittu: jokainen kohde Frigate seuraa valituissa kameroissa. Frigate:n omia asetuksia ei muuteta koskaan.",
+     "security_event_hidden_zones": "Yksi per rivi kamerana/vyöhykkeenä, esimerkiksi portti/ajotieltä. Tapahtumat, jotka ovat vain näillä vyöhykkeillä, eivät ole luettelossa, eivätkä ne aloita tietoturvahäiriöitä. Käytä Suojaus-sivulla PIILOTA TÄMÄ VYÖHYKE -vaihtoehtoa muutaman \"ei henkilö\" -korjauksen jälkeen tai poista rivi listataksesi vyöhykkeen uudelleen. Frigate ei ole muuttunut.",
+     "security_coverage": "Näytä, mitkä määritetyt kamerat lisäsivät säilytettyjä todisteita ja mahdolliset raportit, jotka on tallennettu live-tapahtumien ohella. Nykyiset kameraraportit näytetään erikseen. Tämän poistaminen poistaa säilytetyt peittoaukot.",
+     "frigate_pipeline_health": "Lue Frigate MQTT:n saatavuus, kamerakohtaiset käsittelynopeudet ja milloin Sentient viimeksi vastaanotti tapahtuman. Puuttuvat tiedot näytetään tuntemattomina. Kameran asetuksia ei muuteta.",
+     "security_conversation_context": "Muista valitun tapahtuman enintään viiden minuutin ajan saman keskustelun, laitteen ja käyttäjän sisällä. Seurantakysymyksissä käytetään kyseistä tapahtumaa ja tuoreita käyttöasteraportteja; henkilöllisyyttä tai jatkuvaa läsnäoloa ei oletetaan. Seuraa määritettyjä kameratapahtumia. Oletuksena pois päältä. Poistaminen käytöstä poistaa keskusteluviitteet; tapahtumatiedot säilyttävät normaalin vanhenemispäivänsä.",
+     "security_event_feedback": "Järjestelmänvalvojat voivat merkitä käynnin hyväksi saaliiksi, eivät henkilöksi tai huomiotta jätettäväksi. Tarkistetut käynnit siirtyvät taitettuun Arvosteltu-luetteloon, ja \"ei henkilö\" lasketaan myös tarkistetuksi vääräksi havainnoksi vain kyseisestä käynnistä tehdyn tietoturvahäiriön osalta. Korjaukset ovat voimassa seitsemän päivää. Ei automaattisia tunnistimen, hälytyksen tai ilmoitussäännön muutoksia. Poistaminen käytöstä piilottaa palautteen ja pysäyttää uudet korjaukset; Käytä Unohda viimeisimmät tiedot poistaaksesi tallennetut tietueet.",
+     "share_clip_analysis": "Jaa yhteensopivia yleisiä analyyseja samasta valmiista Frigate-tapahtumasta automaattisen leikkeen katselun ja tapahtumaleikkeiden kysymyksiin. Palveluntarjoajan, materiaalin kattavuuden ja identiteettiasetusten on vastattava toisiaan. Mukautetut kysymykset analysoidaan erikseen. Pidä enintään 100 tulosta muistissa kuuden tunnin ajan. Oletuksena pois päältä. Poistaminen käytöstä, asetusten muuttaminen tai unohtaminen tyhjentää välimuistin.",
+     "sleep_ignore_sensors": "Liiketunnistimet, jotka laukeavat ihmisten nukkuessa, esimerkiksi makuuhuoneessa. Nukkumaan meneminen odottaa, ettei mikään liiku yllä olevaan aikaan; makuuhuoneen tunnistin, joka laukeaa, kun joku kääntyy ympäri, pitää talon \"valvoina\" koko yön, joten luettele se tähän. Ne lasketaan edelleen kaikkeen muuhun.",
+     "heating_graph": "Päällä: Talo-välilehden lämmityskortti näyttää kunkin termostaatin lämpötilan viimeiset 24 tuntia verrattuna siihen, mihin se oli asetettu, ja ajastetut ajat on varjostettu. Lue Home Assistant:n historiasta; mitään ylimääräistä ei tallenneta. Pois päältä: kaavio on piilotettu.",
+     "heating_revert": "Päällä: jos termostaattia käännetään ylös, alas tai sammutetaan käsin (tai vaihtuu itsestään) eikä se ole takaisin aikataulussa, Sentient jättää sen hetkeksi ja asettaa sen sitten takaisin: jakson lämpötila päivällä, yölämpötila yöllä. Vain termostaatit lämmitysohjelmassa. Käsin tai äänellä tehty muutos kestää koko ajan, vaikka jakso alkaisi tai päättyisi sillä välin; sitten aikataulu ottaa vallan. Pois: käsin tehdyt muutokset pysyvät seuraavaan aikatauluun asti. Mitään ei tallenneta kumpaankaan suuntaan.",
+     "window_heating": "Päällä: kun ikkuna tai ovi on ollut auki muutaman minuutin ja huoneessa on oma lämmitin, Sentient laskee lämmittimen yölämpötilaan ja laittaa sen takaisin, kun ikkuna sulkeutuu, mutta vain jos kukaan ei ole vaihtanut sitä sillä välin. Koko talon termostaattia ei koskaan sammuteta yhdelle ikkunalle: Sentient vain sanoo, että ikkuna on auki ja lämmitys päällä. Luopuu 3 tunnin kuluttua. Pois päältä: mitään ei ole muutettu tai sanottu; kaikki, minkä se oli kieltäytynyt, laitetaan takaisin (jos kukaan ei ole vaihtanut sitä) ja sen pieni tietue tyhjennetään.",
+     "window_heating_minutes": "Kuinka kauan ikkunan on oltava auki ennen kuin Sentient toimii. Oletusarvo 5 minuuttia.",
+     "rooms_view": "Päällä: Talo-välilehdellä näkyy ruutu jokaiselle huoneelle — lämpötila, kosteus, valot päällä, ovet ja ikkunat auki, milloin joku on viimeksi muuttanut sinne ja mitä soitetaan — ja yleiskatsaus saa lyhyen ympäri taloa -kortin. Rakennettu alueiltasi; mitään ei tallenneta. Pois päältä: molemmat ovat piilossa.",
+     "outdoor_areas": "Alueet, jotka ovat talon ulkopuolella, kuten kanikoppa, aita tai kasvihuone. He saavat edelleen oman laatan Talo-välilehdeltä, jossa on merkintä ULKOPUOLELLA, ja niiden lämpötila näkyy omalla rivillään yleiskatsauksessa, mutta ne jätetään pois lämpimimmästä ja viileimmästä huoneesta, eikä siellä liikkumista (kamera, joka näkee ihmisten kävelevän) lasketa jonkun talossa oleviksi. Jätä tyhjäksi laskeaksesi jokaisen alueen osaksi taloa.",
+     "knowledge_card": "Päällä: Mieli-välilehti tiivistää sen, mitä se on oppinut talosta — tavallinen nukkumaanmeno- ja heräämisaika, syrjään asettamat anturit, kuinka nopeasti lämmitys lämpenee, seuraavan huoneen arvaukset, rutiinit ja muistot. Se näyttää vain sen, mikä on jo tiedossa; mitään ylimääräistä ei tallenneta. Pois päältä: kortti on piilotettu.",
+     "day_chart": "Päällä: yleiskatsauksessa näkyy tänään tunti kerrallaan — liike, mitä se sanoi, mitä ulkona tapahtui ja mitä kysyit siltä — sekä milloin joku oli ensimmäisenä paikalla ja kiireisin tunti. Laskettu aikajanalta; mitään ylimääräistä ei tallenneta. Pois päältä: kaavio on piilotettu.",
+     "house_ledger": "Päällä: jokainen muutos jokaiseen laitteeseen tallennetaan sen aiheuttajan kanssa (henkilö, äänipyyntö, automaatio, Sentient tai ei mitään Home Assistant:ssä, mikä tarkoittaa itse laitetta, sen sovellusta tai jotakuta siinä), joten voit kysyä \"milloin lämmitys sammui ja miksi?\". Nopeasti muuttuvat luvut pidetään merkittävinä muutoksina. Säilytetty 90 päivää Sentient:n omassa tietokannassa, sitten yhteenveto päiväkohtaisesti. Pois: mitään uutta ei tallenneta; säilytetty säilyy, kunnes tyhjennät sen Mieli-välilehdeltä.",
+     "unexplained_changes": "Päällä: Kun tarkkailtava laite (oletusarvoisesti lämmitys, vedenlämmittimet ja venttiilit) vaihtuu ilman, että sen takana ole mitään Home Assistant:ssä sille epätavalliseen aikaan, se sanotaan kerran ja laitetaan aikajanalle, ja toistot linkitetään: \"kolmas kerta tällä viikolla, aina noin klo 11\". Kun se vielä oppii laitetta tai kun toistosta tulee tavallista, se menee vain aikajanalle. Off: edelleen tallennettu, ei koskaan mainittu.",
+     "unexplained_entities": "Jätä tyhjäksi lämmitystä, vedenlämmittimiä ja venttiilejä varten. Lukkoja, ovia ja portteja käytetään käsin päivittäin, joten lisää ne vain, jos haluat kuulla niistä.",
+     "expectations": "Käytössä: oppii, kuinka usein kukin laite vaihtuu joka tunti, arkisin ja viikonloppuisin (lämmitettynä kolmen viime viikon historian perusteella), ja pisteyttää jokaisen muutoksen tavallisesta erittäin epätavalliseen. Mieli-välilehti näyttää, kuinka paljon jokaisesta päivästä se odotti. Pelkkä laskenta, ei tekoälyä. Pois: ei pisteitä; Selvitä, mitä se oppi Mieli-välilehdellä.",
+     "surprise_gating": "Katso: muistiin, mitkä huomautukset se ohittaisi, koska muutos on tavanomainen ajalle, ohittamatta yhtään. Päällä: ohittaa ne, mikä myös tallentaa tekoälypuhelun. Ei koskaan koske turvahälytyksiä, hälytyksiä tai mitä tahansa pyytämääsi.",
+     "situations": "Päällä: äänelle kerrotaan muutama selkeä rivi siitä, mitä nyt tapahtuu (tulee juuri kotiin, liikettä viimeisen 15 minuutin aikana, kaikkea epätavallista viimeisen tunnin aikana). Ei jaettu vieraiden kanssa tai yksityisessä huoneessa. Pois päältä: mitään ylimääräistä ei lähetetä.",
+     "beliefs": "Käytössä: Joka ilta se etsii asioita, jotka jatkuvat itsestään suunnilleen samaan aikaan, testaa jokaista juuri mennyttä päivää vastaan, kysyy, mikä pitää, ja pudottaa ne, jotka eivät tapahdu. Ei AI. Pois: ei uusia uskomuksia eikä testausta; olemassa olevat tyhjennetään Mind-välilehden oppimisen avulla.",
+     "learn_reactions": "Päällä: jotain, jonka Sentient on vaihtanut ja joka palautetaan suoraan takaisin, ei oteta sitä uudelleen käyttöön, ja huomautus, jonka joku toimii, on sen hyväksi. Pois päältä: reaktioita ei pisteytetä.",
+     "ai_case_memory": "Päällä: taustalla tehty tekoälytyö, joka on identtinen viimeisten kuuden tunnin aikana, käyttää vastausta uudelleen toisen puhelun sijaan. Ei koskaan käytetty kuviin tai klippeihin. Pois: jokainen työ kutsuu tekoälyä, ja tallennetut vastaukset tyhjennetään.",
+     "memory_tags": "Kerran jokaista muistoa kohden yksi pieni tekoälykutsu yöllä lisää siihen liittyviä sanoja, joita ihmiset saattavat käyttää sen sijaan (“keitin” → hauduta, tee, kuppi), joten “haluatko kuppia?” löytää vedenkeittimen muistoja. Jopa 40 muistoa yössä; upotuspalvelinta ei tarvita. Sen katkaiseminen lopettaa iltaisen puhelun ja palauttaa sanat huomiotta (ne säilytetään, joten takaisinkytkentä on välitöntä). Oletuksena pois päältä.",
+     "memory_upkeep": "Yön pohdinnassa (ei ylimääräistä tekoälypuhelua) muistot siitä, että jokin henkilön sanoma päivän näytöksissä on vanhentunut, korjataan ja pidetään arvauksena, kunnes ne vahvistetaan. Kerran päivässä yksi arvaus (jotain, joka selvisi ennemmin kuin kerrottiin) lisätään kysymyksiinsä, jotta se voi kysyä, onko se oikein. Henkilön vahvistamat tai kiinnittämät muistot eivät koskaan muutu. Tarvitsee yön heijastuksen. Pois päältä: muistoja vain lisätään, se ei koskaan korjaa.",
+     "watch_actions": "Kellot ja muistutukset voivat tehdä jotain ja sanoa sen, tarkistaa ensin kunto ja odottaa, että jokin kestää: \"jos takaovi on auki kymmenen minuuttia, sammuta aulan valo ja kerro minulle\", \"kun pesu on valmis, laita käytävän valo päälle\", \"kello 11, jos takaovi on vielä auki, kerro minulle\". Ääni lukee jokaisen takaisin ja se otetaan käyttöön vasta, kun olet antanut kyllä ​​seuraavan käännöksen. Vain puheavusteille altistetut laitteet, ei koskaan hälytyksiä, lukkoja, komentosarjoja tai mitään ei kosketa -luettelossa; jokainen laite tarkistetaan jälkeenpäin ja vastaus kertoo mitä ei tapahtunut. Pois päältä: kellot ja muistutukset vain puhuvat, kuten ennenkin, ja jo asetetut eivät toimi.",
+     "memory_time": "Asioita, jotka ovat totta vain hetken aikaa, saavat päättymispäivän itsestään: \"toistaiseksi\", \"tällä hetkellä\", \"tällä viikolla\", \"perjantaihin asti\" ja kertaluonteisia asioita (\"Käytin lämmityksen päälle\") säilytetään päivän ajan, jolloin päivämäärä on kirjoitettu, sen sijaan, että niistä tulisi pysyviä faktoja. Kerran päivässä sinulta tarkistetaan yksi fakta, jota kukaan ei ole vahvistanut tai käyttänyt kolmeen kuukauteen. Yön heijastus kirjoittaa myös lyhyen tarinan jokaisesta päivästä (ei ylimääräistä tekoälypuhelua), säilytetään 60 päivää, joten \"mitä teimme viime lauantaina?\" tai \"milloin kattila viimeksi käynnistyi?\" voidaan vastata. Tarvitsee yön pohdiskelun tarinoita ja tarkistuksia varten. Pois päältä: muistoissa säilytetään vain nimeämät päivämäärät, eikä tarinoita säilytetä (jo säilytetyt poistetaan).",
+     "who_where": "Kokoaa sen, mitä kukin lähde tietää — puhelinhuoneen seurantalaitteet (asetettu kohdassa Voice), kuka tunnistettiin viimeksi puhumaan ja missä ja liikkeet, kun vain yksi henkilö on kotona — yhdeksi parhaaksi arvaukseksi henkilöä kohden: mikä huone, kuinka varma ja mistä lähtien. Ääni annetaan tavallisen huoneen jäljityslinjan sijaan, kertoo kuinka varma se on, eikä koskaan sano mitään ihmisestä, joka ei ole kotona. Mitään ei tallenneta. Pois: äänessä on vain huoneseurannan linja, kuten ennenkin.",
+     "big_plans": "\"Laita talo valmiiksi elokuvailtaan\" tai \"selvitä talo, lähdemme pois\": ääni laatii lyhyen suunnitelman laitteen vaiheista, lukee sen takaisin ja tekee sen vasta seuraavan käännöksen kyllä-lauseen jälkeen. Jokainen vaihe tarkistetaan sitten laitteesta ja vastaus kertoo mitä ei tapahtunut. Vain ääniavusteille altistuneet laitteet; ei koskaan hälytyksiä, lukkoja, skriptejä tai ei kosketa -luetteloa; jopa 12 askelta. Pois: Suuret pyynnöt käsitellään yksi laite kerrallaan, kuten ennenkin.",
+     "self_grading": "Joka ilta, mitä ääni sanoi sinä päivänä siitä, oliko jokin päällä, pois, auki vai kiinni, verrataan siihen, mitä talo sillä hetkellä tallensi. Väärä lisätään Mieli-sivun kohtaan \"Missä ääni meni pieleen\" ja siitä tulee oppitunti (\"tarkista takaovi ennen kuin sanot, onko se auki\"), joten se paranee ilman korjausta. Ei AI. Tarvitsee luotettavuuslokin. Pois päältä: mitään ei ole tarkistettu.",
+     "voice_speed_watchdog": "Päällä: Huomioi, kun kaiuttimella kestää paljon kauemmin kuulla sinua kuin sinä kestit puhuaksesi (sen ääni saapuu hitaammin kuin reaaliaikaisesti), ja asettaa sen aikajanalle uudelleenkäynnistysehdotuksella. Pois päältä: ei shekkiä.",
+     "voice_speed_restart": "Päällä: viivyttelevä kaiutin käynnistetään uudelleen omalla uudelleenkäynnistyspainikkeellaan. Pois päältä: se on vain ehdotettu.",
+     "incident_stages": "Päällä: jokainen turvavälikohtaus näyttää, kuinka pitkälle se on päässyt — havaittu, tutkittu, todennäköisesti kotitalous, koskettava tai ratkaistu — tallennetusta, ei koskaan kuka joku oli. Pois päältä: tapahtumat luetellaan ilman vaihetta.",
+     "cognitive_shadow": "Päällä: Toinen, tiukempi tapa arvioida jokainen turvavälikohtaus kulkee tavanomaisten vaiheiden rinnalla ja laskee, kuinka usein molemmat ovat samaa mieltä, kuinka äänellä tehdyt toiminnot osoittautuivat, näytetään Mind-sensorissa vain kokonaislukuina (ei nimiä, kuvia tai laitteita). Se on testausta varten: se ei koskaan muuta hälytystä, vaihetta, mitä sanotaan tai mitä äänelle kerrotaan. Pois päältä: mitään ei verrata, ja laskenta alkaa alusta.",
+     "cognitive_decides": "Päällä: Kun tietoturvatapahtumien arvostelut (Mind-välilehden kunkin tapahtuman alla olevat painikkeet) osoittavat, että kaikki on oikein – vähintään 10 tarkistettua kotitaloustapausta, joista 90 % on samaa mieltä, vähintään 10 muuta sitä tuskin koskaan kutsutaan kodiksi, eikä yhtään vähemmän vakavaksi kutsuttua tapahtumaa, kognitiivinen ydin päättää kunkin tapahtuman vaiheen: mitä Mieli-välilehti ja ääni sanovat tapahtuman. Se pysähtyy itsestään, jos myöhemmät arvostelut jäävät vajaaksi, ja niin sanotaan aikajanalla. Se ei koskaan muuta tai pidättele hälytystä eikä koskaan kutsu tapausta vähemmän vakavaksi kuin tavallisten sääntöjen \"koskee\". Ennen kuin se on ansainnut sen, mikään ei muutu. Off: tavalliset säännöt ratkaisevat; arvostelusi säilytetään.",
+     "cognitive_quiet_heads_up": "Vain testaus: tallentaa kelpoisuuden tapahtumien arvioiden perusteella, mutta ei koskaan peitä puhe- tai puhelinturvavaroituksia. Portin avaaminen ja kameran henkilötunnistus ei vahvista perheen identiteettiä. Ominaisuus ei voi hiljentää mitään ennen kuin itsenäisesti varmennettu henkilöllisyystodistus on otettu käyttöön ja testattu.",
+     "weather_warnings": "Päällä: Maasi viralliset varoitukset tarkistetaan 30 minuutin välein (Met Office and Environment Agency Isossa-Britanniassa, MeteoAlarm kaikkialla Euroopassa, National Weather Service Yhdysvalloissa) Home Assistant:n sijainnin perusteella. Pois päältä: ei tarkastuksia, ja löydetyt unohdetaan.",
+     "warnings_country": "Jätä tyhjäksi käyttääksesi Home Assistant:n maata.",
+     "warnings_region": "Vain varoitukset, joissa on nimetty tämä alue, e.g. Luoteis-Englannissa. Jätä tyhjäksi koko maan osalta (tulva- ja Yhdysvaltojen varoitukset ovat aina lähellä kotia).",
+     "warnings_speak": "Päällä: uusi keltainen, punainen tai vakava varoitus annetaan kerran. Pois päältä: varoitukset näkyvät vain aikajanalla.",
+     "email_read": "Päällä: säilyttää lähettäjän, aiheen ja lyhyen esikatselun 20 viimeisestä viestistä Home Assistant:n IMAP-integrointiraporteissa, joten voit kysyä \"mikä tahansa uusi sähköposti?\". Vain luku, ei salasanaa, ei koskaan jaettu vieraiden kanssa. Pois päältä: mitään ei säilytetä, ja se, mitä säilytettiin, tyhjennetään.",
+     "calendar_clashes": "On: \"onko yhteenottoja huomenna?\" etsii tapahtumat, jotka ovat päällekkäisiä tai joiden välillä on alle 15 minuuttia, tiedotustilaisuuden kalentereista (tai kaikista kalentereista). Pois päältä: ei tarjota.",
+     "security_audit": "Päällä: järjestelmänvalvoja voi kysyä \"onko asetukset suojattu?\" pelkän http-etäkäytön, lukot ja hälytykset, jotka voivat tavoittaa äänellä ilman vahvistusta, vain luku -tarkistukseen, pitkäikäiset tunnukset ja järjestelmänvalvojat ilman kaksivaiheista kirjautumista. Pois päältä: ei tarjota.",
+     "automation_builder": "Päällä: järjestelmänvalvoja voi pyytää automaatiota selkeällä englannin kielellä; jokainen laite ja toiminto tarkistetaan, se luetaan takaisin ja tallennetaan sitten automations.yaml-tiedostoon, kuten editorista. Off: ei tarjota; jo tehdyt automaatit pysyvät.",
+     "pronounce_names": "Päällä: nimi, jonka ääni lukee oikeinkirjoituksen perusteella väärin, sanotaan samalla tavalla kuin se lausutaan, vain kaiuttimissa — chat, aikajana ja puhelimet pitävät oikean oikeinkirjoituksen. Otettu alla olevilta riveiltä ja muistoista, kuten \"Siobhan lausutaan Shivawn\". Pois päältä: nimet luetaan kirjoitettuina.",
+     "pronunciations": "Kirjoitettu = sanottu, yksi riviä kohden, e.g. Siobhan = Shivawn. Kirjoita mainittu versio niin, kuin äänen pitäisi lukea se.",
+     "health_duplicates": "Päällä: Laite, joka näkyy kahdesti yhdellä nimellä, jossa yksi kopio on tyhjä (liitin Tuya Localissa ja jälleen Tuyan pilvestä), näkyy talon kunnossa, ja siinä on painike, jolla tyhjä kopio poistetaan käytöstä. Pois päältä: ei valittu.",
+     "manuals_local_ocr": "Valinnainen ja oletuksena pois päältä. Jos Tesseract on jo asennettu Home Assistant-isäntään, lue tekstiä jopa 20 vain kuva-PDF-sivulta tiedostoa kohden. Ei pilvipyyntöjä tai latauksia. Tavallisessa Home Assistant-käyttöjärjestelmässä Tesseract ei ehkä ole käytettävissä. alkuperäinen PDF-varaosa säilyy.",
+     "memory_semantic_enabled": "Oletuksena pois päältä. Eksplisiittisesti määritetyn paikallisen Ollama-upotuspalvelun avulla uudelleensijoita vain tälle käyttäjälle jo sallitut muistitulokset. Yksityinen teksti lähetetään määritettyyn LAN-isäntään, ei koskaan automaattisesti Internetiin. Määritetty isäntä vastaanottaa valitut muistikatkelmat, joten suorita se ohjaamassasi luotettavassa koneessa.",
+     "memory_semantic_url": "HTTP URL, kuten http://192.168.1.20:11434. Vain numeeriset yksityiset LAN/silmukka-osoitteet hyväksytään (käytä 127.0.0.1 localhost:n sijaan). Palvelimen on esitettävä /api/embed ja malli on jo asennettu.",
+     "memory_semantic_model": "Ollama:ään jo asennetun upotusmallin nimi, kuten nomic-embed-text. Sentient ei lataa mallia. Palvelut, jotka eivät ole käytettävissä tai ovat hitaita, palaavat normaaliin hakuun.",
+     "ai_routing_enabled": "Oletuksena pois päältä. Vain kelvolliset taustatekstityöt voivat käyttää määritettyä vaihtoehtoa, kun molemmilla palveluntarjoajilla on yli 20 mitattua puhelua ja riittävä palvelutason luotettavuus. Ei vaihtamista kuville, strukturoidulle ulostulolle tai eksplisiittisille AI-valinnaille.",
+     "ai_routing_alternative": "Toinen Home Assistant ai_task -kokonaisuus, jota harkitaan sopivia taustatekstitehtäviä varten. Sen on oltava paikallisesti olemassa, eikä sitä koskaan käytetä ilman mitattua huoltohistoriaa ja kustannusarvioita.",
+     "ai_routing_primary_cost": "Oma likimääräinen hintasi yhdestä vastaavasta tekstityöstä; ei palveluntarjoajan laskutusta. Sinun on toimitettava ja vahvistettava molemmat hinnat, ennen kuin halvempaa toimittajaa harkitaan.",
+     "ai_routing_alternative_cost": "Oma hinta-arvio vaihtoehtoiselle AI Task -kokonaisuudelle. Tämä ei ole suoraa laskutusta, ja se voi poiketa todellisista tunnusmaksuista.",
+     "ai_routing_max_p95_ms": "Harkitse toissijaista palveluntarjoajaa vain, kun sen mitattu 95. prosenttipisteen palveluaika on tämän rajan sisällä. Oletusarvo on 4000 ms. Äänivastaukset jatkuvat olemassa olevan putken kautta.",
+     "heating_energy_sensor": "Kumulatiivinen kWh-energiaanturi, joka mittaa lämmitysjärjestelmää, ei koko taloa. Käytä Recorderin säilyttämää anturia, jolla on riittävän pitkä historia.",
+     "heating_measurement_date": "Tarkastelun muutoksen päivämäärä. Sentient vertaa jopa 14 päivää ennen ja jälkeen samoihin arkipäiviin; se ei voi todistaa, että Sentient aiheutti eron.",
+     "heating_energy_price_kwh": "Valinnainen arvio, jota käytetään vain muuttamaan havaitut kWh-erot likimääräisiksi päivittäisiksi valuuttamuutoksiksi, ei todellisiksi laskuiksi tai todistetuiksi säästöiksi.",
+     "autooff_respect_recent_voice": "Oletuksena pois päältä. Kun tämä on käytössä, valon tai kytkimen automaattinen sammutus pidetään enintään kahden minuutin ajan korkeamman prioriteetin vartioidun äänikomennon jälkeen. Ei koske manuaalisia pysäytyspyyntöjä, lämmitystä, lukkoja tai hälytyksiä."
+    }
+   },
+   "memories": {
+    "title": "Muistoja",
+    "description": "Talo muistaa {count} asioita. Valitse muokattava, valitse mikä tahansa, jos haluat unohtaa, tai lisää uusi.",
+    "data": {
+     "edit": "Muokkaa muistia",
+     "forget": "Unohtaa",
+     "add": "Lisää muisti",
+     "category": "Uuden muistin luokka"
+    }
+   },
+   "edit_memory": {
+    "title": "Muokkaa muistia",
+    "data": {
+     "text": "Muisti",
+     "category": "Luokka"
+    }
+   },
+   "briefing": {
+    "title": "Tilannekatsaukset",
+    "description": "Mitä tiedotustilaisuus kattaa — BRIEFING-painikkeella, äänellä tai tiettyyn aikaan joka päivä.",
+    "data": {
+     "briefings": "Tiedotukset päällä",
+     "briefing_sections": "Sisällytä",
+     "briefing_weather": "Sää alkaen",
+     "briefing_todo": "Tehtävälistat",
+     "briefing_calendars": "Kalenterit",
+     "briefing_system": "Ilmoitavat järjestelmäanturit",
+     "outside_info": "Ulkopuolista tietoa",
+     "parcel_trackers": "Pakettien seurantalaitteet",
+     "briefing_time": "Päivittäinen tiedotustilaisuus klo",
+     "digest_time": "Päivittäinen tiivistelmä klo",
+     "morning_briefing": "Tiedotustilaisuus, kun joku on ensimmäisenä paikalla",
+     "morning_briefing_areas": "Aamun tiedotushuoneet",
+     "morning_briefing_quiet": "Aamutiedotus hiljaisina tunteina"
+    },
+    "data_description": {
+     "briefings": "Off sammuttaa painikkeen, äänityökalun ja palvelun.",
+     "briefing_weather": "Jätä tyhjäksi käyttääksesi ensimmäistä sääkokonaisuutta.",
+     "briefing_system": "e.g. Suorittimen lämpötila, levyn käyttö, NAS. Odottavat päivitykset lasketaan aina.",
+     "outside_info": "Muiden integraatioiden anturit lukevat tiedotustilaisuuteen ja iltakatsaukseen huomiseen: tämän päivän sähkön hinta, säävaroitus, paketit matkalla, seuraava koulupäivä. Tyhjät, nolla- ja 'pois' -lukemat jätetään pois. Näiden tekstiä käsitellään vain tiedoksi.",
+     "parcel_trackers": "Kun joku sanoo, että paketti on toimitettavissa, se sanoo sen kerran ja tarkkailee sitä koko päivän (vaikka pakettihälytykset olisivat pois päältä); jos se sanoo toimitettu ennen kuin mitään on nähty ovella, se sanoo myös sen. Tyhjä: pois päältä.",
+     "briefing_time": "Valinnainen. Puhutaan vain, jos joku on kotona eikä ole hiljaisia ​​tunteja.",
+     "digest_time": "Valinnainen: kerran päivässä tekoäly tiivistää aikajanan muutamaan lauseeseen. Se menee aikajanalle (ja puhelimiin, jos valitaan). Ei puhuttu.",
+     "morning_briefing": "Kerran päivässä ennen puoltapäivää, huoneessa joku, heti kun talo näkee hänet ylös ja ympäri (tai ilman sitä, ensimmäinen kerta kun joku muuttaa hiljaisten tuntien päätyttyä).",
+     "morning_briefing_areas": "Valinnainen: anna se vain ensimmäisen kerran, kun joku tulee johonkin näistä huoneista aamulla, huoneen kaiuttimesta — nouse ylös, peseydy ja pukeudu ja kuule se sitten keittiössä tai olohuoneessa. Tyhjä: missä ne ovatkaan.",
+     "morning_briefing_quiet": "Pois päältä: joku ylhäällä ennen hiljaisten tuntien päättymistä saa tiedotuksen, kun se on ohi, kun hänet nähdään ensimmäistä kertaa liikkeessä (aamun tiedotushuoneissa, jos se on valittu), ja kaikki yön yli pidetyt taitetaan siihen. Päällä: se annetaan heti, kun ne näkyvät, jopa hiljaisina aikoina, vain huoneen kaiuttimesta."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Muistoja"
+   },
+   "last_spoken": {
+    "name": "Viimeksi puhuttu"
+   },
+   "likely_room": {
+    "name": "Todennäköisesti huone"
+   },
+   "watches": {
+    "name": "Kellot"
+   },
+   "routines": {
+    "name": "Rutiinit"
+   },
+   "visitors": {
+    "name": "Vierailijat"
+   },
+   "health": {
+    "name": "Talon terveys"
+   },
+   "drive": {
+    "name": "Ajaa"
+   },
+   "mind": {
+    "name": "Ajatukset"
+   },
+   "house": {
+    "name": "Talo",
+    "state": {
+     "awake": "Hereillä",
+     "asleep": "Unessa"
+    }
+   },
+   "screen": {
+    "name": "Näyttö",
+    "state": {
+     "idle": "Tyhjäkäynti",
+     "morning": "Aamu",
+     "notice": "Huomaa",
+     "alert": "Varoitus"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "Hiljaa"
+   },
+   "guest_mode": {
+    "name": "Vierastila"
+   },
+   "chime": {
+    "name": "Soittoääni"
+   },
+   "party_mode": {
+    "name": "Valoshow"
+   },
+   "media_speakers": {
+    "name": "Echo kaiuttimet"
+   },
+   "media_important_only": {
+    "name": "Echos: vain hälytykset ja muistutukset"
+   },
+   "away_lights": {
+    "name": "Pois valot"
+   },
+   "screen": {
+    "name": "Tabletin näyttö"
+   },
+   "holiday": {
+    "name": "Lomatila"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Varmuuskopion kanssa"
+   },
+   "alexa": {
+    "name": "Alexa:lle"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Matala",
+    "normal": "Normaali",
+    "urgent": "Kiireellinen (ohita hiljaiset tunnit)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Faktaa",
+    "preference": "etusija",
+    "person": "Henkilö",
+    "routine": "Rutiini",
+    "note": "Huom",
+    "correction": "Korjaus"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Pois",
+    "quiet": "Hiljainen",
+    "normal": "Normaali",
+    "chatty": "Puhelias"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Aika",
+    "weather": "Sää",
+    "reminders": "Muistutukset tänään",
+    "watches": "Mitä katsotaan",
+    "routines": "Rutiinit tulossa",
+    "open": "Ikkunat ja ovet avautuvat",
+    "visitors": "Vieraita tänään",
+    "said": "Mitä hiljattain sanottiin",
+    "system": "Järjestelmän kunto",
+    "todo": "Tehtävälistat",
+    "calendar": "Kalenteri (seuraavat 24 tuntia)",
+    "energy": "Nykyään käytetty sähkö (ja kaikkea epätavallista)",
+    "security": "Kaikki auki tai lukitsematta"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Kiireelliset ilmoitukset",
+    "held_quiet": "Asiat pysähtyivät hiljaisina tunteina",
+    "unheard": "Asiat, joita kukaan ei voinut kuulla (kaiutinta ei ole saatavilla)",
+    "visitors": "Ovikellovieraat ja paketit",
+    "watches": "Kellot ja muistutukset sammuvat",
+    "health": "Kodin terveysongelmia",
+    "digest": "Päivittäinen tiivistelmä",
+    "critical": "Turvavaroitukset (savu, CO, kaasu, vuodot)",
+    "security": "Asiat jäävät auki, kun kaikki lähtevät ulos"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "Rauhallinen ja asiallinen",
+    "dry": "Kuiva viisaus",
+    "warm": "Lämmin ja ystävällinen",
+    "cheeky": "röyhkeä",
+    "composed": "Säveltänyt kuin hovimestari"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "Disko",
+    "party": "Juhla",
+    "rainbow": "Sateenkaari",
+    "chill": "Rentoudu",
+    "halloween": "Halloween",
+    "christmas": "joulu"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Lukot",
+    "garage": "Autotallin ovet ja portit",
+    "covers": "Kaihtimet, verhot ja ikkunaluukut",
+    "heating": "Nostaa lämmitystä paljon",
+    "appliances": "Koneiden käynnistys"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "Tee se vain",
+    "tell": "Sano niin ja tee se sitten",
+    "ask": "Kysy ensin"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Pois",
+    "nightly": "Joka ilta",
+    "weekly": "Kerran viikossa (sunnuntai-iltana)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Itsetestaus",
+    "rain": "Varoitus sateesta",
+    "hutch": "Eläinhäkin tarkistus",
+    "cat": "Kissan kello",
+    "bins": "Roskisten tarkistus",
+    "faces": "Kuka tämä on? (kasvojen opetus)",
+    "faces_forget": "Unohda nimettömät kasvot nyt",
+    "clip_watch": "Katso uusin klippi nyt"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Vain Frigate-hälytykset",
+    "zones": "Mitä tahansa vyöhykkeellä",
+    "all": "Jokainen havainto"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Aina",
+    "quiet": "Hiljaisia ​​tunteja",
+    "away": "Kun kaikki ovat poissa",
+    "quiet_or_away": "Hiljaisia ​​tunteja tai kun kaikki ovat poissa"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Pois",
+    "worth": "Katsomisen arvoisia",
+    "suspicious": "Epäilyttävää vain",
+    "all": "Jokainen klippi"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (yksi AI-kutsu leike)",
+    "frigate": "Frigate:n omat tekoälyyhteenvedot"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "Ovella",
+    "reminders": "Muistutukset",
+    "questions": "Kysymyksiä (kyllä/ei)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Lyhyt",
+    "natural": "Luonnollinen"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Pois",
+    "watch": "Katso vain",
+    "on": "Päällä"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Vain se, mikä tulee alueelle",
+    "all": "Mitä tahansa havaittu"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Sanoa",
+   "description": "Puhu läpi talon hiljaisten tuntien ja huonetietoisuuden jälkeen.",
+   "fields": {
+    "message": {
+     "name": "Viesti",
+     "description": "Mitä sanoa."
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireellinen jättää huomiotta hiljaiset tunnit ja hiljaiset jaksot; matala ei koskaan keskeytä."
+    },
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Kaiutin, huoneen nimi tai kokonaisuuden tunnus. Jätä tyhjäksi seurataksesi henkilöä."
+    }
+   }
+  },
+  "remember": {
+   "name": "Muistaa",
+   "description": "Lisää jotain talon pitkäaikaiseen muistiin.",
+   "fields": {
+    "text": {
+     "name": "Teksti",
+     "description": "Yksi lyhyt lause."
+    },
+    "category": {
+     "name": "Luokka",
+     "description": "Millainen muisto tämä on."
+    }
+   }
+  },
+  "forget": {
+   "name": "Unohtaa",
+   "description": "Poista muisti tunnuksella tai vastaavalla tekstillä.",
+   "fields": {
+    "what": {
+     "name": "Mitä",
+     "description": "Muistitunnus tai sanat siitä."
+    }
+   }
+  },
+  "watch": {
+   "name": "Katsella",
+   "description": "Pidä silmällä laitetta, anturia tai kameraa ja puhu, kun jotain tapahtuu.",
+   "fields": {
+    "what": {
+     "name": "Mitä",
+     "description": "Lyhyt kuvaus, e.g. 'kissat kanin karsinan lähellä'."
+    },
+    "entity": {
+     "name": "Entiteetti",
+     "description": "Entiteetin tunnus, nimi tai kameran alueen nimi."
+    },
+    "to_state": {
+     "name": "todeta",
+     "description": "Tuli, kun entiteetti saavuttaa tämän tilan."
+    },
+    "above": {
+     "name": "Edellä",
+     "description": "Sytytä, kun arvo ylittää tämän."
+    },
+    "below": {
+     "name": "Alla",
+     "description": "Sytytä, kun arvo laskee tämän alapuolelle."
+    },
+    "question": {
+     "name": "Kysymys",
+     "description": "Kamerakellot: kyllä/ei-kysymys kuvasta."
+    },
+    "look_for": {
+     "name": "Etsiä",
+     "description": "Kamerakellot: herättävä kohde, e.g. henkilö, kissa, auto."
+    },
+    "message": {
+     "name": "Viesti",
+     "description": "Mitä sanoa. Jätä tyhjäksi automaattista lausetta varten."
+    },
+    "until": {
+     "name": "Kunnes",
+     "description": "Kellon aika, e.g. 18.00 tai 18.00."
+    },
+    "minutes": {
+     "name": "Minuutit",
+     "description": "Tai kuinka monta minuuttia pitää katsoa."
+    },
+    "repeat": {
+     "name": "Toistaa",
+     "description": "Jatka katsomista sen syttymisen jälkeen."
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireellinen jättää huomiotta hiljaiset tunnit."
+    },
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Missä se sanotaan. Jätä tyhjäksi seurataksesi ihmisiä."
+    },
+    "wake_on": {
+     "name": "Herää",
+     "description": "Kamerakellot: vyöhyke- tai kohdeanturi, joka herättää kameran omien antureiden sijaan."
+    },
+    "spot": {
+     "name": "Kohta",
+     "description": "Kamerakellot: tarkista vain tämä nimetty kohta (äänellä opetettu, e.g. 'kanin kynä')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "Peruuta kello",
+   "description": "Pysäytä kello.",
+   "fields": {
+    "what": {
+     "name": "Mitä",
+     "description": "Katso id tai sanoja siitä."
+    }
+   }
+  },
+  "remind": {
+   "name": "Muistuttaa",
+   "description": "Sano jotain kerrallaan huoneessa, jossa ihmiset ovat.",
+   "fields": {
+    "message": {
+     "name": "Viesti",
+     "description": "Mitä sanoa, e.g. 'On aika laittaa uuni päälle.'"
+    },
+    "at": {
+     "name": "klo",
+     "description": "Kellon aika, e.g. 18.00 tai 18.00."
+    },
+    "minutes": {
+     "name": "Minuutit",
+     "description": "Tai kuinka monessa minuutissa."
+    },
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Missä se sanotaan. Jätä tyhjäksi seurataksesi ihmisiä."
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireellinen (oletus) puhuu edelleen hiljaisina aikoina."
+    }
+   }
+  },
+  "ask": {
+   "name": "Kysyä",
+   "description": "Esitä kysymys ääneen ja kuuntele vastausta huoneessa, jossa ihmiset ovat.",
+   "fields": {
+    "question": {
+     "name": "Kysymys",
+     "description": "e.g. 'Haluatko oluen? Laitanko vedenkeittimen päälle?'"
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireellinen jättää huomiotta hiljaiset tunnit ja hiljaiset jaksot."
+    },
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Mistä kysyä. Jätä tyhjäksi seurataksesi ihmisiä."
+    },
+    "extra_prompt": {
+     "name": "Lisäohjeet",
+     "description": "Lisäopastusta vastausta käsittelevälle puheagentille."
+    },
+    "preannounce": {
+     "name": "Soita ensin",
+     "description": "Soita kello ennen kuin kysyt."
+    }
+   }
+  },
+  "learn": {
+   "name": "Opi nyt",
+   "description": "Etsi rutiineja lähihistoriasta heti sen sijaan, että odotat tätä iltaa."
+  },
+  "briefing": {
+   "name": "Tilannekatsaus",
+   "description": "Lyhyt selostus tärkeistä asioista, puhuttu siellä, missä ihmiset ovat.",
+   "fields": {
+    "speak": {
+     "name": "Puhu se",
+     "description": "Off palauttaa tosiasiat puhumatta tai käyttämällä tekoälyä."
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireellinen puhuu myös hiljaisina aikoina, e.g. kun joku painoi nappia."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Siistit muistot",
+   "description": "Yhdistä kaksoiskappaleet ja pudota hölynpöly muistista nyt (suorittaa myös joka sunnuntai-ilta)."
+  },
+  "forget_routine": {
+   "name": "Poista opittu rutiini",
+   "description": "Poista opittu rutiini tai tapa lopullisesti — talo lakkaa tekemästä sitä eikä koskaan opi tai tarjoa sitä uudelleen. Kun Palauta on käytössä, tuo poistetut takaisin (yksi tai kaikki, jos rutiini on tyhjä).",
+   "fields": {
+    "routine": {
+     "name": "Rutiini",
+     "description": "Rutiinitunnus tai sanat siitä."
+    },
+    "restore": {
+     "name": "Palauttaa",
+     "description": "Tuo poistetut sen sijaan takaisin."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Ota rutiini käyttöön",
+   "description": "Pyydä taloa tekemään opittu rutiini itse tai lopeta. Jätä Hyväksy tyhjäksi vaihtaaksesi.",
+   "fields": {
+    "routine": {
+     "name": "Rutiini",
+     "description": "Rutiinitunnus tai sanat siitä."
+    },
+    "adopt": {
+     "name": "Adoptoida",
+     "description": "Alkuun, lopettamaan."
+    }
+   }
+  },
+  "hush": {
+   "name": "Hiljaa",
+   "description": "Älä sano mitään, mikä ei ole kiireellinen vähään aikaan. 0 minuuttia lopettaa hiljaisuuden.",
+   "fields": {
+    "minutes": {
+     "name": "Minuutit",
+     "description": "Kuinka kauan pysyä hiljaa."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Juokse rutiini",
+   "description": "Suorita nimetty rutiini (määritä sivupalkin sivun Asetukset → Rutiinit).",
+   "fields": {
+    "name": {
+     "name": "Nimi",
+     "description": "Rutiinin nimi tai jokin sen muista nimistä."
+    },
+    "speak": {
+     "name": "Puhua",
+     "description": "Sano tulos siellä, missä ihmiset ovat."
+    },
+    "details": {
+     "name": "Yksityiskohdat",
+     "description": "Yksityiskohtaisia ​​rutiineja varten e.g. mitkä huoneet."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Viikkoraportti",
+   "description": "Kokoa yhteen, mitä talo oppi ja huomasi viime viikolla, ja pidä se aikajanalla."
+  },
+  "party": {
+   "name": "Valoshow",
+   "description": "Aloita tai lopeta valoshow (disko, Halloween, joulu…). Valot palaavat täsmälleen sellaisina kuin ne olivat sammuessaan.",
+   "fields": {
+    "on": {
+     "name": "Päällä",
+     "description": "Off pysäyttää sen ja laittaa valot takaisin."
+    },
+    "style": {
+     "name": "Tyyli",
+     "description": "Disco, juhla, sateenkaari, chill, Halloween tai joulu. Tyhjä käyttää asetusta."
+    },
+    "minutes": {
+     "name": "Minuutit",
+     "description": "Pysähdy itsestään tämän pitkän ajan kuluttua (0 = kunnes sammutetaan). Tyhjä käyttää asetusta."
+    },
+    "area": {
+     "name": "Huone",
+     "description": "Käytä tämän huoneen valoja (tai \"kaikkialla\" jokaiselle valolle)."
+    },
+    "lights": {
+     "name": "Valot",
+     "description": "Käytä juuri näitä valoja."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Mieti nyt",
+   "description": "Ajattele viimeistä päivää nyt, kuten se tekee yön yli: uusia muistoja, aamun ajatuksia ja kysymystä."
+  },
+  "grade_answers": {
+   "name": "Arvioi omat vastauksensa nyt",
+   "description": "Tarkista, mitä ääni sanoi ovista, valoista, kytkimistä ja lukoista talon äänityksiä vastaan, kuten se tekee joka ilta, kun \"Arvostele omat vastaukset\" on päällä. Palauttaa tarkastetun, viallisen ja mahdolliset oppitunnit.",
+   "fields": {
+    "hours": {
+     "name": "Tuntia",
+     "description": "Kuinka kaukana tarkistaa."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Tarkista asema",
+   "description": "Vilkaise tekoälyä ajopaikkaan nyt ja päivitä sinne pysäköity sisältö."
+  },
+  "wonder": {
+   "name": "Ihme",
+   "description": "Lisää kysymys uteliaisuuden vuoksi, jätä yksi tai kysy seuraava nyt.",
+   "fields": {
+    "question": {
+     "name": "Kysymys",
+     "description": "Jotain kysyttävä kotitaloukselta kerran."
+    },
+    "ask_now": {
+     "name": "Kysy nyt",
+     "description": "Esitä seuraava kysymys heti."
+    },
+    "dismiss": {
+     "name": "Hylkää",
+     "description": "Sanat kysymyksestä, jota ei loppujen lopuksi kysytä."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Seuraa",
+   "description": "Tarkista myöhemmin jotain ja kerro kuinka meni.",
+   "fields": {
+    "minutes": {
+     "name": "Minuutit",
+     "description": "Milloin tarkistaa."
+    },
+    "about": {
+     "name": "Noin",
+     "description": "Muutama sana siitä, mistä on kyse."
+    },
+    "entity": {
+     "name": "Entiteetti",
+     "description": "Laite tarkistettava sitten."
+    },
+    "state": {
+     "name": "Osavaltio",
+     "description": "Tila, joka tarkoittaa, että se toimi."
+    },
+    "above": {
+     "name": "Edellä",
+     "description": "Toimii, jos arvo on vähintään tämä."
+    },
+    "below": {
+     "name": "Alla",
+     "description": "Toimi, jos arvo on enintään tämä."
+    },
+    "if_done": {
+     "name": "Jos tehty",
+     "description": "Mitä sanoa, jos se toimisi."
+    },
+    "if_not": {
+     "name": "Jos ei",
+     "description": "Mitä sanoa jos ei."
+    },
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Missä se sanotaan (oletus: missä ihmiset ovat)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Peruuta seuranta",
+   "description": "Lopeta sen tarkistaminen uudelleen.",
+   "fields": {
+    "about": {
+     "name": "Noin",
+     "description": "Sen tunnus tai sanat siitä, mistä siinä on kyse."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Huolto tehty",
+   "description": "Merkitse huoltotyö valmiiksi (suodatin vaihdettu, kone kalkinpoisto), jotta sen laskenta alkaa uudelleen.",
+   "fields": {
+    "job": {
+     "name": "Tehtävä",
+     "description": "Sen nimi Huolto-sivulla."
+    }
+   }
+  },
+  "notice": {
+   "name": "Huomaa",
+   "description": "Ohjaa jotain tapahtunut Sentient:n kautta — samat hiljaiset tunnit, hiljaisuus, vieras- ja lomasäännöt ja (oletuksena) oma päätös, kannattaako se sanoa ja miten.",
+   "fields": {
+    "message": {
+     "name": "Mitä tapahtui",
+     "description": "Selkein sanoin, e.g. 'Astianpesukone on valmis'."
+    },
+    "entity_id": {
+     "name": "Laite",
+     "description": "Laite, josta on kysymys (valinnainen) — kertoo huoneen ja sen tilan."
+    },
+    "decide": {
+     "name": "Anna sen päättää",
+     "description": "Päällä: AI päättää, kannattaako se sanoa ja miten (laskee huomioimisen). Pois päältä: sano se kuten on annettu."
+    },
+    "priority": {
+     "name": "Prioriteetti",
+     "description": "Kiireelliset edelleen äänet hiljaisina tunteina; matala ei koskaan keskeytä."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "Katsoa eteenpäin",
+   "description": "Katso nyt huomista ja sano, onko siellä mitään huomion arvoista.",
+   "fields": {
+    "speak": {
+     "name": "Sano se",
+     "description": "Sano se ääneen, jos on."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Nukuttaa",
+   "description": "Kerro talolle, että se nukkuu tai on hereillä (suorittaa nukkumaanmenoajan tai aamutoiminnot).",
+   "fields": {
+    "asleep": {
+     "name": "Unessa",
+     "description": "Päällä nukkumaan, pois päältä hereille."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Näytä näytöllä",
+   "description": "Aseta kortti Sentient-näyttökorttiin.",
+   "fields": {
+    "message": {
+     "name": "Viesti",
+     "description": "Mitä näyttää."
+    },
+    "camera": {
+     "name": "Kamera",
+     "description": "Kamera esitettäväksi sen kanssa."
+    },
+    "minutes": {
+     "name": "varten",
+     "description": "Kuinka kauan (10 minuuttia, jos tyhjä)."
+    },
+    "alert": {
+     "name": "Varoitus",
+     "description": "Näytä se varoituksena."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Tyhjennä näyttö",
+   "description": "Ota kortti pois Sentient-näyttökortista tai muusta.",
+   "fields": {
+    "card_id": {
+     "name": "Kortti",
+     "description": "Kortin tunnus, \"aamu\" tai tyhjä kaikesta."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Aamun kortti",
+   "description": "Laita tämän aamun kortti Sentient-näytölle nyt."
+  },
+  "check_now": {
+   "name": "Tarkista nyt",
+   "description": "Suorita yksi valinnaisista tarkistuksista heti — itsetesti, sadetarkastus, koppitarkastus, kissakello, roskakoritarkistus, \"kuka tämä on?\" viimeisille kasvoille, joita ovikamera ei voinut nimetä, unohtaen nimettömät kasvot tai katsomalla viimeisin leike ensimmäisestä leikekamerasta.",
+   "fields": {
+    "what": {
+     "name": "Mikä",
+     "description": "Mikä sekki suoritettava."
+    }
+   }
+  },
+  "game": {
+   "name": "Aloita tai lopeta tarinapeli",
+   "description": "Aloita tarinapeli (se voidaan sitten pelata millä tahansa ääniavustajalla) tai laita nykyinen peli pois. Pelin tallennettu muisti säilyy.",
+   "fields": {
+    "action": {
+     "name": "Toiminta",
+     "description": "Aloita peli tai lopeta pelattava."
+    },
+    "game": {
+     "name": "Peli",
+     "description": "Pelin nimi aloitettaessa."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Lopeta lukeminen",
+   "description": "Lopeta tarinan tai äänikirjan ääneen lukeminen ja hiljennä kaiutin pitäen paikkansa. Toimii ilman ääntä, kun tabletti ei kuule sinua tarinan yli.",
+   "fields": {
+    "speaker": {
+     "name": "Kaiutin",
+     "description": "Puhuja hiljaa. Jätä tyhjäksi lopettaaksesi jokaisen tarinan lukemisen."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} on saatavana",
+   "description": "Sinulla on {installed}. Asenna se kohdasta Asetukset → Päivitykset (Sentient tulee Marketplacesta Home Assistant 2026.11:ssä ja uudemmissa versioissa; vanhemmissa versioissa avaa Sentient HACS:ssä ja valitse Lataa) ja käynnistä sitten Home Assistant uudelleen. Jos Sentient kopioitiin käsin sen sijaan, että se olisi asennettu Marketplacesta tai HACS:stä, se ei koskaan päivity itsestään: asenna se Marketplacesta."
+  }
+ }
+}
