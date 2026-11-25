@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.24.1": [
+        "Cameras named after their stream (\"MainStream\", \"HD Stream\") show on the Security tab again when they're the only camera their device offers.",
+    ],
     "1.24.0": [
         "The rest of the page follows your language: the Overview, Mind and Security tabs, with device states and times in your language and a 24-hour clock.",
         "What's new is translated from 1.19.0 onwards.",

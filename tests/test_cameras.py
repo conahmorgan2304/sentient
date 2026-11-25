@@ -67,3 +67,47 @@ async def test_a_tablets_own_camera_is_not_a_house_camera(hass):
     for eid in ("camera.hall_cam", "camera.door_cam"):
         hass.states.async_set(eid, "idle")
     assert [s.entity_id for s in cameras(hass, {})] == ["camera.door_cam"]
+
+
+def _device(hass, name, cams):
+    """A device with cameras: (object id, disabled_by or None)."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(domain="onvif")
+    entry.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(config_entry_id=entry.entry_id, identifiers={("onvif", name)})
+    reg = er.async_get(hass)
+    for obj, disabled in cams:
+        reg.async_get_or_create("camera", "onvif", obj, suggested_object_id=obj, device_id=dev.id,
+                                config_entry=entry, disabled_by=disabled)
+        if disabled is None:
+            hass.states.async_set(f"camera.{obj}", "idle")
+
+
+async def test_the_camera_left_after_ha_disables_the_other_streams_is_kept(hass):
+    """#228: "Tor - Kamera MainStream" and the Tapo "HD Stream" cameras vanished from the Security tab."""
+    from homeassistant.helpers.entity_registry import RegistryEntryDisabler as D
+
+    _device(hass, "tor", [("tor_kamera_substream", D.INTEGRATION), ("garage_tor_kamera_mainstream", None)])
+    _device(hass, "vorgarten", [("vorgarten_kamera_secondstreamprofile", D.INTEGRATION),
+                                ("vorgarten_vorgarten_kamera_mainstreamprofile", None)])
+    _device(hass, "esszimmer", [("esszimmer_kamera_esszimmer_hd_stream", None),
+                                ("kamera_esszimmer_hd_stream_direct", D.USER), ("esszimmer_kamera_esszimmer_sd_stream", D.USER)])
+    _device(hass, "flur", [("flur_sd_stream", None)])  # whatever is left is the camera
+    assert {s.entity_id for s in cameras(hass, {})} == {
+        "camera.garage_tor_kamera_mainstream", "camera.vorgarten_vorgarten_kamera_mainstreamprofile",
+        "camera.esszimmer_kamera_esszimmer_hd_stream", "camera.flur_sd_stream"}
+    assert hidden(hass, {}) == []
+
+
+async def test_a_device_with_several_streams_still_counts_once(hass):
+    _device(hass, "pair", [("porch_hd_stream", None), ("porch_sd_stream", None)])
+    _device(hass, "bell", [("doorbell", None), ("doorbell_hd_stream", None), ("doorbell_sd_stream", None)])
+    _device(hass, "nvr", [("drive_mainstream", None), ("drive_substream", None)])
+    assert {s.entity_id for s in cameras(hass, {})} == {"camera.porch_hd_stream", "camera.doorbell", "camera.drive_mainstream"}
+
+
+async def test_screenshots_and_maps_are_never_cameras(hass):
+    _device(hass, "tab", [("kitchen_screenshot", None)])
+    assert cameras(hass, {}) == []

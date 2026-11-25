@@ -37,36 +37,42 @@ def on_gadget(hass: HomeAssistant, entity_id: str) -> bool:
     return any(e.domain in GADGET_DOMAINS and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
 
 
-# Primary stream names are not evidence of a duplicate on a registered device.
-PRIMARY_VIEW = re.compile(
-    r"\b(?:hd|main|high)[ _-]?(?:stream|res|resolution|quality)\b",
-    re.IGNORECASE,
-)
-NON_CAMERA_VIEW = re.compile(
-    r"\bscreenshot\b|\blive[ _-]?map\b|\bsnapshots?\b", re.IGNORECASE,
-)
+# the main stream of a camera ("MainStream" on ONVIF, "HD Stream" on Tapo): the camera itself when nothing plainer exists
+PRIMARY_VIEW = re.compile(r"\b(?:hd|main|high)[ _-]?(?:stream|res|resolution|quality)\b", re.IGNORECASE)
+# pictures that are never a camera, whatever else the device offers
+NON_CAMERA_VIEW = re.compile(r"\bscreenshot\b|\blive[ _-]?map\b|\bsnapshots?\b", re.IGNORECASE)
+
+
+def _names(hass: HomeAssistant, entity_id: str, entry: er.RegistryEntry | None, state: State | None = None) -> str:
+    st = state or hass.states.get(entity_id)
+    text = " ".join(filter(None, (entity_id.split(".", 1)[-1], st.name if st else None, entry.original_name if entry else None)))
+    return text.replace("_", " ")
 
 
 def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None = None) -> bool:
-    """True for sub-streams, screenshots, maps and a gadget's own camera (matched on the id, name and device)."""
+    """True for sub-streams, screenshots, maps and a gadget's own camera (matched on the id, name and device).
+
+    A stream name alone isn't enough (#228): Home Assistant often disables a device's other streams already, and
+    what's left ("Tor - Kamera MainStream", "Esszimmer HD Stream") is the camera itself.
+    """
     if on_gadget(hass, entity_id):
         return True
-    entry = er.async_get(hass).async_get(entity_id)
-    st = state or hass.states.get(entity_id)
-    text = " ".join(filter(None, (entity_id.split(".", 1)[-1], st.name if st else None, entry.original_name if entry else None)))
-    text = text.replace("_", " ")
+    reg = er.async_get(hass)
+    entry = reg.async_get(entity_id)
+    text = _names(hass, entity_id, entry, state)
     if NON_CAMERA_VIEW.search(text):
         return True
-    if entry is not None and entry.device_id:
-        # HA may already have disabled every alternative stream. Never discard
-        # the remaining camera merely because its name describes its stream.
-        siblings = (
-            e for e in er.async_entries_for_device(er.async_get(hass), entry.device_id)
-            if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by
-        )
-        if not any(siblings) or PRIMARY_VIEW.search(text):
-            return False
-    return bool(DUPLICATE_VIEW.search(text))
+    if not DUPLICATE_VIEW.search(text):
+        return False
+    if entry is None or not entry.device_id:
+        return True  # no device to go by: the name decides
+    others = [e for e in er.async_entries_for_device(reg, entry.device_id)
+              if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by]
+    if not others:
+        return False  # the only camera its device still offers
+    if any(not DUPLICATE_VIEW.search(_names(hass, e.entity_id, e)) for e in others):
+        return True  # the device has a plainly named camera: this is an extra view of it
+    return not PRIMARY_VIEW.search(text)  # only streams: keep the main one, hide sub/SD/low
 
 
 def ignored(options: dict[str, Any]) -> set[str]:
