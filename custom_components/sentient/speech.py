@@ -622,7 +622,7 @@ class SpeechRouter:
             receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
             accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
             if generation != self._privacy_generation:
-                return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
+                return SpeechResult(bool(accepted), 'spoken' if accepted else 'cancelled', '', accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
                 # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
@@ -927,7 +927,11 @@ class SpeechRouter:
                 self.hass.bus.async_fire(EVENT_SPOKE, {"message": spoken, "speakers": [], "priority": priority, "source": source,
                                                        "question": True, "phone": True, "why": reason_for(source)})
                 return SpeechResult(True, "asked_phone", spoken, [])
+        if generation != self._privacy_generation:
+            return SpeechResult(False, "cancelled", "", [])
         if not listening:
+            if generation != self._privacy_generation:
+                return SpeechResult(False, "cancelled", "", [])
             return await self.async_say(text, priority, candidates, source, _spoken=spoken)
         speaker = listening[0]
         prompt = (
