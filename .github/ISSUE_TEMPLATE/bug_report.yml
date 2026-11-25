@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible problem with Sentient
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Remove API keys, tokens, private camera images, addresses and personal household details from logs and screenshots.
+  - type: input
+    id: sentient_version
+    attributes:
+      label: Sentient version
+      placeholder: e.g. 1.24.2
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Core version
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected feature
+      options:
+        - Setup or update
+        - Voice or conversation
+        - Speakers or notifications
+        - Camera or security
+        - Memory or recognition
+        - Dashboard or frontend
+        - Device control or automation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste only relevant, redacted Home Assistant logs.
+      render: text
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Relevant hardware, integrations, language or AI provider; redact private details.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and removed sensitive information.
+          required: true

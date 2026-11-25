@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an improvement to Sentient
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Describe the improvement
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example of how you would use it
+      description: For voice features, include an example request and expected response.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Existing alternatives or workarounds
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Avoid sharing private household information.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for similar suggestions.
+          required: true
