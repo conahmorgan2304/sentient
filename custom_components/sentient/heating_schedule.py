@@ -642,11 +642,16 @@ class HeatingProgrammes:
             programme = self.items.items.get(key)
             if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
                 continue
-            if self.held(heater, dt_util.utcnow()):
+            current = dt_util.now()
+            if self.held(heater, current):
                 continue
+            active = _active_period(self.programmes(), heater, current)
+            if what == "on" and (active is None or active[0].get("id", active[0]["name"]) != key
+                                 or float(active[1]["temp"]) != temp):
+                continue  # queued request no longer matches the live programme
+            if what != "on" and active is not None:
+                continue  # a new period started while this request was queued
             name = programme["name"]
-            if programme is not None and not programme.get("enabled", True) and what != "recover_off":
-                continue
             state = self.hass.states.get(heater)
             label = state.name if state else heater
             row = rows.setdefault(key, {"time": dt_util.as_utc(local).isoformat(), "zones": {}})
@@ -680,7 +685,7 @@ class HeatingProgrammes:
             domain, service = action["action"].split(".", 1)
             context = own_context(self.hass, f"heating schedule: {name}")
             if what == "on":
-                self._prepare_ownership(heater, key, local, action, context)
+                self._prepare_ownership(heater, key, current, action, context)
             try:
                 async with asyncio.timeout(30):
                     await self.hass.services.async_call(
