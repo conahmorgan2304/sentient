@@ -15,6 +15,12 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.20.0": [
+        "What Sentient writes and says itself now follows your language too. Its fixed sentences (timeline entries, House health, the Mind tab, phone notifications, voice replies and spoken alerts) are translated into Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian from a built-in list, with no AI and no extra cost.",
+        "Words the AI writes for Sentient (thoughts, the digest, briefings, welcome-home lines, camera descriptions) are written in your language: Home Assistant's language for reading, and the voice's language for anything said out loud.",
+        "New in Settings, Voice: \"Sentient's own words in the house's language\", on by default. Turn it off to keep Sentient's own words in English. Nothing stored is changed either way.",
+        "Names of people, rooms and devices stay as they are, and a sentence that isn't in the list stays in English.",
+    ],
     "1.19.0": [
         "The Sentient page and cards follow your Home Assistant language: tabs, headings, buttons, editors and messages are translated into Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian. Dates and times use your language too. English stays as it was.",
         "The Settings forms, options, services and entity names are now fully translated into the same languages. Polish, German, Dutch, Italian and Portuguese are new, and the gaps in Spanish, French and Hungarian are filled.",

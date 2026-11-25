@@ -22,6 +22,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
+from .language import write_in_line
 from .ai import async_generate
 from .numeric import finite_float
 from .media import read_media
@@ -231,6 +232,7 @@ class Clips:
             }
             if ai := self.options.get(CONF_SMART_AI) or self.options.get(CONF_AI_TASK_ENTITY):
                 data["entity_id"] = ai
+            data["instructions"] += write_in_line(self.hass, self.options, spoken=True)
             response = await async_generate(self.hass, data)
         except Exception as err:  # noqa: BLE001
             return {"error": str(err)}

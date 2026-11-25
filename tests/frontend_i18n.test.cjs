@@ -105,3 +105,39 @@ test("in Polish, every page opens and every word the page writes is translated",
     await browser.close();
   }
 });
+
+test("Sentient's own sentences: openings, endings and a known ending kept at the end", async () => {
+  const m = await import(path.join(ROOT, "custom_components/sentient/frontend/sentient-i18n.js"));
+  const d = m.compile({ Awake: "Czuwa" }, {
+    "Running now: ": "Teraz działa: ", " (someone was up)": " (ktoś nie spał)", "The AI": "AI",
+    "{a} is offline": "{a} jest offline", "It's down to {a} degrees in {b}": "Spadło do {a} stopni w {b}",
+    " — it's clear now": " — już czysto", Kitchen: "Kuchnia", "{a} thing{b} to look at": "{a} rzeczy do sprawdzenia" });
+  assert.equal(m.translate("Running now: The AI is offline", d), "Teraz działa: AI jest offline");
+  assert.equal(m.translate("Lights on (someone was up)", d), "Lights on (ktoś nie spał)");
+  assert.equal(m.translate("It's down to 2 degrees in Kitchen — it's clear now", d), "Spadło do 2 stopni w Kuchnia — już czysto");
+  assert.equal(m.translate("1 thing to look at", d), "1 rzeczy do sprawdzenia");
+  assert.equal(m.translate("Awake · The AI is offline", d), "Czuwa · AI jest offline");
+  assert.equal(m.translate("Not one of ours", d), "Not one of ours");
+  // page pieces never become openings or endings, so " on" on the page doesn't eat sentence endings
+  assert.equal(m.compile({ " on": " wł." }).endings.length, 0);
+});
+
+test("the house catalogue: every language has every sentence, with no slots of its own", () => {
+  const H = path.join(DIR, "house");
+  const en = JSON.parse(fs.readFileSync(path.join(H, "en.json"), "utf8"));
+  assert.deepEqual([...en].sort(), en, "keep house/en.json sorted");
+  for (const lang of LANGS) {
+    const tr = JSON.parse(fs.readFileSync(path.join(H, lang + ".json"), "utf8"));
+    assert.deepEqual(Object.keys(tr).sort(), [...en].sort(), `house/${lang}.json keys`);
+    for (const k of en) for (const s of tr[k].match(/\{[a-z]+\}/g) || []) assert.ok(k.includes(s), `${lang}: ${s} in ${JSON.stringify(k)}`);
+  }
+});
+
+test("houseText follows the Mind sensor's switch", async () => {
+  const m = await import(path.join(ROOT, "custom_components/sentient/frontend/sentient-i18n.js"));
+  const hass = (on) => ({ entities: { "sensor.mind": { entity_id: "sensor.mind", platform: "sentient", translation_key: "mind" } },
+    states: { "sensor.mind": { attributes: on === undefined ? {} : { house_language_text: on } } } });
+  assert.equal(m.houseText(hass(false)), false);
+  assert.equal(m.houseText(hass(true)), true);
+  assert.equal(m.houseText(hass()), true);
+});

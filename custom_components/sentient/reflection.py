@@ -25,6 +25,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .language import write_in
 from .ai import async_generate
 from .const import (
     CONF_AI_TASK_ENTITY,
@@ -225,7 +226,10 @@ class Reflection:
                "did, plans made, anything that went wrong or was fixed, visitors as 'someone came to the door' "
                "(never who), with times only where they matter. Nothing private (health, money, passwords). Never "
                "say the house was empty. Write it in the past tense.\n" if time_aware else "")
-            + "Never say or imply the house is or was empty. British English. " + personality_line(rt.options)
+            + "Never say or imply the house is or was empty. "
+            + f"Write the thoughts and the question in {write_in(self.hass, rt.options, spoken=True)}; write the "
+            + f"memories, lessons, corrections and story in {write_in(self.hass, rt.options, spoken=False)}. "
+            + personality_line(rt.options)
             + (f"\nHouse rules:\n{rules}" if rules else "")
             + "\n\nAlready known:\n" + "\n".join(f"- {k}" for k in known[:60])
             + "\n\nLog:\n" + ("\n".join(log) or "(nothing)")

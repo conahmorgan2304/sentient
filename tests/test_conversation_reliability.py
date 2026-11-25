@@ -86,9 +86,9 @@ async def test_concurrent_identical_sentences_use_one_translation(hass):
         await release.wait()
         return {'data': 'La puerta está abierta.'}
     with patch.object(language, 'async_generate', side_effect=translate) as ai:
-        one = hass.async_create_task(language.async_in_house_language(hass, rt.options, 'The door is open.'))
+        one = hass.async_create_task(language.async_in_house_language(hass, rt.options, 'The cat flap has been busy tonight.'))
         await entered.wait()
-        two = hass.async_create_task(language.async_in_house_language(hass, rt.options, 'The door is open.'))
+        two = hass.async_create_task(language.async_in_house_language(hass, rt.options, 'The cat flap has been busy tonight.'))
         await asyncio.sleep(0)
         release.set()
         assert await one == await two == 'La puerta está abierta.'
@@ -287,7 +287,7 @@ async def test_malformed_provider_envelope_falls_back_without_repeated_calls(has
     rt.options['automatic_language'] = False
     with patch.object(language, 'async_generate', AsyncMock(return_value=bad)) as ai:
         for _ in range(2):
-            assert await language.async_in_house_language(hass, rt.options, 'The door is open.') == 'The door is open.'
+            assert await language.async_in_house_language(hass, rt.options, 'The cat flap has been busy tonight.') == 'The cat flap has been busy tonight.'
         ai.assert_awaited_once()
 
 

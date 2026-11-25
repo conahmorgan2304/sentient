@@ -20,6 +20,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .language import write_in
 from .ai import async_generate
 from .const import (
     DOMAIN, CONF_AI_TASK_ENTITY, CONF_WELCOME, CONF_WELCOME_MIN_AWAY, CONF_WELCOME_PEOPLE, CONF_WELCOME_UNTIL, DEFAULT_WELCOME_MIN_AWAY,
@@ -138,7 +139,7 @@ class Welcome:
                     "Someone has just come home. In at most two short spoken sentences, starting with "
                     "'Welcome back.', tell them what's worth knowing from this log of while they were out "
                     "(visitors, parcels, things that finished, problems). No names, no times unless useful, "
-                    "British English. Never say or imply the house was empty. " + personality_line(self.options)
+                    f"Write in {write_in(self.hass, self.options, spoken=True)}. Never say or imply the house was empty. " + personality_line(self.options)
                     + "\n\n" + "\n".join(lines)
                 ),
             }

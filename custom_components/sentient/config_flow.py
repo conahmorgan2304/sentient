@@ -272,6 +272,7 @@ from .const import (
     CONF_AUTOMATIC_LANGUAGE,
     CONF_VOICE_LANGUAGE,
     CONF_SPEAK_HOUSE_LANGUAGE,
+    CONF_HOUSE_LANGUAGE_TEXT,
     CONF_MEDIA_SPEAKERS,
     CONF_MEDIA_IMPORTANT_ONLY,
     CONF_SLEEP,
@@ -466,6 +467,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_TTS_ENTITY, **d(CONF_TTS_ENTITY)): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="tts")
             ),
+            vol.Required(CONF_HOUSE_LANGUAGE_TEXT, **d(CONF_HOUSE_LANGUAGE_TEXT, True)): selector.BooleanSelector(),
             vol.Required(CONF_SPEAK_HOUSE_LANGUAGE, **d(CONF_SPEAK_HOUSE_LANGUAGE, False)): selector.BooleanSelector(),
             vol.Required(CONF_AUTOMATIC_LANGUAGE, **d(CONF_AUTOMATIC_LANGUAGE, False)): selector.BooleanSelector(),
             vol.Required(CONF_REMEMBER_LANGUAGE_PHRASES, **d(CONF_REMEMBER_LANGUAGE_PHRASES, False)): selector.BooleanSelector(),

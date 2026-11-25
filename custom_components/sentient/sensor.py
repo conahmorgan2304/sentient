@@ -330,6 +330,7 @@ class MindSensor(_Base):
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
         "incident_review_quality", "security_review_quality", "cognitive_authority", "conversation_quality",
         "security_events", "security_visits", "security_event_feedback_summary", "reliability", "self_test",
+        "house_language_text",
     })
 
     # the security and learning summaries go through every kept camera event and review, and the page only needs
@@ -404,6 +405,7 @@ class MindSensor(_Base):
             self._heavy, self._heavy_guest = None, rt.speech.guest_mode  # guest mode hides parts: never serve stale
         heavy = self._heavy_part(cognitive, intent_metrics, timings)
         return {
+            "house_language_text": bool(rt.options.get("house_language_text", True)),
             "sentient_updates": rt.updates.status(),
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
             "voice_check": None if rt.speech.guest_mode or not rt.options.get(CONF_LIVE_VOICE_CHECK, True) else rt.voice_checks.status(),
