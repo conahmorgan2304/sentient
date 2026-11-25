@@ -887,6 +887,8 @@ def _manual_pages(hass: HomeAssistant, rt: Any, options: dict[str, Any]) -> None
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
+    if options == entry.runtime_data.options:
+        return  # a no-op save must not interrupt active work
     from .language import clear_translations
 
     from .language import selected_language
