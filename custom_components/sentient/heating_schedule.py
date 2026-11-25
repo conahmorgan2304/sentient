@@ -640,7 +640,11 @@ class HeatingProgrammes:
             if self._stopped or rt is None or not enabled(rt.options):
                 break
             programme = self.items.items.get(key)
-            name = programme["name"] if programme else key
+            if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
+                continue
+            if self.held(heater, dt_util.utcnow()):
+                continue
+            name = programme["name"]
             if programme is not None and not programme.get("enabled", True) and what != "recover_off":
                 continue
             state = self.hass.states.get(heater)
