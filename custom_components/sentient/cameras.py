@@ -70,10 +70,11 @@ def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None =
         object_id = entity_id.split(".", 1)[-1].replace("_", " ")
         base = DUPLICATE_VIEW.sub("", object_id).strip(" -_")
         if base and base != object_id:
-            return any(st.entity_id != entity_id and
-                       st.entity_id.split(".", 1)[-1].replace("_", " ") == base
-                       for st in hass.states.async_all("camera"))
-        return False
+            if any(st.entity_id != entity_id and
+                   st.entity_id.split(".", 1)[-1].replace("_", " ") == base
+                   for st in hass.states.async_all("camera")):
+                return True
+        return not bool(PRIMARY_VIEW.search(text))
     others = [e for e in er.async_entries_for_device(reg, entry.device_id)
               if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by
               and hass.states.get(e.entity_id) is not None
