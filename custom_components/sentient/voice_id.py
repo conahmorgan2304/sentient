@@ -121,11 +121,13 @@ def speaker_scope(hass: HomeAssistant, options: dict[str, Any], memories: list[A
     """Speaker-aware memories (setting "speaker_memories", off by default; needs voice recognition running).
 
     A matched voice gets their own memories first and other people's personal ones are left out; a voice that was
-    heard but not matched gets none of anyone's personal memories. With no voice to go on (typed in the app, an
-    Echo), nothing changes. Household facts are never touched.
+    heard but not matched gets none of anyone's personal memories. If cautious unknown-speaker mode is enabled,
+    missing recognition also limits access to shared memories. Household facts are never touched.
     """
     speaker = current_speaker.get() if speaker is None else speaker
-    if not options.get(CONF_SPEAKER_MEMORIES) or not enabled(hass, options) or speaker is None:
+    if not options.get(CONF_SPEAKER_MEMORIES):
+        return memories
+    if (not enabled(hass, options) or speaker is None) and not options.get(CONF_VOICE_ID_UNKNOWN):
         return memories
     people = known_people(hass)
     me = (name_of(speaker) or "").casefold() if speaker is not UNKNOWN_SPEAKER else ""
