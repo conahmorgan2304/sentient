@@ -279,6 +279,7 @@ class WatchManager:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.watches")
         self._watches: dict[str, Watch] = {}
         self._busy: set[str] = set()
+        self._delivering: dict[str, Watch] = {}  # cancellable one-shot reminders in flight
         self._unsubs: list = []
         self._timers: dict[str, Any] = {}
         self._holds: dict[str, Any] = {}  # watch id -> timer waiting for a state to last
@@ -319,6 +320,7 @@ class WatchManager:
     @callback
     def async_stop(self) -> None:
         self._stopped = True
+        self._delivering.clear()
         self.clear_camera_cache()
         while self._unsubs:
             self._unsubs.pop()()
@@ -477,11 +479,11 @@ class WatchManager:
         self._timers[watch.id] = async_track_point_in_utc_time(self.hass, _due, watch.until_dt)
 
     def cancel(self, id_or_words: str) -> Watch | None:
-        watch = self._watches.get(id_or_words)
+        watch = self._watches.get(id_or_words) or self._delivering.get(id_or_words)
         if watch is None:
             words = set(re.findall(r"[a-z0-9]+", id_or_words.lower())) - {"the", "a", "watch", "watching", "on", "for"}
             best, score = None, 0
-            for w in self._watches.values():
+            for w in (*self._watches.values(), *self._delivering.values()):
                 hay = set(re.findall(r"[a-z0-9]+", f"{w.what} {w.entity_id} {w.look_for or ''}".lower()))
                 s = len(words & hay)
                 if s > score:
@@ -489,6 +491,7 @@ class WatchManager:
             watch = best
         if watch is not None:
             self._watches.pop(watch.id, None)
+            self._delivering.pop(watch.id, None)
             if (unsub := self._timers.pop(watch.id, None)) is not None:
                 unsub()
             if (unsub := self._holds.pop(watch.id, None)) is not None:
@@ -608,7 +611,13 @@ class WatchManager:
             return "I didn't do the rest, because watches that act are switched off in Settings."
         from .acting import async_carry_out
 
-        outcome = await async_carry_out(self.hass, watch.do, f"watch: {watch.what}")
+        generation, options = self._cache_generation, self.options
+        privacy = getattr(self.speech, "_privacy_generation", 0)
+        def valid():
+            return (not self._stopped and self.acting and self.options is options
+                    and generation == self._cache_generation
+                    and privacy == getattr(self.speech, "_privacy_generation", 0))
+        outcome = await async_carry_out(self.hass, watch.do, f"watch: {watch.what}", before_run=valid)
         if (rt := getattr(self, "runtime", None)) is not None and getattr(rt, "timeline", None) is not None:
             rt.timeline.add("watch", f"Watch acted: {watch.what}", outcome["said"])
         return outcome["said"]
@@ -888,8 +897,14 @@ class WatchManager:
                                 "kind": watch.kind}
         )
         kind = "reminder" if watch.kind == KIND_REMINDER else "watch"
-        result = await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")
-        if (watch.kind == KIND_REMINDER and not watch.do and not self._stopped
+        pure_reminder = watch.kind == KIND_REMINDER and not watch.do
+        if pure_reminder:
+            self._delivering[watch.id] = watch
+        try:
+            result = await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")
+        finally:
+            still_current = self._delivering.pop(watch.id, None) is watch
+        if (pure_reminder and still_current and not self._stopped
                 and result is not None and not result.spoken and watch.delivery_retries < 2
                 and (result.reason == "no_speaker" or (
                     result.reason == "delivery_failed" and result.deliveries
