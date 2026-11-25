@@ -33,8 +33,8 @@ def test_every_language_has_every_template_with_its_slots(lang: str) -> None:
         assert set(SLOTS.findall(text)) <= set(SLOTS.findall(en)), en
 
 
-def test_all_eight_languages_are_there() -> None:
-    assert LANGS == ["de", "es", "fr", "hu", "it", "nl", "pl", "pt"]
+def test_all_languages_are_there() -> None:
+    assert LANGS == ["de", "es", "fr", "hu", "it", "nl", "pl", "pt", "sv"]
 
 
 D = phrases.compile_dictionary({
@@ -83,7 +83,7 @@ def test_real_polish_file() -> None:
     assert phrases.load("pl-PL") is not None
     assert phrases.translate("Cancelled. No action was taken.", "pl-pl") == "Anulowano. Nic nie zostało zrobione."
     assert phrases.translate("Lights on (someone was up)", "pl-pl") == "Lights on (ktoś nie spał)"
-    assert phrases.load("en") is None and phrases.load("fi") is None
+    assert phrases.load("en") is None and phrases.load("zz") is None
 
 
 async def test_written_and_spoken_language_follow_the_settings(hass: HomeAssistant) -> None:

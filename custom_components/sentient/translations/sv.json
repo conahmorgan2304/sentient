@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Möt ditt hems hjärna",
+    "description": "Ge det ett namn. Detta är vad det kallar sig och hur det ser ut i Home Assistant.",
+    "data": {
+     "persona": "Namn"
+    }
+   },
+   "speech": {
+    "title": "Hur ska huset tala?",
+    "description": "Välj de röstsatelliter den kan prata igenom. Den talar var människor är (rörelse eller någon som pratar med en högtalare), annars på standardhögtalaren.",
+    "data": {
+     "speakers": "Högtalare",
+     "default_speaker": "Standard högtalare",
+     "quiet_start": "Tysta timmar börjar",
+     "quiet_end": "Tysta timmar slut",
+     "busy_entities": "Var tyst när du är upptagen",
+     "motion_window": "Fönster för rumsmedvetenhet",
+     "banned_words": "Använd aldrig dessa ord (kommaseparerade)",
+     "suppress_entities": "Var tyst efter dessa automatiseringar eller skript",
+     "suppress_seconds": "Var tyst för",
+     "prompt_memories": "Minnen att dela med röstassistenter",
+     "pass_through_areas": "Genomgångsområden",
+     "all_occupied": "Tala i varje upptaget rum",
+     "room_tracking": "Använd rumsspårare (Bluetooth)",
+     "room_trackers": "Rumsspårare",
+     "ai_task_entity": "AI för bakgrundsjobb",
+     "camera_cooldown": "Minsta mellanrum mellan kamerakontrollerna",
+     "fallback_speakers": "Endast backup-högtalare",
+     "daily_ai_limit": "AI-samtal per dag",
+     "prompt_recent": "Just nu och sista timmen i röstens sammanhang",
+     "rules": "Regler och göra dem med rösten",
+     "relevant_memories": "Välj de minnen som stämmer överens med vad du frågade om",
+     "look_cache_minutes": "Återanvänd ett kamerasvar för",
+     "camera_prefilter": "Hoppa över kamerablickar när ingenting har ändrats",
+     "budget_drive": "AI-anrop per dag: körningen",
+     "budget_noticing": "AI-samtal per dag: märker",
+     "budget_cameras": "AI-samtal per dag: kamerakontroller och klockor",
+     "routine_evidence": "Säg hur ofta en rutin har setts",
+     "notice_entities": "Saker att lägga märke till",
+     "remark_repeat_hours": "Upprepa inte en kommentar för",
+     "chattiness": "Hur pratsam",
+     "conversation_style": "Hur det pratar",
+     "carry_on_minutes": "Föra en konversation för",
+     "focused_tools": "Fokuserade röstverktyg",
+     "ask_later": "Fråga hur det gick",
+     "put_right": "Rätta felen på en gång",
+     "music": "Musik genom att fråga",
+     "music_alexa": "Musik genom Alexa (Echos)",
+     "music_alexa_service": "Musiktjänst för Echos",
+     "house_rules": "Husregler",
+     "no_security_offers": "Erbjud aldrig att aktivera, avaktivera eller låsa upp",
+     "learn_entities": "Lär dig rutiner av",
+     "learn_anchors": "Vanor som följer dagen",
+     "trust_lights": "Ljus",
+     "trust_switches": "Strömställare, pluggar och fläktar",
+     "trust_covers": "Persienner och gardiner",
+     "trust_heating": "Uppvärmning",
+     "offer_together": "Erbjud vanor som görs tillsammans som en",
+     "link_triggers": "Lär dig också vad som följer på dessa",
+     "suggest_routines": "Erbjud dig att ta över rutiner",
+     "prove_routines": "Vanor visar sig själva innan de erbjuds",
+     "routine_fading": "Fråga om rutiner som inte behövs längre",
+     "door_camera": "Dörrkamera",
+     "door_triggers": "Dörrklocka",
+     "announce_visitors": "Säg vem som står vid dörren",
+     "faces": "Namn från ansiktsigenkänning",
+     "face_people": "Bara dessa människor",
+     "face_teach": "Fråga på telefon vilka namnlösa ansikten är",
+     "face_teach_cameras": "Lär dig ansikten från dessa kameror",
+     "face_cameras": "Namn endast från dessa kameror",
+     "face_forget_hours": "Glöm namnlösa ansikten efteråt",
+     "clip_watch": "Se händelseklipp",
+     "clip_cameras": "Kameror",
+     "clip_scope": "Vilka händelser",
+     "clip_when": "När",
+     "clip_notify": "Skicka till telefonerna",
+     "clip_source": "Vem skriver sammanfattningen",
+     "clip_whose": "Säg vilken hushållsmedlem det var",
+     "clip_looks": "Hur folk ser ut när deras ansikte inte syns",
+     "budget_clips": "Klipp tittade på en dag (de flesta)",
+     "clip_days": "Behåll sammanfattningarna för",
+     "clip_keep": "Behåll klippfilerna",
+     "parcel_alerts": "Säg när ett paket är kvar",
+     "doorstep_sensors": "Kolla efter paket efter besök sett av",
+     "zone_visits": "Räkna någon vid ytterdörrens kamerazon som en besökare",
+     "zone_door_sensors": "Framdörrssensor (zonen ignoreras om den öppnas först)",
+     "face_sensor": "Känt namn från",
+     "sidebar_panel": "Visa i sidofältet",
+     "page_admin_only": "Endast administratörer kan öppna den här sidan",
+     "custom_pages": "Ordna om Sentient-sidan",
+     "suggestions": "Förslag på sidan Sentient",
+     "whats_new": "Vad är nytt efter en uppdatering",
+     "simple_settings": "Enklare inställningssida",
+     "auto_backup": "Säkerhetskopiera varje vecka",
+     "backup_keep": "Hur många ska man behålla",
+     "confirm_kinds": "Fråga \"ska jag?\" före",
+     "chat_agent": "Chattagent för sidofältssidan",
+     "battery_threshold": "Lågt batteri nedan",
+     "battery_forecast": "Säg när batterierna tar slut",
+     "health_ignore": "Ignorera för husets hälsa",
+     "hide_substreams": "Dölj extra kameravyer",
+     "ignore_cameras": "Kameror att ignorera",
+     "never_entities": "Rör aldrig dessa",
+     "self_check": "Kolla sig själv varje natt",
+     "learn_corrections": "Lär dig när du ångrar vad den gjorde",
+     "normal_day": "Lägg märke till en ovanlig dag",
+     "thoughts": "Visa vad den tänker",
+     "share_learning": "Säg vad den har lärt sig",
+     "self_adjust": "Justera sig själv",
+     "proposals": "Föreslå ändringar av dess inställningar",
+     "privacy_log": "Håll ett register över vad som lämnar huset",
+     "goals": "Mål",
+     "manuals": "Svar från dokument",
+     "manuals_folder": "Dokumentmapp",
+     "manuals_local_text": "Titta inuti textdokument",
+     "manuals_pages": "Läs PDF-filer sida för sida",
+     "games": "Berättelsespel",
+     "voice_id": "Vet vem som talar",
+     "voice_id_unknown": "Behandla röster som det inte kan matcha som en gäst",
+     "speaker_memories": "Behåll varje persons minnen för dem",
+     "books": "Böcker",
+     "books_folder": "Böcker mapp",
+     "reading_tts": "Läsröst: service",
+     "reading_voice": "Läseröst",
+     "read_ahead": "Gör nästa del klar medan du läser",
+     "recipes": "Recept",
+     "recipes_folder": "Mapp med recept",
+     "recipes_list": "Inköpslista för ingredienser",
+     "voice_lists": "Shopping- och att göra-listor med röst",
+     "ready_tonight": "Klart för ikväll",
+     "ready_tonight_lights": "Redo för ikväll: lampor kan släckas",
+     "ready_tonight_follow": "Redo för ikväll: säg till när det är klart",
+     "tandoor_url": "Tandoor adress",
+     "tandoor_token": "Tandoor API-token",
+     "second_opinion_ai": "AI för en andra bedömning",
+     "smart_ai_task": "Starkare AI för säkerhet och övernattning",
+     "event_clips": "Se Frigate:s evenemangsklipp",
+     "chime": "Ring innan du pratar",
+     "voice_agent": "Huvudsaklig AI-röstagent",
+     "backup_agent": "Reservassistent",
+     "offline_answers": "Svara på vanliga frågor utan AI",
+     "animal_sensors": "Djurens temperatursensorer",
+     "away_lights_on": "Borta ljus",
+     "holiday_mode": "Semesterläge",
+     "holiday_thermostats": "Termostater att stänga av på semestern",
+     "holiday_frost": "Frostskyddstemperatur",
+     "holiday_end_on_return": "Avsluta semesterläget när någon är hemma",
+     "away_people": "Borta när alla dessa är ute",
+     "away_lights": "Lampor att använda",
+     "away_after": "Börja efter att alla har varit ute efter",
+     "animal_low": "För kallt nedanför",
+     "animal_high": "För varmt ovan",
+     "hutch_check": "Kvällskoll av djurburen",
+     "hutch_spot": "Hutchens kameraplats",
+     "cat_watch": "Nattkattvakt",
+     "cat_sensors": "Kattsensorer",
+     "cat_loud": "Säg det direkt på natten",
+     "rain_warnings": "Regnvarningar",
+     "rain_entities": "Fönster och dörrar att titta på",
+     "self_test": "Självtest",
+     "self_test_household": "Hushållsfrågor i självtestet",
+     "screen": "Använd surfplattans skärm",
+     "screen_actions": "När något dyker upp",
+     "screen_clear_actions": "När allt är klart",
+     "conversation_sessions": "Konversationssessioner",
+     "room_conversation_handoff": "Överlämning av samtal från rum till rum",
+     "verified_bedtime": "Verifierad läggdags nere",
+     "verified_bedtime_lights": "Godnattlampor på nedervåningen",
+     "verified_bedtime_contacts": "Nedervåningen läggdags öppningskontakter",
+     "session_seconds": "Timeout för sessionsinaktivitet",
+     "guarded_control": "Påtvingad röstbekräftelse",
+     "routine_verify": "Kontrollera att rutinerna fungerade",
+     "voice_unlock": "Tillåt upplåsning med röst",
+     "voice_undo": "Ångra de senaste ljusändringarna",
+     "evidence_awareness": "Förklara bevis och osäkerhet",
+     "security_incidents": "Gruppsäkerhetsincidenter",
+     "incident_front": "Framsidan av huset",
+     "live_voice_check": "Röstkontroll live",
+     "speech_delivery_history": "Leveranshistorik för högtalare",
+     "alexa_tts_only": "Använd endast TTS på Alexa",
+     "update_checker": "Sök efter Sentient-uppdateringar",
+     "contextual_followups": "Kopplade uppföljningar och korrigeringar",
+     "conversation_recovery": "Konversationsavbokning och försiktig återhämtning",
+     "speech_failure_notification": "Meddela om högtalarleveransfel",
+     "recent_followup_context": "Korta uppföljningar efter ett färskt vaknaord",
+     "conversation_cues": "Förstå sign-offs, korrigeringar och förändringar av ämne",
+     "vary_replies": "Säg saker olika varje gång",
+     "behaviour_explanations": "Förklara lyssnande och handlingsbeslut",
+     "current_house_context": "Nuvarande huskontext",
+     "moment_awareness": "Medvetenhet om ögonblicket",
+     "room_memory": "Korttidsminne per rum",
+     "know_people": "Vet vem som förmodligen pratar",
+     "instant_answers": "Omedelbara svar",
+     "capability_awareness": "Vet vad huset kan göra",
+     "house_context_entities": "Ytterligare kontextenheter",
+     "house_context_updates": "Berätta när önskad uppvärmning uppnås",
+     "security_event_evidence": "Länka säkerhetsvarningar till Frigate-händelser",
+     "security_event_zones": "Vilka kamerahändelser som är listade",
+     "security_event_hidden_zones": "Zoner vars händelser inte är listade",
+     "security_coverage": "Förklara luckor i kameratäckning",
+     "frigate_pipeline_health": "Visa Frigate pipeline hälsa",
+     "security_conversation_context": "Behåll säkerhetshändelsen i konversationen",
+     "security_event_feedback": "Spela in feedback om kamerahändelser",
+     "share_clip_analysis": "Återanvänd matchande klippanalyser"
+    },
+    "data_description": {
+     "motion_window": "Hur många minuters rörelsehistoria man ska väga upp när man bestämmer var människor är.",
+     "suppress_entities": "e.g. din dörrklockans meddelande, så bakgrundsanmärkningar pratar inte om det.",
+     "busy_entities": "Medan någon av dessa är på (en möteskalender, en fokusomkopplare, en telefon i Stör ej), håller Sentient tillbaka tal som kan vänta, som om det vore tyst. Säkerhetsvarningar och svar du ber om kommer fortfarande fram. Lämna tomt för att stänga av detta.",
+     "prompt_memories": "Hur många minnen ges till röstassistenten framför. Resten går fortfarande att söka.",
+     "pass_through_areas": "Hallar, avsatser och trappor. Att gå igenom dessa räknas för mycket mindre, så en förbipasserande stjäl inte ett meddelande.",
+     "all_occupied": "På: alla som är hemma hör det. Av: endast det mest trafikerade rummet.",
+     "room_tracking": "Av som standard. När en rumsspårare (till exempel Bermudas \"Area\"-sensor för en telefon) säger att någon är i ett rum med en högtalare, sägs saker för \"var än folk är\" där. När ingen spårare vet — telefonen inte syns, ute eller ett rum utan högtalare — används den rörelsebaserade gissningen som tidigare. Används bara för att välja var man ska tala, aldrig för att bestämma om någon är uppe. Ingenting lagras.",
+     "room_trackers": "Sensorer vars tillstånd är rummet något är i, till exempel Bermuda \"Area\"-sensorer (en per telefon eller tagg). Var och en behöver rummet för att matcha ett Home Assistant-område.",
+     "ai_task_entity": "AI-uppgiften som används för kamerautseende, genomgångar, det nattliga tänkandet och morgondagens utseende. Empty använder Home Assistant:s föredragna AI-uppgift.",
+     "camera_cooldown": "En kameraklocka tittar igen som mest så här ofta för att hålla AI-kostnaderna nere.",
+     "fallback_speakers": "Används endast när ingen är i någon annan högtalares rum, e.g. ett vardagsrum du helst inte vill störa.",
+     "daily_ai_limit": "AI-samtal i bakgrunden (kamerakontroller, genomgångar, nattliga funderingar, dörrklockan…) slutar för dagen efter så många, och den använder vanliga ord istället. Frågor du ställer blir fortfarande besvarade. 0 betyder ingen gräns.",
+     "prompt_recent": "Några rader på just nu (sovande, tysta eller tysta timmar, gäster, allt öppet och avläsningar som inte hörts från på timmar så att de inte ges som aktuella), vad har hänt den senaste timmen och var det har varit rörelse, så \"något jag borde veta?\" och \"vad hände just?\" besvaras direkt. Gratis: inga extra AI-samtal.",
+     "rules": "\"När detta händer, gör det\" regler (sidan Regler), och rösten kan göra dem: den läser regeln tillbaka och sparar den först efter ett ja. Regler kan aldrig aktivera, avaktivera eller låsa upp någonting. Av: inga regler körs.",
+     "relevant_memories": "När det väl finns fler minnen än vad som passar i röstens sammanhang får den de som delar ord med frågan, sedan den nyaste. Gratis, ingen AI. Av: alltid det nyaste.",
+     "look_cache_minutes": "Samma fråga till samma kamera inom denna tid får det sista svaret istället för en ny AI-look. 0 tittar alltid igen.",
+     "camera_prefilter": "Kamerakontroller och klockor jämför en liten bild först (på den här maskinen, gratis) och fråga bara AI:n när kameran — eller dess plats — ser annorlunda ut än den senaste titten.",
+     "budget_drive": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen.",
+     "budget_noticing": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen.",
+     "budget_cameras": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen. Säkerhet, dörrklockan och frågor du ställer hålls aldrig tillbaka.",
+     "routine_evidence": "Erbjudanden att ta över en rutin säger hur ofta det hände, e.g. '4 av de senaste 4 helgdagarna'.",
+     "notice_entities": "När dessa ändras avgör AI om det är värt att säga något (eller fråga). e.g. tvättmaskin, dörrar, väder, papperskorgar.",
+     "remark_repeat_hours": "Samma sak märkt (\"Kannalen har kokat färdigt.\") sägs inte igen så länge. 0: ingen gräns.",
+     "chattiness": "Begränsar anmärkningar per timme: tyst 2, normal 4, pratsam 8. Av slutar märka.",
+     "conversation_style": "Kortfattat: korta, raka svar. Naturligt: ​​kommandon förblir korta, men frågor och chatt får några naturliga meningar och en följdfråga när en person skulle ställa en, vilket gör att mikrofonen lyssnar.",
+     "carry_on_minutes": "Att säga det vakna ordet igen kort efter att ha pratat fortsätter med samma konversation från samma talare, så \"och på övervåningen?\" fortfarande vettigt. 0 stänger av detta; Home Assistant glömmer en konversation efter fem tysta minuter.",
+     "focused_tools": "Ge rösten endast Sentients verktyg som passar vad som efterfrågades (kameror, värme, påminnelser…), plus minne och säkerhet. Ett mindre urval gör billigare modeller snabbare och mer exakta. Allt som inte tydligt matchar får fortfarande alla verktyg.",
+     "ask_later": "När någon nämner något som är på gång (en resa, en match, veterinären) kan rösten komma ihåg att fråga hur det gick nästa gång någon pratar med den — en gång, aldrig under lugna timmar eller med gäster i, och aldrig om något privat. Det talar aldrig ur det blå. Att stänga av detta glömmer allt som väntar på att bli tillfrågat.",
+     "put_right": "När du säger \"nej, den andra\" eller \"inte det ljuset, lampan\", växlar rösten tillbaka vad den just har slagit på (på eller av, inom några minuter) och gör förfrågan igen med bara den korrigerade delen — du behöver inte säga allt igen. Om du stänger av detta lämnas det direkt till röstagenten.",
+     "music": "Med Music Assistant inställt (eller Musik via Alexa på): \"spela något lugnt i köket\" väljer du från dina egna spellistor och radiostationer och spelar det på Music Assistant-spelaren i det rummet (eller frågar rummets Echo) — på nattvolymen under tysta timmar, och inte i ett rum i sin egen tysta tid om du inte är i det. Av: inget musikverktyg.",
+     "music_alexa": "På: \"spela något lugnt i köket\" ber Echo i det rummet (Alexa Media Player) att spela det från tjänsten nedan, med namn — en spellista, en artist, en låt eller en stämning — på nattvolymen under tysta timmar, och inte i ett rum i sin egen tysta tid om du inte är i den. Tjänsten måste länkas i Alexa-appen. Används istället för Music Assistant när båda är konfigurerade (Music Assistant kan inte spela Spotify utan Premium). Av: Echos uppmanas aldrig att spela musik.",
+     "music_alexa_service": "Vilken tjänst Echos spelar från. Spotify fungerar med ett gratiskonto, men Alexa kan blanda liknande musik istället för den exakta låten; Premium spelar precis vad som efterfrågas.",
+     "house_rules": "Enkla meningar varje röst måste följa, en per rad, e.g. \"Säg aldrig att huset är tomt.'",
+     "no_security_offers": "Ta ur röstens svar alla meningar som erbjuder att aktivera eller avaktivera larmet eller låsa upp en dörr (\"Ska jag beväpna den?\") — även när det talas som det är skrivet. Svar till någon som bett om att aktivera, avaktivera, låsa eller låsa upp lämnas ifred, så deras bekräftelse efterfrågas fortfarande. Av som standard.",
+     "learn_entities": "Ljus, strömbrytare, fläktar och persienner som människor använder för hand. Varje kväll de senaste två veckorna kontrolleras för saker som gjorts vid ungefär samma tid de flesta dagar, och för saker som gjorts direkt efter något annat (en dörr som öppnas, en annan lampa tänds).",
+     "learn_anchors": "En vana som håller tiden med solnedgången, soluppgången eller att gå upp snarare än klockan (lampan i skymningen, persiennerna vid soluppgången, vattenkokaren efter att ha stigit upp) lärs in på det sättet, så en rutin som huset gör för dig rör sig med årstiderna. Att gå upp kräver en sömn- och vakenmiljö. Av: allt lärs mot klockan, som tidigare.",
+     "offer_together": "När några saker brukar hända vid ungefär samma tidpunkt på samma dagar (lampan tänd, persiennerna stängda, TV:n på runt 20.00), erbjuds de en gång, tillsammans — ett ja och huset gör allt. Av: var och en erbjuds för sig.",
+     "trust_lights": "När en rutin du har låtit huset ta över tänds ett ljus: bara gör det, säg det först, eller fråga och gör det bara vid ett ja (ingenting händer om ingen svarar).",
+     "trust_switches": "Samma sak för strömbrytare, smarta kontakter och fläktar.",
+     "trust_covers": "Samma sak för persienner och gardiner. Garageportar och portar frågar alltid.",
+     "trust_heating": "Samma sak för att värma upp värmen innan folk är uppe. Att fråga först betyder att det inte kan värmas upp medan alla sover.",
+     "link_triggers": "Valfritt: fler saker som kan skapa en vana (TV:n startar, en sängsensor…). Dörrar, fönster och de lärda ljusen beaktas alltid.",
+     "suggest_routines": "En gång per ny rutin, under dagen när någon är hemma, fråga om huset ska göra det från och med nu.",
+     "prove_routines": "En nyinlärd vana bevakas först: varje dag efter att den lärts in, kontrollerar Sentient om en person verkligen gjorde det inom 45 minuter från sin vanliga tid. Det erbjuds bara när det har varit rätt på minst 3 av 4 dagar det gällde (vardagar, helger eller varje dag). Inställningar › Inlärning visar hur det går för var och en. Av: vanor erbjuds så snart de har lärt sig.",
+     "routine_fading": "På: när en rutin som huset gör för dig redan var klar när den skulle beräknas 5 dagar om två veckor (någon gör det själv nu), frågar Sentient en gång om den ska behållas och slutar om du säger nej. Endast datumen sparas, högst två veckor. Av: rutiner huset gör behålls tills du säger något annat.",
+     "door_camera": "Tittade på en gång när det ringer på dörren, för att logga vem som kom.",
+     "door_triggers": "Dörrklocksknappen (en binär sensor eller händelse), eller något annat som betyder att någon står vid dörren.",
+     "announce_visitors": "Av håller den i en tyst logg som röstassistenter kan svara från.",
+     "faces": "När Frigate (eller dörrklockan) känner igen någon går den på tidslinjen och rösten kan svara \"har Sam kommit hem?\". Namn tillkännages eller gissas aldrig — sägs bara när någon frågar. Av som standard.",
+     "face_people": "Namn som Frigate känner till dem. Tom: alla som den känner igen.",
+     "face_teach": "Hjälper Frigate:s ansiktsigenkänning att bli bättre. När någon lämnar en vald kamera och Frigate höll ett ansikte som den inte kunde namnge, får telefonerna ett privat \"Vem är det här?\" med ansiktet och knappar för hushållet (telefoner visar högst tre). Att knacka på en lär Frigate; \"Någon annan…\" tar ett inskrivet namn för någon ny, eller \"nej\" för att ta bort en främlings ansikte. Aldrig talat, aldrig på surfplattor, högst var tionde minut. Behöver Frigate ansiktsigenkänning på och telefoner valda för aviseringar. Av som standard.",
+     "face_teach_cameras": "Närbildskameror där ansikten är tydliga, e.g. dörrklockan. Tom: dörrkameran.",
+     "face_cameras": "Tom: varje kamera. Välj de närbilder (dörrklockan, ytterdörren) så att en trafikerad gata inte kan ge falska namn.",
+     "face_forget_hours": "Varje natt, ansikten Frigate bevaras men ingen namngiven — främlingar, mestadels — raderas från Frigate när de är så gamla. Namngivna ansikten behålls. 0: lämna det till Frigate (det behåller sina sista 200).",
+     "clip_watch": "När Frigate avslutar en händelse på en vald kamera, tittar AI på den inspelningssträckan en gång och en mening går på tidslinjen och Sentient-sidan: \"Gate 14:10 — en man gick en hund förbi\". Rösten svarar \"vad hände vid porten?\" från dem utan ett annat AI-anrop. Aldrig talat. Av som standard.",
+     "clip_cameras": "Börja med en, e.g. porten.",
+     "clip_scope": "Frigate:s varningar är personer i de zoner du markerat som obligatoriskt — det tystaste valet för en livlig gata. Om en kamera aldrig avger varningar (inga obligatoriska zoner inställda i Frigate), välj \"Allt i en zon\" — klippkortet visar vad som hoppades över och varför.",
+     "clip_when": "Titta bara vid dessa tider. Borta betyder att alla som valts under Bortaljus är ute.",
+     "clip_notify": "Går bara till telefonerna, med en bild och en uppspelningsknapp.",
+     "clip_source": "Frigate:s egna AI-granskningssammanfattningar behöver slås på i Frigate; då görs inget AI-anrop här.",
+     "clip_whose": "I samma AI-samtal ingår hushållets ansiktsfoton från Frigate:s ansiktsbibliotek (och utseendena nedan), och det namnger någon bara när det tydligt är dem — \"förmodligen Sam\". Främlingar nämns aldrig. Bara sagt på frågan, aldrig meddelat.",
+     "clip_looks": "En per rad, e.g. \"Sam: röd cykelhjälm och en gul rock, på en cykel\". Hjälper när en hjälm eller huva döljer ansiktet.",
+     "budget_clips": "Räknas också mot den totala dagliga AI-gränsen. 0: ingen egen gräns.",
+     "clip_days": "Sammanfattningar är bara ord och raderas sedan.",
+     "clip_keep": "Av: varje klipp raderas så snart det har setts.",
+     "parcel_alerts": "Efter en leverans, titta igen några minuter senare och säg om ett paket har lämnats.",
+     "doorstep_sensors": "Tillval: personsensorer för tröskeln eller trädgården (e.g. en Frigate-zons personbeläggning). När ett besök där avslutas utan ringklocka, kontrolleras dörrkameran en gång för ett kvarlämnat paket eller post.",
+     "zone_visits": "Använder tröskelsensorerna ovan (e.g. en Frigate-zons personbeläggning). När ingen ringer behandlas någon som når zonen som en besökare: dörrkameran tittas på och det meddelas. Vad som än kommer först, klockan eller zonen, är besöket och det andra ignoreras. Av: endast klockan startar ett besök.",
+     "zone_door_sensors": "Tillval: ytterdörrens öppna/stängda sensor. Om dörren öppnades (eller är öppen) under den sista och en halv minuten, ignoreras zonen, eftersom det är någon som lämnar eller kommer hem.",
+     "face_sensor": "Tillval: en ansiktsigenkänningssensor vars tillstånd är det namn den just kände igen (e.g. från Frigate). Används i loggen och i meddelandet om det är på.",
+     "sidebar_panel": "En sida i sidofältet som visar minnen, rutiner, klockor, besökare och vad som har sagts.",
+     "page_admin_only": "Döljer sidan och vad den läser för alla utom administratörer. Off håller den öppen för hela hushållet. Att slå på den raderar ingenting.",
+     "custom_pages": "På: flikarna Översikt, Hus, Sinne och Säkerhet använder din sparade layout, och administratörer får REDIGERA SIDLAYOUT här för att flytta kort mellan kolumner, dölja dem, visa dem igen eller återställa en flik. Det finns ingen redigeringsknapp på själva flikarna, bara när du redigerar. Layouten sparas i Sentient, så varje skärm visar detsamma. Av: flikarna går tillbaka till standardlayouten; din sparade layout behålls tills du slår på den igen.",
+     "confirm_kinds": "Ber AI:n att beskriva dessa åtgärder och vänta på ett ja. Det här är en snabbinstruktion, inte ett påtvingat åtgärdsblock: din konversationsagent styr enhetens exekvering. Att stänga av saker behöver inte frågas. Tom: ingen extra bekräftelseinstruktion. För påtvingade kontroller, aktivera bevakad kontroll med dess nödvändiga agentinställning.",
+     "auto_backup": "Söndag kväll, en säkerhetskopia av minnen, fläckar, rutiner, rörelseljus, tystnad och inställningar, sparad i konfigurationsmappen under sentient_backups.",
+     "backup_keep": "Äldre raderas.",
+     "suggestions": "Saker Sentient skulle kunna använda men inte är — en ny högtalare, en effektsensor på tvättmaskinen, en hutch-termometer — erbjuds en rad i taget. Ja lägger till det; det betyder inte att det aldrig erbjuds igen. Gratis, ingen AI.",
+     "whats_new": "Efter att Sentient har uppdaterats, säger ett kort kort på Sentient-sidan vad som är nytt, i vanliga ord, tills du trycker på GOT IT.",
+     "simple_settings": "Inställningslistan visar det väsentliga, med VISA ALLT för de valfria funktionerna. Nya installationer börjar på detta sätt. Ändrar ingenting om vad Sentient gör.",
+     "chat_agent": "Vem svarar på sidans fråga-ruta — välj en röstagent som har kryssat för Sentient. Empty använder din föredragna Assist-pipeline.",
+     "health_ignore": "Entiteter (och deras enheter) som inte borde räknas som problem, e.g. något som är menat att vara avstängt.",
+     "hide_substreams": "Utelämnar HD- och SD-strömmar, skärmdumpar och kartor när man räknar och kontrollerar kameror, så en dörrklocka är inte flera kameror. Ingenting raderas från Home Assistant.",
+     "ignore_cameras": "Kameror Sentient ska inte räknas, kontrollera eller erbjuda, till exempel en surfplattas kamera. De stannar i Home Assistant orörda; välj igen att ta tillbaka en.",
+     "never_entities": "Sentient växlar, dämpar eller ändrar aldrig dessa: inte i regler, rutiner, erbjudanden, automatisk avstängning, bort- eller rörelseljus, ljusshower, värme- eller bevakad röststyrning, och rösten uppmanas att lämna dem ifred. Den kan fortfarande läsa dem och prata om dem. Allt som skulle förändra en hoppas över och noteras.",
+     "self_check": "Varje natt ser den tillbaka på sina egna rekord — vad den sa och hur det gick ner, högtalare som misslyckades, saker som hölls tillbaka, frågor som ställdes om och om igen, AI-mätaren — och noterar vad den märker om sig själv, med siffrorna bakom sig. Ingen AI. Fråga \"har du irriterat oss?\" eller \"vad har du insett?\".",
+     "learn_corrections": "När någon ändrar tillbaka något som huset gjorde för ett ögonblick sedan (ett ljus det tände, en rutin som det tog över), noterar den korrigeringen. En rutin som du fortsätter att ångra lämnas tillbaka (stängs av) och tidslinjen säger det. Om du stänger av detta stoppar tittaren; redan noterade korrigeringar behålls.",
+     "normal_day": "Jämför idag med vad som är vanligt och noterar det på Mind-sidan: till exempel ingen uppe än när någon brukar vara vid det här laget. Vanliga regler, ingenting sägs högt och ingenting växlas. Om du stänger av detta stoppar kontrollen och döljer vad den hittade.",
+     "thoughts": "En kort förstapersonslista på Mind-sidan (\"folk fortsätter att släcka landningsljuset, så jag har slutat\"), plus att gissa vilket rum någon går till härnäst och kolla hur ofta det var rätt. Ingen AI. Att stänga av detta stoppar gissningen och döljer listan; vad den har lärt sig bevaras.",
+     "share_learning": "En gång på kvällen (17:00–20:30), när någon är på väg och det inte är tyst, säger den en sak som den har lärt sig eller ändrat sig om under de senaste två dagarna: en rutin som den lämnade tillbaka, ett faktum den uppdaterade, en vana den upptäckte, hur väl den nu gissar vart du går härnäst. Aldrig samma sak två gånger. Om du stänger av detta förblir allt på Mind-sidan men tyst.",
+     "self_adjust": "När självkontrollen hittar en sorts anmärkning fortsätter huset att tysta, tysta det lite (samma som en tumme ner; det bleknar igen). Rör aldrig säkerhet, säkerhet eller något som den kontrollerar.",
+     "proposals": "När självkontrollen upptäcker att något blev fel, föreslå en liten ändring på Mind-sidan — färre kommentarer, inte upprepa en så ofta, en sektion läggs till i genomgången, en högre AI-gräns — med anledningen. Ingenting förändras förrän du säger ja; ett nej frågas inte igen på en månad. Om du stänger av detta raderas alla vänteförslag.",
+     "privacy_log": "Varje AI-samtal och webbsökning Sentient gör noteras — vilken funktion, hur många bilder, klipp eller dokument och vilken tjänst — aldrig vad som sades eller visades. Se det under Hjärna & system → Det som lämnar huset, med en knapp för att glömma de senaste 48 timmarna. Om du stänger av detta rensas posten.",
+     "goals": "Låt rösten sätta upp mål över dagar eller veckor (\"hjälp oss att använda mindre värme den här månaden\"). Ett mål kan följa en sensor: den jämför varje dag med den vanliga veckan innan och nämner framsteg när den passar. Inget förändras i huset.",
+     "manuals": "Svara på frågor från dokumenten i mappen nedan (ett AI-anrop vardera). Av: dokumenten lämnas ifred.",
+     "manuals_folder": "En mapp i Home Assistant’s media (e.g. manuals = media/manuals). Namnge varje fil efter vad den är till för, e.g. \"Air purifier.pdf\".",
+     "manuals_local_text": "När inget filnamn matchar frågan, leta efter det rätta i .txt- och .md-dokumenten, och om AI inte kan nås, läs upp det närmaste avsnittet istället för ingenting. Ingen AI används för heller. Av: endast filnamn matchas.",
+     "manuals_pages": "På: varje PDF (och textdokument) läses en gång, sida för sida, i Sentients egen databas — på den här datorn, utan AI. En fråga skickar sedan AI endast de få sidor som matchar, inte hela dokumentet, så det kostar mycket mindre och svaret säger vilken sida den är på (\"det är på sidan 14\"). Ett dokument vars namn inte stämmer överens kan fortfarande hittas av vad som finns i det, och om AI:n inte kan nås läses den närmaste passagen upp med sin sida. Skannade PDF-filer (bilder på sidor) läses fortfarande hela av AI. Av: dokument läses hela varje gång och det som lästs rensas.",
+     "games": "Spela röststyrda berättelsespel, till exempel ett escape-the-flat-äventyr med assistenterna som spelmästare. Varje spel har sitt eget sparade minne (var spelarna är, vad de bär, vad de hittade och valde) över sessioner och assistenter. Det visas bara för en röst medan ett spel spelas, och spelmästaren kan läsa husets vanliga minne men aldrig ändra det. Öppna Inställningar → Berättelsespel för att skriva spel och redigera deras minne. Av: spelverktygen och sidan är dolda; sparade spel bevaras, inte rensas.",
+     "voice_id": "Använd den lokala högtalarmatchningen för denna begäran. För att låta AI-modellen anpassa svar eller tillskriva nya minnen efter namn, aktivera också Dela matchade namn med konversationsagenten i röstigenkänning. Det separata lokala “Vem talar?” svar ställs in i röstigenkänning.",
+     "voice_id_unknown": "När en Assist-högtalare inte har någon röstmatchning, håll hushållshistoriken och sparade minnen privata för den svängen. Av: oöverträffade röster behandlas som vanligt.",
+     "speaker_memories": "Med röstigenkänning igång: en matchad röst får sina egna minnen (“Alex: gillar te”) först — alltid inkluderat, även när nyare hushållsfakta skulle fylla listan — och aldrig någon annans personliga; en röst som den inte kan matcha får inget av någons personliga minnen. Hushållsfakta delas alltid. Inskrivna förfrågningar och Echos är oförändrade. Av som standard.",
+     "books": "Spela ljudböcker och läs e-böcker högt och behåll varje rums plats. \"Läs min bok\", \"fortsätt med boken\", \"läs i 20 minuter\", \"sluta\", \"nästa kapitel\", \"gå tillbaka lite\". Ingen AI (förutom en valfri sammanfattning). På en Echo: e-böcker en passage per begäran genom Alexa-färdigheten; ljudböcker behöver en annan högtalare.",
+     "books_folder": "En mapp i Home Assistant:s media (böcker = media/böcker). DRM-fria .epub eller .txt e-böcker; ljudböcker som en .mp3/.m4b/.m4a-fil, eller en mapp med delar uppkallad efter boken.",
+     "reading_tts": "En annan text-till-tal-tjänst bara för böcker och berättelser — Gemini eller ElevenLabs röster är ofta bättre berättare. Lämna det tomt för att läsa med den vanliga rösten. Echos använder alltid Alexas egen röst.",
+     "reading_voice": "Välj rösten från den tjänsten. Använd PROVA RÖSTAN nedan för att höra den på standardhögtalaren innan du sparar.",
+     "read_ahead": "Med en läsröst görs nästa del av berättelsen medan den här delen läses, så en långsam röst (en fri eller molnig) lämnar inte ett mellanrum mellan delarna. Använder den rösten lite tidigare, aldrig oftare.",
+     "recipes": "\"Låt oss göra lasagnen\": ingredienserna, sedan ett steg i taget — \"nästa\", \"upprepa det\", \"gå tillbaka\", \"vad är nästa?\" — kom ihåg steget per talare. \"Gör det för 6\" skalar det; ingredienser kan hamna på inköpslistan.",
+     "recipes_folder": "En mapp i Home Assistants media (recept = media/recept) med PDF-filer, foton, text eller Markdown. Var och en städas i steg av ett AI-anrop första gången, sedan behålls. Mealie används automatiskt om dess integration är inställd.",
+     "recipes_list": "Där \"lägg till ingredienserna till inköpslistan\" placerar dem. Tom: listan med \"shopping\" i namnet.",
+     "voice_lists": "På: \"kryss av mjölk\", \"vad står på inköpslistan?\", \"ta bort soppåsar\" — föremål hittas hur de än sägs (i alla fall, plural, den enda mjölken på listan), två möjliga matchningar frågas om, och Sentient säger bara att det är gjort när listan visar det. Använder listor som exponeras för Assist (alla listor om ingen är det) och inköpslistan om inte någon annan har namnet. Ingen egen AI. Av: rösten använder Home Assistants egna listkommandon. Ingenting lagras.",
+     "ready_tonight": "\"Se till att allt är klart för ikväll\": kontrollerar dörrar, fönster och lås Assisten kan se, släcker endast lamporna som väljs nedan, tittar på värmen och säger vad som fortfarande är öppet, olåst, kvar på eller inte kan bekräftas. Lås, larm och uppvärmning byts aldrig, och larmet erbjuds aldrig. Ingen AI-röst kan fortfarande erbjudas, men det finns ingen egen röst.",
+     "ready_tonight_lights": "De enda lamporna \"redo för ikväll\" kan släckas. Var och en kontrolleras efteråt. Tom: inga lampor är släckta, bara rapporterade.",
+     "ready_tonight_follow": "När något fortfarande är öppet eller olåst, håll ett öga på det i upp till tre timmar och säg en gång, på högtalaren du frågade, när allt är klart. Fortsätter efter omstart.",
+     "tandoor_url": "Valfritt: din Tandoor Recipes-adress, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Valfritt: en API-token från Tandoor (Inställningar → API). Förvaras endast i Home Assistant.",
+     "voice_agent": "AI-agenten som normalt svarar (e.g. Google AI). Empty använder sidans chattagent.",
+     "backup_agent": "Svarar när huvudagenten misslyckas — Home Assistants egen agent gör lampor, värme och timers utan någon AI.",
+     "offline_answers": "När AI-agenten misslyckas, “är huset låst?”, “när är mitt nästa larm?” och “har någon kommit runt?” besvaras direkt från huset, i klartext, innan backupagenten prövas. Bara frågor, bara vad personen får se; i gästläge bara säkerhetsfrågan. Av: allt går till backupagenten.",
+     "animal_sensors": "Hutch, kennel, coop eller tank temperatursensorer.",
+     "away_lights_on": "När alla är ute efter mörkrets inbrott, kopierar lamporna hur de användes vid samma tidpunkt förra veckan (från Home Assistants historia), några minuter åt båda hållen. Startar (eller stannar) inte om någon är hemma eller om det har varit rörelse inne på sistone, för personer som inte har en telefon spårad, och sätter tillbaka det som har slagits på. Även en \"Away lights\"-brytare.",
+     "away_people": "Tom: alla med en personpost. Du kan välja telefoner (enhetsspårare) istället för personer.",
+     "away_lights": "Tomt: varje ljus i ett rum, utelämnar skärmar, LED-ringar, bakgrundsbelysning och grupper. Endast lampor som användes vid den tiden förra veckan tänds.",
+     "holiday_mode": "En omkopplare för \"semesterläge\" och \"vi åker på semester till söndag\" med rösten. Medan den är på, sägs ingenting högt utom säkerhetsvarningar — det som skulle ha sagts går till de telefoner som valts för aviseringar, med besökare och paket; bortljuset lyser även om de normalt är släckta; och termostaterna nedan är nedställda. Av: ingen switch och ingen semester med rösten.",
+     "holiday_thermostats": "Sänkte till frostskydd medan du är borta, och ställ tillbaka precis som de var när semesterläget slutade. Tom: värmen berörs inte.",
+     "holiday_frost": "Vad termostaterna ovan är inställda på när du är borta.",
+     "holiday_end_on_return": "När alla har gått ut, avslutar den första personen hemma semesterläget och sätter tillbaka värmen. Av: den slutar på sitt datum eller när den stängs av.",
+     "away_after": "Så att gå till butiken startar inte det.",
+     "animal_low": "Säger en gång när det sjunker under detta (hålls till morgonen i lugna timmar), och varnar kvällen före frost.",
+     "animal_high": "Säger en gång när den stiger över detta.",
+     "hutch_check": "En halvtimme efter solnedgången tittar en AI på hyddan: är de inne och är den stängd? Säger bara något om inte.",
+     "hutch_spot": "Fläcken ritad runt hyttan på fliken Spots, e.g. 'kanin penna'.",
+     "cat_watch": "Efter mörkrets inbrott, när en kattsensor på hutchs kamera tänds, en AI-blick: är en katt vid eller vid hutch? Högst var 15:e minut, och inte när bilden inte har ändrats.",
+     "cat_sensors": "Tom: kattsensorerna på kojans kamera (e.g. Frigate:s kattbeläggning).",
+     "cat_loud": "Av: hålls för morgonen ('En katt var vid hyddan kl. 02:14'). På: sa genast genom nattvaktshögtalarna.",
+     "rain_warnings": "När det kommer regn inom en timme och ett fönster eller en dörr är öppen: \"Regnet är på väg under nästa timme, och sovrumsfönstret är öppet.\" Läser timprognosen — ingen AI. En gång per period av regn.",
+     "rain_entities": "Tom: varje fönster- och dörrsensor.",
+     "self_test": "Över en natt ställs rösten några vardagliga frågor (temperaturen ute, allt öppet, påminnelser, larmet, tiden) och dess svar kontrolleras mot huset. Allt fel visar sig i husets hälsa med verktyget det använde. Cirka 5 AI kallar en löpning. Endast frågor — ingenting ändras.",
+     "self_test_household": "Lägger till cirka 7 frågor byggda från dina egna enheter: när en dörr eller ett fönster senast stängdes, om ett ljus är på, om en kamera såg någon under de senaste två timmarna, om någon kom till dörren idag, något den inte kan veta (ett påhittat svar misslyckas), något som ingen enhet kan göra och en fråga som är för vag för att svara utan att fråga vilken. Att byta något under en fråga är ett misslyckande. Poängen och dess trend finns på Mind-sidan. Cirka 7 fler AI kallar en löpning.",
+     "screen": "Varningar, meddelanden och ett morgonkort på Sentient-skärmkortet (anpassat:sentient-skärmkort). Av: det visar bara huset i en blick.",
+     "screen_actions": "e.g. väcka en surfplatta och växla till sidan med skärmkortet.",
+     "screen_clear_actions": "e.g. växla tillbaka surfplattan till sin normala sida.",
+     "conversation_sessions": "Använd Sentient med backupagent. Enstaka kommandon slutar lyssna om inte det talade svaret slutar med en fråga. Informations-, säkerhet-, hälso- och systemdiskussioner frågar om det finns något annat och håll öppet tills du säger “det är allt”, “tillräckligt” eller “sluta lyssna”, eller tills inaktivitetstiden går ut. Säg “tillbaka till…” för att återuppta ett oavslutat ämne från den här enheten inom 24 timmar, utan att återställa åtgärdsbehörigheter. Mindpanelen visar de senaste konversationsbesluten. Uppföljningslyssning kräver en kompatibel Assist-enhet.",
+     "room_conversation_handoff": "Säg fortsätt med och namnge ett ämne från en annan enhet. Båda förfrågningarna måste komma från samma identifierade Home Assistant-användare. Färska avläsningar kontrolleras och tidigare åtgärder och bekräftelser förs inte över.",
+     "verified_bedtime": "Säg kör ner läggdags för att släcka de valda lamporna och kontrollera de valda kontakterna. Be läggdagsstatus på nedervåningen att kontrollera igen, eller säg avbryt läggdags nere för att sluta spåra den.",
+     "verified_bedtime_lights": "Välj upp till tjugo individuella Assist-exponerade ljus. Grupper är uteslutna och listan Aldrig vidröra gäller fortfarande.",
+     "verified_bedtime_contacts": "Välj upp till tjugo Assist-exponerade dörr-, fönster- eller andra öppningskontakter att kontrollera. De är endast läsbara.",
+     "session_seconds": "Släng sessionskontext och väntande åtgärder efter dessa många sekunder utan ytterligare en tur. Din röstenhet styr sin egen tystnadstimeout. Bekräftelsen upphör också att gälla efter 60 sekunder.",
+     "guarded_control": "Välj med en dedikerad AI-agent som stöds: välj endast Sentient bevakad under Kontroll Home Assistant, använd sedan Sentient med backup i pipeline. Stäng av Föredrar att hantera kommandon lokalt och ta bort motstridiga meningstriggers, som körs före den här agenten. Fel agent API-konfiguration stoppar förfrågningar. Inga obegränsad reserv, manus, scener eller larmåtgärder. Dörrar, apparatstarter och betydande värmeförändringar kräver ett separat ja.",
+     "routine_verify": "På: efter att en röstrutin (godnatt, lämnar…) har körts, kontrolleras varje ljus, strömbrytare, lås och lock som ändrats några sekunder senare, och svaret säger vad som inte hände (\"Klart, förutom landningsljuset, som fortfarande är tänd\"). Steg som den inte kan kontrollera (manus, scener) rapporteras som inte kontrollerade, aldrig som gjorda. Ingenting görs om eller ångras av sig självt. Av: rutiner körs som tidigare, avmarkerad.",
+     "voice_unlock": "Låter påtvingad röstbekräftelse låsa upp en dörr efter ett separat ja. Av (standard) fortsätter att låsa och stänga men vägrar att låsa upp eller öppna med rösten, eftersom Sentient inte kan se vem som talar.",
+     "voice_undo": "Med bevakad kontroll, säg “ångra det” för att begära återställning av de senaste verifierade ljusinställningarna. Hoppar över ljus som ändrats sedan, upphör med sessionen och ångrar aldrig lås, värme eller apparater.",
+     "evidence_awareness": "Be rösten att skilja på observationer, slutsatser, försök till handlingar och verifierade enhetsrapporter. Otillgängliga säkerhetssensorer förhindrar alltid ett helt säkert anspråk.",
+     "security_incidents": "Gruppera konfigurerade kamerasäkerhetspersonsensorer och ingångskontakter med varningar och klippsammanfattningar. Håll sju dagar lokalt. Tidsnärhet är en möjlig länk, inte bevis för samma person; endast eskalerande varningar upprepas.",
+     "incident_front": "Kameror och sensorer på framsidan av huset (dörrklockan, ytterdörren). Allt här är aldrig grupperat i en säkerhetsincident med något som inte är det, och tvärtom: någon vid ytterdörren och någon vid bakporten samtidigt är två incidenter. Lämna tomt för att gruppera efter ensam tid.",
+     "live_voice_check": "Visa den användarstartade röstkontrollen i tankepanelen. Om du stänger av detta rensas den aktuella kontrollen och slutar registrera kontrollsvängarna. Kräver konversationssessioner för att starta en kontroll.",
+     "speech_delivery_history": "Spara de senaste meddelandena per talare i tankepanelen. Om du stänger av detta rensas den här historiken. Detektering av högtalarfel och säker hantering av försök igen förblir aktiva.",
+     "alexa_tts_only": "Använd vanliga TTS istället för Alexa meddelanden om meddelanden är opålitliga. Detta förbigår Alexa meddelandeklockor; övriga högtalare är oförändrade.",
+     "update_checker": "Kontrollera GitHub för stabila utgåvor när den är aktiverad, vid start och var sjätte timme. Inga AI-samtal, automatisk installation eller automatisk omstart. Inaktivera för att stoppa kontroller.",
+     "contextual_followups": "Kräver konversationssessioner och Sentient med backupagent. Behåll ämnet för korta uppföljningar, uppdatera exponerade enhetsavläsningar och förtydliga tvetydiga justeringar. Ger inte handlingsbehörigheter eller ändrar lyssningsregler. Av som standard; om du stänger av den rensas tillfällig konversationskontext.",
+     "conversation_recovery": "Kräver konversationssessioner och Sentient med backupagent. Avbryt en väntande eller pågående begäran från samma konversation/enhet/användare och undvik att spela upp osäkra enhetskommandon efter ett AI-fel. Det går inte att ångra en åtgärd som redan har skickats eller få maskinvara att acceptera tal när den är upptagen. Av som standard; inaktivering stoppar denna extra hantering.",
+     "speech_failure_notification": "Visa ett Home Assistant-meddelande när högtalarleveransen misslyckas eller är osäker. Av som standard. Inkluderar inte talat innehåll eller upprepat tal. Inaktiverad i gästläge; befintliga meddelanden kvarstår tills de avvisas.",
+     "recent_followup_context": "Använd ett nyligen avslutat ämne efter ett nytt ord på samma talare och användare. Kräver samtalstillfällen och kontextuella uppföljningar. Använder sessionens timeout; återställer aldrig bekräftelse eller lyssning. Av som standard. Att avsluta eller glömma rensar sammanhanget.",
+     "conversation_cues": "Inom en konversation: vardagliga sign-offs (“heja”, “perfekt, tack”, “det kommer att duga”) gör slut när inget specifikt väntar på ett svar; “förlåt, jag menade…”, “fel ljus” och “inte lampan, taklampan” är korrigeringar; och “på en annan ton…” eller “något annat:” startar ett nytt ämne utan att några enheter överförs. Ingen AI. Av: endast de enkla ändelserna och korrigeringarna känns igen.",
+     "vary_replies": "Rösten visas sina egna senaste svar från den senaste dagen och uppmanas att inte återanvända sina meningar eller öppningar, så samma svar ges inte ord för ord två gånger. Inte i privata rum eller gästläge. Upprepade svar räknas åt båda hållen (Mind-fliken, med rösttimingerna). Av som standard.",
+     "behaviour_explanations": "Svara på korta frågor om lyssnande och inspelade enhetsresultat direkt, utan ett AI-samtal. Kräver samtalssessioner. Använder befintliga sessionsposter, respekterar gästläge och enhetsåtkomst och upprepar aldrig en åtgärd. Av som standard; ingen ytterligare historik lagras.",
+     "current_house_context": "Ge konversationer en kompakt relevant ögonblicksbild av exponerade enhetsrapporter, senaste ändringar och den aktuella oavslutade uppgiften. Av som standard. Inga bakgrunds-AI-anrop. Gästläget undertrycker det. De senaste ändringarna upphör att gälla efter 30 minuter; om du inaktiverar eller glömmer bort enbart minneskontext.",
+     "moment_awareness": "Varje röstsvar får en kort \"just nu\"-bild från det som Sentient redan har: vem som är hemma och sedan när, rummen med rörelse, vad som hänt under de senaste 45 minuterna och allt ovanligt för idag. Ingen AI och inget lagrat. I ett privat rum eller gästläge ges endast rörelsen. Av: inget av det läggs till.",
+     "room_memory": "Varje röstsvar i ett rum får vad som hände där den senaste timmen: tidigare konversationer i det rummet, vad som byttes dit med rösten och vad som tillkännagavs där. Om någon bara pratade i ett annat rum för några minuter sedan och ingenting har sagts här sedan dess, kommer det samtalet också, så att de kan fortsätta där de slutade. Inget nytt lagras. Privata rum och gästläge får bara sitt eget rums rekord. Av: inget av det läggs till.",
+     "know_people": "När röstigenkänning inte har gett högtalaren ett namn, räknar Sentient ut vem det förmodligen är utifrån saker den kan lita på: ett meddelande som skrivits i Home Assistant-appen kommer från den personens konto, eller så är deras den enda rumsspårade telefonen i rummet. Rösten får veta vem den förmodligen är och sätter vad den personen berättade om sig själv först. En gissning tillåter aldrig något som behöver en bekräftelse, och ingenting sparas under deras namn på grund av det. Inte i gästläge eller privata rum. Av: ingen gissning.",
+     "instant_answers": "Vardagliga frågor besvaras direkt från huset, före AI:n: tiden, vädret utanför, om en namngiven enhet är på, av, öppen eller låst, ett rums temperatur, nästa larm eller påminnelse, besökare och om huset är låst. Bara frågor, bara en enda enhet som tydligt matchar och exponeras för röstassistenter; allt annat går till AI som vanligt. Utbytet läggs till samtalet så en uppföljare vet fortfarande vad som efterfrågades. Gäster och privata rum får bara tid, väder och enhetsstatus. Av: varje fråga går till AI.",
+     "capability_awareness": "Rösten får veta vilken typ av saker den kan styra i det här huset med rösten (från vad som exponeras för röstassistenter, med hur många av varje) och vilka vanliga huset inte har, som smarta lås eller motoriserade persienner, så den erbjuder aldrig något som ingen enhet kan göra. Ett erbjudande som ändå slinker igenom (att stänga ett fönster, låsa en dörr) tas bort från svaret innan det talas upp. Tränade var femte minut, ingen AI. Av: ingenting läggs till eller tas bort.",
+     "house_context_entities": "Enheter som ska inkluderas i allmänna hussammanfattningar, tillsammans med automatiska klimat- och öppnings-/närvarorapporter. Endast för närvarande exponerade och tillgängliga enheter delas; högst åtta relevanta avläsningar per begäran.",
+     "house_context_updates": "Kräver aktuell huskontext. Efter en verifierad bevakad uppvärmningsbegäran, säg eventuellt en gång när den termostaten rapporterar den begärda temperaturen. Går ut efter en timme, avbryts om målet ändras, högst en uppdatering per 15 minuter. Respekterar normala talregler och gästläge. Av som standard. Om du stänger av rensas väntande uppdateringar.",
+     "security_event_evidence": "Använd Frigate händelse-ID, ögonblicksbilder och klipp på konfigurerade kameror. En unik kamera/tidsmatchning är en kandidatlänk, inte ett bevis på att en sensor identifierat den händelsen. Spara upp till 3 000 händelseregister i sju dagar, lokalt. Av som standard. Inaktivering döljer länkar och slutar matcha; bevarade register löper ut eller kan glömmas bort.",
+     "security_event_zones": "Bara det som kommer in i en zon: på en kamera med Frigate-zoner listas en händelse (och kan starta en säkerhetsincident) först när objektet har gått in i en av dem, samma regel som Frigate använder för sina varningar. En kamera utan zoner listar allt. Allt som har upptäckts: varje objekt Frigate spårar på de valda kamerorna. Frigates egna inställningar ändras aldrig.",
+     "security_event_hidden_zones": "En per rad som kamera/zon, till exempel grind/uppfart. Händelser som bara förekommer i dessa zoner listas inte och startar inte säkerhetsincidenter. Använd HIDE THIS ZONE på säkerhetssidan efter några \"inte en person\"-korrigeringar där, eller ta bort en rad för att lista den zonen igen. Frigate ändras inte.",
+     "security_coverage": "Visa vilka konfigurerade kameror som bidrog med bevarade bevis och eventuella otillgängliga rapporter inspelade tillsammans med liveincidenter. Aktuella kamerarapporter visas separat. Om du stänger av detta rensar du kvarvarande täckningsluckor.",
+     "frigate_pipeline_health": "Läs Frigate MQTT tillgänglighet, bearbetningshastigheter per kamera och när Sentient senast tog emot en händelse. Saknade data visas som okända. Inga kamerainställningar ändras.",
+     "security_conversation_context": "Kom ihåg den valda händelsen i upp till fem minuter inom samma konversation, enhet och användare. Uppföljningsfrågor använder den händelsen och färska beläggningsrapporter; ingen identitet eller fortsatt närvaro antas. Spårar konfigurerade kamerahändelser. Av som standard. Inaktivering rensar konversationsreferenser; händelseposter behåller sitt normala utgångsdatum.",
+     "security_event_feedback": "Administratörer kan markera ett besök som en bra fångst, inte en person eller en att ignorera. Granskade besök flyttas till en vikta granskad lista, och \"inte en person\" räknas också som en granskad falsk upptäckt för en säkerhetsincident som endast görs av det besöket. Rättelserna stannar i sju dagar. Inga automatiska detektor-, larm- eller meddelandereglerändringar. Inaktivering döljer feedback och stoppar nya korrigeringar; använd Glöm senaste data för att radera sparade poster.",
+     "share_clip_analysis": "Dela kompatibla generiska analyser av samma färdiga Frigate-händelse över automatisk klipptittande och frågor om händelseklipp. Leverantör, filmtäckning och identitetsinställningar måste matcha. Anpassade frågor analyseras separat. Behåll högst 100 resultat i minnet i sex timmar. Av som standard. Om du inaktiverar, ändrar inställningar eller glömmer bort rensas cacheminnet."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient är redan konfigurerad."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Inställningar",
+     "briefing": "Lägesrapporter",
+     "memories": "Minnen"
+    }
+   },
+   "settings": {
+    "title": "Inställningar",
+    "data": {
+     "persona": "Namn",
+     "speakers": "Högtalare",
+     "default_speaker": "Standard högtalare",
+     "quiet_start": "Tysta timmar börjar",
+     "quiet_end": "Tysta timmar slut",
+     "busy_entities": "Var tyst när du är upptagen",
+     "motion_window": "Fönster för rumsmedvetenhet",
+     "banned_words": "Använd aldrig dessa ord (kommaseparerade)",
+     "suppress_entities": "Var tyst efter dessa automatiseringar eller skript",
+     "suppress_seconds": "Var tyst för",
+     "prompt_memories": "Minnen att dela med röstassistenter",
+     "pass_through_areas": "Genomgångsområden",
+     "all_occupied": "Tala i varje upptaget rum",
+     "room_tracking": "Använd rumsspårare (Bluetooth)",
+     "room_trackers": "Rumsspårare",
+     "ai_task_entity": "AI för bakgrundsjobb",
+     "camera_cooldown": "Minsta mellanrum mellan kamerakontrollerna",
+     "fallback_speakers": "Endast backup-högtalare",
+     "daily_ai_limit": "AI-samtal per dag",
+     "prompt_recent": "Just nu och sista timmen i röstens sammanhang",
+     "rules": "Regler och göra dem med rösten",
+     "relevant_memories": "Välj de minnen som stämmer överens med vad du frågade om",
+     "look_cache_minutes": "Återanvänd ett kamerasvar för",
+     "camera_prefilter": "Hoppa över kamerablickar när ingenting har ändrats",
+     "budget_drive": "AI-anrop per dag: körningen",
+     "budget_noticing": "AI-samtal per dag: märker",
+     "budget_cameras": "AI-samtal per dag: kamerakontroller och klockor",
+     "routine_evidence": "Säg hur ofta en rutin har setts",
+     "notice_entities": "Saker att lägga märke till",
+     "remark_repeat_hours": "Upprepa inte en kommentar för",
+     "chattiness": "Hur pratsam",
+     "conversation_style": "Hur det pratar",
+     "carry_on_minutes": "Föra en konversation för",
+     "focused_tools": "Fokuserade röstverktyg",
+     "ask_later": "Fråga hur det gick",
+     "put_right": "Rätta felen på en gång",
+     "music": "Musik genom att fråga",
+     "music_alexa": "Musik genom Alexa (Echos)",
+     "music_alexa_service": "Musiktjänst för Echos",
+     "house_rules": "Husregler",
+     "no_security_offers": "Erbjud aldrig att aktivera, avaktivera eller låsa upp",
+     "learn_entities": "Lär dig rutiner av",
+     "learn_anchors": "Vanor som följer dagen",
+     "trust_lights": "Ljus",
+     "trust_switches": "Strömställare, pluggar och fläktar",
+     "trust_covers": "Persienner och gardiner",
+     "trust_heating": "Uppvärmning",
+     "offer_together": "Erbjud vanor som görs tillsammans som en",
+     "link_triggers": "Lär dig också vad som följer på dessa",
+     "suggest_routines": "Erbjud dig att ta över rutiner",
+     "prove_routines": "Vanor visar sig själva innan de erbjuds",
+     "routine_fading": "Fråga om rutiner som inte behövs längre",
+     "door_camera": "Dörrkamera",
+     "door_triggers": "Dörrklocka",
+     "announce_visitors": "Säg vem som står vid dörren",
+     "faces": "Namn från ansiktsigenkänning",
+     "face_people": "Bara dessa människor",
+     "face_teach": "Fråga på telefon vilka namnlösa ansikten är",
+     "face_teach_cameras": "Lär dig ansikten från dessa kameror",
+     "face_cameras": "Namn endast från dessa kameror",
+     "face_forget_hours": "Glöm namnlösa ansikten efteråt",
+     "clip_watch": "Se händelseklipp",
+     "clip_cameras": "Kameror",
+     "clip_scope": "Vilka händelser",
+     "clip_when": "När",
+     "clip_notify": "Skicka till telefonerna",
+     "clip_source": "Vem skriver sammanfattningen",
+     "clip_whose": "Säg vilken hushållsmedlem det var",
+     "clip_looks": "Hur folk ser ut när deras ansikte inte syns",
+     "budget_clips": "Klipp tittade på en dag (de flesta)",
+     "clip_days": "Behåll sammanfattningarna för",
+     "clip_keep": "Behåll klippfilerna",
+     "parcel_alerts": "Säg när ett paket är kvar",
+     "doorstep_sensors": "Kolla efter paket efter besök sett av",
+     "zone_visits": "Räkna någon vid ytterdörrens kamerazon som en besökare",
+     "zone_door_sensors": "Framdörrssensor (zonen ignoreras om den öppnas först)",
+     "face_sensor": "Känt namn från",
+     "sidebar_panel": "Visa i sidofältet",
+     "page_admin_only": "Endast administratörer kan öppna den här sidan",
+     "custom_pages": "Ordna om Sentient-sidan",
+     "suggestions": "Förslag på sidan Sentient",
+     "whats_new": "Vad är nytt efter en uppdatering",
+     "simple_settings": "Enklare inställningssida",
+     "auto_backup": "Säkerhetskopiera varje vecka",
+     "backup_keep": "Hur många ska man behålla",
+     "confirm_kinds": "Fråga \"ska jag?\" före",
+     "chat_agent": "Chattagent för sidofältssidan",
+     "battery_threshold": "Lågt batteri nedan",
+     "battery_forecast": "Säg när batterierna tar slut",
+     "health_ignore": "Ignorera för husets hälsa",
+     "hide_substreams": "Dölj extra kameravyer",
+     "ignore_cameras": "Kameror att ignorera",
+     "never_entities": "Rör aldrig dessa",
+     "self_check": "Kolla sig själv varje natt",
+     "learn_corrections": "Lär dig när du ångrar vad den gjorde",
+     "normal_day": "Lägg märke till en ovanlig dag",
+     "thoughts": "Visa vad den tänker",
+     "share_learning": "Säg vad den har lärt sig",
+     "self_adjust": "Justera sig själv",
+     "proposals": "Föreslå ändringar av dess inställningar",
+     "privacy_log": "Håll ett register över vad som lämnar huset",
+     "goals": "Mål",
+     "manuals": "Svar från dokument",
+     "manuals_folder": "Dokumentmapp",
+     "manuals_local_text": "Titta inuti textdokument",
+     "manuals_pages": "Läs PDF-filer sida för sida",
+     "games": "Berättelsespel",
+     "voice_id": "Vet vem som talar",
+     "voice_id_unknown": "Behandla röster som det inte kan matcha som en gäst",
+     "speaker_memories": "Behåll varje persons minnen för dem",
+     "books": "Böcker",
+     "books_folder": "Böcker mapp",
+     "reading_tts": "Läsröst: service",
+     "reading_voice": "Läseröst",
+     "read_ahead": "Gör nästa del klar medan du läser",
+     "recipes": "Recept",
+     "recipes_folder": "Mapp med recept",
+     "recipes_list": "Inköpslista för ingredienser",
+     "voice_lists": "Shopping- och att göra-listor med röst",
+     "ready_tonight": "Klart för ikväll",
+     "ready_tonight_lights": "Redo för ikväll: lampor kan släckas",
+     "ready_tonight_follow": "Redo för ikväll: säg till när det är klart",
+     "tandoor_url": "Tandoor adress",
+     "tandoor_token": "Tandoor API-token",
+     "second_opinion_ai": "AI för en andra bedömning",
+     "smart_ai_task": "Starkare AI för säkerhet och övernattning",
+     "event_clips": "Se Frigate:s evenemangsklipp",
+     "notify_targets": "Telefoner att meddela",
+     "notify_when": "Skicka till telefoner",
+     "phone_buttons": "Knappar på telefonaviseringar",
+     "phone_apps": "Medföljande appar för knappar",
+     "bins_check": "Koll av soptunnorna",
+     "bins_calendar": "Bin kalender",
+     "bins_spot": "Papperskorgens kameraplats",
+     "bins_time": "Titta på",
+     "chime": "Ring innan du pratar",
+     "welcome_home": "Välkomna folk hem",
+     "welcome_people": "Människor att välkomna",
+     "welcome_min_away": "Borta åtminstone",
+     "welcome_until": "Välkommen på kvällen fram till kl",
+     "speak_volume": "Talar volym",
+     "night_volume": "Talar volym under tysta timmar",
+     "duck_media": "Stäng av musik och TV medan du pratar",
+     "critical_alerts": "Säkerhetsvarningar",
+     "critical_ignore": "Behandla aldrig dessa som säkerhetsvarningar",
+     "energy_insight": "Energiinsikt",
+     "energy_price": "Elpris",
+     "energy_currency": "Valuta",
+     "price_entity": "Pris för användningstid (förslag på billig el)",
+     "search_hints": "Berätta för rösten om sökverktyg",
+     "web_search": "Sentient egen webbsökning",
+     "searxng_url": "SearXNG adress",
+     "alexa_skill": "Svara på frågor som ställs via Alexa",
+     "alexa_wait": "Längsta väntan innan Alexa ger upp",
+     "alexa_late_answers": "Säg långsamma svar på den där Echo",
+     "left_open_minutes": "Nämn dörrar och fönster som lämnats öppna efter",
+     "left_open_ignore": "Nämn inte dessa",
+     "leaving_check": "Kolla när alla går ut",
+     "critical_extra": "Behandla även dessa som säkerhetsvarningar",
+     "heating_entities": "Uppvärmning för att lära sig",
+     "preheat": "Värm upp innan folk är uppe",
+     "heating_schedule": "Värmeschema (ställ in på fliken Hus)",
+     "comfort_temp": "Uppvärmningstemperatur",
+     "inside_sensors": "Rörelsesensorer inuti",
+     "weekly_report": "Veckorapport",
+     "night_watch": "Nattvakt",
+     "night_watch_entities": "Dörrar och portar att titta på",
+     "night_watch_announce": "Säg varningar högt, även under tysta timmar",
+     "night_watch_speakers": "Säg varningar på",
+     "warm_by_weekdays": "Varm av (vardagar)",
+     "warm_by_weekends": "Varmt av (helger)",
+     "heating_limit": "Vänd tillbaka värmen efteråt",
+     "heating_night_temp": "Natttemperatur",
+     "heating_revert_day_hours": "Återvända efter (under dagen)",
+     "heating_revert_night_hours": "Återvänd efter (på natten)",
+     "personality": "Personlighet",
+     "personality_notes": "Personlighetsanteckningar",
+     "style_feedback": "\"Säg det annorlunda\" om saker som det stod",
+     "style_notes": "Hur saker ska sägas",
+     "camera_security": "Kamerasäkerhet",
+     "camera_security_sensors": "Kamerors personsensorer",
+     "camera_security_inside": "Innanför gränsen",
+     "camera_security_entries": "Vägar in",
+     "camera_security_describe": "Beskriv vem det är",
+     "security_reasoning": "Väg varningar mot resten av huset",
+     "party_lights": "Visa ljus",
+     "party_style": "Stil",
+     "party_minutes": "Stanna själv efteråt",
+     "party_whole_house": "Använd varje ljus i huset",
+     "party_exclude": "Använd aldrig dessa lampor",
+     "party_sound": "Följ ljudet från",
+     "party_show": "Knappar på översikten",
+     "party_sound_switch": "Slå på medan du lyssnar",
+     "room_volume": "Tala upp i ett bullrigt rum",
+     "follow_you": "Meddelanden följer människor",
+     "follow_minutes": "Behåll meddelanden att skicka vidare till",
+     "conversation_memory": "Kom ihåg konversationer",
+     "follow_ups": "Kolla tillbaka på saker",
+     "curiosity": "Nyfikenhet",
+     "reflection": "Reflektion över natten",
+     "reflection_time": "Reflektera kl",
+     "drive_spot": "Körplats",
+     "drive_camera": "Kör kamera",
+     "drive_triggers": "Titta när dessa sätter sig",
+     "camera_wake": "Innan du tittar, väck kameran med",
+     "camera_wake_cameras": "Endast för dessa kameror",
+     "camera_wake_seconds": "Vänta sedan",
+     "known_cars": "Hushållsbilar",
+     "full_volume_speakers": "Full volym på dessa högtalare",
+     "tts_entity": "Röst för andra högtalare",
+     "house_language_text": "Sentient egna ord på husets språk",
+     "speak_house_language": "Säg inbyggda meningar på husets språk",
+     "media_speakers": "Använd Echos och andra mediaspelare",
+     "media_important_only": "Echos: endast larm och påminnelser",
+     "foresight": "En titt på morgondagen",
+     "foresight_time": "Se framåt på",
+     "sleep_detection": "Vet när huset sover",
+     "sleep_minutes": "Sover efter att ingenting har rört sig",
+     "sleep_ignore_sensors": "Sensorer att ignorera för läggdags",
+     "bedtime_routines": "Sovdagsrutiner",
+     "sleep_actions": "När huset ska sova, gör det",
+     "wake_actions": "När någon är uppe, gör det",
+     "appliances": "Vitvaror att följa",
+     "appliance_announce": "Säg när de är klara",
+     "appliance_watts": "Springer ovanför",
+     "voice_agent": "Huvudsaklig AI-röstagent",
+     "backup_agent": "Reservassistent",
+     "offline_answers": "Svara på vanliga frågor utan AI",
+     "animal_sensors": "Djurens temperatursensorer",
+     "away_lights_on": "Borta ljus",
+     "holiday_mode": "Semesterläge",
+     "holiday_thermostats": "Termostater att stänga av på semestern",
+     "holiday_frost": "Frostskyddstemperatur",
+     "holiday_end_on_return": "Avsluta semesterläget när någon är hemma",
+     "away_people": "Borta när alla dessa är ute",
+     "away_lights": "Lampor att använda",
+     "away_after": "Börja efter att alla har varit ute efter",
+     "animal_low": "För kallt nedanför",
+     "animal_high": "För varmt ovan",
+     "hutch_check": "Kvällskoll av djurburen",
+     "hutch_spot": "Hutchens kameraplats",
+     "cat_watch": "Nattkattvakt",
+     "cat_sensors": "Kattsensorer",
+     "cat_loud": "Säg det direkt på natten",
+     "rain_warnings": "Regnvarningar",
+     "rain_entities": "Fönster och dörrar att titta på",
+     "self_test": "Självtest",
+     "self_test_household": "Hushållsfrågor i självtestet",
+     "screen": "Använd surfplattans skärm",
+     "screen_actions": "När något dyker upp",
+     "screen_clear_actions": "När allt är klart",
+     "conversation_sessions": "Konversationssessioner",
+     "room_conversation_handoff": "Överlämning av samtal från rum till rum",
+     "verified_bedtime": "Verifierad läggdags nere",
+     "verified_bedtime_lights": "Godnattlampor på nedervåningen",
+     "verified_bedtime_contacts": "Nedervåningen läggdags öppningskontakter",
+     "session_seconds": "Timeout för sessionsinaktivitet",
+     "guarded_control": "Påtvingad röstbekräftelse",
+     "routine_verify": "Kontrollera att rutinerna fungerade",
+     "voice_unlock": "Tillåt upplåsning med röst",
+     "voice_undo": "Ångra de senaste ljusändringarna",
+     "evidence_awareness": "Förklara bevis och osäkerhet",
+     "security_incidents": "Gruppsäkerhetsincidenter",
+     "incident_front": "Framsidan av huset",
+     "live_voice_check": "Röstkontroll live",
+     "speech_delivery_history": "Leveranshistorik för högtalare",
+     "alexa_tts_only": "Använd endast TTS på Alexa",
+     "update_checker": "Sök efter Sentient-uppdateringar",
+     "contextual_followups": "Kopplade uppföljningar och korrigeringar",
+     "conversation_recovery": "Konversationsavbokning och försiktig återhämtning",
+     "automatic_language": "Automatiskt språkstöd",
+     "voice_language": "Tal och samtalsspråk",
+     "remember_language_phrases": "Kom ihåg vanliga språkfraser",
+     "stream_voice_replies": "Tala röstsvar när de skrivs (prov)",
+     "voice_timing_diagnostics": "Röstsvarstidsdiagnostik",
+     "reliability_log": "Notera var rösten blir fel",
+     "unified_evidence": "Enhetlig hushållsbevissökning",
+     "specific_clarification": "Specifika frågor om enhet och värde",
+     "action_recovery": "Enhetsresultat och försiktig återhämtning",
+     "recheck_unconfirmed": "Titta igen på ändringar som inte rapporterade tillbaka",
+     "speech_failure_notification": "Meddela om högtalarleveransfel",
+     "recent_followup_context": "Korta uppföljningar efter ett färskt vaknaord",
+     "conversation_cues": "Förstå sign-offs, korrigeringar och förändringar av ämne",
+     "vary_replies": "Säg saker olika varje gång",
+     "behaviour_explanations": "Förklara lyssnande och handlingsbeslut",
+     "current_house_context": "Nuvarande huskontext",
+     "moment_awareness": "Medvetenhet om ögonblicket",
+     "room_memory": "Korttidsminne per rum",
+     "know_people": "Vet vem som förmodligen pratar",
+     "instant_answers": "Omedelbara svar",
+     "capability_awareness": "Vet vad huset kan göra",
+     "house_context_entities": "Ytterligare kontextenheter",
+     "house_context_updates": "Berätta när önskad uppvärmning uppnås",
+     "security_event_evidence": "Länka säkerhetsvarningar till Frigate-händelser",
+     "security_event_zones": "Vilka kamerahändelser som är listade",
+     "security_event_hidden_zones": "Zoner vars händelser inte är listade",
+     "security_coverage": "Förklara luckor i kameratäckning",
+     "frigate_pipeline_health": "Visa Frigate pipeline hälsa",
+     "security_conversation_context": "Behåll säkerhetshändelsen i konversationen",
+     "security_event_feedback": "Spela in feedback om kamerahändelser",
+     "share_clip_analysis": "Återanvänd matchande klippanalyser",
+     "heating_graph": "Temperaturdiagram på värmekortet",
+     "heating_revert": "Återgå till schemat efter byte för hand",
+     "window_heating": "Stäng av ett rums värmare medan dess fönster är öppet",
+     "window_heating_minutes": "Minuter ett fönster är öppet innan man agerar",
+     "rooms_view": "Rum i ett ögonkast (Flik Hus och översikt)",
+     "outdoor_areas": "Utomhusområden",
+     "knowledge_card": "VAD JAG VET-kort på fliken Mind",
+     "day_chart": "DAGEN SÅ HITTA diagram på översikten",
+     "house_ledger": "Husets logg",
+     "unexplained_changes": "Nämn oförklarade förändringar",
+     "unexplained_entities": "Enheter att se efter oförklarliga förändringar",
+     "expectations": "Förväntningar och överraskning",
+     "surprise_gating": "Hoppa över kommentarer om vad som är vanligt",
+     "situations": "Berätta för rösten vad som händer nu",
+     "beliefs": "Forma och testa övertygelser",
+     "learn_reactions": "Lär dig av reaktionerna",
+     "ai_case_memory": "Spara AI-samtal (caseminne)",
+     "memory_tags": "Återkalla efter mening",
+     "memory_upkeep": "Ett minne som behåller sig själv",
+     "watch_actions": "Klockor och påminnelser kan agera",
+     "memory_time": "Minne som förstår tid",
+     "who_where": "Vet vem som är var",
+     "big_plans": "Planer för stora önskemål",
+     "self_grading": "Betygsätt sina egna svar",
+     "voice_speed_watchdog": "Rösthastighetsvakthund",
+     "voice_speed_restart": "Starta om en långsam högtalare av sig själv",
+     "incident_stages": "Stadier av säkerhetsincidenter",
+     "cognitive_shadow": "Jämför säkerhetsincidenter (testning)",
+     "cognitive_decides": "Låt den kognitiva kärnan bestämma händelsestadier när den har förtjänat det",
+     "cognitive_quiet_heads_up": "Endast testning: utvärdera heads-up-beslut på natten (ingen varningsdämpning)",
+     "weather_warnings": "Varningar för väder och översvämningar",
+     "warnings_country": "Land",
+     "warnings_region": "Region (valfritt)",
+     "warnings_speak": "Säg allvarliga varningar",
+     "email_read": "Skrivskyddad e-post",
+     "calendar_clashes": "Kalenderkrockar",
+     "security_audit": "Säkerhetskontroll",
+     "automation_builder": "Bygg automatiseringar",
+     "pronounce_names": "Säg namn som de uttalas",
+     "pronunciations": "Uttal (ett per rad)",
+     "health_duplicates": "Spot-enheter listade två gånger",
+     "manuals_local_ocr": "Läs skannade PDF-sidor med lokal OCR",
+     "memory_semantic_enabled": "Lokal semantisk minnesrankning",
+     "memory_semantic_url": "Lokal inbäddningsserveradress",
+     "memory_semantic_model": "Lokal inbäddningsmodell",
+     "ai_routing_enabled": "Välj automatiskt billigare AI för textuppgifter",
+     "ai_routing_alternative": "Alternativ AI Task-enhet",
+     "ai_routing_primary_cost": "Vanlig AI uppskattad kostnad per samtal",
+     "ai_routing_alternative_cost": "Alternativ AI uppskattad kostnad per samtal",
+     "ai_routing_max_p95_ms": "Maximal alternativ AI-svarstid (ms)",
+     "heating_energy_sensor": "Värmeenergimätare (kWh)",
+     "heating_measurement_date": "Datum för att jämföra värmeenergianvändning",
+     "heating_energy_price_kwh": "Värmepris per kWh",
+     "autooff_respect_recent_voice": "Låt automatisk avstängning respektera senaste röstkommandon"
+    },
+    "data_description": {
+     "motion_window": "Hur många minuters rörelsehistoria man ska väga upp när man bestämmer var människor är.",
+     "suppress_entities": "e.g. din dörrklockans meddelande, så bakgrundsanmärkningar pratar inte om det.",
+     "busy_entities": "Medan någon av dessa är på (en möteskalender, en fokusomkopplare, en telefon i Stör ej), håller Sentient tillbaka tal som kan vänta, som om det vore tyst. Säkerhetsvarningar och svar du ber om kommer fortfarande fram. Lämna tomt för att stänga av detta.",
+     "prompt_memories": "Hur många minnen ges till röstassistenten framför. Resten går fortfarande att söka.",
+     "pass_through_areas": "Hallar, avsatser och trappor. Att gå igenom dessa räknas för mycket mindre, så en förbipasserande stjäl inte ett meddelande.",
+     "all_occupied": "På: alla som är hemma hör det. Av: endast det mest trafikerade rummet.",
+     "room_tracking": "Av som standard. När en rumsspårare (till exempel Bermudas \"Area\"-sensor för en telefon) säger att någon är i ett rum med en högtalare, sägs saker för \"var än folk är\" där. När ingen spårare vet — telefonen inte syns, ute eller ett rum utan högtalare — används den rörelsebaserade gissningen som tidigare. Används bara för att välja var man ska tala, aldrig för att bestämma om någon är uppe. Ingenting lagras.",
+     "room_trackers": "Sensorer vars tillstånd är rummet något är i, till exempel Bermuda \"Area\"-sensorer (en per telefon eller tagg). Var och en behöver rummet för att matcha ett Home Assistant-område.",
+     "ai_task_entity": "AI-uppgiften som används för kamerautseende, genomgångar, det nattliga tänkandet och morgondagens utseende. Empty använder Home Assistant:s föredragna AI-uppgift.",
+     "camera_cooldown": "En kameraklocka tittar igen som mest så här ofta för att hålla AI-kostnaderna nere.",
+     "fallback_speakers": "Används endast när ingen är i någon annan högtalares rum, e.g. ett vardagsrum du helst inte vill störa.",
+     "daily_ai_limit": "AI-samtal i bakgrunden (kamerakontroller, genomgångar, nattliga funderingar, dörrklockan…) slutar för dagen efter så många, och den använder vanliga ord istället. Frågor du ställer blir fortfarande besvarade. 0 betyder ingen gräns.",
+     "prompt_recent": "Några rader på just nu (sovande, tysta eller tysta timmar, gäster, allt öppet och avläsningar som inte hörts från på timmar så att de inte ges som aktuella), vad har hänt den senaste timmen och var det har varit rörelse, så \"något jag borde veta?\" och \"vad hände just?\" besvaras direkt. Gratis: inga extra AI-samtal.",
+     "rules": "\"När detta händer, gör det\" regler (sidan Regler), och rösten kan göra dem: den läser regeln tillbaka och sparar den först efter ett ja. Regler kan aldrig aktivera, avaktivera eller låsa upp någonting. Av: inga regler körs.",
+     "relevant_memories": "När det väl finns fler minnen än vad som passar i röstens sammanhang får den de som delar ord med frågan, sedan den nyaste. Gratis, ingen AI. Av: alltid det nyaste.",
+     "look_cache_minutes": "Samma fråga till samma kamera inom denna tid får det sista svaret istället för en ny AI-look. 0 tittar alltid igen.",
+     "camera_prefilter": "Kamerakontroller och klockor jämför en liten bild först (på den här maskinen, gratis) och fråga bara AI:n när kameran — eller dess plats — ser annorlunda ut än den senaste titten.",
+     "budget_drive": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen.",
+     "budget_noticing": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen.",
+     "budget_cameras": "Egen dagpenning inom den totala gränsen. 0 betyder att den bara delar den totala gränsen. Säkerhet, dörrklockan och frågor du ställer hålls aldrig tillbaka.",
+     "routine_evidence": "Erbjudanden att ta över en rutin säger hur ofta det hände, e.g. '4 av de senaste 4 helgdagarna'.",
+     "notice_entities": "När dessa ändras avgör AI om det är värt att säga något (eller fråga). e.g. tvättmaskin, dörrar, väder, papperskorgar.",
+     "remark_repeat_hours": "Samma sak märkt (\"Kannalen har kokat färdigt.\") sägs inte igen så länge. 0: ingen gräns.",
+     "chattiness": "Begränsar anmärkningar per timme: tyst 2, normal 4, pratsam 8. Av slutar märka.",
+     "conversation_style": "Kortfattat: korta, raka svar. Naturligt: ​​kommandon förblir korta, men frågor och chatt får några naturliga meningar och en följdfråga när en person skulle ställa en, vilket gör att mikrofonen lyssnar.",
+     "carry_on_minutes": "Att säga det vakna ordet igen kort efter att ha pratat fortsätter med samma konversation från samma talare, så \"och på övervåningen?\" fortfarande vettigt. 0 stänger av detta; Home Assistant glömmer en konversation efter fem tysta minuter.",
+     "focused_tools": "Ge rösten endast Sentients verktyg som passar vad som efterfrågades (kameror, värme, påminnelser…), plus minne och säkerhet. Ett mindre urval gör billigare modeller snabbare och mer exakta. Allt som inte tydligt matchar får fortfarande alla verktyg.",
+     "ask_later": "När någon nämner något som är på gång (en resa, en match, veterinären) kan rösten komma ihåg att fråga hur det gick nästa gång någon pratar med den — en gång, aldrig under lugna timmar eller med gäster i, och aldrig om något privat. Det talar aldrig ur det blå. Att stänga av detta glömmer allt som väntar på att bli tillfrågat.",
+     "put_right": "När du säger \"nej, den andra\" eller \"inte det ljuset, lampan\", växlar rösten tillbaka vad den just har slagit på (på eller av, inom några minuter) och gör förfrågan igen med bara den korrigerade delen — du behöver inte säga allt igen. Om du stänger av detta lämnas det direkt till röstagenten.",
+     "music": "Med Music Assistant inställt (eller Musik via Alexa på): \"spela något lugnt i köket\" väljer du från dina egna spellistor och radiostationer och spelar det på Music Assistant-spelaren i det rummet (eller frågar rummets Echo) — på nattvolymen under tysta timmar, och inte i ett rum i sin egen tysta tid om du inte är i det. Av: inget musikverktyg.",
+     "music_alexa": "Utan musikassistent: \"spela något lugnt i köket\" ber Echo i det rummet (Alexa Media Player) att spela det från tjänsten nedan, med namn — en spellista, en artist, en låt eller en stämning — på nattvolymen under tysta timmar, och inte i ett rum i sin egen tysta tid om du inte är i den. Tjänsten måste länkas i Alexa-appen. Av: Echos uppmanas aldrig att spela musik.",
+     "music_alexa_service": "Vilken tjänst Echos spelar från. Spotify fungerar med ett gratiskonto, men Alexa kan blanda liknande musik istället för den exakta låten; Premium spelar precis vad som efterfrågas.",
+     "house_rules": "Enkla meningar varje röst måste följa, en per rad, e.g. \"Säg aldrig att huset är tomt.'",
+     "no_security_offers": "Ta ur röstens svar alla meningar som erbjuder att aktivera eller avaktivera larmet eller låsa upp en dörr (\"Ska jag beväpna den?\") — även när det talas som det är skrivet. Svar till någon som bett om att aktivera, avaktivera, låsa eller låsa upp lämnas ifred, så deras bekräftelse efterfrågas fortfarande. Av som standard.",
+     "learn_entities": "Ljus, strömbrytare, fläktar och persienner som människor använder för hand. Varje kväll de senaste två veckorna kontrolleras för saker som gjorts vid ungefär samma tid de flesta dagar, och för saker som gjorts direkt efter något annat (en dörr som öppnas, en annan lampa tänds).",
+     "learn_anchors": "En vana som håller tiden med solnedgången, soluppgången eller att gå upp snarare än klockan (lampan i skymningen, persiennerna vid soluppgången, vattenkokaren efter att ha stigit upp) lärs in på det sättet, så en rutin som huset gör för dig rör sig med årstiderna. Att gå upp kräver en sömn- och vakenmiljö. Av: allt lärs mot klockan, som tidigare.",
+     "offer_together": "När några saker brukar hända vid ungefär samma tidpunkt på samma dagar (lampan tänd, persiennerna stängda, TV:n på runt 20.00), erbjuds de en gång, tillsammans — ett ja och huset gör allt. Av: var och en erbjuds för sig.",
+     "trust_lights": "När en rutin du har låtit huset ta över tänds ett ljus: bara gör det, säg det först, eller fråga och gör det bara vid ett ja (ingenting händer om ingen svarar).",
+     "trust_switches": "Samma sak för strömbrytare, smarta kontakter och fläktar.",
+     "trust_covers": "Samma sak för persienner och gardiner. Garageportar och portar frågar alltid.",
+     "trust_heating": "Samma sak för att värma upp värmen innan folk är uppe. Att fråga först betyder att det inte kan värmas upp medan alla sover.",
+     "link_triggers": "Valfritt: fler saker som kan skapa en vana (TV:n startar, en sängsensor…). Dörrar, fönster och de lärda ljusen beaktas alltid.",
+     "suggest_routines": "En gång per ny rutin, under dagen när någon är hemma, fråga om huset ska göra det från och med nu.",
+     "prove_routines": "En nyinlärd vana bevakas först: varje dag efter att den lärts in, kontrollerar Sentient om en person verkligen gjorde det inom 45 minuter från sin vanliga tid. Det erbjuds bara när det har varit rätt på minst 3 av 4 dagar det gällde (vardagar, helger eller varje dag). Inställningar › Inlärning visar hur det går för var och en. Av: vanor erbjuds så snart de har lärt sig.",
+     "routine_fading": "På: när en rutin som huset gör för dig redan var klar när den skulle beräknas 5 dagar om två veckor (någon gör det själv nu), frågar Sentient en gång om den ska behållas och slutar om du säger nej. Endast datumen sparas, högst två veckor. Av: rutiner huset gör behålls tills du säger något annat.",
+     "door_camera": "Tittade på en gång när det ringer på dörren, för att logga vem som kom.",
+     "door_triggers": "Dörrklocksknappen (en binär sensor eller händelse), eller något annat som betyder att någon står vid dörren.",
+     "announce_visitors": "Av håller den i en tyst logg som röstassistenter kan svara från.",
+     "faces": "När Frigate (eller dörrklockan) känner igen någon går den på tidslinjen och rösten kan svara \"har Sam kommit hem?\". Namn tillkännages eller gissas aldrig — sägs bara när någon frågar. Av som standard.",
+     "face_people": "Namn som Frigate känner till dem. Tom: alla som den känner igen.",
+     "face_teach": "Hjälper Frigate:s ansiktsigenkänning att bli bättre. När någon lämnar en vald kamera och Frigate höll ett ansikte som den inte kunde namnge, får telefonerna ett privat \"Vem är det här?\" med ansiktet och knappar för hushållet (telefoner visar högst tre). Att knacka på en lär Frigate; \"Någon annan…\" tar ett inskrivet namn för någon ny, eller \"nej\" för att ta bort en främlings ansikte. Aldrig talat, aldrig på surfplattor, högst var tionde minut. Behöver Frigate ansiktsigenkänning på och telefoner valda för aviseringar. Av som standard.",
+     "face_teach_cameras": "Närbildskameror där ansikten är tydliga, e.g. dörrklockan. Tom: dörrkameran.",
+     "face_cameras": "Tom: varje kamera. Välj de närbilder (dörrklockan, ytterdörren) så att en trafikerad gata inte kan ge falska namn.",
+     "face_forget_hours": "Varje natt, ansikten Frigate bevaras men ingen namngiven — främlingar, mestadels — raderas från Frigate när de är så gamla. Namngivna ansikten behålls. 0: lämna det till Frigate (det behåller sina sista 200).",
+     "clip_watch": "När Frigate avslutar en händelse på en vald kamera, tittar AI på den inspelningssträckan en gång och en mening går på tidslinjen och Sentient-sidan: \"Gate 14:10 — en man gick en hund förbi\". Rösten svarar \"vad hände vid porten?\" från dem utan ett annat AI-anrop. Aldrig talat. Av som standard.",
+     "clip_cameras": "Börja med en, e.g. porten.",
+     "clip_scope": "Frigate:s varningar är personer i de zoner du markerat som obligatoriskt — det tystaste valet för en livlig gata. Om en kamera aldrig avger varningar (inga obligatoriska zoner inställda i Frigate), välj \"Allt i en zon\" — klippkortet visar vad som hoppades över och varför.",
+     "clip_when": "Titta bara vid dessa tider. Borta betyder att alla som valts under Bortaljus är ute.",
+     "clip_notify": "Går bara till telefonerna, med en bild och en uppspelningsknapp.",
+     "clip_source": "Frigate:s egna AI-granskningssammanfattningar behöver slås på i Frigate; då görs inget AI-anrop här.",
+     "clip_whose": "I samma AI-samtal ingår hushållets ansiktsfoton från Frigate:s ansiktsbibliotek (och utseendena nedan), och det namnger någon bara när det tydligt är dem — \"förmodligen Sam\". Främlingar nämns aldrig. Bara sagt på frågan, aldrig meddelat.",
+     "clip_looks": "En per rad, e.g. \"Sam: röd cykelhjälm och en gul rock, på en cykel\". Hjälper när en hjälm eller huva döljer ansiktet.",
+     "budget_clips": "Räknas också mot den totala dagliga AI-gränsen. 0: ingen egen gräns.",
+     "clip_days": "Sammanfattningar är bara ord och raderas sedan.",
+     "clip_keep": "Av: varje klipp raderas så snart det har setts.",
+     "parcel_alerts": "Efter en leverans, titta igen några minuter senare och säg om ett paket har lämnats.",
+     "doorstep_sensors": "Tillval: personsensorer för tröskeln eller trädgården (e.g. en Frigate-zons personbeläggning). När ett besök där avslutas utan ringklocka, kontrolleras dörrkameran en gång för ett kvarlämnat paket eller post.",
+     "zone_visits": "Använder tröskelsensorerna ovan (e.g. en Frigate-zons personbeläggning). När ingen ringer behandlas någon som når zonen som en besökare: dörrkameran tittas på och det meddelas. Vad som än kommer först, klockan eller zonen, är besöket och det andra ignoreras. Av: endast klockan startar ett besök.",
+     "zone_door_sensors": "Tillval: ytterdörrens öppna/stängda sensor. Om dörren öppnades (eller är öppen) under den sista och en halv minuten, ignoreras zonen, eftersom det är någon som lämnar eller kommer hem.",
+     "face_sensor": "Tillval: en ansiktsigenkänningssensor vars tillstånd är det namn den just kände igen (e.g. från Frigate). Används i loggen och i meddelandet om det är på.",
+     "sidebar_panel": "En sida i sidofältet som visar minnen, rutiner, klockor, besökare och vad som har sagts.",
+     "page_admin_only": "Döljer sidan och vad den läser för alla utom administratörer. Off håller den öppen för hela hushållet. Att slå på den raderar ingenting.",
+     "custom_pages": "På: flikarna Översikt, Hus, Sinne och Säkerhet använder din sparade layout, och administratörer får REDIGERA SIDLAYOUT här för att flytta kort mellan kolumner, dölja dem, visa dem igen eller återställa en flik. Det finns ingen redigeringsknapp på själva flikarna, bara när du redigerar. Layouten sparas i Sentient, så varje skärm visar detsamma. Av: flikarna går tillbaka till standardlayouten; din sparade layout behålls tills du slår på den igen.",
+     "confirm_kinds": "Ber AI:n att beskriva dessa åtgärder och vänta på ett ja. Det här är en snabbinstruktion, inte ett påtvingat åtgärdsblock: din konversationsagent styr enhetens exekvering. Att stänga av saker behöver inte frågas. Tom: ingen extra bekräftelseinstruktion. För påtvingade kontroller, aktivera bevakad kontroll med dess nödvändiga agentinställning.",
+     "auto_backup": "Söndag kväll, en säkerhetskopia av minnen, fläckar, rutiner, rörelseljus, tystnad och inställningar, sparad i konfigurationsmappen under sentient_backups.",
+     "backup_keep": "Äldre raderas.",
+     "suggestions": "Saker Sentient skulle kunna använda men inte är — en ny högtalare, en effektsensor på tvättmaskinen, en hutch-termometer — erbjuds en rad i taget. Ja lägger till det; det betyder inte att det aldrig erbjuds igen. Gratis, ingen AI.",
+     "whats_new": "Efter att Sentient har uppdaterats, säger ett kort kort på Sentient-sidan vad som är nytt, i vanliga ord, tills du trycker på GOT IT.",
+     "simple_settings": "Inställningslistan visar det väsentliga, med VISA ALLT för de valfria funktionerna. Nya installationer börjar på detta sätt. Ändrar ingenting om vad Sentient gör.",
+     "chat_agent": "Vem svarar på sidans fråga-ruta — välj en röstagent som har kryssat för Sentient. Empty använder din föredragna Assist-pipeline.",
+     "health_ignore": "Entiteter (och deras enheter) som inte borde räknas som problem, e.g. något som är menat att vara avstängt.",
+     "hide_substreams": "Utelämnar HD- och SD-strömmar, skärmdumpar och kartor när man räknar och kontrollerar kameror, så en dörrklocka är inte flera kameror. Ingenting raderas från Home Assistant.",
+     "ignore_cameras": "Kameror Sentient ska inte räknas, kontrollera eller erbjuda, till exempel en surfplattas kamera. De stannar i Home Assistant orörda; välj igen att ta tillbaka en.",
+     "never_entities": "Sentient växlar, dämpar eller ändrar aldrig dessa: inte i regler, rutiner, erbjudanden, automatisk avstängning, bort- eller rörelseljus, ljusshower, värme- eller bevakad röststyrning, och rösten uppmanas att lämna dem ifred. Den kan fortfarande läsa dem och prata om dem. Allt som skulle förändra en hoppas över och noteras.",
+     "self_check": "Varje natt ser den tillbaka på sina egna rekord — vad den sa och hur det gick ner, högtalare som misslyckades, saker som hölls tillbaka, frågor som ställdes om och om igen, AI-mätaren — och noterar vad den märker om sig själv, med siffrorna bakom sig. Ingen AI. Fråga \"har du irriterat oss?\" eller \"vad har du insett?\".",
+     "learn_corrections": "När någon ändrar tillbaka något som huset gjorde för ett ögonblick sedan (ett ljus det tände, en rutin som det tog över), noterar den korrigeringen. En rutin som du fortsätter att ångra lämnas tillbaka (stängs av) och tidslinjen säger det. Om du stänger av detta stoppar tittaren; redan noterade korrigeringar behålls.",
+     "normal_day": "Jämför idag med vad som är vanligt och noterar det på Mind-sidan: till exempel ingen uppe än när någon brukar vara vid det här laget. Vanliga regler, ingenting sägs högt och ingenting växlas. Om du stänger av detta stoppar kontrollen och döljer vad den hittade.",
+     "thoughts": "En kort förstapersonslista på Mind-sidan (\"folk fortsätter att släcka landningsljuset, så jag har slutat\"), plus att gissa vilket rum någon går till härnäst och kolla hur ofta det var rätt. Ingen AI. Att stänga av detta stoppar gissningen och döljer listan; vad den har lärt sig bevaras.",
+     "share_learning": "En gång på kvällen (17:00–20:30), när någon är på väg och det inte är tyst, säger den en sak som den har lärt sig eller ändrat sig om under de senaste två dagarna: en rutin som den lämnade tillbaka, ett faktum den uppdaterade, en vana den upptäckte, hur väl den nu gissar vart du går härnäst. Aldrig samma sak två gånger. Om du stänger av detta förblir allt på Mind-sidan men tyst.",
+     "self_adjust": "När självkontrollen hittar en sorts anmärkning fortsätter huset att tysta, tysta det lite (samma som en tumme ner; det bleknar igen). Rör aldrig säkerhet, säkerhet eller något som den kontrollerar.",
+     "proposals": "När självkontrollen upptäcker att något blev fel, föreslå en liten ändring på Mind-sidan — färre kommentarer, inte upprepa en så ofta, en sektion läggs till i genomgången, en högre AI-gräns — med anledningen. Ingenting förändras förrän du säger ja; ett nej frågas inte igen på en månad. Om du stänger av detta raderas alla vänteförslag.",
+     "privacy_log": "Varje AI-samtal och webbsökning Sentient gör noteras — vilken funktion, hur många bilder, klipp eller dokument och vilken tjänst — aldrig vad som sades eller visades. Se det under Hjärna & system → Det som lämnar huset, med en knapp för att glömma de senaste 48 timmarna. Om du stänger av detta rensas posten.",
+     "goals": "Låt rösten sätta upp mål över dagar eller veckor (\"hjälp oss att använda mindre värme den här månaden\"). Ett mål kan följa en sensor: den jämför varje dag med den vanliga veckan innan och nämner framsteg när den passar. Inget förändras i huset.",
+     "manuals": "Svara på frågor från dokumenten i mappen nedan (ett AI-anrop vardera). Av: dokumenten lämnas ifred.",
+     "manuals_folder": "En mapp i Home Assistant’s media (e.g. manuals = media/manuals). Namnge varje fil efter vad den är till för, e.g. \"Air purifier.pdf\".",
+     "manuals_local_text": "När inget filnamn matchar frågan, leta efter det rätta i .txt- och .md-dokumenten, och om AI inte kan nås, läs upp det närmaste avsnittet istället för ingenting. Ingen AI används för heller. Av: endast filnamn matchas.",
+     "manuals_pages": "På: varje PDF (och textdokument) läses en gång, sida för sida, i Sentients egen databas — på den här datorn, utan AI. En fråga skickar sedan AI endast de få sidor som matchar, inte hela dokumentet, så det kostar mycket mindre och svaret säger vilken sida den är på (\"det är på sidan 14\"). Ett dokument vars namn inte stämmer överens kan fortfarande hittas av vad som finns i det, och om AI:n inte kan nås läses den närmaste passagen upp med sin sida. Skannade PDF-filer (bilder på sidor) läses fortfarande hela av AI. Av: dokument läses hela varje gång och det som lästs rensas.",
+     "games": "Spela röststyrda berättelsespel, till exempel ett escape-the-flat-äventyr med assistenterna som spelmästare. Varje spel har sitt eget sparade minne (var spelarna är, vad de bär, vad de hittade och valde) över sessioner och assistenter. Det visas bara för en röst medan ett spel spelas, och spelmästaren kan läsa husets vanliga minne men aldrig ändra det. Öppna Inställningar → Berättelsespel för att skriva spel och redigera deras minne. Av: spelverktygen och sidan är dolda; sparade spel bevaras, inte rensas.",
+     "voice_id": "Använd den lokala högtalarmatchningen för denna begäran. För att låta AI-modellen anpassa svar eller tillskriva nya minnen efter namn, aktivera också Dela matchade namn med konversationsagenten i röstigenkänning. Det separata lokala “Vem talar?” svar ställs in i röstigenkänning.",
+     "voice_id_unknown": "När en Assist-högtalare inte har någon röstmatchning, håll hushållshistoriken och sparade minnen privata för den svängen. Av: oöverträffade röster behandlas som vanligt.",
+     "speaker_memories": "Med röstigenkänning igång: en matchad röst får sina egna minnen (“Alex: gillar te”) först — alltid inkluderat, även när nyare hushållsfakta skulle fylla listan — och aldrig någon annans personliga; en röst som den inte kan matcha får inget av någons personliga minnen. Hushållsfakta delas alltid. Inskrivna förfrågningar och Echos är oförändrade. Av som standard.",
+     "books": "Spela ljudböcker och läs e-böcker högt och behåll varje rums plats. \"Läs min bok\", \"fortsätt med boken\", \"läs i 20 minuter\", \"sluta\", \"nästa kapitel\", \"gå tillbaka lite\". Ingen AI (förutom en valfri sammanfattning). På en Echo: e-böcker en passage per begäran genom Alexa-färdigheten; ljudböcker behöver en annan högtalare.",
+     "books_folder": "En mapp i Home Assistant:s media (böcker = media/böcker). DRM-fria .epub eller .txt e-böcker; ljudböcker som en .mp3/.m4b/.m4a-fil, eller en mapp med delar uppkallad efter boken.",
+     "reading_tts": "En annan text-till-tal-tjänst bara för böcker och berättelser — Gemini eller ElevenLabs röster är ofta bättre berättare. Lämna det tomt för att läsa med den vanliga rösten. Echos använder alltid Alexas egen röst.",
+     "reading_voice": "Välj rösten från den tjänsten. Använd PROVA RÖSTAN nedan för att höra den på standardhögtalaren innan du sparar.",
+     "read_ahead": "Med en läsröst görs nästa del av berättelsen medan den här delen läses, så en långsam röst (en fri eller molnig) lämnar inte ett mellanrum mellan delarna. Använder den rösten lite tidigare, aldrig oftare.",
+     "recipes": "\"Låt oss göra lasagnen\": ingredienserna, sedan ett steg i taget — \"nästa\", \"upprepa det\", \"gå tillbaka\", \"vad är nästa?\" — kom ihåg steget per talare. \"Gör det för 6\" skalar det; ingredienser kan hamna på inköpslistan.",
+     "recipes_folder": "En mapp i Home Assistants media (recept = media/recept) med PDF-filer, foton, text eller Markdown. Var och en städas i steg av ett AI-anrop första gången, sedan behålls. Mealie används automatiskt om dess integration är inställd.",
+     "recipes_list": "Där \"lägg till ingredienserna till inköpslistan\" placerar dem. Tom: listan med \"shopping\" i namnet.",
+     "voice_lists": "På: \"kryss av mjölk\", \"vad står på inköpslistan?\", \"ta bort soppåsar\" — föremål hittas hur de än sägs (i alla fall, plural, den enda mjölken på listan), två möjliga matchningar frågas om, och Sentient säger bara att det är gjort när listan visar det. Använder listor som exponeras för Assist (alla listor om ingen är det) och inköpslistan om inte någon annan har namnet. Ingen egen AI. Av: rösten använder Home Assistants egna listkommandon. Ingenting lagras.",
+     "ready_tonight": "\"Se till att allt är klart för ikväll\": kontrollerar dörrar, fönster och lås Assisten kan se, släcker endast lamporna som väljs nedan, tittar på värmen och säger vad som fortfarande är öppet, olåst, kvar på eller inte kan bekräftas. Lås, larm och uppvärmning byts aldrig, och larmet erbjuds aldrig. Ingen AI-röst kan fortfarande erbjudas, men det finns ingen egen röst.",
+     "ready_tonight_lights": "De enda lamporna \"redo för ikväll\" kan släckas. Var och en kontrolleras efteråt. Tom: inga lampor är släckta, bara rapporterade.",
+     "ready_tonight_follow": "När något fortfarande är öppet eller olåst, håll ett öga på det i upp till tre timmar och säg en gång, på högtalaren du frågade, när allt är klart. Fortsätter efter omstart.",
+     "tandoor_url": "Valfritt: din Tandoor Recipes-adress, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Valfritt: en API-token från Tandoor (Inställningar → API). Förvaras endast i Home Assistant.",
+     "second_opinion_ai": "Valfritt: en större modell frågade bara när den vanliga säger att bilden är för mörk eller otydlig för att vara säker. Räknas mot den dagliga gränsen.",
+     "smart_ai_task": "Frivillig. Används endast för kamerasäkerhetsutseende och övernattning, där en smartare modell hjälper mest. Tom: den vanliga AI, så kostnaderna förändras inte.",
+     "event_clips": "Hämtar Frigates korta klipp av en händelse och låter AI titta på det, så att det kan säga vad som faktiskt hände ('lämnade ett paket och gick'). Används efter en kamerasäkerhetslarm och på frågan \"vad hände vid dörren?\". Behöver Frigate integration. Ett AI-anrop per klipp. Av som standard.",
+     "notify_targets": "Meddela enheter, e.g. Home Assistant-appen på varje telefon eller klocka.",
+     "notify_when": "Varje typ skickas högst en gång på tio minuter.",
+     "phone_buttons": "Genom medföljande app: vid dörren — kamerabilden och en Visa kamera-knapp; påminnelser — Snooze 10 min och Klar; frågor — när huset vill fråga något (ett erbjudande, \"vill jag göra det åt dig?\", eller fråga-först innan du gör något) och ingen är i närheten av en högtalare, frågar det i telefonerna med Ja och Nej (inte under tysta timmar). Tom: vanliga meddelanden som nu.",
+     "phone_apps": "e.g. notify.mobile_app_pixel_8. Tom: den kompletterande appen bakom varje telefon vald ovan (notify.my_phone → mobile_app_my_phone) — aldrig surfplattorna.",
+     "bins_check": "Kvällen före hämtning tittar en kamera på var soporna går ut. Säger bara något om de inte är ute: \"Återvinning imorgon, och soporna är inte ute än.\" Tittar en gång till en timme senare.",
+     "bins_calendar": "Tom: en sophämtningskalender från briefingkalendrarna.",
+     "bins_spot": "Ritat på fliken Spots där soporna går ut, e.g. ' papperskorgar'.",
+     "bins_time": "Kvällen före hämtning, innan tysta timmar.",
+     "chime": "Av: tillkännagivanden och frågor börjar direkt, utan talarens ringsignal.",
+     "welcome_home": "När någon kommer tillbaka efter 20 minuter eller mer, säg \"Välkommen tillbaka\" i rummet de är i — plus vad som är värt att veta från när de var ute (besökare, saker som slutade, problem). Aldrig i tysta timmar, tyst eller gästläge.",
+     "welcome_people": "Tom betyder alla med en personpost. Du kan välja telefoner (enhetsspårare) istället — praktiskt när en person är inställd på att alltid vara hemma.",
+     "welcome_min_away": "Hur länge någon måste ha varit ute innan de välkomnas tillbaka, på några minuter.",
+     "welcome_until": "Tysta timmar håller normalt välkomnandet tillbaka. Ställ in en tid och alla som kommer på kvällen innan det är fortfarande välkomna. Lämna tomt för att hålla tysta timmar som de är.",
+     "speak_volume": "Valfritt: högtalarens volym medan Sentient pratar, ställ tillbaka efteråt. Tom lämnar den ifred.",
+     "night_volume": "Valfritt: en tystare nivå för allt som sägs under tysta timmar (endast brådskande meddelanden).",
+     "duck_media": "Allt som spelas i samma rum stängs av medan Sentient pratar och ställs sedan tillbaka.",
+     "critical_alerts": "Rök-, kolmonoxid-, gas-, vattenläckage- och sabotagesensorer hittas automatiskt, och så går larmet. Sägs på varje högtalare, under tysta timmar, tyst och gästläge, upprepas två gånger medan den fortfarande är på och skickas till telefoner.",
+     "energy_insight": "Dagens användning av enheterna på energiinstrumentpanelen jämfört med den senaste veckan: energikortet, informationsdelen, röstverktyget och anteckningar om ovanlig användning. Off gömmer och stoppar allt.",
+     "energy_price": "Valfritt: din enhetspris per kWh, för att visa dagens kostnad för energiinstrumentpanelens enheter — i pence eller cent (24,5) eller i pund, dollar eller euro (0,245); antingen fungerar.",
+     "energy_currency": "Valutakostnaderna visas i. Tom: Home Assistants egen valuta (Inställningar → System → Allmänt).",
+     "price_entity": "Ditt elpris nu, från din leverantörs integration (Octopus Energy, Nordpool…). Om den visar de kommande kurserna används de; annars lärs det vanliga priset vid varje timme från den senaste veckan. En gång per apparat (tvättmaskin, diskmaskin, torktumlare) frågar den på kvällen om du vill ha en knuff att använda fördröjd start när det är billigast över natten. Tom: av.",
+     "search_hints": "När Voice Satellite LLM Tools (eller Sentients egen sökning) ställs in, får rösten höra att sökverktygen finns där och att de ska användas till allt utanför huset — ord på en högtalare, bilder bara på en surfplatta. Inga egna AI-anrop.",
+     "web_search": "En webbsökning med enbart röst genom din egen SearXNG (till exempel SearXNG-tillägget). Används endast när Voice Satellite LLM Tools webbsökning inte är installerad, så rösten får aldrig två. Av som standard.",
+     "searxng_url": "Till exempel http://localhost:8080 eller tilläggets adress. SearXNG måste tillåta json-formatet (i dess inställningar: sök → format).",
+     "alexa_skill": "Lägger till ingenting förrän en färdighet använder den: peka en Alexa-färdighet (till exempel communityns 'Home Assistant Assist'-färdighet) på 'For Alexa'-agenten, säg sedan “Alexa, fråga” och din färdighet namn. Av som standard.",
+     "alexa_wait": "Alexa lägger på efter cirka 8 sekunder, så svaret måste komma snabbare än så här.",
+     "alexa_late_answers": "När AI:n tar längre tid säger Alexa “Ge mig ett ögonblick” och svaret sägs på samma Echo när det är klart.",
+     "left_open_minutes": "Sagt en gång (då varje halvtimme medan det fortfarande är öppet), inom tysta timmar och hyssar som vanligt. 0 stänger av den.",
+     "leaving_check": "När den sista personen går, går allt öppet eller olåst på tidslinjen och till telefoner (\"vänster öppen\").",
+     "critical_extra": "Allt annat som alltid bör sägas överallt när det slås på, e.g. en panikknapp eller en frys för varm sensor. En larmpanel som går igång ingår alltid.",
+     "heating_entities": "Termostater att lära av. Lämna tomt för alla i huset. Den lär sig hur snabbt var och en värms upp och vilken temperatur den vanligtvis är inställd på.",
+     "preheat": "Starta uppvärmningen tidigt så att den har den vanliga temperaturen när folk normalt går upp. En termostat med eget schema sätts tillbaka på den efteråt, och en som är avstängd lämnas av.",
+     "heating_schedule": "På: uppvärmningstiderna som gjorts på fliken Hus körs (en termostat inställd på en temperatur, eller av, åt gången på valda dagar), och endast på de termostater som valts där. Av: ingen körs och schemat är dolt; tiderna du har sparat sparas och körs igen när detta slås på igen.",
+     "comfort_temp": "Valfritt: temperaturen att värma upp till. Lämna tomt för att använda den som den vanligtvis är inställd på under dagen.",
+     "inside_sensors": "Valfritt: vilka rörelsesensorer betyder att någon är inne. Lämna tomt för att använda de på samma våningar som högtalarna (trädgårds- och kamerasensorer räknas inte). Används för nattvakt och gå upp tider.",
+     "weekly_report": "På söndagskvällar, lägg det som huset lärt sig och märkte den här veckan på tidslinjen (skickas till telefoner om sammanfattningar är).",
+     "night_watch": "Lär sig när varje dörr, grind och fönster normalt öppnas. En öppning i taget som den aldrig brukar göra, utan att någon rör sig inuti först, är en varning. Om någon var inne (som skulle gå till jobbet, säg), noteras det bara.",
+     "night_watch_entities": "Lämna tomt för varje dörr, fönster, port och garageportsensor.",
+     "night_watch_announce": "En ovanlig öppning med ingen uppe sägs direkt, genom tysta timmar, tystnad och gästläge — det kan vara någon som inte borde vara där.",
+     "night_watch_speakers": "Lämna tomt för varje högtalare.",
+     "warm_by_weekdays": "Valfritt: när det ska vara varmt på vardagarna. Lämna tomt för att använda den lärda uppstigningstiden.",
+     "warm_by_weekends": "Valfritt: samma sak för lördagar och söndagar.",
+     "heating_limit": "När någon vrider upp eller slår på en av värmetermostaterna som valts ovan, med rösten eller i appen, sätt tillbaka den efter så här många timmar: en termostat utan schema går tillbaka till hur den var (även av). En termostat i ett värmeschema följer istället schemats egna tider (Retur efter byte: dag och natt), och går sedan till vad schemat vill då. Endast de termostater; 0 (standard) gör det aldrig.",
+     "heating_night_temp": "Där värmeschemat sjunker till när en period slutar, och nattnivån den håller. Schemat stänger aldrig av en termostat. Byt här när du vill (5–28°C).",
+     "heating_revert_day_hours": "Hur lång tid en förändring som görs medan en uppvärmningsperiod pågår lämnas ifred innan schemat tar vid igen.",
+     "heating_revert_night_hours": "Hur länge en ändring som görs utanför uppvärmningsperioderna (inklusive avstängning av uppvärmningen) lämnas ifred. På natten går värmen tillbaka till natttemperaturen, aldrig av.",
+     "personality": "Hur huset låter — i anmärkningar, genomgångar, välkomnande och till varje röstassistent.",
+     "personality_notes": "Valfritt, med dina egna ord, e.g. 'Förtjust i katterna. Retar försiktigt om hur mycket te som görs.'",
+     "style_feedback": "En knapp bredvid tummarna på allt som står: välj Kortare, Vanlig, Mindre fräck, Mer detaljerad eller säg hur. Anteckningarna nedan följs sedan överallt där den talar. Av: ingen knapp och anteckningarna används inte.",
+     "style_notes": "En per rad; läggs till från knappen, och din för att redigera. De senaste 8 används.",
+     "camera_security": "Följ människor från kamera till kamera, och varna för någon i trädgården när grinden och dörrarna inte öppnas, eller någon som går på natten utan att någon är uppe. Varningar sägs högt under tysta timmar om nattvakt gör det.",
+     "camera_security_sensors": "Varje kamerans (eller zonens) personsensor, e.g. Frigate's 'Gate person beläggning'.",
+     "camera_security_inside": "Personen känner av platser bakom grinden eller staketet — trädgården, skjulet. Någon som dyker upp där utan möjlighet att öppna är en varning.",
+     "camera_security_entries": "Porten och dörrarna ska folk komma igenom (e.g. bakporten och bakdörren).",
+     "camera_security_describe": "En AI tittar på kameran för varje varning (en man i en mörk luvtröja som provar skjuldörren').",
+     "security_reasoning": "Innan en kamerasäkerhetslarm sägs högt, titta på larmet, om alla är ute, en ingångsdörr eller grind som öppnades precis innan, inomhusrörelser, Frigate-händelser och hur ofta den kameran redan har larmat. Någon som förmodligen går ut, eller samma kamera igen inom en halvtimme, hålls tyst. Varningen går fortfarande på tidslinjen och till telefoner, med anledningarna. Larmet satt eller alla ut: alltid sagt. Ingen AI. Av som standard.",
+     "party_lights": "Lamporna som hänger med när man inte använder hela huset. Lämna det tomt för att använda rummet för den som frågar (eller säg ett rum: 'disco-läge i vardagsrummet').",
+     "party_style": "Disco: snabba färgbyten. Fest: ljusa färger, korta blekningar. Rainbow: ett färghjul. Chill: långsam, svaga färger. Halloween: flimrande orange, lila och grönt. Jul: röd, grön och varmvit, blinkande.",
+     "party_minutes": "Sedan går varje ljus tillbaka precis som det var. 0 fortsätter tills den stängs av.",
+     "party_whole_house": "Varje ljus som kan dämpas eller ändra färg går med (ljusgrupper, skärmar och bakgrundsbelysning gör det inte). Säg \"disco mode everywhere\" för att göra detta bara en gång.",
+     "party_exclude": "Utelämnad från varje show, även \"överallt\" — surfplattor, en projektor, ett sovrum där någon sover.",
+     "party_sound": "Valfritt: en ljudstyrkasensor i dB, som en rösthögtalares mikrofon genom ESPHome:s sound_level-sensor. Disco, fest, regnbåge och halloween följer sedan musiken — högre är ljusare och varje beat ändrar färg.",
+     "party_show": "Vilka visar får en knapp på översikten. Lämna tomt för ingen; varje show fungerar fortfarande med rösten.",
+     "party_sound_switch": "Valfritt: en omkopplare som gör att ljudstyrkesensorn rapporterar (så att den inte skickar avläsningar hela dagen). Den slås på medan en show följer ljudet och stängs av efteråt. Hittas automatiskt om den är på samma enhet och har \"ljudstyrka\" i sitt namn.",
+     "room_volume": "Högtalare som kan höra rummet (en ljudstyrkasensor på samma enhet) lyssnar på en sekund först och talar högre över en TV eller prat. Inte under lugna timmar.",
+     "follow_you": "Något som sägs där ingen var på väg — eller höll tillbaka i tysta timmar — förs vidare nästa gång någon går in i ett rum med en högtalare.",
+     "follow_minutes": "Efter denna långa tid släpps ett ohört meddelande.",
+     "conversation_memory": "Håller en kort journal över vad som frågades och sas på varje högtalare, så att ett annat rum kan fortsätta där man slutade. Förvaras två veckor; privat medan gästerna är inne.",
+     "follow_ups": "Röster kan ställa in uppföljningar (\"Jag ska kontrollera att rummet är uppvärmt om en timme\") och en klocka som tar slut utan att se något stängs av högt.",
+     "curiosity": "Högst en gång om dagen, när någon är på väg, frågar den om något den inte kan förklara — en vanlig uppringare, ett mönster den märkte över en natt — och kommer ihåg svaret.",
+     "reflection": "Ett AI-samtal varje natt över dagens logg och konversationer: nya saker värda att komma ihåg, en tanke eller två för morgonen och en fråga att ställa.",
+     "reflection_time": "Bäst på småtimmarna.",
+     "drive_spot": "Kamerapunkten som visar enheten (rita den på fliken Spots).",
+     "drive_camera": "Behövs bara om mer än en kamera har en plats med det namnet.",
+     "drive_triggers": "Rörelse- eller bilsensorer som ser körningen. Tom: kamerans egna rörelse- och bilsensorer.",
+     "camera_wake": "Åtgärder som väcker en kamera från vänteläge (en väcknings- eller uppdateringsknapp, en strömbrytare, ett skript). {{ camera }} är kameran som ska tittas på. Tom: kameror betraktas som de är.",
+     "camera_wake_cameras": "Tom: varje kamera som AI tittar på.",
+     "camera_wake_seconds": "Sekunder att vänta efter att ha vaknat, på en ny bild.",
+     "known_cars": "En per rad, e.g. 'Sam: mörkgrå halvkombi'. Samma blick på enheten säger sedan vems bil som kom ('Sams bil kom på enheten') — ingen extra AI. Tom: bilar är inte namngivna.",
+     "full_volume_speakers": "Tillkännagivanden om dessa sägs till 100 %, sedan går volymen tillbaka — för surfplattor avstängd för allt annat. Inte under tysta timmar (tysta timmars volym används då).",
+     "tts_entity": "Högtalare kan vara Assist-högtalare eller mediaspelare. Echos talas till genom Alexa Media Player; alla andra mediaspelare (en smart högtalare, en Cast-enhet) använder denna text-till-tal-röst.",
+     "house_language_text": "På: det Sentient skriver för dig att läsa — tidslinjen, husets hälsa, fliken Mind, det dagliga sammandraget, dagsberättelser, klippbeskrivningar och telefonaviseringar — följer Home Assistants språk. Fasta meningar översätts till polska, tyska, holländska, italienska, portugisiska, spanska, franska och ungerska; vad AI skriver följer vilket språk som helst. Ord som talas följer Säg inbyggda meningar på husets språk istället. Inga extra AI-anrop; ingenting lagras. Av: allt förblir på engelska.",
+     "speak_house_language": "Översätt vanliga engelska meningar med hjälp av den befintliga AI-uppgiften, med en tidsgräns, tillfällig meningscache och reservtext i original. Brådskande varningar väntar aldrig på AI. Använd automatiskt språkstöd för förberedda fraser och konversationsslut; välj språket nedan. Fasta exakta ja/nej-tokens täcker vanliga språk. Personliga meningsöversättningar sparas aldrig över omstarter.",
+     "speakers": "Assist högtalare eller mediaspelare (Echos genom Alexa Media Player).",
+     "media_speakers": "Av: endast rösthögtalarna används, även där ett larm eller meddelande namnger en Echo (den går dit folk är istället). Även en \"Echo-högtalare\"-omkopplare för automatiseringar och instrumentbrädor.",
+     "media_important_only": "På: Echos säger bara larm, påminnelser och säkerhetsvarningar; meddelanden, meddelanden och chatt går till rösthögtalarna istället. Även en \"Echos: endast larm och påminnelser\"-omkopplare.",
+     "foresight": "Varje kväll tittar en AI på morgondagens kalendrar, väder, larm och påminnelser. Säger något bara när det finns något att göra ikväll — frost innan en tidig start, regn på tvättdagen. Vanligtvis tyst.",
+     "foresight_time": "Innan tysta timmar börjar.",
+     "sleep_detection": "Sover efter en läggdagsrutin, eller i lugna timmar när inget inuti har rört sig på ett tag. Vaken på morgonen när det är rörelse i två rum (eller ett ljus som tänds för hand). En hussensor visar det.",
+     "bedtime_routines": "Rutiner som innebär att alla har gått och lagt sig, kommaseparerade. Tom: vilken rutin som helst med \"natt\" eller \"säng\" i sitt namn.",
+     "sleep_actions": "e.g. surfplattan stängs av, Echo-högtalarna stängs av.",
+     "wake_actions": "e.g. Echo-högtalarna är på igen, hallljuset är svagt.",
+     "appliances": "Tvättmaskin, torktumlare, diskmaskin, dammsugare — deras effektsensor eller status. Lämna tomt för att följa varje robotdammsugare och eventuell effektsensor som heter tvättmaskin, torktumlare eller diskmaskin.",
+     "appliance_announce": "Säger “tvättmaskinen är klar” där folk är och när det tar mycket längre tid än vanligt. Enkla ord, ingen AI.",
+     "appliance_watts": "För effektsensorer: körs över detta, avslutat när det har hållit sig under fem minuter.",
+     "voice_agent": "AI-agenten som normalt svarar (e.g. Google AI). Empty använder sidans chattagent.",
+     "backup_agent": "Svarar när huvudagenten misslyckas — Home Assistants egen agent gör lampor, värme och timers utan någon AI.",
+     "offline_answers": "När AI-agenten misslyckas, “är huset låst?”, “när är mitt nästa larm?” och “har någon kommit runt?” besvaras direkt från huset, i klartext, innan backupagenten prövas. Bara frågor, bara vad personen får se; i gästläge bara säkerhetsfrågan. Av: allt går till backupagenten.",
+     "animal_sensors": "Hutch, kennel, coop eller tank temperatursensorer.",
+     "away_lights_on": "När alla är ute efter mörkrets inbrott, kopierar lamporna hur de användes vid samma tidpunkt förra veckan (från Home Assistants historia), några minuter åt båda hållen. Startar (eller stannar) inte om någon är hemma eller om det har varit rörelse inne på sistone, för personer som inte har en telefon spårad, och sätter tillbaka det som har slagits på. Även en \"Away lights\"-brytare.",
+     "away_people": "Tom: alla med en personpost. Du kan välja telefoner (enhetsspårare) istället för personer.",
+     "away_lights": "Tomt: varje ljus i ett rum, utelämnar skärmar, LED-ringar, bakgrundsbelysning och grupper. Endast lampor som användes vid den tiden förra veckan tänds.",
+     "holiday_mode": "En omkopplare för \"semesterläge\" och \"vi åker på semester till söndag\" med rösten. Medan den är på, sägs ingenting högt utom säkerhetsvarningar — det som skulle ha sagts går till de telefoner som valts för aviseringar, med besökare och paket; bortljuset lyser även om de normalt är släckta; och termostaterna nedan är nedställda. Av: ingen switch och ingen semester med rösten.",
+     "holiday_thermostats": "Sänkte till frostskydd medan du är borta, och ställ tillbaka precis som de var när semesterläget slutade. Tom: värmen berörs inte.",
+     "holiday_frost": "Vad termostaterna ovan är inställda på när du är borta.",
+     "holiday_end_on_return": "När alla har gått ut, avslutar den första personen hemma semesterläget och sätter tillbaka värmen. Av: den slutar på sitt datum eller när den stängs av.",
+     "away_after": "Så att gå till butiken startar inte det.",
+     "animal_low": "Säger en gång när det sjunker under detta (hålls till morgonen i lugna timmar), och varnar kvällen före frost.",
+     "animal_high": "Säger en gång när den stiger över detta.",
+     "hutch_check": "En halvtimme efter solnedgången tittar en AI på hyddan: är de inne och är den stängd? Säger bara något om inte.",
+     "hutch_spot": "Fläcken ritad runt hyttan på fliken Spots, e.g. 'kanin penna'.",
+     "cat_watch": "Efter mörkrets inbrott, när en kattsensor på hutchs kamera tänds, en AI-blick: är en katt vid eller vid hutch? Högst var 15:e minut, och inte när bilden inte har ändrats.",
+     "cat_sensors": "Tom: kattsensorerna på kojans kamera (e.g. Frigate:s kattbeläggning).",
+     "cat_loud": "Av: hålls för morgonen ('En katt var vid hyddan kl. 02:14'). På: sa genast genom nattvaktshögtalarna.",
+     "rain_warnings": "När det kommer regn inom en timme och ett fönster eller en dörr är öppen: \"Regnet är på väg under nästa timme, och sovrumsfönstret är öppet.\" Läser timprognosen — ingen AI. En gång per period av regn.",
+     "rain_entities": "Tom: varje fönster- och dörrsensor.",
+     "self_test": "Över en natt ställs rösten några vardagliga frågor (temperaturen ute, allt öppet, påminnelser, larmet, tiden) och dess svar kontrolleras mot huset. Allt fel visar sig i husets hälsa med verktyget det använde. Cirka 5 AI kallar en löpning. Endast frågor — ingenting ändras.",
+     "self_test_household": "Lägger till cirka 7 frågor byggda från dina egna enheter: när en dörr eller ett fönster senast stängdes, om ett ljus är på, om en kamera såg någon under de senaste två timmarna, om någon kom till dörren idag, något den inte kan veta (ett påhittat svar misslyckas), något som ingen enhet kan göra och en fråga som är för vag för att svara utan att fråga vilken. Att byta något under en fråga är ett misslyckande. Poängen och dess trend finns på Mind-sidan. Cirka 7 fler AI kallar en löpning.",
+     "screen": "Varningar, meddelanden och ett morgonkort på Sentient-skärmkortet (anpassat:sentient-skärmkort). Av: det visar bara huset i en blick.",
+     "screen_actions": "e.g. väcka en surfplatta och växla till sidan med skärmkortet.",
+     "screen_clear_actions": "e.g. växla tillbaka surfplattan till sin normala sida.",
+     "conversation_sessions": "Använd Sentient med backupagent. Enstaka kommandon slutar lyssna om inte det talade svaret slutar med en fråga. Informations-, säkerhet-, hälso- och systemdiskussioner frågar om det finns något annat och håll öppet tills du säger “det är allt”, “tillräckligt” eller “sluta lyssna”, eller tills inaktivitetstiden går ut. Säg “tillbaka till…” för att återuppta ett oavslutat ämne från den här enheten inom 24 timmar, utan att återställa åtgärdsbehörigheter. Mindpanelen visar de senaste konversationsbesluten. Uppföljningslyssning kräver en kompatibel Assist-enhet.",
+     "room_conversation_handoff": "Säg fortsätt med och namnge ett ämne från en annan enhet. Båda förfrågningarna måste komma från samma identifierade Home Assistant-användare. Färska avläsningar kontrolleras och tidigare åtgärder och bekräftelser förs inte över.",
+     "verified_bedtime": "Säg kör ner läggdags för att släcka de valda lamporna och kontrollera de valda kontakterna. Be läggdagsstatus på nedervåningen att kontrollera igen, eller säg avbryt läggdags nere för att sluta spåra den.",
+     "verified_bedtime_lights": "Välj upp till tjugo individuella Assist-exponerade ljus. Grupper är uteslutna och listan Aldrig vidröra gäller fortfarande.",
+     "verified_bedtime_contacts": "Välj upp till tjugo Assist-exponerade dörr-, fönster- eller andra öppningskontakter att kontrollera. De är endast läsbara.",
+     "session_seconds": "Släng sessionskontext och väntande åtgärder efter dessa många sekunder utan ytterligare en tur. Din röstenhet styr sin egen tystnadstimeout. Bekräftelsen upphör också att gälla efter 60 sekunder.",
+     "guarded_control": "Välj med en dedikerad AI-agent som stöds: välj endast Sentient bevakad under Kontroll Home Assistant, använd sedan Sentient med backup i pipeline. Stäng av Föredrar att hantera kommandon lokalt och ta bort motstridiga meningstriggers, som körs före den här agenten. Fel agent API-konfiguration stoppar förfrågningar. Inga obegränsad reserv, manus, scener eller larmåtgärder. Dörrar, apparatstarter och betydande värmeförändringar kräver ett separat ja.",
+     "routine_verify": "På: efter att en röstrutin (godnatt, lämnar…) har körts, kontrolleras varje ljus, strömbrytare, lås och lock som ändrats några sekunder senare, och svaret säger vad som inte hände (\"Klart, förutom landningsljuset, som fortfarande är tänd\"). Steg som den inte kan kontrollera (manus, scener) rapporteras som inte kontrollerade, aldrig som gjorda. Ingenting görs om eller ångras av sig självt. Av: rutiner körs som tidigare, avmarkerad.",
+     "voice_unlock": "Låter påtvingad röstbekräftelse låsa upp en dörr efter ett separat ja. Av (standard) fortsätter att låsa och stänga men vägrar att låsa upp eller öppna med rösten, eftersom Sentient inte kan se vem som talar.",
+     "voice_undo": "Med bevakad kontroll, säg “ångra det” för att begära återställning av de senaste verifierade ljusinställningarna. Hoppar över ljus som ändrats sedan, upphör med sessionen och ångrar aldrig lås, värme eller apparater.",
+     "evidence_awareness": "Be rösten att skilja på observationer, slutsatser, försök till handlingar och verifierade enhetsrapporter. Otillgängliga säkerhetssensorer förhindrar alltid ett helt säkert anspråk.",
+     "security_incidents": "Gruppera konfigurerade kamerasäkerhetspersonsensorer och ingångskontakter med varningar och klippsammanfattningar. Håll sju dagar lokalt. Tidsnärhet är en möjlig länk, inte bevis för samma person; endast eskalerande varningar upprepas.",
+     "incident_front": "Kameror och sensorer på framsidan av huset (dörrklockan, ytterdörren). Allt här är aldrig grupperat i en säkerhetsincident med något som inte är det, och tvärtom: någon vid ytterdörren och någon vid bakporten samtidigt är två incidenter. Lämna tomt för att gruppera efter ensam tid.",
+     "live_voice_check": "Visa den användarstartade röstkontrollen i tankepanelen. Om du stänger av detta rensas den aktuella kontrollen och slutar registrera kontrollsvängarna. Kräver konversationssessioner för att starta en kontroll.",
+     "speech_delivery_history": "Spara de senaste meddelandena per talare i tankepanelen. Om du stänger av detta rensas den här historiken. Detektering av högtalarfel och säker hantering av försök igen förblir aktiva.",
+     "alexa_tts_only": "Använd vanliga TTS istället för Alexa meddelanden om meddelanden är opålitliga. Detta förbigår Alexa meddelandeklockor; övriga högtalare är oförändrade.",
+     "update_checker": "Kontrollera GitHub för stabila utgåvor när den är aktiverad, vid start och var sjätte timme. Inga AI-samtal, automatisk installation eller automatisk omstart. Inaktivera för att stoppa kontroller.",
+     "contextual_followups": "Kräver konversationssessioner och Sentient med backupagent. Behåll ämnet för korta uppföljningar, uppdatera exponerade enhetsavläsningar och förtydliga tvetydiga justeringar. Ger inte handlingsbehörigheter eller ändrar lyssningsregler. Av som standard; om du stänger av den rensas tillfällig konversationskontext.",
+     "conversation_recovery": "Kräver konversationssessioner och Sentient med backupagent. Avbryt en väntande eller pågående begäran från samma konversation/enhet/användare och undvik att spela upp osäkra enhetskommandon efter ett AI-fel. Det går inte att ångra en åtgärd som redan har skickats eller få maskinvara att acceptera tal när den är upptagen. Av som standard; inaktivering stoppar denna extra hantering.",
+     "automatic_language": "Kräver Säg inbyggda meningar på husspråket. Förbered vanliga fraser, konversationsslut och säkerhetsetiketter med din befintliga AI och budget. Av som standard. Fraser finns kvar i minnet om inte Kom ihåg vanliga språkfraser är aktiverat. Inaktivering rensar dem. Brådskande varningar väntar aldrig på AI; genererade svar tillåter aldrig kritiska åtgärder.",
+     "voice_language": "Använd auto för Home Assistants språk, eller en språkkod som es, de eller pt-BR. Kräver alternativet för talspråk. Din Assist taligenkänning och TTS-röst måste också stödja detta språk; detta omkonfigurerar dem inte.",
+     "remember_language_phrases": "Kräver båda alternativen för talspråk. Spara endast det generiska fraspaketet över omstarter och orelaterade ändringar av inställningar, aldrig personliga meddelanden. Av som standard. Om du inaktiverar, byter språk/leverantör eller glömmer data rensas det.",
+     "stream_voice_replies": "Börjar säga ett långt svar medan AI fortfarande skriver det, även med konversationssessioner på, så svaren börjar tidigare. Om Sentient ändrar svaret i efterhand (till exempel en bekräftelsefråga), läses ändringen upp efter det som redan sagts. Av som standard; om du stänger av den återgår du till att vänta på hela svaret. Ingenting lagras.",
+     "voice_timing_diagnostics": "Spara de senaste 20 röstsvarstiderna i minnet, utan utskrifter eller enhets-/användar-ID:n. Visa tidpunkter för agent, verktyg, översättning och tillkännagivanden. Stadier kan överlappa varandra; mikrofonfångst och slutlig pipelineuppspelning mäts inte. Av som standard; Inställningar ändras och glömmer rensa historiken. Den räknar också hur konversationer går (uppföljningar, korrigeringar, hur snabbt svaren kommer — aldrig orden), hålls omstarter; om du stänger av detta rensar du dessa räkningar.",
+     "reliability_log": "Kontrollera varje röstvändning med vanliga regler (ingen AI) och notera på Mind-sidan när ett verktyg misslyckades, en enhet inte gjorde det, den sa att något gjordes när ingenting gjordes, den erbjöd något som ingen enhet kan göra, den kunde inte svara, eller den svarade om det förflutna utan att slå upp något. Håller en kort rad med frågor och svar i 14 dagar. Om du stänger av den stoppas den och rensar det som sparats.",
+     "unified_evidence": "Av som standard. Ger rösten ett extra skrivskyddat verktyg som tittar igenom husprotokollet, tidslinjen och kamerahistoriken tillsammans när du frågar vad som hände eller varför. Den kan inte byta något, och den säger när en källa inte kunde kontrolleras snarare än att påstå att ingenting hände. Att stänga av det tar bara bort verktyget; ingenting lagras.",
+     "specific_clarification": "Kräver konversationssessioner. Erbjud namngivna enhetsval och känna igen exakta namn, engelska ordtal, både/alla och enkla temperaturer lokalt. Ett nytt försök, sluta sedan istället för att upprepa. Val bekräftar aldrig en åtgärd. Av som standard; inaktivering rensar väntande val. Använd bevakad kontroll för påtvingade åtgärder.",
+     "action_recovery": "Kräver konversationssessioner och bevakad kontroll för enhetsresultat och återförsök. Ge namngivna delresultat och inspektera den senaste bevakade begäran när du säger att det inte fungerade. Endast åtgärder som aldrig har skickats kan erbjudas igen, med ny bekräftelse. Osäkra eller framgångsrika handlingar spelas inte upp. Av som standard; poster förfaller efter två minuter och rensas på Inställningar ändringar eller glömmer.",
+     "recheck_unconfirmed": "När en enhet som kontrolleras med bevakad röststyrning inte har rapporterat sitt nya tillstånd vid tidpunkten för svaret (en garageport, en långsam molnplugg), titta en gång till 20 sekunder senare och uppdatera posten, så “fungerade det?” besvaras utifrån vad enheten säger nu. Inget skickas igen. Av: rekordet förblir som det var vid svaret.",
+     "speech_failure_notification": "Visa ett Home Assistant-meddelande när högtalarleveransen misslyckas eller är osäker. Av som standard. Inkluderar inte talat innehåll eller upprepat tal. Inaktiverad i gästläge; befintliga meddelanden kvarstår tills de avvisas.",
+     "recent_followup_context": "Använd ett nyligen avslutat ämne efter ett nytt ord på samma talare och användare. Kräver samtalstillfällen och kontextuella uppföljningar. Använder sessionens timeout; återställer aldrig bekräftelse eller lyssning. Av som standard. Att avsluta eller glömma rensar sammanhanget.",
+     "conversation_cues": "Inom en konversation: vardagliga sign-offs (“heja”, “perfekt, tack”, “det kommer att duga”) gör slut när inget specifikt väntar på ett svar; “förlåt, jag menade…”, “fel ljus” och “inte lampan, taklampan” är korrigeringar; och “på en annan ton…” eller “något annat:” startar ett nytt ämne utan att några enheter överförs. Ingen AI. Av: endast de enkla ändelserna och korrigeringarna känns igen.",
+     "vary_replies": "Rösten visas sina egna senaste svar från den senaste dagen och uppmanas att inte återanvända sina meningar eller öppningar, så samma svar ges inte ord för ord två gånger. Inte i privata rum eller gästläge. Upprepade svar räknas åt båda hållen (Mind-fliken, med rösttimingerna). Av som standard.",
+     "behaviour_explanations": "Svara på korta frågor om lyssnande och inspelade enhetsresultat direkt, utan ett AI-samtal. Kräver samtalssessioner. Använder befintliga sessionsposter, respekterar gästläge och enhetsåtkomst och upprepar aldrig en åtgärd. Av som standard; ingen ytterligare historik lagras.",
+     "current_house_context": "Ge konversationer en kompakt relevant ögonblicksbild av exponerade enhetsrapporter, senaste ändringar och den aktuella oavslutade uppgiften. Av som standard. Inga bakgrunds-AI-anrop. Gästläget undertrycker det. De senaste ändringarna upphör att gälla efter 30 minuter; om du inaktiverar eller glömmer bort enbart minneskontext.",
+     "moment_awareness": "Varje röstsvar får en kort \"just nu\"-bild från det som Sentient redan har: vem som är hemma och sedan när, rummen med rörelse, vad som hänt under de senaste 45 minuterna och allt ovanligt för idag. Ingen AI och inget lagrat. I ett privat rum eller gästläge ges endast rörelsen. Av: inget av det läggs till.",
+     "room_memory": "Varje röstsvar i ett rum får vad som hände där den senaste timmen: tidigare konversationer i det rummet, vad som byttes dit med rösten och vad som tillkännagavs där. Om någon bara pratade i ett annat rum för några minuter sedan och ingenting har sagts här sedan dess, kommer det samtalet också, så att de kan fortsätta där de slutade. Inget nytt lagras. Privata rum och gästläge får bara sitt eget rums rekord. Av: inget av det läggs till.",
+     "know_people": "När röstigenkänning inte har gett högtalaren ett namn, räknar Sentient ut vem det förmodligen är utifrån saker den kan lita på: ett meddelande som skrivits i Home Assistant-appen kommer från den personens konto, eller så är deras den enda rumsspårade telefonen i rummet. Rösten får veta vem den förmodligen är och sätter vad den personen berättade om sig själv först. En gissning tillåter aldrig något som behöver en bekräftelse, och ingenting sparas under deras namn på grund av det. Inte i gästläge eller privata rum. Av: ingen gissning.",
+     "instant_answers": "Vardagliga frågor besvaras direkt från huset, före AI:n: tiden, vädret utanför, om en namngiven enhet är på, av, öppen eller låst, ett rums temperatur, nästa larm eller påminnelse, besökare och om huset är låst. Bara frågor, bara en enda enhet som tydligt matchar och exponeras för röstassistenter; allt annat går till AI som vanligt. Utbytet läggs till samtalet så en uppföljare vet fortfarande vad som efterfrågades. Gäster och privata rum får bara tid, väder och enhetsstatus. Av: varje fråga går till AI.",
+     "capability_awareness": "Rösten får veta vilken typ av saker den kan styra i det här huset med rösten (från vad som exponeras för röstassistenter, med hur många av varje) och vilka vanliga huset inte har, som smarta lås eller motoriserade persienner, så den erbjuder aldrig något som ingen enhet kan göra. Ett erbjudande som ändå slinker igenom (att stänga ett fönster, låsa en dörr) tas bort från svaret innan det talas upp. Tränade var femte minut, ingen AI. Av: ingenting läggs till eller tas bort.",
+     "house_context_entities": "Enheter som ska inkluderas i allmänna hussammanfattningar, tillsammans med automatiska klimat- och öppnings-/närvarorapporter. Endast för närvarande exponerade och tillgängliga enheter delas; högst åtta relevanta avläsningar per begäran.",
+     "house_context_updates": "Kräver aktuell huskontext. Efter en verifierad bevakad uppvärmningsbegäran, säg eventuellt en gång när den termostaten rapporterar den begärda temperaturen. Går ut efter en timme, avbryts om målet ändras, högst en uppdatering per 15 minuter. Respekterar normala talregler och gästläge. Av som standard. Om du stänger av rensas väntande uppdateringar.",
+     "security_event_evidence": "Använd Frigate händelse-ID, ögonblicksbilder och klipp på konfigurerade kameror. En unik kamera/tidsmatchning är en kandidatlänk, inte ett bevis på att en sensor identifierat den händelsen. Spara upp till 3 000 händelseregister i sju dagar, lokalt. Av som standard. Inaktivering döljer länkar och slutar matcha; bevarade register löper ut eller kan glömmas bort.",
+     "security_event_zones": "Bara det som kommer in i en zon: på en kamera med Frigate-zoner listas en händelse (och kan starta en säkerhetsincident) först när objektet har gått in i en av dem, samma regel som Frigate använder för sina varningar. En kamera utan zoner listar allt. Allt som har upptäckts: varje objekt Frigate spårar på de valda kamerorna. Frigates egna inställningar ändras aldrig.",
+     "security_event_hidden_zones": "En per rad som kamera/zon, till exempel grind/uppfart. Händelser som bara förekommer i dessa zoner listas inte och startar inte säkerhetsincidenter. Använd HIDE THIS ZONE på säkerhetssidan efter några \"inte en person\"-korrigeringar där, eller ta bort en rad för att lista den zonen igen. Frigate ändras inte.",
+     "security_coverage": "Visa vilka konfigurerade kameror som bidrog med bevarade bevis och eventuella otillgängliga rapporter inspelade tillsammans med liveincidenter. Aktuella kamerarapporter visas separat. Om du stänger av detta rensar du kvarvarande täckningsluckor.",
+     "frigate_pipeline_health": "Läs Frigate MQTT tillgänglighet, bearbetningshastigheter per kamera och när Sentient senast tog emot en händelse. Saknade data visas som okända. Inga kamerainställningar ändras.",
+     "security_conversation_context": "Kom ihåg den valda händelsen i upp till fem minuter inom samma konversation, enhet och användare. Uppföljningsfrågor använder den händelsen och färska beläggningsrapporter; ingen identitet eller fortsatt närvaro antas. Spårar konfigurerade kamerahändelser. Av som standard. Inaktivering rensar konversationsreferenser; händelseposter behåller sitt normala utgångsdatum.",
+     "security_event_feedback": "Administratörer kan markera ett besök som en bra fångst, inte en person eller en att ignorera. Granskade besök flyttas till en vikta granskad lista, och \"inte en person\" räknas också som en granskad falsk upptäckt för en säkerhetsincident som endast görs av det besöket. Rättelserna stannar i sju dagar. Inga automatiska detektor-, larm- eller meddelandereglerändringar. Inaktivering döljer feedback och stoppar nya korrigeringar; använd Glöm senaste data för att radera sparade poster.",
+     "share_clip_analysis": "Dela kompatibla generiska analyser av samma färdiga Frigate-händelse över automatisk klipptittande och frågor om händelseklipp. Leverantör, filmtäckning och identitetsinställningar måste matcha. Anpassade frågor analyseras separat. Behåll högst 100 resultat i minnet i sex timmar. Av som standard. Om du inaktiverar, ändrar inställningar eller glömmer bort rensas cacheminnet.",
+     "sleep_ignore_sensors": "Rörelsesensorer som avfyras medan människor sover, till exempel en i ett sovrum. Att gå och sova väntar på att ingenting ska röra sig för tiden ovan; en sovrumssensor som utlöses när någon vänder sig skulle hålla huset \"vaket\" hela natten, så lista det här. De räknas fortfarande för allt annat.",
+     "heating_graph": "På: värmekortet på fliken Hus visar de senaste 24 timmarna av varje termostats temperatur mot vad den var inställd på, med de schemalagda tiderna skuggade. Läs från Home Assistant:s historia; inget extra lagras. Av: grafen är dold.",
+     "heating_revert": "På: om en termostat vrids upp, ner eller av för hand (eller ändrar sig själv) och inte är tillbaka på schemat, lämnar Sentient den ett tag och lägger sedan tillbaka den: periodens temperatur på dagen, natttemperaturen på natten. Endast termostater i ett värmeschema. En förändring gjord för hand eller med röst varar hela tiden även om en period börjar eller slutar under tiden; då tar schemat över. Av: ändringar för hand stannar till nästa schemalagda tidpunkt. Inget lagras på något sätt.",
+     "window_heating": "På: när ett fönster eller en dörr har varit öppen i några minuter och rummet har en egen värmare, sänker Sentient värmaren till natttemperatur och sätter tillbaka den när fönstret stängs, men bara om ingen har bytt det under tiden. En termostat för hela huset sänks aldrig för ett fönster: Sentient säger bara en gång att fönstret är öppet och värmen är på. Ger upp efter 3 timmar. Av: ingenting ändras eller sägs; allt det hade tackat nej till läggs tillbaka (om ingen har ändrat det) och dess lilla post rensas.",
+     "window_heating_minutes": "Hur länge ett fönster måste stå öppet innan Sentient agerar. Standard 5 minuter.",
+     "rooms_view": "På: Husfliken visar en bricka för varje rum — temperatur, luftfuktighet, ljus på, dörrar och fönster öppna, när någon flyttade dit senast och vad som spelas — och översikten får ett kort runt huset-kort. Byggd från dina områden; ingenting lagras. Av: båda är dolda.",
+     "outdoor_areas": "Ytor som ligger utanför huset, till exempel en kaninhydda, skjul eller växthus. De får fortfarande en egen bricka på fliken Hus, märkt UTANFÖR, och deras temperatur visas på en egen rad på översikten, men de lämnas utanför det varmaste och svalaste rummet, och rörelse där (en kamera som ser folk gå förbi) räknas inte som att någon är i huset. Lämna tomt för att räkna varje område som en del av huset.",
+     "knowledge_card": "På: Mind-fliken sammanfattar vad den har lärt sig om huset — vanlig läggdags och gå upp tid, sensorer som den avsätter, hur snabbt uppvärmningen värms upp, gissningar i nästa rum, rutiner och minnen. Den visar bara det som redan är känt; inget extra lagras. Av: kortet är dolt.",
+     "day_chart": "På: översikten visar idag timme för timme — rörelse, vad den sa, vad som hände utanför och vad du frågade om det — med när någon var först uppe och den mest hektiska timmen. Räknat från tidslinjen; inget extra lagras. Av: diagrammet är dolt.",
+     "house_ledger": "På: varje ändring av varje enhet registreras med vad som orsakade den (en person, en röstbegäran, en automatisering, Sentient eller ingenting i Home Assistant, vilket betyder själva enheten, dess app eller någon på den), så du kan fråga \"när gick uppvärmningen av och varför?\". Snabbt föränderliga siffror behålls som anmärkningsvärda förändringar. Förvarade 90 dagar i Sentients egen databas, sedan sammanfattade per dag. Av: inget nytt spelas in; det som sparades stannar tills du rensar det på fliken Mind.",
+     "unexplained_changes": "På: när en bevakad enhet (som standard värme, varmvattenberedare och ventiler) ändras med ingenting i Home Assistant bakom sig vid en tidpunkt som är ovanlig för den, sägs det en gång och sätts på tidslinjen, och upprepningar länkas: \"tredje gången denna vecka, alltid runt 11:00\". Medan den fortfarande lär sig en enhet, eller när en upprepning blir vanlig, går den bara på tidslinjen. Av: fortfarande inspelad, aldrig nämnd.",
+     "unexplained_entities": "Lämna tomt för värme, varmvattenberedare och ventiler. Lås, dörrar och grindar används för hand varje dag, så lägg till dem bara om du vill höra om dem.",
+     "expectations": "På: lär sig hur ofta varje enhet ändras varje timme, på vardagar och på helger (uppvärmd från de senaste tre veckorna av historien), och poängsätter varje förändring från vanligt till mycket ovanligt. Fliken Mind visar hur mycket av varje dag den förväntade sig. Vanlig räkning, ingen AI. Av: inga poäng; rensa vad den lärde sig på fliken Mind.",
+     "surprise_gating": "Titta på: noterar vilka kommentarer den skulle hoppa över eftersom ändringen är vanlig för tiden, utan att hoppa över någon. På: hoppar över dem, vilket också sparar AI-anropet. Gäller aldrig säkerhetsvarningar, larm eller något du bett om.",
+     "situations": "På: rösten berättas några enkla rader om vad som händer nu (kom precis hem, rörelse under de senaste 15 minuterna, allt ovanligt under den senaste timmen). Delas inte med gäster eller i ett privat rum. Av: inget extra skickas.",
+     "beliefs": "På: varje natt letar den efter saker som fortsätter att hända av sig själva vid ungefär samma tidpunkt, testar var och en mot dagen som just gått, frågar om en som håller och släpper de som inte gör det. Ingen AI. Av: inga nya övertygelser och inga tester; befintliga rensas med inlärningen på fliken Mind.",
+     "learn_reactions": "På: något som Sentient har växlat som har lagt rakt tillbaka räknas mot att göra det igen, och en kommentar som någon agerar på räknas till dess fördel. Av: reaktioner görs inte.",
+     "ai_case_memory": "På: ett bakgrunds-AI-jobb som är identiskt med ett under de senaste sex timmarna återanvänder det svaret istället för ett annat samtal. Aldrig använd för bilder eller klipp. Av: varje jobb anropar AI och de sparade svaren raderas.",
+     "memory_tags": "En gång för varje minne lägger ett litet AI-samtal på natten till några relaterade ord som folk kan använda istället (“vattenkokare” → brygga, te, koppa), så “sugen på en kopp?” hittar vattenkokarminnena. Upp till 40 minnen per natt; ingen inbäddningsserver behövs. Om du stänger av den stoppas det nattliga samtalet och återkallningen ignorerar orden (de behålls, så att slå på igen är omedelbart). Av som standard.",
+     "memory_upkeep": "I reflektionen över natten (inga extra AI-anrop) korrigeras minnen om att något en person sa att dagshower är inaktuellt och sparas som en gissning tills det bekräftas. En gång om dagen läggs en gissning (något det löste sig i stället för att berättas) till sina frågor, så att den kan fråga om det är rätt. Minnen som en person bekräftat eller fäst ändras aldrig. Behöver reflektion över natten. Av: minnen läggs bara till, korrigeras aldrig av det.",
+     "watch_actions": "Klockor och påminnelser kan göra något såväl som att säga det, kontrollera ett tillstånd först och vänta på att något håller i sig: \"om bakdörren är öppen i tio minuter, släck lampan i hallen och säg till\", \"när tvätten är klar, sätt på lampan i korridoren\", \"kl 11, om bakdörren fortfarande är öppen, berätta för mig\". Rösten läser var och en tillbaka och den ställs först efter ett ja på nästa sväng. Endast enheter som exponeras för röstassistenter, aldrig larm, lås, skript eller något på listan med aldrig beröring; varje enhet kontrolleras efteråt och svaret säger vad som inte hände. Av: klockor och påminnelser talar bara, som tidigare, och de som redan är inställda agerar inte.",
+     "memory_time": "Saker som sägs och som bara stämmer ett tag får ett slutdatum av sig själva: \"för nu\", \"för tillfället\", \"den här veckan\", \"till fredag\" och enstaka saker (\"jag slog på värmen\") behålls ett dygn med datumet inskrivet, snarare än att bli permanenta fakta. En gång om dagen kontrolleras ett faktum som ingen har bekräftat eller använt på tre månader med dig. Övernattningsreflektionen skriver också en kort berättelse om varje dag (inget extra AI-anrop), bevarat i 60 dagar, så \"vad gjorde vi i lördags?\" eller \"när spelade pannan senast?\" kan besvaras. Behöver reflektion över natten för berättelser och kontroller. Av: minnen behåller endast de datum de namnger, och inga berättelser sparas (de som redan sparats raderas).",
+     "who_where": "Sätter ihop vad varje källa vet — telefonrumsspårare (ställs in under Röst), vem som senast kände igen prata och var, och rörelse när bara en person är hemma — till en bästa gissning per person: vilket rum, hur säkert och sedan när. Rösten ges den istället för den vanliga rumsspårningslinjen, säger hur säker den är och säger aldrig något om någon som inte är hemma. Ingenting lagras. Av: rösten har bara rumsspårarnas linje, som tidigare.",
+     "big_plans": "\"Gör i ordning huset för filmkväll\" eller \"reda upp huset, vi åker iväg\": rösten räknar ut en kort plan med enhetssteg, läser tillbaka den och gör det först efter ett ja på nästa sväng. Varje steg kontrolleras sedan på enheten och svaret säger vad som inte hände. Endast enheter som är utsatta för röstassistenter; aldrig larm, låser, skript, 1 förfrågningar eller de är aldrig avstängda. hanterade en enhet i taget, som tidigare.",
+     "self_grading": "Varje natt kontrolleras vad rösten sa den dagen om huruvida något var på, av, öppet eller stängt mot vad huset spelade in i det ögonblicket. En fel läggs till i \"Där rösten gick fel\" på Mind-sidan och blir en läxa (\"kolla bakdörren innan du säger om den är öppen\"), så den förbättras utan att bli korrigerad. Ingen AI. Behöver tillförlitlighetsloggen. Av: ingenting är markerat.",
+     "voice_speed_watchdog": "På: uppmärksammar när en högtalare tar mycket längre tid att höra dig än vad du tog för att tala (ljudet kommer långsammare än i realtid) och sätter det i tidslinjen med ett omstartsförslag. Av: ingen kontroll.",
+     "voice_speed_restart": "På: en högtalare som fortsätter att släpa startas om med sin egen omstartsknapp. Av: det rekommenderas bara.",
+     "incident_stages": "På: varje säkerhetsincident visar hur långt det har kommit — observerat, undersökt, troligt hushåll, angående eller löst — från det som registrerades, aldrig vem någon var. Av: incidenter listas utan scen.",
+     "cognitive_shadow": "På: ett andra, striktare sätt att bedöma varje säkerhetsincident löper vid sidan av de vanliga stadierna och räknar hur ofta de två överensstämmer, med hur handlingar med rösten blev, som visas på Mind-sensorn endast som summor (inga namn, bilder eller enheter). Det är för att testa: det ändrar aldrig en varning, ett stadium, vad som sägs eller vad rösten sägs. Av: ingenting jämförs och räkningarna börjar igen.",
+     "cognitive_decides": "På: när dina recensioner av säkerhetsincidenter (knapparna under varje incident på fliken Mind) visar att det stämmer in på varje typ — minst 10 granskade hushållsincidenter där 90 % instämmer, minst 10 andra kallas det nästan aldrig för hushåll, och ingen angående incident som kallas mindre allvarlig — bestämmer den kognitiva kärnan stadiet för varje incident: vad Mind-fliken och rösten säger en incident är. Det slutar av sig självt om senare recensioner faller kort, och säger så på tidslinjen. Den ändrar eller håller aldrig tillbaka en varning, och kallar aldrig en incident mindre allvarlig än de vanliga reglernas \"beträffande\". Tills den har förtjänat det förändras ingenting. Av: de vanliga reglerna avgör; dina recensioner bevaras.",
+     "cognitive_quiet_heads_up": "Endast testning: registrerar behörighet baserat på incidentrecensioner, men undertrycker aldrig talade säkerhetsvarningar eller telefonvarningar. Portöppning följt av upptäckt av en kameraperson fastställer inte hushållets identitet. Funktionen kan inte tysta något förrän oberoende verifierade identitetsbevis har implementerats och testats.",
+     "weather_warnings": "På: officiella varningar för ditt land kontrolleras var 30:e minut (Met Office and Environment Agency i Storbritannien, MeteoAlarm i hela Europa, National Weather Service i USA), med hjälp av Home Assistant:s plats. Av: inga kontroller, och det som hittades är glömt.",
+     "warnings_country": "Lämna tomt för att använda Home Assistants land.",
+     "warnings_region": "Endast varningar som namnger denna region, e.g. nordvästra England. Lämna tomt för hela landet (varningar för översvämningar och USA är alltid nära hemmet).",
+     "warnings_speak": "På: en ny gul, röd eller allvarlig varning sägs en gång. Av: varningar visas bara på tidslinjen.",
+     "email_read": "På: behåller avsändaren, ämne och en kort förhandsvisning av de senaste 20 meddelandena Home Assistant:s IMAP-integreringsrapporter, så att du kan fråga \"något nytt e-postmeddelande?\". Skrivskyddad, inget lösenord, delas aldrig med gäster. Av: ingenting behålls och det som behölls rensas.",
+     "calendar_clashes": "På: \"några sammandrabbningar imorgon?\" hittar händelser som överlappar, eller med mindre än 15 minuter mellan, i briefingens kalendrar (eller alla kalendrar). Av: erbjuds inte.",
+     "security_audit": "På: en administratör kan fråga \"är min installation säker?\" för en skrivskyddad kontroll av vanlig http fjärråtkomst, lås och larm som rösten kan nå utan en bekräftelse, långlivade tokens och administratörer utan tvåfaktorsinloggning. Av: erbjuds inte.",
+     "automation_builder": "På: en administratör kan be om en automatisering på vanlig engelska; varje enhet och åtgärd kontrolleras, den läses tillbaka för ett ja och sparas sedan till automations.yaml som en från redigeraren. Av: erbjuds inte; automatiseringar som redan gjorts stanna.",
+     "pronounce_names": "På: ett namn som rösten läser felaktigt från sin stavning sägs på det sätt som det uttalas, endast på högtalare — chatten, tidslinjen och telefonerna behåller den verkliga stavningen. Taget från raderna nedan och från minnen som \"Siobhan uttalas Shivawn\". Av: namn läses som stavade.",
+     "pronunciations": "Skrivet = sagt, en per rad, e.g. Siobhan = Shivawn. Stav den nämnda versionen så som rösten ska läsa den.",
+     "health_duplicates": "På: en enhet som visas två gånger under ett namn där en kopia är tom (en plugg i Tuya Local och igen från Tuyas moln) visas i House health, med en knapp för att inaktivera den tomma kopian. Av: ej markerad.",
+     "manuals_local_ocr": "Valfritt och av som standard. Om Tesseract redan är installerat på Home Assistant-värden, läs text från upp till 20 endast bildbara PDF-sidor per fil. Inga molnförfrågningar eller nedladdningar. På standard Home Assistant OS kan Tesseract vara otillgängligt; den ursprungliga PDF-backen finns kvar.",
+     "memory_semantic_enabled": "Av som standard. Med en explicit konfigurerad lokal Ollama-inbäddningstjänst, ranka om endast minnesresultat som redan är tillåtna för denna användare. Privat text skickas till den konfigurerade LAN-värden, aldrig automatiskt till internet. Den konfigurerade värden tar emot utvalda minnesfragment, så kör den på en betrodd maskin som du kontrollerar.",
+     "memory_semantic_url": "En HTTP URL såsom http://192.168.1.20:11434. Endast numeriska privata LAN/loopback-adresser accepteras (använd 127.0.0.1 istället för localhost). Servern måste exponera /api/embed och redan ha modellen installerad.",
+     "memory_semantic_model": "Namnet på en inbäddningsmodell som redan är installerad i Ollama, till exempel nomic-embed-text. Sentient kommer inte att ladda ner modellen. Otillgängliga eller långsamma tjänster går tillbaka till normal sökning.",
+     "ai_routing_enabled": "Av som standard. Endast kvalificerade bakgrundstextjobb får använda det konfigurerade alternativet efter att båda leverantörerna har 20+ uppmätta samtal och tillräcklig tillförlitlighet på servicenivå. Ingen växling för bilder, strukturerad utdata eller explicita AI-val.",
+     "ai_routing_alternative": "En andra Home Assistant ai_task-enhet att överväga för lämpliga bakgrundstextuppgifter. Den måste finnas lokalt och används aldrig utan uppmätt servicehistorik och kostnadsuppskattningar.",
+     "ai_routing_primary_cost": "Ditt eget ungefärliga pris för ett jämförbart textjobb; inte leverantörsfakturering. Båda priserna måste tillhandahållas och verifieras av dig innan en billigare leverantör övervägs.",
+     "ai_routing_alternative_cost": "Din egen prisuppskattning för den alternativa AI Task-enheten. Detta är inte direktfakturering och kan skilja sig från riktiga tokenavgifter.",
+     "ai_routing_max_p95_ms": "Tänk bara på den sekundära leverantören när dess uppmätta 95:e percentiltjänsttid ligger inom denna gräns. Standard är 4000 ms. Röstsvar fortsätter genom deras befintliga pipeline.",
+     "heating_energy_sensor": "En kumulativ kWh-energisensor som mäter värmesystemet, inte hela huset. Använd en sensor som behålls av Recorder med tillräckligt lång historia.",
+     "heating_measurement_date": "Datum för ändringen du vill granska. Sentient jämför upp till 14 dagar före och efter med samma vardagar; det kan inte bevisa att Sentient orsakade skillnaden.",
+     "heating_energy_price_kwh": "Valfri uppskattning används endast för att översätta observerade kWh-skillnader till ungefärliga dagliga valutaförändringar, inte faktiska räkningar eller bevisade besparingar.",
+     "autooff_respect_recent_voice": "Av som standard. När det är aktiverat hålls en automatisk avstängning av en lampa eller strömbrytare i upp till två minuter efter ett bevakat röstkommando med högre prioritet. Gäller inte manuella stoppförfrågningar, värme, lås eller larm."
+    }
+   },
+   "memories": {
+    "title": "Minnen",
+    "description": "Huset minns {count} saker. Välj en att redigera, markera någon för att glömma eller lägg till en ny.",
+    "data": {
+     "edit": "Redigera ett minne",
+     "forget": "Glömma",
+     "add": "Lägg till ett minne",
+     "category": "Kategori för det nya minnet"
+    }
+   },
+   "edit_memory": {
+    "title": "Redigera minne",
+    "data": {
+     "text": "Minne",
+     "category": "Kategori"
+    }
+   },
+   "briefing": {
+    "title": "Lägesrapporter",
+    "description": "Vad en genomgång omfattar — från BRIEFING-knappen, med rösten eller vid en bestämd tid varje dag.",
+    "data": {
+     "briefings": "Briefing på",
+     "briefing_sections": "Omfatta",
+     "briefing_weather": "Väder från",
+     "briefing_todo": "Att göra-listor",
+     "briefing_calendars": "Kalendrar",
+     "briefing_system": "Systemsensorer att rapportera",
+     "outside_info": "Utomstående information",
+     "parcel_trackers": "Paketspårare",
+     "briefing_time": "Daglig genomgång kl",
+     "digest_time": "Daglig sammanfattning kl",
+     "morning_briefing": "Briefing när någon är först ut",
+     "morning_briefing_areas": "Informationsrum på morgonen",
+     "morning_briefing_quiet": "Morgongenomgång under lugna timmar"
+    },
+    "data_description": {
+     "briefings": "Av stänger av knappen, röstverktyget och tjänsten.",
+     "briefing_weather": "Lämna tomt för att använda den första väderenheten.",
+     "briefing_system": "e.g. CPU-temperatur, diskanvändning, NAS. Väntande uppdateringar räknas alltid.",
+     "outside_info": "Sensorer från andra integrationer läser in i genomgången och kvällen tittar på morgondagen: dagens elpris, en vädervarning, paket på väg, nästa skoldag. Tom, noll och \"av\" avläsningar utelämnas. Text från dessa behandlas endast som information.",
+     "parcel_trackers": "När man säger att ett paket är ute för leverans, säger det det en gång och tittar på dörren efter det hela dagen (även om paketvarningar är avstängda); om det står levererat innan något har setts vid dörren, står det det också. Tom: av.",
+     "briefing_time": "Frivillig. Talas bara om någon är hemma och det inte är tysta timmar.",
+     "digest_time": "Valfritt: en gång om dagen sammanfattar AI tidslinjen i några få meningar. Det går på tidslinjen (och till telefoner om så väljs). Inte talat.",
+     "morning_briefing": "En gång om dagen före middagstid, i rummet någon är i, så fort huset ser dem upp och går (eller, utan det, första gången någon flyttar efter tysta timmars slut).",
+     "morning_briefing_areas": "Valfritt: ge det bara första gången någon kommer in i ett av dessa rum på morgonen, på rummets högtalare — gå upp, tvätta och klä på dig och hör det sedan i köket eller vardagsrummet. Tomma: var de än är.",
+     "morning_briefing_quiet": "Av: någon som är igång innan de tysta timmarna slutar får genomgången när de är över, första gången de ses röra sig (i morgongenomgångsrummen, om så väljs), och allt som hålls över natten viks in i det. På: den ges så snart de ses upp, även under tysta timmar, på just det rummets högtalare."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Minnen"
+   },
+   "last_spoken": {
+    "name": "Senast talat"
+   },
+   "likely_room": {
+    "name": "Troligtvis rum"
+   },
+   "watches": {
+    "name": "Klockor"
+   },
+   "routines": {
+    "name": "Rutiner"
+   },
+   "visitors": {
+    "name": "Besökare"
+   },
+   "health": {
+    "name": "Husets hälsa"
+   },
+   "drive": {
+    "name": "Köra"
+   },
+   "mind": {
+    "name": "Tankar"
+   },
+   "house": {
+    "name": "Hus",
+    "state": {
+     "awake": "Vaken",
+     "asleep": "Sovande"
+    }
+   },
+   "screen": {
+    "name": "Skärm",
+    "state": {
+     "idle": "På tomgång",
+     "morning": "Morgon",
+     "notice": "Varsel",
+     "alert": "Varna"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "Tysta ner"
+   },
+   "guest_mode": {
+    "name": "Gästläge"
+   },
+   "chime": {
+    "name": "Klämta"
+   },
+   "party_mode": {
+    "name": "Ljusshow"
+   },
+   "media_speakers": {
+    "name": "Echo högtalare"
+   },
+   "media_important_only": {
+    "name": "Echos: endast larm och påminnelser"
+   },
+   "away_lights": {
+    "name": "Borta ljus"
+   },
+   "screen": {
+    "name": "Surfplattans skärm"
+   },
+   "holiday": {
+    "name": "Semesterläge"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Med backup"
+   },
+   "alexa": {
+    "name": "För Alexa"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Låg",
+    "normal": "Normal",
+    "urgent": "Brådskande (ignorerar tysta timmar)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Faktum",
+    "preference": "Preferens",
+    "person": "Person",
+    "routine": "Rutin",
+    "note": "Notera",
+    "correction": "Korrektion"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Av",
+    "quiet": "Tyst",
+    "normal": "Normal",
+    "chatty": "Pratsam"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Tid",
+    "weather": "Väder",
+    "reminders": "Påminnelser i dag",
+    "watches": "Vad som bevakas",
+    "routines": "Rutiner kommer",
+    "open": "Fönster och dörrar öppnas",
+    "visitors": "Besökare idag",
+    "said": "Vad som sades nyligen",
+    "system": "Systemhälsa",
+    "todo": "Att göra-listor",
+    "calendar": "Kalender (nästa 24 timmar)",
+    "energy": "El som används idag (och allt ovanligt)",
+    "security": "Allt öppet eller olåst"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Brådskande meddelanden",
+    "held_quiet": "Saker och ting höll tillbaka under lugna timmar",
+    "unheard": "Saker som ingen kunde höra (ingen högtalare tillgänglig)",
+    "visitors": "Dörrklocka besökare och paket",
+    "watches": "Klockor och påminnelser går igång",
+    "health": "Hälsoproblem i huset",
+    "digest": "Det dagliga sammandraget",
+    "critical": "Säkerhetsvarningar (rök, CO, gas, läckor)",
+    "security": "Saker lämnas öppna när alla går ut"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "Lugnt och rakt på sak",
+    "dry": "Torr vett",
+    "warm": "Varm och vänlig",
+    "cheeky": "Fräck",
+    "composed": "Komponerad, som en butler"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "Disko",
+    "party": "Part",
+    "rainbow": "Regnbåge",
+    "chill": "Kyla",
+    "halloween": "Halloween",
+    "christmas": "Jul"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Lås",
+    "garage": "Garageportar och portar",
+    "covers": "Persienner, gardiner och jalusier",
+    "heating": "Vrider upp värmen rejält",
+    "appliances": "Starta apparater"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "Gör det bara",
+    "tell": "Säg det, gör det sedan",
+    "ask": "Fråga först"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Av",
+    "nightly": "Varje kväll",
+    "weekly": "En gång i veckan (söndag kväll)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Självtest",
+    "rain": "Regnvarning",
+    "hutch": "Koll av djurburen",
+    "cat": "Kattklocka",
+    "bins": "Koll av soptunnorna",
+    "faces": "Vem är det här? (ansiktsundervisning)",
+    "faces_forget": "Glöm namnlösa ansikten nu",
+    "clip_watch": "Se det senaste klippet nu"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Endast Frigate-varningar",
+    "zones": "Vad som helst i en zon",
+    "all": "Varje upptäckt"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Alltid",
+    "quiet": "Tysta timmar",
+    "away": "När alla är ute",
+    "quiet_or_away": "Tysta timmar eller när alla är ute"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Av",
+    "worth": "De som är värda en titt",
+    "suspicious": "Endast misstänkt",
+    "all": "Varje klipp"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (en AI kallar ett klipp)",
+    "frigate": "Frigate egna AI-sammanfattningar"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "Vid dörren",
+    "reminders": "Påminnelser",
+    "questions": "Frågor (Ja/Nej)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Kort",
+    "natural": "Naturlig"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Av",
+    "watch": "Titta bara",
+    "on": "På"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Bara det som kommer in i en zon",
+    "all": "Något upptäckt"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Säga",
+   "description": "Tala genom huset, följ tysta timmar och rumsmedvetenhet.",
+   "fields": {
+    "message": {
+     "name": "Meddelande",
+     "description": "Vad ska man säga."
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande ignorerar tysta timmar och tysta perioder; låg avbryter aldrig."
+    },
+    "speaker": {
+     "name": "Högtalare",
+     "description": "En högtalare, rumsnamn eller enhets-id. Lämna tomt för att följa personen."
+    }
+   }
+  },
+  "remember": {
+   "name": "Komma ihåg",
+   "description": "Tillför något till husets långtidsminne.",
+   "fields": {
+    "text": {
+     "name": "Text",
+     "description": "En kort mening."
+    },
+    "category": {
+     "name": "Kategori",
+     "description": "Vad är det här för minne."
+    }
+   }
+  },
+  "forget": {
+   "name": "Glömma",
+   "description": "Ta bort ett minne med id eller genom att matcha text.",
+   "fields": {
+    "what": {
+     "name": "Vad",
+     "description": "Minnes-id eller ord från det."
+    }
+   }
+  },
+  "watch": {
+   "name": "Titta",
+   "description": "Håll ett öga på en enhet, sensor eller kamera och säg till när något händer.",
+   "fields": {
+    "what": {
+     "name": "Vad",
+     "description": "Kort beskrivning, e.g. 'katterna nära kaninfåsen'."
+    },
+    "entity": {
+     "name": "Enhet",
+     "description": "Enhets-id, namn eller kamerans områdesnamn."
+    },
+    "to_state": {
+     "name": "Att konstatera",
+     "description": "Avfyras när enheten når detta tillstånd."
+    },
+    "above": {
+     "name": "Ovan",
+     "description": "Avfyra när värdet går över detta."
+    },
+    "below": {
+     "name": "Nedan",
+     "description": "Avfyra när värdet går under detta."
+    },
+    "question": {
+     "name": "Fråga",
+     "description": "Kameraklockor: en ja/nej-fråga om bilden."
+    },
+    "look_for": {
+     "name": "Söka efter",
+     "description": "Kameraklockor: objekt att väcka på, e.g. person, katt, bil."
+    },
+    "message": {
+     "name": "Meddelande",
+     "description": "Vad ska man säga. Lämna tomt för en automatisk mening."
+    },
+    "until": {
+     "name": "Tills",
+     "description": "Klocktid, e.g. 18.00 eller 18.00."
+    },
+    "minutes": {
+     "name": "Minuter",
+     "description": "Eller hur många minuter att titta på."
+    },
+    "repeat": {
+     "name": "Upprepa",
+     "description": "Håll utkik efter det brinner."
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande ignorerar tysta timmar."
+    },
+    "speaker": {
+     "name": "Högtalare",
+     "description": "Var ska man säga det. Lämna tomt för att följa personer."
+    },
+    "wake_on": {
+     "name": "Vakna",
+     "description": "Kameraklockor: en zon- eller objektsensor att väcka på istället för kamerans egna sensorer."
+    },
+    "spot": {
+     "name": "Fläck",
+     "description": "Kameraklockor: kontrollera endast den här namngivna platsen (undervisas med röst, e.g. 'kaninpennan')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "Avbryt bevakning",
+   "description": "Stoppa en klocka.",
+   "fields": {
+    "what": {
+     "name": "Vad",
+     "description": "Titta på id eller ord från den."
+    }
+   }
+  },
+  "remind": {
+   "name": "Påminna",
+   "description": "Säg något åt ​​gången, i rummet där människor är.",
+   "fields": {
+    "message": {
+     "name": "Meddelande",
+     "description": "Vad ska man säga, e.g. 'Dags att sätta på ugnen.'"
+    },
+    "at": {
+     "name": "På",
+     "description": "Klocktid, e.g. 18.00 eller 18.00."
+    },
+    "minutes": {
+     "name": "Minuter",
+     "description": "Eller på hur många minuter."
+    },
+    "speaker": {
+     "name": "Högtalare",
+     "description": "Var ska man säga det. Lämna tomt för att följa personer."
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande (standard) talar fortfarande under tysta timmar."
+    }
+   }
+  },
+  "ask": {
+   "name": "Be",
+   "description": "Ställ en fråga högt och lyssna efter svaret, i rummet där människor är.",
+   "fields": {
+    "question": {
+     "name": "Fråga",
+     "description": "e.g. 'Vill du ha en brygga? Ska jag sätta på vattenkokaren?'"
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande ignorerar tysta timmar och tysta perioder."
+    },
+    "speaker": {
+     "name": "Högtalare",
+     "description": "Var ska man fråga. Lämna tomt för att följa personer."
+    },
+    "extra_prompt": {
+     "name": "Extra instruktioner",
+     "description": "Extra vägledning för röstagenten som hanterar svaret."
+    },
+    "preannounce": {
+     "name": "Ring först",
+     "description": "Spela klockspelet innan du frågar."
+    }
+   }
+  },
+  "learn": {
+   "name": "Lär dig nu",
+   "description": "Leta genast efter rutiner i den senaste historien istället för att vänta på ikväll."
+  },
+  "briefing": {
+   "name": "Lägesrapport",
+   "description": "En kort genomgång av vad som är viktigt just nu, talat var människor är.",
+   "fields": {
+    "speak": {
+     "name": "Säg det",
+     "description": "Off returnerar fakta utan att tala eller använda AI."
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande talar även under tysta timmar, e.g. när någon tryckte på en knapp för det."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Snygga minnen",
+   "description": "Slå ihop dubbletter och släpp nonsens från minnet nu (körs också varje söndag kväll)."
+  },
+  "forget_routine": {
+   "name": "Ta bort inlärd rutin",
+   "description": "Ta bort en inlärd rutin eller vana för gott — huset slutar göra det och lär sig aldrig eller erbjuder det igen. Med Återställ på, ta tillbaka borttagna (en eller alla om rutinen är tom).",
+   "fields": {
+    "routine": {
+     "name": "Rutin",
+     "description": "Rutin-id eller ord från den."
+    },
+    "restore": {
+     "name": "Återställa",
+     "description": "Ta tillbaka de raderade istället."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Anta rutin",
+   "description": "Låt huset göra en inlärd rutin av sig själv, eller sluta. Lämna adoptera tomt för att växla.",
+   "fields": {
+    "routine": {
+     "name": "Rutin",
+     "description": "Rutin-id eller ord från den."
+    },
+    "adopt": {
+     "name": "Anta",
+     "description": "På för att starta, av för att sluta."
+    }
+   }
+  },
+  "hush": {
+   "name": "Tysta ner",
+   "description": "Säg inget som inte är brådskande på ett tag. 0 minuter slutar tysta.",
+   "fields": {
+    "minutes": {
+     "name": "Minuter",
+     "description": "Hur länge ska man vara tyst."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Kör rutin",
+   "description": "Kör en namngiven rutin (ställ in på sidofältssidans Inställningar → Rutiner).",
+   "fields": {
+    "name": {
+     "name": "Namn",
+     "description": "Rutinens namn eller något av dess andra namn."
+    },
+    "speak": {
+     "name": "Tala",
+     "description": "Säg resultatet där människor är."
+    },
+    "details": {
+     "name": "Detaljer",
+     "description": "För rutiner som tar detaljer, e.g. vilka rum."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Veckorapport",
+   "description": "Sätt ihop vad huset lärt sig och märkt under den senaste veckan, och håll det på tidslinjen."
+  },
+  "party": {
+   "name": "Ljusshow",
+   "description": "Starta eller stoppa en ljusshow (disco, Halloween, jul…). Lamporna går tillbaka exakt som de var när de stannade.",
+   "fields": {
+    "on": {
+     "name": "På",
+     "description": "Off stoppar den och sätter tillbaka lamporna."
+    },
+    "style": {
+     "name": "Stil",
+     "description": "Disco, fest, regnbåge, chill, Halloween eller jul. Empty använder inställningen."
+    },
+    "minutes": {
+     "name": "Minuter",
+     "description": "Sluta av sig själv efter så här lång tid (0 = tills den stängs av). Empty använder inställningen."
+    },
+    "area": {
+     "name": "Rum",
+     "description": "Använd detta rums lampor (eller \"överallt\" för varje ljus)."
+    },
+    "lights": {
+     "name": "Ljus",
+     "description": "Använd exakt dessa lampor."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Reflektera nu",
+   "description": "Tänk på den sista dagen nu, som den gör över en natt: nya minnen, morgontankar och en fråga."
+  },
+  "grade_answers": {
+   "name": "Betygsätt sina egna svar nu",
+   "description": "Kontrollera vad rösten sa om dörrar, lampor, strömbrytare och lås mot vad huset spelade in, som den gör varje kväll med \"Betygsätt sina egna svar\" på. Returnerar det som kontrollerats, vad som var fel och eventuella lektioner.",
+   "fields": {
+    "hours": {
+     "name": "Timmar",
+     "description": "Hur långt tillbaka ska man kolla."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Kontrollera enheten",
+   "description": "Ta en AI-titt på körplatsen nu och uppdatera vad som är parkerat där."
+  },
+  "wonder": {
+   "name": "Undra",
+   "description": "Lägg till en fråga för nyfikenhet att ställa, släpp en eller ställ nästa nu.",
+   "fields": {
+    "question": {
+     "name": "Fråga",
+     "description": "Något att fråga hushållet en gång."
+    },
+    "ask_now": {
+     "name": "Fråga nu",
+     "description": "Ställ nästa fråga direkt."
+    },
+    "dismiss": {
+     "name": "Avfärda",
+     "description": "Ord från en fråga att inte ställa trots allt."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Följa upp",
+   "description": "Kolla in något senare och berätta hur det gick.",
+   "fields": {
+    "minutes": {
+     "name": "Minuter",
+     "description": "När ska man kontrollera."
+    },
+    "about": {
+     "name": "Om",
+     "description": "Några ord om vad det handlar om."
+    },
+    "entity": {
+     "name": "Enhet",
+     "description": "Enhet att kontrollera då."
+    },
+    "state": {
+     "name": "Ange",
+     "description": "Staten som betyder att det fungerade."
+    },
+    "above": {
+     "name": "Ovan",
+     "description": "Fungerade om värdet är minst detta."
+    },
+    "below": {
+     "name": "Nedan",
+     "description": "Fungerade om värdet är högst detta."
+    },
+    "if_done": {
+     "name": "Om det är gjort",
+     "description": "Vad ska man säga om det fungerade."
+    },
+    "if_not": {
+     "name": "Om inte",
+     "description": "Vad ska man säga om det inte gjorde det."
+    },
+    "speaker": {
+     "name": "Högtalare",
+     "description": "Var ska man säga det (standard: var människor är)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Avbryt en uppföljning",
+   "description": "Sluta kolla upp något igen.",
+   "fields": {
+    "about": {
+     "name": "Om",
+     "description": "Dess id, eller ord från vad det handlar om."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Underhåll utfört",
+   "description": "Markera ett underhållsjobb som utfört (ett filter bytt, maskinen avkalkad) så att räkningen börjar igen.",
+   "fields": {
+    "job": {
+     "name": "Jobb",
+     "description": "Dess namn på underhållssidan."
+    }
+   }
+  },
+  "notice": {
+   "name": "Varsel",
+   "description": "Skicka något som hände genom Sentient — samma tysta timmar, tystnad, gäst- och semesterregler och (som standard) sitt eget beslut om det är värt att säga och hur.",
+   "fields": {
+    "message": {
+     "name": "Vad hände",
+     "description": "Med klara ord, e.g. 'Diskmaskinen är klar'."
+    },
+    "entity_id": {
+     "name": "Anordning",
+     "description": "Enheten det handlar om (valfritt) — ger rummet och dess tillstånd."
+    },
+    "decide": {
+     "name": "Låt det bestämma",
+     "description": "På: AI:n avgör om det är värt att säga, och hur (räknas som att lägga märke till). Av: säg det som givet."
+    },
+    "priority": {
+     "name": "Prioritet",
+     "description": "Brådskande ljud fortfarande under tysta timmar; låg avbryter aldrig."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "Se framåt",
+   "description": "Titta på morgondagen nu och säg om det finns något som är värt en heads-up.",
+   "fields": {
+    "speak": {
+     "name": "Säg det",
+     "description": "Säg det högt om det finns."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Somnade",
+   "description": "Berätta för huset att det sover eller är vaket (kör läggdags- eller morgonaktiviteterna).",
+   "fields": {
+    "asleep": {
+     "name": "Sovande",
+     "description": "På för att sova, av för att vara vaken."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Visa på skärmen",
+   "description": "Sätt ett kort på Sentient-skärmkortet.",
+   "fields": {
+    "message": {
+     "name": "Meddelande",
+     "description": "Vad ska man visa."
+    },
+    "camera": {
+     "name": "Kamera",
+     "description": "En kamera att visa med den."
+    },
+    "minutes": {
+     "name": "För",
+     "description": "Hur länge (10 minuter om den är tom)."
+    },
+    "alert": {
+     "name": "Varna",
+     "description": "Visa det som en varning."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Rensa skärmen",
+   "description": "Ta bort ett kort från Sentient-skärmkortet, eller allt.",
+   "fields": {
+    "card_id": {
+     "name": "Kort",
+     "description": "Kortets id, \"morgon\" eller tomt för allt."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Morgonkort",
+   "description": "Lägg morgonens kort på Sentient-skärmen nu."
+  },
+  "check_now": {
+   "name": "Kolla nu",
+   "description": "Kör en av de valfria kontrollerna direkt — självtestet, en regnkontroll, hutchchecken, kattklockan, soptunnelkontrollen, ett \"vem är det här?\" för det sista ansiktet som dörrkameran inte kunde namnge, glömma namnlösa ansikten eller titta på det senaste klippet från den första klippkameran.",
+   "fields": {
+    "what": {
+     "name": "Som",
+     "description": "Vilken check som ska köras."
+    }
+   }
+  },
+  "game": {
+   "name": "Starta eller stoppa ett sagospel",
+   "description": "Starta ett storyspel (det kan sedan spelas med valfri röstassistent) eller lägg bort det aktuella spelet. Spelets sparade minne bevaras.",
+   "fields": {
+    "action": {
+     "name": "Handling",
+     "description": "Starta ett spel eller stoppa det som spelas."
+    },
+    "game": {
+     "name": "Spel",
+     "description": "Spelets namn, när du startar ett."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Sluta läsa",
+   "description": "Stoppa en berättelse eller ljudbok som läses högt och tysta talaren och behåll platsen. Fungerar utan rösten när en surfplatta inte kan höra dig över berättelsen.",
+   "fields": {
+    "speaker": {
+     "name": "Högtalare",
+     "description": "Talaren till tystnad. Lämna tomt för att stoppa varje berättelse som läses."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} är tillgänglig",
+   "description": "Du har {installed}. Installera det från Inställningar → Uppdateringar (Sentient kommer från Marketplace på Home Assistant 2026.11 och senare; på äldre versioner, öppna Sentient i HACS och välj Ladda ner), starta sedan om Home Assistant. Om Sentient kopierades in för hand istället för att installeras från Marketplace eller HACS, kommer den aldrig att uppdatera av sig själv: installera den från Marketplace istället."
+  }
+ }
+}
