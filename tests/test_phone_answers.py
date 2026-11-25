@@ -49,3 +49,48 @@ async def test_off_unless_chosen(hass: HomeAssistant) -> None:
     async_mock_service(hass, "notify", "mobile_app_pixel")
     entry = await _setup(hass, phone_buttons=[])
     assert not entry.runtime_data.notifier.can_ask()
+
+
+async def test_failed_phone_question_falls_back_to_satellite(hass):
+    from unittest.mock import AsyncMock
+    from homeassistant.exceptions import HomeAssistantError
+
+    async def fail(call):
+        raise HomeAssistantError("phone offline")
+
+    hass.services.async_register("notify", "mobile_app_pixel", fail)
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    asked = async_mock_service(hass, "assist_satellite", "start_conversation")
+    rt.speech.nobody_about = True
+    rt.speech.pick_speaker = lambda important=True: ["assist_satellite.kitchen"]
+    result = await rt.speech.async_ask("Would you like a reminder?", on_answer=AsyncMock())
+    assert result.reason == "asked"
+    assert len(asked) == 1
+    assert not rt.notifier._questions
+
+
+async def test_pending_voice_answer_is_invalidated_during_classification(hass):
+    from datetime import timedelta
+    from unittest.mock import AsyncMock, patch
+    from homeassistant.util import dt as dt_util
+
+    entry = await _setup(hass, automatic_language=True)
+    speech = entry.runtime_data.speech
+    answer = AsyncMock()
+    speech._questions["assist_satellite.kitchen"] = {
+        "until": dt_util.utcnow() + timedelta(minutes=1),
+        "asked": "Would you like a reminder?",
+        "on_answer": answer,
+    }
+
+    async def rejection(*args):
+        speech._privacy_generation += 1
+        return True
+
+    with patch("custom_components.sentient.answers.classify", return_value=None), \
+            patch("custom_components.sentient.sessions.is_conversation_end", return_value=False), \
+            patch("custom_components.sentient.language.async_language_rejection", side_effect=rejection):
+        result = await speech.async_take_answer("assist_satellite.kitchen", "some words")
+    assert result == "That question is no longer open."
+    answer.assert_not_awaited()
