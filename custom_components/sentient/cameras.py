@@ -34,7 +34,7 @@ def on_gadget(hass: HomeAssistant, entity_id: str) -> bool:
     entry = reg.async_get(entity_id)
     if entry is None or not entry.device_id:
         return False
-    return any(e.domain in GADGET_DOMAINS and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
+    return any(e.domain in GADGET_DOMAINS and not e.disabled_by and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
 
 
 # the main stream of a camera ("MainStream" on ONVIF, "HD Stream" on Tapo): the camera itself when nothing plainer exists
@@ -67,12 +67,19 @@ def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None =
     if entry is None or not entry.device_id:
         return True  # no device to go by: the name decides
     others = [e for e in er.async_entries_for_device(reg, entry.device_id)
-              if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by]
+              if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by
+              and hass.states.get(e.entity_id) is not None
+              and not NON_CAMERA_VIEW.search(_names(hass, e.entity_id, e))]
     if not others:
         return False  # the only camera its device still offers
     if any(not DUPLICATE_VIEW.search(_names(hass, e.entity_id, e)) for e in others):
         return True  # the device has a plainly named camera: this is an extra view of it
-    return not PRIMARY_VIEW.search(text)  # only streams: keep the main one, hide sub/SD/low
+    if PRIMARY_VIEW.search(text):
+        return False  # multiple primary streams may be separate lenses
+    if any(PRIMARY_VIEW.search(_names(hass, e.entity_id, e)) for e in others):
+        return True
+    # No primary or plain view exists. Keep one stable representative.
+    return entity_id != min([entity_id, *(e.entity_id for e in others)])
 
 
 def ignored(options: dict[str, Any]) -> set[str]:
