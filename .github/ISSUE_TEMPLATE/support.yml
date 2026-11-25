@@ -1,0 +1,31 @@
+name: Setup or troubleshooting
+description: Ask for help configuring or using Sentient
+title: "[Help]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Sentient version
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Core version
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to achieve?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you already tried?
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Relevant setup details or redacted logs
+      description: Never include credentials, tokens, private camera images or personal data.
