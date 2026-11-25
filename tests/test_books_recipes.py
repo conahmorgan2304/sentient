@@ -452,10 +452,12 @@ async def test_reading_session_stops_without_advancing_bookmark_on_privacy_chang
     rt = entry.runtime_data
     speaker = "assist_satellite.bedroom"
     said = []
+    entered, release = asyncio.Event(), asyncio.Event()
 
     async def read_aloud(text, target, **kwargs):
         said.append(text)
-        rt.speech._privacy_generation += 1
+        entered.set()
+        await release.wait()
         return True
 
     with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), \
@@ -463,8 +465,11 @@ async def test_reading_session_stops_without_advancing_bookmark_on_privacy_chang
             patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()):
         result = await rt.books.async_read("Flump", speaker)
         assert result["reading"]
+        await asyncio.wait_for(entered.wait(), timeout=5)
         task = rt.books.reading[speaker]["task"]
-        await task
+        rt.speech._privacy_generation += 1
+        release.set()
+        await asyncio.wait_for(task, timeout=5)
     assert len(said) == 1
     assert speaker not in rt.books.reading
     assert rt.books.place("Flump", speaker) is None
