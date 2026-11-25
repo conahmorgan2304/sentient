@@ -37,8 +37,8 @@ def test_all_languages_are_there() -> None:
     assert LANGS == [
         "ar", "bn", "cs", "da", "de", "el", "es", "fi",
         "fr", "he", "hi", "hu", "id", "it", "ja", "ko",
-        "nb", "nl", "pl", "pt", "ro", "ru", "sv", "tr",
-        "uk", "vi", "zh", "zh-hant",
+        "nb", "nl", "pl", "pt", "ro", "ru", "sv", "th",
+        "tr", "uk", "vi", "zh", "zh-hant",
     ]
 
 
