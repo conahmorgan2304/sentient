@@ -356,3 +356,24 @@ async def test_the_voice_can_name_the_camera_as_camera(hass: HomeAssistant) -> N
     assert entry.runtime_data.watches.watches[0].entity_id == "camera.garden"
     missing = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args=tool.parameters({"what": "x"})), None)
     assert "error" in missing
+
+
+async def test_pure_reminder_retries_only_before_dispatch(hass):
+    from unittest.mock import AsyncMock, patch
+    from custom_components.sentient.speech import SpeechResult
+
+    entry = await _setup(hass)
+    watches = entry.runtime_data.watches
+    watch = watches.add_reminder("Check the laundry", minutes=2)
+    with patch.object(watches.speech, "async_say", AsyncMock(return_value=SpeechResult(
+            False, "delivery_failed", "Check the laundry", [],
+            [{"entity_id": "assist_satellite.kitchen", "status": "unavailable", "dispatched": False}]))):
+        await watches._async_fire(watch, None, None)
+    assert watch.delivery_retries == 1
+    assert watch in watches.watches
+    with patch.object(watches.speech, "async_say", AsyncMock(return_value=SpeechResult(
+            False, "delivery_timeout", "Check the laundry", [],
+            [{"entity_id": "assist_satellite.kitchen", "status": "timed_out", "dispatched": True}]))):
+        await watches._async_fire(watch, None, None)
+    assert watch not in watches.watches
+    watches.cancel(watch.id)
