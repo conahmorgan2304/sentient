@@ -111,3 +111,20 @@ async def test_a_device_with_several_streams_still_counts_once(hass):
 async def test_screenshots_and_maps_are_never_cameras(hass):
     _device(hass, "tab", [("kitchen_screenshot", None)])
     assert cameras(hass, {}) == []
+
+
+async def test_secondary_only_camera_never_disappears(hass):
+    _device(hass, "low_only", [("drive_sd_stream", None), ("drive_substream", None)])
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.drive_sd_stream"]
+    assert hidden(hass, {}) == ["camera.drive_substream"]
+
+
+async def test_unloaded_alternative_does_not_hide_primary(hass):
+    _device(hass, "unloaded", [("gate_hd_stream", None), ("gate", None)])
+    hass.states.async_remove("camera.gate")
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.gate_hd_stream"]
+
+
+async def test_picture_sibling_does_not_hide_secondary_only_camera(hass):
+    _device(hass, "picture", [("shed_sd_stream", None), ("shed_screenshot", None)])
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.shed_sd_stream"]
