@@ -128,3 +128,10 @@ async def test_unloaded_alternative_does_not_hide_primary(hass):
 async def test_picture_sibling_does_not_hide_secondary_only_camera(hass):
     _device(hass, "picture", [("shed_sd_stream", None), ("shed_screenshot", None)])
     assert [s.entity_id for s in cameras(hass, {})] == ["camera.shed_sd_stream"]
+
+
+async def test_unregistered_primary_is_kept_without_a_matching_base(hass):
+    hass.states.async_set("camera.garage_hd_stream", "idle")
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.garage_hd_stream"]
+    hass.states.async_set("camera.garage", "idle")
+    assert [s.entity_id for s in cameras(hass, {})] == ["camera.garage"]
