@@ -34,7 +34,7 @@ def test_every_language_has_every_template_with_its_slots(lang: str) -> None:
 
 
 def test_all_languages_are_there() -> None:
-    assert LANGS == ["cs", "da", "de", "el", "es", "fi", "fr", "hu", "it", "nb", "nl", "pl", "pt", "ro", "sv", "tr", "zh"]
+    assert LANGS == ["cs", "da", "de", "el", "es", "fi", "fr", "hu", "it", "nb", "nl", "pl", "pt", "ro", "sv", "tr", "zh", "zh-hant"]
 
 
 D = phrases.compile_dictionary({
