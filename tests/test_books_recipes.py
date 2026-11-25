@@ -430,3 +430,16 @@ async def test_reading_stop_command_from_the_panel(hass: HomeAssistant, tmp_path
     assert (await client.receive_json())["result"] == {"stopped": ["Flump"]}
     await hass.async_block_till_done()
     assert task.cancelled() and not books.reading
+
+
+async def test_queued_reading_does_not_speak_after_privacy_change(hass, tmp_path):
+    entry = await _setup(hass, tmp_path)
+    speech = entry.runtime_data.speech
+
+    async def invalidate(*args):
+        speech._privacy_generation += 1
+
+    with patch.object(speech, "_wait_idle", side_effect=invalidate), \
+            patch.object(speech, "_speak", new_callable=AsyncMock) as speak:
+        assert not await speech.async_read_aloud("A queued passage.", "assist_satellite.bedroom")
+    speak.assert_not_awaited()
