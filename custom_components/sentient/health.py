@@ -121,7 +121,8 @@ class HouseHealth:
         ignore = set(self.options.get(CONF_HEALTH_IGNORE) or [])
         from .cameras import hidden as hidden_cameras
 
-        ignore |= set(hidden_cameras(self.hass, self.options))  # extra views of a camera aren't problems
+        hidden_views = set(hidden_cameras(self.hass, self.options))
+        # Hidden views are not evidence of a fault, but must not silence the whole device.
         threshold = float(self.options.get(CONF_BATTERY_THRESHOLD, DEFAULT_BATTERY_THRESHOLD))
         now = dt_util.utcnow()
         ent_reg = er.async_get(self.hass)
@@ -131,7 +132,7 @@ class HouseHealth:
         by_device: dict[str, list] = {}
         links: dict[str, list] = {}
         for entry in ent_reg.entities.values():
-            if not entry.device_id or entry.disabled_by:
+            if not entry.device_id or entry.disabled_by or entry.entity_id in hidden_views:
                 continue
             if entry.entity_category is None and entry.domain != "update":
                 by_device.setdefault(entry.device_id, []).append(entry.entity_id)
@@ -309,8 +310,10 @@ class HouseHealth:
                         real, was_real = real or is_real, is_real
                     if real:
                         self._never.pop(e, None)
-                    else:
+                    elif rows.get(e):
                         self._never[e] = now + RECHECK
+                    else:
+                        self._never.pop(e, None)  # absent recorder history is not proof of a never-working device
             for e in entity_ids:
                 self._checked[e] = now
         except Exception:  # noqa: BLE001 - fall back to counting them

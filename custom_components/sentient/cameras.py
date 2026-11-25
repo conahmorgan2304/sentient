@@ -34,7 +34,7 @@ def on_gadget(hass: HomeAssistant, entity_id: str) -> bool:
     entry = reg.async_get(entity_id)
     if entry is None or not entry.device_id:
         return False
-    return any(e.domain in GADGET_DOMAINS and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
+    return any(e.domain in GADGET_DOMAINS and not e.disabled_by and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
 
 
 # the main stream of a camera ("MainStream" on ONVIF, "HD Stream" on Tapo): the camera itself when nothing plainer exists
@@ -65,14 +65,46 @@ def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None =
     if not DUPLICATE_VIEW.search(text):
         return False
     if entry is None or not entry.device_id:
-        return True  # no device to go by: the name decides
+        # Without registry metadata, only suppress a named stream when a
+        # corresponding base camera is actually present. Preserve ambiguous views.
+        object_id = entity_id.split(".", 1)[-1].replace("_", " ")
+        base = DUPLICATE_VIEW.sub("", object_id).strip(" -_")
+        if base and base != object_id:
+            if any(st.entity_id != entity_id and
+                   st.entity_id.split(".", 1)[-1].replace("_", " ") == base
+                   for st in hass.states.async_all("camera")):
+                return True
+        return not bool(PRIMARY_VIEW.search(text))
     others = [e for e in er.async_entries_for_device(reg, entry.device_id)
-              if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by]
+              if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by
+              and hass.states.get(e.entity_id) is not None
+              and not NON_CAMERA_VIEW.search(_names(hass, e.entity_id, e))]
     if not others:
         return False  # the only camera its device still offers
     if any(not DUPLICATE_VIEW.search(_names(hass, e.entity_id, e)) for e in others):
         return True  # the device has a plainly named camera: this is an extra view of it
-    return not PRIMARY_VIEW.search(text)  # only streams: keep the main one, hide sub/SD/low
+    if PRIMARY_VIEW.search(text):
+        return False  # multiple primary streams may be separate lenses
+    if any(PRIMARY_VIEW.search(_names(hass, e.entity_id, e)) for e in others):
+        return True
+    # No primary or plain view exists. Keep one stable representative.
+    return entity_id != min([entity_id, *(e.entity_id for e in others)])
+
+
+def inventory(hass: HomeAssistant, options: dict[str, Any]) -> list[dict[str, Any]]:
+    """Shared camera classification; explicit security selections remain independent."""
+    reg = er.async_get(hass)
+    skip = ignored(options)
+    rows = []
+    for state in hass.states.async_all("camera"):
+        entry = reg.async_get(state.entity_id)
+        rows.append({"state": state, "entity_id": state.entity_id,
+                     "device_id": entry.device_id if entry else None,
+                     "extra": is_duplicate_view(hass, state.entity_id, state),
+                     "ignored": state.entity_id in skip,
+                     "available": state.state not in ("unknown", "unavailable"),
+                     "supported_features": state.attributes.get("supported_features", 0)})
+    return rows
 
 
 def ignored(options: dict[str, Any]) -> set[str]:
@@ -81,14 +113,9 @@ def ignored(options: dict[str, Any]) -> set[str]:
 
 def cameras(hass: HomeAssistant, options: dict[str, Any]) -> list[State]:
     """The cameras Sentient should count, check and offer: not ignored, not an extra view."""
-    skip = ignored(options)
     hide = options.get(CONF_HIDE_SUBSTREAMS, True)
-    out = []
-    for st in hass.states.async_all("camera"):
-        if st.entity_id in skip or (hide and is_duplicate_view(hass, st.entity_id, st)):
-            continue
-        out.append(st)
-    return out
+    return [row["state"] for row in inventory(hass, options)
+            if not row["ignored"] and not (hide and row["extra"])]
 
 
 def hidden(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:

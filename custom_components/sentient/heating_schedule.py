@@ -436,9 +436,9 @@ class HeatingProgrammes:
                 self._observe(heater, state)
                 if heater in self._owned and state is not None and state.state not in ("unknown", "unavailable"):
                     events.append((heater, "recover_off", None, record["key"]))
-        events.extend(e for e in self.reconcile(local) if e[0] not in scheduled)
+        events.extend(self.reconcile(local, exclude=scheduled))
         if events:
-            self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
+            self.hass.async_create_background_task(self.async_run(events, local, revalidate=True), "sentient_heating_programme")
 
     def held(self, heater: str, now: datetime) -> bool:
         """Is someone's own change to this thermostat still within its time? Then a period starting or ending waits.
@@ -495,7 +495,7 @@ class HeatingProgrammes:
         return bool(rt is not None and enabled(rt.options) and any(
             p.get("enabled", True) and heater in p["heaters"] for p in self.programmes()))
 
-    def reconcile(self, local: datetime) -> list[tuple[str, str, float | None, str]]:
+    def reconcile(self, local: datetime, *, exclude: set[str] | None = None) -> list[tuple[str, str, float | None, str]]:
         """Thermostats found away from the schedule (turned up, down or off by hand, or by the device itself) are
         left alone for a while, 3 hours by day and 1 at night, then put back: a period's temperature, or the
         night temperature outside the periods. "off" here runs as the night temperature."""
@@ -511,6 +511,8 @@ class HeatingProgrammes:
             self._manual.pop(gone)
         night, now, out = night_temp(rt.options), dt_util.as_utc(local), []
         for heater in heaters:
+            if exclude and heater in exclude:
+                continue  # a boundary already owns this turn; do not invent a manual hold
             state = self.hass.states.get(heater)
             if state is None or state.state in ("unknown", "unavailable") or blocked(self.hass, heater) \
                     or heater in (rt.options.get(CONF_NEVER_ENTITIES) or []) \
@@ -626,11 +628,11 @@ class HeatingProgrammes:
             row["ok"], row["why"] = False, " · ".join(z["why"] for z in row["zones"].values())
         return False
 
-    async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
+    async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime, *, revalidate: bool = False) -> list[str]:
         async with self._lock:
-            return await self._async_run(events, local)
+            return await self._async_run(events, local, revalidate=revalidate)
 
-    async def _async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
+    async def _async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime, *, revalidate: bool = False) -> list[str]:
         from .own import own_context
 
         rt = self._rt()
@@ -640,9 +642,23 @@ class HeatingProgrammes:
             if self._stopped or rt is None or not enabled(rt.options):
                 break
             programme = self.items.items.get(key)
-            name = programme["name"] if programme else key
+            current = dt_util.now() if revalidate else local
             if programme is not None and not programme.get("enabled", True) and what != "recover_off":
                 continue
+            if revalidate:
+                if programme is None or heater not in programme["heaters"]:
+                    continue
+                # Boundary heaters were excluded from reconciliation, so a hold
+                # here cannot be invented by the same tick merely seeing a new target.
+                if self.held(heater, current):
+                    continue
+                active = _active_period(self.programmes(), heater, current)
+                if what == "on" and (active is None or active[0].get("id", active[0]["name"]) != key
+                                     or float(active[1]["temp"]) != temp):
+                    continue
+                if what != "on" and active is not None:
+                    continue
+            name = programme["name"] if programme else key
             state = self.hass.states.get(heater)
             label = state.name if state else heater
             row = rows.setdefault(key, {"time": dt_util.as_utc(local).isoformat(), "zones": {}})
@@ -676,7 +692,7 @@ class HeatingProgrammes:
             domain, service = action["action"].split(".", 1)
             context = own_context(self.hass, f"heating schedule: {name}")
             if what == "on":
-                self._prepare_ownership(heater, key, local, action, context)
+                self._prepare_ownership(heater, key, current, action, context)
             try:
                 async with asyncio.timeout(30):
                     await self.hass.services.async_call(

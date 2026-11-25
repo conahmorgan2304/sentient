@@ -316,3 +316,22 @@ async def test_a_problem_can_be_cleared_until_it_comes_back(hass: HomeAssistant,
     assert health.dismissed == {}  # gone by itself: forgotten
     hass.states.async_set("sensor.door_battery", "7", {"device_class": "battery", "friendly_name": "Door battery"})
     assert [i["name"] for i in health.async_check()] == ["Door battery"]  # back again: shown again
+
+
+async def test_hidden_camera_stream_does_not_hide_offline_device(hass, freezer):
+    from custom_components.sentient.health import HouseHealth
+
+    other = MockConfigEntry(domain="onvif")
+    other.add_to_hass(hass)
+    dev = dr.async_get(hass).async_get_or_create(
+        config_entry_id=other.entry_id, identifiers={("onvif", "gate")}, name="Gate camera"
+    )
+    reg = er.async_get(hass)
+    for obj in ("gate_hd_stream", "gate_sd_stream"):
+        reg.async_get_or_create("camera", "onvif", obj, suggested_object_id=obj, device_id=dev.id)
+        hass.states.async_set(f"camera.{obj}", "unavailable")
+    health = HouseHealth(hass, {})
+    freezer.tick(timedelta(minutes=11))
+    health._checked["camera.gate_hd_stream"] = dt_util.utcnow()
+    assert any(i["kind"] == "offline" and i["device_id"] == dev.id
+               for i in health.async_check())

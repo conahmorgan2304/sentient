@@ -616,7 +616,10 @@ class SpeechRouter:
                 self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
                 # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
                 self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
-            self._remember_said(text, spoken)
+            if accepted:
+                self._remember_said(text, spoken)
+        if not accepted:
+            return SpeechResult(False, "failed", spoken, [], receipts)
         speakers = accepted
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(

@@ -71,9 +71,9 @@ async def test_old_request_does_not_overwrite_current_provider_health(hass, old_
     gate.options = {'ai_task_entity': 'ai_task.new'}
     gate.failed(HomeAssistantError('new provider error'))
     release.set()
-    if old_error:
-        with pytest.raises(AIUnavailable): await task
-    else: await task
+    # Neither a stale failure nor a stale success may escape the invalidated request.
+    with pytest.raises(AIUnavailable):
+        await task
     assert gate.fails_in_row == 1 and gate.last_error == 'new provider error'
     assert gate.last_ok_at is None
 
