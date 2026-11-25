@@ -327,6 +327,8 @@ class AIGate:
                 self.failed(err)
                 self._record_outcome(data, False, round((monotonic() - started_at) * 1000))
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
+        if not current():
+            raise AIUnavailable("AI settings or privacy changed; response discarded")
         if current():
             self.ok()
             self._record_outcome(data, True, round((monotonic() - started_at) * 1000))
