@@ -240,25 +240,36 @@ class Notifier:
         if text.lower() in self._sent:
             return
         self._sent[text.lower()] = now
-        persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
         kind = "door" if event.data.get("kind") == "visitor" else "reminders" if event.data.get("reminder") else None
         link = tap_link(event.data)
         tap = {"url": link, "clickAction": link, "group": "sentient"}  # iOS opens url, Android clickAction
         if event.data.get("kind") == "security":
             tap["tag"] = alert_tag(event.data)  # so the picture check can update this notification in place
-        if self.on_sent is not None:
-            self.on_sent(event.data.get("time"), title)
         rich = self._with_buttons(kind, event.data) if kind else None
         if rich is not None:
             apps, data = rich
-            self.hass.async_create_task(self._send_app(apps, f"{persona} · {title}", text, {**tap, **data}), eager_start=True)
+            self.hass.async_create_task(self._deliver_item(event.data.get("time"), title, text, apps, [], {**tap, **data}), eager_start=True)
             return
         # phones go through the app's own action (title, tap link); anything else through send_message
         apps = {t: app for t in targets if (app := app_service_for(self.hass, t)) is not None}
-        if apps:
-            self.hass.async_create_task(self._send_app(sorted(set(apps.values())), f"{persona} · {title}", text, tap), eager_start=True)
-        if others := [t for t in targets if t not in apps]:
-            self.hass.async_create_task(self._send(others, f"{persona} · {title}", text), eager_start=True)
+        others = [t for t in targets if t not in apps]
+        self.hass.async_create_task(self._deliver_item(event.data.get("time"), title, text,
+                                    sorted(set(apps.values())), others, tap), eager_start=True)
+
+    async def _deliver_item(self, stamp, title, text, apps, others, data):
+        """Only mark a timeline notification after a destination accepts it."""
+        generation = self._generation
+        persona = self.options.get(CONF_PERSONA) or DEFAULT_PERSONA
+        sent = await self._send_app(apps, f"{persona} · {title}", text, data) if apps else False
+        if generation != self._generation:
+            return
+        if others:
+            sent = await self._send(others, f"{persona} · {title}", text) or sent
+        if generation == self._generation:
+            if sent and self.on_sent is not None:
+                self.on_sent(stamp, title)
+            elif not sent:
+                self._sent.pop(text.lower(), None)
 
     @callback
     def follow_up(self, item: dict[str, Any] | None, line: str) -> None:
@@ -276,19 +287,21 @@ class Notifier:
         self.hass.async_create_task(self._send_app(apps, f"{persona} · {item['phoned']}",
                                                    f"{item.get('text', '')}\n{line}", data), eager_start=True)
 
-    async def _send(self, targets: list[str], title: str, message: str) -> None:
+    async def _send(self, targets: list[str], title: str, message: str) -> bool:
         from .phrases import async_written
 
         generation, options = self._generation, self.options
         title, message = await async_written(self.hass, options, title), await async_written(self.hass, options, message)
         if generation != self._generation or self.options is not options:
-            return
+            return False
         try:
             await self.hass.services.async_call(
                 "notify", "send_message", {"entity_id": targets, "title": title, "message": message}, blocking=True
             )
         except Exception as err:  # noqa: BLE001 - a failed notification must never break anything else
             _LOGGER.warning("Sentient couldn't send a notification: %s", err)
+            return False
+        return True
 
     async def _send_app(self, apps: list[str], title: str, message: str, data: dict[str, Any]) -> bool:
         from .phrases import async_written, async_written_data
