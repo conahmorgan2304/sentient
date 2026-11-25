@@ -39,13 +39,16 @@ export function localeOf(hass) {
 
 function slotRe(parts, caps, anchor = "whole") {
   const names = [];
+  // a slot doesn't reach across " · " (a list of separate pieces) unless the piece itself has one
+  const dotted = parts.some((p) => p.includes(" · "));
+  const any = dotted ? "." : "(?:(?! · ).)";
   const body = parts.map((part, i) => {
     const m = /^\{([a-z]+|\d+)\}$/.exec(part);
     if (!m) return (caps ? part.toUpperCase() : part).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     names.push(m[1]);
     if (/^\d+$/.test(m[1])) return "(\\d+(?:[.,:]\\d+)*)";
     // a slot straight after a letter is a word ending ("thing{b}" for "s"), which may be empty
-    return /[A-Za-z]$/.test(parts[i - 1] || "") ? "(.*?)" : "(.+?)";
+    return "(" + any + (/[A-Za-z]$/.test(parts[i - 1] || "") ? "*?)" : "+?)");
   }).join("");
   const rx = anchor === "start" ? "^" + body : anchor === "end" ? body + "$" : "^" + body + "$";
   return { re: new RegExp(rx, "s"), names };
@@ -171,8 +174,21 @@ function fragments(text, d, depth) {
   return null;
 }
 
+// a known sentence with a known ending added: the ending stays at the end instead of inside the last slot
+function ended(text, d, depth) {
+  if (depth > 4) return null;
+  for (const e of d.endings || []) {
+    const m = e.re.exec(text);
+    if (m && m.index > 0) {
+      const head = one(text.slice(0, m.index), d, false, depth + 1);
+      if (head != null) return head + filled(e.tr, e.names, m, d);
+    }
+  }
+  return null;
+}
+
 function one(text, d, split = true, depth = 0) {
-  const hit = whole(text, d) ?? numbered(text, d) ?? slotted(text, d) ?? fragments(text, d, depth);
+  const hit = whole(text, d) ?? numbered(text, d) ?? ended(text, d, depth) ?? slotted(text, d) ?? fragments(text, d, depth);
   if (hit != null || !split || !text.includes(" · ")) return hit;
   let changed = false;
   const parts = text.split(" · ").map((p) => { const t = one(p.trim(), d, false); if (t != null) { changed = true; return t; } return p; });

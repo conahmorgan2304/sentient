@@ -150,7 +150,9 @@ For a local reply to **"Who's speaking?"**, set up the separate [Sentient Voice 
 
 The Sentient page and cards follow your Home Assistant language. They're translated into English, Polish, German, Dutch, Italian, Portuguese, Spanish, French and Hungarian; any other language shows English. The Settings forms, services and entity names come from `custom_components/sentient/translations/<language>.json` and are complete in the same languages; Home Assistant shows English for anything missing.
 
-To add or fix a language for the page, edit `custom_components/sentient/frontend/i18n/<language>.json`. Each English piece from `i18n/en.json` maps to its translation, and `{0}` or `{name}` slots are kept as they are. `node --test tests/frontend_i18n.test.cjs` checks that every language has every piece. Native speakers' corrections are very welcome.
+Sentient's own words follow your language too. Its fixed sentences (timeline, House health, the Mind tab, phone notifications, voice replies and spoken alerts) come from a built-in list in the same languages, with no AI used. Words the AI writes for it are written in Home Assistant's language, or the voice's language when they're said out loud. Names of people, rooms and devices stay as they are. Turn "Sentient's own words in the house's language" off in Settings → Voice to keep them in English.
+
+To add or fix a language for the page, edit `custom_components/sentient/frontend/i18n/<language>.json`. Each English piece from `i18n/en.json` maps to its translation, and `{0}` or `{name}` slots are kept as they are. `node --test tests/frontend_i18n.test.cjs` checks that every language has every piece. Sentient's own sentences are in `frontend/i18n/house/`: `en.json` lists them with `{a}`, `{b}` where a name or number goes, and each `<language>.json` translates them. A translation may leave out a slot (a plural ending, say) but never add one. Native speakers' corrections are very welcome.
 
 ## Services
 

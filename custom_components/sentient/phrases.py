@@ -47,12 +47,14 @@ def _pattern(template: str, caps: bool, anchor: str) -> tuple[re.Pattern, list[s
     parts = _SLOT.split(template)
     names: list[str] = []
     body = ""
+    # a slot doesn't reach across " · " (a list of separate pieces) unless the template itself has one
+    any_ = "." if " · " in template else "(?:(?! · ).)"
     for i, part in enumerate(parts):
         if _SLOT.fullmatch(part):
             names.append(part[1:-1])
             # a slot straight after a letter is a word ending ("thing{b}" for "s"), which may be empty
             before = parts[i - 1] if i else ""
-            body += "(.*?)" if before[-1:].isalpha() else "(.+?)"
+            body += f"({any_}*?)" if before[-1:].isalpha() else f"({any_}+?)"
         else:
             body += re.escape(part.upper() if caps else part)
     if anchor == "whole":
@@ -112,6 +114,12 @@ def _one(text: str, d: Dictionary, split: bool = True, depth: int = 0) -> str | 
     caps = _caps(text)
     if caps and text in d.upper:
         return d.upper[text].upper()
+    # a known sentence with a known ending added ("It's down to 2 degrees in the hutch" + " and freezing — …"):
+    # keep the ending at the end rather than letting the sentence's last slot swallow it
+    for rx, names, tr in d.endings:
+        m = rx.search(text)
+        if m and m.start() > 0 and (head := _one(text[:m.start()], d, split=False, depth=depth + 1)) is not None:
+            return head + _fill(tr, names, m.groups(), d, False)
     for rx, up, names, tr in d.slots:
         m = (up if caps else rx).match(text)
         if m:
