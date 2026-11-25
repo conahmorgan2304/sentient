@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Seznamte se s mozkem svého domova",
+    "description": "Dejte tomu jméno. Tak se nazývá a jak se objevuje v Home Assistant.",
+    "data": {
+     "persona": "Jméno"
+    }
+   },
+   "speech": {
+    "title": "Jak by měl dům mluvit?",
+    "description": "Vyber hlasové satelity, přes které může mluvit. Mluví tam, kde jsou lidé (pohyb nebo někdo mluví s reproduktorem), jinak na výchozí reproduktor.",
+    "data": {
+     "speakers": "Reproduktory",
+     "default_speaker": "Výchozí reproduktor",
+     "quiet_start": "Začínají tiché hodiny",
+     "quiet_end": "Tiché hodiny končí",
+     "busy_entities": "Zůstaňte zticha, když jsi zaneprázdněni",
+     "motion_window": "Okno pro povědomí o místnosti",
+     "banned_words": "Nikdy nepoužívejte tato slova (oddělená čárkou)",
+     "suppress_entities": "Po těchto automatizacích nebo skriptech zůstaňte zticha",
+     "suppress_seconds": "Buď zticha",
+     "prompt_memories": "Vzpomínky ke sdílení s hlasovými asistenty",
+     "pass_through_areas": "Průchozí oblasti",
+     "all_occupied": "Mluvte v každé obsazené místnosti",
+     "room_tracking": "Použij sledovače místností (Bluetooth)",
+     "room_trackers": "Sledovače pokojů",
+     "ai_task_entity": "AI pro úlohy na pozadí",
+     "camera_cooldown": "Minimální mezera mezi kontrolami kamery",
+     "fallback_speakers": "Pouze záložní reproduktory",
+     "daily_ai_limit": "AI volání za den",
+     "prompt_recent": "Právě teď a poslední hodina v kontextu hlasu",
+     "rules": "Pravidla a jejich vytváření hlasem",
+     "relevant_memories": "Vyber vzpomínky, které odpovídají tomu, co bylo požadováno",
+     "look_cache_minutes": "Znovu použít odpověď z fotoaparátu pro",
+     "camera_prefilter": "Přeskočit pohledy kamery, když se nic nezměnilo",
+     "budget_drive": "AI volání za den: cesta",
+     "budget_noticing": "AI volání za den: všímání si",
+     "budget_cameras": "AI volání za den: kontrola kamer a sledování",
+     "routine_evidence": "Řekni, jak často jsi viděli rutinu",
+     "notice_entities": "Věci, kterých je třeba si všimnout",
+     "remark_repeat_hours": "Neopakujte poznámku pro",
+     "chattiness": "Jak upovídané",
+     "conversation_style": "Jak to mluví",
+     "carry_on_minutes": "Pokračujte v rozhovoru pro",
+     "focused_tools": "Zaměřené hlasové nástroje",
+     "ask_later": "Zeptej se, jak to šlo",
+     "put_right": "Napravte chyby jedním tahem",
+     "music": "Hudba na dotaz",
+     "music_alexa": "Hudba přes Alexa (Echos)",
+     "music_alexa_service": "Hudební služba pro Echos",
+     "house_rules": "Domácí řád",
+     "no_security_offers": "Nikdy nenabízejte aktivaci, deaktivaci nebo odemknutí",
+     "learn_entities": "Naučte se rutiny od",
+     "learn_anchors": "Návyky, které následují po dni",
+     "trust_lights": "Světla",
+     "trust_switches": "Vypínače, zástrčky a ventilátory",
+     "trust_covers": "Žaluzie a závěsy",
+     "trust_heating": "Topení",
+     "offer_together": "Nabídněte návyky prováděné společně jako jeden",
+     "link_triggers": "Přečti si také, co následuje po těchto",
+     "suggest_routines": "Nabídněte, že převezmete rutiny",
+     "prove_routines": "Zvyky se osvědčí dříve, než jsou nabídnuty",
+     "routine_fading": "Zeptej se na rutiny, které již nejsou potřeba",
+     "door_camera": "Dveřní kamera",
+     "door_triggers": "Domovní zvonek",
+     "announce_visitors": "Řekni, kdo je u dveří",
+     "faces": "Jména z rozpoznávání obličejů",
+     "face_people": "Pouze tito lidé",
+     "face_teach": "Zeptej se na telefonu, kdo jsou nejmenované tváře",
+     "face_teach_cameras": "Naučte se tváře z těchto kamer",
+     "face_cameras": "Jména pouze z těchto kamer",
+     "face_forget_hours": "Poté zapomeňte na nejmenované tváře",
+     "clip_watch": "Sledujte klipy z akcí",
+     "clip_cameras": "Kamery",
+     "clip_scope": "Které události",
+     "clip_when": "Když",
+     "clip_notify": "Poslat na telefony",
+     "clip_source": "Kdo píše shrnutí",
+     "clip_whose": "Řekni, který člen domácnosti to byl",
+     "clip_looks": "Jak lidé vypadají, když jim není vidět do tváře",
+     "budget_clips": "Klipy sledované za den (většina)",
+     "clip_days": "Shrnutí si uschovejte pro",
+     "clip_keep": "Uchovávejte soubory klipů",
+     "parcel_alerts": "Řekni, kdy zbyde balík",
+     "doorstep_sensors": "Zkontroluj balíky po návštěvách, které viděli",
+     "zone_visits": "Počítejte s někým v zóně s kamerou u předních dveří jako s návštěvníkem",
+     "zone_door_sensors": "Senzor předních dveří (zóna je ignorována, pokud se otevřela jako první)",
+     "face_sensor": "Uznávané jméno od",
+     "sidebar_panel": "Zobrazit na postranním panelu",
+     "page_admin_only": "Tuto stránku mohou otevřít pouze správci",
+     "custom_pages": "Uspořádejte stránku Sentient",
+     "suggestions": "Návrhy na stránce Sentient",
+     "whats_new": "Co je nového po aktualizaci",
+     "simple_settings": "Jednodušší stránka nastavení",
+     "auto_backup": "Zálohujte každý týden",
+     "backup_keep": "Kolik si jich nechat",
+     "confirm_kinds": "Zeptej se \"mám?\" před",
+     "chat_agent": "Chatovací agent pro stránku postranního panelu",
+     "battery_threshold": "Slabá baterie níže",
+     "battery_forecast": "Řekni, kdy se vybijí baterie",
+     "health_ignore": "Ignorovat pro zdraví domu",
+     "hide_substreams": "Skrýt další pohledy kamery",
+     "ignore_cameras": "Kamery k ignorování",
+     "never_entities": "Nikdy se jich nedotýkejte",
+     "self_check": "Kontrolujte se každou noc",
+     "learn_corrections": "Naučte se, když zrušíte to, co způsobil",
+     "normal_day": "Všimněte si neobvyklého dne",
+     "thoughts": "Ukaž, co si myslí",
+     "share_learning": "Řekni, co se naučil",
+     "self_adjust": "Uprav se",
+     "proposals": "Navrhněte změny v jeho nastavení",
+     "privacy_log": "Zaznamenejte si, co opouští dům",
+     "goals": "Cíle",
+     "manuals": "Odpověď z dokumentů",
+     "manuals_folder": "Složka dokumentů",
+     "manuals_local_text": "Podívej se do textových dokumentů",
+     "manuals_pages": "Číst soubory PDF stránku po stránce",
+     "games": "Příběhové hry",
+     "voice_id": "Vědět, kdo mluví",
+     "voice_id_unknown": "Zacházejte s hlasy, které se nemohou shodovat, jako s hostem",
+     "speaker_memories": "Uchovávejte vzpomínky každého člověka",
+     "books": "knihy",
+     "books_folder": "Složka knihy",
+     "reading_tts": "Čtení hlasu: služba",
+     "reading_voice": "Čtení hlasu",
+     "read_ahead": "Během čtení si připravte další část",
+     "recipes": "Recepty",
+     "recipes_folder": "Složka recepty",
+     "recipes_list": "Nákupní seznam ingrediencí",
+     "voice_lists": "Nakupování a seznamy úkolů hlasem",
+     "ready_tonight": "Připraven na dnešní večer",
+     "ready_tonight_lights": "Připraveno na dnešní noc: světla se mohou vypnout",
+     "ready_tonight_follow": "Připraveno na dnešní večer: řekni mi, až to bude vyřešeno",
+     "tandoor_url": "Adresa Tandoor",
+     "tandoor_token": "Token Tandoor API",
+     "second_opinion_ai": "AI pro druhý názor",
+     "smart_ai_task": "Silnější AI pro bezpečnost a myšlení přes noc",
+     "event_clips": "Podívej se na klipy událostí Frigate",
+     "chime": "Než začnete mluvit, zazvoňte",
+     "voice_agent": "Hlavní hlasový agent AI",
+     "backup_agent": "Záložní asistent",
+     "offline_answers": "Odpověz na běžné otázky bez AI",
+     "animal_sensors": "Teplotní senzory zvířat",
+     "away_lights_on": "Pryč světla",
+     "holiday_mode": "Prázdninový režim",
+     "holiday_thermostats": "Termostaty na dovolenou ztlumit",
+     "holiday_frost": "Teplota ochrany proti mrazu",
+     "holiday_end_on_return": "Ukončete prázdninový režim, když je někdo doma",
+     "away_people": "Pryč, když jsou všichni venku",
+     "away_lights": "Světla k použití",
+     "away_after": "Začněte poté, co všichni odešli",
+     "animal_low": "Dole je příliš chladno",
+     "animal_high": "Nahoře je příliš horko",
+     "hutch_check": "Večerní kontrola kotce",
+     "hutch_spot": "Kamerový bod chýše",
+     "cat_watch": "Noční kočičí hlídka",
+     "cat_sensors": "Kočičí senzory",
+     "cat_loud": "Řekni to rovnou v noci",
+     "rain_warnings": "Varování před deštěm",
+     "rain_entities": "Okna a dveře ke sledování",
+     "self_test": "Autotest",
+     "self_test_household": "Otázky pro domácnost v autotestu",
+     "screen": "Použij obrazovku tabletu",
+     "screen_actions": "Když se něco objeví",
+     "screen_clear_actions": "Až se to všechno vyčistí",
+     "conversation_sessions": "Konverzační sezení",
+     "room_conversation_handoff": "Předání konverzace z místnosti do místnosti",
+     "verified_bedtime": "Ověřeno před spaním",
+     "verified_bedtime_lights": "Dole světla před spaním",
+     "verified_bedtime_contacts": "Dole před spaním otevírací kontakty",
+     "session_seconds": "Časový limit nečinnosti relace",
+     "guarded_control": "Vynucené hlasové potvrzení",
+     "routine_verify": "Kontrolní rutiny fungovaly",
+     "voice_unlock": "Povolit odemykání hlasem",
+     "voice_undo": "Vraťte zpět poslední změny světla",
+     "evidence_awareness": "Vysvětlete důkazy a nejistotu",
+     "security_incidents": "Skupinové bezpečnostní incidenty",
+     "incident_front": "Před domem",
+     "live_voice_check": "Živá hlasová kontrola",
+     "speech_delivery_history": "Historie doručení reproduktoru",
+     "alexa_tts_only": "Používejte TTS pouze na Alexa",
+     "update_checker": "Zkontroluj aktualizace Sentient",
+     "contextual_followups": "Související sledování a opravy",
+     "conversation_recovery": "Zrušení konverzace a opatrné obnovení",
+     "speech_failure_notification": "Informujte o selhání dodávky reproduktorů",
+     "recent_followup_context": "Krátké sledování po novém probuzení",
+     "conversation_cues": "Pochopit odhlášení, opravy a změny předmětu",
+     "vary_replies": "Pokaždé říkejte věci jinak",
+     "behaviour_explanations": "Vysvětlete rozhodování naslouchání a jednání",
+     "current_house_context": "Současný kontext domu",
+     "moment_awareness": "Uvědomění si okamžiku",
+     "room_memory": "Krátkodobá paměť na pokoj",
+     "know_people": "Vědět, kdo asi mluví",
+     "instant_answers": "Okamžité odpovědi",
+     "capability_awareness": "Vědět, co dům dokáže",
+     "house_context_entities": "Další kontextové entity",
+     "house_context_updates": "Řekni mi, až bude dosaženo požadovaného vytápění",
+     "security_event_evidence": "Propojte bezpečnostní výstrahy s událostmi Frigate",
+     "security_event_zones": "Které události kamery jsou uvedeny",
+     "security_event_hidden_zones": "Zóny, jejichž události nejsou uvedeny",
+     "security_coverage": "Vysvětlete mezery v pokrytí kamery",
+     "frigate_pipeline_health": "Zobrazit stav potrubí Frigate",
+     "security_conversation_context": "Ponech událost zabezpečení v konverzaci",
+     "security_event_feedback": "Zaznamenejte zpětnou vazbu na události kamery",
+     "share_clip_analysis": "Znovu použij analýzy odpovídajících klipů"
+    },
+    "data_description": {
+     "motion_window": "Kolik minut historie pohybu zvážit při rozhodování, kde se lidé nacházejí.",
+     "suppress_entities": "e.g. tvoje oznámení zvonku, takže poznámky na pozadí toho nemluví.",
+     "busy_entities": "Když je kterékoli z nich zapnuté (kalendář schůzek, přepínač Focus, telefon v režimu Nerušit), Sentient zadržuje řeč, která může čekat, jako by byla umlčena. Bezpečnostní upozornění a odpovědi, které požadujete, stále přicházejí. Chceš-li to vypnout, ponech prázdné.",
+     "prompt_memories": "Kolik vzpomínek dostane hlasový asistent předem. Zbytek lze ještě prohledat.",
+     "pass_through_areas": "Chodby, podesty a schodiště. Procházka těmito se počítá za mnohem méně, takže kolemjdoucí neukradne oznámení.",
+     "all_occupied": "On: každý, kdo je doma, to slyší. Vypnuto: pouze nejrušnější místnost.",
+     "room_tracking": "Ve výchozím nastavení vypnuto. Když pokojový sledovač (například bermudský senzor \"Area\" pro telefon) říká, že někdo je v místnosti s reproduktorem, jsou tam uvedeny věci \"kdekoli jsou lidé\". Když žádný sledovač neví — telefon není vidět, venku nebo místnost bez reproduktoru — odhad založený na pohybu se použije jako dříve. Jen jsem si vybíral, kde mluvit, nikdy neřešil, jestli je někdo vzhůru. Nic není uloženo.",
+     "room_trackers": "Senzory, jejichž stav je místnost, ve které se něco nachází, jako například senzory \"Area\" na Bermudách (jeden na telefon nebo štítek). Každý potřebuje, aby místnost odpovídala oblasti Home Assistant.",
+     "ai_task_entity": "Úkol umělé inteligence používaný pro pohledy kamery, briefingy, noční přemýšlení a pohled na zítřek. Prázdný používá preferovaný úkol umělé inteligence Home Assistant.",
+     "camera_cooldown": "Hodinky s fotoaparátem se dívají maximálně takto často, aby se snížily náklady na umělou inteligenci.",
+     "fallback_speakers": "Používá se pouze tehdy, když nikdo není v jiné místnosti reproduktorů, e.g. obývací pokoj, který byste raději nerušili.",
+     "daily_ai_limit": "Volání umělé inteligence na pozadí (kontroly kamery, brífinky, noční přemýšlení, zvonek…) se zastaví na následující den a místo toho používá srozumitelná slova. Otázky, na které se ptáte, jsou stále zodpovězeny. 0 znamená žádný limit.",
+     "prompt_recent": "Pár řádků právě teď (spící, tiché nebo tiché hodiny, hosté, cokoli otevřeného a čtení, ze kterého nebylo několik hodin slyšet, takže nejsou uváděna jako aktuální), co se stalo za poslední hodinu a kde došlo k pohybu, takže „něco, co bych měl vědět?“ a \"co se právě stalo?\" jsou zodpovězeny rovnou. Zdarma: žádné další volání AI.",
+     "rules": "\"Když se to stane, udělejte to\" pravidla (stránka Pravidla) a hlas je může vytvořit: přečte pravidlo zpět a uloží ho až po vyslovení ano. Pravidla nikdy nemohou nic aktivovat, deaktivovat ani odemknout. Vypnuto: žádná pravidla se nespustí.",
+     "relevant_memories": "Jakmile existuje více vzpomínek, než se vejde do kontextu hlasu, dostane ty, které sdílejí slova s ​​otázkou, pak nejnovější. Zdarma, žádná AI. Vypnuto: vždy nejnovější.",
+     "look_cache_minutes": "Stejná otázka na stejnou kameru během této doby dostane poslední odpověď namísto nového vzhledu AI. 0 vždy vypadá znovu.",
+     "camera_prefilter": "Kontroly fotoaparátu a hodinky nejprve porovnávají malý obrázek (na tomto stroji zdarma) a zeptají se AI pouze tehdy, když kamera — nebo její místo — vypadá jinak než při posledním pohledu.",
+     "budget_drive": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit.",
+     "budget_noticing": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit.",
+     "budget_cameras": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit. Bezpečnost, zvonek a otázky, které kladete, nejsou nikdy zadržovány.",
+     "routine_evidence": "Nabídky na převzetí rutiny říkají, jak často se to stalo, e.g. '4 z posledních 4 víkendových dnů'.",
+     "notice_entities": "Když se tyto změny změní, AI rozhodne, zda má cenu něco říkat (nebo se ptát). e.g. pračka, dveře, počasí, koše.",
+     "remark_repeat_hours": "Totéž, co jsi si všimli (\"Konvice se uvařila.\"), se už tak dlouho neříká. 0: bez omezení.",
+     "chattiness": "Limity poznámek za hodinu: tichý 2, normální 4, upovídaný 8. Vypnuto přestane vnímat.",
+     "conversation_style": "Stručně: krátké, věcné odpovědi. Přirozené: příkazy zůstávají krátké, ale otázky a chat obsahují několik přirozených vět a doplňující otázku, když se na ni někdo zeptá, takže mikrofon poslouchá.",
+     "carry_on_minutes": "Opětovné vyslovení budícího slova krátce po mluvení vede stejnou konverzaci od stejného mluvčího, takže \"a nahoře?\" stále dává smysl. 0 toto vypne; Home Assistant zapomene konverzaci po pěti minutách klidu.",
+     "focused_tools": "Dejte hlasu pouze nástroje Sentient, které odpovídají tomu, co bylo požadováno (kamery, topení, připomenutí…), plus paměť a bezpečnost. Menší výběr dělá levnější modely rychlejší a přesnější. Cokoli, co se jasně neshoduje, stále dostane každý nástroj.",
+     "ask_later": "Když se někdo zmíní o něčem, co se chystá (výlet, zápas, veterinář), hlas si zapamatuje, že se zeptá, jak to probíhalo, až s tím někdo bude příště mluvit — jednou, nikdy v klidných hodinách nebo s hosty a nikdy o ničem soukromém. Nikdy nemluví z čistého nebe. Vypnutím zapomenete na vše, co čeká na dotaz.",
+     "put_right": "Když řeknete \"ne, ten druhý\" nebo \"ne to světlo, lampa\", hlas přepne zpět to, co právě zapnul (zapnul nebo zhasl, během několika minut) a znovu provede požadavek pouze s opravenou částí — není třeba říkat vše znovu. Když toto vypnete, přenecháte to přímo hlasovému agentovi.",
+     "music": "S nastavením Music Assistant (nebo zapnutou hudbou přes Alexa): \"hrajte něco klidného v kuchyni\" vybírá z tvých vlastních seznamů skladeb a rádiových stanic a přehrává to na přehrávači Music Assistant v dané místnosti (nebo se zeptá na Echo v dané místnosti) — při noční hlasitosti v tichých hodinách, a ne v místnosti ve vlastní tiché době, pokud v ní nejste. Vypnuto: žádný hudební nástroj.",
+     "music_alexa": "Zapnuto: \"přehrajte něco klidného v kuchyni\" požádá Echo v této místnosti (Alexa Media Player), aby to přehrál z níže uvedené služby, podle jména — seznamu skladeb, interpreta, skladby nebo nálady — při noční hlasitosti v tichých hodinách, a ne v místnosti ve svém vlastním klidu, pokud v ní nejste. Služba musí být propojena v aplikaci Alexa. Používá se místo Music Assistant, když jsou oba nastaveny (Music Assistant nemůže přehrávat Spotify bez Premium). Vypnuto: Echos nejsou nikdy požádány o přehrávání hudby.",
+     "music_alexa_service": "Ze které služby Echos hraje. Spotify funguje s bezplatným účtem, ale Alexa může místo přesné skladby zamíchat podobnou hudbu; Premium hraje přesně to, co se žádá.",
+     "house_rules": "Prosté věty, které musí následovat každý hlas, jedna na řádek, e.g. „Nikdy neříkej, že dům je prázdný.'",
+     "no_security_offers": "Vyjměte z hlasových odpovědí jakoukoli větu, která nabízí aktivaci nebo deaktivaci alarmu nebo odemknutí dveří (\"Mám to aktivovat?\") — i když je vyslovena tak, jak je napsána. Odpovědi někomu, kdo požádal o aktivaci, deaktivaci, zamknutí nebo odemknutí, zůstávají samotné, takže jejich potvrzení je stále vyžadováno. Ve výchozím nastavení vypnuto.",
+     "learn_entities": "Světla, vypínače, ventilátory a žaluzie lidé používají ručně. Každou noc se za poslední dva týdny kontrolují věci, které se dělají většinu dní přibližně ve stejnou dobu, a věci, které se dělají hned po něčem jiném (otevření dveří, rozsvícení dalšího světla).",
+     "learn_anchors": "Zvyk, který drží čas při západu, východu nebo vstávání místo hodin (lampa za soumraku, žaluzie při východu slunce, konvice po vstávání), se tak naučí, takže rutina, kterou za tebe dům dělá, se mění s ročním obdobím. Vstávání vyžaduje nastavení spánku a bdění. Vypnuto: vše se učí s časem, jako dříve.",
+     "offer_together": "Když se několik věcí obvykle stane přibližně ve stejnou dobu ve stejných dnech (lampa svítí, žaluzie stažené, televize zapnutá kolem 20:00), jsou nabídnuty jednou, společně — jedna ano a dům udělá všechny. Vypnuto: každý je nabízen samostatně.",
+     "trust_lights": "Když rutina, kterou necháte převzít dům, rozsvítí světlo: prostě to udělejte, řekni to jako první, nebo se zeptej a udělejte to pouze na ano (pokud nikdo neodpoví, nic se nestane).",
+     "trust_switches": "Totéž pro vypínače, chytré zástrčky a ventilátory.",
+     "trust_covers": "Totéž platí pro žaluzie a závěsy. Garážová vrata a vrata se vždy ptají.",
+     "trust_heating": "Totéž pro ohřev topení, než lidé vstanou. Zeptat se jako první znamená, že se nemůže zahřát, když všichni spí.",
+     "link_triggers": "Volitelné: více věcí, které by mohly spustit návyk (spuštění televize, senzor postele…). Vždy se berou v úvahu dveře, okna a naučená světla.",
+     "suggest_routines": "Jednou za novou rutinu, během dne, kdy je někdo doma, se zeptej, zda to má dům od této chvíle dělat.",
+     "prove_routines": "Nově naučený návyk je sledován jako první: každý den poté, co se ho naučil, Sentient do 45 minut od obvyklého času zkontroluje, zda to člověk skutečně udělal. Je nabízena pouze tehdy, pokud je to správné alespoň 3 ze 4 dnů, na které se vztahovalo (pracovní dny, víkendy nebo každý den). Nastavení › Učení ukazuje, jak si každý vede. Vypnuto: návyky jsou nabízeny, jakmile se naučíte.",
+     "routine_fading": "Zapnuto: když rutina, kterou za tebe dům dělá, byla již hotová v době, kdy měla 5 dní za dva týdny (někdo to nyní dělá sám), Sentient se jednou zeptá, zda ji má zachovat, a zastaví se, pokud řeknete ne. Dodržují se pouze data, maximálně dva týdny. Vypnuto: rutiny, které dům dělá, jsou zachovány, dokud neřeknete jinak.",
+     "door_camera": "Okamžitě se podíval, když zazvonil zvonek, aby se zapsal, kdo přišel.",
+     "door_triggers": "Tlačítko zvonku (binární senzor nebo událost) nebo cokoli jiného, ​​co znamená, že někdo je u dveří.",
+     "announce_visitors": "Vypnuto udržuje záznam v tichém záznamu, ze kterého mohou hlasoví asistenti odpovídat.",
+     "faces": "Když Frigate (nebo zvonek) někoho rozpozná, přejde na časovou osu a hlas může odpovědět \"přišel Sam domů?\". Jména se nikdy neoznamují ani nehádají — vyslovují se pouze tehdy, když se někdo zeptá. Ve výchozím nastavení vypnuto.",
+     "face_people": "Jména, jak je Frigate zná. Prázdný: každý, koho pozná.",
+     "face_teach": "Pomáhá zlepšit rozpoznání obličeje Frigate. Když někdo opustí vybraný fotoaparát a Frigate si ponechal tvář, kterou nedokázal pojmenovat, telefony dostanou soukromé \"Kdo je to?\" s obličejem a tlačítky pro domácnost (telefony ukazují maximálně tři). Klepnutím na jednu se naučíte Frigate; \"Někdo jiný…\" má napsané jméno pro kohokoli nového, nebo \"ne\" pro smazání cizího obličeje. Nikdy nemluvené, nikdy na tabletech, maximálně každých deset minut. Vyžaduje rozpoznání obličeje Frigate a telefony vybrané pro oznámení. Ve výchozím nastavení vypnuto.",
+     "face_teach_cameras": "Makro kamery s jasnými tvářemi, e.g. zvonek. Prázdné: dveřní kamera.",
+     "face_cameras": "Prázdné: každý fotoaparát. Vyber si ty zblízka (zvonek, vchodové dveře), aby rušná ulice nemohla uvádět falešná jména.",
+     "face_forget_hours": "Každou noc jsou tváře Frigate zachovány, ale nikdo jmenovaný — většinou cizí lidé — jsou ze Frigate odstraněn, jakmile budou tak staré. Pojmenované tváře jsou zachovány. 0: nech to na Frigate (zachová si posledních 200).",
+     "clip_watch": "Když Frigate dokončí událost na vybrané kameře, AI jednou sleduje tento úsek záznamu a na časové ose a na stránce Sentient se objeví věta: \"Brána 14:10 — kolem prošel muž psa\". Hlas odpovídá \"co se stalo u brány?\" od nich bez dalšího volání AI. Nikdy nemluveno. Ve výchozím nastavení vypnuto.",
+     "clip_cameras": "Začněte jedním, e.g. brána.",
+     "clip_scope": "Upozornění Frigate jsou lidé v zónách, které jsi označili jako požadované — nejtišší volba pro rušnou ulici. Pokud kamera nikdy neupozorňuje (v Frigate nejsou nastaveny žádné požadované zóny), zvol \"Cokoliv v zóně\" — karta Clips ukazuje, co bylo přeskočeno a proč.",
+     "clip_when": "Sledujte pouze v těchto časech. Pryč znamená, že všichni vybraní pod světly Pryč jsou mimo.",
+     "clip_notify": "Jde pouze do telefonů, s obrázkem a tlačítkem přehrávání.",
+     "clip_source": "Vlastní souhrny recenzí AI Frigate je třeba zapnout v Frigate; pak se zde neuskuteční žádné volání AI.",
+     "clip_whose": "Ve stejném volání umělé inteligence jsou zahrnuty fotografie obličejů domácnosti z knihovny obličejů Frigate (a vzhledy níže) a někoho pojmenuje pouze tehdy, když je to jasně on — \"pravděpodobně Sam\". Cizinci nejsou nikdy jmenováni. Řekl jen na dotaz, nikdy neoznámil.",
+     "clip_looks": "Jeden na řádek, e.g. \"Sam: červená cyklistická helma a žlutý kabát, na kole\". Pomáhá, když helma nebo kapuce skryje obličej.",
+     "budget_clips": "Počítá se také do celkového denního limitu AI. 0: žádný vlastní limit.",
+     "clip_days": "Souhrny jsou pouze slova, poté se vymažou.",
+     "clip_keep": "Vypnuto: každý klip je smazán, jakmile je zhlédnut.",
+     "parcel_alerts": "Po doručení se o několik minut později znovu podívej a řekni, zda ti balík zůstal.",
+     "doorstep_sensors": "Volitelně: senzory osob na prahu nebo předzahrádku (e.g. a Frigate obsazenost zóny osobami). Když tam návštěva skončí bez zvonku, dveřní kamera je jednou zkontrolována, zda po ní nezůstal balík nebo pošta.",
+     "zone_visits": "Používá prahové senzory uvedené výše (e.g. a Frigate obsazenost zóny). Když nikdo nezazvoní, někdo, kdo dorazí do zóny, je považován za návštěvníka: je sledován dveřní kamera a je to oznámeno. Cokoli nastane dříve, zvonek nebo zóna, je návštěva a druhá je ignorována. Vypnuto: návštěvu zahájí pouze zvonek.",
+     "zone_door_sensors": "Volitelné: senzor otevření/zavření předních dveří. Pokud byly dveře otevřeny (nebo jsou otevřené) v poslední minutě a půl, zóna je ignorována, protože to je někdo, kdo odchází nebo přichází domů.",
+     "face_sensor": "Volitelné: snímač rozpoznávání obličeje, jehož stav je název, který právě rozpoznal (e.g. z Frigate). Používá se v protokolu a v oznámení, pokud je zapnuto.",
+     "sidebar_panel": "Stránka v postranním panelu zobrazující vzpomínky, rutiny, hodinky, návštěvníky a to, co bylo řečeno.",
+     "page_admin_only": "Skryje stránku a to, co čte, před všemi kromě administrátorů. Vypnuto udržuje otevřenou pro celou domácnost. Zapnutím se nic nesmaže.",
+     "custom_pages": "Zapnuto: Karty Přehled, Dům, Mysl a Zabezpečení používají tvoje uložené rozvržení a správci zde dostanou UPRAVIT ROZLOŽENÍ STRÁNKY, aby mohli přesouvat karty mezi sloupci, skrýt je, znovu je zobrazit nebo resetovat kartu. Na samotných kartách není žádné tlačítko pro úpravy, pouze když provádíte úpravy. Rozvržení je uloženo v Sentient, takže každá obrazovka zobrazuje totéž. Vypnuto: karty se vrátí do standardního rozvržení; tvoje uložené rozvržení zůstane zachováno, až jej znovu zapnete.",
+     "confirm_kinds": "Požádá AI, aby tyto akce popsala a počkala na ano. Toto je rychlá instrukce, nikoli vynucený akční blok: tvůj konverzační agent řídí provádění zařízení. Vypnutí věcí není třeba se ptát. Prázdné: žádná další potvrzovací instrukce. Pro vynucené kontroly povol chráněnou kontrolu s požadovaným nastavením agenta.",
+     "auto_backup": "Nedělní noc, záloha vzpomínek, spotů, rutin, pohybových světel, ztišení a nastavení, uložená v konfigurační složce pod sentient_backups.",
+     "backup_keep": "Starší jsou smazány.",
+     "suggestions": "Věci, které by Sentient mohl využít, ale nenabízí — nový reproduktor, čidlo výkonu na pračce, teploměr — nabízí jednu řadu po druhé. Ano to přidává; to neznamená, že už to nikdy nebude nabízeno. Zdarma, žádná AI.",
+     "whats_new": "Po aktualizaci Sentient krátká karta na stránce Sentient říká, co je nového, jednoduchými slovy, dokud neklepnete na GOT IT.",
+     "simple_settings": "Seznam nastavení zobrazuje to nejnutnější, s volitelnými funkcemi ZOBRAZIT VŠE. Nové instalace začínají tímto způsobem. Nemění nic na tom, co Sentient dělá.",
+     "chat_agent": "Kdo odpovídá na pole Dotaz na stránce — vyber hlasového agenta, který má zaškrtnuté Sentient. Vyprázdnit používá preferovaný asistenční kanál.",
+     "health_ignore": "Entity (a jejich zařízení), které by se neměly považovat za problémy, e.g. něco, co má být pryč.",
+     "hide_substreams": "Při počítání a kontrole kamer vynechává HD a SD streamy, snímky obrazovky a mapy, takže jeden zvonek není několik kamer. Z Home Assistant není nic smazáno.",
+     "ignore_cameras": "Fotoaparáty Sentient by neměly počítat, kontrolovat ani nabízet, jako je fotoaparát tabletu. Zůstanou v Home Assistant nedotčeni; vybrat znovu, aby se jeden vrátil.",
+     "never_entities": "Sentient je nikdy nepřepíná, neztlumuje ani nemění: ne v pravidlech, rutinách, nabídkách, automatickém vypínání, kontrolkách nepřítomnosti nebo pohybu, světelných show, topení nebo hlídaném hlasovém ovládání a hlasu je řečeno, aby je nechal na pokoji. Stále je může číst a mluvit o nich. Cokoli, co by člověka změnilo, je přeskočeno a zaznamenáno.",
+     "self_check": "Každou noc si prohlíží své vlastní záznamy — co řekl a jak to dopadlo, reproduktory, které selhaly, věci zadržené, znovu a znovu kladené otázky, měřič umělé inteligence — a zaznamenává, čeho si na sobě všimne, s čísly za tím. Žádná umělá inteligence. Zeptej se \"obtěžoval jsi nás?\" nebo \"co jsi si uvědomili?\".",
+     "learn_corrections": "Když někdo změní něco, co dům udělal před chvílí (světlo, které rozsvítil, rutina, kterou převzal), zaznamená opravu. Rutina, kterou stále vracíte, je vrácena zpět (vypnutá) a časová osa to říká. Vypnutím zastavíte sledování; již zaznamenané opravy jsou zachovány.",
+     "normal_day": "Porovná dnešek s tím, co je obvyklé, a zaznamená to na stránce Mysl: například ještě nikdo není vzhůru, když už někdo obvykle je. Jednoduchá pravidla, nic se neříká nahlas a nic se nepřepíná. Vypnutím zastavíte kontrolu a skryjete, co našlo.",
+     "thoughts": "Krátký seznam z pohledu první osoby na stránce Mysl (\"lidé pořád vypínají přistávací světlo, takže jsem přestal\"), plus hádání, do které místnosti jde někdo další, a kontrola, jak často to bylo správně. Žádná umělá inteligence. Vypnutím zastavíte hádání a skryjete seznam; co se naučil, je zachováno.",
+     "share_learning": "Jednou večer (17:00–20:30), když je někdo nablízku a není to zrovna klidný čas, řekne jednu věc, kterou se za poslední dva dny naučil nebo na kterou změnil názor: rutinu, kterou vrátil, skutečnost, kterou aktualizoval, zvyk, kterého si všiml, jak dobře teď odhaduje, kam půjdete příště. Nikdy totéž dvakrát. Když toto vypnete, vše zůstane na stránce Mysl, ale ztichne.",
+     "self_adjust": "Když autokontrola najde jakousi poznámku, dům stále mlčí, trochu ho ztište (stejně jako palec dolů; zase slábne). Nikdy se nedotýká bezpečnosti, zabezpečení nebo čehokoli, co ovládá.",
+     "proposals": "Když autokontrola zjistí, že něco není v pořádku, navrhněte jednu malou změnu na stránce Mysl — méně poznámek, neopakování jedné tak často, část přidaná do briefingu, vyšší limit AI — s důvodem. Nic se nezmění, dokud neřeknete ano; ne se znovu měsíc nezeptá. Vypnutím této možnosti vymažete všechny návrhy na čekání.",
+     "privacy_log": "U každého volání AI a vyhledávání na webu Sentient je zaznamenáno — která funkce, kolik obrázků, klipů nebo dokumentů a která služba — nikdy není co bylo řečeno nebo ukázáno. Podívej se na to v části Mozek a systém → Co opouští dům s tlačítkem pro zapomenutí posledních 48 hodin. Vypnutím se záznam vymaže.",
+     "goals": "Nech hlas určovat cíle během dní nebo týdnů (\"pomozte nám tento měsíc spotřebovat méně topení\"). Cíl může sledovat senzor: porovnává každý den s obvyklým týdnem předtím a zmiňuje pokrok, když se hodí. V domě se nic nemění.",
+     "manuals": "Odpověz na otázky z dokumentů ve složce níže (každý po jednom volání AI). Vypnuto: dokumenty zůstanou v klidu.",
+     "manuals_folder": "Složka na médiu Home Assistant (příručky e.g. = media/manuals). Každý soubor pojmenuj podle toho, k čemu je určen, e.g. \"Vzduch purifier.pdf\".",
+     "manuals_local_text": "Pokud dotazu neodpovídá žádný název souboru, vyhledejte v dokumentech .txt a .md ten správný, a pokud AI není k zastižení, přečti si místo ničeho nejbližší pasáž. Ani na jedno se nepoužívá AI. Vypnuto: shodují se pouze názvy souborů.",
+     "manuals_pages": "Zapnuto: každý PDF (a textový dokument) je jednou přečten, stránku po stránce, do vlastní databáze Sentient — na tomto počítači bez AI. Otázka pak odešle AI pouze několik stránek, které odpovídají, nikoli celý dokument, takže to stojí mnohem méně a odpověď říká, na které stránce se nachází (\"je to na stránce 14\"). Dokument, jehož název se neshoduje, lze stále najít podle toho, co je v něm, a pokud AI není k zastižení, nejbližší pasáž se přečte se svou stránkou. Naskenované soubory PDF (obrázky stránek) AI stále čte celé. Vypnuto: dokumenty se pokaždé přečtou celé a přečtené se vymaže.",
+     "games": "Hrajte příběhové hry vedené hlasem, jako je například únikové dobrodružství s asistenty jako herními mistry. Každá hra si uchovává svou vlastní uloženou paměť (kde jsou hráči, co nosí, co našli a vybrali) napříč sezeními a asistenty. Je ukazován hlasu pouze během hraní hry a mistr hry může číst běžnou paměť domu, ale nikdy ji nezmění. Otevři Nastavení → Příběhové hry, kde můžeš psát hry a upravovat jejich paměť. Vypnuto: herní nástroje a stránka jsou skryté; uložené hry jsou zachovány, nejsou vymazány.",
+     "voice_id": "Pro tento požadavek použij shodu místního mluvčího. Chceš-li, aby model umělé inteligence personalizoval odpovědi nebo přiřazoval nové vzpomínky jménem, ​​zapni také Sdílet shodná jména s agentem konverzace v aplikaci Rozpoznávání hlasu. Samostatné místní “Kdo to mluví?” odpověď je nastavena v Rozpoznávání hlasu.",
+     "voice_id_unknown": "Když reproduktor Assist nemá žádnou shodu hlasu, ponech historii domácnosti a uložené vzpomínky soukromé pro daný okamžik. Vypnuto: Nesrovnatelné hlasy jsou považovány za normální.",
+     "speaker_memories": "Se spuštěným rozpoznáváním hlasu: odpovídající hlas získá své vlastní vzpomínky (“Alex: má rád čaj”) jako první — vždy zahrnuty, i když by seznam zaplnily novější fakta o domácnosti — a nikdy osobní vzpomínky nikoho jiného; hlas, kterému se nemůže vyrovnat, nezíská žádnou z osobních vzpomínek nikoho. Fakta o domácnostech jsou vždy sdílena. Zadané požadavky a Echos se nemění. Ve výchozím nastavení vypnuto.",
+     "books": "Přehrávejte si audioknihy a čtěte e-knihy nahlas a udržujte místo v každé místnosti. \"Přečti si mou knihu\", \"pokračujte v knize\", \"čtěte 20 minut\", \"zastavte se\", \"další kapitola\", \"vraťte se o kousek zpět\". Žádná umělá inteligence (kromě volitelné rekapitulace). Na Echo: e-knihy jeden průchod na požadavek prostřednictvím dovednosti Alexa; audioknihy potřebují další reproduktor.",
+     "books_folder": "Složka v médiích Home Assistant (knihy = média/knihy). elektronické knihy .epub nebo .txt bez DRM; audioknihy jako jeden soubor .mp3/.m4b/.m4a nebo složka částí pojmenovaných po knize.",
+     "reading_tts": "Jiná služba převodu textu na řeč pouze pro knihy a příběhy — hlasy Gemini nebo ElevenLabs jsou často lepšími vypravěči. Chceš-li číst obvyklým hlasem, nech pole prázdné. Echos vždy používá vlastní hlas Alexa.",
+     "reading_voice": "Vyber hlas z této služby. Před uložením použij VYZKOUŠET HLAS níže, abyste jej slyšeli na výchozím reproduktoru.",
+     "read_ahead": "S hlasem pro čtení se další část příběhu vytváří během čtení této části, takže pomalý hlas (volný nebo oblačný) nezanechává mezeru mezi částmi. Používá ten hlas o něco dříve, nikdy častěji.",
+     "recipes": "\"Pojďme udělat lasagne\": ingredience, pak krok za krokem — \"další\", \"zopakuj to\", \"vrátit se\", \"co dál?\" — zapamatujte si krok každého řečníka. \"Udělejte to za 6\" zváží to; ingredience mohou jít na nákupní seznam.",
+     "recipes_folder": "Složka v médiích Home Assistant (recepty = média/recepty) s PDF, fotografiemi, textem nebo Markdown. Každý je poprvé uspořádán do kroků jedním voláním AI a poté zachován. Mealie se používá automaticky, pokud je nastavena jeho integrace.",
+     "recipes_list": "Kam je umístí \"přidat ingredience na nákupní seznam\". Prázdný: seznam s \"nákupy\" v názvu.",
+     "voice_lists": "Zapnuto: \"odškrtnout mléko\", \"co je na nákupním seznamu?\", \"sejmout pytle do koše\" — položky jsou nalezeny, jakkoli se říkají (v každém případě, množná čísla, jediné mléko na seznamu), jsou dotázány dvě možné shody a Sentient říká, že je hotovo, jakmile to seznam zobrazí. Používá seznamy vystavené Assist (všechny seznamy, pokud žádné nejsou) a nákupní seznam, pokud není pojmenován jiný. Žádná vlastní AI. Vypnuto: hlas používá vlastní seznam příkazů Home Assistant. Nic není uloženo.",
+     "ready_tonight": "\"Ujisti se, že je na dnešní noc vše připraveno\": zkontroluje dveře, okna a zámky, které Assist vidí, vypne pouze světla vybraná níže, podívá se na topení a řekne, co je ještě otevřené, odemčené, zapnuté nebo co nelze potvrdit. Zámky, alarm a topení se nikdy nemění a alarm není nikdy nabízen. Žádná vlastní AI. Vypnuto: hlas může stále kontrolovat dům, ale toto není nabízeno. Nic není uloženo.",
+     "ready_tonight_lights": "Jediná světla \"připravená na dnešní noc\" mohou zhasnout. Každá je následně zkontrolována. Prázdná: žádná světla nejsou vypnutá, pouze hlášená.",
+     "ready_tonight_follow": "Když je něco stále otevřené nebo odemčené, sledujte to až tři hodiny a jednou řekni do reproduktoru, na který jsi se zeptali, až bude vše vyřízeno. Pokračuje po restartu.",
+     "tandoor_url": "Volitelné: tvoje adresa Tandoor Recipes, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Volitelné: API token od Tandoor (Nastavení → API). Uchováváno pouze v Home Assistant.",
+     "voice_agent": "Agent AI, který normálně odpovídá (e.g. Google AI). Prázdný používá chat agenta stránky.",
+     "backup_agent": "Odpovídá, když hlavní agent selže — vlastní agent Home Assistant dělá světla, topení a časovače bez jakékoli AI.",
+     "offline_answers": "Když agent AI selže, “je dům zamčený?”, “kdy mám další alarm?” a “přišel někdo?” jsou zodpovězeny přímo z domu, prostými slovy, než je záložní agent vyzkoušen. Jen otázky, jen to, co ten člověk může vidět; v režimu hosta pouze bezpečnostní otázka. Vypnuto: vše přejde na záložního agenta.",
+     "animal_sensors": "Senzory teploty boudy, psí boudy, kotce nebo nádrže.",
+     "away_lights_on": "Když jsou všichni po setmění venku, světla zkopírují, jak se používali ve stejnou dobu minulý týden (z historie Home Assistant), a to několik minut v obou směrech. Nespustí se (nebo se nezastaví), pokud je někdo doma nebo došlo v poslední době uvnitř k pohybu, pro lidi bez sledování telefonu a vrátí to, co zapnul. Také spínač 'Away lights.",
+     "away_people": "Prázdné: všichni se záznamem osoby. Místo lidí si můžeš vybrat telefony (sledovače zařízení.",
+     "away_lights": "Prázdné: každé světlo v místnosti, vynechání obrazovek, LED kroužků, podsvícení a skupin. Rozsvítí se pouze světla, která byla v té době minulý týden používána.",
+     "holiday_mode": "Přepínač „Dovolenkový režim“ a „Jedeme na dovolenou do neděle“ hlasově. Když je zapnutý, nic se neříká nahlas kromě bezpečnostních upozornění — to, co by bylo řečeno, jde na telefony vybrané pro upozornění, s návštěvníky a balíčky; pryč světla běží, i když jsou normálně zhasnutá; a níže uvedené termostaty jsou vypnuty. Vypnuto: žádné přepínání a žádná dovolená hlasem.",
+     "holiday_thermostats": "Když jsi pryč, zapni ochranu proti mrazu a po skončení prázdninového režimu se vrátíte přesně tak, jak byli. Prázdné: topení se nedotýkáte.",
+     "holiday_frost": "Na co jsou nastaveny termostaty výše, když jsi pryč.",
+     "holiday_end_on_return": "Jakmile všichni odejdou, domov první osoby ukončí prázdninový režim a zapne topení. Vypnuto: skončí k datu nebo po vypnutí.",
+     "away_after": "Takže skokem do obchodu to nezačíná.",
+     "animal_low": "Řekne jednou, když klesne pod tuto hodnotu (trvá do rána v klidných hodinách), a varuje večer před mrazem.",
+     "animal_high": "Říká jednou, když se to povznese nad tohle.",
+     "hutch_check": "Půl hodiny po západu slunce se jeden AI podívá na boudu: jsou uvnitř a je zavřená? Řekne jen něco, pokud ne.",
+     "hutch_spot": "Bod nakreslený kolem kóje na kartě Spoty, e.g. 'králičí ohrada'.",
+     "cat_watch": "Když se po setmění zapne kočičí senzor na kameře boudy, jeden pohled AI: je kočka u boudy nebo u ní? Maximálně každých 15 minut a ne, když se obraz nezměnil.",
+     "cat_sensors": "Prázdné: kočičí senzory na kameře boudy (e.g. Frigate obsazeno kočkou).",
+     "cat_loud": "Vypnuto: ponecháno na ráno („Kočka byla u boudy ve 2:14“). Zapnuto: řeklo se okamžitě přes reproduktory noční hlídky.",
+     "rain_warnings": "Když má pršet do hodiny a okno nebo dveře jsou otevřené: 'Příští hodinu bude pršet a okno ložnice je otevřené.' Čte hodinovou předpověď — žádná umělá inteligence. Jednou za deště.",
+     "rain_entities": "Prázdné: každý senzor oken a dveří.",
+     "self_test": "Přes noc je hlasu položeno několik každodenních otázek (teplota venku, cokoli otevřeného, ​​připomenutí, budík, čas) a jeho odpovědi jsou kontrolovány proti domu. Cokoli špatného se projeví na zdraví domu pomocí nástroje, který používá. Asi 5 AI volá run. Pouze otázky — nic se nepřepíná.",
+     "self_test_household": "Přidává asi 7 otázek vytvořených z tvých vlastních zařízení: kdy se naposledy zavřely dveře nebo okno, zda je rozsvícené světlo, zda kamera někoho za poslední dvě hodiny viděla, zda dnes někdo přišel ke dveřím, něco, co nemůže vědět (vymyšlená odpověď se nezdaří), něco, co žádné zařízení neumí, a otázku, která je příliš vágní na to, aniž bychom se zeptali na kterou. Přepínání čehokoli během otázky je selhání. Skóre a jeho trend jsou na stránce Mysl. Asi 7 dalších AI volá run.",
+     "screen": "Upozornění, upozornění a ranní karta na kartě obrazovky Sentient (vlastní: karta obrazovky sentient). Vypnuto: zobrazuje dům pouze na první pohled.",
+     "screen_actions": "e.g. probuďte tablet a přepni jej na stránku s kartou obrazovky.",
+     "screen_clear_actions": "e.g. přepni tablet zpět na normální stránku.",
+     "conversation_sessions": "Použij Sentient se záložním agentem. Jednotlivé příkazy přestanou poslouchat, pokud mluvená odpověď neskončí otázkou. Diskuse o informacích, zabezpečení, zdraví a systému se ptají, zda existuje ještě něco jiného, ​​a zůstaňte otevřené, dokud neřeknete “to je vše”, “dost” nebo “přestat poslouchat”, nebo dokud nevyprší časový limit nečinnosti. Řekni “zpět na…” a obnovte nedokončené téma z tohoto zařízení do 24 hodin bez obnovení oprávnění k akci. Panel Mysl zobrazuje nedávná konverzační rozhodnutí. Následný poslech vyžaduje kompatibilní zařízení Assist.",
+     "room_conversation_handoff": "Řekni pokračovat s a pojmenuj téma z jiného zařízení. Oba požadavky musí pocházet od stejného identifikovaného uživatele Home Assistant. Čerstvé naměřené hodnoty jsou kontrolovány a dřívější akce a potvrzení se nepřenášejí.",
+     "verified_bedtime": "Řekni běž dolů před spaním, abyste zhasli vybraná světla a zkontroluj vybrané kontakty. Požádejte dole stav večerky, abyste to znovu zkontrolovali, nebo řekni zrušit večerku dole, abyste jej přestali sledovat.",
+     "verified_bedtime_lights": "Vyber si až dvacet samostatných asistenčních světel. Skupiny jsou vyloučeny a stále platí seznam Nikdy se nedotýkat.",
+     "verified_bedtime_contacts": "Vyber si až dvacet kontaktů pro otevření dveří, oken nebo jiných kontaktů Assist, které chceš zkontrolovat. Jsou pouze pro čtení.",
+     "session_seconds": "Po tomto mnoha sekundách bez dalšího tahu zahoďte kontext relace a nevyřízené akce. Tvoje hlasové zařízení ovládá svůj vlastní časový limit ticha. Platnost potvrzení také vyprší po 60 sekundách.",
+     "guarded_control": "Přihlas se pomocí vyhrazeného podporovaného agenta umělé inteligence: vyber pouze Sentient chráněné pod kontrolou Home Assistant a poté použij Sentient s připravenou zálohou. Vypni Preferovat zpracování příkazů lokálně a odstraň konfliktní spouštěče vět, které běží před tímto agentem. Nesprávná konfigurace API agenta zastaví požadavky. Žádné neomezené zálohy, scénáře, scény nebo poplachové akce. Dveře, spouštění spotřebičů a výrazné změny topení vyžadují samostatné ano.",
+     "routine_verify": "Zapnuto: po spuštění hlasové rutiny (dobrou noc, odjezd…) je každé změněné světlo, vypínač, zámek a kryt o několik sekund později zkontrolováno a odpověď říká, co se nestalo (\"Hotovo, kromě přistávacího světla, které stále svítí\"). Kroky, které nemůže zkontrolovat (scénáře, scény), jsou hlášeny jako nezkontrolované, nikdy jako dokončené. Nic se samo o sobě nezkusí ani nezruší. Vypnuto: rutiny běží jako dříve, nezaškrtnuté.",
+     "voice_unlock": "Umožňuje vynucené hlasové potvrzení odemknout dveře po samostatném ano. Vypnuto (výchozí nastavení) stále zamyká a zavírá, ale odmítá odemknout nebo otevřít hlasem, protože Sentient nedokáže zjistit, kdo mluví.",
+     "voice_undo": "S chráněným ovládáním vyslovte “Ukončit to”, abyste požádali o obnovení nedávných ověřených nastavení osvětlení. Přeskočí světla, která se od té doby změnila, vyprší s relací a nikdy neodemkne zámky, topení nebo spotřebiče.",
+     "evidence_awareness": "Řekni hlasu, aby rozlišil pozorování, závěry, pokusy o akce a ověřené zprávy zařízení. Nedostupné bezpečnostní senzory vždy zabrání plně zabezpečené reklamaci.",
+     "security_incidents": "Seskupte konfigurované senzory osob s bezpečnostními kamerami a vstupní kontakty s výstrahami a souhrny klipů. Udržujte místně sedm dní. Časová blízkost je možným spojením, nikoli důkazem o stejné osobě; opakují se pouze stupňující se výstrahy.",
+     "incident_front": "Kamery a senzory v přední části domu (zvonek, vchodové dveře). Nic zde není nikdy seskupeno do jednoho bezpečnostního incidentu s něčím, co není, a naopak: někdo u předních dveří a někdo u zadní brány ve stejnou chvíli jsou dva incidenty. Nech prázdné, aby se skupina podle času sama seskupila.",
+     "live_voice_check": "Zobrazit hlasovou kontrolu spuštěnou uživatelem na panelu Mysl. Vypnutím vymažete aktuální kontrolu a zastavíte nahrávání kontrolních tahů. Ke spuštění kontroly vyžaduje relace konverzace.",
+     "speech_delivery_history": "Uchovávejte poslední výsledky oznámení podle mluvčího na panelu Mysl. Vypnutím se tato historie vymaže. Detekce selhání reproduktoru a bezpečné zpracování opakování zůstávají aktivní.",
+     "alexa_tts_only": "Pokud jsou oznámení nespolehlivá, použij místo oznámení Alexa prostý TTS. To obchází oznamovací zvonky Alexa; ostatní reproduktory jsou beze změny.",
+     "update_checker": "Zkontroluj GitHub pro stabilní vydání, když je povoleno, při spuštění a každých šest hodin. Žádné volání AI, automatická instalace nebo automatické restarty. Deaktivací zastavíte kontroly.",
+     "contextual_followups": "Vyžaduje konverzační relace a Sentient se záložním agentem. Udržujte předmět pro krátké sledování, obnovte údaje exponovaného zařízení a vyjasněte nejednoznačné úpravy. Neuděluje oprávnění k akci ani nemění pravidla naslouchání. Ve výchozím nastavení vypnuto; jeho vypnutí vymaže dočasný kontext konverzace.",
+     "conversation_recovery": "Vyžaduje konverzační relace a Sentient se záložním agentem. Zruš čekající nebo běžící požadavek od stejné konverzace/zařízení/uživatele a vyhněte se opakovanému přehrávání nejistých příkazů zařízení po selhání AI. Nelze vrátit zpět již odeslanou akci nebo zajistit, aby hardware přijímal řeč, když je zaneprázdněn. Ve výchozím nastavení vypnuto; deaktivace zastaví tuto zvláštní manipulaci.",
+     "speech_failure_notification": "Zobraz upozornění Home Assistant, když selže přenos reproduktoru nebo je nejistý. Ve výchozím nastavení vypnuto. Nezahrnuje mluvený obsah ani opakovanou řeč. Zakázáno v režimu hosta; stávající oznámení zůstávají, dokud nebudou zrušena.",
+     "recent_followup_context": "Použij nedávno dokončený předmět po novém probuzení na stejném reproduktoru a uživateli. Vyžaduje konverzační sezení a kontextové sledování. Používá časový limit relace; nikdy neobnoví potvrzení ani poslech. Ve výchozím nastavení vypnuto. Ukončení nebo zapomenutí vyčistí kontext.",
+     "conversation_cues": "V rámci konverzace: každodenní odhlašování (“na zdraví”, “perfektní, děkuji”, “to bude stačit”) ji ukončí, když nic konkrétního nečeká na odpověď; “promiň, myslel jsem…”, “špatné světlo” a “ne lampa, stropní světlo” jsou opravy; a “na další notu…” nebo “něco jiného:” začíná nový předmět bez přenesených zařízení. Žádná umělá inteligence. Vypnuto: rozpoznány jsou pouze hladké konce a opravy.",
+     "vary_replies": "Hlasu je zobrazeno jeho posledních pár odpovědí z minulého dne a je mu řečeno, aby znovu nepoužíval své věty nebo začátky, takže stejná odpověď není uvedena slovo od slova dvakrát. Ne v soukromých pokojích nebo režimu pro hosty. Opakované odpovědi se počítají v obou směrech (záložka Mind s načasováním hlasu). Ve výchozím nastavení vypnuto.",
+     "behaviour_explanations": "Odpovídejte na krátké otázky o poslechu a zaznamenaných výsledcích zařízení přímo, bez volání AI. Vyžaduje konverzační relace. Používá existující záznamy relací, respektuje režim hosta a přístup k zařízení a nikdy neopakuje žádnou akci. Ve výchozím nastavení vypnuto; neukládá se žádná další historie.",
+     "current_house_context": "Poskytněte konverzacím kompaktní relevantní snímek zpráv vystavených zařízení, nedávných změn a aktuálního nedokončeného úkolu. Ve výchozím nastavení vypnuto. Žádné volání AI na pozadí. Režim hosta to potlačí. Platnost posledních změn vyprší po 30 minutách; deaktivace nebo zapomenutí vymaže kontext pouze v paměti.",
+     "moment_awareness": "Každá hlasová odpověď dostane krátký obrázek „právě teď“ z toho, co již Sentient uchovává: kdo je doma a od kdy, místnosti s pohybem, co se stalo za posledních 45 minut a cokoli neobvyklého pro dnešek. Žádná AI a nic uloženého. V soukromé místnosti nebo v režimu hosta je dán pouze pohyb. Vypnuto: nic z toho není přidáno.",
+     "room_memory": "Každá hlasová odpověď v místnosti dostane to, co se tam dělo za poslední hodinu: dřívější konverzace v této místnosti, to, co tam bylo přepnuto hlasem a co tam bylo oznámeno. Pokud někdo před pár minutami mluvil v jiné místnosti a od té doby se tu nic neříkalo, tento rozhovor přichází také, takže může pokračovat tam, kde skončil. Nic nového se neukládá. Soukromé pokoje a režim hosta získají pouze záznam vlastní místnosti. Vypnuto: nic z toho není přidáno.",
+     "know_people": "Když rozpoznávání hlasu nepojmenuje reproduktor, Sentient zjistí, kdo to pravděpodobně je, z věcí, kterým může důvěřovat: zpráva napsaná v aplikaci Home Assistant pochází z účtu této osoby nebo je její jediný telefon v místnosti sledovaný v místnosti. Hlasu je řečeno, kdo to pravděpodobně je, a na první místo klade to, co mu daná osoba o sobě řekla. Odhad nikdy nepovoluje nic, co potřebuje potvrzení, a kvůli tomu se pod jejich jménem nic neukládá. Ne v režimu hosta ani v soukromých pokojích. Vypnuto: žádné hádání.",
+     "instant_answers": "Každodenní otázky jsou zodpovězeny přímo z domu, před AI: čas, počasí venku, zda je jedno jmenované zařízení zapnuté, vypnuté, otevřené nebo zamčené, teplota v místnosti, další alarm nebo připomenutí, návštěvníci a zda je dům zamčený. Pouze otázky, pouze jediné zařízení, které jasně odpovídá a je vystaveno hlasovým asistentům; cokoli jiného jde do AI jako obvykle. Výměna je přidána do konverzace, takže sledující stále ví, na co byla požádána. Hosté a soukromé pokoje získají pouze čas, počasí a stavy zařízení. Vypnuto: každá otázka směřuje k AI.",
+     "capability_awareness": "Hlasu se říká, jaké druhy věcí může v tomto domě ovládat hlasem (z toho, co je vystaveno hlasovým asistentům, s kolika z nich) a které běžné dům nemá, jako jsou chytré zámky nebo motorizované žaluzie, takže nikdy nenabízí něco, co žádné zařízení nedokáže. Nabídka, která stejně proklouzne (zavření okna, zamknutí dveří), je z odpovědi vyřazena dříve, než je vyslovena. Trénováno každých pět minut, žádná umělá inteligence. Vypnuto: nic není přidáno ani odebráno.",
+     "house_context_entities": "Zařízení, která mají být zahrnuta do obecných domácích souhrnů spolu s automatickým klimatem a zprávami o otevření/přítomnosti. Sdílí se pouze aktuálně vystavená a přístupná zařízení; maximálně osm relevantních hodnot na žádost.",
+     "house_context_updates": "Vyžaduje aktuální kontext domu. Po ověřeném hlídaném požadavku na vytápění volitelně řekni jednou, když termostat hlásí požadovanou teplotu. Vyprší po jedné hodině, zruší se, pokud se změní její cíl, maximálně jedna aktualizace za 15 minut. Respektuje normální pravidla řeči a režim hosta. Ve výchozím nastavení vypnuto. Vypnutím vymažete čekající aktualizace.",
+     "security_event_evidence": "Použij Frigate ID událostí, snímky a klipy na nakonfigurovaných kamerách. Jedinečná shoda kamery a času je kandidátským spojením, nikoli důkazem, že senzor identifikoval tuto událost. Uchovávejte až 3 000 záznamů událostí po dobu sedmi dnů lokálně. Ve výchozím nastavení vypnuto. Zakázání skryje odkazy a zastaví shodu; uchované záznamy vyprší nebo mohou být zapomenuty.",
+     "security_event_zones": "Pouze to, co vstoupí do zóny: na kameře se zónami Frigate je událost uvedena (a může spustit bezpečnostní incident) až poté, co objekt vstoupí do jedné z nich, stejné pravidlo používá Frigate pro své výstrahy. Kamera bez zón uvádí vše. Cokoli detekováno: každý objekt Frigate sleduje na vybraných kamerách. Vlastní nastavení Frigate se nikdy nemění.",
+     "security_event_hidden_zones": "Jedna na řádek jako kamera/zóna, například brána/příjezdová cesta. Události, které jsou vždy pouze v těchto zónách, nejsou uvedeny a nespouštějí bezpečnostní incidenty. Použij SKRYT TUTO ZÓNU na stránce Zabezpečení po několika opravách „není osoba“ nebo odstraň řádek, abyste tuto zónu znovu vypsali. Frigate se nezmění.",
+     "security_coverage": "Ukažte, které nakonfigurované kamery přispěly k uchovaným důkazům a veškerým nedostupným zprávám zaznamenaným spolu s živými incidenty. Aktuální zprávy z kamer se zobrazují samostatně. Vypnutím této možnosti odstraníte zbývající mezery v pokrytí.",
+     "frigate_pipeline_health": "Přečti si informace o dostupnosti Frigate MQTT, rychlosti zpracování pro jednotlivé kamery a o tom, kdy Sentient naposledy přijal událost. Chybějící data jsou zobrazena jako neznámá. Nezmění se žádná nastavení fotoaparátu.",
+     "security_conversation_context": "Zapamatovat si vybranou událost po dobu až pěti minut v rámci stejné konverzace, zařízení a uživatele. Následné otázky využívají tuto událost a čerstvé zprávy o obsazenosti; nepředpokládá se žádná identita nebo pokračující přítomnost. Sleduje nakonfigurované události kamery. Ve výchozím nastavení vypnuto. Zakázání vymaže odkazy na konverzace; záznamy událostí si zachovají svou běžnou dobu platnosti.",
+     "security_event_feedback": "Správci mohou návštěvu označit za dobrý úlovek, nikoli jako osobu, nebo jako takovou, kterou je třeba ignorovat. Zkontrolované návštěvy se přesunou do složeného revidovaného seznamu a „ne osoba“ se také počítá jako zkontrolovaná falešná detekce bezpečnostního incidentu provedeného pouze z této návštěvy. Opravy zůstávají sedm dní. Žádné změny pravidel automatického detektoru, alarmu nebo upozornění. Deaktivace skryje zpětnou vazbu a zastaví nové opravy; použij Zapomenout poslední data k vymazání uchovaných záznamů.",
+     "share_clip_analysis": "Sdílejte kompatibilní obecné analýzy stejné dokončené události Frigate v rámci automatického sledování klipů a otázek týkajících se klipů událostí. Poskytovatel, pokrytí záběrů a nastavení identity se musí shodovat. Vlastní otázky jsou analyzovány samostatně. Uchovávejte maximálně 100 výsledků v paměti po dobu šesti hodin. Ve výchozím nastavení vypnuto. Zakázání, změna nastavení nebo zapomenutí vymaže mezipaměť."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient je již nastaveno."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Nastavení",
+     "briefing": "Přehledy",
+     "memories": "Vzpomínky"
+    }
+   },
+   "settings": {
+    "title": "Nastavení",
+    "data": {
+     "persona": "Jméno",
+     "speakers": "Reproduktory",
+     "default_speaker": "Výchozí reproduktor",
+     "quiet_start": "Začínají tiché hodiny",
+     "quiet_end": "Tiché hodiny končí",
+     "busy_entities": "Zůstaňte zticha, když jsi zaneprázdněni",
+     "motion_window": "Okno pro povědomí o místnosti",
+     "banned_words": "Nikdy nepoužívejte tato slova (oddělená čárkou)",
+     "suppress_entities": "Po těchto automatizacích nebo skriptech zůstaňte zticha",
+     "suppress_seconds": "Buď zticha",
+     "prompt_memories": "Vzpomínky ke sdílení s hlasovými asistenty",
+     "pass_through_areas": "Průchozí oblasti",
+     "all_occupied": "Mluvte v každé obsazené místnosti",
+     "room_tracking": "Použij sledovače místností (Bluetooth)",
+     "room_trackers": "Sledovače pokojů",
+     "ai_task_entity": "AI pro úlohy na pozadí",
+     "camera_cooldown": "Minimální mezera mezi kontrolami kamery",
+     "fallback_speakers": "Pouze záložní reproduktory",
+     "daily_ai_limit": "AI volání za den",
+     "prompt_recent": "Právě teď a poslední hodina v kontextu hlasu",
+     "rules": "Pravidla a jejich vytváření hlasem",
+     "relevant_memories": "Vyber vzpomínky, které odpovídají tomu, co bylo požadováno",
+     "look_cache_minutes": "Znovu použít odpověď z fotoaparátu pro",
+     "camera_prefilter": "Přeskočit pohledy kamery, když se nic nezměnilo",
+     "budget_drive": "AI volání za den: cesta",
+     "budget_noticing": "AI volání za den: všímání si",
+     "budget_cameras": "AI volání za den: kontrola kamer a sledování",
+     "routine_evidence": "Řekni, jak často jsi viděli rutinu",
+     "notice_entities": "Věci, kterých je třeba si všimnout",
+     "remark_repeat_hours": "Neopakujte poznámku pro",
+     "chattiness": "Jak upovídané",
+     "conversation_style": "Jak to mluví",
+     "carry_on_minutes": "Pokračujte v rozhovoru pro",
+     "focused_tools": "Zaměřené hlasové nástroje",
+     "ask_later": "Zeptej se, jak to šlo",
+     "put_right": "Napravte chyby jedním tahem",
+     "music": "Hudba na dotaz",
+     "music_alexa": "Hudba přes Alexa (Echos)",
+     "music_alexa_service": "Hudební služba pro Echos",
+     "house_rules": "Domácí řád",
+     "no_security_offers": "Nikdy nenabízejte aktivaci, deaktivaci nebo odemknutí",
+     "learn_entities": "Naučte se rutiny od",
+     "learn_anchors": "Návyky, které následují po dni",
+     "trust_lights": "Světla",
+     "trust_switches": "Vypínače, zástrčky a ventilátory",
+     "trust_covers": "Žaluzie a závěsy",
+     "trust_heating": "Topení",
+     "offer_together": "Nabídněte návyky prováděné společně jako jeden",
+     "link_triggers": "Přečti si také, co následuje po těchto",
+     "suggest_routines": "Nabídněte, že převezmete rutiny",
+     "prove_routines": "Zvyky se osvědčí dříve, než jsou nabídnuty",
+     "routine_fading": "Zeptej se na rutiny, které již nejsou potřeba",
+     "door_camera": "Dveřní kamera",
+     "door_triggers": "Domovní zvonek",
+     "announce_visitors": "Řekni, kdo je u dveří",
+     "faces": "Jména z rozpoznávání obličejů",
+     "face_people": "Pouze tito lidé",
+     "face_teach": "Zeptej se na telefonu, kdo jsou nejmenované tváře",
+     "face_teach_cameras": "Naučte se tváře z těchto kamer",
+     "face_cameras": "Jména pouze z těchto kamer",
+     "face_forget_hours": "Poté zapomeňte na nejmenované tváře",
+     "clip_watch": "Sledujte klipy z akcí",
+     "clip_cameras": "Kamery",
+     "clip_scope": "Které události",
+     "clip_when": "Když",
+     "clip_notify": "Poslat na telefony",
+     "clip_source": "Kdo píše shrnutí",
+     "clip_whose": "Řekni, který člen domácnosti to byl",
+     "clip_looks": "Jak lidé vypadají, když jim není vidět do tváře",
+     "budget_clips": "Klipy sledované za den (většina)",
+     "clip_days": "Shrnutí si uschovejte pro",
+     "clip_keep": "Uchovávejte soubory klipů",
+     "parcel_alerts": "Řekni, kdy zbyde balík",
+     "doorstep_sensors": "Zkontroluj balíky po návštěvách, které viděli",
+     "zone_visits": "Počítejte s někým v zóně s kamerou u předních dveří jako s návštěvníkem",
+     "zone_door_sensors": "Senzor předních dveří (zóna je ignorována, pokud se otevřela jako první)",
+     "face_sensor": "Uznávané jméno od",
+     "sidebar_panel": "Zobrazit na postranním panelu",
+     "page_admin_only": "Tuto stránku mohou otevřít pouze správci",
+     "custom_pages": "Uspořádejte stránku Sentient",
+     "suggestions": "Návrhy na stránce Sentient",
+     "whats_new": "Co je nového po aktualizaci",
+     "simple_settings": "Jednodušší stránka nastavení",
+     "auto_backup": "Zálohujte každý týden",
+     "backup_keep": "Kolik si jich nechat",
+     "confirm_kinds": "Zeptej se \"mám?\" před",
+     "chat_agent": "Chatovací agent pro stránku postranního panelu",
+     "battery_threshold": "Slabá baterie níže",
+     "battery_forecast": "Řekni, kdy se vybijí baterie",
+     "health_ignore": "Ignorovat pro zdraví domu",
+     "hide_substreams": "Skrýt další pohledy kamery",
+     "ignore_cameras": "Kamery k ignorování",
+     "never_entities": "Nikdy se jich nedotýkejte",
+     "self_check": "Kontrolujte se každou noc",
+     "learn_corrections": "Naučte se, když zrušíte to, co způsobil",
+     "normal_day": "Všimněte si neobvyklého dne",
+     "thoughts": "Ukaž, co si myslí",
+     "share_learning": "Řekni, co se naučil",
+     "self_adjust": "Uprav se",
+     "proposals": "Navrhněte změny v jeho nastavení",
+     "privacy_log": "Zaznamenejte si, co opouští dům",
+     "goals": "Cíle",
+     "manuals": "Odpověď z dokumentů",
+     "manuals_folder": "Složka dokumentů",
+     "manuals_local_text": "Podívej se do textových dokumentů",
+     "manuals_pages": "Číst soubory PDF stránku po stránce",
+     "games": "Příběhové hry",
+     "voice_id": "Vědět, kdo mluví",
+     "voice_id_unknown": "Zacházejte s hlasy, které se nemohou shodovat, jako s hostem",
+     "speaker_memories": "Uchovávejte vzpomínky každého člověka",
+     "books": "knihy",
+     "books_folder": "Složka knihy",
+     "reading_tts": "Čtení hlasu: služba",
+     "reading_voice": "Čtení hlasu",
+     "read_ahead": "Během čtení si připravte další část",
+     "recipes": "Recepty",
+     "recipes_folder": "Složka recepty",
+     "recipes_list": "Nákupní seznam ingrediencí",
+     "voice_lists": "Nakupování a seznamy úkolů hlasem",
+     "ready_tonight": "Připraven na dnešní večer",
+     "ready_tonight_lights": "Připraveno na dnešní noc: světla se mohou vypnout",
+     "ready_tonight_follow": "Připraveno na dnešní večer: řekni mi, až to bude vyřešeno",
+     "tandoor_url": "Adresa Tandoor",
+     "tandoor_token": "Token Tandoor API",
+     "second_opinion_ai": "AI pro druhý názor",
+     "smart_ai_task": "Silnější AI pro bezpečnost a myšlení přes noc",
+     "event_clips": "Podívej se na klipy událostí Frigate",
+     "notify_targets": "Telefony pro upozornění",
+     "notify_when": "Odeslat na telefony",
+     "phone_buttons": "Tlačítka na upozornění telefonu",
+     "phone_apps": "Doprovodné aplikace pro tlačítka",
+     "bins_check": "Kontrola popelnic",
+     "bins_calendar": "Košový kalendář",
+     "bins_spot": "Kamerový bod popelnic",
+     "bins_time": "Podívat se na",
+     "chime": "Než začnete mluvit, zazvoňte",
+     "welcome_home": "Vítej lidi doma",
+     "welcome_people": "Lidé na uvítanou",
+     "welcome_min_away": "Pryč minimálně",
+     "welcome_until": "Vítejte večer do",
+     "speak_volume": "Hlasitost mluvení",
+     "night_volume": "Hlasitost mluvení v tichých hodinách",
+     "duck_media": "Během mluvení ztlumte hudbu a televizi",
+     "critical_alerts": "Bezpečnostní upozornění",
+     "critical_ignore": "Nikdy je nepovažujte za bezpečnostní upozornění",
+     "energy_insight": "Energetický náhled",
+     "energy_price": "Cena elektřiny",
+     "energy_currency": "Měna",
+     "price_entity": "Cena za dobu používání (návrhy na levnou elektřinu)",
+     "search_hints": "Řekni hlasu o vyhledávacích nástrojích",
+     "web_search": "Vlastní webové vyhledávání Sentient",
+     "searxng_url": "Adresa SearXNG",
+     "alexa_skill": "Odpověz na otázky položené prostřednictvím Alexa",
+     "alexa_wait": "Nejdelší čekání, než to Alexa vzdá",
+     "alexa_late_answers": "Říkejte pomalé odpovědi na to Echo",
+     "left_open_minutes": "Zmiňte dveře a okna, která poté zůstala otevřená",
+     "left_open_ignore": "O těchto se nezmiňujte",
+     "leaving_check": "Zkontroluj, kdy všichni jdou ven",
+     "critical_extra": "Považujte je také za bezpečnostní upozornění",
+     "heating_entities": "Zahřívání k učení",
+     "preheat": "Zahřejte se, než lidé vstanou",
+     "heating_schedule": "Plán vytápění (nastavuje se na záložce Dům)",
+     "comfort_temp": "Teplota zahřívání",
+     "inside_sensors": "Pohybové senzory uvnitř",
+     "weekly_report": "Týdenní zpráva",
+     "night_watch": "Noční hlídka",
+     "night_watch_entities": "Dveře a brány k pozorování",
+     "night_watch_announce": "Vyslovujte upozornění nahlas, a to i v tichých hodinách",
+     "night_watch_speakers": "Řekni zapnutá upozornění",
+     "warm_by_weekdays": "Teplo do (všední dny)",
+     "warm_by_weekends": "Teplo do (víkendy)",
+     "heating_limit": "Poté zahřívání vraťte",
+     "heating_night_temp": "Noční teplota",
+     "heating_revert_day_hours": "Návrat po (během dne)",
+     "heating_revert_night_hours": "Návrat po (v noci)",
+     "personality": "Osobnost",
+     "personality_notes": "Osobnostní poznámky",
+     "style_feedback": "\"Řekni to jinak\" na věci, které řekl",
+     "style_notes": "Jak by se věci měly říkat",
+     "camera_security": "Zabezpečení kamery",
+     "camera_security_sensors": "Senzory osob kamer",
+     "camera_security_inside": "Uvnitř hranice",
+     "camera_security_entries": "Cesty dovnitř",
+     "camera_security_describe": "Popište, kdo to je",
+     "security_reasoning": "Zvažte výstrahy vůči zbytku domu",
+     "party_lights": "Zobrazit světla",
+     "party_style": "Styl",
+     "party_minutes": "Zastav se sám poté",
+     "party_whole_house": "Využijte každé světlo v domě",
+     "party_exclude": "Nikdy nepoužívejte tato světla",
+     "party_sound": "Sledujte zvuk z",
+     "party_show": "Tlačítka na přehledu",
+     "party_sound_switch": "Zapni při poslechu",
+     "room_volume": "Promluvte si v hlučné místnosti",
+     "follow_you": "Zprávy sledují lidi",
+     "follow_minutes": "Uchovávejte zprávy, které chceš předat",
+     "conversation_memory": "Pamatujte na rozhovory",
+     "follow_ups": "Zkontroluj si věci",
+     "curiosity": "Zvědavost",
+     "reflection": "Noční odraz",
+     "reflection_time": "Reflektujte na",
+     "drive_spot": "Místo jízdy",
+     "drive_camera": "Řídit kameru",
+     "drive_triggers": "Podívej, až se to ustálí",
+     "camera_wake": "Než se podíváte, probuďte fotoaparát pomocí",
+     "camera_wake_cameras": "Pouze pro tyto fotoaparáty",
+     "camera_wake_seconds": "Pak počkej",
+     "known_cars": "Auta pro domácnost",
+     "full_volume_speakers": "Plná hlasitost na těchto reproduktorech",
+     "tts_entity": "Hlas pro ostatní reproduktory",
+     "house_language_text": "Vlastní slova Sentient v jazyce domu",
+     "speak_house_language": "Řekni vestavěné věty v jazyce domu",
+     "media_speakers": "Použij Echos a další přehrávače médií",
+     "media_important_only": "Echos: pouze alarmy a připomenutí",
+     "foresight": "Pohled na zítřek",
+     "foresight_time": "Podívej se dopředu",
+     "sleep_detection": "Vědět, kdy dům spí",
+     "sleep_minutes": "Usnout poté, co se o nic nepohnulo",
+     "sleep_ignore_sensors": "Senzory, které je třeba před spaním ignorovat",
+     "bedtime_routines": "Rutiny před spaním",
+     "sleep_actions": "Když jde dům spát, udělejte to",
+     "wake_actions": "Když někdo vstane, udělejte to",
+     "appliances": "Spotřebiče následovat",
+     "appliance_announce": "Řekni, až skončí",
+     "appliance_watts": "Běží výše",
+     "voice_agent": "Hlavní hlasový agent AI",
+     "backup_agent": "Záložní asistent",
+     "offline_answers": "Odpověz na běžné otázky bez AI",
+     "animal_sensors": "Teplotní senzory zvířat",
+     "away_lights_on": "Pryč světla",
+     "holiday_mode": "Prázdninový režim",
+     "holiday_thermostats": "Termostaty na dovolenou ztlumit",
+     "holiday_frost": "Teplota ochrany proti mrazu",
+     "holiday_end_on_return": "Ukončete prázdninový režim, když je někdo doma",
+     "away_people": "Pryč, když jsou všichni venku",
+     "away_lights": "Světla k použití",
+     "away_after": "Začněte poté, co všichni odešli",
+     "animal_low": "Dole je příliš chladno",
+     "animal_high": "Nahoře je příliš horko",
+     "hutch_check": "Večerní kontrola kotce",
+     "hutch_spot": "Kamerový bod chýše",
+     "cat_watch": "Noční kočičí hlídka",
+     "cat_sensors": "Kočičí senzory",
+     "cat_loud": "Řekni to rovnou v noci",
+     "rain_warnings": "Varování před deštěm",
+     "rain_entities": "Okna a dveře ke sledování",
+     "self_test": "Autotest",
+     "self_test_household": "Otázky pro domácnost v autotestu",
+     "screen": "Použij obrazovku tabletu",
+     "screen_actions": "Když se něco objeví",
+     "screen_clear_actions": "Až se to všechno vyčistí",
+     "conversation_sessions": "Konverzační sezení",
+     "room_conversation_handoff": "Předání konverzace z místnosti do místnosti",
+     "verified_bedtime": "Ověřeno před spaním",
+     "verified_bedtime_lights": "Dole světla před spaním",
+     "verified_bedtime_contacts": "Dole před spaním otevírací kontakty",
+     "session_seconds": "Časový limit nečinnosti relace",
+     "guarded_control": "Vynucené hlasové potvrzení",
+     "routine_verify": "Kontrolní rutiny fungovaly",
+     "voice_unlock": "Povolit odemykání hlasem",
+     "voice_undo": "Vraťte zpět poslední změny světla",
+     "evidence_awareness": "Vysvětlete důkazy a nejistotu",
+     "security_incidents": "Skupinové bezpečnostní incidenty",
+     "incident_front": "Před domem",
+     "live_voice_check": "Živá hlasová kontrola",
+     "speech_delivery_history": "Historie doručení reproduktoru",
+     "alexa_tts_only": "Používejte TTS pouze na Alexa",
+     "update_checker": "Zkontroluj aktualizace Sentient",
+     "contextual_followups": "Související sledování a opravy",
+     "conversation_recovery": "Zrušení konverzace a opatrné obnovení",
+     "automatic_language": "Automatická jazyková podpora",
+     "voice_language": "Řeč a konverzační jazyk",
+     "remember_language_phrases": "Zapamatujte si fráze v běžném jazyce",
+     "stream_voice_replies": "Vyslovovat hlasové odpovědi tak, jak jsou napsány (zkušební verze)",
+     "voice_timing_diagnostics": "Diagnostika časování hlasové odezvy",
+     "reliability_log": "Všimněte si, kde se hlas pokazí",
+     "unified_evidence": "Jednotné vyhledávání evidence domácností",
+     "specific_clarification": "Specifické otázky týkající se zařízení a hodnoty",
+     "action_recovery": "Výsledky zařízení a opatrná obnova",
+     "recheck_unconfirmed": "Podívej se znovu na změny, které se neohlásily",
+     "speech_failure_notification": "Informujte o selhání dodávky reproduktorů",
+     "recent_followup_context": "Krátké sledování po novém probuzení",
+     "conversation_cues": "Pochopit odhlášení, opravy a změny předmětu",
+     "vary_replies": "Pokaždé říkejte věci jinak",
+     "behaviour_explanations": "Vysvětlete rozhodování naslouchání a jednání",
+     "current_house_context": "Současný kontext domu",
+     "moment_awareness": "Uvědomění si okamžiku",
+     "room_memory": "Krátkodobá paměť na pokoj",
+     "know_people": "Vědět, kdo asi mluví",
+     "instant_answers": "Okamžité odpovědi",
+     "capability_awareness": "Vědět, co dům dokáže",
+     "house_context_entities": "Další kontextové entity",
+     "house_context_updates": "Řekni mi, až bude dosaženo požadovaného vytápění",
+     "security_event_evidence": "Propojte bezpečnostní výstrahy s událostmi Frigate",
+     "security_event_zones": "Které události kamery jsou uvedeny",
+     "security_event_hidden_zones": "Zóny, jejichž události nejsou uvedeny",
+     "security_coverage": "Vysvětlete mezery v pokrytí kamery",
+     "frigate_pipeline_health": "Zobrazit stav potrubí Frigate",
+     "security_conversation_context": "Ponech událost zabezpečení v konverzaci",
+     "security_event_feedback": "Zaznamenejte zpětnou vazbu na události kamery",
+     "share_clip_analysis": "Znovu použij analýzy odpovídajících klipů",
+     "heating_graph": "Graf teploty na topné kartě",
+     "heating_revert": "Vraťte se k rozvrhu po změně ručně",
+     "window_heating": "Vypni topení v místnosti, když je okno otevřené",
+     "window_heating_minutes": "Minuty je okno otevřené před akcí",
+     "rooms_view": "Přehled místností (karta Dům a přehled)",
+     "outdoor_areas": "Venkovní prostory",
+     "knowledge_card": "karta CO VÍM na kartě Mysl",
+     "day_chart": "Přehled DNEŠNÍHO DNE v přehledu",
+     "house_ledger": "Deník domácnosti",
+     "unexplained_changes": "Uveďte nevysvětlené změny",
+     "unexplained_entities": "Zařízení, která mají sledovat nevysvětlitelné změny",
+     "expectations": "Očekávání a překvapení",
+     "surprise_gating": "Přeskočte poznámky o tom, co je obvyklé",
+     "situations": "Řekni hlasu, co se teď děje",
+     "beliefs": "Formujte a testujte přesvědčení",
+     "learn_reactions": "Učte se z reakcí",
+     "ai_case_memory": "Uložit volání AI (paměť případu)",
+     "memory_tags": "Připomeňte si významem",
+     "memory_upkeep": "Vzpomínka, která se uchovává sama",
+     "watch_actions": "Hodinky a upomínky mohou fungovat",
+     "memory_time": "Paměť, která rozumí času",
+     "who_where": "Vědět, kdo je kde",
+     "big_plans": "Plány pro velké požadavky",
+     "self_grading": "Hodnotit vlastní odpovědi",
+     "voice_speed_watchdog": "Hlídač rychlosti hlasu",
+     "voice_speed_restart": "Restartuj pomalý reproduktor sám",
+     "incident_stages": "Fáze bezpečnostních incidentů",
+     "cognitive_shadow": "Porovnejte bezpečnostní incidenty (testování)",
+     "cognitive_decides": "Nech kognitivní jádro rozhodnout o fázích incidentu, jakmile si to zasloužilo",
+     "cognitive_quiet_heads_up": "Pouze testování: vyhodnoťte noční heads-up rozhodnutí (žádné potlačení výstrahy)",
+     "weather_warnings": "Upozornění na počasí a povodně",
+     "warnings_country": "Země",
+     "warnings_region": "Region (volitelné)",
+     "warnings_speak": "Řekni vážná varování",
+     "email_read": "E-mail pouze pro čtení",
+     "calendar_clashes": "Kalendářní střety",
+     "security_audit": "Bezpečnostní kontrola",
+     "automation_builder": "Vytvářejte automatizace",
+     "pronounce_names": "Vyslovujte jména tak, jak se vyslovují",
+     "pronunciations": "Výslovnosti (jedna na řádek)",
+     "health_duplicates": "Spot zařízení uvedena dvakrát",
+     "manuals_local_ocr": "Číst naskenované stránky PDF pomocí místního OCR",
+     "memory_semantic_enabled": "Hodnocení lokální sémantické paměti",
+     "memory_semantic_url": "Adresa místního serveru pro vkládání",
+     "memory_semantic_model": "Místní model vkládání",
+     "ai_routing_enabled": "Automaticky vybírejte levnější AI pro textové úlohy",
+     "ai_routing_alternative": "Alternativní AI Task entity",
+     "ai_routing_primary_cost": "Obvyklá odhadovaná cena AI za hovor",
+     "ai_routing_alternative_cost": "Odhadovaná cena za hovor alternativní AI",
+     "ai_routing_max_p95_ms": "Maximální alternativní doba odezvy AI (ms)",
+     "heating_energy_sensor": "Měřič topné energie (kWh)",
+     "heating_measurement_date": "Datum pro porovnání spotřeby energie na vytápění",
+     "heating_energy_price_kwh": "Cena topení za kWh",
+     "autooff_respect_recent_voice": "Nech automatické vypnutí respektovat poslední hlasové příkazy"
+    },
+    "data_description": {
+     "motion_window": "Kolik minut historie pohybu zvážit při rozhodování, kde se lidé nacházejí.",
+     "suppress_entities": "e.g. tvoje oznámení zvonku, takže poznámky na pozadí toho nemluví.",
+     "busy_entities": "Když je kterékoli z nich zapnuté (kalendář schůzek, přepínač Focus, telefon v režimu Nerušit), Sentient zadržuje řeč, která může čekat, jako by byla umlčena. Bezpečnostní upozornění a odpovědi, které požadujete, stále přicházejí. Chceš-li to vypnout, ponech prázdné.",
+     "prompt_memories": "Kolik vzpomínek dostane hlasový asistent předem. Zbytek lze ještě prohledat.",
+     "pass_through_areas": "Chodby, podesty a schodiště. Procházka těmito se počítá za mnohem méně, takže kolemjdoucí neukradne oznámení.",
+     "all_occupied": "On: každý, kdo je doma, to slyší. Vypnuto: pouze nejrušnější místnost.",
+     "room_tracking": "Ve výchozím nastavení vypnuto. Když pokojový sledovač (například bermudský senzor \"Area\" pro telefon) říká, že někdo je v místnosti s reproduktorem, jsou tam uvedeny věci \"kdekoli jsou lidé\". Když žádný sledovač neví — telefon není vidět, venku nebo místnost bez reproduktoru — odhad založený na pohybu se použije jako dříve. Jen jsem si vybíral, kde mluvit, nikdy neřešil, jestli je někdo vzhůru. Nic není uloženo.",
+     "room_trackers": "Senzory, jejichž stav je místnost, ve které se něco nachází, jako například senzory \"Area\" na Bermudách (jeden na telefon nebo štítek). Každý potřebuje, aby místnost odpovídala oblasti Home Assistant.",
+     "ai_task_entity": "Úkol umělé inteligence používaný pro pohledy kamery, briefingy, noční přemýšlení a pohled na zítřek. Prázdný používá preferovaný úkol umělé inteligence Home Assistant.",
+     "camera_cooldown": "Hodinky s fotoaparátem se dívají maximálně takto často, aby se snížily náklady na umělou inteligenci.",
+     "fallback_speakers": "Používá se pouze tehdy, když nikdo není v jiné místnosti reproduktorů, e.g. obývací pokoj, který byste raději nerušili.",
+     "daily_ai_limit": "Volání umělé inteligence na pozadí (kontroly kamery, brífinky, noční přemýšlení, zvonek…) se zastaví na následující den a místo toho používá srozumitelná slova. Otázky, na které se ptáte, jsou stále zodpovězeny. 0 znamená žádný limit.",
+     "prompt_recent": "Pár řádků právě teď (spící, tiché nebo tiché hodiny, hosté, cokoli otevřeného a čtení, ze kterého nebylo několik hodin slyšet, takže nejsou uváděna jako aktuální), co se stalo za poslední hodinu a kde došlo k pohybu, takže „něco, co bych měl vědět?“ a \"co se právě stalo?\" jsou zodpovězeny rovnou. Zdarma: žádné další volání AI.",
+     "rules": "\"Když se to stane, udělejte to\" pravidla (stránka Pravidla) a hlas je může vytvořit: přečte pravidlo zpět a uloží ho až po vyslovení ano. Pravidla nikdy nemohou nic aktivovat, deaktivovat ani odemknout. Vypnuto: žádná pravidla se nespustí.",
+     "relevant_memories": "Jakmile existuje více vzpomínek, než se vejde do kontextu hlasu, dostane ty, které sdílejí slova s ​​otázkou, pak nejnovější. Zdarma, žádná AI. Vypnuto: vždy nejnovější.",
+     "look_cache_minutes": "Stejná otázka na stejnou kameru během této doby dostane poslední odpověď namísto nového vzhledu AI. 0 vždy vypadá znovu.",
+     "camera_prefilter": "Kontroly fotoaparátu a hodinky nejprve porovnávají malý obrázek (na tomto stroji zdarma) a zeptají se AI pouze tehdy, když kamera — nebo její místo — vypadá jinak než při posledním pohledu.",
+     "budget_drive": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit.",
+     "budget_noticing": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit.",
+     "budget_cameras": "Vlastní denní dávka v rámci celkového limitu. 0 znamená, že sdílí pouze celkový limit. Bezpečnost, zvonek a otázky, které kladete, nejsou nikdy zadržovány.",
+     "routine_evidence": "Nabídky na převzetí rutiny říkají, jak často se to stalo, e.g. '4 z posledních 4 víkendových dnů'.",
+     "notice_entities": "Když se tyto změny změní, AI rozhodne, zda má cenu něco říkat (nebo se ptát). e.g. pračka, dveře, počasí, koše.",
+     "remark_repeat_hours": "Totéž, co jsi si všimli (\"Konvice se uvařila.\"), se už tak dlouho neříká. 0: bez omezení.",
+     "chattiness": "Limity poznámek za hodinu: tichý 2, normální 4, upovídaný 8. Vypnuto přestane vnímat.",
+     "conversation_style": "Stručně: krátké, věcné odpovědi. Přirozené: příkazy zůstávají krátké, ale otázky a chat obsahují několik přirozených vět a doplňující otázku, když se na ni někdo zeptá, takže mikrofon poslouchá.",
+     "carry_on_minutes": "Opětovné vyslovení budícího slova krátce po mluvení vede stejnou konverzaci od stejného mluvčího, takže \"a nahoře?\" stále dává smysl. 0 toto vypne; Home Assistant zapomene konverzaci po pěti minutách klidu.",
+     "focused_tools": "Dejte hlasu pouze nástroje Sentient, které odpovídají tomu, co bylo požadováno (kamery, topení, připomenutí…), plus paměť a bezpečnost. Menší výběr dělá levnější modely rychlejší a přesnější. Cokoli, co se jasně neshoduje, stále dostane každý nástroj.",
+     "ask_later": "Když se někdo zmíní o něčem, co se chystá (výlet, zápas, veterinář), hlas si zapamatuje, že se zeptá, jak to probíhalo, až s tím někdo bude příště mluvit — jednou, nikdy v klidných hodinách nebo s hosty a nikdy o ničem soukromém. Nikdy nemluví z čistého nebe. Vypnutím zapomenete na vše, co čeká na dotaz.",
+     "put_right": "Když řeknete \"ne, ten druhý\" nebo \"ne to světlo, lampa\", hlas přepne zpět to, co právě zapnul (zapnul nebo zhasl, během několika minut) a znovu provede požadavek pouze s opravenou částí — není třeba říkat vše znovu. Když toto vypnete, přenecháte to přímo hlasovému agentovi.",
+     "music": "S nastavením Music Assistant (nebo zapnutou hudbou přes Alexa): \"hrajte něco klidného v kuchyni\" vybírá z tvých vlastních seznamů skladeb a rádiových stanic a přehrává to na přehrávači Music Assistant v dané místnosti (nebo se zeptá na Echo v dané místnosti) — při noční hlasitosti v tichých hodinách, a ne v místnosti ve vlastní tiché době, pokud v ní nejste. Vypnuto: žádný hudební nástroj.",
+     "music_alexa": "Bez hudebního asistenta: \"přehrajte něco klidného v kuchyni\" požádá Echo v této místnosti (přehrávač médií Alexa), aby to přehrál z níže uvedené služby, podle jména — seznamu skladeb, interpreta, skladby nebo nálady — při noční hlasitosti v tichých hodinách, a ne v místnosti ve svém vlastním klidu, pokud v ní nejste. Služba musí být propojena v aplikaci Alexa. Vypnuto: Echos nejsou nikdy požádány o přehrávání hudby.",
+     "music_alexa_service": "Ze které služby Echos hraje. Spotify funguje s bezplatným účtem, ale Alexa může místo přesné skladby zamíchat podobnou hudbu; Premium hraje přesně to, co se žádá.",
+     "house_rules": "Prosté věty, které musí následovat každý hlas, jedna na řádek, e.g. „Nikdy neříkej, že dům je prázdný.'",
+     "no_security_offers": "Vyjměte z hlasových odpovědí jakoukoli větu, která nabízí aktivaci nebo deaktivaci alarmu nebo odemknutí dveří (\"Mám to aktivovat?\") — i když je vyslovena tak, jak je napsána. Odpovědi někomu, kdo požádal o aktivaci, deaktivaci, zamknutí nebo odemknutí, zůstávají samotné, takže jejich potvrzení je stále vyžadováno. Ve výchozím nastavení vypnuto.",
+     "learn_entities": "Světla, vypínače, ventilátory a žaluzie lidé používají ručně. Každou noc se za poslední dva týdny kontrolují věci, které se dělají většinu dní přibližně ve stejnou dobu, a věci, které se dělají hned po něčem jiném (otevření dveří, rozsvícení dalšího světla).",
+     "learn_anchors": "Zvyk, který drží čas při západu, východu nebo vstávání místo hodin (lampa za soumraku, žaluzie při východu slunce, konvice po vstávání), se tak naučí, takže rutina, kterou za tebe dům dělá, se mění s ročním obdobím. Vstávání vyžaduje nastavení spánku a bdění. Vypnuto: vše se učí s časem, jako dříve.",
+     "offer_together": "Když se několik věcí obvykle stane přibližně ve stejnou dobu ve stejných dnech (lampa svítí, žaluzie stažené, televize zapnutá kolem 20:00), jsou nabídnuty jednou, společně — jedna ano a dům udělá všechny. Vypnuto: každý je nabízen samostatně.",
+     "trust_lights": "Když rutina, kterou necháte převzít dům, rozsvítí světlo: prostě to udělejte, řekni to jako první, nebo se zeptej a udělejte to pouze na ano (pokud nikdo neodpoví, nic se nestane).",
+     "trust_switches": "Totéž pro vypínače, chytré zástrčky a ventilátory.",
+     "trust_covers": "Totéž platí pro žaluzie a závěsy. Garážová vrata a vrata se vždy ptají.",
+     "trust_heating": "Totéž pro ohřev topení, než lidé vstanou. Zeptat se jako první znamená, že se nemůže zahřát, když všichni spí.",
+     "link_triggers": "Volitelné: více věcí, které by mohly spustit návyk (spuštění televize, senzor postele…). Vždy se berou v úvahu dveře, okna a naučená světla.",
+     "suggest_routines": "Jednou za novou rutinu, během dne, kdy je někdo doma, se zeptej, zda to má dům od této chvíle dělat.",
+     "prove_routines": "Nově naučený návyk je sledován jako první: každý den poté, co se ho naučil, Sentient do 45 minut od obvyklého času zkontroluje, zda to člověk skutečně udělal. Je nabízena pouze tehdy, pokud je to správné alespoň 3 ze 4 dnů, na které se vztahovalo (pracovní dny, víkendy nebo každý den). Nastavení › Učení ukazuje, jak si každý vede. Vypnuto: návyky jsou nabízeny, jakmile se naučíte.",
+     "routine_fading": "Zapnuto: když rutina, kterou za tebe dům dělá, byla již hotová v době, kdy měla 5 dní za dva týdny (někdo to nyní dělá sám), Sentient se jednou zeptá, zda ji má zachovat, a zastaví se, pokud řeknete ne. Dodržují se pouze data, maximálně dva týdny. Vypnuto: rutiny, které dům dělá, jsou zachovány, dokud neřeknete jinak.",
+     "door_camera": "Okamžitě se podíval, když zazvonil zvonek, aby se zapsal, kdo přišel.",
+     "door_triggers": "Tlačítko zvonku (binární senzor nebo událost) nebo cokoli jiného, ​​co znamená, že někdo je u dveří.",
+     "announce_visitors": "Vypnuto udržuje záznam v tichém záznamu, ze kterého mohou hlasoví asistenti odpovídat.",
+     "faces": "Když Frigate (nebo zvonek) někoho rozpozná, přejde na časovou osu a hlas může odpovědět \"přišel Sam domů?\". Jména se nikdy neoznamují ani nehádají — vyslovují se pouze tehdy, když se někdo zeptá. Ve výchozím nastavení vypnuto.",
+     "face_people": "Jména, jak je Frigate zná. Prázdný: každý, koho pozná.",
+     "face_teach": "Pomáhá zlepšit rozpoznání obličeje Frigate. Když někdo opustí vybraný fotoaparát a Frigate si ponechal tvář, kterou nedokázal pojmenovat, telefony dostanou soukromé \"Kdo je to?\" s obličejem a tlačítky pro domácnost (telefony ukazují maximálně tři). Klepnutím na jednu se naučíte Frigate; \"Někdo jiný…\" má napsané jméno pro kohokoli nového, nebo \"ne\" pro smazání cizího obličeje. Nikdy nemluvené, nikdy na tabletech, maximálně každých deset minut. Vyžaduje rozpoznání obličeje Frigate a telefony vybrané pro oznámení. Ve výchozím nastavení vypnuto.",
+     "face_teach_cameras": "Makro kamery s jasnými tvářemi, e.g. zvonek. Prázdné: dveřní kamera.",
+     "face_cameras": "Prázdné: každý fotoaparát. Vyber si ty zblízka (zvonek, vchodové dveře), aby rušná ulice nemohla uvádět falešná jména.",
+     "face_forget_hours": "Každou noc jsou tváře Frigate zachovány, ale nikdo jmenovaný — většinou cizí lidé — jsou ze Frigate odstraněn, jakmile budou tak staré. Pojmenované tváře jsou zachovány. 0: nech to na Frigate (zachová si posledních 200).",
+     "clip_watch": "Když Frigate dokončí událost na vybrané kameře, AI jednou sleduje tento úsek záznamu a na časové ose a na stránce Sentient se objeví věta: \"Brána 14:10 — kolem prošel muž psa\". Hlas odpovídá \"co se stalo u brány?\" od nich bez dalšího volání AI. Nikdy nemluveno. Ve výchozím nastavení vypnuto.",
+     "clip_cameras": "Začněte jedním, e.g. brána.",
+     "clip_scope": "Upozornění Frigate jsou lidé v zónách, které jsi označili jako požadované — nejtišší volba pro rušnou ulici. Pokud kamera nikdy neupozorňuje (v Frigate nejsou nastaveny žádné požadované zóny), zvol \"Cokoliv v zóně\" — karta Clips ukazuje, co bylo přeskočeno a proč.",
+     "clip_when": "Sledujte pouze v těchto časech. Pryč znamená, že všichni vybraní pod světly Pryč jsou mimo.",
+     "clip_notify": "Jde pouze do telefonů, s obrázkem a tlačítkem přehrávání.",
+     "clip_source": "Vlastní souhrny recenzí AI Frigate je třeba zapnout v Frigate; pak se zde neuskuteční žádné volání AI.",
+     "clip_whose": "Ve stejném volání umělé inteligence jsou zahrnuty fotografie obličejů domácnosti z knihovny obličejů Frigate (a vzhledy níže) a někoho pojmenuje pouze tehdy, když je to jasně on — \"pravděpodobně Sam\". Cizinci nejsou nikdy jmenováni. Řekl jen na dotaz, nikdy neoznámil.",
+     "clip_looks": "Jeden na řádek, e.g. \"Sam: červená cyklistická helma a žlutý kabát, na kole\". Pomáhá, když helma nebo kapuce skryje obličej.",
+     "budget_clips": "Počítá se také do celkového denního limitu AI. 0: žádný vlastní limit.",
+     "clip_days": "Souhrny jsou pouze slova, poté se vymažou.",
+     "clip_keep": "Vypnuto: každý klip je smazán, jakmile je zhlédnut.",
+     "parcel_alerts": "Po doručení se o několik minut později znovu podívej a řekni, zda ti balík zůstal.",
+     "doorstep_sensors": "Volitelně: senzory osob na prahu nebo předzahrádku (e.g. a Frigate obsazenost zóny osobami). Když tam návštěva skončí bez zvonku, dveřní kamera je jednou zkontrolována, zda po ní nezůstal balík nebo pošta.",
+     "zone_visits": "Používá prahové senzory uvedené výše (e.g. a Frigate obsazenost zóny). Když nikdo nezazvoní, někdo, kdo dorazí do zóny, je považován za návštěvníka: je sledován dveřní kamera a je to oznámeno. Cokoli nastane dříve, zvonek nebo zóna, je návštěva a druhá je ignorována. Vypnuto: návštěvu zahájí pouze zvonek.",
+     "zone_door_sensors": "Volitelné: senzor otevření/zavření předních dveří. Pokud byly dveře otevřeny (nebo jsou otevřené) v poslední minutě a půl, zóna je ignorována, protože to je někdo, kdo odchází nebo přichází domů.",
+     "face_sensor": "Volitelné: snímač rozpoznávání obličeje, jehož stav je název, který právě rozpoznal (e.g. z Frigate). Používá se v protokolu a v oznámení, pokud je zapnuto.",
+     "sidebar_panel": "Stránka v postranním panelu zobrazující vzpomínky, rutiny, hodinky, návštěvníky a to, co bylo řečeno.",
+     "page_admin_only": "Skryje stránku a to, co čte, před všemi kromě administrátorů. Vypnuto udržuje otevřenou pro celou domácnost. Zapnutím se nic nesmaže.",
+     "custom_pages": "Zapnuto: Karty Přehled, Dům, Mysl a Zabezpečení používají tvoje uložené rozvržení a správci zde dostanou UPRAVIT ROZLOŽENÍ STRÁNKY, aby mohli přesouvat karty mezi sloupci, skrýt je, znovu je zobrazit nebo resetovat kartu. Na samotných kartách není žádné tlačítko pro úpravy, pouze když provádíte úpravy. Rozvržení je uloženo v Sentient, takže každá obrazovka zobrazuje totéž. Vypnuto: karty se vrátí do standardního rozvržení; tvoje uložené rozvržení zůstane zachováno, až jej znovu zapnete.",
+     "confirm_kinds": "Požádá AI, aby tyto akce popsala a počkala na ano. Toto je rychlá instrukce, nikoli vynucený akční blok: tvůj konverzační agent řídí provádění zařízení. Vypnutí věcí není třeba se ptát. Prázdné: žádná další potvrzovací instrukce. Pro vynucené kontroly povol chráněnou kontrolu s požadovaným nastavením agenta.",
+     "auto_backup": "Nedělní noc, záloha vzpomínek, spotů, rutin, pohybových světel, ztišení a nastavení, uložená v konfigurační složce pod sentient_backups.",
+     "backup_keep": "Starší jsou smazány.",
+     "suggestions": "Věci, které by Sentient mohl využít, ale nenabízí — nový reproduktor, čidlo výkonu na pračce, teploměr — nabízí jednu řadu po druhé. Ano to přidává; to neznamená, že už to nikdy nebude nabízeno. Zdarma, žádná AI.",
+     "whats_new": "Po aktualizaci Sentient krátká karta na stránce Sentient říká, co je nového, jednoduchými slovy, dokud neklepnete na GOT IT.",
+     "simple_settings": "Seznam nastavení zobrazuje to nejnutnější, s volitelnými funkcemi ZOBRAZIT VŠE. Nové instalace začínají tímto způsobem. Nemění nic na tom, co Sentient dělá.",
+     "chat_agent": "Kdo odpovídá na pole Dotaz na stránce — vyber hlasového agenta, který má zaškrtnuté Sentient. Vyprázdnit používá preferovaný asistenční kanál.",
+     "health_ignore": "Entity (a jejich zařízení), které by se neměly považovat za problémy, e.g. něco, co má být pryč.",
+     "hide_substreams": "Při počítání a kontrole kamer vynechává HD a SD streamy, snímky obrazovky a mapy, takže jeden zvonek není několik kamer. Z Home Assistant není nic smazáno.",
+     "ignore_cameras": "Fotoaparáty Sentient by neměly počítat, kontrolovat ani nabízet, jako je fotoaparát tabletu. Zůstanou v Home Assistant nedotčeni; vybrat znovu, aby se jeden vrátil.",
+     "never_entities": "Sentient je nikdy nepřepíná, neztlumuje ani nemění: ne v pravidlech, rutinách, nabídkách, automatickém vypínání, kontrolkách nepřítomnosti nebo pohybu, světelných show, topení nebo hlídaném hlasovém ovládání a hlasu je řečeno, aby je nechal na pokoji. Stále je může číst a mluvit o nich. Cokoli, co by člověka změnilo, je přeskočeno a zaznamenáno.",
+     "self_check": "Každou noc si prohlíží své vlastní záznamy — co řekl a jak to dopadlo, reproduktory, které selhaly, věci zadržené, znovu a znovu kladené otázky, měřič umělé inteligence — a zaznamenává, čeho si na sobě všimne, s čísly za tím. Žádná umělá inteligence. Zeptej se \"obtěžoval jsi nás?\" nebo \"co jsi si uvědomili?\".",
+     "learn_corrections": "Když někdo změní něco, co dům udělal před chvílí (světlo, které rozsvítil, rutina, kterou převzal), zaznamená opravu. Rutina, kterou stále vracíte, je vrácena zpět (vypnutá) a časová osa to říká. Vypnutím zastavíte sledování; již zaznamenané opravy jsou zachovány.",
+     "normal_day": "Porovná dnešek s tím, co je obvyklé, a zaznamená to na stránce Mysl: například ještě nikdo není vzhůru, když už někdo obvykle je. Jednoduchá pravidla, nic se neříká nahlas a nic se nepřepíná. Vypnutím zastavíte kontrolu a skryjete, co našlo.",
+     "thoughts": "Krátký seznam z pohledu první osoby na stránce Mysl (\"lidé pořád vypínají přistávací světlo, takže jsem přestal\"), plus hádání, do které místnosti jde někdo další, a kontrola, jak často to bylo správně. Žádná umělá inteligence. Vypnutím zastavíte hádání a skryjete seznam; co se naučil, je zachováno.",
+     "share_learning": "Jednou večer (17:00–20:30), když je někdo nablízku a není to zrovna klidný čas, řekne jednu věc, kterou se za poslední dva dny naučil nebo na kterou změnil názor: rutinu, kterou vrátil, skutečnost, kterou aktualizoval, zvyk, kterého si všiml, jak dobře teď odhaduje, kam půjdete příště. Nikdy totéž dvakrát. Když toto vypnete, vše zůstane na stránce Mysl, ale ztichne.",
+     "self_adjust": "Když autokontrola najde jakousi poznámku, dům stále mlčí, trochu ho ztište (stejně jako palec dolů; zase slábne). Nikdy se nedotýká bezpečnosti, zabezpečení nebo čehokoli, co ovládá.",
+     "proposals": "Když autokontrola zjistí, že něco není v pořádku, navrhněte jednu malou změnu na stránce Mysl — méně poznámek, neopakování jedné tak často, část přidaná do briefingu, vyšší limit AI — s důvodem. Nic se nezmění, dokud neřeknete ano; ne se znovu měsíc nezeptá. Vypnutím této možnosti vymažete všechny návrhy na čekání.",
+     "privacy_log": "U každého volání AI a vyhledávání na webu Sentient je zaznamenáno — která funkce, kolik obrázků, klipů nebo dokumentů a která služba — nikdy není co bylo řečeno nebo ukázáno. Podívej se na to v části Mozek a systém → Co opouští dům s tlačítkem pro zapomenutí posledních 48 hodin. Vypnutím se záznam vymaže.",
+     "goals": "Nech hlas určovat cíle během dní nebo týdnů (\"pomozte nám tento měsíc spotřebovat méně topení\"). Cíl může sledovat senzor: porovnává každý den s obvyklým týdnem předtím a zmiňuje pokrok, když se hodí. V domě se nic nemění.",
+     "manuals": "Odpověz na otázky z dokumentů ve složce níže (každý po jednom volání AI). Vypnuto: dokumenty zůstanou v klidu.",
+     "manuals_folder": "Složka na médiu Home Assistant (příručky e.g. = media/manuals). Každý soubor pojmenuj podle toho, k čemu je určen, e.g. \"Vzduch purifier.pdf\".",
+     "manuals_local_text": "Pokud dotazu neodpovídá žádný název souboru, vyhledejte v dokumentech .txt a .md ten správný, a pokud AI není k zastižení, přečti si místo ničeho nejbližší pasáž. Ani na jedno se nepoužívá AI. Vypnuto: shodují se pouze názvy souborů.",
+     "manuals_pages": "Zapnuto: každý PDF (a textový dokument) je jednou přečten, stránku po stránce, do vlastní databáze Sentient — na tomto počítači bez AI. Otázka pak odešle AI pouze několik stránek, které odpovídají, nikoli celý dokument, takže to stojí mnohem méně a odpověď říká, na které stránce se nachází (\"je to na stránce 14\"). Dokument, jehož název se neshoduje, lze stále najít podle toho, co je v něm, a pokud AI není k zastižení, nejbližší pasáž se přečte se svou stránkou. Naskenované soubory PDF (obrázky stránek) AI stále čte celé. Vypnuto: dokumenty se pokaždé přečtou celé a přečtené se vymaže.",
+     "games": "Hrajte příběhové hry vedené hlasem, jako je například únikové dobrodružství s asistenty jako herními mistry. Každá hra si uchovává svou vlastní uloženou paměť (kde jsou hráči, co nosí, co našli a vybrali) napříč sezeními a asistenty. Je ukazován hlasu pouze během hraní hry a mistr hry může číst běžnou paměť domu, ale nikdy ji nezmění. Otevři Nastavení → Příběhové hry, kde můžeš psát hry a upravovat jejich paměť. Vypnuto: herní nástroje a stránka jsou skryté; uložené hry jsou zachovány, nejsou vymazány.",
+     "voice_id": "Pro tento požadavek použij shodu místního mluvčího. Chceš-li, aby model umělé inteligence personalizoval odpovědi nebo přiřazoval nové vzpomínky jménem, ​​zapni také Sdílet shodná jména s agentem konverzace v aplikaci Rozpoznávání hlasu. Samostatné místní “Kdo to mluví?” odpověď je nastavena v Rozpoznávání hlasu.",
+     "voice_id_unknown": "Když reproduktor Assist nemá žádnou shodu hlasu, ponech historii domácnosti a uložené vzpomínky soukromé pro daný okamžik. Vypnuto: Nesrovnatelné hlasy jsou považovány za normální.",
+     "speaker_memories": "Se spuštěným rozpoznáváním hlasu: odpovídající hlas získá své vlastní vzpomínky (“Alex: má rád čaj”) jako první — vždy zahrnuty, i když by seznam zaplnily novější fakta o domácnosti — a nikdy osobní vzpomínky nikoho jiného; hlas, kterému se nemůže vyrovnat, nezíská žádnou z osobních vzpomínek nikoho. Fakta o domácnostech jsou vždy sdílena. Zadané požadavky a Echos se nemění. Ve výchozím nastavení vypnuto.",
+     "books": "Přehrávejte si audioknihy a čtěte e-knihy nahlas a udržujte místo v každé místnosti. \"Přečti si mou knihu\", \"pokračujte v knize\", \"čtěte 20 minut\", \"zastavte se\", \"další kapitola\", \"vraťte se o kousek zpět\". Žádná umělá inteligence (kromě volitelné rekapitulace). Na Echo: e-knihy jeden průchod na požadavek prostřednictvím dovednosti Alexa; audioknihy potřebují další reproduktor.",
+     "books_folder": "Složka v médiích Home Assistant (knihy = média/knihy). elektronické knihy .epub nebo .txt bez DRM; audioknihy jako jeden soubor .mp3/.m4b/.m4a nebo složka částí pojmenovaných po knize.",
+     "reading_tts": "Jiná služba převodu textu na řeč pouze pro knihy a příběhy — hlasy Gemini nebo ElevenLabs jsou často lepšími vypravěči. Chceš-li číst obvyklým hlasem, nech pole prázdné. Echos vždy používá vlastní hlas Alexa.",
+     "reading_voice": "Vyber hlas z této služby. Před uložením použij VYZKOUŠET HLAS níže, abyste jej slyšeli na výchozím reproduktoru.",
+     "read_ahead": "S hlasem pro čtení se další část příběhu vytváří během čtení této části, takže pomalý hlas (volný nebo oblačný) nezanechává mezeru mezi částmi. Používá ten hlas o něco dříve, nikdy častěji.",
+     "recipes": "\"Pojďme udělat lasagne\": ingredience, pak krok za krokem — \"další\", \"zopakuj to\", \"vrátit se\", \"co dál?\" — zapamatujte si krok každého řečníka. \"Udělejte to za 6\" zváží to; ingredience mohou jít na nákupní seznam.",
+     "recipes_folder": "Složka v médiích Home Assistant (recepty = média/recepty) s PDF, fotografiemi, textem nebo Markdown. Každý je poprvé uspořádán do kroků jedním voláním AI a poté zachován. Mealie se používá automaticky, pokud je nastavena jeho integrace.",
+     "recipes_list": "Kam je umístí \"přidat ingredience na nákupní seznam\". Prázdný: seznam s \"nákupy\" v názvu.",
+     "voice_lists": "Zapnuto: \"odškrtnout mléko\", \"co je na nákupním seznamu?\", \"sejmout pytle do koše\" — položky jsou nalezeny, jakkoli se říkají (v každém případě, množná čísla, jediné mléko na seznamu), jsou dotázány dvě možné shody a Sentient říká, že je hotovo, jakmile to seznam zobrazí. Používá seznamy vystavené Assist (všechny seznamy, pokud žádné nejsou) a nákupní seznam, pokud není pojmenován jiný. Žádná vlastní AI. Vypnuto: hlas používá vlastní seznam příkazů Home Assistant. Nic není uloženo.",
+     "ready_tonight": "\"Ujisti se, že je na dnešní noc vše připraveno\": zkontroluje dveře, okna a zámky, které Assist vidí, vypne pouze světla vybraná níže, podívá se na topení a řekne, co je ještě otevřené, odemčené, zapnuté nebo co nelze potvrdit. Zámky, alarm a topení se nikdy nemění a alarm není nikdy nabízen. Žádná vlastní AI. Vypnuto: hlas může stále kontrolovat dům, ale toto není nabízeno. Nic není uloženo.",
+     "ready_tonight_lights": "Jediná světla \"připravená na dnešní noc\" mohou zhasnout. Každá je následně zkontrolována. Prázdná: žádná světla nejsou vypnutá, pouze hlášená.",
+     "ready_tonight_follow": "Když je něco stále otevřené nebo odemčené, sledujte to až tři hodiny a jednou řekni do reproduktoru, na který jsi se zeptali, až bude vše vyřízeno. Pokračuje po restartu.",
+     "tandoor_url": "Volitelné: tvoje adresa Tandoor Recipes, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "Volitelné: API token od Tandoor (Nastavení → API). Uchováváno pouze v Home Assistant.",
+     "second_opinion_ai": "Volitelné: větší model se zeptal pouze tehdy, když obvyklý říká, že obrázek je příliš tmavý nebo nejasný. Počítá se do denního limitu.",
+     "smart_ai_task": "Volitelný. Používá se pouze pro bezpečnostní vzhled kamery a noční přemýšlení, kde chytřejší model pomáhá nejvíce. Prázdné: obvyklá AI, takže náklady se nemění.",
+     "event_clips": "Načte krátký klip události Frigate a nechá ho sledovat AI, takže může říct, co se vlastně stalo ('nechal balíček a odešel'). Používá se po upozornění na bezpečnostní kameru a na dotaz „co se stalo u dveří?“. Vyžaduje integraci Frigate. Jedno volání AI na klip. Ve výchozím nastavení vypnuto.",
+     "notify_targets": "Upozornit entity, e.g. aplikaci Home Assistant na každém telefonu nebo hodinkách.",
+     "notify_when": "Každý druh je odeslán maximálně jednou za deset minut.",
+     "phone_buttons": "Prostřednictvím doprovodné aplikace: u dveří — obrázek fotoaparátu a tlačítko Zobrazit fotoaparát; připomenutí — Odložit o 10 minut a Hotovo; otázky — když se dům chce na něco zeptat (nabídka, \"chceš, abych to pro tebe udělal?\", nebo se nejprve zeptej, než něco uděláte) a nikdo není poblíž mluvčího, zeptá se na telefonech pomocí Ano a Ne (ne v klidných hodinách). Prázdné: jednoduchá oznámení jako nyní.",
+     "phone_apps": "e.g. notify.mobile_app_pixel_8. Prázdné: doprovodná aplikace za každým výše vybraným telefonem (notify.my_phone → mobile_app_my_phone) — nikdy tablety.",
+     "bins_check": "Večer před sběrem se jedna kamera podívá na to, kde odpadnou popelnice. Něco říká, jen když nejsou venku: 'Zítra recyklujeme a koše ještě nejsou venku.' Podívá se ještě jednou o hodinu později.",
+     "bins_calendar": "Prázdný: kalendář svozu odpadu z kalendářů instruktáží.",
+     "bins_spot": "Nakresleno na záložce Spots, kde se vyhazují koše, e.g. popelnice'.",
+     "bins_time": "Večer před odběrem, před hodinami klidu.",
+     "chime": "Vypnuto: Oznámení a otázky začnou okamžitě, bez vyzvánění mluvčího.",
+     "welcome_home": "Když se někdo vrátí po 20 minutách nebo déle, řekni \"Vítejte zpět\" v místnosti, ve které se nachází — plus to, co stojí za to vědět z doby, kdy byl venku (návštěvníci, dokončené věci, problémy). Nikdy v klidových hodinách, v tichosti nebo v režimu hosta.",
+     "welcome_people": "Prázdný znamená, že každý se záznamem osoby. Místo toho si můžeš vybrat telefony (sledovače zařízení) — užitečné, když je člověk nastaven tak, aby byl vždy doma.",
+     "welcome_min_away": "Jak dlouho musel být někdo venku, než ho přivítali zpět, v minutách.",
+     "welcome_until": "Tiché hodiny obvykle zdržují přivítání. Nastav čas a každý, kdo přijede večer, je stále vítán. Nech prázdné, aby byly hodiny v klidu tak, jak jsou.",
+     "speak_volume": "Volitelné: hlasitost reproduktoru, když Sentient mluví, vraťte zpět. Prázdný to nechá být.",
+     "night_volume": "Volitelné: tišší úroveň pro cokoliv, co bylo řečeno v tichých hodinách (pouze naléhavé zprávy).",
+     "duck_media": "Cokoli, co se hraje ve stejné místnosti, je ztlumeno, zatímco Sentient mluví, a poté otočeno zpět nahoru.",
+     "critical_alerts": "Automaticky jsou nalezeny senzory kouře, oxidu uhelnatého, plynu, úniku vody a neoprávněné manipulace, a tak se spustí alarm. Vysloveno na každém reproduktoru, prostřednictvím tichých hodin, tichého režimu a režimu hosta, dvakrát zopakováno, zatímco je stále zapnuté, a odesláno do telefonů.",
+     "energy_insight": "Dnešní použití zařízení na palubní desce Energy ve srovnání s minulým týdnem: karta Energy, sekce briefingu, hlasový nástroj a poznámky k neobvyklému použití. Off to všechno skryje a zastaví.",
+     "energy_price": "Volitelné: tvoje jednotková sazba za kWh pro zobrazení dnešních nákladů na zařízení Energy dashboard — v pencích nebo centech (24,5) nebo v librách, dolarech nebo eurech (0,245); buď funguje.",
+     "energy_currency": "Měnové náklady jsou uvedeny v. Prázdné: Vlastní měna Home Assistant (Nastavení → Systém → Obecné).",
+     "price_entity": "Tvoje cena elektřiny nyní, z integrace tvého dodavatele (Octopus Energy, Nordpool…). Pokud uvádí nadcházející sazby, které se používají; jinak se obvyklá cena za každou hodinu zjistí z minulého týdne. Jednou pro každý spotřebič (pračka, myčka, sušička) se večer zeptá, zda si přejete použít odložený start, když je přes noc nejlevnější. Prázdné: vypnuto.",
+     "search_hints": "Když jsou nastaveny nástroje Voice Satellite LLM Tools (nebo vlastní vyhledávání Sentient), hlas je informován, že vyhledávací nástroje jsou k dispozici a lze je použít pro cokoli mimo dům — slova v reproduktoru, obrázky pouze na tabletu. Žádné vlastní volání AI.",
+     "web_search": "Hlasové vyhledávání na webu prostřednictvím tvého vlastního SearXNG (například doplněk SearXNG). Používá se pouze v případě, že není nainstalováno vyhledávání na webu Voice Satellite LLM Tools, takže hlas nikdy nedostane dva. Ve výchozím nastavení vypnuto.",
+     "searxng_url": "Například http://localhost:8080 nebo adresa doplňku. SearXNG musí umožňovat formát json (ve svém nastavení: vyhledávání → formáty).",
+     "alexa_skill": "Nepřidává nic, dokud ji dovednost nepoužije: namiřte dovednost Alexa (například komunitní dovednost 'Home Assistant Assist') na agenta 'For Alexa', poté řekni “Alexa, ask” a název tvojí dovednosti. Ve výchozím nastavení vypnuto.",
+     "alexa_wait": "Alexa zavěsí asi po 8 sekundách, takže odpověď musí přijít rychleji.",
+     "alexa_late_answers": "Když AI trvá déle, Alexa řekne “Dej mi chvíli” a odpověď se ozve na stejném Echo, když bude připravena.",
+     "left_open_minutes": "Řekl to jednou (pak každou půlhodinu, když je stále otevřeno), během klidných hodin a ticho jako obvykle. 0 jej vypne.",
+     "leaving_check": "Když odejde poslední osoba, vše otevřené nebo odemčené se přesune na časovou osu a do telefonů (\"Nechat otevřeno\").",
+     "critical_extra": "Cokoli jiného, ​​co by mělo být vždy řečeno všude, když se zapne, e.g. panikové tlačítko nebo čidlo příliš teplého mrazáku. Vždy je zahrnut alarm, který se spustí.",
+     "heating_entities": "Termostaty, od kterých se můžeš učit. Nech prázdné pro každého v domě. Učí se, jak rychle se každý zahřeje a na jakou teplotu je obvykle nastaven.",
+     "preheat": "Začněte topení brzy, aby bylo v době, kdy lidé normálně vstávají, na obvyklou teplotu. Termostat s vlastním programem se poté nasadí zpět a ten, který je vypnutý, zůstane vypnutý.",
+     "heating_schedule": "Zapnuto: běží časy vytápění nastavené na záložce Dům (termostat nastavený na teplotu nebo vypnutý v čase ve zvolené dny) a pouze na termostatech, které jsou zde zvolené. Vypnuto: žádné spuštění a plán je skrytý; časy, které jsi uložili, jsou zachovány a po opětovném zapnutí se spustí znovu.",
+     "comfort_temp": "Volitelné: teplota, na kterou se má zahřát. Nech prázdné, abyste mohli použít ten, na který je obvykle během dne nastaven.",
+     "inside_sensors": "Volitelné: která pohybová čidla znamenají, že je někdo uvnitř. Nech prázdné, chceš-li použít reproduktory ve stejných patrech (zahradní a kamerové senzory se nepočítají). Používá se pro noční hlídky a časy vstávání.",
+     "weekly_report": "V neděli večer dejte na časovou osu toho, co se dům dozvěděl a všiml si toho tento týden (zašlete na telefony).",
+     "night_watch": "Učí se, kdy se normálně otevírají dveře, brána a okno. Otevření v době, kdy se to obvykle neděje, a nikdo se dovnitř nepohne jako první, je výstrahou. Pokud byl někdo uvnitř (řekněme odchází do práce), je to pouze zaznamenáno.",
+     "night_watch_entities": "Ponech prázdné pro každý senzor dveří, okna, brány a garážových vrat.",
+     "night_watch_announce": "Neobvyklé otevření s nikým vzhůru je řečeno okamžitě, prostřednictvím tichých hodin, ticha a režimu pro hosty — může to být někdo, kdo by tam neměl být.",
+     "night_watch_speakers": "Ponech prázdné pro každý reproduktor.",
+     "warm_by_weekdays": "Volitelné: kdy má být ve všední dny teplo. Nech prázdné, abyste využili naučený čas na vstávání.",
+     "warm_by_weekends": "Volitelné: totéž pro soboty a neděle.",
+     "heating_limit": "Když někdo zapne nebo zapne některý z výše uvedených termostatů topení, hlasem nebo v aplikaci, vraťte jej po tolika hodinách: termostat bez plánu se vrátí do původního stavu (i když je vypnutý). Termostat v plánu vytápění se místo toho řídí podle vlastních časů plánu (Návrat po změně: ve dne a v noci) a poté přejde na to, co do té doby plán vyžaduje. Jen ty termostaty; 0 (výchozí) nikdy ne.",
+     "heating_night_temp": "Kde plán vytápění klesne na konec období a noční úroveň, kterou udržuje. Plán nikdy nevypne termostat. Změň jej zde, kdykoli budeš chtít (5–28 °C).",
+     "heating_revert_day_hours": "Doba, po kterou byla provedena změna, když běží topné období, je ponechána sama, než se znovu převezme plán.",
+     "heating_revert_night_hours": "Jak dlouho je změna provedená mimo topná období (včetně vypnutí topení) ponechána na pokoji. V noci se topení vrací na noční teplotu, nikdy se nevypíná.",
+     "personality": "Jak zní dům — v poznámkách, instruktážích, přivítání a každému hlasovému asistentovi.",
+     "personality_notes": "Volitelné, vlastními slovy, e.g. „Mám rád kočky. Jemně škádlí o tom, kolik čaje se vyrábí.'",
+     "style_feedback": "Tlačítko vedle palců na čemkoli, co bylo napsáno: vyber kratší, jednodušší, méně drzý, více podrobností nebo řekni jak. Níže uvedené poznámky se pak dodržují všude, kde se mluví. Vypnuto: žádné tlačítko a poznámky se nepoužívají.",
+     "style_notes": "jeden na řádek; přidáno z tlačítka a tvoje k úpravě. Používá se nejnovějších 8.",
+     "camera_security": "Sledujte lidi od kamery ke kameře a upozorněte na někoho v zahradě, když se brána a dveře neotevřely, nebo na kohokoli v noci, když nikdo není vzhůru. Výstrahy jsou vyslovovány nahlas v tichých hodinách, pokud ano.",
+     "camera_security_sensors": "Senzor osob každé kamery (nebo zóny), e.g. Frigate's 'obsazenost brány osob'.",
+     "camera_security_inside": "Senzory osob pro místa za bránou nebo plotem — zahrada, kůlna. Někdo, kdo se tam objeví bez možnosti otevření, je upozornění.",
+     "camera_security_entries": "Brána a dveře by lidé měli projít (e.g. zadní brána a zadní dveře).",
+     "camera_security_describe": "Jeden pohled umělé inteligence do kamery pro každé upozornění („muž v tmavé mikině s kapucí, který zkouší dveře kůlny').",
+     "security_reasoning": "Než se nahlas vysloví výstraha zabezpečení kamery, podívej se na výstrahu, zda jsou všichni venku, na vstupní dveře nebo bránu, které se otevřely těsně předtím, pohyb uvnitř, události Frigate a jak často již kamera upozornila. Někdo, kdo pravděpodobně jde ven, nebo stejná kamera do půl hodiny znovu, je umlčen. Upozornění se stále zobrazuje na časové ose a na telefony s důvody. Budík nastaven nebo všichni ven: vždy řekl. Žádná umělá inteligence. Ve výchozím nastavení vypnuto.",
+     "party_lights": "Světla, která se zapojí, když nepoužíváte celý dům. Nech prázdné, chceš-li použít pokoj toho, kdo o to požádá (nebo řekni pokoj: 'režim diskotéky v obývacím pokoji').",
+     "party_style": "Disco: rychlé změny barev. Párty: světlé barvy, krátké vyblednutí. Duha: barevné kolečko. Chlazení: pomalé, matné barvy. Halloween: blikající oranžová, fialová a zelená. Vánoce: červená, zelená a teplá bílá, třpytivá.",
+     "party_minutes": "Pak se každé světlo vrátí přesně tak, jak bylo. 0 pokračuje, dokud se nevypne.",
+     "party_whole_house": "Každé světlo, které může ztlumit nebo změnit barvu, se připojí (skupiny světel, obrazovky a podsvícení nikoli). Chceš-li to provést pouze jednou, řekni „režim diskotéky všude.",
+     "party_exclude": "Vynecháno z každého pořadu, dokonce i „všude“ — obrazovky tabletu, projektor, ložnice, kde někdo spí.",
+     "party_sound": "Volitelné: snímač hlasitosti v dB, třeba mikrofon reproduktoru se snímačem sound_level v ESPHome. Režimy Diskotéka, Párty, Duha a Halloween se pak řídí hudbou — čím hlasitější hudba, tím jasnější světlo. S každým úderem se změní barva.",
+     "party_show": "Které pořady mají v přehledu tlačítko. Nech prázdné pro žádné; každá show stále funguje hlasem.",
+     "party_sound_switch": "Volitelné: přepínač, který hlásí snímač hlasitosti (takže neposílá údaje celý den). Zapne se, když pořad následuje zvuk, a poté se vypne. Nalezeno automaticky, pokud je na stejném zařízení a má v názvu slovo „hlasitost.",
+     "room_volume": "Reproduktory, které slyší místnost (snímač hlasitosti na stejném zařízení), poslouchají nejprve jednu sekundu a mluví hlasitěji přes televizi nebo chatují. Ne v klidných hodinách.",
+     "follow_you": "Něco, co bylo řečeno tam, kde nikdo nebyl — nebo zadržené na tiché hodiny — se předá dál, když někdo vejde do místnosti s reproduktorem.",
+     "follow_minutes": "Po této dlouhé době zmizí neslyšená zpráva.",
+     "conversation_memory": "Uchovává krátký záznam toho, co bylo požádáno a řečeno na každém reproduktoru, takže jiná místnost může pokračovat tam, kde někdo skončil. Uchováván dva týdny; soukromé, když jsou hosté uvnitř.",
+     "follow_ups": "Hlasy mohou nastavit následná opatření (\"Za hodinu zkontroluji, zda je místnost vytopená\") a hodinky, které dojdou, aniž by nic viděli, se nahlas zavřou.",
+     "curiosity": "Maximálně jednou za den, když je někdo kolem, zeptá se na něco, co nedokáže vysvětlit — běžný volající, vzorec, kterého si všiml přes noc — a pamatuje si odpověď.",
+     "reflection": "Každý večer jeden telefonát AI přes denní deník a konverzace: nové věci, které stojí za zapamatování, jedna nebo dvě myšlenky na ráno a otázka, kterou je třeba položit.",
+     "reflection_time": "Nejlépe v malých hodinách.",
+     "drive_spot": "Bod kamery, který ukazuje disk (nakreslete jej na kartě Spots).",
+     "drive_camera": "Potřebné pouze v případě, že více než jedna kamera má spot s tímto názvem.",
+     "drive_triggers": "Pohybové nebo automobilové senzory, které vidí jízdu. Prázdné: vlastní pohyb kamery a senzory auta.",
+     "camera_wake": "Akce, které probudí kameru z pohotovostního režimu (tlačítko probuzení nebo obnovení, přepínač streamu, skript). {{ camera }} je fotoaparát, na který se chceš podívat. Prázdné: na kamery se hledí tak, jak jsou.",
+     "camera_wake_cameras": "Prázdné: každá kamera, na kterou se AI dívá.",
+     "camera_wake_seconds": "Vteřiny čekání po probuzení na nový obrázek.",
+     "known_cars": "Jeden na řádek, e.g. 'Sam: tmavě šedý hatchback'. Stejný pohled na jednotku pak říká, čí auto přijelo („Samovo auto dorazilo na cestu“) — žádná další AI. Prázdné: auta nejsou pojmenována.",
+     "full_volume_speakers": "Oznámení na nich jsou uvedena na 100 %, pak se hlasitost vrátí zpět — u tabletů se vše ostatní vypne. Ne v klidných hodinách (pak se použije hlasitost klidových hodin).",
+     "tts_entity": "Reproduktory mohou být asistenční reproduktory nebo přehrávače médií. Echos se mluví přes Alexa Media Player; jakýkoli jiný přehrávač médií (chytrý reproduktor, zařízení Cast) používá tento hlas převodu textu na řeč.",
+     "house_language_text": "Zapnuto: to, co ti Sentient píše ke čtení — časová osa, zdraví domu, karta Mysl, denní přehled, denní příběhy, popisy klipů a telefonická upozornění — se řídí jazykem Home Assistant. Pevné věty jsou překládány do polštiny, němčiny, holandštiny, italštiny, portugalštiny, španělštiny, francouzštiny a maďarštiny; to, co AI píše, se řídí jakýmkoli jazykem. Slova, která jsou vyřčena, následují místo toho Řekni vestavěné věty v jazyce domu. Žádné další volání AI; nic není uloženo. Vypnuto: vše zůstane v angličtině.",
+     "speak_house_language": "Překládejte běžné anglické věty pomocí stávajícího úkolu umělé inteligence, s časovým limitem, dočasnou mezipamětí vět a záložním řešením původního textu. Naléhavá upozornění nikdy nečekají na AI. Použij automatickou jazykovou podporu pro připravené fráze a konverzace; vyber jazyk níže. Opravené přesné tokeny ano/ne pokrývají běžné jazyky. Překlady osobních vět se při restartech nikdy neukládají.",
+     "speakers": "Podpora reproduktorů nebo přehrávačů médií (Echos až Alexa Media Player).",
+     "media_speakers": "Vypnuto: Používají se pouze hlasové reproduktory, a to i tam, kde alarm nebo hlášení pojmenovává Echo (místo toho jde tam, kde jsou lidé). Také přepínač „Echo speakers“ pro automatizaci a přístrojové desky.",
+     "media_important_only": "Zapnuto: Echos říká pouze alarmy, připomenutí a bezpečnostní upozornění; oznámení, oznámení a chat místo toho přejdou do hlasových reproduktorů. Také přepínač „Echos: pouze budíky a připomenutí.",
+     "foresight": "Každý večer jeden pohled AI na zítřejší kalendáře, počasí, budíky a připomenutí. Říká něco, jen když je dnes v noci co dělat — mráz před brzkým startem, déšť v den mytí. Obvykle tichý.",
+     "foresight_time": "Než začnou hodiny klidu.",
+     "sleep_detection": "Usínejte po rutině před spaním nebo v klidných hodinách, když se uvnitř chvíli nic nehýbalo. Probuďte se ráno, když je ve dvou místnostech pohyb (nebo je světlo rozsvícené ručně). Ukazuje to domovní senzor.",
+     "bedtime_routines": "Rutiny, které znamenají, že všichni šli spát, odděleni čárkami. Prázdné: jakákoli rutina s „noc“ nebo „postel“ v názvu.",
+     "sleep_actions": "e.g. vypnou obrazovky tabletu, vypnou se reproduktory Echo.",
+     "wake_actions": "e.g. reproduktory Echo znovu zapnuté, světlo v chodbě ztlumené.",
+     "appliances": "Pračka, sušička, myčka, vysavač — jejich čidlo výkonu nebo stav. Nech prázdné, abyste sledovali každý robotický vysavač a jakýkoli senzor výkonu, jmenovitě pračka, sušička nebo myčka.",
+     "appliance_announce": "Říká “pračka je hotová” tam, kde jsou lidé, a když to jednomu trvá mnohem déle než obvykle. Obyčejná slova, žádná AI.",
+     "appliance_watts": "Pro výkonové senzory: běží nad tímto, skončí, jakmile zůstane pod ním pět minut.",
+     "voice_agent": "Agent AI, který normálně odpovídá (e.g. Google AI). Prázdný používá chat agenta stránky.",
+     "backup_agent": "Odpovídá, když hlavní agent selže — vlastní agent Home Assistant dělá světla, topení a časovače bez jakékoli AI.",
+     "offline_answers": "Když agent AI selže, “je dům zamčený?”, “kdy mám další alarm?” a “přišel někdo?” jsou zodpovězeny přímo z domu, prostými slovy, než je záložní agent vyzkoušen. Jen otázky, jen to, co ten člověk může vidět; v režimu hosta pouze bezpečnostní otázka. Vypnuto: vše přejde na záložního agenta.",
+     "animal_sensors": "Senzory teploty boudy, psí boudy, kotce nebo nádrže.",
+     "away_lights_on": "Když jsou všichni po setmění venku, světla zkopírují, jak se používali ve stejnou dobu minulý týden (z historie Home Assistant), a to několik minut v obou směrech. Nespustí se (nebo se nezastaví), pokud je někdo doma nebo došlo v poslední době uvnitř k pohybu, pro lidi bez sledování telefonu a vrátí to, co zapnul. Také spínač 'Away lights.",
+     "away_people": "Prázdné: všichni se záznamem osoby. Místo lidí si můžeš vybrat telefony (sledovače zařízení.",
+     "away_lights": "Prázdné: každé světlo v místnosti, vynechání obrazovek, LED kroužků, podsvícení a skupin. Rozsvítí se pouze světla, která byla v té době minulý týden používána.",
+     "holiday_mode": "Přepínač „Dovolenkový režim“ a „Jedeme na dovolenou do neděle“ hlasově. Když je zapnutý, nic se neříká nahlas kromě bezpečnostních upozornění — to, co by bylo řečeno, jde na telefony vybrané pro upozornění, s návštěvníky a balíčky; pryč světla běží, i když jsou normálně zhasnutá; a níže uvedené termostaty jsou vypnuty. Vypnuto: žádné přepínání a žádná dovolená hlasem.",
+     "holiday_thermostats": "Když jsi pryč, zapni ochranu proti mrazu a po skončení prázdninového režimu se vrátíte přesně tak, jak byli. Prázdné: topení se nedotýkáte.",
+     "holiday_frost": "Na co jsou nastaveny termostaty výše, když jsi pryč.",
+     "holiday_end_on_return": "Jakmile všichni odejdou, domov první osoby ukončí prázdninový režim a zapne topení. Vypnuto: skončí k datu nebo po vypnutí.",
+     "away_after": "Takže skokem do obchodu to nezačíná.",
+     "animal_low": "Řekne jednou, když klesne pod tuto hodnotu (trvá do rána v klidných hodinách), a varuje večer před mrazem.",
+     "animal_high": "Říká jednou, když se to povznese nad tohle.",
+     "hutch_check": "Půl hodiny po západu slunce se jeden AI podívá na boudu: jsou uvnitř a je zavřená? Řekne jen něco, pokud ne.",
+     "hutch_spot": "Bod nakreslený kolem kóje na kartě Spoty, e.g. 'králičí ohrada'.",
+     "cat_watch": "Když se po setmění zapne kočičí senzor na kameře boudy, jeden pohled AI: je kočka u boudy nebo u ní? Maximálně každých 15 minut a ne, když se obraz nezměnil.",
+     "cat_sensors": "Prázdné: kočičí senzory na kameře boudy (e.g. Frigate obsazeno kočkou).",
+     "cat_loud": "Vypnuto: ponecháno na ráno („Kočka byla u boudy ve 2:14“). Zapnuto: řeklo se okamžitě přes reproduktory noční hlídky.",
+     "rain_warnings": "Když má pršet do hodiny a okno nebo dveře jsou otevřené: 'Příští hodinu bude pršet a okno ložnice je otevřené.' Čte hodinovou předpověď — žádná umělá inteligence. Jednou za deště.",
+     "rain_entities": "Prázdné: každý senzor oken a dveří.",
+     "self_test": "Přes noc je hlasu položeno několik každodenních otázek (teplota venku, cokoli otevřeného, ​​připomenutí, budík, čas) a jeho odpovědi jsou kontrolovány proti domu. Cokoli špatného se projeví na zdraví domu pomocí nástroje, který používá. Asi 5 AI volá run. Pouze otázky — nic se nepřepíná.",
+     "self_test_household": "Přidává asi 7 otázek vytvořených z tvých vlastních zařízení: kdy se naposledy zavřely dveře nebo okno, zda je rozsvícené světlo, zda kamera někoho za poslední dvě hodiny viděla, zda dnes někdo přišel ke dveřím, něco, co nemůže vědět (vymyšlená odpověď se nezdaří), něco, co žádné zařízení neumí, a otázku, která je příliš vágní na to, aniž bychom se zeptali na kterou. Přepínání čehokoli během otázky je selhání. Skóre a jeho trend jsou na stránce Mysl. Asi 7 dalších AI volá run.",
+     "screen": "Upozornění, upozornění a ranní karta na kartě obrazovky Sentient (vlastní: karta obrazovky sentient). Vypnuto: zobrazuje dům pouze na první pohled.",
+     "screen_actions": "e.g. probuďte tablet a přepni jej na stránku s kartou obrazovky.",
+     "screen_clear_actions": "e.g. přepni tablet zpět na normální stránku.",
+     "conversation_sessions": "Použij Sentient se záložním agentem. Jednotlivé příkazy přestanou poslouchat, pokud mluvená odpověď neskončí otázkou. Diskuse o informacích, zabezpečení, zdraví a systému se ptají, zda existuje ještě něco jiného, ​​a zůstaňte otevřené, dokud neřeknete “to je vše”, “dost” nebo “přestat poslouchat”, nebo dokud nevyprší časový limit nečinnosti. Řekni “zpět na…” a obnovte nedokončené téma z tohoto zařízení do 24 hodin bez obnovení oprávnění k akci. Panel Mysl zobrazuje nedávná konverzační rozhodnutí. Následný poslech vyžaduje kompatibilní zařízení Assist.",
+     "room_conversation_handoff": "Řekni pokračovat s a pojmenuj téma z jiného zařízení. Oba požadavky musí pocházet od stejného identifikovaného uživatele Home Assistant. Čerstvé naměřené hodnoty jsou kontrolovány a dřívější akce a potvrzení se nepřenášejí.",
+     "verified_bedtime": "Řekni běž dolů před spaním, abyste zhasli vybraná světla a zkontroluj vybrané kontakty. Požádejte dole stav večerky, abyste to znovu zkontrolovali, nebo řekni zrušit večerku dole, abyste jej přestali sledovat.",
+     "verified_bedtime_lights": "Vyber si až dvacet samostatných asistenčních světel. Skupiny jsou vyloučeny a stále platí seznam Nikdy se nedotýkat.",
+     "verified_bedtime_contacts": "Vyber si až dvacet kontaktů pro otevření dveří, oken nebo jiných kontaktů Assist, které chceš zkontrolovat. Jsou pouze pro čtení.",
+     "session_seconds": "Po tomto mnoha sekundách bez dalšího tahu zahoďte kontext relace a nevyřízené akce. Tvoje hlasové zařízení ovládá svůj vlastní časový limit ticha. Platnost potvrzení také vyprší po 60 sekundách.",
+     "guarded_control": "Přihlas se pomocí vyhrazeného podporovaného agenta umělé inteligence: vyber pouze Sentient chráněné pod kontrolou Home Assistant a poté použij Sentient s připravenou zálohou. Vypni Preferovat zpracování příkazů lokálně a odstraň konfliktní spouštěče vět, které běží před tímto agentem. Nesprávná konfigurace API agenta zastaví požadavky. Žádné neomezené zálohy, scénáře, scény nebo poplachové akce. Dveře, spouštění spotřebičů a výrazné změny topení vyžadují samostatné ano.",
+     "routine_verify": "Zapnuto: po spuštění hlasové rutiny (dobrou noc, odjezd…) je každé změněné světlo, vypínač, zámek a kryt o několik sekund později zkontrolováno a odpověď říká, co se nestalo (\"Hotovo, kromě přistávacího světla, které stále svítí\"). Kroky, které nemůže zkontrolovat (scénáře, scény), jsou hlášeny jako nezkontrolované, nikdy jako dokončené. Nic se samo o sobě nezkusí ani nezruší. Vypnuto: rutiny běží jako dříve, nezaškrtnuté.",
+     "voice_unlock": "Umožňuje vynucené hlasové potvrzení odemknout dveře po samostatném ano. Vypnuto (výchozí nastavení) stále zamyká a zavírá, ale odmítá odemknout nebo otevřít hlasem, protože Sentient nedokáže zjistit, kdo mluví.",
+     "voice_undo": "S chráněným ovládáním vyslovte “Ukončit to”, abyste požádali o obnovení nedávných ověřených nastavení osvětlení. Přeskočí světla, která se od té doby změnila, vyprší s relací a nikdy neodemkne zámky, topení nebo spotřebiče.",
+     "evidence_awareness": "Řekni hlasu, aby rozlišil pozorování, závěry, pokusy o akce a ověřené zprávy zařízení. Nedostupné bezpečnostní senzory vždy zabrání plně zabezpečené reklamaci.",
+     "security_incidents": "Seskupte konfigurované senzory osob s bezpečnostními kamerami a vstupní kontakty s výstrahami a souhrny klipů. Udržujte místně sedm dní. Časová blízkost je možným spojením, nikoli důkazem o stejné osobě; opakují se pouze stupňující se výstrahy.",
+     "incident_front": "Kamery a senzory v přední části domu (zvonek, vchodové dveře). Nic zde není nikdy seskupeno do jednoho bezpečnostního incidentu s něčím, co není, a naopak: někdo u předních dveří a někdo u zadní brány ve stejnou chvíli jsou dva incidenty. Nech prázdné, aby se skupina podle času sama seskupila.",
+     "live_voice_check": "Zobrazit hlasovou kontrolu spuštěnou uživatelem na panelu Mysl. Vypnutím vymažete aktuální kontrolu a zastavíte nahrávání kontrolních tahů. Ke spuštění kontroly vyžaduje relace konverzace.",
+     "speech_delivery_history": "Uchovávejte poslední výsledky oznámení podle mluvčího na panelu Mysl. Vypnutím se tato historie vymaže. Detekce selhání reproduktoru a bezpečné zpracování opakování zůstávají aktivní.",
+     "alexa_tts_only": "Pokud jsou oznámení nespolehlivá, použij místo oznámení Alexa prostý TTS. To obchází oznamovací zvonky Alexa; ostatní reproduktory jsou beze změny.",
+     "update_checker": "Zkontroluj GitHub pro stabilní vydání, když je povoleno, při spuštění a každých šest hodin. Žádné volání AI, automatická instalace nebo automatické restarty. Deaktivací zastavíte kontroly.",
+     "contextual_followups": "Vyžaduje konverzační relace a Sentient se záložním agentem. Udržujte předmět pro krátké sledování, obnovte údaje exponovaného zařízení a vyjasněte nejednoznačné úpravy. Neuděluje oprávnění k akci ani nemění pravidla naslouchání. Ve výchozím nastavení vypnuto; jeho vypnutí vymaže dočasný kontext konverzace.",
+     "conversation_recovery": "Vyžaduje konverzační relace a Sentient se záložním agentem. Zruš čekající nebo běžící požadavek od stejné konverzace/zařízení/uživatele a vyhněte se opakovanému přehrávání nejistých příkazů zařízení po selhání AI. Nelze vrátit zpět již odeslanou akci nebo zajistit, aby hardware přijímal řeč, když je zaneprázdněn. Ve výchozím nastavení vypnuto; deaktivace zastaví tuto zvláštní manipulaci.",
+     "automatic_language": "Vyžaduje Řekni vestavěné věty v domácím jazyce. Připravte si běžné fráze, konce konverzací a bezpečnostní štítky s tvojí stávající AI a rozpočtem. Ve výchozím nastavení vypnuto. Fráze zůstávají v paměti, pokud není povolena možnost Zapamatovat fráze v běžném jazyce. Deaktivací je vymažete. Naléhavá upozornění nikdy nečekají na AI; generované odpovědi nikdy nepovolují kritické akce.",
+     "voice_language": "Pro jazyk Home Assistant použij auto nebo kód jazyka, jako je es, de nebo pt-BR. Vyžaduje volbu jazyka řeči. Tento jazyk musí podporovat také rozpoznávání řeči Assist a hlas TTS; to je nepřekonfiguruje.",
+     "remember_language_phrases": "Vyžaduje obě možnosti řeči. Při restartech a nesouvisejících změnách nastavení ukládejte pouze obecný balík frází, nikdy ne osobní oznámení. Ve výchozím nastavení vypnuto. Deaktivace, změna jazyka/poskytovatele nebo zapomenutí dat jej vymaže.",
+     "stream_voice_replies": "Začne mluvit dlouhou odpověď, zatímco ji AI stále píše, a to i se zapnutou konverzací, takže odpovědi začnou dříve. Pokud Sentient poté změní odpověď (například potvrzovací otázku), změna se vysloví po tom, co již bylo řečeno. Ve výchozím nastavení vypnuto; vypnutím se vrátíte k čekání na celou odpověď. Nic není uloženo.",
+     "voice_timing_diagnostics": "Uchovávejte posledních 20 časování hlasové odezvy v paměti bez přepisů nebo ID zařízení/uživatele. Ukažte agenta, nástroj, překlad a načasování oznámení v Mind. Etapy se mohou překrývat; zachycení mikrofonu a konečné přehrávání potrubí se neměří. Ve výchozím nastavení vypnuto; Změny nastavení a zapomenutí vymazat historii. Také se počítá, jak konverzace probíhají (následná opatření, opravy, jak rychle přicházejí odpovědi — nikdy slova), vedené přes restart; vypnutím se tyto počty vynulují.",
+     "reliability_log": "Zkontroluj každé otočení hlasu pomocí jednoduchých pravidel (bez umělé inteligence) a poznamenej si na stránce Mysl, když nástroj selhal, zařízení to neudělalo, řeklo, že bylo něco uděláno, když nic nebylo, nabídlo něco, co žádné zařízení neumí, nemohlo odpovědět nebo odpovědělo o minulosti, aniž by cokoliv hledalo. Uchová krátký řádek otázky a odpovědi po dobu 14 dnů. Vypnutím se zastaví a vymaže se, co zůstalo.",
+     "unified_evidence": "Ve výchozím nastavení vypnuto. Poskytuje hlasu jeden extra nástroj pouze pro čtení, který společně prohlíží záznam domu, časovou osu a historii kamery, když se zeptáš, co se stalo nebo proč. Nemůže nic přepnout a místo toho, aby tvrdil, že se nic nestalo, píše, že zdroj nelze zkontrolovat. Vypnutím pouze odstraníte nástroj; nic není uloženo.",
+     "specific_clarification": "Vyžaduje konverzační relace. Nabízejte možnosti pojmenovaných zařízení a rozpoznávejte přesné názvy, anglické pořadové číslo, obojí/všechny a jednoduché teploty lokálně. Jeden opakování, pak raději zastavte, než opakujte. Výběr nikdy nepotvrdí akci. Ve výchozím nastavení vypnuto; deaktivace vymaže čekající volby. Použij hlídanou kontrolu pro omezení vynucených akcí.",
+     "action_recovery": "Vyžaduje konverzační relace a chráněnou kontrolu pro výsledky zařízení a opakování. Uveďte pojmenované dílčí výsledky a zkontroluj poslední střežený požadavek, když říkáte, že nefungoval. Pouze akce nikdy neodeslané mohou být znovu nabízeny s novým potvrzením. Nejisté nebo úspěšné akce se nepřehrají. Ve výchozím nastavení vypnuto; Platnost záznamů vyprší po dvou minutách a zruš změny nastavení nebo zapomenutí.",
+     "recheck_unconfirmed": "Když zařízení ovládané pomocí hlídaného hlasového ovládání neoznámí svůj nový stav do doby odpovědi (garážová vrata, pomalá zásuvka cloudu), podívej se ještě jednou o 20 sekund později a aktualizujte záznam, takže “fungovalo to?” je zodpovězeno z toho, co zařízení říká nyní. Opět se nic neodesílá. Vypnuto: záznam zůstane tak, jak byl při odpovědi.",
+     "speech_failure_notification": "Zobraz upozornění Home Assistant, když selže přenos reproduktoru nebo je nejistý. Ve výchozím nastavení vypnuto. Nezahrnuje mluvený obsah ani opakovanou řeč. Zakázáno v režimu hosta; stávající oznámení zůstávají, dokud nebudou zrušena.",
+     "recent_followup_context": "Použij nedávno dokončený předmět po novém probuzení na stejném reproduktoru a uživateli. Vyžaduje konverzační sezení a kontextové sledování. Používá časový limit relace; nikdy neobnoví potvrzení ani poslech. Ve výchozím nastavení vypnuto. Ukončení nebo zapomenutí vyčistí kontext.",
+     "conversation_cues": "V rámci konverzace: každodenní odhlašování (“na zdraví”, “perfektní, děkuji”, “to bude stačit”) ji ukončí, když nic konkrétního nečeká na odpověď; “promiň, myslel jsem…”, “špatné světlo” a “ne lampa, stropní světlo” jsou opravy; a “na další notu…” nebo “něco jiného:” začíná nový předmět bez přenesených zařízení. Žádná umělá inteligence. Vypnuto: rozpoznány jsou pouze hladké konce a opravy.",
+     "vary_replies": "Hlasu je zobrazeno jeho posledních pár odpovědí z minulého dne a je mu řečeno, aby znovu nepoužíval své věty nebo začátky, takže stejná odpověď není uvedena slovo od slova dvakrát. Ne v soukromých pokojích nebo režimu pro hosty. Opakované odpovědi se počítají v obou směrech (záložka Mind s načasováním hlasu). Ve výchozím nastavení vypnuto.",
+     "behaviour_explanations": "Odpovídejte na krátké otázky o poslechu a zaznamenaných výsledcích zařízení přímo, bez volání AI. Vyžaduje konverzační relace. Používá existující záznamy relací, respektuje režim hosta a přístup k zařízení a nikdy neopakuje žádnou akci. Ve výchozím nastavení vypnuto; neukládá se žádná další historie.",
+     "current_house_context": "Poskytněte konverzacím kompaktní relevantní snímek zpráv vystavených zařízení, nedávných změn a aktuálního nedokončeného úkolu. Ve výchozím nastavení vypnuto. Žádné volání AI na pozadí. Režim hosta to potlačí. Platnost posledních změn vyprší po 30 minutách; deaktivace nebo zapomenutí vymaže kontext pouze v paměti.",
+     "moment_awareness": "Každá hlasová odpověď dostane krátký obrázek „právě teď“ z toho, co již Sentient uchovává: kdo je doma a od kdy, místnosti s pohybem, co se stalo za posledních 45 minut a cokoli neobvyklého pro dnešek. Žádná AI a nic uloženého. V soukromé místnosti nebo v režimu hosta je dán pouze pohyb. Vypnuto: nic z toho není přidáno.",
+     "room_memory": "Každá hlasová odpověď v místnosti dostane to, co se tam dělo za poslední hodinu: dřívější konverzace v této místnosti, to, co tam bylo přepnuto hlasem a co tam bylo oznámeno. Pokud někdo před pár minutami mluvil v jiné místnosti a od té doby se tu nic neříkalo, tento rozhovor přichází také, takže může pokračovat tam, kde skončil. Nic nového se neukládá. Soukromé pokoje a režim hosta získají pouze záznam vlastní místnosti. Vypnuto: nic z toho není přidáno.",
+     "know_people": "Když rozpoznávání hlasu nepojmenuje reproduktor, Sentient zjistí, kdo to pravděpodobně je, z věcí, kterým může důvěřovat: zpráva napsaná v aplikaci Home Assistant pochází z účtu této osoby nebo je její jediný telefon v místnosti sledovaný v místnosti. Hlasu je řečeno, kdo to pravděpodobně je, a na první místo klade to, co mu daná osoba o sobě řekla. Odhad nikdy nepovoluje nic, co potřebuje potvrzení, a kvůli tomu se pod jejich jménem nic neukládá. Ne v režimu hosta ani v soukromých pokojích. Vypnuto: žádné hádání.",
+     "instant_answers": "Každodenní otázky jsou zodpovězeny přímo z domu, před AI: čas, počasí venku, zda je jedno jmenované zařízení zapnuté, vypnuté, otevřené nebo zamčené, teplota v místnosti, další alarm nebo připomenutí, návštěvníci a zda je dům zamčený. Pouze otázky, pouze jediné zařízení, které jasně odpovídá a je vystaveno hlasovým asistentům; cokoli jiného jde do AI jako obvykle. Výměna je přidána do konverzace, takže sledující stále ví, na co byla požádána. Hosté a soukromé pokoje získají pouze čas, počasí a stavy zařízení. Vypnuto: každá otázka směřuje k AI.",
+     "capability_awareness": "Hlasu se říká, jaké druhy věcí může v tomto domě ovládat hlasem (z toho, co je vystaveno hlasovým asistentům, s kolika z nich) a které běžné dům nemá, jako jsou chytré zámky nebo motorizované žaluzie, takže nikdy nenabízí něco, co žádné zařízení nedokáže. Nabídka, která stejně proklouzne (zavření okna, zamknutí dveří), je z odpovědi vyřazena dříve, než je vyslovena. Trénováno každých pět minut, žádná umělá inteligence. Vypnuto: nic není přidáno ani odebráno.",
+     "house_context_entities": "Zařízení, která mají být zahrnuta do obecných domácích souhrnů spolu s automatickým klimatem a zprávami o otevření/přítomnosti. Sdílí se pouze aktuálně vystavená a přístupná zařízení; maximálně osm relevantních hodnot na žádost.",
+     "house_context_updates": "Vyžaduje aktuální kontext domu. Po ověřeném hlídaném požadavku na vytápění volitelně řekni jednou, když termostat hlásí požadovanou teplotu. Vyprší po jedné hodině, zruší se, pokud se změní její cíl, maximálně jedna aktualizace za 15 minut. Respektuje normální pravidla řeči a režim hosta. Ve výchozím nastavení vypnuto. Vypnutím vymažete čekající aktualizace.",
+     "security_event_evidence": "Použij Frigate ID událostí, snímky a klipy na nakonfigurovaných kamerách. Jedinečná shoda kamery a času je kandidátským spojením, nikoli důkazem, že senzor identifikoval tuto událost. Uchovávejte až 3 000 záznamů událostí po dobu sedmi dnů lokálně. Ve výchozím nastavení vypnuto. Zakázání skryje odkazy a zastaví shodu; uchované záznamy vyprší nebo mohou být zapomenuty.",
+     "security_event_zones": "Pouze to, co vstoupí do zóny: na kameře se zónami Frigate je událost uvedena (a může spustit bezpečnostní incident) až poté, co objekt vstoupí do jedné z nich, stejné pravidlo používá Frigate pro své výstrahy. Kamera bez zón uvádí vše. Cokoli detekováno: každý objekt Frigate sleduje na vybraných kamerách. Vlastní nastavení Frigate se nikdy nemění.",
+     "security_event_hidden_zones": "Jedna na řádek jako kamera/zóna, například brána/příjezdová cesta. Události, které jsou vždy pouze v těchto zónách, nejsou uvedeny a nespouštějí bezpečnostní incidenty. Použij SKRYT TUTO ZÓNU na stránce Zabezpečení po několika opravách „není osoba“ nebo odstraň řádek, abyste tuto zónu znovu vypsali. Frigate se nezmění.",
+     "security_coverage": "Ukažte, které nakonfigurované kamery přispěly k uchovaným důkazům a veškerým nedostupným zprávám zaznamenaným spolu s živými incidenty. Aktuální zprávy z kamer se zobrazují samostatně. Vypnutím této možnosti odstraníte zbývající mezery v pokrytí.",
+     "frigate_pipeline_health": "Přečti si informace o dostupnosti Frigate MQTT, rychlosti zpracování pro jednotlivé kamery a o tom, kdy Sentient naposledy přijal událost. Chybějící data jsou zobrazena jako neznámá. Nezmění se žádná nastavení fotoaparátu.",
+     "security_conversation_context": "Zapamatovat si vybranou událost po dobu až pěti minut v rámci stejné konverzace, zařízení a uživatele. Následné otázky využívají tuto událost a čerstvé zprávy o obsazenosti; nepředpokládá se žádná identita nebo pokračující přítomnost. Sleduje nakonfigurované události kamery. Ve výchozím nastavení vypnuto. Zakázání vymaže odkazy na konverzace; záznamy událostí si zachovají svou běžnou dobu platnosti.",
+     "security_event_feedback": "Správci mohou návštěvu označit za dobrý úlovek, nikoli jako osobu, nebo jako takovou, kterou je třeba ignorovat. Zkontrolované návštěvy se přesunou do složeného revidovaného seznamu a „ne osoba“ se také počítá jako zkontrolovaná falešná detekce bezpečnostního incidentu provedeného pouze z této návštěvy. Opravy zůstávají sedm dní. Žádné změny pravidel automatického detektoru, alarmu nebo upozornění. Deaktivace skryje zpětnou vazbu a zastaví nové opravy; použij Zapomenout poslední data k vymazání uchovaných záznamů.",
+     "share_clip_analysis": "Sdílejte kompatibilní obecné analýzy stejné dokončené události Frigate v rámci automatického sledování klipů a otázek týkajících se klipů událostí. Poskytovatel, pokrytí záběrů a nastavení identity se musí shodovat. Vlastní otázky jsou analyzovány samostatně. Uchovávejte maximálně 100 výsledků v paměti po dobu šesti hodin. Ve výchozím nastavení vypnuto. Zakázání, změna nastavení nebo zapomenutí vymaže mezipaměť.",
+     "sleep_ignore_sensors": "Pohybové senzory, které se spouštějí, když lidé spí, například v ložnici. Jít spát čeká, až se po dobu výše nic nepohne; čidlo v ložnici, které se spustí, když se někdo převrátí, by udrželo dům \"v bdělém stavu\" celou noc, takže jej zde uveďte. Stále počítají se vším ostatním.",
+     "heating_graph": "Zapnuto: topná karta na kartě Dům zobrazuje posledních 24 hodin teploty každého termostatu v porovnání s tím, na co byl nastaven, s plánovanými časy šedě. Přečti si z historie Home Assistant; není uloženo nic navíc. Vypnuto: graf je skrytý.",
+     "heating_revert": "Zapnuto: pokud je termostat ručně otočen nahoru, dolů nebo vypnut (nebo se sám změní) a není zpět v plánu, Sentient jej na chvíli opustí a poté jej vrátí: teplota v období ve dne, teplota v noci v noci. Pouze termostaty v rozvrhu vytápění. Změna provedená ručně nebo hlasem trvá celou dobu, i když mezitím začne nebo skončí období; pak převezme rozvrh. Vypnuto: změny ručně zůstávají do dalšího naplánovaného času. Nic se neukládá ani tak.",
+     "window_heating": "Zapnuto: když je okno nebo dveře několik minut otevřené a tato místnost má vlastní topení, Sentient toto topení sníží na noční teplotu a vrátí je zpět, když se okno zavře, ale pouze v případě, že je mezitím nikdo nevyměnil. Termostat pro celý dům není nikdy vypnut pro jedno okno: Sentient pouze jednou řekne, že okno je otevřené a topení je zapnuté. Vzdává se po 3 hodinách. Vypnuto: nic se nezměnilo ani neřeklo; vše, co odmítl, je vráceno zpět (pokud to nikdo nezměnil) a jeho malý záznam je vymazán.",
+     "window_heating_minutes": "Jak dlouho musí zůstat okno otevřené, než Sentient zareaguje. Výchozí 5 minut.",
+     "rooms_view": "Zapnuto: na kartě Dům se zobrazuje dlaždice pro každou místnost — teplota, vlhkost, zapnutá světla, dveře a okna otevřená, kdy se tam někdo naposledy pohyboval a co hraje — a přehled dostane krátkou kartu kolem domu. Postaveno z tvých oblastí; nic není uloženo. Vypnuto: obojí je skryté.",
+     "outdoor_areas": "Plochy, které jsou mimo dům, jako je králíkárna, kůlna nebo skleník. Stále dostanou svou vlastní dlaždici na kartě Dům označenou VENKU a jejich teplota je zobrazena na samostatném řádku v přehledu, ale zůstanou mimo nejteplejší a nejchladnější místnost a pohyb tam (kamera, která vidí lidi procházet kolem) se nepočítá jako někdo, kdo je v domě. Nech prázdné, chceš-li započítat každou oblast jako součást domu.",
+     "knowledge_card": "Zapnuto: Záložka Mysl shrnuje, co se o domě dozvěděla — obvyklou dobu spánku a vstávání, senzory, které odkládá, jak rychle se ohřívá topení, odhady o vedlejší místnosti, rutiny a vzpomínky. Ukazuje pouze to, co je již známo; není uloženo nic navíc. Nesvítí: karta je skrytá.",
+     "day_chart": "Zapnuto: Přehled ukazuje dnešek hodinu po hodině — pohyb, co řekl, co se stalo venku a na co jsi se ho zeptali — s tím, kdy byl někdo první nahoře a nejrušnější hodinu. Počítáno z časové osy; není uloženo nic navíc. Vypnuto: graf je skrytý.",
+     "house_ledger": "Zapnuto: každá změna na každém zařízení je zaznamenána s tím, co ji způsobilo (osoba, hlasový požadavek, automatizace, Sentient nebo nic v Home Assistant, což znamená zařízení samotné, jeho aplikace nebo někdo v něm), takže se můžeš zeptat \"kdy se topení vypnulo a proč?\". Rychle se měnící čísla jsou zachována jako významné změny. Uchováváno 90 dní ve vlastní databázi Sentient, poté shrnuto po dnech. Vypnuto: není zaznamenáno nic nového; co bylo uchováno, zůstane, dokud to nevymažete na kartě Mysl.",
+     "unexplained_changes": "Zapnuto: když se sledované zařízení (standardně topení, ohřívače vody a ventily) změní bez ničeho v Home Assistant za ním v pro něj nezvyklou dobu, řekne se to jednou a dá se na časovou osu a jsou propojena opakování: \"potřetí tento týden, vždy kolem 11:00\". Zatímco se zařízení stále učí, nebo jakmile se opakování stane obvyklým, jde pouze na časové ose. Vypnuto: stále zaznamenáno, nikdy zmíněno.",
+     "unexplained_entities": "Nech prázdné pro topení, ohřívače vody a ventily. Zámky, dveře a brány se používají ručně každý den, takže je přidávejte pouze v případě, že o nich chceš slyšet.",
+     "expectations": "Zapnuto: zjišťuje, jak často se každé zařízení mění v každou hodinu, ve všední dny ao víkendech (zahřáté z posledních tří týdnů historie) a hodnotí každou změnu od obvyklé po velmi neobvyklou. Karta Mind ukazuje, kolik z každého dne očekával. Obyčejné počítání, žádná AI. Vypnuto: žádné skóre; jasné, co se naučil na kartě Mysl.",
+     "surprise_gating": "Watch: zaznamenává, které poznámky by přeskakoval, protože změna je v danou chvíli obvyklá, aniž by žádné vynechal. Zapnuto: přeskočí je, čímž se také uloží volání AI. Nikdy se nevztahuje na bezpečnostní upozornění, alarmy nebo cokoli, o co jsi požádali.",
+     "situations": "Zapnuto: hlas je sdělen několika prostými řádky toho, co se právě děje (právě jsem se vrátil domů, pohyb za posledních 15 minut, cokoliv neobvyklého za poslední hodinu). Není sdíleno s hosty ani v soukromém pokoji. Vypnuto: nic navíc se neodesílá.",
+     "beliefs": "Zapnuto: každou noc hledá věci, které se samy od sebe dějí přibližně ve stejnou dobu, každou z nich testuje proti právě uplynulému dni, ptá se na jednu, která platí, a vypouští ty, které ne. Žádná umělá inteligence. Vypnuto: žádná nová přesvědčení a žádné testování; stávající jsou vymazány pomocí učení na kartě Mysl.",
+     "learn_reactions": "Zapnuto: něco, co Sentient přepnul a co bylo vráceno zpět, se staví proti opakování a poznámka, kterou někdo provede, se počítá v jeho prospěch. Vypnuto: reakce se nehodnotí.",
+     "ai_case_memory": "Zapnuto: Úloha AI na pozadí identická s úlohou za posledních šest hodin znovu použije tuto odpověď namísto dalšího volání. Nikdy nepoužito pro obrázky nebo klipy. Vypnuto: každá úloha volá AI a uložené odpovědi se vymažou.",
+     "memory_tags": "Jednou pro každou vzpomínku jedno malé noční volání umělé inteligence přidá několik souvisejících slov, která mohou lidé místo toho použít (“konvice” → uvařit, čaj, šálek), takže “máš chuť na šálek?” najde vzpomínky konvice. Až 40 vzpomínek za noc; není potřeba žádný server pro vkládání. Vypnutím se zastaví noční hovor a přivolání ignoruje slova (jsou zachována, takže opětovné zapnutí je okamžité). Ve výchozím nastavení vypnuto.",
+     "memory_upkeep": "V noční reflexi (žádné další volání umělé inteligence) jsou vzpomínky na to, že něco, co člověk řekl, že ten den ukazuje, zastaralé, a uchovávají se jako odhad, dokud se nepotvrdí. Jednou denně je k jeho otázkám přidán jeden odhad (něco, co se vydařilo, než bylo řečeno), takže se může ptát, zda je to správné. Vzpomínky potvrzené nebo připnuté osoby se nikdy nezmění. Potřebuje reflexi přes noc. Vypnuto: vzpomínky se pouze přidávají, nikdy se tím neopravují.",
+     "watch_actions": "Hodinky a upomínky dokážou něco udělat, stejně jako to říct, nejdřív zkontrolovat stav a počkat, až něco vydrží: \"jestli jsou zadní dveře otevřené deset minut, zhasni světlo v hale a řekni mi\", \"až skončí mytí, rozsviť chodbu\", \"v 11, pokud jsou zadní dveře stále otevřené, řekni mi to\". Hlas přečte každou z nich zpět a nastaví se až po vyslovení ano v příštím kole. Pouze zařízení vystavená hlasovým asistentům, nikdy alarmům, zámkům, skriptům nebo čemukoli na seznamu nikdy se nedotýkat; každé zařízení je následně zkontrolováno a odpověď říká, co se nestalo. Vypnuto: hodinky a připomenutí pouze mluví jako dříve a již nastavené nefungují.",
+     "memory_time": "Věci, které jsou pravdivé jen na chvíli, dostanou samy o sobě konečné datum: \"prozatím\", \"momentálně\", \"tento týden\", \"do pátku\" a jednorázové věci (\"zapnul jsem topení\") se uchovávají jeden den se zapsaným datem, místo aby se staly trvalými fakty. Jednou denně se u tebe zkontroluje jedna skutečnost, kterou za tři měsíce nikdo nepotvrdil ani nepoužil. Noční reflexe také napíše krátký příběh každého dne (žádné další volání AI), který se uchovává 60 dní, takže \"co jsme dělali minulou sobotu?\" nebo \"kdy kotel naposledy hrál?\" lze odpovědět. Potřebuje noční reflexi pro příběhy a kontroly. Vypnuto: vzpomínky uchovávají pouze data, která pojmenovávají, a neuchovávají se žádné příběhy (již uložené jsou vymazány).",
+     "who_where": "Dá dohromady to, co každý zdroj ví — sledovače telefonních místností (nastavené pod Hlasem), kdo byl naposledy rozpoznán, jak mluví a kde, a pohyb, když je doma pouze jedna osoba — do jednoho nejlepšího odhadu na osobu: která místnost, jak jistá a odkdy. Hlas je dán místo obyčejné linky sledování místnosti, říká, jak je to jisté, a nikdy neříká nic o někom, kdo není doma. Nic není uloženo. Vypnuto: hlas má pouze linku sledovačů místností, jako předtím.",
+     "big_plans": "\"Připravte dům na filmový večer\" nebo \"vytřiďte dům, jedeme pryč\": hlas vypracuje krátký plán kroků zařízení, přečte ho a udělá to až po ano v další zatáčce. Každý krok je pak kontrolován na zařízení a odpověď říká, co se nestalo. Pouze zařízení vystavená hlasovým asistentům; nikdy alarmy, zámky, skripty nebo seznam nikdy se nedotýkat; až 12 kroků. Vypnuto: velké požadavky jsou zpracovávány po jednom zařízení jako dříve.",
+     "self_grading": "Každou noc se kontroluje, co ten den hlas řekl o tom, zda bylo něco zapnuté, vypnuté, otevřené nebo zavřené, s tím, co dům v tu chvíli zaznamenal. Špatná je přidána do \"Kde se pokazil hlas\" na stránce Mysl a stane se lekcí (\"zkontroluj zadní vrátka, než řeknete, zda jsou otevřená\"), takže se zlepšuje, aniž by byla opravována. Žádná umělá inteligence. Vyžaduje protokol spolehlivosti. Vypnuto: nic není zaškrtnuto.",
+     "voice_speed_watchdog": "Zapnuto: Zaznamená, když tebe reproduktor slyší mnohem déle, než ti trvalo mluvit (jeho zvuk přichází pomaleji než v reálném čase) a zařadí jej do časové osy s návrhem na restart. Vypnuto: žádná kontrola.",
+     "voice_speed_restart": "Zapnuto: reproduktor, který neustále zpožďuje, se restartuje pomocí vlastního tlačítka restartování. Vypnuto: je to pouze navrženo.",
+     "incident_stages": "Zapnuto: každý bezpečnostní incident ukazuje, jak daleko se dostal — pozorovaný, vyšetřovaný, pravděpodobná domácnost, týkající se nebo vyřešený — od zaznamenaného, ​​nikdy, kdo byl. Vypnuto: incidenty jsou uvedeny bez fáze.",
+     "cognitive_shadow": "Zapnuto: druhý, přísnější způsob posuzování každého bezpečnostního incidentu probíhá vedle obvyklých fází a počítá, jak často oba souhlasí s tím, jak dopadly hlasové akce, zobrazené na senzoru mysli pouze jako součty (žádná jména, obrázky nebo zařízení). Je to pro testování: nikdy nemění výstrahu, fázi, to, co je řečeno nebo co je řečeno hlasem. Vypnuto: nic se neporovnává a počítání začíná znovu.",
+     "cognitive_decides": "Zapnuto: jakmile tvoje recenze bezpečnostních incidentů (tlačítka pod každým incidentem na kartě Mysl) ukážou, že je každý druh správný — alespoň 10 zkontrolovaných incidentů v domácnosti s 90% souhlasem, nejméně 10 dalších, které téměř nikdy neoznačuje jako domácnost, a žádný související incident s názvem méně závažný — kognitivní jádro rozhodne o fázi každého incidentu: o tom, co je incident na kartě Mysl a hlas. Zastaví se sám, pokud pozdější recenze nedosáhnou, a uvádí to na časové ose. Nikdy nemění ani nezdržuje výstrahu a nikdy neoznačuje incident za méně závažný, než je \"týkající se obvyklých pravidel\". Dokud si to nevydělá, nic se nemění. Vypnuto: rozhodují obvyklá pravidla; tvoje recenze jsou zachovány.",
+     "cognitive_quiet_heads_up": "Pouze testování: zaznamenává způsobilost na základě recenzí incidentů, ale nikdy nepotlačuje mluvené nebo telefonické bezpečnostní výstrahy. Otevření brány následované detekcí osoby kamerou nestanoví identitu domácnosti. Tato funkce nemůže nic umlčet, dokud nebude implementován a otestován nezávisle ověřený důkaz totožnosti.",
+     "weather_warnings": "Zapnuto: oficiální varování pro tvoji zemi jsou kontrolována každých 30 minut (Agentura Met Office and Environment Agency ve Spojeném království, MeteoAlarm v Evropě, Národní meteorologická služba v USA) pomocí polohy Home Assistant. Vypnuto: žádné kontroly a co bylo nalezeno, je zapomenuto.",
+     "warnings_country": "Chceš-li použít zemi Home Assistant, ponech prázdné.",
+     "warnings_region": "Pouze varování s názvem této oblasti, e.g. Severozápadní Anglie. Ponech prázdné pro celou zemi (varování před povodněmi a USA jsou vždy blízko domova).",
+     "warnings_speak": "Zapnuto: jednou zazní nové žluté, červené nebo vážné varování. Vypnuto: varování se zobrazují pouze na časové ose.",
+     "email_read": "Zapnuto: zachová odesílatele, předmět a krátký náhled posledních 20 zpráv o integraci IMAP zpráv Home Assistant, takže se můžeš zeptat \"nějaký nový e-mail?\". Pouze pro čtení, žádné heslo, nikdy sdíleno s hosty. Vypnuto: nic se neuchová a to, co zůstalo, se vymaže.",
+     "calendar_clashes": "On: \"nějaké zítra střety?\" vyhledá události, které se překrývají nebo jsou mezi nimi méně než 15 minut, v kalendářích briefingu (nebo všech kalendářích). Vypnuto: není nabízeno.",
+     "security_audit": "Zapnuto: správce se může zeptat \"je moje nastavení bezpečné?\" pro kontrolu pouze pro čtení prostého vzdáleného přístupu http, zámků a alarmů, ke kterým se hlas dostane bez potvrzení, tokenů s dlouhou životností a správců bez dvoufaktorového přihlašování. Vypnuto: není nabízeno.",
+     "automation_builder": "Zapnuto: správce může požádat o automatizaci v jednoduché angličtině; každé zařízení a akce je zkontrolována, je přečtena zpětně a poté uložena do automations.yaml jako z editoru. Vypnuto: není nabízeno; již vyrobené automatizace zůstávají.",
+     "pronounce_names": "Zapnuto: jméno, které hlas špatně čte ze svého pravopisu, se vysloví tak, jak se vyslovuje, pouze na reproduktorech — chat, časová osa a telefony zachovávají skutečný pravopis. Převzato z řádků níže a ze vzpomínek jako \"Siobhan se vyslovuje Shivawn\". Vypnuto: jména se čtou tak, jak jsou napsána.",
+     "pronunciations": "Napsáno = řečeno, jeden na řádek, e.g. Siobhan = Shivawn. Vyhláskujte uvedenou verzi tak, jak by ji měl hlas číst.",
+     "health_duplicates": "Zapnuto: zařízení, které se zobrazuje dvakrát pod jedním jménem, ​​kde je jedna kopie prázdná (zástrčka v Tuya Local a znovu z Tuyova cloudu), se zobrazuje ve zdraví domu s tlačítkem pro deaktivaci prázdné kopie. Vypnuto: nezaškrtnuto.",
+     "manuals_local_ocr": "Volitelné a ve výchozím nastavení vypnuto. Pokud je Tesseract již nainstalován na hostiteli Home Assistant, čtěte text až z 20 stránek PDF pouze s obrázky na soubor. Žádné cloudové požadavky ani stahování. Na standardním OS Home Assistant může být Tesseract nedostupný; původní záložní verze PDF zůstává.",
+     "memory_semantic_enabled": "Ve výchozím nastavení vypnuto. S explicitně nakonfigurovanou místní službou vkládání Ollama přeřaďte pouze výsledky paměti, které jsou již povoleny tomuto uživateli. Soukromý text se odesílá na nakonfigurovaného hostitele LAN, nikdy automaticky na internet. Nakonfigurovaný hostitel přijímá vybrané úryvky paměti, takže jej spusť na důvěryhodném počítači, který ovládáte.",
+     "memory_semantic_url": "HTTP URL, jako je http://192.168.1.20:11434. Jsou akceptovány pouze číselné soukromé adresy LAN/loopback (místo localhost použij 127.0.0.1). Server musí vystavit /api/embed a již mít nainstalovaný model.",
+     "memory_semantic_model": "Název modelu vkládání, který je již nainstalován v Ollama, jako je nomic-embed-text. Sentient nestáhne model. Nedostupné nebo pomalé služby se vrátí k normálnímu vyhledávání.",
+     "ai_routing_enabled": "Ve výchozím nastavení vypnuto. Pouze vhodné úlohy textu na pozadí mohou používat nakonfigurovanou alternativu poté, co oba poskytovatelé budou mít 20+ naměřených hovorů a dostatečnou spolehlivost na úrovni služby. Žádné přepínání pro obrázky, strukturovaný výstup nebo explicitní výběry AI.",
+     "ai_routing_alternative": "Druhá entita Home Assistant ai_task ke zvážení pro vhodné úlohy s textem na pozadí. Musí existovat lokálně a nikdy se nepoužívá bez naměřené servisní historie a odhadů nákladů.",
+     "ai_routing_primary_cost": "Tvoje vlastní přibližná cena za jednu srovnatelnou textovou práci; nikoli fakturace poskytovatele. Před zvažováním levnějšího poskytovatele musíte obě ceny dodat a ověřit.",
+     "ai_routing_alternative_cost": "Tvůj vlastní odhad ceny pro alternativní entitu AI Task. Toto není živá fakturace a může se lišit od skutečných tokenových poplatků.",
+     "ai_routing_max_p95_ms": "Sekundárního poskytovatele zvažte pouze tehdy, když je jeho naměřená doba služby na 95. percentilu v rámci tohoto limitu. Výchozí hodnota je 4000 ms. Hlasové odpovědi pokračují prostřednictvím stávajícího kanálu.",
+     "heating_energy_sensor": "Kumulativní senzor energie v kWh měřící topný systém, nikoli celý dům. Použij senzor, který si Rekordér uchoval s dostatečně dlouhou historií.",
+     "heating_measurement_date": "Datum změny, kterou chceš prozkoumat. Sentient porovnává až 14 dní před a po se stejnými dny v týdnu; nemůže dokázat, že Sentient způsobil rozdíl.",
+     "heating_energy_price_kwh": "Nepovinný odhad používaný pouze k převodu pozorovaných rozdílů v kWh na přibližné denní změny měny, nikoli na skutečné účty nebo prokázané úspory.",
+     "autooff_respect_recent_voice": "Ve výchozím nastavení vypnuto. Je-li tato funkce povolena, po hlídaném hlasovém příkazu s vyšší prioritou je podrženo automatické zhasnutí světla nebo vypínače po dobu až dvou minut. Nevztahuje se na požadavky na ruční zastavení, topení, zámky nebo alarmy."
+    }
+   },
+   "memories": {
+    "title": "Vzpomínky",
+    "description": "Dům si pamatuje věci {count}. Vyber jednu, kterou chceš upravit, zaškrtněte kteroukoli, kterou chceš zapomenout, nebo přidej novou.",
+    "data": {
+     "edit": "Upravit vzpomínku",
+     "forget": "Zapomenout",
+     "add": "Přidej vzpomínku",
+     "category": "Kategorie pro novou paměť"
+    }
+   },
+   "edit_memory": {
+    "title": "Upravit paměť",
+    "data": {
+     "text": "Paměť",
+     "category": "Kategorie"
+    }
+   },
+   "briefing": {
+    "title": "Přehledy",
+    "description": "Co zahrnuje briefing — pomocí tlačítka BRIEFING, hlasem nebo každý den ve stanovený čas.",
+    "data": {
+     "briefings": "Brífinky na",
+     "briefing_sections": "Zahrnout",
+     "briefing_weather": "Počasí od",
+     "briefing_todo": "Seznamy úkolů",
+     "briefing_calendars": "Kalendáře",
+     "briefing_system": "Systémové senzory k hlášení",
+     "outside_info": "Informace zvenčí",
+     "parcel_trackers": "Sledování zásilek",
+     "briefing_time": "Denní briefing v",
+     "digest_time": "Denní přehled v",
+     "morning_briefing": "Briefing, když je někdo první",
+     "morning_briefing_areas": "Ranní instruktážní místnosti",
+     "morning_briefing_quiet": "Ranní briefing v klidných hodinách"
+    },
+    "data_description": {
+     "briefings": "Vypnuto vypne tlačítko, hlasový nástroj a službu.",
+     "briefing_weather": "Chceš-li použít první entitu počasí, ponech prázdné.",
+     "briefing_system": "e.g. Teplota CPU, využití disku, NAS. Nevyřízené aktualizace se vždy počítají.",
+     "outside_info": "Senzory z jiných integrací čtou do briefingu a večer se podívají na zítřek: dnešní cenu elektřiny, varování před počasím, balíčky na cestě, další školní den. Prázdné, nulové a „vypnuté“ hodnoty jsou vynechány. Text z nich je považován pouze za informaci.",
+     "parcel_trackers": "Když někdo řekne, že balík je k doručení, řekne to jednou a celý den hlídá dveře (i když jsou upozornění na balík vypnutá); pokud je napsáno doručeno, než je něco vidět u dveří, říká to také. Prázdné: vypnuto.",
+     "briefing_time": "Volitelný. Mluví se jen tehdy, když je někdo doma a není klid.",
+     "digest_time": "Volitelné: jednou denně AI shrne časovou osu do několika vět. Přejde na časovou osu (a na telefony, pokud je vybrán). Nemluveno.",
+     "morning_briefing": "Jednou denně před polednem je někdo v místnosti, jakmile ho dům uvidí vzhůru a kolem (nebo bez toho, když se někdo poprvé stěhuje po skončení klidných hodin).",
+     "morning_briefing_areas": "Volitelné: dejte to pouze tehdy, když někdo přijde ráno do jedné z těchto místností, na reproduktor v této místnosti — vstaňte, umyjte se a oblékněte, pak si to poslechněte v kuchyni nebo v obývacím pokoji. Prázdné: ať jsou kdekoli.",
+     "morning_briefing_quiet": "Vypnuto: někdo, kdo je vzhůru, než skončí klidná hodina, dostane instruktáž, jakmile skončí, když je poprvé spatřen v pohybu (v ranních zasedacích místnostech, je-li vybráno), a vše, co bylo přes noc uloženo, se do něj složí. Zapnuto: je dáno, jakmile jsou vidět, dokonce i v tichých hodinách, pouze z reproduktoru v dané místnosti."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Vzpomínky"
+   },
+   "last_spoken": {
+    "name": "Naposledy řečeno"
+   },
+   "likely_room": {
+    "name": "Pravděpodobný pokoj"
+   },
+   "watches": {
+    "name": "Hodinky"
+   },
+   "routines": {
+    "name": "Rutiny"
+   },
+   "visitors": {
+    "name": "Návštěvníci"
+   },
+   "health": {
+    "name": "Zdraví domu"
+   },
+   "drive": {
+    "name": "Řídit"
+   },
+   "mind": {
+    "name": "Myšlenky"
+   },
+   "house": {
+    "name": "Dům",
+    "state": {
+     "awake": "Probudit",
+     "asleep": "Spící"
+    }
+   },
+   "screen": {
+    "name": "Obrazovka",
+    "state": {
+     "idle": "Líný",
+     "morning": "Ráno",
+     "notice": "Oznámení",
+     "alert": "Upozornění"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "Utišit"
+   },
+   "guest_mode": {
+    "name": "Režim hosta"
+   },
+   "chime": {
+    "name": "Rozeznít"
+   },
+   "party_mode": {
+    "name": "Světelná show"
+   },
+   "media_speakers": {
+    "name": "Reproduktory Echo"
+   },
+   "media_important_only": {
+    "name": "Echos: pouze alarmy a připomenutí"
+   },
+   "away_lights": {
+    "name": "Pryč světla"
+   },
+   "screen": {
+    "name": "Obrazovka tabletu"
+   },
+   "holiday": {
+    "name": "Prázdninový režim"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Se zálohou"
+   },
+   "alexa": {
+    "name": "Pro Alexa"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Nízký",
+    "normal": "Normální",
+    "urgent": "Naléhavé (ignoruje hodiny klidu)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Skutečnost",
+    "preference": "Přednost",
+    "person": "Osoba",
+    "routine": "Rutina",
+    "note": "Poznámka",
+    "correction": "Oprava"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Vypnuto",
+    "quiet": "Klid",
+    "normal": "Normální",
+    "chatty": "Hovorný"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Čas",
+    "weather": "Počasí",
+    "reminders": "Upomínky splatné dnes",
+    "watches": "Co je sledováno",
+    "routines": "Blíží se rutiny",
+    "open": "Okna a dveře otevřené",
+    "visitors": "Dnešní návštěvníci",
+    "said": "Co bylo nedávno řečeno",
+    "system": "Zdraví systému",
+    "todo": "Seznamy úkolů",
+    "calendar": "Kalendář (příštích 24 hodin)",
+    "energy": "Dnes používaná elektřina (a cokoliv neobvyklého)",
+    "security": "Cokoli otevřeného nebo odemčeného"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Naléhavá oznámení",
+    "held_quiet": "Věci se zdržely v klidných hodinách",
+    "unheard": "Věci, které nikdo neslyšel (žádný reproduktor není k dispozici)",
+    "visitors": "Návštěvníci zvonku a balíčky",
+    "watches": "Hodinky a připomenutí se spustí",
+    "health": "Domácí zdravotní problémy",
+    "digest": "Denní digest",
+    "critical": "Bezpečnostní upozornění (kouř, CO, plyn, úniky)",
+    "security": "Věci zůstaly otevřené, když všichni odešli"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "V klidu a k věci",
+    "dry": "Suchý vtip",
+    "warm": "Teplý a přátelský",
+    "cheeky": "Drzý",
+    "composed": "Složený, jako komorník"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "Disko",
+    "party": "Strana",
+    "rainbow": "Duha",
+    "chill": "Chlad",
+    "halloween": "Halloween",
+    "christmas": "Vánoce"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Zámky",
+    "garage": "Garážová vrata a vrata",
+    "covers": "Žaluzie, závěsy a žaluzie",
+    "heating": "Hodně zahřívat",
+    "appliances": "Spouštění spotřebičů"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "Prostě to udělej",
+    "tell": "Řekni to, pak to udělej",
+    "ask": "Nejprve se zeptej"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Vypnuto",
+    "nightly": "Každou noc",
+    "weekly": "Jednou týdně (v neděli večer)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Autotest",
+    "rain": "Varování před deštěm",
+    "hutch": "Kontrola kotce",
+    "cat": "Kočičí hodinky",
+    "bins": "Kontrola popelnic",
+    "faces": "kdo je to? (výuka obličeje)",
+    "faces_forget": "Zapomeňte teď na nejmenované tváře",
+    "clip_watch": "Podívej se na nejnovější klip"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Pouze upozornění Frigate",
+    "zones": "Cokoli v zóně",
+    "all": "Každá detekce"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Vždy",
+    "quiet": "Tiché hodiny",
+    "away": "Když jsou všichni venku",
+    "quiet_or_away": "Hodiny klidu nebo když jsou všichni venku"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Vypnuto",
+    "worth": "Takové, které stojí za shlédnutí",
+    "suspicious": "Pouze podezřelé",
+    "all": "Každý klip"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (jedna umělá inteligence volá klip)",
+    "frigate": "Vlastní souhrny AI Frigate"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "U dveří",
+    "reminders": "Připomenutí",
+    "questions": "Otázky (Ano / Ne)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Stručný",
+    "natural": "Přírodní"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Vypnuto",
+    "watch": "Pouze sledovat",
+    "on": "Na"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Pouze to, co vstupuje do zóny",
+    "all": "Cokoli zjištěno"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Říci",
+   "description": "Mluvte po domě, sledujte hodiny klidu a povědomí o místnosti.",
+   "fields": {
+    "message": {
+     "name": "Zpráva",
+     "description": "Co říct."
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Urgent ignoruje hodiny klidu a období ticha; nízká nikdy nepřerušuje."
+    },
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Reproduktor, název místnosti nebo ID entity. Chceš-li osobu sledovat, ponech prázdné."
+    }
+   }
+  },
+  "remember": {
+   "name": "Pamatujte si",
+   "description": "Přidej něco do dlouhodobé paměti domu.",
+   "fields": {
+    "text": {
+     "name": "Text",
+     "description": "Jedna krátká věta."
+    },
+    "category": {
+     "name": "Kategorie",
+     "description": "Co je to za paměť."
+    }
+   }
+  },
+  "forget": {
+   "name": "Zapomenout",
+   "description": "Odeber vzpomínku podle ID nebo podle shodného textu.",
+   "fields": {
+    "what": {
+     "name": "Co",
+     "description": "ID paměti nebo slova z ní."
+    }
+   }
+  },
+  "watch": {
+   "name": "Hodinky",
+   "description": "Sledujte zařízení, senzor nebo kameru a ozvěte se, když se něco stane.",
+   "fields": {
+    "what": {
+     "name": "Co",
+     "description": "Krátký popis, e.g. „Kočky poblíž kotce pro králíky'."
+    },
+    "entity": {
+     "name": "Entita",
+     "description": "ID entity, název nebo název oblasti kamery."
+    },
+    "to_state": {
+     "name": "Konstatovat",
+     "description": "Spusť, když entita dosáhne tohoto stavu."
+    },
+    "above": {
+     "name": "Výše",
+     "description": "Spusť, když hodnota překročí tuto hodnotu."
+    },
+    "below": {
+     "name": "Níže",
+     "description": "Spusť, když hodnota klesne pod tuto hodnotu."
+    },
+    "question": {
+     "name": "Otázka",
+     "description": "Hodinky s fotoaparátem: otázka ano/ne ohledně obrázku."
+    },
+    "look_for": {
+     "name": "Hledat",
+     "description": "Hodinky s fotoaparátem: objekt k probuzení, e.g. osoba, kočka, auto."
+    },
+    "message": {
+     "name": "Zpráva",
+     "description": "Co říct. Nech prázdné pro automatickou větu."
+    },
+    "until": {
+     "name": "Až",
+     "description": "Hodiny, e.g. 18:00 nebo 18:00."
+    },
+    "minutes": {
+     "name": "Zápis",
+     "description": "Nebo kolik minut sledovat."
+    },
+    "repeat": {
+     "name": "Opakovat",
+     "description": "Po vystřelení sledujte."
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Urgent ignoruje klidné hodiny."
+    },
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Kde to říct. Chceš-li sledovat lidi, ponech prázdné."
+    },
+    "wake_on": {
+     "name": "Probuď se",
+     "description": "Hodinky s kamerou: zónový nebo objektový senzor, který se zapíná namísto vlastních senzorů kamery."
+    },
+    "spot": {
+     "name": "Místo",
+     "description": "Hodinky s fotoaparátem: zkontroluj pouze toto pojmenované místo (naučené hlasem, e.g')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "Zrušit sledování",
+   "description": "Zastavte hodinky.",
+   "fields": {
+    "what": {
+     "name": "Co",
+     "description": "Sledujte id nebo slova z něj."
+    }
+   }
+  },
+  "remind": {
+   "name": "Připomenout",
+   "description": "Řekni něco najednou v místnosti, kde jsou lidé.",
+   "fields": {
+    "message": {
+     "name": "Zpráva",
+     "description": "Co říct, e.g. „Je čas zapnout troubu.'"
+    },
+    "at": {
+     "name": "Na",
+     "description": "Hodiny, e.g. 18:00 nebo 18:00."
+    },
+    "minutes": {
+     "name": "Zápis",
+     "description": "Nebo za kolik minut."
+    },
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Kde to říct. Chceš-li sledovat lidi, ponech prázdné."
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Naléhavé (výchozí) stále mluví během klidových hodin."
+    }
+   }
+  },
+  "ask": {
+   "name": "Požádat",
+   "description": "Položte otázku nahlas a poslouchejte odpověď v místnosti, kde jsou lidé.",
+   "fields": {
+    "question": {
+     "name": "Otázka",
+     "description": "e.g. 'Chceš pivo? Mám postavit konvici?'"
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Urgent ignoruje hodiny klidu a období ticha."
+    },
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Kde se zeptat. Chceš-li sledovat lidi, ponech prázdné."
+    },
+    "extra_prompt": {
+     "name": "Další pokyny",
+     "description": "Další pokyny pro hlasového agenta zpracovávajícího odpověď."
+    },
+    "preannounce": {
+     "name": "Nejprve zazvoňte",
+     "description": "Než se zeptáš, zahrajte na zvonek."
+    }
+   }
+  },
+  "learn": {
+   "name": "Učte se hned",
+   "description": "Okamžitě hledejte rutiny v nedávné historii místo čekání na dnešní večer."
+  },
+  "briefing": {
+   "name": "Přehled",
+   "description": "Krátká instruktáž o tom, na čem právě teď záleží, mluvená tam, kde jsou lidé.",
+   "fields": {
+    "speak": {
+     "name": "Mluv to",
+     "description": "Vypnuto vrátí fakta bez mluvení nebo použití AI."
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Naléhavě mluví i v tichých hodinách, e.g. když na to někdo stiskl tlačítko."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Uklizené vzpomínky",
+   "description": "Sloučit duplikáty a vypustit nesmysly z paměti nyní (probíhá také každou neděli večer)."
+  },
+  "forget_routine": {
+   "name": "Smazat naučený postup",
+   "description": "Nadobro odstraň naučenou rutinu nebo zvyk — dům to přestane dělat a už se to nikdy nenaučí ani nenabízí. Se zapnutou funkcí Obnovit můžeš smazané vrátit zpět (jednu nebo všechny, pokud je rutina prázdná).",
+   "fields": {
+    "routine": {
+     "name": "Rutina",
+     "description": "Rutinní id nebo slova z něj."
+    },
+    "restore": {
+     "name": "Obnovit",
+     "description": "Místo toho vraťte smazané zpět."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Přijmout rutinu",
+   "description": "Nech dům udělat naučenou rutinu sám, nebo přestaňte. Chceš-li přepnout, ponech Přijmout prázdné.",
+   "fields": {
+    "routine": {
+     "name": "Rutina",
+     "description": "Rutinní id nebo slova z něj."
+    },
+    "adopt": {
+     "name": "Přijmout",
+     "description": "Zapnuto pro spuštění, vypnuto pro zastavení."
+    }
+   }
+  },
+  "hush": {
+   "name": "Utišit",
+   "description": "Chvíli neříkejte nic, co není naléhavé. 0 minut přestane mlčet.",
+   "fields": {
+    "minutes": {
+     "name": "Zápis",
+     "description": "Jak dlouho zůstat v klidu."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Spustit rutinu",
+   "description": "Spusť pojmenovanou rutinu (nastavenou na stránce Nastavení → Rutiny na postranním panelu).",
+   "fields": {
+    "name": {
+     "name": "Jméno",
+     "description": "Název rutiny nebo jeden z jejích dalších názvů."
+    },
+    "speak": {
+     "name": "Mluvit",
+     "description": "Řekni výsledek tam, kde jsou lidé."
+    },
+    "details": {
+     "name": "Podrobnosti",
+     "description": "Pro rutiny, které berou detaily, e.g. které pokoje."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Týdenní zpráva",
+   "description": "Dejte dohromady, co se dům dozvěděl a všiml za poslední týden, a udržujte to na časové ose."
+  },
+  "party": {
+   "name": "Světelná show",
+   "description": "Spusť nebo zastavte světelnou show (diskotéka, Halloween, Vánoce…). Světla se vrátí přesně tak, jak byla, když se zastavila.",
+   "fields": {
+    "on": {
+     "name": "Na",
+     "description": "Off to zastaví a vrátí světla zpět."
+    },
+    "style": {
+     "name": "Styl",
+     "description": "Diskotéka, párty, duha, chill, Halloween nebo Vánoce. Prázdné používá nastavení."
+    },
+    "minutes": {
+     "name": "Zápis",
+     "description": "Po uplynutí této doby se sám zastaví (0 = do vypnutí). Prázdné používá nastavení."
+    },
+    "area": {
+     "name": "Pokoj",
+     "description": "Použij světla této místnosti (nebo „všude“ pro každé světlo)."
+    },
+    "lights": {
+     "name": "Světla",
+     "description": "Použij přesně tato světla."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Zamyslete se nyní",
+   "description": "Přemýšlejte o posledním dni teď, stejně jako přes noc: nové vzpomínky, ranní myšlenky a otázka."
+  },
+  "grade_answers": {
+   "name": "Nyní ohodnoťte vlastní odpovědi",
+   "description": "Zkontroluj, co hlas řekl o dveřích, světlech, vypínačích a zámcích, v porovnání s tím, co dům zaznamenal, jako to dělá každý večer se zapnutým \"Hodnotit vlastní odpovědi\". Vrátí, co bylo zkontrolováno, co bylo špatně a jakékoli lekce.",
+   "fields": {
+    "hours": {
+     "name": "hodiny",
+     "description": "Jak daleko zpět ke kontrole."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Zkontroluj pohon",
+   "description": "Podívej se nyní jednou AI na místo pohonu a aktualizujte, co tam parkuje."
+  },
+  "wonder": {
+   "name": "Zázrak",
+   "description": "Přidej otázku pro zajímavost, zahoďte jednu nebo položte další.",
+   "fields": {
+    "question": {
+     "name": "Otázka",
+     "description": "Jednou se na něco zeptat domácnosti."
+    },
+    "ask_now": {
+     "name": "Zeptej se nyní",
+     "description": "Hned se zeptej na další otázku."
+    },
+    "dismiss": {
+     "name": "Propustit",
+     "description": "Slova z otázky, která se přeci neptá."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Sledujte",
+   "description": "Podívej se na něco později a řekni, jak to dopadlo.",
+   "fields": {
+    "minutes": {
+     "name": "Zápis",
+     "description": "Kdy zkontrolovat."
+    },
+    "about": {
+     "name": "O",
+     "description": "Pár slov o čem to je."
+    },
+    "entity": {
+     "name": "Entita",
+     "description": "Zařízení pak zkontrolovat."
+    },
+    "state": {
+     "name": "Stát",
+     "description": "Stav, který znamená, že to fungovalo."
+    },
+    "above": {
+     "name": "Výše",
+     "description": "Fungovalo, pokud je hodnota alespoň tato."
+    },
+    "below": {
+     "name": "Níže",
+     "description": "Fungovalo, pokud je hodnota maximálně tato."
+    },
+    "if_done": {
+     "name": "Pokud je hotovo",
+     "description": "Co říct, jestli to fungovalo."
+    },
+    "if_not": {
+     "name": "Pokud ne",
+     "description": "Co říct, když ne."
+    },
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Kde to říct (výchozí: kde jsou lidé)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Zrušit sledování",
+   "description": "Přestaň už něco kontrolovat.",
+   "fields": {
+    "about": {
+     "name": "O",
+     "description": "Jeho id nebo slova z toho, o čem to je."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Údržba provedena",
+   "description": "Označte dokončenou údržbu (filtr vyměněn, stroj odvápněný), aby se její počítání začalo znovu.",
+   "fields": {
+    "job": {
+     "name": "Práce",
+     "description": "Jeho název na stránce Údržba."
+    }
+   }
+  },
+  "notice": {
+   "name": "Oznámení",
+   "description": "Předejte něco, co se stalo, prostřednictvím Sentient — stejné hodiny klidu, ticho, pravidla pro hosty a svátky a (ve výchozím nastavení) vlastní rozhodnutí, zda to stojí za to říct a jak.",
+   "fields": {
+    "message": {
+     "name": "Co se stalo",
+     "description": "Jednoduše řečeno, e.g. „Myčka skončila'."
+    },
+    "entity_id": {
+     "name": "Zařízení",
+     "description": "Zařízení, o které jde (volitelné) — udává místnost a její stav."
+    },
+    "decide": {
+     "name": "Ať se rozhodne",
+     "description": "Zapnuto: AI rozhodne, zda to stojí za to říkat a jak (počítá se jako povšimnutí). Off: Řekni to, jak je dáno."
+    },
+    "priority": {
+     "name": "Přednost",
+     "description": "Naléhavé stále zní v tichých hodinách; nízká nikdy nepřerušuje."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "Podívej se dopředu",
+   "description": "Podívej se na zítřek a řekni, zda je něco, co stojí za pozornost.",
+   "fields": {
+    "speak": {
+     "name": "Řekni to",
+     "description": "Řekni to nahlas, pokud existuje."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Uspat",
+   "description": "Řekni domu, že spí nebo je vzhůru (provádí před spaním nebo ranní akce).",
+   "fields": {
+    "asleep": {
+     "name": "Spící",
+     "description": "Zapnuto pro spánek, vypnuto pro probuzení."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Zobrazit na obrazovce",
+   "description": "Vložte kartu na kartu obrazovky Sentient.",
+   "fields": {
+    "message": {
+     "name": "Zpráva",
+     "description": "Co ukázat."
+    },
+    "camera": {
+     "name": "Fotoaparát",
+     "description": "Fotoaparát, který se s ním ukáže."
+    },
+    "minutes": {
+     "name": "Pro",
+     "description": "Jak dlouho (10 minut, pokud je prázdný)."
+    },
+    "alert": {
+     "name": "Upozornění",
+     "description": "Ukažte to jako upozornění."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Vyčistěte obrazovku",
+   "description": "Sundejte kartu z karty obrazovky Sentient nebo tak něco.",
+   "fields": {
+    "card_id": {
+     "name": "Karta",
+     "description": "ID karty, 'ráno' nebo prázdné pro všechno."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Ranní karta",
+   "description": "Vložte dnešní ranní kartu na obrazovku Sentient hned."
+  },
+  "check_now": {
+   "name": "Zkontroluj nyní",
+   "description": "Okamžitě spusť jednu z volitelných kontrol — autotest, dešťovou kontrolu, kontrolu boudy, kočičí hlídku, kontrolu popelnic, dotaz \"kdo je to?\" u poslední tváře, kterou kamera dveří nedokázala pojmenovat, zapomínání nejmenovaných tváří nebo sledování nejnovějšího klipu z první kamery.",
+   "fields": {
+    "what": {
+     "name": "Který",
+     "description": "Jakou kontrolu spustit."
+    }
+   }
+  },
+  "game": {
+   "name": "Spusť nebo zastavte příběhovou hru",
+   "description": "Spusť příběhovou hru (lze ji pak hrát s jakýmkoli hlasovým asistentem) nebo odložte aktuální hru. Uložená paměť hry je zachována.",
+   "fields": {
+    "action": {
+     "name": "Akce",
+     "description": "Spusť hru nebo zastavte hru."
+    },
+    "game": {
+     "name": "Hra",
+     "description": "Název hry při spuštění."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Přestaňte číst",
+   "description": "Zastavte předčítání jakéhokoli příběhu nebo audioknihy a ztište reproduktor, zachovejte místo. Funguje bez hlasu, když tebe tablet během příběhu neslyší.",
+   "fields": {
+    "speaker": {
+     "name": "Reproduktor",
+     "description": "Mluvčí ztišit. Nech prázdné, aby se zastavilo čtení každého příběhu."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} je k dispozici",
+   "description": "Máš {installed}. Nainstaluj jej z Nastavení → Aktualizace (Sentient pochází z Marketplace na Home Assistant 2026.11 a novějších; na starších verzích otevři Sentient v HACS a zvol Stáhnout), poté restartuj Home Assistant. Pokud byl Sentient zkopírován ručně a nikoli nainstalován z Marketplace nebo HACS, nikdy se sám neaktualizuje: místo toho jej nainstaluj z Marketplace."
+  }
+ }
+}

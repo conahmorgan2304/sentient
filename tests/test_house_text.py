@@ -33,8 +33,8 @@ def test_every_language_has_every_template_with_its_slots(lang: str) -> None:
         assert set(SLOTS.findall(text)) <= set(SLOTS.findall(en)), en
 
 
-def test_all_eight_languages_are_there() -> None:
-    assert LANGS == ["de", "es", "fr", "hu", "it", "nl", "pl", "pt"]
+def test_all_languages_are_there() -> None:
+    assert LANGS == ["cs", "da", "de", "el", "es", "fi", "fr", "hu", "it", "nb", "nl", "pl", "pt", "ro", "sv", "tr"]
 
 
 D = phrases.compile_dictionary({
@@ -83,7 +83,7 @@ def test_real_polish_file() -> None:
     assert phrases.load("pl-PL") is not None
     assert phrases.translate("Cancelled. No action was taken.", "pl-pl") == "Anulowano. Nic nie zostało zrobione."
     assert phrases.translate("Lights on (someone was up)", "pl-pl") == "Lights on (ktoś nie spał)"
-    assert phrases.load("en") is None and phrases.load("fi") is None
+    assert phrases.load("en") is None and phrases.load("zz") is None
 
 
 async def test_written_and_spoken_language_follow_the_settings(hass: HomeAssistant) -> None:
@@ -143,3 +143,12 @@ async def test_voice_reply_in_the_conversation_language(hass: HomeAssistant) -> 
     obj, _ = agent(hass, {"house_language_text": False})
     out = await obj._localise_result(response("Cancelled. No action was taken."), polish)
     assert out.response.speech["plain"]["speech"] == "Cancelled. No action was taken."
+
+
+async def test_safety_alert_wording_comes_before_general_sentences(hass: HomeAssistant) -> None:
+    calls = await _setup(hass, house_language="fi")
+    rt = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
+    await phrases.async_load(hass, "fi")
+    said = await language.async_in_house_language(hass, rt.options, "Smoke in the kitchen!", urgent=True)
+    assert said == "Savua havaittu: kitchen!"
+    assert not calls
