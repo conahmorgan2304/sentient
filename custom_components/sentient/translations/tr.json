@@ -1,0 +1,1910 @@
+{
+ "config": {
+  "step": {
+   "user": {
+    "title": "Evinin beyniyle tanışın",
+    "description": "Ona bir isim verin. Kendisini bu şekilde adlandırıyor ve Home Assistant'de nasıl göründüğünü gösteriyor.",
+    "data": {
+     "persona": "İsim"
+    }
+   },
+   "speech": {
+    "title": "Ev nasıl konuşmalı?",
+    "description": "Konuşabileceği ses uydularını seç. İnsanların olduğu yerde konuşur (hareket veya birinin konuşmacıyla konuşması), aksi halde varsayılan hoparlörde.",
+    "data": {
+     "speakers": "Hoparlörler",
+     "default_speaker": "Varsayılan hoparlör",
+     "quiet_start": "Sessiz saatler başlıyor",
+     "quiet_end": "Sessiz saatler sona erdi",
+     "busy_entities": "Meşgulken sessiz kal",
+     "motion_window": "Oda farkındalığı penceresi",
+     "banned_words": "Bu kelimeleri asla kullanmayın (virgülle ayrılmış)",
+     "suppress_entities": "Bu otomasyonlardan veya komut dosyalarından sonra sessiz kalın",
+     "suppress_seconds": "Şunun için sessiz kal",
+     "prompt_memories": "Sesli asistanlarla paylaşılacak anılar",
+     "pass_through_areas": "Geçiş alanları",
+     "all_occupied": "İşgal edilen her odada konuşun",
+     "room_tracking": "Oda izleyicileri kullanma (Bluetooth)",
+     "room_trackers": "Oda takipçileri",
+     "ai_task_entity": "Arka plan işleri için yapay zeka",
+     "camera_cooldown": "Kamera kontrolleri arasındaki minimum boşluk",
+     "fallback_speakers": "Yalnızca yedek hoparlörler",
+     "daily_ai_limit": "Günlük AI aramaları",
+     "prompt_recent": "Şu anda ve ses bağlamında son saat",
+     "rules": "Kurallar ve bunları sesli olarak oluşturma",
+     "relevant_memories": "Sorulanlarla eşleşen anıları seç",
+     "look_cache_minutes": "Bir kamera yanıtını şunun için yeniden kullan",
+     "camera_prefilter": "Hiçbir şey değişmediğinde kamera görünümünü atla",
+     "budget_drive": "Günlük AI aramaları: sürücü",
+     "budget_noticing": "Günlük AI aramaları: fark etme",
+     "budget_cameras": "Günlük AI çağrıları: kamera kontrolleri ve izlemeleri",
+     "routine_evidence": "Bir rutinin ne sıklıkta görüldüğünü söyle",
+     "notice_entities": "Dikkat edilmesi gerekenler",
+     "remark_repeat_hours": "için bir açıklamayı tekrarlamayın",
+     "chattiness": "Ne kadar konuşkan",
+     "conversation_style": "Nasıl konuşuyor",
+     "carry_on_minutes": "Bir görüşmeye devam edin",
+     "focused_tools": "Odaklanmış ses araçları",
+     "ask_later": "İşlerin nasıl gittiğini sorun",
+     "put_right": "Hataları tek seferde düzeltin",
+     "music": "Sorarak müzik",
+     "music_alexa": "Alexa (Echos) aracılığıyla müzik)",
+     "music_alexa_service": "Echos için müzik hizmeti",
+     "house_rules": "Ev kuralları",
+     "no_security_offers": "Asla etkinleştirmeyi, devre dışı bırakmayı veya kilidi açmayı teklif etmeyin",
+     "learn_entities": "Rutinleri öğrenin",
+     "learn_anchors": "Günü takip eden alışkanlıklar",
+     "trust_lights": "Işıklar",
+     "trust_switches": "Anahtarlar, fişler ve fanlar",
+     "trust_covers": "Panjur ve perdeler",
+     "trust_heating": "Isıtma",
+     "offer_together": "Birlikte yapılan alışkanlıkları sunun",
+     "link_triggers": "Ayrıca aşağıdakileri de öğrenin",
+     "suggest_routines": "Rutinleri devralmayı teklif et",
+     "prove_routines": "Alışkanlıklar daha teklif edilmeden önce kendilerini kanıtlarlar",
+     "routine_fading": "Artık ihtiyaç duyulmayan rutinler hakkında soru sorun",
+     "door_camera": "Kapı kamerası",
+     "door_triggers": "Kapı zili",
+     "announce_visitors": "Kapıda kim olduğunu söyle",
+     "faces": "Yüz tanımadan alınan isimler",
+     "face_people": "Yalnızca bu insanlar",
+     "face_teach": "İsimsiz yüzlerin kim olduğunu telefonda sorun",
+     "face_teach_cameras": "Bu kameralardan yüzleri öğrenin",
+     "face_cameras": "Yalnızca bu kameralardan alınan adlar",
+     "face_forget_hours": "İsimsiz yüzleri unutun",
+     "clip_watch": "Etkinlik kliplerini izleyin",
+     "clip_cameras": "Kameralar",
+     "clip_scope": "Hangi olaylar",
+     "clip_when": "Ne zaman",
+     "clip_notify": "Telefonlara gönder",
+     "clip_source": "Özeti kim yazıyor",
+     "clip_whose": "Hangi hane üyesi olduğunu söyle",
+     "clip_looks": "Yüzleri görünmediğinde insanlar nasıl görünüyor",
+     "budget_clips": "Bir günde izlenen klipler (çoğu)",
+     "clip_days": "Özetleri sakla",
+     "clip_keep": "Klip dosyalarını sakla",
+     "parcel_alerts": "Bir parselin ne zaman kaldığını söyle",
+     "doorstep_sensors": "Tarafından görülen ziyaretlerden sonra paket olup olmadığını kontrol et",
+     "zone_visits": "Ön kapı kamera bölgesindeki birini ziyaretçi olarak sayın",
+     "zone_door_sensors": "Ön kapı sensörü (ilk önce açıldığında bölge göz ardı edilir)",
+     "face_sensor": "Tanınan isim",
+     "sidebar_panel": "Kenar çubuğunda göster",
+     "page_admin_only": "Bu sayfayı yalnızca yöneticiler açabilir",
+     "custom_pages": "Sentient sayfasını yeniden düzenle",
+     "suggestions": "Sentient sayfasındaki öneriler",
+     "whats_new": "Güncellemeden sonraki yenilikler",
+     "simple_settings": "Daha basit ayarlar sayfası",
+     "auto_backup": "Her hafta yedekleyin",
+     "backup_keep": "Kaç tane saklanmalı",
+     "confirm_kinds": "Yapayım mı?\" diye sorun. önce",
+     "chat_agent": "Kenar çubuğu sayfası için sohbet aracısı",
+     "battery_threshold": "Düşük pil seviyesi aşağıda",
+     "battery_forecast": "Pillerin ne zaman biteceğini söyle",
+     "health_ignore": "Ev sağlığı için görmezden gelin",
+     "hide_substreams": "Ekstra kamera görünümlerini gizle",
+     "ignore_cameras": "Göz ardı edilecek kameralar",
+     "never_entities": "Bunlara asla dokunmayın",
+     "self_check": "Her gece kendini kontrol et",
+     "learn_corrections": "Yaptığı şeyi ne zaman geri alacağınızı öğrenin",
+     "normal_day": "Olağandışı bir güne dikkat edin",
+     "thoughts": "Ne düşündüğünü göster",
+     "share_learning": "Ne öğrendiğini söyle",
+     "self_adjust": "Kendini ayarla",
+     "proposals": "Ayarlarında değişiklik önerin",
+     "privacy_log": "Evden çıkanların kaydını tutun",
+     "goals": "Hedefler",
+     "manuals": "Belgelerden yanıt",
+     "manuals_folder": "Belgeler klasörü",
+     "manuals_local_text": "Metin belgelerinin içine bakın",
+     "manuals_pages": "PDF'leri sayfa sayfa oku",
+     "games": "Hikaye oyunları",
+     "voice_id": "Kimin konuştuğunu bilin",
+     "voice_id_unknown": "Eşleşemediği seslere misafir muamelesi yapın",
+     "speaker_memories": "Her kişinin anılarını onlara sakla",
+     "books": "Kitaplar",
+     "books_folder": "Kitap klasörü",
+     "reading_tts": "Ses okuma: servis",
+     "reading_voice": "Ses okuma",
+     "read_ahead": "Okurken bir sonraki bölümü hazırlayın",
+     "recipes": "Tarifler",
+     "recipes_folder": "Tarifler klasörü",
+     "recipes_list": "Malzemeler için alışveriş listesi",
+     "voice_lists": "Sesli alışveriş ve yapılacaklar listeleri",
+     "ready_tonight": "Bu geceye hazır",
+     "ready_tonight_lights": "Bu geceye hazırız: ışıklar kapanabilir",
+     "ready_tonight_follow": "Bu geceye hazırım: düzenlendiğinde bana söyle",
+     "tandoor_url": "Tandır adresi",
+     "tandoor_token": "Tandır API jetonu",
+     "second_opinion_ai": "İkinci görüş için yapay zekâ",
+     "smart_ai_task": "Güvenlik ve gece boyunca düşünme için daha güçlü yapay zeka",
+     "event_clips": "Frigate'in etkinlik kliplerini izleyin",
+     "chime": "Konuşmadan önce zil sesi",
+     "voice_agent": "Ana AI ses aracısı",
+     "backup_agent": "Yedek asistan",
+     "offline_answers": "Sık sorulan soruları AI olmadan yanıtla",
+     "animal_sensors": "Hayvanların sıcaklık sensörleri",
+     "away_lights_on": "Uzak ışıklar",
+     "holiday_mode": "Tatil modu",
+     "holiday_thermostats": "Tatilde termostatlar kapatılacak",
+     "holiday_frost": "Donma koruma sıcaklığı",
+     "holiday_end_on_return": "Birisi evde olduğunda tatil modunu sonlandırın",
+     "away_people": "Bütün bunlar bittiğinde uzakta",
+     "away_lights": "Kullanılacak ışıklar",
+     "away_after": "Herkes dışarı çıktıktan sonra başlayın",
+     "animal_low": "Aşağısı çok soğuk",
+     "animal_high": "Üstü çok sıcak",
+     "hutch_check": "Akşam kümes kontrolü",
+     "hutch_spot": "Kafesin kamera noktası",
+     "cat_watch": "Gece kedisi izle",
+     "cat_sensors": "Kedi sensörleri",
+     "cat_loud": "Geceleri hemen söyle",
+     "rain_warnings": "Yağmur uyarıları",
+     "rain_entities": "İzlenecek pencereler ve kapılar",
+     "self_test": "Kendi kendine test",
+     "self_test_household": "Kendi kendine testteki ev soruları",
+     "screen": "Tablet ekranını kullanma",
+     "screen_actions": "Bir şey göründüğünde",
+     "screen_clear_actions": "Her şey temizlendiğinde",
+     "conversation_sessions": "Konuşma oturumları",
+     "room_conversation_handoff": "Odadan odaya konuşma aktarımı",
+     "verified_bedtime": "Alt katta yatma vakti doğrulandı",
+     "verified_bedtime_lights": "Alt katta yatma vakti ışıkları",
+     "verified_bedtime_contacts": "Alt katta yatmadan önce kontakları açma",
+     "session_seconds": "Oturumda etkinlik olmaması zaman aşımı",
+     "guarded_control": "Zorunlu sesli onay",
+     "routine_verify": "Kontrol rutinleri işe yaradı",
+     "voice_unlock": "Sesle kilit açmaya izin ver",
+     "voice_undo": "Son ışık değişikliklerini geri al",
+     "evidence_awareness": "Kanıt ve belirsizliği açıklayın",
+     "security_incidents": "Grup güvenlik olayları",
+     "incident_front": "Evin ön tarafı",
+     "live_voice_check": "Canlı sesli kontrol",
+     "speech_delivery_history": "Hoparlör teslimat geçmişi",
+     "alexa_tts_only": "TTS'yi yalnızca Alexa'de kullan",
+     "update_checker": "Sentient güncellemelerini kontrol et",
+     "contextual_followups": "Bağlantılı takipler ve düzeltmeler",
+     "conversation_recovery": "Konuşmanın iptali ve dikkatli bir şekilde toparlanma",
+     "speech_failure_notification": "Hoparlör dağıtım hataları hakkında bildirim",
+     "recent_followup_context": "Yeni bir uyandırma sözünden sonra kısa takipler",
+     "conversation_cues": "İmzaları, düzeltmeleri ve konu değişikliklerini anlayın",
+     "vary_replies": "Her seferinde farklı şeyler söyle",
+     "behaviour_explanations": "Dinleme ve eylem kararlarını açıklayın",
+     "current_house_context": "Mevcut ev bağlamı",
+     "moment_awareness": "Anın farkındalığı",
+     "room_memory": "Oda başına kısa süreli hafıza",
+     "know_people": "Muhtemelen kimin konuştuğunu bilin",
+     "instant_answers": "Anında yanıtlar",
+     "capability_awareness": "Evin neler yapabileceğini bilin",
+     "house_context_entities": "Ek bağlam varlıkları",
+     "house_context_updates": "İstenilen ısıtmaya ulaşıldığında bana haber ver",
+     "security_event_evidence": "Güvenlik uyarılarını Frigate olaylarına bağlama",
+     "security_event_zones": "Hangi kamera etkinlikleri listeleniyor",
+     "security_event_hidden_zones": "Etkinlikleri listelenmeyen bölgeler",
+     "security_coverage": "Kamera kapsama boşluklarını açıklayın",
+     "frigate_pipeline_health": "Frigate işlem hattı sağlığını göster",
+     "security_conversation_context": "Güvenlik olayını görüşmede tutun",
+     "security_event_feedback": "Kamera etkinlikleriyle ilgili geri bildirimleri kaydet",
+     "share_clip_analysis": "Eşleşen klip analizlerini yeniden kullan"
+    },
+    "data_description": {
+     "motion_window": "İnsanların nerede olacağına karar verirken kaç dakikalık hareket geçmişi dikkate alınmalıdır.",
+     "suppress_entities": "e.g. kapı zili duyurunuz, böylece arka plandaki açıklamalar bunun üzerinde konuşmaz.",
+     "busy_entities": "Bunlardan herhangi biri açıkken (toplantı takvimi, Odak anahtarı, Rahatsız Etmeyin modundaki bir telefon), Sentient bekleyebilecek konuşmayı sanki susturulmuş gibi tutar. İstediğiniz güvenlik uyarıları ve yanıtları hâlâ karşınıza çıkıyor. Bunu kapatmak için boş bırak.",
+     "prompt_memories": "Sesli asistana ön planda kaç hafıza veriliyor? Geri kalanı hala aranabilir.",
+     "pass_through_areas": "Koridorlar, sahanlıklar ve merdivenler. Bu sayılanlardan çok daha az parayla geçmek, böylece yoldan geçen birinin duyuruyu çalmaması sağlanır.",
+     "all_occupied": "Açık: evde olan herkes bunu duyar. Kapalı: yalnızca en yoğun oda.",
+     "room_tracking": "Varsayılan olarak kapalıdır. Bir oda izleyici (örneğin, Bermuda'nın bir telefon için \"Alan\" sensörü), hoparlörlü bir odada birisinin olduğunu söylediğinde, \"insanların olduğu her yer\" ile ilgili şeyler orada söylenir. Hiçbir izleyici bunu bilmediğinde (telefon görülmediğinde, dışarıda olduğunda veya hoparlörü olmayan bir odada), harekete dayalı tahmin daha önce olduğu gibi kullanılır. Sadece nerede konuşacağımı seçerdim, asla birinin uyanıp uyanmayacağına karar vermezdim. Hiçbir şey saklanmıyor.",
+     "room_trackers": "Bermuda \"Alan\" sensörleri gibi durumu bir şeyin bulunduğu oda olan sensörler (telefon veya etiket başına bir tane). Her birinin Home Assistant alanıyla eşleşecek odaya ihtiyacı var.",
+     "ai_task_entity": "Yapay zeka görevi kamera görünümleri, brifingler, gece düşünceleri ve yarına bakış için kullanılır. Empty, Home Assistant'nin tercih ettiği yapay zeka görevini kullanıyor.",
+     "camera_cooldown": "Yapay zeka maliyetlerini düşük tutmak için bir kameralı saat en fazla bu sıklıkta tekrar bakar.",
+     "fallback_speakers": "Yalnızca başka bir konuşmacının odasında kimse olmadığında kullanılır, e.g. rahatsız etmemeyi tercih edeceğiniz bir oturma odası.",
+     "daily_ai_limit": "Arka plandaki yapay zeka çağrıları (kamera kontrolleri, brifingler, gece düşünceleri, kapı zili…) bu sayıdan sonraki gün için durur ve bunun yerine sade kelimeler kullanır. Sorduğunuz sorular hala yanıtlanıyor. 0 limit yok demektir.",
+     "prompt_recent": "Şu anda birkaç satır (uykuda, sessiz veya sessiz saatler, konuklar, açık olan herhangi bir şey ve saatlerdir haber alınamayan okumalar, dolayısıyla güncel olarak verilmiyor), son saatte ne oldu ve nerede hareket oldu, yani 'bilmem gereken bir şey var mı?' ve 'az önce ne oldu?' hemen cevap veriliyor. Ücretsiz: Ekstra AI araması yok.",
+     "rules": "\"Bu olduğunda, bunu yap\" kuralları (Kurallar sayfası) ve ses bunları yapabilir: kuralı geri okur ve yalnızca bir evet cevabından sonra kaydeder. Kurallar hiçbir zaman hiçbir şeyi etkinleştiremez, devre dışı bırakamaz veya kilidini açamaz. Kapalı: hiçbir kural çalıştırılmaz.",
+     "relevant_memories": "Sesin bağlamına sığmayacak kadar çok anı oluştuğunda, soruyla aynı kelimeleri paylaşanları ve ardından en yenilerini alır. Ücretsiz, yapay zeka yok. Kapalı: her zaman en yeni.",
+     "look_cache_minutes": "Bu süre içinde aynı kameraya aynı soru, yeni bir yapay zeka görünümü yerine son yanıtı alır. 0 her zaman tekrar bakar.",
+     "camera_prefilter": "Kamera kontrolleri ve saatleri önce küçük bir resmi karşılaştırır (bu makinede ücretsiz) ve yalnızca kamera veya noktası son bakıştan farklı göründüğünde yapay zekaya sorar.",
+     "budget_drive": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir.",
+     "budget_noticing": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir.",
+     "budget_cameras": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir. Güvenlik, kapı zili ve sorduğunuz sorular asla durdurulmaz.",
+     "routine_evidence": "Bir rutini devralma teklifleri, bunun ne sıklıkta gerçekleştiğini belirtir, e.g. 'Son 4 hafta sonu gününden 4'ü'.",
+     "notice_entities": "Bunlar değiştiğinde yapay zeka bir şeyi söylemeye (veya sormaya) değip değmeyeceğine karar verir. e.g. çamaşır makinesi, kapılar, hava durumu, çöp kutuları.",
+     "remark_repeat_hours": "Fark edilen aynı şey (\"Kaynanın kaynaması bitti.\") bu kadar uzun süre bir daha söylenmedi. 0: sınır yok.",
+     "chattiness": "Saat başına yapılan açıklamaları sınırlar: sessiz 2, normal 4, konuşkan 8. Kapalı fark etmeyi bırakır.",
+     "conversation_style": "Kısa: Kısa, konuya odaklı cevaplar. Doğal: komutlar kısa kalır, ancak sorular ve sohbette birkaç doğal cümle bulunur ve kişi bir soru sorduğunda, mikrofonun dinlemesini sağlayan bir takip sorusu bulunur.",
+     "carry_on_minutes": "Konuşmadan kısa bir süre sonra uyandırma sözcüğünü tekrar söylemek, aynı konuşmacıdan aynı konuşmayı devam ettirir, yani \"ve üst katta?\" hala mantıklı. 0 bunu kapatır; Home Assistant, beş sessiz dakikanın ardından konuşmayı unutuyor.",
+     "focused_tools": "Sese yalnızca Sentient'nin istenenlere uygun araçlarını (kameralar, ısıtma, hatırlatıcılar…), artı hafızayı ve güvenliği verin. Daha küçük bir seçim, daha ucuz modelleri daha hızlı ve daha doğru hale getirir. Açıkça eşleşmeyen her şey yine de tüm araçları alır.",
+     "ask_later": "Birisi yaklaşmakta olan bir şeyden (seyahat, maç, veteriner) bahsettiğinde, ses bir dahaki sefere birisi onunla konuştuğunda işin nasıl gittiğini sormayı hatırlayabilir — bir kez olsun, asla sessiz saatlerde veya misafirler varken ve asla özel bir şey hakkında değil. Hiçbir zaman durup dururken konuşmaz. Bunu kapatmak sorulmayı bekleyen her şeyi unutur.",
+     "put_right": "Hayır, diğeri\" veya \"o ışık değil, lamba\" dediğinizde, ses az önce açtığı şeye geri döner (birkaç dakika içinde açılır veya kapanır) ve isteği yalnızca düzeltilmiş kısımla yeniden yapar — hepsini tekrar söylemeye gerek yoktur. Bunu kapatmak, işi doğrudan sesli temsilciye bırakmayı sağlar.",
+     "music": "Müzik Asistanı ayarlandığında (veya Alexa aracılığıyla Müzik açıkken): \"mutfakta sakin bir şeyler çal\", kendi çalma listelerinizden ve radyo istasyonlarınızdan seçim yapar ve bunu o odadaki Müzik Asistanı oynatıcısında çalar (veya o odanın Echo'sini sorar) — sessiz saatlerde gece ses seviyesinde, sen orada olmadığınız sürece odanın kendi sessiz zamanında değil. Kapalı: müzik aracı yok.",
+     "music_alexa": "Açık: \"mutfakta sakin bir şeyler çalın\", o odadaki Echo'den (Alexa Medya Oynatıcısı), aşağıdaki hizmetten ismine göre — bir çalma listesi, bir sanatçı, bir şarkı veya bir ruh hali — sessiz saatlerde gece ses seviyesinde çalmasını ve sen orada olmadığınız sürece bir odanın kendi sessiz zamanında çalmasını ister. Hizmetin Alexa uygulamasına bağlanması gerekir. Her ikisi de kurulduğunda Müzik Asistanı yerine kullanılır (Müzik Asistanı Premium olmadan Spotify'ı çalamaz). Kapalı: Echos'den hiçbir zaman müzik çalması istenmez.",
+     "music_alexa_service": "Echos'nin hangi hizmetten oynatıldığı. Spotify ücretsiz bir hesapla çalışır, ancak Alexa tam şarkı yerine benzer müziği karıştırabilir; Premium tam olarak istenileni oynuyor.",
+     "house_rules": "Her sesin takip etmesi gereken basit cümleler, her satıra bir tane e.g. 'Asla evin boş olduğunu söyleme.'",
+     "no_security_offers": "Sesin yanıtlarından, alarmı devreye almayı veya devre dışı bırakmayı ya da bir kapının kilidini açmayı öneren tüm cümleleri çıkarın (\"Kurayım mı?\") — yazıldığı gibi söylense bile. Etkinleştirmeyi, devre dışı bırakmayı, kilitlemeyi veya kilidi açmayı isteyen bir kişiye verilen yanıtlar yalnız bırakılır, dolayısıyla onayları sorulmaya devam eder. Varsayılan olarak kapalı.",
+     "learn_entities": "İnsanların elle kullandığı ışıklar, anahtarlar, vantilatörler ve panjurlar. Son iki hafta boyunca her gece, çoğu gün aynı saatte yapılan işler ve başka bir şeyin hemen ardından yapılan işler (bir kapının açılması, başka bir ışığın yanması) kontrol edilir).",
+     "learn_anchors": "Saati saat yerine gün batımı, gün doğumu veya uyanışa göre tutan bir alışkanlık (akşam karanlığında lamba, gün doğumunda panjur, uyandıktan sonra çaydanlık) bu şekilde öğrenilir, böylece evin senin için yaptığı bir rutin mevsimlere göre hareket eder. Kalkmak uykuda ve uyanıklık ortamını gerektirir. Kapalı: Her şey daha önce olduğu gibi zamana karşı öğrenilir.",
+     "offer_together": "Birkaç şey genellikle aynı günlerde, hemen hemen aynı saatte gerçekleştiğinde (lambanın yanması, panjurların kapalı olması, akşam saat 20.00 civarında televizyonun açılması), bunlar bir kez, birlikte sunulur — bir evet ve ev bunların hepsini yapar. Kapalı: her biri kendi başına sunulur.",
+     "trust_lights": "Evin devralmasına izin verdiğiniz bir rutin ışığı yaktığında: sadece yapın, önce söyle veya sorun ve yalnızca evet cevabıyla yapın (kimse cevap vermezse hiçbir şey olmaz).",
+     "trust_switches": "Anahtarlar, akıllı prizler ve fanlar için de aynısı.",
+     "trust_covers": "Panjur ve perdeler için de aynı şey geçerlidir. Garaj kapıları ve kapıları her zaman sorar.",
+     "trust_heating": "İnsanlar kalkmadan önce ısıtmayı ısıtmak için de aynı şey geçerli. İlk önce sormak, herkes uyurken ısınamayacağı anlamına gelir.",
+     "link_triggers": "İsteğe bağlı: alışkanlığı tetikleyebilecek daha fazla şey (TV'nin başlatılması, yatak sensörü…). Kapılar, pencereler ve öğrenilen ışıklar her zaman dikkate alınır.",
+     "suggest_routines": "Her yeni rutinde bir kez, birinin evde olduğu gün boyunca, bundan sonra evin bunu yapması gerekip gerekmediğini sorun.",
+     "prove_routines": "İlk olarak yeni öğrenilen bir alışkanlık izleniyor: Sentient, her gün öğrenildikten sonra kişinin bunu normal zamanından sonraki 45 dakika içinde gerçekten yapıp yapmadığını kontrol ediyor. Başvuru yapıldığı 4 günün en az 3'ünde (hafta içi, hafta sonu veya her gün) doğru sonuç alındığında sunulur. Ayarlar › Öğrenme her birinin ne durumda olduğunu gösterir. Kapalı: alışkanlıklar öğrenilir öğrenilmez sunulur.",
+     "routine_fading": "Açık: Evin senin için yaptığı bir rutin, iki haftanın 5 gününde zaten bitmişse (artık birisi bunu kendisi yapıyor), Sentient bir kez bunu sürdürüp sürdürmeyeceğinizi sorar ve sen hayır derseniz durur. Yalnızca tarihler en fazla iki hafta tutulur. Kapalı: evin yaptığı rutinler sen aksini söyleyene kadar korunur.",
+     "door_camera": "Kapı zili çaldığında kimin geldiğini kaydetmek için hemen baktım.",
+     "door_triggers": "Kapı zili düğmesi (ikili sensör veya olay) veya birisinin kapıda olduğu anlamına gelen herhangi bir şey.",
+     "announce_visitors": "Kapalı, sesli asistanların yanıtlayabileceği sessiz bir kayıtta kalmasını sağlar.",
+     "faces": "Frigate (veya kapı zili) birini tanıdığında zaman çizelgesine geçer ve ses \"Sam eve geldi mi?\" sorusunu yanıtlayabilir. İsimler hiçbir zaman açıklanmaz veya tahmin edilmez — yalnızca biri sorduğunda söylenir. Varsayılan olarak kapalı.",
+     "face_people": "Frigate olarak isimler bunları biliyor. Boş: tanıdığı herkes.",
+     "face_teach": "Frigate'nin yüz tanıma özelliğinin iyileşmesine yardımcı olur. Birisi seçilen kamerayı terk ettiğinde ve Frigate adını koyamadığı bir yüz ifadesine sahip olduğunda, telefonlara özel bir \"Bu kim?\" ev için yüz ve düğmelerle (telefonlar en fazla üç tane gösterir). Birine dokunmak Frigate'yi öğretir; \"Başka biri…\" yeni birisi için yazılan adı alır veya bir yabancının yüzünü silmek için \"hayır\" kullanılır. Hiç konuşulmadı, tabletlerde hiç konuşulmadı, en fazla on dakikada bir. Frigate yüz tanımanın açık olması ve bildirimler için seçilen telefonların olması gerekiyor. Varsayılan olarak kapalı.",
+     "face_teach_cameras": "Yüzlerin net olduğu yakın çekim kameralar, e.g. kapı zili. Boş: kapı kamerası.",
+     "face_cameras": "Boş: her kamera. Yakın plandakileri (kapı zili, ön kapı) seç, böylece kalabalık bir cadde sahte isimler vermesin.",
+     "face_forget_hours": "Her gece Frigate'in sakladığı ancak ad verilmemiş yüzler — çoğu yabancı — bu süreyi doldurunca Frigate'den silinir. Adı olanlar saklanır. 0: Frigate'e bırak (son 200 yüzü saklar).",
+     "clip_watch": "Frigate seçilen bir kamerada bir etkinliği bitirdiğinde, yapay zeka kaydın bu bölümünü bir kez izler ve zaman çizelgesinde ve Sentient sayfasında bir cümle belirir: \"Kapı 14:10 — bir adam bir köpeğin yanından geçti\". Ses \"Kapıda ne oldu?\" diye yanıtlıyor. başka bir AI çağrısı olmadan onlardan. Hiç konuşulmadı. Varsayılan olarak kapalı.",
+     "clip_cameras": "Bir tanesiyle başlayın, e.g. kapı.",
+     "clip_scope": "Frigate'nin uyarıları, gerekli olarak işaretlediğiniz bölgelerdeki kişilerdir — yoğun bir cadde için en sessiz seçimdir. Bir kamera hiçbir zaman uyarı vermiyorsa (Frigate'de gerekli bölge ayarlanmamışsa), \"Bölgedeki herhangi bir şey\"i seç — Klipler kartı neyin atlandığını ve nedenini gösterir.",
+     "clip_when": "Sadece bu saatlerde izleyin. Dışarıda, Deplasman ışıkları altında seçilen herkesin dışarıda olduğu anlamına gelir.",
+     "clip_notify": "Resim ve oynat düğmesiyle yalnızca telefonlara gider.",
+     "clip_source": "Frigate'nin kendi yapay zeka inceleme özetlerinin Frigate'de açılması gerekiyor; o zaman burada AI çağrısı yapılmaz.",
+     "clip_whose": "Aynı yapay zeka çağrısında, Frigate'nin yüz kütüphanesindeki hane halkının yüz fotoğrafları (ve aşağıdaki görünümler) dahil ediliyor ve yalnızca açıkça o kişi olduğu takdirde \"muhtemelen Sam\" olarak adlandırılıyor. Yabancıların adı asla anılmaz. Sadece sorulduğunda söylendi, asla duyurulmadı.",
+     "clip_looks": "Her satıra bir tane, e.g. \"Sam: kırmızı bisiklet kaskı ve sarı bir ceket, bisiklette\". Kask veya başlık yüzü gizlediğinde yardımcı olur.",
+     "budget_clips": "Genel günlük AI limitine de sayılır. 0: kendine ait bir limit yok.",
+     "clip_days": "Özetler yalnızca kelimelerden oluşur, daha sonra silinir.",
+     "clip_keep": "Kapalı: Her klip izlendiği anda silinir.",
+     "parcel_alerts": "Teslimattan sonra birkaç dakika sonra tekrar bakın ve paketin bırakılıp bırakılmadığını söyle.",
+     "doorstep_sensors": "İsteğe bağlı: kapı eşiği veya ön bahçe için kişi sensörleri (e.g. Frigate bölgesinin kişi doluluğu). Ziyaret zil sesi olmadan sona erdiğinde, kapı kamerası geride bırakılan paket veya posta olup olmadığını bir kez kontrol eder.",
+     "zone_visits": "Yukarıdaki kapı eşiği sensörlerini kullanır (e.g. Frigate bölgesinin kişi doluluk oranı). Kimse çalmadığında bölgeye ulaşan biri ziyaretçi muamelesi görüyor, kapı kamerasına bakılıyor ve anons ediliyor. Zil veya bölge hangisi önce gelirse ziyaret olur, diğeri görmezden gelinir. Kapalı: yalnızca zil ziyareti başlatır.",
+     "zone_door_sensors": "İsteğe bağlı: ön kapının açık/kapalı sensörü. Kapı son bir buçuk dakika içinde açılmışsa (veya açıksa), bölge göz ardı edilir çünkü bu, birisinin evden ayrılması veya eve gelmesi anlamına gelir.",
+     "face_sensor": "İsteğe bağlı: durumu yeni tanıdığı adla aynı olan bir yüz tanıma sensörü (e.g., Frigate'den). Günlükte ve açıksa duyuruda kullanılır.",
+     "sidebar_panel": "Kenar çubuğunda anıları, rutinleri, saatleri, ziyaretçileri ve söylenenleri gösteren bir sayfa.",
+     "page_admin_only": "Sayfayı ve okuduklarını yöneticiler dışındaki herkesten gizler. Kapalı, tüm eve açık kalmasını sağlar. Açmak hiçbir şeyi silmez.",
+     "custom_pages": "Açık: Genel Bakış, Ev, Akıl ve Güvenlik sekmeleri kayıtlı düzeninizi kullanır ve yöneticiler, kartları sütunlar arasında taşımak, gizlemek, tekrar göstermek veya bir sekmeyi sıfırlamak için SAYFA DÜZENİNİ DÜZENLE seçeneğine sahiptir. Sekmelerin kendisinde düzenleme düğmesi yoktur, yalnızca düzenleme yaparken. Düzen Sentient'ye kaydedilir, böylece her ekran aynısını gösterir. Kapalı: sekmeler standart düzene geri döner; kayıtlı düzeniniz, tekrar açtığınızda kullanılmak üzere saklanır.",
+     "confirm_kinds": "Yapay zekadan bu eylemleri açıklamasını ve evet cevabını beklemesini ister. Bu, zorunlu bir eylem bloğu değil, hızlı bir talimattır: konuşma aracınız cihazın yürütülmesini kontrol eder. Bir şeyleri kapatmak için sormaya gerek yok. Boş: Ekstra onay talimatı yok. Zorunlu kontroller için gerekli aracı kurulumuyla korumalı kontrolü etkinleştir.",
+     "auto_backup": "Pazar gecesi, anıların, spotların, rutinlerin, hareketli ışıkların, susturmaların ve ayarların bir yedeği, sentient_backups altındaki yapılandırma klasörüne kaydedildi.",
+     "backup_keep": "Eskiler siliniyor.",
+     "suggestions": "Sentient'in kullanabileceği ama kullanamadığı şeyler (yeni bir hoparlör, çamaşır makinesindeki güç sensörü, dolap termometresi) her seferinde bir satır sunuyordu. Evet ekliyor; hayır, bir daha asla teklif edilmeyeceği anlamına gelir. Ücretsiz, yapay zeka yok.",
+     "whats_new": "Sentient güncellendikten sonra, Sentient sayfasındaki kısa bir kart, sen ANLADIM'a dokunana kadar, sade kelimelerle yenilikleri söylüyor.",
+     "simple_settings": "Ayarlar listesi, isteğe bağlı özellikler için HER ŞEYİ GÖSTER ile temel özellikleri gösterir. Yeni yüklemeler bu şekilde başlar. Sentient'in yaptıklarıyla ilgili hiçbir şeyi değiştirmez.",
+     "chat_agent": "Sayfanın Sor kutusunu kim yanıtlıyor? Sentient işaretli bir sesli temsilci seç. Boş, tercih ettiğiniz Assist ardışık düzenini kullanır.",
+     "health_ignore": "Sorun olarak sayılmaması gereken varlıklar (ve bunların cihazları), e.g. kapalı olması gereken bir şey.",
+     "hide_substreams": "Kameraları sayarken ve kontrol ederken HD ve SD akışları, ekran görüntülerini ve haritaları dışarıda bırakır; böylece bir kapı zili birden fazla kamera anlamına gelmez. Home Assistant'den hiçbir şey silinmez.",
+     "ignore_cameras": "Kameralar Sentient, bir tabletin kamerası gibi sayılmamalı, kontrol edilmemeli veya teklif edilmemelidir. Home Assistant'de dokunulmadan kalırlar; birini geri getirmek için tekrar seç.",
+     "never_entities": "Sentient bunları hiçbir zaman değiştirmez, karartmaz veya değiştirmez: kurallarda, rutinlerde, tekliflerde, otomatik kapanmada, dışarıda veya hareket ışıklarında, ışık gösterilerinde, ısıtmada veya korumalı ses kontrolünde ve sese bunları rahat bırakması söylenmediğinde. Hala onları okuyabilir ve onlar hakkında konuşabilir. İnsanı değiştirecek her şey atlanır ve not edilir.",
+     "self_check": "Her gece kendi kayıtlarına — ne söylediği ve nasıl gittiği, başarısız olan konuşmacılar, ertelenen şeyler, tekrar tekrar sorulan sorular, AI ölçer — bakar ve kendisi hakkında fark ettiği şeyleri arkasındaki sayılarla birlikte not eder. AI yok. \"Bizi sinirlendirdiniz mi?\" diye sorun. veya \"ne farkettin?\".",
+     "learn_corrections": "Birisi evin bir dakika önce yaptığı bir şeyi (yaktığı bir ışık, devraldığı bir rutin) eski haline getirdiğinde, düzeltmeyi not eder. Sürekli olarak geri aldığınız bir rutin geri verilir (kapatılır) ve zaman çizelgesi bunu söyler. Bunu kapatmak izlemeyi durdurur; daha önce not edilen düzeltmeler korunur.",
+     "normal_day": "Bugünü olağan olanla karşılaştırır ve bunu Zihin sayfasına not eder: örneğin, birisi genellikle şimdiye kadar kalkmışken henüz kimse kalkmamıştır. Basit kurallar; hiçbir şey yüksek sesle söylenmez ve hiçbir şey değiştirilmez. Bunu kapatmak kontrolü durdurur ve bulunanları gizler.",
+     "thoughts": "Akıl sayfasında kısa bir birinci şahıs listesi (\"insanlar sahanlığın ışığını kapatmaya devam ediyor, ben de durdum\"), ayrıca birisinin bir sonraki odaya gideceğini tahmin etme ve bunun ne sıklıkla doğru olduğunu kontrol etme. AI yok. Bunu kapatmak tahmin etmeyi durdurur ve listeyi gizler; öğrendikleri saklanır.",
+     "share_learning": "Her akşam (17:00–20:30), birisi etraftayken ve henüz sessiz bir zaman değilken, son iki gün içinde öğrendiği veya fikrini değiştirdiği bir şeyi söylüyor: geri verdiği bir rutin, güncellediği bir gerçek, tespit ettiği bir alışkanlık, bir sonraki adımda nereye gideceğinizi şimdi ne kadar iyi tahmin ediyor. Asla aynı şeyi iki kez yapmayın. Bunu kapatmak, her şeyin Zihin sayfasında kalmasını sağlar ancak sessiz kalır.",
+     "self_adjust": "Kendi kendine kontrol, evin susmaya devam ettiği bir tür yorum bulduğunda, onu biraz susturun (başparmak aşağılamayla aynı; tekrar söner). Emniyete, güvenliğe veya kontrol ettiği herhangi bir şeye asla dokunmaz.",
+     "proposals": "Öz kontrolde yanlış giden bir şey bulduğunda, Zihin sayfasında küçük bir değişiklik önerin — daha az açıklama, bir açıklamanın çok sık tekrarlanmaması, brifinge bir bölüm eklenmesi, daha yüksek bir AI sınırı — nedeni ile birlikte. Sen evet diyene kadar hiçbir şey değişmez; bir ay boyunca bir daha hayır sorulmuyor. Bunu kapatmak tüm bekleme önerilerini temizler.",
+     "privacy_log": "Sentient'nin yaptığı her AI araması ve web araması, hangi özelliğin, kaç resim, klip veya belgenin ve hangi hizmetin söylendiği veya gösterildiği asla not edilir. Son 48 saati unutmak için bir düğmeyle Beyin ve sistem → Evden çıkanlar altında görün. Bunu kapatmak kaydı temizler.",
+     "goals": "Sesin günler veya haftalar boyunca hedefler belirlemesine izin ver (\"bu ay daha az ısıtma kullanmamıza yardımcı olun\"). Bir hedef bir sensörü takip edebilir: Her günü önceki olağan haftayla karşılaştırır ve uygun olduğunda ilerlemeden bahseder. Evde hiçbir şey değişmedi.",
+     "manuals": "Aşağıdaki klasördeki belgelerdeki soruları yanıtla (her biri bir AI çağrısı). Kapalı: belgeler yalnız bırakılır.",
+     "manuals_folder": "Home Assistant ortamındaki bir klasör (e.g.manuals = media/manuals). Her dosyayı ne işe yaradığına göre adlandır, e.g. \"Hava purifier.pdf\".",
+     "manuals_local_text": "Hiçbir dosya adı soruyla eşleşmediğinde, doğru olanı bulmak için .txt ve .md belgelerinin içine bakın ve yapay zekaya ulaşılamıyorsa hiçbir şey yapmamak yerine en yakın pasajı oku. Her ikisinde de yapay zeka kullanılmaz. Kapalı: yalnızca dosya adları eşleştirilir.",
+     "manuals_pages": "Açık: Her PDF (ve metin belgesi), bu bilgisayarda, yapay zeka olmadan, Sentient'nin kendi veritabanında sayfa sayfa bir kez okunur. Daha sonra bir soru, AI'ya belgenin tamamını değil, yalnızca eşleşen birkaç sayfayı gönderir, böylece maliyeti çok daha düşük olur ve yanıt, sorunun hangi sayfada olduğunu belirtir (\"sayfa 14'te\"). Adı eşleşmeyen bir belge yine de içindekiler sayesinde bulunabiliyor ve yapay zekaya ulaşılamıyorsa en yakın pasaj sayfasıyla birlikte okunuyor. Taranan PDF'ler (sayfaların resimleri) hala yapay zeka tarafından bütünüyle okunuyor. Kapalı: belgeler her seferinde tam olarak okunur ve okunanlar silinir.",
+     "games": "Asistanların oyun ustası olduğu daireden kaçış macerası gibi sesli hikaye oyunları oynayın. Her oyun, oturumlar ve asistanlar arasında kendi kayıtlı hafızasını (oyuncuların nerede olduğu, ne taşıdıkları, ne buldukları ve seçtikleri) saklar. Yalnızca oyun oynanırken bir sese gösterilir ve oyun ustası evin sıradan hafızasını okuyabilir ancak onu asla değiştirmez. Oyunlar yazmak ve hafızalarını düzenlemek için Ayarlar → Hikaye oyunları'nı aç. Kapalı: oyun araçları ve sayfa gizlenir; kaydedilen oyunlar silinmez, tutulur.",
+     "voice_id": "Bu istek için yerel konuşmacı eşleşmesini kullan. Yapay zeka modelinin yanıtları kişiselleştirmesine veya yeni anıları ada göre atamasına izin vermek için Ses Tanıma'da Eşleşen adları konuşma aracısıyla paylaş seçeneğini de aç. Ayrı yerel “Kim konuşuyor?” Yanıt, Ses Tanıma'da ayarlandı.",
+     "voice_id_unknown": "Bir Asistan konuşmacının ses eşleşmesi olmadığında, o sıra için ev geçmişini ve kayıtlı anıları gizli tutun. Kapalı: eşleşmeyen sesler normal kabul edilir.",
+     "speaker_memories": "Ses tanıma çalışırken: Eşleşen bir ses önce kendi anılarını alır (“Alex: çayı sever”) — listeyi daha yeni aile gerçekleri doldursa bile her zaman dahil edilir — ve asla başkalarının kişisel anılarını almaz; Eşleşemediği bir ses, kimsenin kişisel anılarından hiçbirini alamaz. Evdeki gerçekler her zaman paylaşılır. Yazılan istekler ve Echos değişmedi. Varsayılan olarak kapalı.",
+     "books": "Her odanın yerini koruyarak sesli kitaplar çalın ve e-kitapları yüksek sesle oku. \"Kitabımı oku\", \"kitabına devam et\", \"20 dakika oku\", \"dur\", \"sonraki bölüm\", \"biraz geriye git\". AI yok (isteğe bağlı özet hariç). Echo'de: Alexa becerisi aracılığıyla istek başına bir pasajı e-kitap olarak kaydeder; sesli kitapların başka bir konuşmacıya ihtiyacı var.",
+     "books_folder": "Home Assistant ortamındaki bir klasör (kitaplar = medya/kitaplar). DRM'sen .epub veya .txt e-kitapları; sesli kitapları tek bir .mp3/.m4b/.m4a dosyası olarak veya kitabın adını taşıyan parçalardan oluşan bir klasör olarak.",
+     "reading_tts": "Yalnızca kitaplar ve hikayeler için farklı bir metinden konuşmaya hizmeti — Gemini veya ElevenLabs'ın sesleri genellikle daha iyi hikaye anlatıcılarıdır. Her zamanki ses tonuyla okumak için boş bırak. Echos her zaman Alexa'nin kendi sesini kullanır.",
+     "reading_voice": "Sesi bu hizmetten seç. Kaydetmeden önce varsayılan hoparlörde duymak için aşağıdaki SES'İ DENEYİN'i kullan.",
+     "read_ahead": "Okuma sesiyle hikayenin bir sonraki bölümü bu bölüm okunurken yapılır, böylece yavaş bir ses (serbest veya bulutlu) bölümler arasında boşluk bırakmaz. Bu sesi biraz daha erken kullanıyor, asla daha sık kullanmıyor.",
+     "recipes": "\"Lazanyayı yapalım\": malzemeler, ardından adım adım — \"sonraki\", \"bunu tekrarla\", \"geri dön\", \"sırada ne var?\" — konuşmacı başına adımı hatırlayarak. \"6 için yap\" bunu ölçeklendirir; malzemeler alışveriş listesine eklenebilir.",
+     "recipes_folder": "Home Assistant ortamındaki (tarifler = ortam/tarifler) PDF'ler, fotoğraflar, metin veya Markdown içeren bir klasör. Her biri ilk seferde bir yapay zeka çağrısıyla adımlar halinde düzenlenir ve daha sonra saklanır. Entegrasyonu ayarlanmışsa Mealie otomatik olarak kullanılır.",
+     "recipes_list": "Malzemeleri alışveriş listesine ekle\" seçeneğinin onları koyduğu yer. Boş: Adında \"alışveriş\" yazan liste.",
+     "voice_lists": "Açık: \"süt işaretini kaldır\", \"alışveriş listesinde ne var?\", \"çöp torbalarını çıkarın\" — öğeler nasıl söylenirse bulunur (her durumda, çoğullar, listedeki tek süt), iki olası eşleşme sorulur ve Sentient yalnızca liste bunu gösterdiğinde bunun yapıldığını söyler. Assist'e sunulan listeleri (hiçbiri yoksa tüm listeler) ve başka biri adlandırılmadığı sürece alışveriş listesini kullanır. Kendi başına bir yapay zeka yok. Kapalı: ses, Home Assistant'nin kendi liste komutlarını kullanır. Hiçbir şey saklanmıyor.",
+     "ready_tonight": "\"Bu gece için her şeyin hazır olduğundan emin ol\": kapıları, pencereleri ve kilitleri kontrol eder Asistan görebilir, yalnızca aşağıda seçilen ışıkları kapatır, ısıtmaya bakar ve neyin hala açık, kilitsiz, açık bırakıldığını veya onaylanamayacağını söyler. Kilitler, alarm ve ısıtma asla değiştirilmez ve alarm asla sunulmaz. Kendi başına bir yapay zeka yok. Kapalı: Ses hâlâ evi kontrol edebilir ancak bu sunulmaz. Hiçbir şey saklanmıyor.",
+     "ready_tonight_lights": "Bu geceye hazır\" yazan tek ışıklar sönebilir. Her biri daha sonra kontrol edilir. Boş: hiçbir ışık kapatılmaz, yalnızca rapor edilir.",
+     "ready_tonight_follow": "Bir şey hala açık veya kilidi açıksa, üç saate kadar ona göz kulak olun ve her şey düzeldiğinde istediğiniz hoparlöre bir kez söyle. Yeniden başlatmanın ardından devam ediyor.",
+     "tandoor_url": "İsteğe bağlı: Tandoor Recipes adresiniz, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "İsteğe bağlı: Tandoor'dan bir API jetonu (Ayarlar → API). Yalnızca Home Assistant'de tutuldu.",
+     "voice_agent": "Normalde yanıt veren AI aracısı (e.g. Google AI). Empty sayfanın sohbet aracısını kullanır.",
+     "backup_agent": "Ana temsilci başarısız olduğunda yanıt verir — Home Assistant'nin kendi temsilcisi herhangi bir yapay zeka olmadan aydınlatma, ısıtma ve zamanlayıcıları gerçekleştirir.",
+     "offline_answers": "Yapay zeka ajanı başarısız olduğunda “ev kilitli mi?”, “bir sonraki alarmım ne zaman?” ve “kimse geldi mi?” Yedek ajan yargılanmadan önce, doğrudan evden, açık bir ifadeyle yanıtlanıyor. Yalnızca sorular, yalnızca kişinin görebildiği şeyler; misafir modunda yalnızca güvenlik sorusu. Kapalı: her şey yedekleme aracısına gider.",
+     "animal_sensors": "Baraka, köpek kulübesi, kümes veya tank sıcaklık sensörleri.",
+     "away_lights_on": "Hava karardıktan sonra herkes dışarı çıktığında, ışıklar geçen hafta aynı saatte nasıl kullanıldığını kopyalıyor (Home Assistant'nin geçmişinden), her iki durumda da birkaç dakika. Evde herhangi biri varsa veya son zamanlarda içeride hareket varsa, telefonu takip edilmeyen kişiler için başlamaz (veya durmaz) ve açtığı şeyi geri getirir. Ayrıca bir 'Dışarıda ışıklar' düğmesi.",
+     "away_people": "Boş: Kişi girişi olan herkes. Kişiler yerine telefonları (cihaz izleyicileri) seçebilirsin.",
+     "away_lights": "Boş: Bir odadaki tüm ışıklar, ekranlar, LED halkalar, arka ışıklar ve gruplar hariç. Yalnızca geçen hafta o dönemde kullanılan ışıklar yanıyor.",
+     "holiday_mode": "Tatil modu' anahtarı ve sesli olarak 'Pazar gününe kadar tatile çıkıyoruz'. Açıkken, güvenlik uyarıları dışında yüksek sesle hiçbir şey söylenmez; söylenecek olanlar, ziyaretçiler ve paketlerle birlikte bildirimler için seçilen telefonlara gider; dış ışıklar normalde kapalı olsalar bile çalışır; ve aşağıdaki termostatlar kapatılır. Kapalı: anahtar yok ve sesli tatil yok.",
+     "holiday_thermostats": "Sen yokken donma koruması devre dışı bırakılır ve tatil modu sona erdiğinde olduğu gibi geri alınır. Boş: ısıtmaya dokunulmuyor.",
+     "holiday_frost": "Sen uzaktayken yukarıdaki termostatlar neye ayarlı.",
+     "holiday_end_on_return": "Herkes dışarı çıktığında, evdeki ilk kişi tatil modunu sonlandırıyor ve ısıtmayı tekrar çalıştırıyor. Kapalı: Tarihinde veya kapatıldığında sona erer.",
+     "away_after": "Yani mağazaya uğramak her şeyi başlatmıyor.",
+     "animal_low": "Bunun altına düştüğünde bir kez söyler (sakin saatlerde sabaha kadar tutulur) ve dondan önceki akşam uyarır.",
+     "animal_high": "Bunun üzerine çıktığında bir kez diyor.",
+     "hutch_check": "Gün batımından yarım saat sonra bir yapay zeka kulübeye bakıyor: İçerideler mi ve kapalı mı? Değilse sadece bir şey söyler.",
+     "hutch_spot": "Noktalar sekmesinde kabinin etrafına çizilen nokta, e.g. 'tavşan kalemi'.",
+     "cat_watch": "Hava karardıktan sonra, kulübenin kamerasındaki bir kedi sensörü açıldığında, bir AI bakışı: Kedi kulübenin yanında mı, yoksa kulübenin yanında mı? En fazla 15 dakikada bir ve görüntü değişmediğinde değil.",
+     "cat_sensors": "Boş: kulübenin kamerasındaki kedi sensörleri (e.g. Frigate'nin kedi doluluğu).",
+     "cat_loud": "Kapalı: sabah tutuldu ('Sabah 2:14'te kulübenin yanında bir kedi vardı'). Açık: gece nöbeti hoparlörleri aracılığıyla aynı anda söylendi.",
+     "rain_warnings": "Bir saat içinde yağmur yağacaksa ve bir pencere veya kapı açıksa: 'Bir saat sonra yağmur yağacak ve yatak odasının penceresi açık.' Saatlik tahmini okur — AI yok. Her yağmurda bir kez.",
+     "rain_entities": "Boş: tüm pencere ve kapı sensörleri.",
+     "self_test": "Gece boyunca sese birkaç gündelik soru soruluyor (dışarıdaki sıcaklık, açık olan herhangi bir şey, hatırlatıcılar, alarm, saat) ve yanıtları evle karşılaştırılarak kontrol ediliyor. Yanlış olan her şey ev sağlığında kullandığı aletle kendini gösterir. Yaklaşık 5 AI bir koşuyu çağırıyor. Yalnızca sorular — hiçbir şey değiştirilmez.",
+     "self_test_household": "Kendi cihazlarınızdan oluşturulan yaklaşık 7 soruyu ekler: bir kapı veya pencerenin en son ne zaman kapandığı, bir ışığın açık olup olmadığı, kameranın son iki saat içinde kimseyi görüp görmediği, bugün kapıya birisinin gelip gelmediği, bilemeyeceği bir şey (icat edilmiş bir cevap başarısız olur), hiçbir cihazın yapamayacağı bir şey ve hangisi sorulmadan cevaplanamayacak kadar belirsiz bir soru. Bir soru sırasında herhangi bir şeyi değiştirmek başarısızlıktır. Skor ve trendi Mind sayfasındadır. Yaklaşık 7 yapay zeka daha bir koşu çağrısı yapıyor.",
+     "screen": "Sentient ekran kartında uyarılar, bildirimler ve bir sabah kartı (özel:sentient-ekran kartı). Kapalı: yalnızca bir bakışta evi gösterir.",
+     "screen_actions": "e.g. tableti uyandırın ve ekran kartının bulunduğu sayfaya geçirin.",
+     "screen_clear_actions": "e.g. tableti normal sayfasına geri döndürün.",
+     "conversation_sessions": "Sentient'yi yedekleme aracısıyla kullan. Tek komutlar, sözlü yanıt bir soruyla bitmediği sürece dinlemeyi durdurur. Bilgi, güvenlik, sağlık ve sistem tartışmaları başka bir şey olup olmadığını sorar ve sen “hepsi bu kadar”, “yeter” veya “dinlemeyi bırak” diyene veya hareketsizlik zaman aşımı süresi dolana kadar açık kalın. Tamamlanmamış bir konuyu, eylem izinlerini geri yüklemeden 24 saat içinde bu cihazdan devam ettirmek için “geri dön…” deyin. Zihin paneli en son konuşma kararlarını gösterir. Takip dinlemesi için uyumlu bir Destek cihazı gerekir.",
+     "room_conversation_handoff": "Devam edin deyin ve başka bir cihazdan bir konuyu adlandır. Her iki istek de aynı tanımlanmış Home Assistant kullanıcısından gelmelidir. Yeni okumalar kontrol edilir ve önceki eylemler ve onaylar aktarılmaz.",
+     "verified_bedtime": "Seçilen ışıkları kapatmak ve seçilen kişileri kontrol etmek için yatmadan önce aşağıya koşun deyin. Tekrar kontrol etmek için alt kattaki uyku vakti durumunu sor veya izlemeyi durdurmak için alt kattaki uyku vaktini iptal et deyin.",
+     "verified_bedtime_lights": "Yirmi adede kadar ayrı Destekli ışık arasından seçim yapın. Gruplar hariç tutulur ve Asla dokunma listesi hâlâ geçerlidir.",
+     "verified_bedtime_contacts": "Kontrol etmek için yirmi adede kadar Destekli kapı, pencere veya diğer açılış kontağını seç. Salt okunurlar.",
+     "session_seconds": "Bu kadar saniyeden sonra başka bir dönüş yapmadan oturum bağlamını ve bekleyen eylemleri atın. Ses cihazın kendi sessizlik zaman aşımını kontrol eder. Onay ayrıca 60 saniye sonra sona erer.",
+     "guarded_control": "Özel olarak desteklenen bir yapay zeka aracısıyla kaydolun: yalnızca Home Assistant Kontrolü kapsamında korunan Sentient'yi seç, ardından işlem hattında yedeklemeyle Sentient'yi kullan. Komutları yerel olarak işlemeyi tercih et seçeneğini kapat ve bu aracıdan önce çalışan çakışan cümle tetikleyicilerini kaldır. Yanlış aracı API yapılandırması istekleri durdurur. Sınırsız geri dönüş, komut dosyası, sahne veya alarm eylemi yok. Kapılar, cihaz çalıştırmaları ve önemli ısıtma değişiklikleri ayrı bir evet gerektirir.",
+     "routine_verify": "Açık: Bir ses rutini (iyi geceler, yola çıkma…) çalıştıktan sonra, değiştirilen her ışık, anahtar, kilit ve kapak birkaç saniye sonra kontrol edilir ve yanıtta ne olmadığı belirtilir (\"Hala açık olan iniş ışığı dışında tamamlandı\"). Kontrol edemediği adımlar (komut dosyaları, sahneler) kontrol edilmemiş olarak raporlanır, hiçbir zaman yapılmamış olarak raporlanır. Hiçbir şey tek başına yeniden denenmez veya geri alınmaz. Kapalı: rutinler daha önce olduğu gibi çalışır, işaretlenmez.",
+     "voice_unlock": "Zorunlu sesli onayın ayrı bir evet sonrasında kapının kilidini açmasına izin ver. Kapalı (varsayılan) kilitlemeyi ve kapatmayı sürdürür ancak Sentient kimin konuştuğunu anlayamadığından kilidi açmayı veya sesle açmayı reddeder.",
+     "voice_undo": "Korumalı kontrolle, en son doğrulanan ışık ayarlarının geri yüklenmesini istemek için “bunu geri al” deyin. O zamandan bu yana değişen ışıkları atlar, oturumla birlikte sona erer ve kilitleri, ısıtmayı veya cihazları asla geri almaz.",
+     "evidence_awareness": "Sese gözlemleri, çıkarımları, denenen eylemleri ve doğrulanmış cihaz raporlarını ayırt etmesini söyle. Kullanılamayan güvenlik sensörleri her zaman tamamen güvenli bir hak talebini engeller.",
+     "security_incidents": "Uyarılar ve klip özetleriyle yapılandırılmış kamera-güvenlik kişi sensörlerini ve giriş kişilerini gruplandırın. Yerel olarak yedi gün tutun. Zaman yakınlığı olası bir bağlantıdır, aynı kişinin kanıtı değildir; yalnızca artan uyarılar tekrarlanır.",
+     "incident_front": "Evin ön tarafındaki kameralar ve sensörler (kapı zili, ön kapı). Burada herhangi bir şey asla tek bir güvenlik olayı halinde gruplandırılmaz ve tam tersi: aynı anda ön kapıda olan biri ve arka kapıda olan biri iki olaydır. Yalnızca zamana göre gruplandırmak için boş bırak.",
+     "live_voice_check": "Kullanıcı tarafından başlatılan sesli kontrolü Mind panelinde gösterin. Bunu kapatmak mevcut kontrolü temizler ve kontrol dönüşlerinin kaydedilmesini durdurur. Kontrolü başlatmak için Konuşma oturumları gerekir.",
+     "speech_delivery_history": "Konuşmacı başına en son duyuru sonuçlarını Akıl panelinde tutun. Bunu kapatmak bu geçmişi temizler. Hoparlör arıza tespiti ve güvenli yeniden deneme işlemi etkin kalır.",
+     "alexa_tts_only": "Duyurular güvenilmezse Alexa duyuruları yerine düz TTS kullan. Bu, Alexa duyuru çanlarını atlar; diğer hoparlörler değişmedi.",
+     "update_checker": "Etkinleştirildiğinde, başlangıçta ve her altı saatte bir GitHub'un kararlı sürümlerini kontrol et. AI çağrısı, otomatik kurulum veya otomatik yeniden başlatma yok. Kontrolleri durdurmak için devre dışı bırak.",
+     "contextual_followups": "Konuşma oturumları ve yedekleme aracılı Sentient gerektirir. Kısa takipler için konuyu sakla, açıkta kalan cihaz okumalarını yenileyin ve belirsiz ayarlamaları netleştirin. Eylem izinleri vermez veya dinleme kurallarını değiştirmez. Varsayılan olarak kapalı; bunu kapatmak geçici konuşma içeriğini temizler.",
+     "conversation_recovery": "Konuşma oturumları ve yedekleme aracılı Sentient gerektirir. Aynı görüşmeden/cihazdan/kullanıcıdan gelen bekleyen veya çalışan bir isteği iptal et ve bir yapay zeka hatasından sonra belirsiz cihaz komutlarının tekrar oynatılmasını önleyin. Zaten gönderilmiş bir eylem geri alınamaz veya meşgulken donanımın konuşmayı kabul etmesi sağlanamaz. Varsayılan olarak kapalı; devre dışı bırakmak bu ekstra işlemi durdurur.",
+     "speech_failure_notification": "Hoparlör iletimi başarısız olduğunda veya belirsiz olduğunda bir Home Assistant bildirimi gösterin. Varsayılan olarak kapalıdır. Konuşma içeriğini veya tekrarlanan konuşmayı içermez. Konuk modunda devre dışı bırakıldı; mevcut bildirimler kapatılana kadar kalır.",
+     "recent_followup_context": "Aynı konuşmacı ve kullanıcı üzerinde yeni bir uyandırma sözcüğünden sonra yakın zamanda tamamlanan bir konuyu kullan. Konuşma oturumları ve bağlamsal takipler gerektirir. Oturum zaman aşımını kullanır; onayı veya dinlemeyi asla geri yüklemez. Varsayılan olarak kapalıdır. Bitirmek veya unutmak bağlamı temizler.",
+     "conversation_cues": "Bir konuşma içinde: günlük imzalar (“şerefe”, “mükemmel, teşekkürler”, “bu işe yarar”) yanıt bekleyen belirli bir şey olmadığında sohbeti sona erdirir; “pardon, demek istedim…”, “yanlış ışık” ve “lamba değil, tavan lambası” düzeltmelerdir; ve “başka bir deyişle…” veya “başka bir şey:” hiçbir cihaz taşınmadan yeni bir konu başlatır. AI yok. Kapalı: yalnızca düz sonlar ve düzeltmeler tanınır.",
+     "vary_replies": "Sese geçen güne ait son birkaç yanıtı gösterilir ve cümlelerini veya açılışlarını tekrar kullanmaması söylenir, böylece aynı yanıt kelimesi kelimesine iki kez verilmez. Özel odalarda veya misafir modunda değil. Tekrarlanan yanıtlar her iki şekilde de sayılır (ses zamanlamalarıyla birlikte Akıl sekmesi). Varsayılan olarak kapalı.",
+     "behaviour_explanations": "Yapay zeka çağrısı olmadan, dinleme ve kaydedilen cihaz sonuçlarıyla ilgili kısa soruları doğrudan yanıtla. Konuşma oturumları gerektirir. Mevcut oturum kayıtlarını kullanır, misafir moduna ve cihaz erişimine saygı gösterir ve hiçbir eylemi tekrarlamaz. Varsayılan olarak kapalı; ek geçmiş saklanmaz.",
+     "current_house_context": "Konuşmalara, açığa çıkan cihaz raporlarının, son değişikliklerin ve mevcut tamamlanmamış görevin kompakt ve ilgili anlık görüntüsünü verin. Varsayılan olarak kapalıdır. Arka planda yapay zeka çağrısı yok. Misafir modu bunu bastırır. Son değişikliklerin geçerliliği 30 dakika sonra sona erer; devre dışı bırakmak veya unutmak yalnızca bellek içeriğini temizler.",
+     "moment_awareness": "Her sesli yanıt, Sentient'nin halihazırda sakladığı bilgilerden kısa bir 'şu anda' resmi alır: kim evde ve ne zamandan beri, odalarda hareket var, son 45 dakikada ne oldu ve bugün için olağandışı herhangi bir şey. AI yok ve saklanan hiçbir şey yok. Özel oda veya misafir modunda yalnızca hareket verilir. Kapalı: hiçbiri eklenmez.",
+     "room_memory": "Bir odadaki her sesli yanıt, son bir saat içinde orada olup bitenleri alır: o odadaki daha önceki konuşmalar, orada sesle değiştirilenler ve orada duyurulanlar. Birisi birkaç dakika önce başka bir odada konuşuyorsa ve o zamandan beri burada hiçbir şey söylenmemişse, o konuşma da gelir, böylece kaldıkları yerden devam edebilirler. Yeni hiçbir şey saklanmaz. Özel odalar ve misafir modu sadece kendi odalarının kaydını alır. Kapalı: hiçbiri eklenmez.",
+     "know_people": "Ses tanıma, konuşmacının adını vermediğinde Sentient, güvenebileceği şeylerden yola çıkarak muhtemelen kim olduğunu tespit ediyor: Home Assistant uygulamasına yazılan bir mesaj o kişinin hesabından geliyor veya onunki, odadaki oda takip edilen tek telefon. Sese muhtemelen kim olduğu söylenir ve o kişinin kendisi hakkında söylediklerini ilk sıraya koyar. Tahmin asla onaylanması gereken hiçbir şeye izin vermez ve bu nedenle hiçbir şey onların adı altında kaydedilmez. Misafir modunda veya özel odalarda değil. Kapalı: tahmin yok.",
+     "instant_answers": "Gündelik sorular yapay zekadan önce doğrudan evden yanıtlanıyor: saat, dışarıdaki hava durumu, adı verilen bir cihazın açık mı, kapalı mı, açık mı yoksa kilitli mi olduğu, odanın sıcaklığı, bir sonraki alarm veya hatırlatma, ziyaretçiler ve evin kilitli olup olmadığı. Sadece sorular, net bir şekilde eşleşen ve sesli asistanlara maruz kalan tek bir cihaz; geri kalan her şey her zamanki gibi yapay zekaya gidiyor. Değişim sohbete eklenir, böylece takip eden kişi hala ne sorulduğunu bilir. Misafirler ve özel odalar yalnızca saati, hava durumunu ve cihaz durumlarını alır. Kapalı: her soru yapay zekaya gider.",
+     "capability_awareness": "Sese, bu evde ne tür şeyleri sesle kontrol edebileceği (sesli asistanlara maruz kalanlardan, her birinden kaç tane olduğu) ve akıllı kilitler veya motorlu panjur gibi evin ortak hangilerinin bulunmadığı anlatılıyor, dolayısıyla hiçbir cihazın yapamayacağı bir şey sunmuyor. Her halükarda gözden kaçan bir teklif (bir pencerenin kapatılması, bir kapının kilitlenmesi) daha konuşulmadan yanıttan çıkarılır. Her beş dakikada bir çalıştı, yapay zeka yok. Kapalı: hiçbir şey eklenmez veya kaldırılmaz.",
+     "house_context_entities": "Otomatik iklim ve açılış/varlık raporlarının yanı sıra genel ev özetlerine dahil edilecek cihazlar. Yalnızca şu anda kullanıma açık ve erişilebilir cihazlar paylaşılır; istek başına en fazla sekiz ilgili okuma.",
+     "house_context_updates": "Mevcut ev bağlamını gerektirir. Doğrulanmış bir korumalı ısıtma talebinden sonra, isteğe bağlı olarak termostatın istenen sıcaklığı ne zaman bildirdiğini bir kez söyle. Bir saat sonra sona erer, hedefi değişirse iptal edilir; en fazla 15 dakikada bir güncelleme yapılır. Normal konuşma kurallarına ve misafir moduna saygı gösterir. Varsayılan olarak kapalıdır. Kapatmak, bekleyen güncellemeleri temizler.",
+     "security_event_evidence": "Yapılandırılmış kameralarda Frigate olay kimliklerini, anlık görüntüleri ve klipleri kullan. Benzersiz bir kamera/zaman eşleşmesi, bir sensörün olayı tanımladığının kanıtı değil, aday bir bağlantıdır. Yedi gün boyunca 3.000'e kadar olay kaydını yerel olarak sakla. Varsayılan olarak kapalıdır. Devre dışı bırakıldığında bağlantılar gizlenir ve eşleşme durdurulur; Saklanan kayıtların süresi dolar veya unutulabilir.",
+     "security_event_zones": "Yalnızca bölgeye girenler: Frigate bölgelerine sahip bir kamerada, bir olay yalnızca nesne bunlardan birine girdiğinde listelenir (ve bir güvenlik olayı başlatabilir), Frigate'nin uyarıları için kullandığı kuralın aynısıdır. Bölgeleri olmayan bir kamera her şeyi listeler. Algılanan her şey: Frigate her nesneyi seçilen kameralarda izler. Frigate'nin kendi ayarları hiçbir zaman değiştirilmez.",
+     "security_event_hidden_zones": "Kamera/bölge olarak her satıra bir tane, örneğin kapı/araba yolu. Yalnızca bu bölgelerde gerçekleşen olaylar listelenmez ve güvenlik olaylarını başlatmaz. Güvenlik sayfasında birkaç 'kişi değil' düzeltmesinden sonra BU BÖLGEYİ GİZLE seçeneğini kullan veya o bölgeyi tekrar listelemek için bir satırı kaldır. Frigate değişmedi.",
+     "security_coverage": "Hangi yapılandırılmış kameraların saklanan kanıtlara katkıda bulunduğunu ve canlı olayların yanı sıra kaydedilen mevcut olmayan raporları gösterin. Mevcut kamera raporları ayrı olarak gösterilir. Bunu kapatmak, tutulan kapsam boşluklarını temizler.",
+     "frigate_pipeline_health": "Frigate MQTT kullanılabilirliğini, kamera başına işlem hızlarını ve Sentient'nin en son ne zaman bir etkinlik aldığını oku. Eksik veriler bilinmiyor olarak gösterilir. Hiçbir kamera ayarı değiştirilmedi.",
+     "security_conversation_context": "Seçilen etkinliği aynı görüşme, cihaz ve kullanıcı içinde beş dakikaya kadar hatırlayın. Takip soruları bu etkinliği ve yeni doluluk raporlarını kullanır; hiçbir kimlik veya sürekli mevcudiyet varsayılmaz. Yapılandırılmış kamera olaylarını izler. Varsayılan olarak kapalıdır. Devre dışı bırakmak konuşma referanslarını temizler; olay kayıtları normal geçerlilik sürelerini korur.",
+     "security_event_feedback": "Yöneticiler bir ziyareti bir kişi veya göz ardı edilecek bir ziyaret olarak değil, iyi bir fırsat olarak işaretleyebilir. Gözden geçirilen ziyaretler, katlanmış bir Gözden Geçirilenler listesine taşınır ve \"kişi değil\" ifadesi de yalnızca söz konusu ziyaretle ilgili olarak yapılan bir güvenlik olayı için incelenen yanlış tespit olarak sayılır. Düzeltmeler yedi gün süreyle kalır. Otomatik dedektör, alarm veya bildirim kuralı değişikliği yoktur. Devre dışı bırakıldığında geri bildirim gizlenir ve yeni düzeltmeler durdurulur; Saklanan kayıtları silmek için Son verileri unut'u kullan.",
+     "share_clip_analysis": "Otomatik klip izleme ve etkinlik klibi sorularıyla aynı tamamlanmış Frigate etkinliğinin uyumlu genel analizlerini paylaşın. Sağlayıcı, çekim kapsamı ve kimlik ayarları eşleşmelidir. Özel sorular ayrı ayrı analiz edilir. En fazla 100 sonucu altı saat boyunca hafızada tutun. Varsayılan olarak kapalıdır. Ayarların devre dışı bırakılması, değiştirilmesi veya unutulması önbelleği temizler."
+    }
+   }
+  },
+  "abort": {
+   "already_configured": "Sentient zaten kuruldu."
+  }
+ },
+ "options": {
+  "step": {
+   "init": {
+    "title": "Sentient",
+    "menu_options": {
+     "settings": "Ayarlar",
+     "briefing": "Durum özetleri",
+     "memories": "Hatıralar"
+    }
+   },
+   "settings": {
+    "title": "Ayarlar",
+    "data": {
+     "persona": "İsim",
+     "speakers": "Hoparlörler",
+     "default_speaker": "Varsayılan hoparlör",
+     "quiet_start": "Sessiz saatler başlıyor",
+     "quiet_end": "Sessiz saatler sona erdi",
+     "busy_entities": "Meşgulken sessiz kal",
+     "motion_window": "Oda farkındalığı penceresi",
+     "banned_words": "Bu kelimeleri asla kullanmayın (virgülle ayrılmış)",
+     "suppress_entities": "Bu otomasyonlardan veya komut dosyalarından sonra sessiz kalın",
+     "suppress_seconds": "Şunun için sessiz kal",
+     "prompt_memories": "Sesli asistanlarla paylaşılacak anılar",
+     "pass_through_areas": "Geçiş alanları",
+     "all_occupied": "İşgal edilen her odada konuşun",
+     "room_tracking": "Oda izleyicileri kullanma (Bluetooth)",
+     "room_trackers": "Oda takipçileri",
+     "ai_task_entity": "Arka plan işleri için yapay zeka",
+     "camera_cooldown": "Kamera kontrolleri arasındaki minimum boşluk",
+     "fallback_speakers": "Yalnızca yedek hoparlörler",
+     "daily_ai_limit": "Günlük AI aramaları",
+     "prompt_recent": "Şu anda ve ses bağlamında son saat",
+     "rules": "Kurallar ve bunları sesli olarak oluşturma",
+     "relevant_memories": "Sorulanlarla eşleşen anıları seç",
+     "look_cache_minutes": "Bir kamera yanıtını şunun için yeniden kullan",
+     "camera_prefilter": "Hiçbir şey değişmediğinde kamera görünümünü atla",
+     "budget_drive": "Günlük AI aramaları: sürücü",
+     "budget_noticing": "Günlük AI aramaları: fark etme",
+     "budget_cameras": "Günlük AI çağrıları: kamera kontrolleri ve izlemeleri",
+     "routine_evidence": "Bir rutinin ne sıklıkta görüldüğünü söyle",
+     "notice_entities": "Dikkat edilmesi gerekenler",
+     "remark_repeat_hours": "için bir açıklamayı tekrarlamayın",
+     "chattiness": "Ne kadar konuşkan",
+     "conversation_style": "Nasıl konuşuyor",
+     "carry_on_minutes": "Bir görüşmeye devam edin",
+     "focused_tools": "Odaklanmış ses araçları",
+     "ask_later": "İşlerin nasıl gittiğini sorun",
+     "put_right": "Hataları tek seferde düzeltin",
+     "music": "Sorarak müzik",
+     "music_alexa": "Alexa (Echos) aracılığıyla müzik)",
+     "music_alexa_service": "Echos için müzik hizmeti",
+     "house_rules": "Ev kuralları",
+     "no_security_offers": "Asla etkinleştirmeyi, devre dışı bırakmayı veya kilidi açmayı teklif etmeyin",
+     "learn_entities": "Rutinleri öğrenin",
+     "learn_anchors": "Günü takip eden alışkanlıklar",
+     "trust_lights": "Işıklar",
+     "trust_switches": "Anahtarlar, fişler ve fanlar",
+     "trust_covers": "Panjur ve perdeler",
+     "trust_heating": "Isıtma",
+     "offer_together": "Birlikte yapılan alışkanlıkları sunun",
+     "link_triggers": "Ayrıca aşağıdakileri de öğrenin",
+     "suggest_routines": "Rutinleri devralmayı teklif et",
+     "prove_routines": "Alışkanlıklar daha teklif edilmeden önce kendilerini kanıtlarlar",
+     "routine_fading": "Artık ihtiyaç duyulmayan rutinler hakkında soru sorun",
+     "door_camera": "Kapı kamerası",
+     "door_triggers": "Kapı zili",
+     "announce_visitors": "Kapıda kim olduğunu söyle",
+     "faces": "Yüz tanımadan alınan isimler",
+     "face_people": "Yalnızca bu insanlar",
+     "face_teach": "İsimsiz yüzlerin kim olduğunu telefonda sorun",
+     "face_teach_cameras": "Bu kameralardan yüzleri öğrenin",
+     "face_cameras": "Yalnızca bu kameralardan alınan adlar",
+     "face_forget_hours": "İsimsiz yüzleri unutun",
+     "clip_watch": "Etkinlik kliplerini izleyin",
+     "clip_cameras": "Kameralar",
+     "clip_scope": "Hangi olaylar",
+     "clip_when": "Ne zaman",
+     "clip_notify": "Telefonlara gönder",
+     "clip_source": "Özeti kim yazıyor",
+     "clip_whose": "Hangi hane üyesi olduğunu söyle",
+     "clip_looks": "Yüzleri görünmediğinde insanlar nasıl görünüyor",
+     "budget_clips": "Bir günde izlenen klipler (çoğu)",
+     "clip_days": "Özetleri sakla",
+     "clip_keep": "Klip dosyalarını sakla",
+     "parcel_alerts": "Bir parselin ne zaman kaldığını söyle",
+     "doorstep_sensors": "Tarafından görülen ziyaretlerden sonra paket olup olmadığını kontrol et",
+     "zone_visits": "Ön kapı kamera bölgesindeki birini ziyaretçi olarak sayın",
+     "zone_door_sensors": "Ön kapı sensörü (ilk önce açıldığında bölge göz ardı edilir)",
+     "face_sensor": "Tanınan isim",
+     "sidebar_panel": "Kenar çubuğunda göster",
+     "page_admin_only": "Bu sayfayı yalnızca yöneticiler açabilir",
+     "custom_pages": "Sentient sayfasını yeniden düzenle",
+     "suggestions": "Sentient sayfasındaki öneriler",
+     "whats_new": "Güncellemeden sonraki yenilikler",
+     "simple_settings": "Daha basit ayarlar sayfası",
+     "auto_backup": "Her hafta yedekleyin",
+     "backup_keep": "Kaç tane saklanmalı",
+     "confirm_kinds": "Yapayım mı?\" diye sorun. önce",
+     "chat_agent": "Kenar çubuğu sayfası için sohbet aracısı",
+     "battery_threshold": "Düşük pil seviyesi aşağıda",
+     "battery_forecast": "Pillerin ne zaman biteceğini söyle",
+     "health_ignore": "Ev sağlığı için görmezden gelin",
+     "hide_substreams": "Ekstra kamera görünümlerini gizle",
+     "ignore_cameras": "Göz ardı edilecek kameralar",
+     "never_entities": "Bunlara asla dokunmayın",
+     "self_check": "Her gece kendini kontrol et",
+     "learn_corrections": "Yaptığı şeyi ne zaman geri alacağınızı öğrenin",
+     "normal_day": "Olağandışı bir güne dikkat edin",
+     "thoughts": "Ne düşündüğünü göster",
+     "share_learning": "Ne öğrendiğini söyle",
+     "self_adjust": "Kendini ayarla",
+     "proposals": "Ayarlarında değişiklik önerin",
+     "privacy_log": "Evden çıkanların kaydını tutun",
+     "goals": "Hedefler",
+     "manuals": "Belgelerden yanıt",
+     "manuals_folder": "Belgeler klasörü",
+     "manuals_local_text": "Metin belgelerinin içine bakın",
+     "manuals_pages": "PDF'leri sayfa sayfa oku",
+     "games": "Hikaye oyunları",
+     "voice_id": "Kimin konuştuğunu bilin",
+     "voice_id_unknown": "Eşleşemediği seslere misafir muamelesi yapın",
+     "speaker_memories": "Her kişinin anılarını onlara sakla",
+     "books": "Kitaplar",
+     "books_folder": "Kitap klasörü",
+     "reading_tts": "Ses okuma: servis",
+     "reading_voice": "Ses okuma",
+     "read_ahead": "Okurken bir sonraki bölümü hazırlayın",
+     "recipes": "Tarifler",
+     "recipes_folder": "Tarifler klasörü",
+     "recipes_list": "Malzemeler için alışveriş listesi",
+     "voice_lists": "Sesli alışveriş ve yapılacaklar listeleri",
+     "ready_tonight": "Bu geceye hazır",
+     "ready_tonight_lights": "Bu geceye hazırız: ışıklar kapanabilir",
+     "ready_tonight_follow": "Bu geceye hazırım: düzenlendiğinde bana söyle",
+     "tandoor_url": "Tandır adresi",
+     "tandoor_token": "Tandır API jetonu",
+     "second_opinion_ai": "İkinci görüş için yapay zekâ",
+     "smart_ai_task": "Güvenlik ve gece boyunca düşünme için daha güçlü yapay zeka",
+     "event_clips": "Frigate'in etkinlik kliplerini izleyin",
+     "notify_targets": "Bildirilecek telefonlar",
+     "notify_when": "Telefonlara gönder",
+     "phone_buttons": "Telefon bildirimlerindeki düğmeler",
+     "phone_apps": "Düğmeler için yardımcı uygulamalar",
+     "bins_check": "Çöp kutusu kontrolü",
+     "bins_calendar": "Çöp kutusu takvimi",
+     "bins_spot": "Çöp kutularının kamera noktası",
+     "bins_time": "Bak",
+     "chime": "Konuşmadan önce zil sesi",
+     "welcome_home": "İnsanları evinize hoş geldiniz",
+     "welcome_people": "Karşılanacak insanlar",
+     "welcome_min_away": "En azından uzakta",
+     "welcome_until": "Akşama kadar hoş geldiniz",
+     "speak_volume": "Konuşma sesi",
+     "night_volume": "Sessiz saatlerde konuşma sesi",
+     "duck_media": "Konuşurken müziği ve televizyonu kısın",
+     "critical_alerts": "Güvenlik uyarıları",
+     "critical_ignore": "Bunları asla güvenlik uyarıları olarak görmeyin",
+     "energy_insight": "Enerji içgörüsü",
+     "energy_price": "Elektrik fiyatı",
+     "energy_currency": "Para birimi",
+     "price_entity": "Kullanım süresi fiyatı (ucuz-elektrik önerileri)",
+     "search_hints": "Sese arama araçları hakkında bilgi verin",
+     "web_search": "Sentient'nin kendi web araması",
+     "searxng_url": "SearXNG adresi",
+     "alexa_skill": "Alexa aracılığıyla sorulan soruları yanıtla",
+     "alexa_wait": "Alexa pes etmeden önceki en uzun bekleme süresi",
+     "alexa_late_answers": "Bu Echo hakkında yavaş yanıtlar söyle",
+     "left_open_minutes": "Sonrasında açık bırakılan kapı ve pencerelerden bahsedin",
+     "left_open_ignore": "Bunlardan bahsetme",
+     "leaving_check": "Herkesin ne zaman dışarı çıktığını kontrol et",
+     "critical_extra": "Bunları ayrıca güvenlik uyarıları olarak değerlendirin",
+     "heating_entities": "Öğrenmek için ısıtma",
+     "preheat": "İnsanlar kalkmadan önce ısın",
+     "heating_schedule": "Isıtma programı (Ev sekmesinde ayarlanır)",
+     "comfort_temp": "Isınma sıcaklığı",
+     "inside_sensors": "İçerideki hareket sensörleri",
+     "weekly_report": "Haftalık rapor",
+     "night_watch": "Gece nöbeti",
+     "night_watch_entities": "İzlenecek kapılar ve kapılar",
+     "night_watch_announce": "Sessiz saatlerde bile uyarıları yüksek sesle söyle",
+     "night_watch_speakers": "Uyarıların açık olduğunu söyle",
+     "warm_by_weekdays": "Sıcaklığa kadar (hafta içi)",
+     "warm_by_weekends": "Sıcaklığa kadar (hafta sonları)",
+     "heating_limit": "Isıtmayı tekrar aç",
+     "heating_night_temp": "Gece sıcaklığı",
+     "heating_revert_day_hours": "Sonra geri dön (gün içinde)",
+     "heating_revert_night_hours": "Sonra geri dön (gece)",
+     "personality": "Kişilik",
+     "personality_notes": "Kişilik notları",
+     "style_feedback": "\"Söylediği şeyler hakkında farklı söyle",
+     "style_notes": "Bazı şeylerin nasıl söylenmesi gerektiği",
+     "camera_security": "Kamera güvenliği",
+     "camera_security_sensors": "Kameraların kişi sensörleri",
+     "camera_security_inside": "Sınırın içinde",
+     "camera_security_entries": "Giriş yolları",
+     "camera_security_describe": "Kim olduğunu açıkla",
+     "security_reasoning": "Evin geri kalanına karşı uyarıları tartın",
+     "party_lights": "Işıkları göster",
+     "party_style": "Stil",
+     "party_minutes": "Kendi kendine durduktan sonra",
+     "party_whole_house": "Evdeki her ışığı kullan",
+     "party_exclude": "Bu ışıkları asla kullanmayın",
+     "party_sound": "Gelen sesi takip edin",
+     "party_show": "Genel bakıştaki düğmeler",
+     "party_sound_switch": "Dinlerken aç",
+     "room_volume": "Gürültülü bir odada konuşun",
+     "follow_you": "Mesajlar insanları takip ediyor",
+     "follow_minutes": "İletilecek mesajları sakla",
+     "conversation_memory": "Konuşmaları hatırla",
+     "follow_ups": "Bir şeyleri tekrar kontrol et",
+     "curiosity": "Merak",
+     "reflection": "Gecelik yansıma",
+     "reflection_time": "Yansıtmak",
+     "drive_spot": "Sürüş noktası",
+     "drive_camera": "Sürücü kamerası",
+     "drive_triggers": "Bak bunlar ne zaman düzelecek",
+     "camera_wake": "Bakmadan önce kamerayı",
+     "camera_wake_cameras": "Yalnızca bu kameralar için",
+     "camera_wake_seconds": "O zaman bekle",
+     "known_cars": "Ev arabaları",
+     "full_volume_speakers": "Bu hoparlörlerde tam ses",
+     "tts_entity": "Diğer konuşmacılar için ses",
+     "house_language_text": "Sentient'nin evin dilindeki kendi sözleri",
+     "speak_house_language": "Evin dilinde yerleşik cümleleri söyle",
+     "media_speakers": "Echos ve diğer medya oynatıcılarını kullan",
+     "media_important_only": "Echos: yalnızca alarmlar ve hatırlatıcılar",
+     "foresight": "Yarına bir bakış",
+     "foresight_time": "İleriye bak",
+     "sleep_detection": "Evin ne zaman uyuduğunu bilin",
+     "sleep_minutes": "Hiçbir şey hareket etmedikten sonra uykuya daldım",
+     "sleep_ignore_sensors": "Uyku vakti için göz ardı edilecek sensörler",
+     "bedtime_routines": "Yatma vakti rutinleri",
+     "sleep_actions": "Ev uykuya daldığında şunları yapın",
+     "wake_actions": "Birisi kalktığında şunu yap",
+     "appliances": "Takip edilecek cihazlar",
+     "appliance_announce": "Ne zaman biteceklerini söyle",
+     "appliance_watts": "Yukarıda koşuyorum",
+     "voice_agent": "Ana AI ses aracısı",
+     "backup_agent": "Yedek asistan",
+     "offline_answers": "Sık sorulan soruları AI olmadan yanıtla",
+     "animal_sensors": "Hayvanların sıcaklık sensörleri",
+     "away_lights_on": "Uzak ışıklar",
+     "holiday_mode": "Tatil modu",
+     "holiday_thermostats": "Tatilde termostatlar kapatılacak",
+     "holiday_frost": "Donma koruma sıcaklığı",
+     "holiday_end_on_return": "Birisi evde olduğunda tatil modunu sonlandırın",
+     "away_people": "Bütün bunlar bittiğinde uzakta",
+     "away_lights": "Kullanılacak ışıklar",
+     "away_after": "Herkes dışarı çıktıktan sonra başlayın",
+     "animal_low": "Aşağısı çok soğuk",
+     "animal_high": "Üstü çok sıcak",
+     "hutch_check": "Akşam kümes kontrolü",
+     "hutch_spot": "Kafesin kamera noktası",
+     "cat_watch": "Gece kedisi izle",
+     "cat_sensors": "Kedi sensörleri",
+     "cat_loud": "Geceleri hemen söyle",
+     "rain_warnings": "Yağmur uyarıları",
+     "rain_entities": "İzlenecek pencereler ve kapılar",
+     "self_test": "Kendi kendine test",
+     "self_test_household": "Kendi kendine testteki ev soruları",
+     "screen": "Tablet ekranını kullanma",
+     "screen_actions": "Bir şey göründüğünde",
+     "screen_clear_actions": "Her şey temizlendiğinde",
+     "conversation_sessions": "Konuşma oturumları",
+     "room_conversation_handoff": "Odadan odaya konuşma aktarımı",
+     "verified_bedtime": "Alt katta yatma vakti doğrulandı",
+     "verified_bedtime_lights": "Alt katta yatma vakti ışıkları",
+     "verified_bedtime_contacts": "Alt katta yatmadan önce kontakları açma",
+     "session_seconds": "Oturumda etkinlik olmaması zaman aşımı",
+     "guarded_control": "Zorunlu sesli onay",
+     "routine_verify": "Kontrol rutinleri işe yaradı",
+     "voice_unlock": "Sesle kilit açmaya izin ver",
+     "voice_undo": "Son ışık değişikliklerini geri al",
+     "evidence_awareness": "Kanıt ve belirsizliği açıklayın",
+     "security_incidents": "Grup güvenlik olayları",
+     "incident_front": "Evin ön tarafı",
+     "live_voice_check": "Canlı sesli kontrol",
+     "speech_delivery_history": "Hoparlör teslimat geçmişi",
+     "alexa_tts_only": "TTS'yi yalnızca Alexa'de kullan",
+     "update_checker": "Sentient güncellemelerini kontrol et",
+     "contextual_followups": "Bağlantılı takipler ve düzeltmeler",
+     "conversation_recovery": "Konuşmanın iptali ve dikkatli bir şekilde toparlanma",
+     "automatic_language": "Otomatik dil desteği",
+     "voice_language": "Konuşma ve konuşma dili",
+     "remember_language_phrases": "Yaygın dil ifadelerini hatırlayın",
+     "stream_voice_replies": "Sesli yanıtları yazıldığı gibi söyle (deneme)",
+     "voice_timing_diagnostics": "Sesli yanıt zamanlaması teşhisi",
+     "reliability_log": "Sesin nerede yanlış gittiğine dikkat edin",
+     "unified_evidence": "Birleşik ev delili araması",
+     "specific_clarification": "Özel cihaz ve değer soruları",
+     "action_recovery": "Cihaz sonuçları ve dikkatli kurtarma",
+     "recheck_unconfirmed": "Geri bildirim sağlamayan değişikliklere tekrar bakın",
+     "speech_failure_notification": "Hoparlör dağıtım hataları hakkında bildirim",
+     "recent_followup_context": "Yeni bir uyandırma sözünden sonra kısa takipler",
+     "conversation_cues": "İmzaları, düzeltmeleri ve konu değişikliklerini anlayın",
+     "vary_replies": "Her seferinde farklı şeyler söyle",
+     "behaviour_explanations": "Dinleme ve eylem kararlarını açıklayın",
+     "current_house_context": "Mevcut ev bağlamı",
+     "moment_awareness": "Anın farkındalığı",
+     "room_memory": "Oda başına kısa süreli hafıza",
+     "know_people": "Muhtemelen kimin konuştuğunu bilin",
+     "instant_answers": "Anında yanıtlar",
+     "capability_awareness": "Evin neler yapabileceğini bilin",
+     "house_context_entities": "Ek bağlam varlıkları",
+     "house_context_updates": "İstenilen ısıtmaya ulaşıldığında bana haber ver",
+     "security_event_evidence": "Güvenlik uyarılarını Frigate olaylarına bağlama",
+     "security_event_zones": "Hangi kamera etkinlikleri listeleniyor",
+     "security_event_hidden_zones": "Etkinlikleri listelenmeyen bölgeler",
+     "security_coverage": "Kamera kapsama boşluklarını açıklayın",
+     "frigate_pipeline_health": "Frigate işlem hattı sağlığını göster",
+     "security_conversation_context": "Güvenlik olayını görüşmede tutun",
+     "security_event_feedback": "Kamera etkinlikleriyle ilgili geri bildirimleri kaydet",
+     "share_clip_analysis": "Eşleşen klip analizlerini yeniden kullan",
+     "heating_graph": "Isıtma kartındaki sıcaklık grafiği",
+     "heating_revert": "Elle yapılan değişiklikten sonra programa geri dönün",
+     "window_heating": "Pencere açıkken odanın ısıtıcısını kısın",
+     "window_heating_minutes": "Harekete geçmeden önce bir pencerenin açıldığı dakikalar",
+     "rooms_view": "Bir bakışta odalar (Ev sekmesi ve genel bakış)",
+     "outdoor_areas": "Açık alanlar",
+     "knowledge_card": "Akıl sekmesindeki NE BİLİYORUM kartı",
+     "day_chart": "Genel bakışta THE DAY SO FAR tablosu",
+     "house_ledger": "Ev günlüğü",
+     "unexplained_changes": "Açıklanamayan değişikliklerden bahsedin",
+     "unexplained_entities": "Açıklanamayan değişiklikleri izlemek için cihazlar",
+     "expectations": "Beklentiler ve sürpriz",
+     "surprise_gating": "Olağan olanla ilgili açıklamaları atla",
+     "situations": "Sese söyle şimdi neler oluyor",
+     "beliefs": "İnançları biçimlendirin ve test edin",
+     "learn_reactions": "Tepkilerden ders çıkarın",
+     "ai_case_memory": "AI çağrılarını kaydet (vaka belleği)",
+     "memory_tags": "Anlamına göre hatırla",
+     "memory_upkeep": "Kendini saklayan bir hatıra",
+     "watch_actions": "Saatler ve hatırlatıcılar harekete geçebilir",
+     "memory_time": "Zamanı anlayan hafıza",
+     "who_where": "Kimin nerede olduğunu bil",
+     "big_plans": "Büyük isteklere yönelik planlar",
+     "self_grading": "Kendi yanıtlarına not verin",
+     "voice_speed_watchdog": "Ses hızı gözlemcisi",
+     "voice_speed_restart": "Yavaş bir hoparlörü kendi kendine yeniden başlat",
+     "incident_stages": "Güvenlik olayı aşamaları",
+     "cognitive_shadow": "Güvenlik olaylarını karşılaştırın (test)",
+     "cognitive_decides": "Bilişsel çekirdeğin, hak ettikten sonra olay aşamalarına karar vermesine izin ver",
+     "cognitive_quiet_heads_up": "Yalnızca test etme: gece uyarı kararlarını değerlendirin (uyarı bastırma yok)",
+     "weather_warnings": "Hava durumu ve sel uyarıları",
+     "warnings_country": "Ülke",
+     "warnings_region": "Bölge (isteğe bağlı)",
+     "warnings_speak": "Ciddi uyarılarda bulunun",
+     "email_read": "Salt okunur e-posta",
+     "calendar_clashes": "Takvim çakışmaları",
+     "security_audit": "Güvenlik kontrolü",
+     "automation_builder": "Otomasyonlar oluştur",
+     "pronounce_names": "İsimleri telaffuz edildiği gibi söyle",
+     "pronunciations": "Telaffuzlar (satır başına bir tane)",
+     "health_duplicates": "İki kez listelenen cihazları tespit edin",
+     "manuals_local_ocr": "Taranan PDF sayfalarını yerel OCR ile oku",
+     "memory_semantic_enabled": "Yerel anlamsal bellek sıralaması",
+     "memory_semantic_url": "Yerel yerleştirme sunucusu adresi",
+     "memory_semantic_model": "Yerel yerleştirme modeli",
+     "ai_routing_enabled": "Metin görevleri için otomatik olarak daha ucuz yapay zekayı seç",
+     "ai_routing_alternative": "Alternatif AI Görev varlığı",
+     "ai_routing_primary_cost": "Arama başına olağan AI tahmini maliyeti",
+     "ai_routing_alternative_cost": "Alternatif AI tahmini arama başına maliyet",
+     "ai_routing_max_p95_ms": "Maksimum alternatif AI yanıt süresi (ms)",
+     "heating_energy_sensor": "Isıtma enerjisi sayacı (kWh)",
+     "heating_measurement_date": "Isıtma enerjisi kullanımının karşılaştırılacağı tarih",
+     "heating_energy_price_kwh": "kWh başına ısıtma fiyatı",
+     "autooff_respect_recent_voice": "Otomatik kapanmanın en son sesli komutlara uymasına izin ver"
+    },
+    "data_description": {
+     "motion_window": "İnsanların nerede olacağına karar verirken kaç dakikalık hareket geçmişi dikkate alınmalıdır.",
+     "suppress_entities": "e.g. kapı zili duyurunuz, böylece arka plandaki açıklamalar bunun üzerinde konuşmaz.",
+     "busy_entities": "Bunlardan herhangi biri açıkken (toplantı takvimi, Odak anahtarı, Rahatsız Etmeyin modundaki bir telefon), Sentient bekleyebilecek konuşmayı sanki susturulmuş gibi tutar. İstediğiniz güvenlik uyarıları ve yanıtları hâlâ karşınıza çıkıyor. Bunu kapatmak için boş bırak.",
+     "prompt_memories": "Sesli asistana ön planda kaç hafıza veriliyor? Geri kalanı hala aranabilir.",
+     "pass_through_areas": "Koridorlar, sahanlıklar ve merdivenler. Bu sayılanlardan çok daha az parayla geçmek, böylece yoldan geçen birinin duyuruyu çalmaması sağlanır.",
+     "all_occupied": "Açık: evde olan herkes bunu duyar. Kapalı: yalnızca en yoğun oda.",
+     "room_tracking": "Varsayılan olarak kapalıdır. Bir oda izleyici (örneğin, Bermuda'nın bir telefon için \"Alan\" sensörü), hoparlörlü bir odada birisinin olduğunu söylediğinde, \"insanların olduğu her yer\" ile ilgili şeyler orada söylenir. Hiçbir izleyici bunu bilmediğinde (telefon görülmediğinde, dışarıda olduğunda veya hoparlörü olmayan bir odada), harekete dayalı tahmin daha önce olduğu gibi kullanılır. Sadece nerede konuşacağımı seçerdim, asla birinin uyanıp uyanmayacağına karar vermezdim. Hiçbir şey saklanmıyor.",
+     "room_trackers": "Bermuda \"Alan\" sensörleri gibi durumu bir şeyin bulunduğu oda olan sensörler (telefon veya etiket başına bir tane). Her birinin Home Assistant alanıyla eşleşecek odaya ihtiyacı var.",
+     "ai_task_entity": "Yapay zeka görevi kamera görünümleri, brifingler, gece düşünceleri ve yarına bakış için kullanılır. Empty, Home Assistant'nin tercih ettiği yapay zeka görevini kullanıyor.",
+     "camera_cooldown": "Yapay zeka maliyetlerini düşük tutmak için bir kameralı saat en fazla bu sıklıkta tekrar bakar.",
+     "fallback_speakers": "Yalnızca başka bir konuşmacının odasında kimse olmadığında kullanılır, e.g. rahatsız etmemeyi tercih edeceğiniz bir oturma odası.",
+     "daily_ai_limit": "Arka plandaki yapay zeka çağrıları (kamera kontrolleri, brifingler, gece düşünceleri, kapı zili…) bu sayıdan sonraki gün için durur ve bunun yerine sade kelimeler kullanır. Sorduğunuz sorular hala yanıtlanıyor. 0 limit yok demektir.",
+     "prompt_recent": "Şu anda birkaç satır (uykuda, sessiz veya sessiz saatler, konuklar, açık olan herhangi bir şey ve saatlerdir haber alınamayan okumalar, dolayısıyla güncel olarak verilmiyor), son saatte ne oldu ve nerede hareket oldu, yani 'bilmem gereken bir şey var mı?' ve 'az önce ne oldu?' hemen cevap veriliyor. Ücretsiz: Ekstra AI araması yok.",
+     "rules": "\"Bu olduğunda, bunu yap\" kuralları (Kurallar sayfası) ve ses bunları yapabilir: kuralı geri okur ve yalnızca bir evet cevabından sonra kaydeder. Kurallar hiçbir zaman hiçbir şeyi etkinleştiremez, devre dışı bırakamaz veya kilidini açamaz. Kapalı: hiçbir kural çalıştırılmaz.",
+     "relevant_memories": "Sesin bağlamına sığmayacak kadar çok anı oluştuğunda, soruyla aynı kelimeleri paylaşanları ve ardından en yenilerini alır. Ücretsiz, yapay zeka yok. Kapalı: her zaman en yeni.",
+     "look_cache_minutes": "Bu süre içinde aynı kameraya aynı soru, yeni bir yapay zeka görünümü yerine son yanıtı alır. 0 her zaman tekrar bakar.",
+     "camera_prefilter": "Kamera kontrolleri ve saatleri önce küçük bir resmi karşılaştırır (bu makinede ücretsiz) ve yalnızca kamera veya noktası son bakıştan farklı göründüğünde yapay zekaya sorar.",
+     "budget_drive": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir.",
+     "budget_noticing": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir.",
+     "budget_cameras": "Genel limit dahilinde kendi günlük ödeneği. 0, yalnızca genel sınırı paylaştığı anlamına gelir. Güvenlik, kapı zili ve sorduğunuz sorular asla durdurulmaz.",
+     "routine_evidence": "Bir rutini devralma teklifleri, bunun ne sıklıkta gerçekleştiğini belirtir, e.g. 'Son 4 hafta sonu gününden 4'ü'.",
+     "notice_entities": "Bunlar değiştiğinde yapay zeka bir şeyi söylemeye (veya sormaya) değip değmeyeceğine karar verir. e.g. çamaşır makinesi, kapılar, hava durumu, çöp kutuları.",
+     "remark_repeat_hours": "Fark edilen aynı şey (\"Kaynanın kaynaması bitti.\") bu kadar uzun süre bir daha söylenmedi. 0: sınır yok.",
+     "chattiness": "Saat başına yapılan açıklamaları sınırlar: sessiz 2, normal 4, konuşkan 8. Kapalı fark etmeyi bırakır.",
+     "conversation_style": "Kısa: Kısa, konuya odaklı cevaplar. Doğal: komutlar kısa kalır, ancak sorular ve sohbette birkaç doğal cümle bulunur ve kişi bir soru sorduğunda, mikrofonun dinlemesini sağlayan bir takip sorusu bulunur.",
+     "carry_on_minutes": "Konuşmadan kısa bir süre sonra uyandırma sözcüğünü tekrar söylemek, aynı konuşmacıdan aynı konuşmayı devam ettirir, yani \"ve üst katta?\" hala mantıklı. 0 bunu kapatır; Home Assistant, beş sessiz dakikanın ardından konuşmayı unutuyor.",
+     "focused_tools": "Sese yalnızca Sentient'nin istenenlere uygun araçlarını (kameralar, ısıtma, hatırlatıcılar…), artı hafızayı ve güvenliği verin. Daha küçük bir seçim, daha ucuz modelleri daha hızlı ve daha doğru hale getirir. Açıkça eşleşmeyen her şey yine de tüm araçları alır.",
+     "ask_later": "Birisi yaklaşmakta olan bir şeyden (seyahat, maç, veteriner) bahsettiğinde, ses bir dahaki sefere birisi onunla konuştuğunda işin nasıl gittiğini sormayı hatırlayabilir — bir kez olsun, asla sessiz saatlerde veya misafirler varken ve asla özel bir şey hakkında değil. Hiçbir zaman durup dururken konuşmaz. Bunu kapatmak sorulmayı bekleyen her şeyi unutur.",
+     "put_right": "Hayır, diğeri\" veya \"o ışık değil, lamba\" dediğinizde, ses az önce açtığı şeye geri döner (birkaç dakika içinde açılır veya kapanır) ve isteği yalnızca düzeltilmiş kısımla yeniden yapar — hepsini tekrar söylemeye gerek yoktur. Bunu kapatmak, işi doğrudan sesli temsilciye bırakmayı sağlar.",
+     "music": "Müzik Asistanı ayarlandığında (veya Alexa aracılığıyla Müzik açıkken): \"mutfakta sakin bir şeyler çal\", kendi çalma listelerinizden ve radyo istasyonlarınızdan seçim yapar ve bunu o odadaki Müzik Asistanı oynatıcısında çalar (veya o odanın Echo'sini sorar) — sessiz saatlerde gece ses seviyesinde, sen orada olmadığınız sürece odanın kendi sessiz zamanında değil. Kapalı: müzik aracı yok.",
+     "music_alexa": "Müzik Asistanı olmadan: \"mutfakta sakin bir şeyler çalın\", o odadaki Echo'den (Alexa Medya Oynatıcısı), aşağıdaki hizmetten ismine göre (bir çalma listesi, bir sanatçı, bir şarkı veya bir ruh hali) sessiz saatlerde gece ses seviyesinde çalmasını ve sen orada olmadığınız sürece bir odanın kendi sessiz zamanında çalmasını ister. Hizmetin Alexa uygulamasına bağlanması gerekir. Kapalı: Echos'den hiçbir zaman müzik çalması istenmez.",
+     "music_alexa_service": "Echos'nin hangi hizmetten oynatıldığı. Spotify ücretsiz bir hesapla çalışır, ancak Alexa tam şarkı yerine benzer müziği karıştırabilir; Premium tam olarak istenileni oynuyor.",
+     "house_rules": "Her sesin takip etmesi gereken basit cümleler, her satıra bir tane e.g. 'Asla evin boş olduğunu söyleme.'",
+     "no_security_offers": "Sesin yanıtlarından, alarmı devreye almayı veya devre dışı bırakmayı ya da bir kapının kilidini açmayı öneren tüm cümleleri çıkarın (\"Kurayım mı?\") — yazıldığı gibi söylense bile. Etkinleştirmeyi, devre dışı bırakmayı, kilitlemeyi veya kilidi açmayı isteyen bir kişiye verilen yanıtlar yalnız bırakılır, dolayısıyla onayları sorulmaya devam eder. Varsayılan olarak kapalı.",
+     "learn_entities": "İnsanların elle kullandığı ışıklar, anahtarlar, vantilatörler ve panjurlar. Son iki hafta boyunca her gece, çoğu gün aynı saatte yapılan işler ve başka bir şeyin hemen ardından yapılan işler (bir kapının açılması, başka bir ışığın yanması) kontrol edilir).",
+     "learn_anchors": "Saati saat yerine gün batımı, gün doğumu veya uyanışa göre tutan bir alışkanlık (akşam karanlığında lamba, gün doğumunda panjur, uyandıktan sonra çaydanlık) bu şekilde öğrenilir, böylece evin senin için yaptığı bir rutin mevsimlere göre hareket eder. Kalkmak uykuda ve uyanıklık ortamını gerektirir. Kapalı: Her şey daha önce olduğu gibi zamana karşı öğrenilir.",
+     "offer_together": "Birkaç şey genellikle aynı günlerde, hemen hemen aynı saatte gerçekleştiğinde (lambanın yanması, panjurların kapalı olması, akşam saat 20.00 civarında televizyonun açılması), bunlar bir kez, birlikte sunulur — bir evet ve ev bunların hepsini yapar. Kapalı: her biri kendi başına sunulur.",
+     "trust_lights": "Evin devralmasına izin verdiğiniz bir rutin ışığı yaktığında: sadece yapın, önce söyle veya sorun ve yalnızca evet cevabıyla yapın (kimse cevap vermezse hiçbir şey olmaz).",
+     "trust_switches": "Anahtarlar, akıllı prizler ve fanlar için de aynısı.",
+     "trust_covers": "Panjur ve perdeler için de aynı şey geçerlidir. Garaj kapıları ve kapıları her zaman sorar.",
+     "trust_heating": "İnsanlar kalkmadan önce ısıtmayı ısıtmak için de aynı şey geçerli. İlk önce sormak, herkes uyurken ısınamayacağı anlamına gelir.",
+     "link_triggers": "İsteğe bağlı: alışkanlığı tetikleyebilecek daha fazla şey (TV'nin başlatılması, yatak sensörü…). Kapılar, pencereler ve öğrenilen ışıklar her zaman dikkate alınır.",
+     "suggest_routines": "Her yeni rutinde bir kez, birinin evde olduğu gün boyunca, bundan sonra evin bunu yapması gerekip gerekmediğini sorun.",
+     "prove_routines": "İlk olarak yeni öğrenilen bir alışkanlık izleniyor: Sentient, her gün öğrenildikten sonra kişinin bunu normal zamanından sonraki 45 dakika içinde gerçekten yapıp yapmadığını kontrol ediyor. Başvuru yapıldığı 4 günün en az 3'ünde (hafta içi, hafta sonu veya her gün) doğru sonuç alındığında sunulur. Ayarlar › Öğrenme her birinin ne durumda olduğunu gösterir. Kapalı: alışkanlıklar öğrenilir öğrenilmez sunulur.",
+     "routine_fading": "Açık: Evin senin için yaptığı bir rutin, iki haftanın 5 gününde zaten bitmişse (artık birisi bunu kendisi yapıyor), Sentient bir kez bunu sürdürüp sürdürmeyeceğinizi sorar ve sen hayır derseniz durur. Yalnızca tarihler en fazla iki hafta tutulur. Kapalı: evin yaptığı rutinler sen aksini söyleyene kadar korunur.",
+     "door_camera": "Kapı zili çaldığında kimin geldiğini kaydetmek için hemen baktım.",
+     "door_triggers": "Kapı zili düğmesi (ikili sensör veya olay) veya birisinin kapıda olduğu anlamına gelen herhangi bir şey.",
+     "announce_visitors": "Kapalı, sesli asistanların yanıtlayabileceği sessiz bir kayıtta kalmasını sağlar.",
+     "faces": "Frigate (veya kapı zili) birini tanıdığında zaman çizelgesine geçer ve ses \"Sam eve geldi mi?\" sorusunu yanıtlayabilir. İsimler hiçbir zaman açıklanmaz veya tahmin edilmez — yalnızca biri sorduğunda söylenir. Varsayılan olarak kapalı.",
+     "face_people": "Frigate olarak isimler bunları biliyor. Boş: tanıdığı herkes.",
+     "face_teach": "Frigate'nin yüz tanıma özelliğinin iyileşmesine yardımcı olur. Birisi seçilen kamerayı terk ettiğinde ve Frigate adını koyamadığı bir yüz ifadesine sahip olduğunda, telefonlara özel bir \"Bu kim?\" ev için yüz ve düğmelerle (telefonlar en fazla üç tane gösterir). Birine dokunmak Frigate'yi öğretir; \"Başka biri…\" yeni birisi için yazılan adı alır veya bir yabancının yüzünü silmek için \"hayır\" kullanılır. Hiç konuşulmadı, tabletlerde hiç konuşulmadı, en fazla on dakikada bir. Frigate yüz tanımanın açık olması ve bildirimler için seçilen telefonların olması gerekiyor. Varsayılan olarak kapalı.",
+     "face_teach_cameras": "Yüzlerin net olduğu yakın çekim kameralar, e.g. kapı zili. Boş: kapı kamerası.",
+     "face_cameras": "Boş: her kamera. Yakın plandakileri (kapı zili, ön kapı) seç, böylece kalabalık bir cadde sahte isimler vermesin.",
+     "face_forget_hours": "Her gece Frigate'in sakladığı ancak ad verilmemiş yüzler — çoğu yabancı — bu süreyi doldurunca Frigate'den silinir. Adı olanlar saklanır. 0: Frigate'e bırak (son 200 yüzü saklar).",
+     "clip_watch": "Frigate seçilen bir kamerada bir etkinliği bitirdiğinde, yapay zeka kaydın bu bölümünü bir kez izler ve zaman çizelgesinde ve Sentient sayfasında bir cümle belirir: \"Kapı 14:10 — bir adam bir köpeğin yanından geçti\". Ses \"Kapıda ne oldu?\" diye yanıtlıyor. başka bir AI çağrısı olmadan onlardan. Hiç konuşulmadı. Varsayılan olarak kapalı.",
+     "clip_cameras": "Bir tanesiyle başlayın, e.g. kapı.",
+     "clip_scope": "Frigate'nin uyarıları, gerekli olarak işaretlediğiniz bölgelerdeki kişilerdir — yoğun bir cadde için en sessiz seçimdir. Bir kamera hiçbir zaman uyarı vermiyorsa (Frigate'de gerekli bölge ayarlanmamışsa), \"Bölgedeki herhangi bir şey\"i seç — Klipler kartı neyin atlandığını ve nedenini gösterir.",
+     "clip_when": "Sadece bu saatlerde izleyin. Dışarıda, Deplasman ışıkları altında seçilen herkesin dışarıda olduğu anlamına gelir.",
+     "clip_notify": "Resim ve oynat düğmesiyle yalnızca telefonlara gider.",
+     "clip_source": "Frigate'nin kendi yapay zeka inceleme özetlerinin Frigate'de açılması gerekiyor; o zaman burada AI çağrısı yapılmaz.",
+     "clip_whose": "Aynı yapay zeka çağrısında, Frigate'nin yüz kütüphanesindeki hane halkının yüz fotoğrafları (ve aşağıdaki görünümler) dahil ediliyor ve yalnızca açıkça o kişi olduğu takdirde \"muhtemelen Sam\" olarak adlandırılıyor. Yabancıların adı asla anılmaz. Sadece sorulduğunda söylendi, asla duyurulmadı.",
+     "clip_looks": "Her satıra bir tane, e.g. \"Sam: kırmızı bisiklet kaskı ve sarı bir ceket, bisiklette\". Kask veya başlık yüzü gizlediğinde yardımcı olur.",
+     "budget_clips": "Genel günlük AI limitine de sayılır. 0: kendine ait bir limit yok.",
+     "clip_days": "Özetler yalnızca kelimelerden oluşur, daha sonra silinir.",
+     "clip_keep": "Kapalı: Her klip izlendiği anda silinir.",
+     "parcel_alerts": "Teslimattan sonra birkaç dakika sonra tekrar bakın ve paketin bırakılıp bırakılmadığını söyle.",
+     "doorstep_sensors": "İsteğe bağlı: kapı eşiği veya ön bahçe için kişi sensörleri (e.g. Frigate bölgesinin kişi doluluğu). Ziyaret zil sesi olmadan sona erdiğinde, kapı kamerası geride bırakılan paket veya posta olup olmadığını bir kez kontrol eder.",
+     "zone_visits": "Yukarıdaki kapı eşiği sensörlerini kullanır (e.g. Frigate bölgesinin kişi doluluk oranı). Kimse çalmadığında bölgeye ulaşan biri ziyaretçi muamelesi görüyor, kapı kamerasına bakılıyor ve anons ediliyor. Zil veya bölge hangisi önce gelirse ziyaret olur, diğeri görmezden gelinir. Kapalı: yalnızca zil ziyareti başlatır.",
+     "zone_door_sensors": "İsteğe bağlı: ön kapının açık/kapalı sensörü. Kapı son bir buçuk dakika içinde açılmışsa (veya açıksa), bölge göz ardı edilir çünkü bu, birisinin evden ayrılması veya eve gelmesi anlamına gelir.",
+     "face_sensor": "İsteğe bağlı: durumu yeni tanıdığı adla aynı olan bir yüz tanıma sensörü (e.g., Frigate'den). Günlükte ve açıksa duyuruda kullanılır.",
+     "sidebar_panel": "Kenar çubuğunda anıları, rutinleri, saatleri, ziyaretçileri ve söylenenleri gösteren bir sayfa.",
+     "page_admin_only": "Sayfayı ve okuduklarını yöneticiler dışındaki herkesten gizler. Kapalı, tüm eve açık kalmasını sağlar. Açmak hiçbir şeyi silmez.",
+     "custom_pages": "Açık: Genel Bakış, Ev, Akıl ve Güvenlik sekmeleri kayıtlı düzeninizi kullanır ve yöneticiler, kartları sütunlar arasında taşımak, gizlemek, tekrar göstermek veya bir sekmeyi sıfırlamak için SAYFA DÜZENİNİ DÜZENLE seçeneğine sahiptir. Sekmelerin kendisinde düzenleme düğmesi yoktur, yalnızca düzenleme yaparken. Düzen Sentient'ye kaydedilir, böylece her ekran aynısını gösterir. Kapalı: sekmeler standart düzene geri döner; kayıtlı düzeniniz, tekrar açtığınızda kullanılmak üzere saklanır.",
+     "confirm_kinds": "Yapay zekadan bu eylemleri açıklamasını ve evet cevabını beklemesini ister. Bu, zorunlu bir eylem bloğu değil, hızlı bir talimattır: konuşma aracınız cihazın yürütülmesini kontrol eder. Bir şeyleri kapatmak için sormaya gerek yok. Boş: Ekstra onay talimatı yok. Zorunlu kontroller için gerekli aracı kurulumuyla korumalı kontrolü etkinleştir.",
+     "auto_backup": "Pazar gecesi, anıların, spotların, rutinlerin, hareketli ışıkların, susturmaların ve ayarların bir yedeği, sentient_backups altındaki yapılandırma klasörüne kaydedildi.",
+     "backup_keep": "Eskiler siliniyor.",
+     "suggestions": "Sentient'in kullanabileceği ama kullanamadığı şeyler (yeni bir hoparlör, çamaşır makinesindeki güç sensörü, dolap termometresi) her seferinde bir satır sunuyordu. Evet ekliyor; hayır, bir daha asla teklif edilmeyeceği anlamına gelir. Ücretsiz, yapay zeka yok.",
+     "whats_new": "Sentient güncellendikten sonra, Sentient sayfasındaki kısa bir kart, sen ANLADIM'a dokunana kadar, sade kelimelerle yenilikleri söylüyor.",
+     "simple_settings": "Ayarlar listesi, isteğe bağlı özellikler için HER ŞEYİ GÖSTER ile temel özellikleri gösterir. Yeni yüklemeler bu şekilde başlar. Sentient'in yaptıklarıyla ilgili hiçbir şeyi değiştirmez.",
+     "chat_agent": "Sayfanın Sor kutusunu kim yanıtlıyor? Sentient işaretli bir sesli temsilci seç. Boş, tercih ettiğiniz Assist ardışık düzenini kullanır.",
+     "health_ignore": "Sorun olarak sayılmaması gereken varlıklar (ve bunların cihazları), e.g. kapalı olması gereken bir şey.",
+     "hide_substreams": "Kameraları sayarken ve kontrol ederken HD ve SD akışları, ekran görüntülerini ve haritaları dışarıda bırakır; böylece bir kapı zili birden fazla kamera anlamına gelmez. Home Assistant'den hiçbir şey silinmez.",
+     "ignore_cameras": "Kameralar Sentient, bir tabletin kamerası gibi sayılmamalı, kontrol edilmemeli veya teklif edilmemelidir. Home Assistant'de dokunulmadan kalırlar; birini geri getirmek için tekrar seç.",
+     "never_entities": "Sentient bunları hiçbir zaman değiştirmez, karartmaz veya değiştirmez: kurallarda, rutinlerde, tekliflerde, otomatik kapanmada, dışarıda veya hareket ışıklarında, ışık gösterilerinde, ısıtmada veya korumalı ses kontrolünde ve sese bunları rahat bırakması söylenmediğinde. Hala onları okuyabilir ve onlar hakkında konuşabilir. İnsanı değiştirecek her şey atlanır ve not edilir.",
+     "self_check": "Her gece kendi kayıtlarına — ne söylediği ve nasıl gittiği, başarısız olan konuşmacılar, ertelenen şeyler, tekrar tekrar sorulan sorular, AI ölçer — bakar ve kendisi hakkında fark ettiği şeyleri arkasındaki sayılarla birlikte not eder. AI yok. \"Bizi sinirlendirdiniz mi?\" diye sorun. veya \"ne farkettin?\".",
+     "learn_corrections": "Birisi evin bir dakika önce yaptığı bir şeyi (yaktığı bir ışık, devraldığı bir rutin) eski haline getirdiğinde, düzeltmeyi not eder. Sürekli olarak geri aldığınız bir rutin geri verilir (kapatılır) ve zaman çizelgesi bunu söyler. Bunu kapatmak izlemeyi durdurur; daha önce not edilen düzeltmeler korunur.",
+     "normal_day": "Bugünü olağan olanla karşılaştırır ve bunu Zihin sayfasına not eder: örneğin, birisi genellikle şimdiye kadar kalkmışken henüz kimse kalkmamıştır. Basit kurallar; hiçbir şey yüksek sesle söylenmez ve hiçbir şey değiştirilmez. Bunu kapatmak kontrolü durdurur ve bulunanları gizler.",
+     "thoughts": "Akıl sayfasında kısa bir birinci şahıs listesi (\"insanlar sahanlığın ışığını kapatmaya devam ediyor, ben de durdum\"), ayrıca birisinin bir sonraki odaya gideceğini tahmin etme ve bunun ne sıklıkla doğru olduğunu kontrol etme. AI yok. Bunu kapatmak tahmin etmeyi durdurur ve listeyi gizler; öğrendikleri saklanır.",
+     "share_learning": "Her akşam (17:00–20:30), birisi etraftayken ve henüz sessiz bir zaman değilken, son iki gün içinde öğrendiği veya fikrini değiştirdiği bir şeyi söylüyor: geri verdiği bir rutin, güncellediği bir gerçek, tespit ettiği bir alışkanlık, bir sonraki adımda nereye gideceğinizi şimdi ne kadar iyi tahmin ediyor. Asla aynı şeyi iki kez yapmayın. Bunu kapatmak, her şeyin Zihin sayfasında kalmasını sağlar ancak sessiz kalır.",
+     "self_adjust": "Kendi kendine kontrol, evin susmaya devam ettiği bir tür yorum bulduğunda, onu biraz susturun (başparmak aşağılamayla aynı; tekrar söner). Emniyete, güvenliğe veya kontrol ettiği herhangi bir şeye asla dokunmaz.",
+     "proposals": "Öz kontrolde yanlış giden bir şey bulduğunda, Zihin sayfasında küçük bir değişiklik önerin — daha az açıklama, bir açıklamanın çok sık tekrarlanmaması, brifinge bir bölüm eklenmesi, daha yüksek bir AI sınırı — nedeni ile birlikte. Sen evet diyene kadar hiçbir şey değişmez; bir ay boyunca bir daha hayır sorulmuyor. Bunu kapatmak tüm bekleme önerilerini temizler.",
+     "privacy_log": "Sentient'nin yaptığı her AI araması ve web araması, hangi özelliğin, kaç resim, klip veya belgenin ve hangi hizmetin söylendiği veya gösterildiği asla not edilir. Son 48 saati unutmak için bir düğmeyle Beyin ve sistem → Evden çıkanlar altında görün. Bunu kapatmak kaydı temizler.",
+     "goals": "Sesin günler veya haftalar boyunca hedefler belirlemesine izin ver (\"bu ay daha az ısıtma kullanmamıza yardımcı olun\"). Bir hedef bir sensörü takip edebilir: Her günü önceki olağan haftayla karşılaştırır ve uygun olduğunda ilerlemeden bahseder. Evde hiçbir şey değişmedi.",
+     "manuals": "Aşağıdaki klasördeki belgelerdeki soruları yanıtla (her biri bir AI çağrısı). Kapalı: belgeler yalnız bırakılır.",
+     "manuals_folder": "Home Assistant ortamındaki bir klasör (e.g.manuals = media/manuals). Her dosyayı ne işe yaradığına göre adlandır, e.g. \"Hava purifier.pdf\".",
+     "manuals_local_text": "Hiçbir dosya adı soruyla eşleşmediğinde, doğru olanı bulmak için .txt ve .md belgelerinin içine bakın ve yapay zekaya ulaşılamıyorsa hiçbir şey yapmamak yerine en yakın pasajı oku. Her ikisinde de yapay zeka kullanılmaz. Kapalı: yalnızca dosya adları eşleştirilir.",
+     "manuals_pages": "Açık: Her PDF (ve metin belgesi), bu bilgisayarda, yapay zeka olmadan, Sentient'nin kendi veritabanında sayfa sayfa bir kez okunur. Daha sonra bir soru, AI'ya belgenin tamamını değil, yalnızca eşleşen birkaç sayfayı gönderir, böylece maliyeti çok daha düşük olur ve yanıt, sorunun hangi sayfada olduğunu belirtir (\"sayfa 14'te\"). Adı eşleşmeyen bir belge yine de içindekiler sayesinde bulunabiliyor ve yapay zekaya ulaşılamıyorsa en yakın pasaj sayfasıyla birlikte okunuyor. Taranan PDF'ler (sayfaların resimleri) hala yapay zeka tarafından bütünüyle okunuyor. Kapalı: belgeler her seferinde tam olarak okunur ve okunanlar silinir.",
+     "games": "Asistanların oyun ustası olduğu daireden kaçış macerası gibi sesli hikaye oyunları oynayın. Her oyun, oturumlar ve asistanlar arasında kendi kayıtlı hafızasını (oyuncuların nerede olduğu, ne taşıdıkları, ne buldukları ve seçtikleri) saklar. Yalnızca oyun oynanırken bir sese gösterilir ve oyun ustası evin sıradan hafızasını okuyabilir ancak onu asla değiştirmez. Oyunlar yazmak ve hafızalarını düzenlemek için Ayarlar → Hikaye oyunları'nı aç. Kapalı: oyun araçları ve sayfa gizlenir; kaydedilen oyunlar silinmez, tutulur.",
+     "voice_id": "Bu istek için yerel konuşmacı eşleşmesini kullan. Yapay zeka modelinin yanıtları kişiselleştirmesine veya yeni anıları ada göre atamasına izin vermek için Ses Tanıma'da Eşleşen adları konuşma aracısıyla paylaş seçeneğini de aç. Ayrı yerel “Kim konuşuyor?” Yanıt, Ses Tanıma'da ayarlandı.",
+     "voice_id_unknown": "Bir Asistan konuşmacının ses eşleşmesi olmadığında, o sıra için ev geçmişini ve kayıtlı anıları gizli tutun. Kapalı: eşleşmeyen sesler normal kabul edilir.",
+     "speaker_memories": "Ses tanıma çalışırken: Eşleşen bir ses önce kendi anılarını alır (“Alex: çayı sever”) — listeyi daha yeni aile gerçekleri doldursa bile her zaman dahil edilir — ve asla başkalarının kişisel anılarını almaz; Eşleşemediği bir ses, kimsenin kişisel anılarından hiçbirini alamaz. Evdeki gerçekler her zaman paylaşılır. Yazılan istekler ve Echos değişmedi. Varsayılan olarak kapalı.",
+     "books": "Her odanın yerini koruyarak sesli kitaplar çalın ve e-kitapları yüksek sesle oku. \"Kitabımı oku\", \"kitabına devam et\", \"20 dakika oku\", \"dur\", \"sonraki bölüm\", \"biraz geriye git\". AI yok (isteğe bağlı özet hariç). Echo'de: Alexa becerisi aracılığıyla istek başına bir pasajı e-kitap olarak kaydeder; sesli kitapların başka bir konuşmacıya ihtiyacı var.",
+     "books_folder": "Home Assistant ortamındaki bir klasör (kitaplar = medya/kitaplar). DRM'sen .epub veya .txt e-kitapları; sesli kitapları tek bir .mp3/.m4b/.m4a dosyası olarak veya kitabın adını taşıyan parçalardan oluşan bir klasör olarak.",
+     "reading_tts": "Yalnızca kitaplar ve hikayeler için farklı bir metinden konuşmaya hizmeti — Gemini veya ElevenLabs'ın sesleri genellikle daha iyi hikaye anlatıcılarıdır. Her zamanki ses tonuyla okumak için boş bırak. Echos her zaman Alexa'nin kendi sesini kullanır.",
+     "reading_voice": "Sesi bu hizmetten seç. Kaydetmeden önce varsayılan hoparlörde duymak için aşağıdaki SES'İ DENEYİN'i kullan.",
+     "read_ahead": "Okuma sesiyle hikayenin bir sonraki bölümü bu bölüm okunurken yapılır, böylece yavaş bir ses (serbest veya bulutlu) bölümler arasında boşluk bırakmaz. Bu sesi biraz daha erken kullanıyor, asla daha sık kullanmıyor.",
+     "recipes": "\"Lazanyayı yapalım\": malzemeler, ardından adım adım — \"sonraki\", \"bunu tekrarla\", \"geri dön\", \"sırada ne var?\" — konuşmacı başına adımı hatırlayarak. \"6 için yap\" bunu ölçeklendirir; malzemeler alışveriş listesine eklenebilir.",
+     "recipes_folder": "Home Assistant ortamındaki (tarifler = ortam/tarifler) PDF'ler, fotoğraflar, metin veya Markdown içeren bir klasör. Her biri ilk seferde bir yapay zeka çağrısıyla adımlar halinde düzenlenir ve daha sonra saklanır. Entegrasyonu ayarlanmışsa Mealie otomatik olarak kullanılır.",
+     "recipes_list": "Malzemeleri alışveriş listesine ekle\" seçeneğinin onları koyduğu yer. Boş: Adında \"alışveriş\" yazan liste.",
+     "voice_lists": "Açık: \"süt işaretini kaldır\", \"alışveriş listesinde ne var?\", \"çöp torbalarını çıkarın\" — öğeler nasıl söylenirse bulunur (her durumda, çoğullar, listedeki tek süt), iki olası eşleşme sorulur ve Sentient yalnızca liste bunu gösterdiğinde bunun yapıldığını söyler. Assist'e sunulan listeleri (hiçbiri yoksa tüm listeler) ve başka biri adlandırılmadığı sürece alışveriş listesini kullanır. Kendi başına bir yapay zeka yok. Kapalı: ses, Home Assistant'nin kendi liste komutlarını kullanır. Hiçbir şey saklanmıyor.",
+     "ready_tonight": "\"Bu gece için her şeyin hazır olduğundan emin ol\": kapıları, pencereleri ve kilitleri kontrol eder Asistan görebilir, yalnızca aşağıda seçilen ışıkları kapatır, ısıtmaya bakar ve neyin hala açık, kilitsiz, açık bırakıldığını veya onaylanamayacağını söyler. Kilitler, alarm ve ısıtma asla değiştirilmez ve alarm asla sunulmaz. Kendi başına bir yapay zeka yok. Kapalı: Ses hâlâ evi kontrol edebilir ancak bu sunulmaz. Hiçbir şey saklanmıyor.",
+     "ready_tonight_lights": "Bu geceye hazır\" yazan tek ışıklar sönebilir. Her biri daha sonra kontrol edilir. Boş: hiçbir ışık kapatılmaz, yalnızca rapor edilir.",
+     "ready_tonight_follow": "Bir şey hala açık veya kilidi açıksa, üç saate kadar ona göz kulak olun ve her şey düzeldiğinde istediğiniz hoparlöre bir kez söyle. Yeniden başlatmanın ardından devam ediyor.",
+     "tandoor_url": "İsteğe bağlı: Tandoor Recipes adresiniz, e.g. http://192.168.1.20:8080.",
+     "tandoor_token": "İsteğe bağlı: Tandoor'dan bir API jetonu (Ayarlar → API). Yalnızca Home Assistant'de tutuldu.",
+     "second_opinion_ai": "İsteğe bağlı: Daha büyük bir model yalnızca normal model, resmin emin olamayacak kadar karanlık veya belirsiz olduğunu söylediğinde sorulur. Günlük limite sayılır.",
+     "smart_ai_task": "İsteğe bağlı. Yalnızca kamera güvenliği görünümleri ve daha akıllı bir modelin en çok yardımcı olduğu gece düşünme için kullanılır. Boş: olağan yapay zeka, yani maliyetler değişmiyor.",
+     "event_clips": "Frigate'nin bir olayın kısa klibini getirir ve yapay zekanın bunu izlemesini sağlar, böylece gerçekte ne olduğunu söyleyebilir (\"bir paket bıraktı ve gitti\"). Kamera güvenlik uyarısından sonra ve 'kapıda ne oldu?' sorulduğunda kullanılır. Frigate entegrasyonu gerekiyor. Klip başına bir AI çağrısı. Varsayılan olarak kapalı.",
+     "notify_targets": "Varlıkları bilgilendirin, e.g. her telefonda veya saatte Home Assistant uygulaması.",
+     "notify_when": "Her tür en fazla on dakikada bir gönderilir.",
+     "phone_buttons": "Yardımcı uygulama aracılığıyla: kapıda — kamera resmi ve Kamerayı göster düğmesi; hatırlatıcılar — 10 dakika erteleyin ve Bitti; sorular — ev bir şey sormak istediğinde (bir teklif, \"bunu senin için yapmamı ister misin?\" veya bir şeyi yapmadan önce önce sor) ve konuşmacının yakınında kimse yoksa, telefonlarda Evet ve Hayır şeklinde sorar (sessiz saatlerde değil). Boş: şimdiki gibi düz bildirimler.",
+     "phone_apps": "e.g. notify.mobile_app_pixel_8. Boş: yukarıda seçilen her telefonun arkasındaki yardımcı uygulama (notify.my_phone → mobile_app_my_phone) — asla tabletler değil.",
+     "bins_check": "Toplamadan önceki akşam, bir kamera çöp kutularının nereye atıldığını izliyor. Sadece dışarı çıkmadıklarında bir şeyler söylüyor: 'Yarın geri dönüşüm yapılacak ve çöp kutuları henüz dışarı çıkmamış.' Bir saat sonra bir kez daha görünüyor.",
+     "bins_calendar": "Boş: brifing takvimlerinden bir atık toplama takvimi.",
+     "bins_spot": "Kutuların dışarı çıktığı Noktalar sekmesinde çizilmiş olan e.g. 'kutular'.",
+     "bins_time": "Koleksiyondan önceki akşam, sessiz saatlerden önce.",
+     "chime": "Kapalı: duyurular ve sorular konuşmacının sesi olmadan hemen başlar.",
+     "welcome_home": "Birisi 20 dakika veya daha uzun bir süre sonra geri döndüğünde, bulunduğu odada \"Tekrar hoş geldiniz\" deyin — ayrıca dışarıdayken bilmeye değer şeyler (ziyaretçiler, biten şeyler, sorunlar). Asla sessiz saatlerde, suskunlukta veya misafir modunda değil.",
+     "welcome_people": "Boş, kişi girişi olan herkes anlamına gelir. Bunun yerine telefonları (cihaz izleyicileri) seçebilirsin — bir kişi her zaman evde olacak şekilde ayarlandığında kullanışlıdır.",
+     "welcome_min_away": "Birinin birkaç dakika içinde tekrar karşılanması için ne kadar süre dışarıda kalmış olması gerekir.",
+     "welcome_until": "Sessiz saatler normalde hoş karşılanmayı geciktirir. Bir zaman belirle ve o saatten önce akşam gelen herkes yine de memnuniyetle karşılanır. Saatlerin sessiz kalması için boş bırak.",
+     "speak_volume": "İsteğe bağlı: Sentient konuşurken konuşmacının ses düzeyi daha sonra kısılır. Boş onu yalnız bırakır.",
+     "night_volume": "İsteğe bağlı: Sessiz saatlerde söylenen her şey için daha sessiz bir seviye (yalnızca acil mesajlar).",
+     "duck_media": "Sentient konuşurken aynı odada çalan her şey kapatılır, sonra tekrar açılır.",
+     "critical_alerts": "Duman, karbon monoksit, gaz, su sızıntısı ve dış müdahale sensörleri otomatik olarak bulunur ve alarm da devreye girer. Sessiz saatlerde, susma ve misafir modunda her konuşmacıda söylendi, açıkken iki kez tekrarlandı ve telefonlara gönderildi.",
+     "energy_insight": "Enerji panosundaki cihazların bugünkü kullanımı geçen haftayla karşılaştırıldığında: Enerji kartı, brifing bölümü, ses aracı ve olağandışı kullanıma ilişkin notlar. Off hepsini gizler ve durdurur.",
+     "energy_price": "İsteğe bağlı: Enerji kontrol panelindeki cihazların bugünkü maliyetini göstermek için kWh başına birim ücretiniz — peni veya sent (24,5) veya pound, dolar veya euro (0,245) cinsinden; ikisi de işe yarar.",
+     "energy_currency": "Para birimi maliyetleri şu şekilde gösterilir: Boş: Home Assistant'nin kendi para birimi (Ayarlar → Sistem → Genel).",
+     "price_entity": "Tedarikçinizin entegrasyonundan (Octopus Energy, Nordpool…) elektrik fiyatınız şimdi. Kullanılacak gelecek oranları listeliyorsa; Aksi takdirde her saatteki olağan fiyat son haftadan öğrenilir. Cihaz başına bir kez (çamaşır makinesi, bulaşık makinesi, kurutucu) akşamları, gece boyunca en ucuz olduğunda gecikmeli başlatmayı kullanmak isteyip istemediğinizi sorar. Boş: kapalı.",
+     "search_hints": "Voice Satellite LLM Tools (veya Sentient'nin kendi araması) kurulduğunda, sese arama araçlarının orada olduğu ve bunları evin dışında herhangi bir şey için kullanması gerektiği söylenir (hoparlördeki kelimeler, yalnızca tabletteki resimler). Kendi başına yapay zeka çağrısı yok.",
+     "web_search": "Kendi SearXNG'niz (örneğin SearXNG eklentisi) aracılığıyla yalnızca sesli web araması. Yalnızca Voice Satellite LLM Tools'un web araması yüklü olmadığında kullanılır, dolayısıyla ses hiçbir zaman iki tane almaz. Varsayılan olarak kapalı.",
+     "searxng_url": "Örneğin http://localhost:8080 veya eklentinin adresi. SearXNG, json formatına izin vermelidir (ayarlarında: arama → formatlar).",
+     "alexa_skill": "Bir beceri onu kullanana kadar hiçbir şey eklemez: bir Alexa becerisini (örneğin, topluluğun 'Home Assistant Yardımı' becerisini) 'Alexa İçin' temsilcisine yönlendirin, ardından “Alexa, sor” deyin ve becerinizin adını söyle. Varsayılan olarak kapalı.",
+     "alexa_wait": "Alexa yaklaşık 8 saniye sonra telefonu kapatıyor, dolayısıyla yanıt bundan daha hızlı gelmiş olmalı.",
+     "alexa_late_answers": "Yapay zeka daha uzun sürdüğünde Alexa “Bana bir dakika ver” diyor ve hazır olduğunda yanıt aynı Echo üzerinden söyleniyor.",
+     "left_open_minutes": "Bir kez (sonra hala açıkken her yarım saatte bir) sessiz saatlerde söylenir ve her zamanki gibi susulur. 0 kapatır.",
+     "leaving_check": "Son kişi ayrıldığında, açık veya kilidi açılmış her şey zaman çizelgesine ve telefonlara aktarılır (\"Açık bırak\").",
+     "critical_extra": "Açıldığında her zaman her yerde söylenmesi gereken başka bir şey varsa, e.g. panik butonu veya dondurucunun çok sıcak olması sensörü. Her zaman çalan bir alarm paneli dahildir.",
+     "heating_entities": "Öğrenilecek termostatlar. Evdeki herkes için boş bırak. Her birinin ne kadar hızlı ısındığını ve genellikle ayarlandığı sıcaklığı öğrenir.",
+     "preheat": "Isıtmayı erkenden başlat, böylece insanlar normalde uyandığında ortam normal sıcaklıkta olur. Daha sonra kendi programına sahip bir termostat tekrar takılır ve kapatılan termostat kapalı kalır.",
+     "heating_schedule": "Açık: Ev sekmesinde yapılan ısıtma süreleri çalışır (bir termostat seçilen günlerde belirli bir sıcaklığa ayarlanmış veya kapalıdır) ve yalnızca orada seçilen termostatlarda çalışır. Kapalı: hiçbiri çalıştırılmaz ve program gizlenir; kaydettiğiniz zamanlar saklanır ve bu tekrar açıldığında tekrar çalıştırılır.",
+     "comfort_temp": "İsteğe bağlı: Isınılacak sıcaklık. Genellikle gün içinde ayarlanmış olanı kullanmak için boş bırak.",
+     "inside_sensors": "İsteğe bağlı: Hangi hareket sensörleri içeride birinin olduğu anlamına gelir. Hoparlörlerle aynı kattakileri kullanmak için boş bırak (bahçe ve kamera sensörleri sayılmaz). Gece nöbeti ve kalkma zamanlarında kullanılır.",
+     "weekly_report": "Pazar akşamları, evin bu hafta öğrendiklerini ve fark ettiklerini zaman çizelgesine koyun (özetler varsa telefonlara gönderilir).",
+     "night_watch": "Her kapının, kapının ve pencerenin normalde ne zaman açıldığını öğrenir. Normalde hiç kimsenin içeri girmediği bir zamanda açılmak bir uyarıdır. Birisi içerideyse (mesela işe gitmek için çıkıyorsa), bu yalnızca not edilir.",
+     "night_watch_entities": "Her kapı, pencere, geçit ve garaj kapısı sensörü için boş bırak.",
+     "night_watch_announce": "Kimsenin olmadığı alışılmadık bir açılış, sessiz saatler, sessizlik ve misafir modu aracılığıyla hemen söylenir — orada olmaması gereken biri olabilir.",
+     "night_watch_speakers": "Her konuşmacı için boş bırak.",
+     "warm_by_weekdays": "İsteğe bağlı: Hafta içi havanın ne zaman sıcak olması gerektiği. Öğrenilen kalkma süresini kullanmak için boş bırak.",
+     "warm_by_weekends": "İsteğe bağlı: cumartesi ve pazar günleri için aynı.",
+     "heating_limit": "Birisi yukarıda seçilen ısıtma termostatlarından birini sesli olarak veya uygulama aracılığıyla açtığında veya açtığında, birkaç saat sonra onu geri koyun: programı olmayan bir termostat eski haline (kapalı olsa bile) geri döner. Isıtma programındaki bir termostat bunun yerine programın kendi zamanlarını takip eder (Değişiklik sonrasında geri dönüş: gündüz ve gece) ve o zamana kadar programın istediği şeye gider. Sadece bu termostatlar; 0 (varsayılan) asla yapmaz.",
+     "heating_night_temp": "Isıtma programının bir periyodun bitimine düştüğü ve gece seviyesinin korunduğu yer. Program asla bir termostatı kapatmaz. İstediğiniz zaman buradan değiştir (5–28°C).",
+     "heating_revert_day_hours": "Bir ısıtma periyodu çalışırken yapılan değişiklik, program yeniden devreye girene kadar tek başına bırakılır.",
+     "heating_revert_night_hours": "Isıtma dönemleri dışında yapılan bir değişikliğin (ısıtmanın kapatılması dahil) ne kadar süre yalnız bırakılacağı. Geceleri ısıtma gece sıcaklığına geri döner, asla kapanmaz.",
+     "personality": "Evin sesi nasıl — açıklamalarda, brifinglerde, karşılamalarda ve tüm sesli asistanlara.",
+     "personality_notes": "İsteğe bağlı, kendi sözlerinizle e.g. 'Kedilere düşkünüm. Ne kadar çay yapıldığı konusunda nazikçe dalga geçiyor.'",
+     "style_feedback": "Başparmakların yanında yazan herhangi bir düğme: Daha Kısa, Daha Sade, Daha Az Arsız, Daha Fazla Ayrıntı'yı seç veya nasıl olduğunu söyle. Aşağıdaki notlar daha sonra konuştuğu her yerde takip edilir. Kapalı: düğme yok ve notlar kullanılmıyor.",
+     "style_notes": "Her satıra bir tane; düğmeden eklendi ve düzenlemek sizinki. En son 8 tanesi kullanılıyor.",
+     "camera_security": "İnsanları kameradan kameraya takip edin ve bahçe kapısı ve kapılar açılmadığında veya geceleri kimse ayakta olmadığında bahçedeki birisine karşı uyarıda bulunun. Gece nöbeti devam ederse, sessiz saatlerde uyarılar yüksek sesle söylenir.",
+     "camera_security_sensors": "Her kameranın (veya bölgenin) kişi sensörü e.g. Frigate'nin 'Kapıdaki kişi doluluğu'.",
+     "camera_security_inside": "Kapının veya çitin arkasındaki yerleri (bahçe, kulübe) algılayan kişi sensörleri. Açılması mümkün olmayan birinin orada belirmesi bir uyarıdır.",
+     "camera_security_entries": "İnsanların geçmesi gereken kapı ve kapılar (e.g. arka kapı ve arka kapı).",
+     "camera_security_describe": "Her uyarı için bir yapay zeka kameraya bakıyor ('koyu kapüşonlu bir adam barakanın kapısını deniyor').",
+     "security_reasoning": "Bir kamera güvenlik uyarısı yüksek sesle söylenmeden önce, alarma, herkesin dışarıda olup olmadığına, giriş kapısına veya hemen önce açılan kapıya, iç mekan hareketine, Frigate olaylarına ve kameranın ne sıklıkla uyarı verdiğine bakın. Muhtemelen birisi dışarı çıkıyor ya da yarım saat içinde aynı kamera tekrar sessiz kalıyor. Uyarı, nedenleriyle birlikte zaman çizelgesinde ve telefonlarda hala devam ediyor. Alarm kuruldu ya da herkes dışarıda: her zaman söylenirdi. AI yok. Varsayılan olarak kapalı.",
+     "party_lights": "Evin tamamı kullanılmadığında devreye giren ışıklar. Soran kişinin odasını kullanmak için boş bırak (ya da bir oda deyin: oturma odasında 'disko modu').",
+     "party_style": "Disko: hızlı renk değişiklikleri. Parti: parlak renkler, kısa solukluk. Gökkuşağı: bir renk tekerleği. Sakin ol: yavaş, loş renkler. Cadılar Bayramı: titreşen turuncu, mor ve yeşil. Noel: kırmızı, yeşil ve sıcak beyaz, parıldayan.",
+     "party_minutes": "Sonra her ışık tam olarak olduğu gibi geri döner. 0 kapanana kadar devam eder.",
+     "party_whole_house": "Karartabilen veya rengini değiştirebilen her ışık katılır (ışık grupları, ekranlar ve arka ışıklar katılmaz). Bunu yalnızca bir kez yapmak için 'her yerde disko modu' deyin.",
+     "party_exclude": "Her gösterinin, hatta \"her yerde\" - tablet ekranları, projektör, birinin uyuduğu bir yatak odası - dışında bırakıldı.",
+     "party_sound": "İsteğe bağlı: ESPHome'nin sound_level sensörü aracılığıyla ses hoparlörünün mikrofonu gibi dB cinsinden bir ses yüksekliği sensörü. Ardından disko, parti, gökkuşağı ve Cadılar Bayramı müziği takip edin — yüksek ses daha parlaktır ve her vuruşun rengi değişir.",
+     "party_show": "Hangi gösteriler genel bakışta bir düğme alır. Hiçbiri için boş bırak; her gösteri hala sesle çalışıyor.",
+     "party_sound_switch": "İsteğe bağlı: Ses yüksekliği sensörü raporunu oluşturan bir anahtar (böylece tüm gün okuma göndermez). Bir gösteri sesi takip ederken açılır ve daha sonra kapanır. Aynı cihazdaysa ve adında \"ses yüksekliği\" varsa otomatik olarak bulunur.",
+     "room_volume": "Odayı duyabilen hoparlörler (aynı cihazdaki bir ses yüksekliği sensörü), önce bir saniyelik dinleme süresine sahiptir ve TV veya sohbet üzerinden daha yüksek sesle konuşmaktadır. Sessiz saatlerde değil.",
+     "follow_you": "Kimsenin ortalıkta olmadığı veya sessiz saatler boyunca geride tutulduğu bir yerde söylenen bir şey, bir dahaki sefere birisi hoparlörlü bir odaya girdiğinde aktarılır.",
+     "follow_minutes": "Bu kadar uzun süre sonra duyulmamış bir mesaj atılır.",
+     "conversation_memory": "Her konuşmacıda sorulan ve söylenenlerin kısa bir kaydını tutar, böylece başka bir oda birinin kaldığı yerden devam edebilir. İki hafta tutuldu; misafirler içerideyken özel.",
+     "follow_ups": "Sesler takipleri ayarlayabilir (\"Odanın ısındığını bir saat içinde kontrol edeceğim\") ve hiçbir şey görünmeden biten bir saat yüksek sesle kapatılır.",
+     "curiosity": "Günde en fazla bir kez, birisi etraftayken açıklayamadığı bir şeyi sorar — düzenli bir arayan, bir gecede fark ettiği bir model — ve cevabı hatırlar.",
+     "reflection": "Günün kaydı ve konuşmaları hakkında her gece bir yapay zeka araması: hatırlamaya değer yeni şeyler, sabah için bir veya iki düşünce ve sorulacak bir soru.",
+     "reflection_time": "Küçük saatlerde en iyisi.",
+     "drive_spot": "Sürücüyü gösteren kamera noktası (bunu Noktalar sekmesinde çizin).",
+     "drive_camera": "Yalnızca birden fazla kameranın aynı ada sahip bir noktası varsa gereklidir.",
+     "drive_triggers": "Sürücüyü gören hareket veya araba sensörleri. Boş: kameranın kendi hareket ve araç sensörleri.",
+     "camera_wake": "Bir kamerayı bekleme modundan uyandıran eylemler (uyandırma veya yenileme düğmesi, akış anahtarı, komut dosyası). {{ camera }} bakılmak üzere olan kameradır. Boş: kameralara oldukları gibi bakılır.",
+     "camera_wake_cameras": "Boş: Yapay zekanın baktığı her kamera.",
+     "camera_wake_seconds": "Yeni bir fotoğraf için uyandıktan sonra birkaç saniye beklenebilir.",
+     "known_cars": "Her satıra bir tane, e.g. 'Sam: koyu gri hatchback'. Sürücüye aynı bakış, kimin arabasının geldiğini söylüyor (\"Sam'in arabası sürücüye ulaştı\") — fazladan yapay zeka yok. Boş: arabalar adlandırılmamış.",
+     "full_volume_speakers": "Bunlarla ilgili duyurular %100 olarak yapılıyor, ardından ses geri geliyor — diğer her şey için tabletler kapatılıyor. Sessiz saatlerde değil (sessiz saatlerin sesi o zaman kullanılır).",
+     "tts_entity": "Hoparlörler, Yardımcı hoparlörler veya medya oynatıcıları olabilir. Echos ile Alexa Media Player aracılığıyla konuşulur; başka herhangi bir medya oynatıcı (akıllı hoparlör, Cast cihazı) bu metinden konuşmaya sesini kullanır.",
+     "house_language_text": "Açık: Sentient'nin okumanız için yazdıkları — zaman çizelgesi, Ev sağlığı, Zihin sekmesi, günlük özet, günlük hikayeler, klip açıklamaları ve telefon bildirimleri — Home Assistant'nin dilini takip ediyor. Sabit cümleler Lehçe, Almanca, Felemenkçe, İtalyanca, Portekizce, İspanyolca, Fransızca ve Macarcaya çevrilmiştir; Yapay zekanın yazdıkları her dili takip ediyor. Konuşulan kelimeler takip edilir Bunun yerine evin dilindeki yerleşik cümleleri söyle. Ekstra AI çağrısı yok; hiçbir şey saklanmaz. Kapalı: tamamı İngilizce olarak kalır.",
+     "speak_house_language": "Zaman sınırı, geçici cümle önbelleği ve orijinal metin geri dönüşüyle ​​mevcut yapay zeka görevini kullanarak sıradan İngilizce cümleleri çevirin. Acil uyarılar asla yapay zekayı beklemez. Hazırlanan ifadeler ve konuşma sonları için Otomatik dil desteğini kullan; aşağıdaki dili seç. Sabit kesin evet/hayır belirteçleri ortak dilleri kapsar. Kişisel cümle çevirileri yeniden başlatmalarda hiçbir zaman kaydedilmez.",
+     "speakers": "Yardımcı hoparlörler veya medya oynatıcılar (Echos'den Alexa Medya Oynatıcıya kadar).",
+     "media_speakers": "Kapalı: Bir alarm veya duyurunun Echo adını verdiği durumlarda bile yalnızca ses hoparlörleri kullanılır (bunun yerine insanların olduğu yere gider). Ayrıca otomasyonlar ve kontrol panelleri için bir 'Echo hoparlörler' anahtarı.",
+     "media_important_only": "Açık: Echos yalnızca alarmları, hatırlatıcıları ve güvenlik uyarılarını söyler; duyurular, bildirimler ve sohbetler bunun yerine sesli hoparlörlere gider. Ayrıca bir 'Echos: yalnızca alarmlar ve hatırlatıcılar' anahtarı.",
+     "foresight": "Her akşam bir yapay zeka yarının takvimlerine, hava durumuna, alarmlarına ve hatırlatıcılarına bakar. Sadece bu gece yapılacak bir şey olduğunda bir şeyler söylüyor — erken başlamadan önce don, çamaşır yıkama gününde yağmur. Genellikle sessiz.",
+     "foresight_time": "Sessiz saatler başlamadan önce.",
+     "sleep_detection": "Yatma vakti rutininden sonra veya sessiz saatlerde, içeride bir süre hiçbir şey hareket etmediğinde uykuya dalın. Sabah iki odada hareket olduğunda (veya elle bir ışık açıldığında) uyanırsınız. Bir Ev sensörü bunu gösteriyor.",
+     "bedtime_routines": "Virgülle ayrılmış olarak herkesin yatmaya gittiği anlamına gelen rutinler. Boş: Adında 'gece' veya 'yatak' geçen herhangi bir rutin.",
+     "sleep_actions": "e.g. tablet ekranları kapalı, Echo hoparlörler kapanıyor.",
+     "wake_actions": "e.g. Echo hoparlörler tekrar açıldı, koridor ışığı kısık.",
+     "appliances": "Çamaşır makinesi, kurutucu, bulaşık makinesi, elektrikli süpürge — bunların güç sensörü veya durumu. Her robot süpürgesini ve çamaşır makinesi, kurutucu veya bulaşık makinesi adı verilen güç sensörlerini takip etmek için boş bırak.",
+     "appliance_announce": "İnsanların olduğu yerde ve normalden çok daha uzun zaman aldığında “çamaşır makinesinin işi bitti” diyor. Sade kelimeler, yapay zeka yok.",
+     "appliance_watts": "Güç sensörleri için: bunun üzerindeyken çalıştırma, beş dakika boyunca aşağıda kaldığında bitirilir.",
+     "voice_agent": "Normalde yanıt veren AI aracısı (e.g. Google AI). Empty sayfanın sohbet aracısını kullanır.",
+     "backup_agent": "Ana temsilci başarısız olduğunda yanıt verir — Home Assistant'nin kendi temsilcisi herhangi bir yapay zeka olmadan aydınlatma, ısıtma ve zamanlayıcıları gerçekleştirir.",
+     "offline_answers": "Yapay zeka ajanı başarısız olduğunda “ev kilitli mi?”, “bir sonraki alarmım ne zaman?” ve “kimse geldi mi?” Yedek ajan yargılanmadan önce, doğrudan evden, açık bir ifadeyle yanıtlanıyor. Yalnızca sorular, yalnızca kişinin görebildiği şeyler; misafir modunda yalnızca güvenlik sorusu. Kapalı: her şey yedekleme aracısına gider.",
+     "animal_sensors": "Baraka, köpek kulübesi, kümes veya tank sıcaklık sensörleri.",
+     "away_lights_on": "Hava karardıktan sonra herkes dışarı çıktığında, ışıklar geçen hafta aynı saatte nasıl kullanıldığını kopyalıyor (Home Assistant'nin geçmişinden), her iki durumda da birkaç dakika. Evde herhangi biri varsa veya son zamanlarda içeride hareket varsa, telefonu takip edilmeyen kişiler için başlamaz (veya durmaz) ve açtığı şeyi geri getirir. Ayrıca bir 'Dışarıda ışıklar' düğmesi.",
+     "away_people": "Boş: Kişi girişi olan herkes. Kişiler yerine telefonları (cihaz izleyicileri) seçebilirsin.",
+     "away_lights": "Boş: Bir odadaki tüm ışıklar, ekranlar, LED halkalar, arka ışıklar ve gruplar hariç. Yalnızca geçen hafta o dönemde kullanılan ışıklar yanıyor.",
+     "holiday_mode": "Tatil modu' anahtarı ve sesli olarak 'Pazar gününe kadar tatile çıkıyoruz'. Açıkken, güvenlik uyarıları dışında yüksek sesle hiçbir şey söylenmez; söylenecek olanlar, ziyaretçiler ve paketlerle birlikte bildirimler için seçilen telefonlara gider; dış ışıklar normalde kapalı olsalar bile çalışır; ve aşağıdaki termostatlar kapatılır. Kapalı: anahtar yok ve sesli tatil yok.",
+     "holiday_thermostats": "Sen yokken donma koruması devre dışı bırakılır ve tatil modu sona erdiğinde olduğu gibi geri alınır. Boş: ısıtmaya dokunulmuyor.",
+     "holiday_frost": "Sen uzaktayken yukarıdaki termostatlar neye ayarlı.",
+     "holiday_end_on_return": "Herkes dışarı çıktığında, evdeki ilk kişi tatil modunu sonlandırıyor ve ısıtmayı tekrar çalıştırıyor. Kapalı: Tarihinde veya kapatıldığında sona erer.",
+     "away_after": "Yani mağazaya uğramak her şeyi başlatmıyor.",
+     "animal_low": "Bunun altına düştüğünde bir kez söyler (sakin saatlerde sabaha kadar tutulur) ve dondan önceki akşam uyarır.",
+     "animal_high": "Bunun üzerine çıktığında bir kez diyor.",
+     "hutch_check": "Gün batımından yarım saat sonra bir yapay zeka kulübeye bakıyor: İçerideler mi ve kapalı mı? Değilse sadece bir şey söyler.",
+     "hutch_spot": "Noktalar sekmesinde kabinin etrafına çizilen nokta, e.g. 'tavşan kalemi'.",
+     "cat_watch": "Hava karardıktan sonra, kulübenin kamerasındaki bir kedi sensörü açıldığında, bir AI bakışı: Kedi kulübenin yanında mı, yoksa kulübenin yanında mı? En fazla 15 dakikada bir ve görüntü değişmediğinde değil.",
+     "cat_sensors": "Boş: kulübenin kamerasındaki kedi sensörleri (e.g. Frigate'nin kedi doluluğu).",
+     "cat_loud": "Kapalı: sabah tutuldu ('Sabah 2:14'te kulübenin yanında bir kedi vardı'). Açık: gece nöbeti hoparlörleri aracılığıyla aynı anda söylendi.",
+     "rain_warnings": "Bir saat içinde yağmur yağacaksa ve bir pencere veya kapı açıksa: 'Bir saat sonra yağmur yağacak ve yatak odasının penceresi açık.' Saatlik tahmini okur — AI yok. Her yağmurda bir kez.",
+     "rain_entities": "Boş: tüm pencere ve kapı sensörleri.",
+     "self_test": "Gece boyunca sese birkaç gündelik soru soruluyor (dışarıdaki sıcaklık, açık olan herhangi bir şey, hatırlatıcılar, alarm, saat) ve yanıtları evle karşılaştırılarak kontrol ediliyor. Yanlış olan her şey ev sağlığında kullandığı aletle kendini gösterir. Yaklaşık 5 AI bir koşuyu çağırıyor. Yalnızca sorular — hiçbir şey değiştirilmez.",
+     "self_test_household": "Kendi cihazlarınızdan oluşturulan yaklaşık 7 soruyu ekler: bir kapı veya pencerenin en son ne zaman kapandığı, bir ışığın açık olup olmadığı, kameranın son iki saat içinde kimseyi görüp görmediği, bugün kapıya birisinin gelip gelmediği, bilemeyeceği bir şey (icat edilmiş bir cevap başarısız olur), hiçbir cihazın yapamayacağı bir şey ve hangisi sorulmadan cevaplanamayacak kadar belirsiz bir soru. Bir soru sırasında herhangi bir şeyi değiştirmek başarısızlıktır. Skor ve trendi Mind sayfasındadır. Yaklaşık 7 yapay zeka daha bir koşu çağrısı yapıyor.",
+     "screen": "Sentient ekran kartında uyarılar, bildirimler ve bir sabah kartı (özel:sentient-ekran kartı). Kapalı: yalnızca bir bakışta evi gösterir.",
+     "screen_actions": "e.g. tableti uyandırın ve ekran kartının bulunduğu sayfaya geçirin.",
+     "screen_clear_actions": "e.g. tableti normal sayfasına geri döndürün.",
+     "conversation_sessions": "Sentient'yi yedekleme aracısıyla kullan. Tek komutlar, sözlü yanıt bir soruyla bitmediği sürece dinlemeyi durdurur. Bilgi, güvenlik, sağlık ve sistem tartışmaları başka bir şey olup olmadığını sorar ve sen “hepsi bu kadar”, “yeter” veya “dinlemeyi bırak” diyene veya hareketsizlik zaman aşımı süresi dolana kadar açık kalın. Tamamlanmamış bir konuyu, eylem izinlerini geri yüklemeden 24 saat içinde bu cihazdan devam ettirmek için “geri dön…” deyin. Zihin paneli en son konuşma kararlarını gösterir. Takip dinlemesi için uyumlu bir Destek cihazı gerekir.",
+     "room_conversation_handoff": "Devam edin deyin ve başka bir cihazdan bir konuyu adlandır. Her iki istek de aynı tanımlanmış Home Assistant kullanıcısından gelmelidir. Yeni okumalar kontrol edilir ve önceki eylemler ve onaylar aktarılmaz.",
+     "verified_bedtime": "Seçilen ışıkları kapatmak ve seçilen kişileri kontrol etmek için yatmadan önce aşağıya koşun deyin. Tekrar kontrol etmek için alt kattaki uyku vakti durumunu sor veya izlemeyi durdurmak için alt kattaki uyku vaktini iptal et deyin.",
+     "verified_bedtime_lights": "Yirmi adede kadar ayrı Destekli ışık arasından seçim yapın. Gruplar hariç tutulur ve Asla dokunma listesi hâlâ geçerlidir.",
+     "verified_bedtime_contacts": "Kontrol etmek için yirmi adede kadar Destekli kapı, pencere veya diğer açılış kontağını seç. Salt okunurlar.",
+     "session_seconds": "Bu kadar saniyeden sonra başka bir dönüş yapmadan oturum bağlamını ve bekleyen eylemleri atın. Ses cihazın kendi sessizlik zaman aşımını kontrol eder. Onay ayrıca 60 saniye sonra sona erer.",
+     "guarded_control": "Özel olarak desteklenen bir yapay zeka aracısıyla kaydolun: yalnızca Home Assistant Kontrolü kapsamında korunan Sentient'yi seç, ardından işlem hattında yedeklemeyle Sentient'yi kullan. Komutları yerel olarak işlemeyi tercih et seçeneğini kapat ve bu aracıdan önce çalışan çakışan cümle tetikleyicilerini kaldır. Yanlış aracı API yapılandırması istekleri durdurur. Sınırsız geri dönüş, komut dosyası, sahne veya alarm eylemi yok. Kapılar, cihaz çalıştırmaları ve önemli ısıtma değişiklikleri ayrı bir evet gerektirir.",
+     "routine_verify": "Açık: Bir ses rutini (iyi geceler, yola çıkma…) çalıştıktan sonra, değiştirilen her ışık, anahtar, kilit ve kapak birkaç saniye sonra kontrol edilir ve yanıtta ne olmadığı belirtilir (\"Hala açık olan iniş ışığı dışında tamamlandı\"). Kontrol edemediği adımlar (komut dosyaları, sahneler) kontrol edilmemiş olarak raporlanır, hiçbir zaman yapılmamış olarak raporlanır. Hiçbir şey tek başına yeniden denenmez veya geri alınmaz. Kapalı: rutinler daha önce olduğu gibi çalışır, işaretlenmez.",
+     "voice_unlock": "Zorunlu sesli onayın ayrı bir evet sonrasında kapının kilidini açmasına izin ver. Kapalı (varsayılan) kilitlemeyi ve kapatmayı sürdürür ancak Sentient kimin konuştuğunu anlayamadığından kilidi açmayı veya sesle açmayı reddeder.",
+     "voice_undo": "Korumalı kontrolle, en son doğrulanan ışık ayarlarının geri yüklenmesini istemek için “bunu geri al” deyin. O zamandan bu yana değişen ışıkları atlar, oturumla birlikte sona erer ve kilitleri, ısıtmayı veya cihazları asla geri almaz.",
+     "evidence_awareness": "Sese gözlemleri, çıkarımları, denenen eylemleri ve doğrulanmış cihaz raporlarını ayırt etmesini söyle. Kullanılamayan güvenlik sensörleri her zaman tamamen güvenli bir hak talebini engeller.",
+     "security_incidents": "Uyarılar ve klip özetleriyle yapılandırılmış kamera-güvenlik kişi sensörlerini ve giriş kişilerini gruplandırın. Yerel olarak yedi gün tutun. Zaman yakınlığı olası bir bağlantıdır, aynı kişinin kanıtı değildir; yalnızca artan uyarılar tekrarlanır.",
+     "incident_front": "Evin ön tarafındaki kameralar ve sensörler (kapı zili, ön kapı). Burada herhangi bir şey asla tek bir güvenlik olayı halinde gruplandırılmaz ve tam tersi: aynı anda ön kapıda olan biri ve arka kapıda olan biri iki olaydır. Yalnızca zamana göre gruplandırmak için boş bırak.",
+     "live_voice_check": "Kullanıcı tarafından başlatılan sesli kontrolü Mind panelinde gösterin. Bunu kapatmak mevcut kontrolü temizler ve kontrol dönüşlerinin kaydedilmesini durdurur. Kontrolü başlatmak için Konuşma oturumları gerekir.",
+     "speech_delivery_history": "Konuşmacı başına en son duyuru sonuçlarını Akıl panelinde tutun. Bunu kapatmak bu geçmişi temizler. Hoparlör arıza tespiti ve güvenli yeniden deneme işlemi etkin kalır.",
+     "alexa_tts_only": "Duyurular güvenilmezse Alexa duyuruları yerine düz TTS kullan. Bu, Alexa duyuru çanlarını atlar; diğer hoparlörler değişmedi.",
+     "update_checker": "Etkinleştirildiğinde, başlangıçta ve her altı saatte bir GitHub'un kararlı sürümlerini kontrol et. AI çağrısı, otomatik kurulum veya otomatik yeniden başlatma yok. Kontrolleri durdurmak için devre dışı bırak.",
+     "contextual_followups": "Konuşma oturumları ve yedekleme aracılı Sentient gerektirir. Kısa takipler için konuyu sakla, açıkta kalan cihaz okumalarını yenileyin ve belirsiz ayarlamaları netleştirin. Eylem izinleri vermez veya dinleme kurallarını değiştirmez. Varsayılan olarak kapalı; bunu kapatmak geçici konuşma içeriğini temizler.",
+     "conversation_recovery": "Konuşma oturumları ve yedekleme aracılı Sentient gerektirir. Aynı görüşmeden/cihazdan/kullanıcıdan gelen bekleyen veya çalışan bir isteği iptal et ve bir yapay zeka hatasından sonra belirsiz cihaz komutlarının tekrar oynatılmasını önleyin. Zaten gönderilmiş bir eylem geri alınamaz veya meşgulken donanımın konuşmayı kabul etmesi sağlanamaz. Varsayılan olarak kapalı; devre dışı bırakmak bu ekstra işlemi durdurur.",
+     "automatic_language": "Ana dilde Say'ın yerleşik cümlelerini gerektirir. Mevcut yapay zekanız ve bütçenizle ortak ifadeler, konuşma sonları ve güvenlik etiketleri hazırlayın. Varsayılan olarak kapalıdır. Ortak dildeki ifadeleri hatırla seçeneği etkinleştirilmediği sürece ifadeler bellekte kalır. Devre dışı bırakmak bunları temizler. Acil uyarılar asla yapay zekayı beklemez; oluşturulan yanıtlar hiçbir zaman kritik eylemlere izin vermez.",
+     "voice_language": "Home Assistant'nin dili için auto'yu veya es, de veya pt-BR gibi bir dil kodunu kullan. Konuşma dili seçeneğini gerektirir. Assist konuşma tanıma ve TTS sesinizin de bu dili desteklemesi gerekir; bu onları yeniden yapılandırmaz.",
+     "remember_language_phrases": "Her iki konuşma dili seçeneğini de gerektirir. Yeniden başlatmalarda ve ilgisiz Ayarlar değişikliklerinde yalnızca genel ifade paketini kaydet, kişisel duyuruları asla kaydet. Varsayılan olarak kapalıdır. Dili/sağlayıcıyı devre dışı bırakmak, değiştirmek veya verileri unutmak verileri temizler.",
+     "stream_voice_replies": "Yapay zeka hâlâ yazarken, konuşma oturumları açıkken bile uzun bir yanıt vermeye başlar, böylece yanıtlar daha erken başlar. Sentient daha sonra yanıtı değiştirirse (örneğin bir onay sorusu), değişiklik daha önce söylenenden sonra konuşulur. Varsayılan olarak kapalı; bunu kapatmak, tüm cevabı beklemeye geri döner. Hiçbir şey saklanmıyor.",
+     "voice_timing_diagnostics": "Son 20 sesli yanıt zamanlamasını, transkriptler veya cihaz/kullanıcı kimlikleri olmadan hafızada tutun. Temsilciyi, aracı, çeviriyi ve duyuru zamanlarını Mind'da gösterin. Aşamalar örtüşebilir; mikrofon yakalama ve son ardışık düzen oynatma ölçülmez. Varsayılan olarak kapalı; Ayarlar değişir ve unutulursa geçmişi temizler. Aynı zamanda konuşmaların nasıl ilerlediğini (takipler, düzeltmeler, yanıtların ne kadar çabuk geldiğini — sözcükleri asla), yeniden başlatmaların devam ettiğini de sayar; bunu kapatmak bu sayıları siler.",
+     "reliability_log": "Her ses dönüşünü basit kurallarla (AI yok) kontrol et ve bir araç başarısız olduğunda, bir cihaz bunu yapmadığında, hiçbir şey yapılmadığında bir şeyin yapıldığını söylediğinde, hiçbir cihazın yapamayacağı bir şey sunduğunda, cevap veremediğinde veya hiçbir şeye bakmadan geçmişle ilgili cevap verdiğinde Zihin sayfasına not edin. 14 gün boyunca kısa bir soru-cevap satırı tutar. Kapatmak onu durdurur ve saklananları temizler.",
+     "unified_evidence": "Varsayılan olarak kapalıdır. Ne olduğunu veya nedenini sorduğunuz zaman sese, kurum kayıtlarını, zaman çizelgesini ve kamera geçmişini birlikte inceleyen salt okunur bir araç daha verir. Hiçbir şeyi değiştiremez ve hiçbir şey olmadığını iddia etmek yerine kaynağın kontrol edilemediğini belirtir. Kapatılması yalnızca aracın kaldırılmasına neden olur; hiçbir şey saklanmıyor.",
+     "specific_clarification": "Konuşma oturumları gerektirir. Adlandırılmış cihaz seçenekleri sunun ve tam adları, İngilizce sıra sayılarını, her ikisini de/tümü ve basit sıcaklıkları yerel olarak tanıyın. Bir kez daha dene ve tekrarlamak yerine durun. Seçim asla bir eylemi onaylamaz. Varsayılan olarak kapalı; devre dışı bırakılması bekleyen seçimleri temizler. Zorunlu eylem kısıtlamaları için korumalı kontrolü kullan.",
+     "action_recovery": "Cihaz sonuçları ve yeniden denemeler için Konuşma oturumları ve korumalı kontrol gerektirir. Adlandırılmış kısmi sonuçları verin ve işe yaramadığını söylediğinizde son korunan isteği inceleyin. Yalnızca hiçbir zaman gönderilmeyen eylemler yeni bir onayla yeniden sunulabilir. Belirsiz veya başarılı eylemler tekrarlanmaz. Varsayılan olarak kapalı; kayıtlar iki dakika sonra sona erer ve Ayarlar değiştiğinde veya unutulduğunda silinir.",
+     "recheck_unconfirmed": "Korumalı ses kontrolüyle kontrol edilen bir cihaz, yanıt anında yeni durumunu bildirmediğinde (bir garaj kapısı, yavaş bir bulut tıkacı), 20 saniye sonra bir kez daha bakın ve kaydı güncelleyin, yani “bu işe yaradı mı?” cihazın şu anda söylediklerine göre yanıt verilir. Tekrar hiçbir şey gönderilmedi. Kapalı: kayıt yanıttaki haliyle kalır.",
+     "speech_failure_notification": "Hoparlör iletimi başarısız olduğunda veya belirsiz olduğunda bir Home Assistant bildirimi gösterin. Varsayılan olarak kapalıdır. Konuşma içeriğini veya tekrarlanan konuşmayı içermez. Konuk modunda devre dışı bırakıldı; mevcut bildirimler kapatılana kadar kalır.",
+     "recent_followup_context": "Aynı konuşmacı ve kullanıcı üzerinde yeni bir uyandırma sözcüğünden sonra yakın zamanda tamamlanan bir konuyu kullan. Konuşma oturumları ve bağlamsal takipler gerektirir. Oturum zaman aşımını kullanır; onayı veya dinlemeyi asla geri yüklemez. Varsayılan olarak kapalıdır. Bitirmek veya unutmak bağlamı temizler.",
+     "conversation_cues": "Bir konuşma içinde: günlük imzalar (“şerefe”, “mükemmel, teşekkürler”, “bu işe yarar”) yanıt bekleyen belirli bir şey olmadığında sohbeti sona erdirir; “pardon, demek istedim…”, “yanlış ışık” ve “lamba değil, tavan lambası” düzeltmelerdir; ve “başka bir deyişle…” veya “başka bir şey:” hiçbir cihaz taşınmadan yeni bir konu başlatır. AI yok. Kapalı: yalnızca düz sonlar ve düzeltmeler tanınır.",
+     "vary_replies": "Sese geçen güne ait son birkaç yanıtı gösterilir ve cümlelerini veya açılışlarını tekrar kullanmaması söylenir, böylece aynı yanıt kelimesi kelimesine iki kez verilmez. Özel odalarda veya misafir modunda değil. Tekrarlanan yanıtlar her iki şekilde de sayılır (ses zamanlamalarıyla birlikte Akıl sekmesi). Varsayılan olarak kapalı.",
+     "behaviour_explanations": "Yapay zeka çağrısı olmadan, dinleme ve kaydedilen cihaz sonuçlarıyla ilgili kısa soruları doğrudan yanıtla. Konuşma oturumları gerektirir. Mevcut oturum kayıtlarını kullanır, misafir moduna ve cihaz erişimine saygı gösterir ve hiçbir eylemi tekrarlamaz. Varsayılan olarak kapalı; ek geçmiş saklanmaz.",
+     "current_house_context": "Konuşmalara, açığa çıkan cihaz raporlarının, son değişikliklerin ve mevcut tamamlanmamış görevin kompakt ve ilgili anlık görüntüsünü verin. Varsayılan olarak kapalıdır. Arka planda yapay zeka çağrısı yok. Misafir modu bunu bastırır. Son değişikliklerin geçerliliği 30 dakika sonra sona erer; devre dışı bırakmak veya unutmak yalnızca bellek içeriğini temizler.",
+     "moment_awareness": "Her sesli yanıt, Sentient'nin halihazırda sakladığı bilgilerden kısa bir 'şu anda' resmi alır: kim evde ve ne zamandan beri, odalarda hareket var, son 45 dakikada ne oldu ve bugün için olağandışı herhangi bir şey. AI yok ve saklanan hiçbir şey yok. Özel oda veya misafir modunda yalnızca hareket verilir. Kapalı: hiçbiri eklenmez.",
+     "room_memory": "Bir odadaki her sesli yanıt, son bir saat içinde orada olup bitenleri alır: o odadaki daha önceki konuşmalar, orada sesle değiştirilenler ve orada duyurulanlar. Birisi birkaç dakika önce başka bir odada konuşuyorsa ve o zamandan beri burada hiçbir şey söylenmemişse, o konuşma da gelir, böylece kaldıkları yerden devam edebilirler. Yeni hiçbir şey saklanmaz. Özel odalar ve misafir modu sadece kendi odalarının kaydını alır. Kapalı: hiçbiri eklenmez.",
+     "know_people": "Ses tanıma, konuşmacının adını vermediğinde Sentient, güvenebileceği şeylerden yola çıkarak muhtemelen kim olduğunu tespit ediyor: Home Assistant uygulamasına yazılan bir mesaj o kişinin hesabından geliyor veya onunki, odadaki oda takip edilen tek telefon. Sese muhtemelen kim olduğu söylenir ve o kişinin kendisi hakkında söylediklerini ilk sıraya koyar. Tahmin asla onaylanması gereken hiçbir şeye izin vermez ve bu nedenle hiçbir şey onların adı altında kaydedilmez. Misafir modunda veya özel odalarda değil. Kapalı: tahmin yok.",
+     "instant_answers": "Gündelik sorular yapay zekadan önce doğrudan evden yanıtlanıyor: saat, dışarıdaki hava durumu, adı verilen bir cihazın açık mı, kapalı mı, açık mı yoksa kilitli mi olduğu, odanın sıcaklığı, bir sonraki alarm veya hatırlatma, ziyaretçiler ve evin kilitli olup olmadığı. Sadece sorular, net bir şekilde eşleşen ve sesli asistanlara maruz kalan tek bir cihaz; geri kalan her şey her zamanki gibi yapay zekaya gidiyor. Değişim sohbete eklenir, böylece takip eden kişi hala ne sorulduğunu bilir. Misafirler ve özel odalar yalnızca saati, hava durumunu ve cihaz durumlarını alır. Kapalı: her soru yapay zekaya gider.",
+     "capability_awareness": "Sese, bu evde ne tür şeyleri sesle kontrol edebileceği (sesli asistanlara maruz kalanlardan, her birinden kaç tane olduğu) ve akıllı kilitler veya motorlu panjur gibi evin ortak hangilerinin bulunmadığı anlatılıyor, dolayısıyla hiçbir cihazın yapamayacağı bir şey sunmuyor. Her halükarda gözden kaçan bir teklif (bir pencerenin kapatılması, bir kapının kilitlenmesi) daha konuşulmadan yanıttan çıkarılır. Her beş dakikada bir çalıştı, yapay zeka yok. Kapalı: hiçbir şey eklenmez veya kaldırılmaz.",
+     "house_context_entities": "Otomatik iklim ve açılış/varlık raporlarının yanı sıra genel ev özetlerine dahil edilecek cihazlar. Yalnızca şu anda kullanıma açık ve erişilebilir cihazlar paylaşılır; istek başına en fazla sekiz ilgili okuma.",
+     "house_context_updates": "Mevcut ev bağlamını gerektirir. Doğrulanmış bir korumalı ısıtma talebinden sonra, isteğe bağlı olarak termostatın istenen sıcaklığı ne zaman bildirdiğini bir kez söyle. Bir saat sonra sona erer, hedefi değişirse iptal edilir; en fazla 15 dakikada bir güncelleme yapılır. Normal konuşma kurallarına ve misafir moduna saygı gösterir. Varsayılan olarak kapalıdır. Kapatmak, bekleyen güncellemeleri temizler.",
+     "security_event_evidence": "Yapılandırılmış kameralarda Frigate olay kimliklerini, anlık görüntüleri ve klipleri kullan. Benzersiz bir kamera/zaman eşleşmesi, bir sensörün olayı tanımladığının kanıtı değil, aday bir bağlantıdır. Yedi gün boyunca 3.000'e kadar olay kaydını yerel olarak sakla. Varsayılan olarak kapalıdır. Devre dışı bırakıldığında bağlantılar gizlenir ve eşleşme durdurulur; Saklanan kayıtların süresi dolar veya unutulabilir.",
+     "security_event_zones": "Yalnızca bölgeye girenler: Frigate bölgelerine sahip bir kamerada, bir olay yalnızca nesne bunlardan birine girdiğinde listelenir (ve bir güvenlik olayı başlatabilir), Frigate'nin uyarıları için kullandığı kuralın aynısıdır. Bölgeleri olmayan bir kamera her şeyi listeler. Algılanan her şey: Frigate her nesneyi seçilen kameralarda izler. Frigate'nin kendi ayarları hiçbir zaman değiştirilmez.",
+     "security_event_hidden_zones": "Kamera/bölge olarak her satıra bir tane, örneğin kapı/araba yolu. Yalnızca bu bölgelerde gerçekleşen olaylar listelenmez ve güvenlik olaylarını başlatmaz. Güvenlik sayfasında birkaç 'kişi değil' düzeltmesinden sonra BU BÖLGEYİ GİZLE seçeneğini kullan veya o bölgeyi tekrar listelemek için bir satırı kaldır. Frigate değişmedi.",
+     "security_coverage": "Hangi yapılandırılmış kameraların saklanan kanıtlara katkıda bulunduğunu ve canlı olayların yanı sıra kaydedilen mevcut olmayan raporları gösterin. Mevcut kamera raporları ayrı olarak gösterilir. Bunu kapatmak, tutulan kapsam boşluklarını temizler.",
+     "frigate_pipeline_health": "Frigate MQTT kullanılabilirliğini, kamera başına işlem hızlarını ve Sentient'nin en son ne zaman bir etkinlik aldığını oku. Eksik veriler bilinmiyor olarak gösterilir. Hiçbir kamera ayarı değiştirilmedi.",
+     "security_conversation_context": "Seçilen etkinliği aynı görüşme, cihaz ve kullanıcı içinde beş dakikaya kadar hatırlayın. Takip soruları bu etkinliği ve yeni doluluk raporlarını kullanır; hiçbir kimlik veya sürekli mevcudiyet varsayılmaz. Yapılandırılmış kamera olaylarını izler. Varsayılan olarak kapalıdır. Devre dışı bırakmak konuşma referanslarını temizler; olay kayıtları normal geçerlilik sürelerini korur.",
+     "security_event_feedback": "Yöneticiler bir ziyareti bir kişi veya göz ardı edilecek bir ziyaret olarak değil, iyi bir fırsat olarak işaretleyebilir. Gözden geçirilen ziyaretler, katlanmış bir Gözden Geçirilenler listesine taşınır ve \"kişi değil\" ifadesi de yalnızca söz konusu ziyaretle ilgili olarak yapılan bir güvenlik olayı için incelenen yanlış tespit olarak sayılır. Düzeltmeler yedi gün süreyle kalır. Otomatik dedektör, alarm veya bildirim kuralı değişikliği yoktur. Devre dışı bırakıldığında geri bildirim gizlenir ve yeni düzeltmeler durdurulur; Saklanan kayıtları silmek için Son verileri unut'u kullan.",
+     "share_clip_analysis": "Otomatik klip izleme ve etkinlik klibi sorularıyla aynı tamamlanmış Frigate etkinliğinin uyumlu genel analizlerini paylaşın. Sağlayıcı, çekim kapsamı ve kimlik ayarları eşleşmelidir. Özel sorular ayrı ayrı analiz edilir. En fazla 100 sonucu altı saat boyunca hafızada tutun. Varsayılan olarak kapalıdır. Ayarların devre dışı bırakılması, değiştirilmesi veya unutulması önbelleği temizler.",
+     "sleep_ignore_sensors": "Yatak odasında olduğu gibi insanlar uyurken ateşlenen hareket sensörleri. Uyumak için yukarıdaki süre boyunca hiçbir şeyin hareket etmemesi beklenir; Birisi döndüğünde tetiklenen bir yatak odası sensörü, evi bütün gece \"uyanık\" tutacaktır, bu yüzden burada listeleyin. Hala diğer her şey için sayılıyorlar.",
+     "heating_graph": "Açık: Ev sekmesindeki ısıtma kartı, programlanan zamanlar gölgeli olarak her termostatın son 24 saatlik sıcaklığını, ayarlandığı değere göre gösterir. Home Assistant'in geçmişinden oku; fazladan hiçbir şey saklanmaz. Kapalı: grafik gizlenir.",
+     "heating_revert": "Açık: Bir termostat elle açılır, kapatılır veya kapatılırsa (veya kendini değiştirirse) ve programa geri dönmezse, Sentient bunu bir süreliğine bırakır ve sonra geri koyar: dönemin gündüz sıcaklığı, gecenin gece sıcaklığı. Yalnızca ısıtma programındaki termostatlar. Elle veya sesle yapılan bir değişiklik, bu arada bir süre başlasa veya bitse bile tüm süresi boyunca devam eder; daha sonra program devralır. Kapalı: elle yapılan değişiklikler bir sonraki programlanan zamana kadar kalır. Her iki durumda da hiçbir şey saklanmaz.",
+     "window_heating": "Açık: Bir pencere veya kapı birkaç dakika açık kaldığında ve o odanın kendi ısıtıcısı varsa, Sentient bu ısıtıcıyı gece sıcaklığına düşürür ve pencere kapatıldığında geri koyar, ancak bu arada kimse değiştirmemişse. Tüm evi kapsayan bir termostat hiçbir zaman tek bir pencere için kapatılmaz: Sentient yalnızca pencerenin açık olduğunu ve ısıtmanın açık olduğunu söyler. 3 saat sonra vazgeçiliyor. Kapalı: hiçbir şey değiştirilmez veya söylenmez; geri çevirdiği her şey geri alınır (eğer kimse değiştirmediyse) ve küçük kayıtları silinir.",
+     "window_heating_minutes": "Sentient harekete geçmeden önce bir pencerenin ne kadar süre açık kalması gerekir. Varsayılan 5 dakika.",
+     "rooms_view": "Açık: Ev sekmesi her oda için bir kutucuk gösterir — sıcaklık, nem, ışıklar açık, kapılar ve pencereler açık, en son birinin oraya ne zaman taşındığı ve ne oynandığı — ve genel bakış, evin etrafını gösteren kısa bir kart alır. Bölgelerinizden inşa edilmiştir; hiçbir şey saklanmaz. Kapalı: ikisi de gizli.",
+     "outdoor_areas": "Tavşan kafesi, kulübe veya sera gibi evin dışındaki alanlar. Ev sekmesinde hala DIŞARI olarak işaretlenmiş kendi karoları var ve sıcaklıkları genel bakışta kendi satırında gösteriliyor, ancak en sıcak ve en soğuk odanın dışında bırakılıyorlar ve oradaki hareket (insanların yanından geçtiğini gören bir kamera) evde birisinin olduğu anlamına gelmiyor. Her alanı evin bir parçası olarak saymak için boş bırak.",
+     "knowledge_card": "Açık: Zihin sekmesi ev hakkında öğrendiklerini özetliyor: normal yatma ve kalkma saatleri, bir kenara koyduğu sensörler, ısıtmanın ne kadar çabuk ısındığı, yan oda tahminleri, rutinler ve anılar. Yalnızca zaten bilinenleri gösterir; fazladan hiçbir şey saklanmaz. Kapalı: kart gizlidir.",
+     "day_chart": "Açık: Genel bakış bugün saat saat, hareket, ne söylediği, dışarıda ne olduğu ve ona ne sorduğunuz, birinin ilk kalktığı zamanı ve en yoğun saati gösterir. Zaman çizelgesinden sayıldı; fazladan hiçbir şey saklanmaz. Kapalı: grafik gizlenir.",
+     "house_ledger": "Açık: her cihazda yapılan her değişiklik, buna neyin sebep olduğuyla birlikte kaydedilir (bir kişi, bir sesli istek, bir otomasyon, Sentient veya Home Assistant'deki hiçbir şey, yani cihazın kendisi, uygulaması veya cihazdaki biri), böylece \"ısıtma ne zaman ve neden kapandı?\" diye sorabilirsiniz. Hızlı değişen sayılar dikkate değer değişiklikler olarak tutulur. Sentient'nin kendi veritabanında 90 gün tutuldu, ardından gün bazında özetlendi. Kapalı: yeni hiçbir şey kaydedilmez; saklanan şey, sen onu Zihin sekmesinde temizleyene kadar kalır.",
+     "unexplained_changes": "Açık: izlenen bir cihaz (varsayılan olarak ısıtma, su ısıtıcıları ve vanalar) alışılmadık bir zamanda arkasında Home Assistant'de hiçbir şey olmadan değiştiğinde, bu bir kez söylenir ve zaman çizelgesine konulur ve tekrarlar bağlanır: \"bu hafta üçüncü kez, her zaman sabah 11 civarında\". Hala bir cihazı öğrenirken veya tekrarlama olağan hale geldiğinde, yalnızca zaman çizelgesinde devam eder. Kapalı: hala kayıtlı, hiç bahsedilmedi.",
+     "unexplained_entities": "Isıtma, su ısıtıcıları ve vanalar için boş bırak. Kilitler, kapılar ve geçitler her gün elle kullanılmaktadır, bu nedenle bunları yalnızca onlar hakkında bilgi almak istiyorsan ekle.",
+     "expectations": "Açık: her cihazın saat başı, hafta içi ve hafta sonları (geçmişin son üç haftasından itibaren ısınmış) ne sıklıkta değiştiğini öğrenir ve her değişikliği olağandan çok sıra dışıya doğru puanlar. Zihin sekmesi her günün ne kadarını beklediğini gösterir. Basit sayma, yapay zeka yok. Kapalı: puan yok; Zihin sekmesinde öğrendiklerini temizle.",
+     "surprise_gating": "İzle: Herhangi bir şeyi atlamadan, o zaman için olağan bir değişiklik olduğu için atlanacağını belirten notlar. Açık: bunları atlar; bu aynı zamanda AI çağrısını da kaydeder. Güvenlik uyarıları, alarmlar veya istediğiniz herhangi bir şey için asla geçerli değildir.",
+     "situations": "Açık: Sese şu anda olup bitenler hakkında birkaç basit satır anlatılır (eve yeni geldi, son 15 dakika içinde hareket etti, son bir saatte olağandışı herhangi bir şey oldu). Misafirlerle veya özel bir odada paylaşılmaz. Kapalı: ekstra hiçbir şey gönderilmez.",
+     "beliefs": "Açık: Her gece hemen hemen aynı anda kendi kendine olmaya devam eden şeyleri arar, her birini geçen günle karşılaştırır, geçerli olanı sorar ve uymayanları bırakır. AI yok. Kapalı: yeni inanç yok ve test yok; Mevcut olanlar Zihin sekmesindeki öğrenmeyle temizlenir.",
+     "learn_reactions": "Açık: Sentient'nin değiştirdiği bir şey, bunun tekrar yapılmasına engel olan bir şey ve birinin yaptığı bir açıklama onun lehine sayılır. Kapalı: tepkiler puanlanmaz.",
+     "ai_case_memory": "Açık: Son altı saattekinin aynısı olan bir arka plan yapay zeka işi, başka bir çağrı yerine bu yanıtı yeniden kullanır. Asla resim veya klip için kullanılmaz. Kapalı: her iş yapay zekayı arar ve kayıtlı yanıtlar temizlenir.",
+     "memory_tags": "Her anı için bir kez, gece yapılan küçük bir yapay zeka çağrısı, bunun yerine insanların kullanabileceği birkaç ilgili kelimeyi ekler (“su ısıtıcısı” → demlemek, çay, fincan), yani “bir fincan kahve ister misin?” çaydanlık anılarını bulur. Bir gecede 40'a kadar anı; yerleştirme sunucusuna gerek yok. Kapatıldığında gece araması durdurulur ve geri çağırma sözcükleri yok sayar (bunlar saklanır, dolayısıyla tekrar açmak anında gerçekleşir). Varsayılan olarak kapalı.",
+     "memory_upkeep": "Gece boyunca yapılan düşünmede (fazladan yapay zeka çağrısı yok), bir kişinin o günkü programlarda söylediği bir şeyin güncelliğini yitirdiğine dair anılar düzeltilir ve onaylanana kadar bir tahmin olarak saklanır. Günde bir kez sorularına bir tahmin (söylenmekten ziyade işe yarayan bir şey) eklenir, böylece doğru olup olmadığını sorabilir. Bir kişinin onayladığı veya sabitlediği anılar asla değişmez. Bir gecede düşünmeye ihtiyacı var. Kapalı: anılar yalnızca eklenir, asla düzeltilmez.",
+     "watch_actions": "Saatler ve hatırlatıcılar bir şeyler yapabilir, bunu söyleyebilir, önce bir durumu kontrol edebilir ve bir şeyin sürmesini bekleyebilir: \"Eğer arka kapı on dakika boyunca açıksa koridorun ışığını kapat ve bana söyle\", \"çamaşır bittiğinde koridorun ışığını aç\", \"saat 11'de, arka kapı hala açıksa bana söyle\". Ses, her birini geri okur ve yalnızca bir sonraki dönüşte evet cevabından sonra kurulur. Yalnızca sesli asistanlara maruz kalan cihazlar; hiçbir zaman alarm, kilit, komut dosyası veya asla dokunulmayacaklar listesindeki herhangi bir şey; Daha sonra her cihaz kontrol edilir ve cevapta ne olmadığı belirtilir. Kapalı: saatler ve hatırlatıcılar daha önce olduğu gibi yalnızca konuşur ve önceden ayarlanmış olanlar harekete geçmez.",
+     "memory_time": "Yalnızca bir süreliğine doğru olan ve kendi başlarına bir bitiş tarihi alan söylenen şeyler: \"şimdilik\", \"şu anda\", \"bu hafta\", \"Cuma'ya kadar\" ve tek seferlik şeyler (\"Isıtmayı açtım\"), kalıcı gerçekler haline gelmek yerine tarihin yazılı olduğu bir gün boyunca saklanır. Günde bir kez, üç aydır kimsenin onaylamadığı veya kullanmadığı bir gerçek sizinle kontrol ediliyor. Gecelik yansıma aynı zamanda her günün kısa bir öyküsünü de yazar (ekstra yapay zeka çağrısı yok), 60 gün boyunca saklanır, yani \"geçen Cumartesi ne yaptık?\" veya \"Kazan en son ne zaman çalıştı?\" cevaplanabilir. Hikayeler ve kontroller için bir gecede düşünmeye ihtiyaç var. Kapalı: anılar yalnızca adlandırdıkları tarihleri ​​tutar ve hiçbir hikaye saklanmaz (halihazırda saklananlar silinir).",
+     "who_where": "Her kaynağın bildiklerini (telefon odası izleyicileri (Ses altında ayarlanmıştır), en son kimin konuştuğunu ve nerede olduğunu ve evde yalnızca bir kişi varken yapılan hareketleri) kişi başına en iyi tahminde bir araya getirir: hangi odadan, ne kadar emin ve ne zamandan beri. Ses, sade oda takip hattı yerine bu mesajı veriyor, bunun ne kadar emin olduğunu söylüyor ve evde olmayan biri hakkında asla bir şey söylemiyor. Hiçbir şey saklanmıyor. Kapalı: ses, daha önce olduğu gibi yalnızca oda takip hattını içerir.",
+     "big_plans": "\"Evi film gecesi için hazırlayın\" veya \"evi halledin, biz gidiyoruz\": Ses, cihazın adımlarından oluşan kısa bir plan hazırlar, bunu tekrar okur ve bunu ancak bir sonraki dönüşte evet cevabından sonra yapar. Daha sonra her adım cihazda kontrol edilir ve yanıtta ne olmadığı belirtilir. Yalnızca sesli asistanlara maruz kalan cihazlar; asla alarm vermez, kilitlemez, komut dosyası oluşturmaz veya asla dokunulmayacaklar listesi oluşturmaz; 12 adıma kadar. Kapalı: büyük istekler daha önce olduğu gibi aynı anda tek bir cihazla ele alınır.",
+     "self_grading": "Her gece, sesin o gün bir şeyin açık mı, kapalı mı, açık mı yoksa kapalı mı olduğu konusunda söyledikleri, evin o anda kaydettikleri ile karşılaştırılarak kontrol ediliyor. Akıl sayfasındaki \"Sesin ters gittiği yer\" kısmına yanlış olan eklenir ve ders olur (\"açık mı demeden arka kapıyı kontrol et\") böylece düzeltilmeden gelişir. AI yok. Güvenilirlik günlüğüne ihtiyaç var. Kapalı: hiçbir şey kontrol edilmez.",
+     "voice_speed_watchdog": "Açık: Bir konuşmacının seni duymasının senin konuşmanızdan çok daha uzun sürdüğünü fark eder (sesi gerçek zamandan daha yavaş ulaşır) ve yeniden başlatma önerisiyle bunu zaman çizelgesine koyar. Kapalı: onay yok.",
+     "voice_speed_restart": "Açık: Gecikmeye devam eden bir hoparlör, kendi yeniden başlatma düğmesiyle yeniden başlatılır. Kapalı: yalnızca önerilir.",
+     "incident_stages": "Açık: Her bir güvenlik olayı, kişinin kim olduğundan değil, kaydedilenlerden ne kadar uzakta olduğunu (gözlemlendiğini, araştırıldığını, muhtemelen hane halkıyla ilgili olduğunu veya çözüldüğünü) gösterir. Kapalı: olaylar aşama olmadan listelenir.",
+     "cognitive_shadow": "Açık: Her bir güvenlik olayını değerlendirmenin ikinci ve daha katı bir yolu, olağan aşamalarla birlikte yürütülür ve ikisinin ne sıklıkta aynı fikirde olduğunu, Mind sensöründe yalnızca toplam olarak gösterilen (isim, resim veya cihaz yok) sesli eylemlerin nasıl sonuçlandığını sayar. Deneme amaçlıdır; bir uyarıyı, bir sahneyi, söyleneni, sesin söyleneni asla değiştirmez. Kapalı: hiçbir şey karşılaştırılmaz ve sayımlar yeniden başlar.",
+     "cognitive_decides": "Açık: Güvenlik olaylarıyla ilgili incelemeleriniz (Mind sekmesindeki her olayın altındaki düğmeler) her türün doğru olduğunu gösterdiğinde — %90'ı kabul eden en az 10 incelenen ev olayı, neredeyse hiç ev olarak adlandırılmayan en az 10 diğer olay ve daha az ciddi olarak adlandırılan hiçbir olay — bilişsel çekirdek her olayın aşamasına karar verir: Zihin sekmesi ve ses bir olayın ne olduğunu söyler. Daha sonraki incelemeler yetersiz kalırsa kendi kendine durur ve bunu zaman çizelgesinde belirtir. Asla bir uyarıyı değiştirmez veya ertelemez ve hiçbir zaman olağan kuralların \"ilgili\" kurallarından daha az ciddi bir olay olarak adlandırılmaz. Bunu hak edene kadar hiçbir şey değişmez. Kapalı: olağan kurallar karar verir; yorumlarınız tutuluyor.",
+     "cognitive_quiet_heads_up": "Yalnızca test etme: Olay incelemelerine dayalı olarak uygunluğu kaydeder, ancak sözlü veya telefonla yapılan güvenlik uyarılarını hiçbir zaman engellemez. Kapının açılması ve ardından kameralı kişinin tespit edilmesi hanenin kimliğini tespit etmez. Bu özellik, bağımsız olarak doğrulanan kimlik kanıtları uygulanıp test edilene kadar hiçbir şeyi susturamaz.",
+     "weather_warnings": "Açık: Home Assistant'nin konumu kullanılarak ülkeniz için resmi uyarılar her 30 dakikada bir kontrol edilir (Birleşik Krallık'ta Met Office ve Çevre Ajansı, Avrupa genelinde MeteoAlarm, ABD'de Ulusal Hava Durumu Servisi). Kapalı: kontrol yok ve bulunanlar unutuluyor.",
+     "warnings_country": "Home Assistant'nin ülkesini kullanmak için boş bırak.",
+     "warnings_region": "Yalnızca bu bölgeyi e.g olarak adlandıran uyarılar. Kuzey Batı İngiltere. Ülkenin tamamı için boş bırak (sel ve ABD uyarıları her zaman evin yakınındadır).",
+     "warnings_speak": "Açık: Yeni bir sarı, kırmızı veya şiddetli uyarı bir kez söylenir. Kapalı: uyarılar yalnızca zaman çizelgesinde görüntülenir.",
+     "email_read": "Açık: Home Assistant'nin IMAP entegrasyon raporlarını göndereni, konuyu ve son 20 mesajın kısa bir önizlemesini tutar, böylece \"yeni bir e-posta var mı?\" diye sorabilirsiniz. Salt okunur, şifresiz, misafirlerle asla paylaşılmaz. Kapalı: hiçbir şey tutulmaz ve tutulanlar silinir.",
+     "calendar_clashes": "Açık: \"Yarın herhangi bir çatışma var mı?\" brifing takvimlerinde (veya tüm takvimlerde) çakışan veya aralarında 15 dakikadan az zaman bulunan etkinlikleri bulur. Kapalı: teklif edilmiyor.",
+     "security_audit": "Açık: yönetici \"kurulumum güvenli mi?\" diye sorabilir düz http uzaktan erişimin salt okunur kontrolü için, sesin onay olmadan ulaşabileceği kilitler ve alarmlar, uzun ömürlü belirteçler ve iki faktörlü oturum açmaya gerek kalmadan yöneticiler. Kapalı: teklif edilmiyor.",
+     "automation_builder": "Açık: Bir yönetici, düz İngilizce dilinde bir otomasyon isteyebilir; her cihaz ve eylem kontrol edilir, evet olarak tekrar okunur ve ardından editördeki gibi automations.yaml'ye kaydedilir. Kapalı: sunulmuyor; otomasyonlar zaten kaldı.",
+     "pronounce_names": "Açık: Sesin yazılışından yanlış okuduğu bir ad, yalnızca hoparlörlerde telaffuz edildiği şekilde söylenir — sohbet, zaman çizelgesi ve telefonlar gerçek yazımı korur. Aşağıdaki satırlardan ve \"Siobhan, Shivawn olarak telaffuz edilir\" gibi anılardan alınmıştır. Kapalı: adlar yazıldığı gibi okunur.",
+     "pronunciations": "Yazılı = söylenen, her satıra bir tane, e.g. Siobhan = Şivawn. Söz konusu versiyonu sesin okuması gerektiği şekilde yazın.",
+     "health_duplicates": "Açık: Bir kopyanın boş olduğu bir ad altında iki kez görünen bir cihaz (Tuya Local'deki bir eklenti ve yine Tuya'nın bulutundan bir eklenti), boş kopyayı devre dışı bırakan bir düğmeyle Ev sağlığında gösterilir. Kapalı: işaretlenmedi.",
+     "manuals_local_ocr": "İsteğe bağlıdır ve varsayılan olarak kapalıdır. Tesseract zaten Home Assistant ana bilgisayarında yüklüyse, dosya başına en fazla 20 yalnızca görüntü içeren PDF sayfasındaki metni oku. Bulut isteği veya indirme yok. Standart Home Assistant işletim sisteminde Tesseract kullanılamayabilir; orijinal PDF geri dönüşü kalır.",
+     "memory_semantic_enabled": "Varsayılan olarak kapalıdır. Açıkça yapılandırılmış bir yerel Ollama yerleştirme hizmetiyle, yalnızca bu kullanıcıya zaten izin verilen bellek sonuçlarını yeniden sıralayın. Özel metin, hiçbir zaman otomatik olarak internete değil, yapılandırılmış LAN ana bilgisayarına gönderilir. Yapılandırılmış ana bilgisayar seçilen bellek parçacıklarını alır; dolayısıyla onu kontrol ettiğiniz güvenilir bir makinede çalıştırın.",
+     "memory_semantic_url": "http://192.168.1.20:11434 gibi bir HTTP URL. Yalnızca sayısal özel LAN/geri döngü adresleri kabul edilir (localhost yerine 127.0.0.1 kullan). Sunucu /api/embed'yi açığa çıkarmalı ve model zaten kurulu olmalıdır.",
+     "memory_semantic_model": "Nomic-embed-text gibi Ollama'de zaten yüklü olan bir gömme modelinin adı. Sentient modeli indirmeyecek. Kullanılamayan veya yavaş hizmetler normal aramaya geri döner.",
+     "ai_routing_enabled": "Varsayılan olarak kapalıdır. Her iki sağlayıcı da 20'den fazla ölçülen çağrıya ve yeterli hizmet düzeyi güvenilirliğine sahip olduktan sonra, yalnızca uygun arka plan metin işleri yapılandırılmış alternatifi kullanabilir. Resimler, yapılandırılmış çıktılar veya açık yapay zeka seçimleri için geçiş yok.",
+     "ai_routing_alternative": "Uygun arka plan metni görevleri için dikkate alınacak ikinci bir Home Assistant ai_task varlığı. Yerel olarak mevcut olmalı ve ölçülen hizmet geçmişi ve maliyet tahminleri olmadan asla kullanılmamalıdır.",
+     "ai_routing_primary_cost": "Karşılaştırılabilir bir metin işi için kendi yaklaşık fiyatınız; sağlayıcı faturalandırması değil. Daha ucuz bir sağlayıcı dikkate alınmadan önce her iki fiyatın da senin tarafınızdan sağlanması ve doğrulanması gerekir.",
+     "ai_routing_alternative_cost": "Alternatif Yapay Zeka Görevi varlığı için kendi fiyat tahmininiz. Bu canlı faturalandırma değildir ve gerçek jeton ücretlerinden farklı olabilir.",
+     "ai_routing_max_p95_ms": "İkincil sağlayıcıyı yalnızca ölçülen yüzde 95'lik hizmet süresi bu limit dahilinde olduğunda dikkate alın. Varsayılan 4000 ms'dir. Sesli yanıtlar mevcut ardışık düzen üzerinden devam ediyor.",
+     "heating_energy_sensor": "Tüm evi değil, ısıtma sistemini ölçen kümülatif bir kWh enerji sensörü. Yeterince uzun geçmişe sahip, Kaydedici tarafından tutulan bir sensörü kullan.",
+     "heating_measurement_date": "İncelemek istediğiniz değişikliğin tarihi. Sentient, haftanın aynı günleriyle 14 güne kadar önceki ve sonraki günleri karşılaştırır; Sentient'nin farklılığa neden olduğunu kanıtlayamaz.",
+     "heating_energy_price_kwh": "Gerçek faturalara veya kanıtlanmış tasarruflara değil, yalnızca gözlemlenen kWh farklılıklarını yaklaşık günlük para birimi değişikliklerine dönüştürmek için kullanılan isteğe bağlı tahmin.",
+     "autooff_respect_recent_voice": "Varsayılan olarak kapalıdır. Etkinleştirildiğinde, yüksek öncelikli, korumalı bir sesli komuttan sonra bir ışığın veya anahtarın otomatik olarak kapatılması iki dakikaya kadar tutulur. Manuel durdurma talepleri, ısıtma, kilitler veya alarmlar için geçerli değildir."
+    }
+   },
+   "memories": {
+    "title": "Hatıralar",
+    "description": "Ev {count} şeyleri hatırlıyor. Düzenlemek için birini seç, unutmak için herhangi birini işaretleyin veya yeni bir tane ekle.",
+    "data": {
+     "edit": "Bir anıyı düzenleme",
+     "forget": "Unutmak",
+     "add": "Bir anı ekle",
+     "category": "Yeni hafıza kategorisi"
+    }
+   },
+   "edit_memory": {
+    "title": "Belleği düzenle",
+    "data": {
+     "text": "Hafıza",
+     "category": "Kategori"
+    }
+   },
+   "briefing": {
+    "title": "Durum özetleri",
+    "description": "Brifing neleri kapsar? BRİFİNG düğmesinden, sesli olarak veya her gün belirli bir saatte.",
+    "data": {
+     "briefings": "Brifingler",
+     "briefing_sections": "Katmak",
+     "briefing_weather": "Hava durumu",
+     "briefing_todo": "Yapılacaklar listeleri",
+     "briefing_calendars": "Takvimler",
+     "briefing_system": "Raporlanacak sistem sensörleri",
+     "outside_info": "Dışarıdan bilgi",
+     "parcel_trackers": "Paket takipçileri",
+     "briefing_time": "Günlük brifing şu saatte",
+     "digest_time": "Günlük özet",
+     "morning_briefing": "Birisi ilk geldiğinde brifing vermek",
+     "morning_briefing_areas": "Sabah brifing odaları",
+     "morning_briefing_quiet": "Sakin saatlerde sabah brifingi"
+    },
+    "data_description": {
+     "briefings": "Kapalı düğmeyi, ses aracını ve hizmeti kapatır.",
+     "briefing_weather": "İlk hava durumu varlığını kullanmak için boş bırak.",
+     "briefing_system": "e.g. CPU sıcaklığı, disk kullanımı, NAS. Bekleyen güncellemeler her zaman sayılır.",
+     "outside_info": "Diğer entegrasyonlardan gelen sensörler brifingi okuyor ve akşam yarına bakıyor: bugünkü elektrik fiyatı, hava durumu uyarısı, yolda paketler, bir sonraki okulun ek günü. Boş, sıfır ve 'kapalı' okumalar dışarıda bırakılır. Bunlardan alınan metinler yalnızca bilgi olarak kabul edilir.",
+     "parcel_trackers": "Bir paketin teslimata çıktığını söylediğinde, bunu bir kez söylüyor ve tüm gün kapıyı izliyor (paket uyarıları kapalı olsa bile); kapıda bir şey görülmeden teslim edilir yazıyorsa onu da söylüyor. Boş: kapalı.",
+     "briefing_time": "İsteğe bağlı. Yalnızca evde biri varsa ve sessiz saatler değilse konuşulur.",
+     "digest_time": "İsteğe bağlı: Yapay zeka günde bir kez zaman çizelgesini birkaç cümleyle özetliyor. Zaman çizelgesine (ve seçilirse telefonlara) gider. Konuşulmadı.",
+     "morning_briefing": "Günde bir kez, öğleden önce, ev onları görür görmez birisinin bulunduğu odada (ya da bu olmadan, sessiz saatlerin bitiminden sonra ilk kez birisi hareket ettiğinde).",
+     "morning_briefing_areas": "İsteğe bağlı: Bu sesi yalnızca sabahları birisi bu odalardan birine ilk kez geldiğinde odanın hoparlöründen verin — kalkın, yıkanın ve giyinin, ardından mutfakta veya oturma odasında dinleyin. Boş: nerede olurlarsa olsunlar.",
+     "morning_briefing_quiet": "Kapalı: Sessiz saatlerin bitiminden önce ayağa kalkan biri brifingi, brifing bittiğinde, ilk kez hareket ederken görüldüğünde alır (eğer seçilmişse, sabah brifing odalarında) ve gece boyunca saklanan her şey bunun içine katlanır. Açık: Sessiz saatlerde bile, görüldükleri anda yalnızca o odanın hoparlöründen verilir."
+    }
+   }
+  }
+ },
+ "entity": {
+  "sensor": {
+   "memories": {
+    "name": "Hatıralar"
+   },
+   "last_spoken": {
+    "name": "Son konuşulan"
+   },
+   "likely_room": {
+    "name": "Olası oda"
+   },
+   "watches": {
+    "name": "Saatler"
+   },
+   "routines": {
+    "name": "Rutinler"
+   },
+   "visitors": {
+    "name": "Ziyaretçiler"
+   },
+   "health": {
+    "name": "Ev sağlığı"
+   },
+   "drive": {
+    "name": "Sürmek"
+   },
+   "mind": {
+    "name": "Düşünceler"
+   },
+   "house": {
+    "name": "Ev",
+    "state": {
+     "awake": "Uyanmak",
+     "asleep": "Uyuya kalmak"
+    }
+   },
+   "screen": {
+    "name": "Ekran",
+    "state": {
+     "idle": "Boşta",
+     "morning": "Sabah",
+     "notice": "Fark etme",
+     "alert": "Uyarı"
+    }
+   }
+  },
+  "switch": {
+   "hush": {
+    "name": "Sus"
+   },
+   "guest_mode": {
+    "name": "Misafir modu"
+   },
+   "chime": {
+    "name": "Zil"
+   },
+   "party_mode": {
+    "name": "Işık gösterisi"
+   },
+   "media_speakers": {
+    "name": "Echo hoparlörler"
+   },
+   "media_important_only": {
+    "name": "Echos: yalnızca alarmlar ve hatırlatıcılar"
+   },
+   "away_lights": {
+    "name": "Uzak ışıklar"
+   },
+   "screen": {
+    "name": "Tablet ekranı"
+   },
+   "holiday": {
+    "name": "Tatil modu"
+   }
+  },
+  "conversation": {
+   "voice": {
+    "name": "Yedekleme ile"
+   },
+   "alexa": {
+    "name": "Alexa için"
+   }
+  }
+ },
+ "selector": {
+  "priority": {
+   "options": {
+    "low": "Düşük",
+    "normal": "Normal",
+    "urgent": "Acil (sessiz saatleri dikkate almaz)"
+   }
+  },
+  "category": {
+   "options": {
+    "fact": "Hakikat",
+    "preference": "Tercih",
+    "person": "Kişi",
+    "routine": "Rutin",
+    "note": "Not",
+    "correction": "Düzeltme"
+   }
+  },
+  "chattiness": {
+   "options": {
+    "off": "Kapalı",
+    "quiet": "Sessizlik",
+    "normal": "Normal",
+    "chatty": "Konuşkan"
+   }
+  },
+  "briefing_section": {
+   "options": {
+    "time": "Zaman",
+    "weather": "Hava durumu",
+    "reminders": "Hatırlatmalar bugün yapılacak",
+    "watches": "Ne izleniyor",
+    "routines": "Rutinler yaklaşıyor",
+    "open": "Pencereler ve kapılar açık",
+    "visitors": "Bugün ziyaretçiler",
+    "said": "Son zamanlarda söylenenler",
+    "system": "Sistem sağlığı",
+    "todo": "Yapılacaklar listeleri",
+    "calendar": "Takvim (sonraki 24 saat)",
+    "energy": "Bugün kullanılan elektrik (ve olağandışı herhangi bir şey)",
+    "security": "Açık veya kilidi açılmış herhangi bir şey"
+   }
+  },
+  "notify_when": {
+   "options": {
+    "urgent": "Acil duyurular",
+    "held_quiet": "Sessiz saatlerde her şey ertelendi",
+    "unheard": "Kimsenin duyamayacağı şeyler (hoparlör yok)",
+    "visitors": "Kapı zili ziyaretçileri ve paketleri",
+    "watches": "Saatler ve hatırlatıcılar çalıyor",
+    "health": "Evde sağlık sorunları",
+    "digest": "Günlük özet",
+    "critical": "Güvenlik uyarıları (duman, CO, gaz, sızıntılar)",
+    "security": "Herkes dışarı çıktığında işler açık kalıyor"
+   }
+  },
+  "personality": {
+   "options": {
+    "calm": "Sakin ve konuya",
+    "dry": "Kuru zeka",
+    "warm": "Sıcak ve dost canlısı",
+    "cheeky": "Yüzsüz",
+    "composed": "Bir uşak gibi bestelenmiş"
+   }
+  },
+  "party_style": {
+   "options": {
+    "disco": "Disko",
+    "party": "Parti",
+    "rainbow": "Gökkuşağı",
+    "chill": "Sakin olmak",
+    "halloween": "Cadılar Bayramı",
+    "christmas": "Noel"
+   }
+  },
+  "confirm_kinds": {
+   "options": {
+    "locks": "Kilitler",
+    "garage": "Garaj kapıları ve kapıları",
+    "covers": "Panjurlar, perdeler ve panjurlar",
+    "heating": "Isıtmayı çok fazla açmak",
+    "appliances": "Cihazların başlatılması"
+   }
+  },
+  "trust_level": {
+   "options": {
+    "do": "Sadece yap",
+    "tell": "Öyle söyle sonra yap",
+    "ask": "Önce sor"
+   }
+  },
+  "self_test": {
+   "options": {
+    "off": "Kapalı",
+    "nightly": "Her gece",
+    "weekly": "Haftada bir kez (Pazar gecesi)"
+   }
+  },
+  "check_now": {
+   "options": {
+    "self_test": "Kendi kendine test",
+    "rain": "Yağmur uyarısı",
+    "hutch": "Kümes kontrolü",
+    "cat": "Kedi izle",
+    "bins": "Çöp kutusu kontrolü",
+    "faces": "Bu kim? (yüz öğretimi)",
+    "faces_forget": "İsimsiz yüzleri artık unutun",
+    "clip_watch": "En son klibi şimdi izleyin"
+   }
+  },
+  "clip_scope": {
+   "options": {
+    "alerts": "Yalnızca Frigate uyarıları",
+    "zones": "Bir bölgedeki herhangi bir şey",
+    "all": "Her tespit"
+   }
+  },
+  "clip_when": {
+   "options": {
+    "always": "Her zaman",
+    "quiet": "Sessiz saatler",
+    "away": "Herkes dışarı çıktığında",
+    "quiet_or_away": "Sessiz saatler veya herkesin dışarıda olduğu zamanlar"
+   }
+  },
+  "clip_notify": {
+   "options": {
+    "off": "Kapalı",
+    "worth": "Bakmaya değer olanlar",
+    "suspicious": "Yalnızca şüpheli",
+    "all": "Her klip"
+   }
+  },
+  "clip_source": {
+   "options": {
+    "sentient": "Sentient (bir yapay zeka bir klibi çağırır)",
+    "frigate": "Frigate'nin kendi yapay zeka özetleri"
+   }
+  },
+  "phone_buttons": {
+   "options": {
+    "door": "Kapıda",
+    "reminders": "Hatırlatıcılar",
+    "questions": "Sorular (Evet / Hayır)"
+   }
+  },
+  "conversation_style": {
+   "options": {
+    "brief": "Kısa bilgi",
+    "natural": "Doğal"
+   }
+  },
+  "surprise_gating": {
+   "options": {
+    "off": "Kapalı",
+    "watch": "Yalnızca izle",
+    "on": "Açık"
+   }
+  },
+  "security_event_zones": {
+   "options": {
+    "zones": "Yalnızca bir bölgeye giren şey",
+    "all": "Herhangi bir şey algılandı"
+   }
+  }
+ },
+ "services": {
+  "say": {
+   "name": "Söylemek",
+   "description": "Sessiz saatleri ve oda farkındalığını takip ederek evin içinden konuşun.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ne söylenmeli."
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil, sessiz saatleri ve sessiz dönemleri göz ardı eder; düşük asla kesintiye uğramaz."
+    },
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Bir konuşmacı, oda adı veya varlık kimliği. Kişiyi takip etmek için boş bırak."
+    }
+   }
+  },
+  "remember": {
+   "name": "Hatırlamak",
+   "description": "Evin uzun süreli hafızasına bir şeyler ekle.",
+   "fields": {
+    "text": {
+     "name": "Metin",
+     "description": "Kısa bir cümle."
+    },
+    "category": {
+     "name": "Kategori",
+     "description": "Bu nasıl bir hafıza."
+    }
+   }
+  },
+  "forget": {
+   "name": "Unutmak",
+   "description": "Kimliğe veya eşleşen metne göre bir anıyı kaldır.",
+   "fields": {
+    "what": {
+     "name": "Ne",
+     "description": "Bellek kimliği veya ondan gelen kelimeler."
+    }
+   }
+  },
+  "watch": {
+   "name": "Kol saati",
+   "description": "Bir cihaza, sensöre veya kameraya göz kulak olun ve bir şey olduğunda sesini çıkarın.",
+   "fields": {
+    "what": {
+     "name": "Ne",
+     "description": "Kısa açıklama e.g. 'tavşan ağılının yanındaki kediler'."
+    },
+    "entity": {
+     "name": "Varlık",
+     "description": "Varlık kimliği, adı veya kameranın alan adı."
+    },
+    "to_state": {
+     "name": "belirtmek",
+     "description": "Varlık bu duruma ulaştığında ateşle."
+    },
+    "above": {
+     "name": "Üstünde",
+     "description": "Değer bunun üzerine çıktığında ateşle."
+    },
+    "below": {
+     "name": "Altında",
+     "description": "Değer bunun altına düştüğünde ateşle."
+    },
+    "question": {
+     "name": "Soru",
+     "description": "Kamera izliyor: resimle ilgili evet/hayır sorusu."
+    },
+    "look_for": {
+     "name": "Aramak",
+     "description": "Kamera izliyor: uyandırılacak nesne, e.g. kişi, kedi, araba."
+    },
+    "message": {
+     "name": "Mesaj",
+     "description": "Ne söylenmeli? Otomatik cümle için boş bırak."
+    },
+    "until": {
+     "name": "Değin",
+     "description": "Saat zamanı, e.g. 18:00 veya 18:00."
+    },
+    "minutes": {
+     "name": "dakika",
+     "description": "Veya kaç dakika izlenecek."
+    },
+    "repeat": {
+     "name": "Tekrarlamak",
+     "description": "Ateş ettikten sonra izlemeye devam edin."
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil, sessiz saatleri dikkate almaz."
+    },
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Nerede söyleyeceğim. İnsanları takip etmek için boş bırak."
+    },
+    "wake_on": {
+     "name": "Uyan",
+     "description": "Kamera izliyor: kameranın kendi sensörleri yerine uyanacak bir bölge veya nesne sensörü."
+    },
+    "spot": {
+     "name": "Leke",
+     "description": "Kamera izliyor: yalnızca bu adlı noktayı kontrol et (sesle öğretilir, e.g. 'tavşan kalemi')."
+    }
+   }
+  },
+  "cancel_watch": {
+   "name": "İzlemeyi iptal et",
+   "description": "Saati durdurma.",
+   "fields": {
+    "what": {
+     "name": "Ne",
+     "description": "Kimliğini veya içindeki kelimeleri izle."
+    }
+   }
+  },
+  "remind": {
+   "name": "Hatırlatmak",
+   "description": "İnsanların bulunduğu odada birer birer bir şeyler söyle.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ne diyeceğim e.g. 'Fırını çalıştırmanın zamanı geldi.'"
+    },
+    "at": {
+     "name": "Şu tarihte",
+     "description": "Saat zamanı, e.g. 18:00 veya 18:00."
+    },
+    "minutes": {
+     "name": "dakika",
+     "description": "Veya kaç dakikada."
+    },
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Nerede söyleyeceğim. İnsanları takip etmek için boş bırak."
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil (varsayılan) sessiz saatlerde hala konuşuyor."
+    }
+   }
+  },
+  "ask": {
+   "name": "Sormak",
+   "description": "İnsanların bulunduğu odada yüksek sesle bir soru sorun ve cevabı dinleyin.",
+   "fields": {
+    "question": {
+     "name": "Soru",
+     "description": "e.g. 'Bira içmek ister misin? Çaydanlığı koyayım mı?'"
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil, sessiz saatleri ve sessiz dönemleri göz ardı eder."
+    },
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Nereye sorulmalı? İnsanları takip etmek için boş bırak."
+    },
+    "extra_prompt": {
+     "name": "Ekstra talimatlar",
+     "description": "Yanıtla ilgilenen sesli temsilci için ekstra rehberlik."
+    },
+    "preannounce": {
+     "name": "Önce zil sesi",
+     "description": "Sormadan önce zili çal."
+    }
+   }
+  },
+  "learn": {
+   "name": "Şimdi öğren",
+   "description": "Bu geceyi beklemek yerine hemen yakın tarihteki rutinleri arayın."
+  },
+  "briefing": {
+   "name": "Durum özeti",
+   "description": "Şu anda neyin önemli olduğuna dair kısa bir brifing, insanların bulunduğu yerde konuşulur.",
+   "fields": {
+    "speak": {
+     "name": "Konuş",
+     "description": "Kapalı, konuşmadan veya yapay zekayı kullanmadan gerçekleri döndürür."
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil, sessiz saatlerde bile konuşuyor, e.g. Birisi bunun için bir düğmeye bastığında."
+    }
+   }
+  },
+  "tidy_memories": {
+   "name": "Düzenli anılar",
+   "description": "Kopyaları birleştirin ve artık saçmalıkları bellekten sil (ayrıca her Pazar gecesi çalışır)."
+  },
+  "forget_routine": {
+   "name": "Öğrenilen rutini sil",
+   "description": "Öğrenilmiş bir rutini veya alışkanlığı tamamen sil — ev bunu yapmayı bırakır ve bir daha asla öğrenmez veya teklif etmez. Geri Yükleme açıkken, silinenleri geri getirin (Rutin boşsa birini veya tümünü).",
+   "fields": {
+    "routine": {
+     "name": "Rutin",
+     "description": "Rutin kimlik veya ondan alınan kelimeler."
+    },
+    "restore": {
+     "name": "Eski haline getirmek",
+     "description": "Bunun yerine silinenleri geri getirin."
+    }
+   }
+  },
+  "adopt_routine": {
+   "name": "Rutini benimseyin",
+   "description": "Evin öğrenilmiş bir rutini kendi başına yapmasını sağlayın veya durun. Geçiş yapmak için Benimseme'yi boş bırak.",
+   "fields": {
+    "routine": {
+     "name": "Rutin",
+     "description": "Rutin kimlik veya ondan alınan kelimeler."
+    },
+    "adopt": {
+     "name": "Evlat edinmek",
+     "description": "Başlamak için açık, durdurmak için kapalı."
+    }
+   }
+  },
+  "hush": {
+   "name": "Sus",
+   "description": "Bir süre acil olmayan hiçbir şey söylemeyin. 0 dakika susmayı bırakır.",
+   "fields": {
+    "minutes": {
+     "name": "dakika",
+     "description": "Ne kadar süre suskun kalacağız."
+    }
+   }
+  },
+  "run_routine": {
+   "name": "Rutini çalıştır",
+   "description": "Adlandırılmış bir rutin çalıştırın (kenar çubuğu sayfasındaki Ayarlar → Rutinler bölümünden ayarla).",
+   "fields": {
+    "name": {
+     "name": "İsim",
+     "description": "Rutinin adı veya diğer adlarından biri."
+    },
+    "speak": {
+     "name": "Konuşmak",
+     "description": "İnsanların bulunduğu yerde sonucu söyle."
+    },
+    "details": {
+     "name": "Detaylar",
+     "description": "Ayrıntılar gerektiren rutinler için e.g. hangi odalar."
+    }
+   }
+  },
+  "weekly_report": {
+   "name": "Haftalık rapor",
+   "description": "Evin geçen hafta öğrendiklerini ve fark ettiklerini bir araya getirin ve zaman çizelgesinde tutun."
+  },
+  "party": {
+   "name": "Işık gösterisi",
+   "description": "Bir ışık gösterisini başlat veya durdur (disko, Cadılar Bayramı, Noel…). Işıklar durduğunda aynen eskisi gibi geri döner.",
+   "fields": {
+    "on": {
+     "name": "Açık",
+     "description": "Kapalı onu durdurur ve ışıkları tekrar açar."
+    },
+    "style": {
+     "name": "Stil",
+     "description": "Disko, parti, gökkuşağı, sakinlik, Cadılar Bayramı veya Noel. Boş ayarı kullanır."
+    },
+    "minutes": {
+     "name": "dakika",
+     "description": "Bu kadar süre sonra kendi kendine durur (0 = kapatılana kadar). Boş ayarı kullanır."
+    },
+    "area": {
+     "name": "Oda",
+     "description": "Bu odanın ışıklarını (veya her ışık için 'her yeri') kullan)."
+    },
+    "lights": {
+     "name": "Işıklar",
+     "description": "Tam olarak bu ışıkları kullan."
+    }
+   }
+  },
+  "reflect": {
+   "name": "Şimdi yansıt",
+   "description": "Bir gecede olduğu gibi şimdi de son günü düşünün: yeni anılar, sabah düşünceleri ve bir soru."
+  },
+  "grade_answers": {
+   "name": "Şimdi kendi yanıtlarına not verin",
+   "description": "Sesin kapılar, ışıklar, anahtarlar ve kilitler hakkında ne söylediğini, her gece \"Kendi cevaplarını notla\" seçeneği açıkken yaptığı gibi evin kaydettikleriyle karşılaştırarak kontrol et. Neyin kontrol edildiğini, neyin yanlış olduğunu ve varsa dersleri döndürür.",
+   "fields": {
+    "hours": {
+     "name": "Saat",
+     "description": "Kontrol etmek için ne kadar geriye."
+    }
+   }
+  },
+  "check_drive": {
+   "name": "Sürücüyü kontrol et",
+   "description": "Şimdi sürüş noktasına bir yapay zeka bakışı atın ve oraya park edilenleri güncelleyin."
+  },
+  "wonder": {
+   "name": "Merak etmek",
+   "description": "Sormak için merak ettiğiniz bir soruyu ekle, birini bırak veya bir sonrakini şimdi sorun.",
+   "fields": {
+    "question": {
+     "name": "Soru",
+     "description": "Ev halkına bir kez sorulacak bir şey."
+    },
+    "ask_now": {
+     "name": "Şimdi sor",
+     "description": "Bir sonraki soruyu hemen sorun."
+    },
+    "dismiss": {
+     "name": "Azletmek",
+     "description": "Sonuçta sorulmaması gereken bir sorudan alınan kelimeler."
+    }
+   }
+  },
+  "follow_up": {
+   "name": "Takip etmek",
+   "description": "Bir şeyi daha sonra tekrar kontrol et ve nasıl gittiğini söyle.",
+   "fields": {
+    "minutes": {
+     "name": "dakika",
+     "description": "Ne zaman kontrol edilmeli."
+    },
+    "about": {
+     "name": "Hakkında",
+     "description": "Neyle ilgili olduğuna dair birkaç kelime."
+    },
+    "entity": {
+     "name": "Varlık",
+     "description": "Daha sonra kontrol edilecek cihaz."
+    },
+    "state": {
+     "name": "Durum",
+     "description": "İşe yaradığı anlamına gelen durum."
+    },
+    "above": {
+     "name": "Üstünde",
+     "description": "Değer en azından buysa işe yaradı."
+    },
+    "below": {
+     "name": "Altında",
+     "description": "Değer en fazla buysa işe yaradı."
+    },
+    "if_done": {
+     "name": "Eğer yapılırsa",
+     "description": "İşe yaradıysa ne söylenir."
+    },
+    "if_not": {
+     "name": "Değilse",
+     "description": "Olmasaydı ne söylenirdi."
+    },
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Nerede söylenmeli (varsayılan: insanların olduğu yer)."
+    }
+   }
+  },
+  "cancel_follow_up": {
+   "name": "Takibi iptal etme",
+   "description": "Bir şeyi tekrar kontrol etmeyi bırak.",
+   "fields": {
+    "about": {
+     "name": "Hakkında",
+     "description": "Kimliği veya neyle ilgili olduğuyla ilgili kelimeler."
+    }
+   }
+  },
+  "maintenance_done": {
+   "name": "Bakım yapıldı",
+   "description": "Bir bakım işini tamamlandı olarak işaretleyin (filtre değiştirildi, makinenin kireci çözüldü), böylece sayım yeniden başlar.",
+   "fields": {
+    "job": {
+     "name": "İş",
+     "description": "Bakım sayfasındaki adı."
+    }
+   }
+  },
+  "notice": {
+   "name": "Fark etme",
+   "description": "Olan bir şeyi Sentient'den geçirin — aynı sessiz saatler, sessizlik, misafir ve tatil kuralları ve (varsayılan olarak) söylemeye değer olup olmadığına ve nasıl söyleneceğine kendi kararı.",
+   "fields": {
+    "message": {
+     "name": "Ne oldu",
+     "description": "Basit bir ifadeyle e.g. 'Bulaşık makinesinin işi bitti'."
+    },
+    "entity_id": {
+     "name": "Cihaz",
+     "description": "İlgili cihaz (isteğe bağlı) — odayı ve durumunu verir."
+    },
+    "decide": {
+     "name": "Karar vermesine izin ver",
+     "description": "Açık: Yapay zeka, bunun söylenmeye değer olup olmadığına ve nasıl söyleneceğine (fark edilmek olarak sayılır) karar verir. Kapalı: verildiği gibi söyle."
+    },
+    "priority": {
+     "name": "Öncelik",
+     "description": "Acil, sessiz saatlerde bile duyulur; düşük asla kesintiye uğramaz."
+    }
+   }
+  },
+  "look_ahead": {
+   "name": "İleriye bak",
+   "description": "Şimdi yarına bakın ve haber vermeye değer bir şey olup olmadığını söyle.",
+   "fields": {
+    "speak": {
+     "name": "Söyle",
+     "description": "Varsa yüksek sesle söyle."
+    }
+   }
+  },
+  "set_asleep": {
+   "name": "Uykuya ayarla",
+   "description": "Evin uyuduğunu veya uyanık olduğunu söyle (yatma vaktini veya sabah eylemlerini yönetir).",
+   "fields": {
+    "asleep": {
+     "name": "Uyuya kalmak",
+     "description": "Uyumak için açık, uyanık olmak için kapalı."
+    }
+   }
+  },
+  "show_on_screen": {
+   "name": "Ekranda göster",
+   "description": "Sentient ekran kartına bir kart yerleştirin.",
+   "fields": {
+    "message": {
+     "name": "Mesaj",
+     "description": "Ne gösterilecek."
+    },
+    "camera": {
+     "name": "Kamera",
+     "description": "Onunla birlikte gösterilecek bir kamera."
+    },
+    "minutes": {
+     "name": "İçin",
+     "description": "Ne kadar süre (boşsa 10 dakika)."
+    },
+    "alert": {
+     "name": "Uyarı",
+     "description": "Uyarı olarak göster."
+    }
+   }
+  },
+  "clear_screen": {
+   "name": "Ekranı temizle",
+   "description": "Sentient ekran kartından bir kart veya her şeyi çıkarın.",
+   "fields": {
+    "card_id": {
+     "name": "Kart",
+     "description": "Kartın kimliği, 'sabah' veya her şey için boş."
+    }
+   }
+  },
+  "morning_card": {
+   "name": "Sabah kartı",
+   "description": "Bu sabahın kartını şimdi Sentient ekranına koyun."
+  },
+  "check_now": {
+   "name": "Şimdi kontrol et",
+   "description": "İsteğe bağlı kontrollerden birini hemen çalıştırın — kendi kendini test etme, yağmur kontrolü, kabin kontrolü, kedi izleme, çöp kutusu kontrolü, \"bu kim?\" kapı kamerasının adlandıramadığı son yüz için, isimsiz yüzleri unutmak veya ilk klip kameradan en son klibi izlemek.",
+   "fields": {
+    "what": {
+     "name": "Hangi",
+     "description": "Hangi kontrolün çalıştırılacağı."
+    }
+   }
+  },
+  "game": {
+   "name": "Bir hikaye oyununu başlat veya durdur",
+   "description": "Bir hikaye oyunu başlat (daha sonra herhangi bir sesli asistanla oynanabilir) veya mevcut oyunu bir kenara bırak. Oyunun kayıtlı hafızası tutulur.",
+   "fields": {
+    "action": {
+     "name": "Aksiyon",
+     "description": "Bir oyunu başlat veya oynanan oyunu durdur."
+    },
+    "game": {
+     "name": "Oyun",
+     "description": "Oyunun adı, oyuna başlarken."
+    }
+   }
+  },
+  "stop_reading": {
+   "name": "Okumayı bırak",
+   "description": "Herhangi bir hikayenin veya sesli kitabın yüksek sesle okunmasını durdur ve konuşmacıyı susturarak yeri koruyun. Tablet hikaye boyunca seni duyamadığında ses olmadan çalışır.",
+   "fields": {
+    "speaker": {
+     "name": "Hoparlör",
+     "description": "Konuşmacıyı susturmak. Her hikayenin okunmasını durdurmak için boş bırak."
+    }
+   }
+  }
+ },
+ "issues": {
+  "update_available": {
+   "title": "Sentient {latest} mevcut",
+   "description": "{installed}'niz var. Ayarlar → Güncellemeler'den yükle (Sentient, Home Assistant 2026.11 ve sonraki sürümlerde Marketplace'ten gelir; daha eski sürümlerde, HACS'de Sentient'yi aç ve İndir'i seç), ardından Home Assistant'yi yeniden başlat. Sentient, Marketplace'ten veya HACS'den yüklenmek yerine elle kopyalandıysa hiçbir zaman kendi kendine güncellenmez: bunun yerine Marketplace'ten yükle."
+  }
+ }
+}
