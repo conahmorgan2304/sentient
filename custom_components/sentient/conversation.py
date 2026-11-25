@@ -1051,7 +1051,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(text)
             return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
-        if attempt.get('action_started') or (self.main_agent and may_change):
+        if attempt.get('action_started') or (self.main_agent and may_change and not _definitely_offline(why)):
             return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
         rt_local = getattr(self._entry, "runtime_data", None)
         from .local_answers import async_answer as local_answer
@@ -1095,15 +1095,18 @@ class BackedUpAgent(conversation.ConversationEntity):
         backups = [self.backup_agent] + ([DEFAULT_BACKUP_AGENT] if self.backup_agent != DEFAULT_BACKUP_AGENT
                                          and _COMMAND.search(user_input.text or "") else [])
         for backup in backups:
+            backup_failure = ""
             try:
                 async with asyncio.timeout(BACKUP_TIMEOUT):
                     result = await self._converse(backup, user_input)
                 if result.response.response_type != intent.IntentResponseType.ERROR:
                     return result
+                backup_failure = result.response.speech.get("plain", {}).get("speech") or ""
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Backup agent %s failed too: %s", backup, err)
                 result = None
-            if may_change:
+                backup_failure = str(err)
+            if may_change and (attempt.get("started") or attempt.get("action_started") or not _definitely_offline(backup_failure)):
                 break  # a backup may have performed the action before failing
         response = intent.IntentResponse(language=user_input.language)
         response.async_set_speech(NOT_ANSWERING)
@@ -1129,6 +1132,11 @@ ALEXA_PROMPT = (
 )
 _SKILL_SUFFIX = re.compile(r"\.?\s*device_id:\s*\S+\s*$", re.I)
 CALLED_WITHIN = 20  # seconds: the Echo spoken to most recently, if this recent, is the one asking
+
+
+def _definitely_offline(reason: str) -> bool:
+    """Explicit connection failures, unlike timeouts, can use the offline fallback."""
+    return reason.strip().casefold() in {"no internet", "network is unreachable", "connection refused"}
 
 
 def calling_echo(hass: HomeAssistant, within: float = CALLED_WITHIN) -> str | None:
