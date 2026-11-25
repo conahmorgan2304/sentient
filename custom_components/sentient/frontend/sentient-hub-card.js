@@ -154,7 +154,7 @@
       if (climate) {
         const tgt = climate.attributes.temperature;
         out.push({ icon: climate.attributes.hvac_action === "heating" ? "mdi:fire" : "mdi:home-thermometer-outline",
-          val: `${Math.round(climate.attributes.current_temperature * 10) / 10}°`, label: tgt != null ? `INSIDE · SET ${tgt}°` : "INSIDE",
+          val: `${Math.round(climate.attributes.current_temperature * 10) / 10}°`, label: tgt != null ? "INSIDE · " + "SET {a}°".replace("{a}", tgt) : "INSIDE",
           cls: climate.attributes.hvac_action === "heating" ? "heat" : "", more: climate.entity_id });
       }
       if (weather) out.push({ icon: "mdi:weather-partly-cloudy", val: `${Math.round(weather.attributes.temperature)}°`, label: "OUTSIDE", more: weather.entity_id });
@@ -282,7 +282,7 @@
       const temp = sys.temperature && num(sys.temperature);
       let up = "";
       const boot = sys.boot && S[sys.boot] ? new Date(S[sys.boot].state) : null;
-      if (boot && !isNaN(boot)) { const ms = Date.now() - boot; up = `UP ${Math.floor(ms / 864e5)}d ${Math.floor((ms % 864e5) / 36e5)}h`; }
+      if (boot && !isNaN(boot)) { const ms = Date.now() - boot; up = "UP {a}d {b}h".replace("{a}", Math.floor(ms / 864e5)).replace("{b}", Math.floor((ms % 864e5) / 36e5)); }
 
       const fixed = parseInt(this._cfg.height, 10);
       this.shadowRoot.innerHTML = `<style>${CSS}</style>

@@ -12,6 +12,31 @@
     mind: ["memories", "mutes", "usage", "privacy"],
     security: ["spots", "checks"],
   };
+  const AI_PURPOSE_COUNTS = {
+    animals: "ANIMALS {a}",
+    bins: "BINS {a}",
+    "book recap": "BOOK RECAP {a}",
+    briefing: "BRIEFING {a}",
+    "camera checks": "CAMERA CHECKS {a}",
+    "clip watch": "CLIP WATCH {a}",
+    clips: "CLIPS {a}",
+    digest: "DIGEST {a}",
+    doorbell: "DOORBELL {a}",
+    drive: "DRIVE {a}",
+    manual: "MANUAL {a}",
+    noticing: "NOTICING {a}",
+    overnight: "OVERNIGHT {a}",
+    question: "QUESTION {a}",
+    recipe: "RECIPE {a}",
+    routing_calibration: "ROUTING_CALIBRATION {a}",
+    security: "SECURITY {a}",
+    "self-test": "SELF-TEST {a}",
+    "speech language": "SPEECH LANGUAGE {a}",
+    tomorrow: "TOMORROW {a}",
+    upkeep: "UPKEEP {a}",
+    watches: "WATCHES {a}",
+    welcome: "WELCOME {a}",
+  };
   const TAB_OF = Object.fromEntries(Object.entries(ON_TABS).flatMap(([tab, ids]) => ids.map((id) => [id, tab])));
   const SWITCH = { clips: "clip_watch", camsec: "camera_security", nightwatch: "night_watch", away: "away_lights_on", bins: "bins_check",
     rain: "rain_warnings", alexa: "alexa_skill", energy: "energy_insight", autobackup: "auto_backup", screen: "screen", updates: "update_checker",
@@ -29,12 +54,20 @@
   let LOCALE = "en-GB", I18N = null, HASS = null;
   const isEnglish = (h) => /^en(-|$)/i.test(String((h && ((h.locale && h.locale.language) || h.language)) || "en"));
   const T = (s) => (I18N && HASS ? I18N.t(HASS, s) : s);
+  // Interpolate the English template before the shadow-root translation pass.
+  const sentence = (template, ...values) => template.replace(/\{([a-z])\}/g, (_, slot) => values[slot.charCodeAt(0) - 97] ?? "");
   const confirmT = (s) => window.confirm(T(s));
   // option labels inside a form schema written in English (the item editors)
   const trSchema = (x) => (Array.isArray(x) ? x.map(trSchema) : x && typeof x === "object"
     ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, k === "label" && typeof v === "string" ? T(v) : trSchema(v)])) : x);
   const esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); };
+  const hm = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", ...(!isEnglish(HASS) && { hourCycle: "h23", timeZone: HASS.config?.time_zone }) }); };
+  const stateLabel = (hass, entityId, state) => {
+    const entity = hass.states[entityId];
+    return !isEnglish(hass) && hass.formatEntityState
+      ? hass.formatEntityState(entity || { entity_id: entityId, state, attributes: {} }, state) || state
+      : state;
+  };
   const heldWhy = (reason) => {
     const [kind, what] = String(reason || "").split(/:(.*)/s);
     if (kind === "hushed_by") return what === "announcement" ? "AFTER ANOTHER ANNOUNCEMENT" : "AFTER " + String(what || "SOMETHING ELSE").split(".").pop().replaceAll("_", " ").toUpperCase();
@@ -136,14 +169,20 @@
     _editorOpen() { return this._view === "settings" || !!this._host; }
 
     _language(hass) {
+      const previous = HASS && I18N && [I18N.languageOf(HASS), I18N.houseText(HASS)].join();
       HASS = hass;
       LOCALE = isEnglish(hass) ? "en-GB" : String((hass.locale && hass.locale.language) || hass.language);
-      if (this._i18nUpdate) { this._i18nUpdate(hass); return; }
+      if (this._i18nUpdate) {
+        const changed = previous !== [I18N.languageOf(hass), I18N.houseText(hass)].join();
+        const updated = this._i18nUpdate(hass);
+        if (changed) updated.then(() => { if (this._view === "mind") this._drawBrain(); });
+        return;
+      }
       if (this._i18nLoading || isEnglish(hass)) return;
       this._i18nLoading = import(I18N_URL).then((m) => {
         I18N = m;
         this._i18nUpdate = m.attach(this.shadowRoot, this._hass);
-        m.prepare(this._hass);
+        m.prepare(this._hass).then(() => { if (this._view === "mind") this._drawBrain(); });
       }, () => {});  // no translations: the page stays in English
     }
 
@@ -639,7 +678,7 @@
       const clear = (i) => this._hass.user && this._hass.user.is_admin
         ? `<button class="hx" data-act="hclear" data-id="${esc(i.kind + ":" + i.name)}" title="Clear this problem" aria-label="Clear this problem"><ha-icon icon="mdi:close"></ha-icon></button>` : "";
       const healthRows = issues.slice(0, 6).map((i) => (i.kind === "offline"
-        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>and ${i.with} of its device${i.with > 1 ? "s" : ""}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u>${stop(i)}</div>`
+        ? `<div class="r bad"><ha-icon icon="mdi:lan-disconnect"></ha-icon><b>${esc(i.name)}${i.with ? `<small>${esc(sentence(i.with === 1 ? "and {a} of its device" : "and {a} of its devices", i.with))}</small>` : ""}${i.why ? `<small>${esc(i.why)}</small>` : ""}</b><u>OFFLINE${i.since ? " · " + ago(i.since) : ""}</u>${stop(i)}</div>`
         : i.kind === "ai" ? `<div class="r bad"><ha-icon icon="mdi:robot-confused-outline"></ha-icon><b title="${esc(i.detail || "")}">The AI isn't answering</b><u>PLAIN WORDS</u></div>`
         : i.kind === "limit" ? `<div class="r warn"><ha-icon icon="mdi:counter"></ha-icon><b>Today's AI tasks are used up</b><u>${esc(i.level)} · PLAIN WORDS</u></div>`
         : i.kind === "speaker" ? `<div class="r bad"><ha-icon icon="mdi:speaker-off"></ha-icon><b title="${esc(i.detail || "")}">Couldn't speak on ${esc(i.name)}</b><u>${ago(i.since)}</u></div>`
@@ -729,7 +768,19 @@
       const lastHour = this._lh ? (this._lh.length ? this._lh.map((i) => `<div class="r dim"><ha-icon icon="mdi:clock-outline"></ha-icon>
           <b>${esc(i.text)}</b><u>${hm(i.time)}</u></div>`).join("") : '<div class="e">NOTHING IN THE LAST HOUR</div>') : "";
       const mindTitle = mindCount ? `${mindCount} ON ITS MIND` : `${this._st("mind") ? this._st("mind").state : 0} TALKS TODAY`;
-      const meter = (top) => ai.by_purpose ? `<div class="hint meter">AI ${ai.today}${ai.limit ? " OF " + ai.limit : ""} TODAY${Object.keys(ai.by_purpose).length ? " · " + Object.entries(ai.by_purpose).slice(0, top).map(([k, v]) => `${esc(k).toUpperCase()} ${v}`).join(" · ") : ""}${ai.average_per_day != null ? " · USUALLY " + ai.average_per_day + "/DAY" : ""}${ai.service_attempts_today != null ? ` · ${esc(ai.service_attempts_today)} SERVICE ATTEMPTS (${esc(ai.retry_attempts_today || 0)} RETRIES)` : ""}</div>` : "";
+      const meter = (top) => {
+        if (!ai.by_purpose) return "";
+        const parts = [
+          ai.limit ? sentence("AI {a} OF {b} TODAY", ai.today, ai.limit) : sentence("AI {a} TODAY", ai.today),
+          ...Object.entries(ai.by_purpose).slice(0, top).map(([purpose, count]) => Object.hasOwn(AI_PURPOSE_COUNTS, purpose)
+            ? sentence(AI_PURPOSE_COUNTS[purpose], count) : `${purpose.toUpperCase()} ${count}`),
+          ai.average_per_day != null ? sentence("USUALLY {a}/DAY", ai.average_per_day) : "",
+          ai.service_attempts_today == null ? "" : sentence(
+            ai.retry_attempts_today === 1 ? "{a} SERVICE ATTEMPTS ({b} RETRY)" : "{a} SERVICE ATTEMPTS ({b} RETRIES)",
+            ai.service_attempts_today, ai.retry_attempts_today || 0),
+        ];
+        return `<div class="hint meter">${esc(parts.filter(Boolean).join(" · "))}</div>`;
+      };
       // the overview keeps a short summary; everything else lives on the MIND tab
       R("mind").innerHTML = this._h("MIND", mindTitle)
         + (thinkList.slice(0, 4).join("") || '<div class="e">NOTHING ON ITS MIND · THINKS IT OVER EACH NIGHT</div>')
@@ -1913,7 +1964,7 @@
         return `<div class="dc${later ? " later" : ""}${i === Math.floor(d.now) ? " nowc" : ""}" title="${String(i).padStart(2, "0")}:00 · ${tot} event${tot === 1 ? "" : "s"}">${segs}</div>`;
       }).join("");
       const ticks = [0, 6, 12, 18].map((h) => `<span style="left:${(h / 24 * 100).toFixed(2)}%">${String(h).padStart(2, "0")}</span>`).join("");
-      const facts = [d.first_move ? `FIRST UP ${esc(d.first_move)}` : "", d.busiest ? `BUSIEST ${esc(d.busiest)}` : ""].filter(Boolean).join(" · ");
+      const facts = [d.first_move ? esc(sentence("FIRST UP {a}", d.first_move)) : "", d.busiest ? esc(sentence("BUSIEST {a}", d.busiest)) : ""].filter(Boolean).join(" · ");
       el.innerHTML = this._h("THE DAY SO FAR", facts)
         + `<div class="dchart">${cols}</div><div class="dticks">${ticks}</div>`
         + `<div class="dkey">${G.map(([k, l]) => `<span class="${k}"><i></i>${d.totals[k]} ${l}</span>`).join("")}</div>`;
@@ -1938,17 +1989,27 @@
       const pct = (v) => (v == null ? "—" : `${v}%`);
       const p = b.prediction || {}, o = b.outcome || {}, ind = b.independence || {};
       const rows = [];
-      rows.push(`<div class="r"><ha-icon icon="mdi:crystal-ball"></ha-icon><b class="wrap">Expected ${pct(p.percent)} of today's changes<small>${b.warming ? "warming up from history…" : `${p.judged || 0} judged${(b.trend || []).length > 1 ? ` · ${b.trend[0].percent}% → ${b.trend[b.trend.length - 1].percent}% over ${b.trend.length} days` : ""}`}</small></b></div>`);
-      if ((p.surprises || []).length) rows.push(`<div class="r warn"><ha-icon icon="mdi:alert-decagram-outline"></ha-icon><b class="wrap">Surprises today<small>${esc(p.surprises.slice(-3).map((x) => `${x.name || x.entity} ${x.new} at ${hm(new Date(x.ts * 1000).toISOString())}`).join(" · "))}</small></b></div>`);
-      rows.push(`<div class="r"><ha-icon icon="mdi:thumbs-up-down-outline"></ha-icon><b class="wrap">Reactions: ${pct(o.percent)} went well<small>${o.good || 0} acted on · ${o.bad || 0} put straight back (30 days)</small></b></div>`);
-      rows.push(`<div class="r"><ha-icon icon="mdi:piggy-bank-outline"></ha-icon><b class="wrap">Without the AI: ${pct(ind.percent)}<small>${ind.without_ai || 0} saved today · ${ind.ai_calls == null ? "?" : ind.ai_calls} AI calls${b.gating === "watch" && b.would_skip ? ` · skipping the usual would save ${b.would_skip}` : ""}</small></b></div>`);
-      rows.push(`<div class="r"><ha-icon icon="mdi:database-clock-outline"></ha-icon><b class="wrap">House ledger: ${b.ledger_on ? (b.ledger || 0).toLocaleString() + " changes" : "off"}<small>${b.unexplained_week || 0} switched by themselves this week · search: ${esc(b.search)}${b.recall_misses ? ` · ${b.recall_misses} found nothing today` : ""}</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:crystal-ball"></ha-icon><b class="wrap">${esc(sentence("Expected {a} of today's changes", pct(p.percent)))}<small>${b.warming ? "warming up from history…" : `${esc(sentence("{a} judged", p.judged || 0))}${(b.trend || []).length > 1 ? ` · ${esc(sentence("{a}% → {b}% over {c} days", b.trend[0].percent, b.trend[b.trend.length - 1].percent, b.trend.length))}` : ""}`}</small></b></div>`);
+      if ((p.surprises || []).length) rows.push(`<div class="r warn"><ha-icon icon="mdi:alert-decagram-outline"></ha-icon><b class="wrap">Surprises today<small data-no-i18n>${esc(p.surprises.slice(-3).map((x) => sentence(T("{a} {b} at {c}"), x.name || x.entity, stateLabel(this._hass, x.entity, x.new), hm(x.ts * 1000))).join(" · "))}</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:thumbs-up-down-outline"></ha-icon><b class="wrap">${esc(sentence("Reactions: {a} went well", pct(o.percent)))}<small>${esc(sentence("{a} acted on", o.good || 0))} · ${esc(sentence("{a} put straight back (30 days)", o.bad || 0))}</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:piggy-bank-outline"></ha-icon><b class="wrap">${esc(sentence("Without the AI: {a}", pct(ind.percent)))}<small>${esc(sentence("{a} saved today", ind.without_ai || 0))} · ${esc(sentence("{a} AI calls", ind.ai_calls ?? "?"))}${b.gating === "watch" && b.would_skip ? ` · ${esc(sentence("skipping the usual would save {a}", b.would_skip))}` : ""}</small></b></div>`);
+      rows.push(`<div class="r"><ha-icon icon="mdi:database-clock-outline"></ha-icon><b class="wrap">${b.ledger_on ? esc(sentence("House ledger: {a} changes", (b.ledger || 0).toLocaleString(LOCALE))) : "House ledger: off"}<small>${esc(sentence("{a} switched by themselves this week", b.unexplained_week || 0))} · ${esc(sentence("search: {a}", b.search))}${b.recall_misses ? ` · ${esc(sentence("{a} found nothing today", b.recall_misses))}` : ""}</small></b></div>`);
       const c = b.corrections;
-      if (c && c.corrections) rows.push(`<div class="r"><ha-icon icon="mdi:school-outline"></ha-icon><b class="wrap">Corrections without observed repeats: ${c.stuck_rate == null ? `${c.stuck} of ${c.judged}` : pct(Math.round(c.stuck_rate * 100))}<small>${esc(c.corrections)} thumbs down, shushes and hushes this month · ${esc(c.said_again)} still mentioned again within a fortnight · ${esc(c.corrections - c.judged)} still being watched · silence is not proof a correction worked</small></b></div>`);
+      if (c && c.corrections) rows.push(`<div class="r"><ha-icon icon="mdi:school-outline"></ha-icon><b class="wrap">${esc(c.stuck_rate == null ? sentence("Corrections without observed repeats: {a} of {b}", c.stuck, c.judged) : sentence("Corrections without observed repeats: {a}%", Math.round(c.stuck_rate * 100)))}<small>${esc(sentence("{a} thumbs down, shushes and hushes this month", c.corrections))} · ${esc(sentence("{a} still mentioned again within a fortnight", c.said_again))} · ${esc(sentence("{a} still being watched", c.corrections - c.judged))} · silence is not proof a correction worked</small></b></div>`);
       if ((b.by_themselves || []).length) rows.push(`<div class="r dim"><ha-icon icon="mdi:help-circle-outline"></ha-icon><b class="wrap">Switched by themselves most this week<small>${esc(b.by_themselves.map((x) => `${x.name} ${x.times}×`).join(" · "))}</small></b></div>`);
-      (b.beliefs || []).slice(0, 4).forEach((x) => rows.push(`<div class="r${x.status === "held" ? "" : " dim"}"><ha-icon icon="mdi:lightbulb-question-outline"></ha-icon><b class="wrap">${esc(x.claim)}<small>${esc(x.status)} · confidence ${Math.round(x.confidence * 100)}% · ${x.support} held, ${x.against} missed</small></b></div>`));
-      (b.voice || []).forEach((v) => rows.push(`<div class="r warn"><ha-icon icon="mdi:microphone-off"></ha-icon><b class="wrap">${esc(v.name)} is slow to hear you<small>${esc(v.samples.map((s) => `${s.seconds}s for ${s.words} words`).join(" · "))}</small></b></div>`));
-      (b.trust || []).slice(0, 3).forEach((t) => rows.push(`<div class="r dim"><ha-icon icon="mdi:shield-half-full"></ha-icon><b class="wrap">${esc(t.name)}: trusted ${Math.round(t.trust * 100)}%<small>${esc(t.why)}</small></b></div>`));
+      const beliefLabel = (belief) => {
+        const { claim, params } = belief;
+        if (isEnglish(this._hass) || belief.kind !== "by_itself" || !params) return esc(claim);
+        // The stored claim keeps its original name even if the entity was renamed.
+        const end = claim.lastIndexOf(` goes to ${params.state} by itself around `);
+        const template = T("{a} goes to {b} by itself around {c}");
+        if (end < 0 || template === "{a} goes to {b} by itself around {c}") return esc(claim);
+        return `<span data-no-i18n>${esc(sentence(template, claim.slice(0, end),
+          stateLabel(this._hass, params.entity, params.state), `${String(params.hour).padStart(2, "0")}:00`))}</span>`;
+      };
+      (b.beliefs || []).slice(0, 4).forEach((x) => rows.push(`<div class="r${x.status === "held" ? "" : " dim"}"><ha-icon icon="mdi:lightbulb-question-outline"></ha-icon><b class="wrap">${beliefLabel(x)}<small>${esc(x.status)} · ${esc(sentence("confidence {a}%", Math.round(x.confidence * 100)))} · ${esc(sentence("{a} held, {b} missed", x.support, x.against))}</small></b></div>`));
+      (b.voice || []).forEach((v) => rows.push(`<div class="r warn"><ha-icon icon="mdi:microphone-off"></ha-icon><b class="wrap">${esc(sentence("{a} is slow to hear you", v.name))}<small>${esc(v.samples.map((s) => sentence("{a}s for {b} words", s.seconds, s.words)).join(" · "))}</small></b></div>`));
+      (b.trust || []).slice(0, 3).forEach((t) => rows.push(`<div class="r dim"><ha-icon icon="mdi:shield-half-full"></ha-icon><b class="wrap">${esc(sentence("{a}: trusted {b}%", t.name, Math.round(t.trust * 100)))}<small>${esc(t.why)}</small></b></div>`));
       const admin = this._hass.user && this._hass.user.is_admin;
       el.innerHTML = this._h("HOW I'M LEARNING", b.gating === "on" ? "SKIPPING THE USUAL" : b.gating === "watch" ? "WATCHING" : "")
         + rows.join("")
@@ -2481,14 +2542,14 @@
       if (!c || !(c.cameras || []).length) { el.hidden = true; return; }
       el.hidden = false;
       const busy = c.cameras.reduce((n, x) => n + (x.today || 0), 0);
-      el.innerHTML = this._h("CAMERAS", `${c.cameras.length} · ${busy} DETECTIONS TODAY`)
+      el.innerHTML = this._h("CAMERAS", esc([c.cameras.length, sentence("{a} DETECTIONS TODAY", busy)].join(" · ")))
         + c.cameras.map((x) => {
           const live = this._hass.states[x.entity_id] || { state: x.state };
           const ok = !["unavailable", "unknown"].includes(live.state);
           return `<div class="r rtr${ok ? "" : " bad"}${this._liveCam === x.entity_id ? " on" : ""}" data-act="livecam" data-id="${esc(x.entity_id)}"><ha-icon icon="${esc(ok ? "mdi:cctv" : "mdi:video-off-outline")}"></ha-icon><b>${esc(x.name)}</b>`
-            + `<u>${esc(ok ? String(live.state).toUpperCase() : "OFFLINE")}${x.today ? " · " + x.today + " TODAY" : ""}</u></div>`;
+            + `<u>${esc(ok ? stateLabel(this._hass, x.entity_id, live.state).toUpperCase() : "OFFLINE")}${x.today ? " · " + esc(sentence("{a} TODAY", x.today)) : ""}</u></div>`;
         }).join("")
-        + (c.hidden ? `<div class="hint">${c.hidden} EXTRA VIEWS HIDDEN (SUB-STREAMS, SCREENSHOTS, MAPS)</div>` : "");
+        + (c.hidden ? `<div class="hint">${esc(sentence("{a} EXTRA VIEWS HIDDEN (SUB-STREAMS, SCREENSHOTS, MAPS)", c.hidden))}</div>` : "");
     }
 
     _drawSecurity() {
@@ -2896,10 +2957,10 @@
     // where the voice went wrong this week, by plain rules: the measure a change to Sentient should improve
     _reliabilityCard(rel) {
       const when = (t) => t ? new Date(t).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
-      const rate = rel.clean_rate == null ? "" : `${Math.round(rel.clean_rate * 100)}% WITHOUT A PROBLEM`;
+      const rate = rel.clean_rate == null ? "" : esc(sentence("{a}% WITHOUT A PROBLEM", Math.round(rel.clean_rate * 100)));
       const counts = (rel.counts || []).map((c) => `${esc(c.label)} (${esc(c.count)})`).join(" · ");
       const head = rel.turns
-        ? `<div class="r"><ha-icon icon="mdi:check-decagram-outline"></ha-icon><b class="wrap">${esc(rel.turns)} voice turn${rel.turns === 1 ? "" : "s"} in ${esc(rel.days)} days · ${esc(rel.clean_turns)} without a problem${counts ? `<small>${counts}</small>` : ""}</b><u>${rate}</u></div>`
+        ? `<div class="r"><ha-icon icon="mdi:check-decagram-outline"></ha-icon><b class="wrap">${esc(sentence(rel.turns === 1 ? "{a} voice turn in {b} days" : "{a} voice turns in {b} days", rel.turns, rel.days))} · ${esc(sentence("{a} without a problem", rel.clean_turns))}${counts ? `<small>${counts}</small>` : ""}</b><u>${rate}</u></div>`
         : '<div class="e">NO VOICE TURNS CHECKED YET · ASK SENTIENT SOMETHING</div>';
       const rows = (rel.recent || []).map((r) => `<div class="r warn"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><b class="wrap">${esc(r.asked)}<small>${esc(r.problems.map((p) => p.label).join(" · "))}</small><details><summary>What happened</summary><small>SAID · ${esc(r.said)}</small><small>TOOLS · ${esc((r.tools || []).join(", ") || "none")}</small>${r.problems.map((p) => `<small>${esc(p.label)} · ${esc(p.detail)}</small>`).join("")}</details></b><u>${when(r.time)}${r.room ? " · " + esc(r.room).toUpperCase() : ""}</u></div>`).join("");
       const clear = this._hass.user?.is_admin && (rel.recent || []).length ? `<div class="row lh"><button class="btn sm ghost" data-act="reliabilityclear"><ha-icon icon="mdi:delete-outline"></ha-icon> CLEAR</button></div>` : "";
@@ -3432,8 +3493,8 @@
       R("mbrain").innerHTML = `<div class="brh"><div class="brl">${this._h("MIND", ai.failing ? "AI NOT ANSWERING" : ai.capped ? "AI LIMIT REACHED" : "THINKING NORMALLY")}
           <div class="st">${tile(ai.today ?? 0, ai.limit ? `AI TASKS OF ${ai.limit}` : "AI TASKS")}${tile(ai.failed_today || 0, "FAILED TODAY", ai.failed_today ? "warn" : "")}${tile(this._st("mind") ? this._st("mind").state : 0, "TALKS TODAY")}${tile(this._st("memories") ? this._st("memories").state : 0, "MEMORIES")}${tile((mind.follow_ups || []).length + later.length, "TO COME BACK TO")}</div>
           ${ai.limit ? `<div class="use"><i style="width:${used}%"></i></div>` : ""}
-          <div class="tchips">${chip(tk.style === "natural", tk.style === "natural" ? "NATURAL TALK" : "BRIEF TALK")}${chip(tk.carry_on_minutes > 0, tk.carry_on_minutes > 0 ? `CARRIES ON ${esc(String(tk.carry_on_minutes))} MIN` : "NEW CHAT EACH TIME")}${chip(tk.focused_tools, "FOCUSED TOOLS")}${chip(tk.ask_later, "ASKS HOW THINGS WENT")}</div></div>
-        <div class="week"><div class="wt">AI TASKS · LAST WEEK${ai.average_per_day != null ? ` · USUALLY ${esc(String(ai.average_per_day))} A DAY` : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
+          <div class="tchips">${chip(tk.style === "natural", tk.style === "natural" ? "NATURAL TALK" : "BRIEF TALK")}${chip(tk.carry_on_minutes > 0, tk.carry_on_minutes > 0 ? esc(sentence("CARRIES ON {a} MIN", tk.carry_on_minutes)) : "NEW CHAT EACH TIME")}${chip(tk.focused_tools, "FOCUSED TOOLS")}${chip(tk.ask_later, "ASKS HOW THINGS WENT")}</div></div>
+        <div class="week"><div class="wt">AI TASKS · LAST WEEK${ai.average_per_day != null ? " · " + esc(sentence("USUALLY {a} A DAY", ai.average_per_day)) : ""}</div><div class="wbars">${bars || '<div class="e">NO HISTORY YET</div>'}</div></div></div>`;
       // about itself: what works right now, and what its own records show
       const me = mind.self;
       R("mself").hidden = !me;
@@ -3448,7 +3509,7 @@
         const props = (mind.proposals || []).filter((p) => !gone.has(p.id)).map((p) => `<div class="r prop"><ha-icon icon="mdi:tune-variant"></ha-icon>
           <b class="wrap">I'd change: ${esc(p.change.charAt(0).toLowerCase() + p.change.slice(1))}<small>Because ${esc(p.because)}</small></b>
           <button class="btn sm" data-act="propyes" data-id="${esc(p.id)}">YES</button><button class="btn sm ghost" data-act="propno" data-id="${esc(p.id)}">NO</button></div>`).join("");
-        R("mself").innerHTML = this._h("ABOUT ITSELF", limited ? `${limited} LIMITED` : "ALL WORKING")
+        R("mself").innerHTML = this._h("ABOUT ITSELF", limited ? esc(sentence("{a} LIMITED", limited)) : "ALL WORKING")
           + notOk + props + found + (me.enabled === false ? "" : (found ? "" : '<div class="hint">NOTHING STANDS OUT IN ITS OWN RECORDS THIS WEEK</div>'))
           + (me.adjusted || []).map((a) => `<div class="hint">LAST NIGHT · ${esc(a).toUpperCase()}</div>`).join("")
           + `${statusRows ? `<details class="caps"><summary>${notOk ? "Everything else is working" : "What it can do right now · all working"}</summary>${statusRows}</details>` : ""}`;

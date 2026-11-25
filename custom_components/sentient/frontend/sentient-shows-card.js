@@ -68,7 +68,7 @@
         button.christmas.on{background:#ff4d5e;border-color:#ff4d5e;box-shadow:0 0 16px rgba(255,77,94,.55)}
       </style><ha-card>
         <div class="h"><ha-icon icon="mdi:party-popper"></ha-icon>${esc(this._config.title || "LIGHT SHOWS")}
-          <span>${on ? `${st.attributes.following_sound ? "♪ " : ""}${until ? "TILL " + until : "ON"}` : ""}</span></div>
+          <span>${on ? `${st.attributes.following_sound ? '<i aria-hidden="true">♪ </i>' : ""}${until ? "TILL {when}".replace("{when}", until) : "ON"}` : ""}</span></div>
         <div class="b">${list.map((s) => {
           const lit = on && style === s;
           return `<button class="${esc(s)}${lit ? " on" : ""}" data-s="${esc(s)}"><ha-icon icon="${esc(SHOWS[s][0])}"></ha-icon>${SHOWS[s][1]}${lit ? " · stop" : ""}</button>`;
