@@ -175,3 +175,25 @@ def test_every_language_can_word_an_alarm(lang: str) -> None:
 
     phrases.load(lang)
     assert safety_sentence("The burglar alarm has gone off!", lang).endswith(": burglar alarm!")
+
+
+def test_assembled_overview_mind_and_security_text_in_polish(monkeypatch) -> None:
+    # The browser uses both files. Compile those same templates here to check
+    # that server-side matching also handles names, states and dotted lists.
+    page = json.loads((DIR.parent / "pl.json").read_text(encoding="utf-8"))
+    house = json.loads((DIR / "pl.json").read_text(encoding="utf-8"))
+    monkeypatch.setitem(phrases._loaded, "pl", phrases.compile_dictionary(house | page))
+    cases = json.loads((Path(__file__).parent / "fixtures/assembled_text_pl.json").read_text(encoding="utf-8"))
+    for english, polish in cases:
+        assert phrases.translate(english, "pl") == polish, english
+
+
+def test_recent_release_notes_are_translated_in_polish() -> None:
+    from custom_components.sentient.whatsnew import NOTES
+
+    house = json.loads((DIR / "pl.json").read_text(encoding="utf-8"))
+    assert phrases.load("pl") is not None
+    for version, notes in NOTES.items():
+        if tuple(map(int, version.split("."))) >= (1, 19, 0):
+            for note in notes:
+                assert phrases.translate(note, "pl") == house[note] != note

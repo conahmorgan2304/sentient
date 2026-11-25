@@ -88,6 +88,29 @@ test("in Polish, every page opens and every word the page writes is translated",
     }
     await page.evaluate(() => window.__panel._show("settings", true)); await settle(page); await grab();
     const tabs = await page.evaluate(() => [...window.__panel.shadowRoot.querySelectorAll("nav.tabs span")].map((s) => s.textContent));
+    const mind = await page.evaluate(async () => {
+      const p = window.__panel;
+      p._hass.config = { ...p._hass.config, time_zone: "Europe/Warsaw" };
+      p._hass.formatEntityState = (_entity, state) => state === "listening" ? "nasłuchuje poleceń" : "wyłączone";
+      p._brain = {
+        on: true,
+        prediction: { percent: 89, judged: 368, surprises: [{
+          name: "Home Assistant Voice", entity: "assist_satellite.voice", new: "listening",
+          ts: Date.UTC(2026, 10, 10, 9, 20) / 1000,
+        }] },
+        beliefs: [{
+          kind: "by_itself", claim: "Ledy nad zlewem goes to off by itself around 7pm",
+          params: { entity: "light.sink", state: "off", hour: 19 },
+          status: "held", confidence: 0.71, support: 4, against: 1,
+        }],
+      };
+      p._drawBrain();
+      await Promise.resolve();
+      return p.shadowRoot.getElementById("mlearn").textContent;
+    });
+    assert.ok(mind.includes("Home Assistant Voice (nasłuchuje poleceń) o 10:20"), mind);
+    assert.ok(mind.includes("Ledy nad zlewem sam przechodzi w stan wyłączone około 19:00"), mind);
+    assert.ok(mind.includes("Przewidziałem 89% dzisiejszych zmian"), mind);
     await page.close();
     // pictures (camera thumbnails, icons) point at Home Assistant's own addresses, which this test page doesn't serve
     assert.deepEqual(errors.filter((e) => !e.includes("Failed to load resource")), [], "errors on the page in Polish");
@@ -140,4 +163,18 @@ test("houseText follows the Mind sensor's switch", async () => {
   assert.equal(m.houseText(hass(false)), false);
   assert.equal(m.houseText(hass(true)), true);
   assert.equal(m.houseText(hass()), true);
+});
+
+test("assembled Overview, Mind and Security text reads in Polish", async () => {
+  const m = await import(path.join(ROOT, "custom_components/sentient/frontend/sentient-i18n.js"));
+  const page = JSON.parse(fs.readFileSync(path.join(DIR, "pl.json"), "utf8"));
+  const house = JSON.parse(fs.readFileSync(path.join(DIR, "house/pl.json"), "utf8"));
+  const dict = m.compile(page, house);
+  const cases = require("./fixtures/assembled_text_pl.json");
+  for (const [english, polish] of cases) assert.equal(m.translate(english, dict), polish, english);
+  const whatsNew = fs.readFileSync(path.join(DIR, "../../whatsnew.py"), "utf8")
+    .split('    "1.18.1": [')[0];
+  const notes = [...whatsNew.matchAll(/^        (".*"),$/gm)].map((m) => JSON.parse(m[1]));
+  assert.ok(notes.length >= 14);
+  for (const note of notes) assert.equal(m.translate(note, dict), house[note], note);
 });
