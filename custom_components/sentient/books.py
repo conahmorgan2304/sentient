@@ -282,7 +282,11 @@ class Books:
     # ----- reading and playing ----------------------------------------------------------------
     async def async_read(self, title: str | None, speaker: str, minutes: float | None = None,
                          via_reply: bool = False) -> dict[str, Any]:
+        speech = self._rt().speech
+        generation = getattr(speech, "_privacy_generation", 0)
         books = await self.async_books()
+        if generation != getattr(speech, "_privacy_generation", 0):
+            return {"error": "The reading request is no longer current. Please ask again."}
         if not books:
             return {"error": f"no books yet — put .epub, .txt or audiobook files in the media folder '{self.options.get(CONF_BOOKS_FOLDER) or DEFAULT_BOOKS_FOLDER}'"}
         name = title or self.last.get(speaker)
@@ -296,6 +300,8 @@ class Books:
                 return {"error": "audiobooks need a speaker that can play audio files — Echos can't play the house's own files; try a voice satellite or another speaker"}
             return await self._play_audio(book, speaker, minutes)
         chapters = await self._chapters_of(book)
+        if generation != getattr(speech, "_privacy_generation", 0):
+            return {"error": "The reading request is no longer current. Please ask again."}
         if not chapters:
             return {"error": f"couldn't find any text in {book['name']} (is it DRM-free?)"}
         mark = self.place(book["name"], speaker) or {"chapter": 0, "passage": 0}
@@ -312,7 +318,7 @@ class Books:
             self._mark(book["name"], speaker, ch, ps + 1, chapters)
             return {"book": book["name"], "where": where, "read_aloud": text,
                     "note": "Reply with exactly the read_aloud text, then a short 'say carry on for more'. Don't summarise it."}
-        task = self.hass.async_create_background_task(self._read_loop(book, speaker, ch, ps, minutes), f"sentient book {book['name']}")
+        task = self.hass.async_create_background_task(self._read_loop(book, speaker, ch, ps, minutes, generation), f"sentient book {book['name']}")
         self.reading[speaker] = {"task": task, "book": book["name"], "unsub": self._watch_wake(speaker)}
         start = "Starting" if (ch, ps) == (0, 0) else "Picking up in"
         return {"book": book["name"], "reading": True, "where": where, "for_minutes": minutes,
@@ -327,19 +333,30 @@ class Books:
                                            "where": f"chapter {ch + 1} of {len(chapters)}" + (f" ({title})" if title else "")}
         self._save()
 
-    async def _read_loop(self, book: dict[str, Any], speaker: str, ch: int, ps: int, minutes: float | None) -> None:
-        chapters = await self._chapters_of(book)
+    async def _read_loop(self, book: dict[str, Any], speaker: str, ch: int, ps: int, minutes: float | None,
+                         generation: int | None = None) -> None:
         rt = self._rt()
+        speech = rt.speech
+        generation = getattr(speech, "_privacy_generation", 0) if generation is None else generation
+
+        def current():
+            return generation == getattr(speech, "_privacy_generation", 0)
+
         until = dt_util.utcnow().timestamp() + minutes * 60 if minutes else None
         loop = asyncio.get_running_loop()
         cuts, first = 0, (ch, ps)
-        if ch < len(chapters) and ps < len(chapters[ch]["passages"]):
-            rt.speech.prepare_reading(speech_pieces(chapters[ch]["passages"][ps])[0], speaker)  # ready by the time it's needed
-        await asyncio.sleep(4)  # let the voice finish its "picking up in…"
         try:
-            while ch < len(chapters):
+            if not current():
+                return
+            chapters = await self._chapters_of(book)
+            if not current():
+                return
+            if ch < len(chapters) and ps < len(chapters[ch]["passages"]):
+                speech.prepare_reading(speech_pieces(chapters[ch]["passages"][ps])[0], speaker)
+            await asyncio.sleep(4)  # let the voice finish its "picking up in…"
+            while current() and ch < len(chapters):
                 passages = chapters[ch]["passages"]
-                while ps < len(passages):
+                while current() and ps < len(passages):
                     if until and dt_util.utcnow().timestamp() >= until:
                         await rt.speech.async_read_aloud("I'll stop there and keep your place.", speaker, story=True)
                         return
@@ -347,11 +364,13 @@ class Books:
                     following = speech_pieces(passages[ps + 1])[:1] if ps + 1 < len(passages) else []
                     upcoming = pieces + following
                     for i, piece in enumerate(pieces):
+                        if not current():
+                            return
                         if i + 1 < len(upcoming):
                             rt.speech.prepare_reading(upcoming[i + 1], speaker)  # made while this one is read
                         began = loop.time()
-                        if not await rt.speech.async_read_aloud(piece, speaker, story=True):
-                            return  # couldn't speak: keep the place on this passage
+                        if not await speech.async_read_aloud(piece, speaker, story=True) or not current():
+                            return  # interrupted: keep the place on this passage
                         if cut := self._cut_short(piece, loop.time() - began):
                             if not cuts:
                                 first = (ch, ps)
@@ -371,12 +390,14 @@ class Books:
                     ps += 1
                     self._mark(book["name"], speaker, ch, ps, chapters)  # only once it has been read
                 ch, ps = ch + 1, 0
-                if ch < len(chapters):
-                    await rt.speech.async_read_aloud(f"Chapter {ch + 1}.", speaker, story=True)
-            await rt.speech.async_read_aloud(f"That's the end of {book['name']}.", speaker, story=True)
+                if current() and ch < len(chapters):
+                    if not await speech.async_read_aloud(f"Chapter {ch + 1}.", speaker, story=True):
+                        return
+            if current():
+                await speech.async_read_aloud(f"That's the end of {book['name']}.", speaker, story=True)
         finally:
             info = self.reading.get(speaker)
-            if info and info.get("book") == book["name"]:
+            if info and info.get("task") is asyncio.current_task():
                 if info.get("unsub"):
                     info["unsub"]()
                 self.reading.pop(speaker, None)
