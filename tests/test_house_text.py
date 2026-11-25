@@ -38,7 +38,7 @@ def test_all_languages_are_there() -> None:
         "ar", "bn", "cs", "da", "de", "el", "es", "fi",
         "fr", "he", "hi", "hu", "id", "it", "ja", "ko",
         "nb", "nl", "pl", "pt", "ro", "ru", "sv", "tr",
-        "uk", "zh", "zh-hant",
+        "uk", "vi", "zh", "zh-hant",
     ]
 
 
