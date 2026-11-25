@@ -789,7 +789,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     setattr(entry.runtime_data, "grading", grading)
     from .pronounce import Pronouncer
 
-    pronouncer = Pronouncer(lambda: entry.runtime_data.options, lambda: [m.text for m in entry.runtime_data.memory.items])
+    from .language import spoken_language
+
+    pronouncer = Pronouncer(lambda: entry.runtime_data.options, lambda: [m.text for m in entry.runtime_data.memory.items],
+                            lambda: spoken_language(hass, entry.runtime_data.options))
     entry.runtime_data.pronouncer = pronouncer
     entry.runtime_data.speech.pronounce = pronouncer
     from .brain import Brain

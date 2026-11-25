@@ -15,6 +15,10 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.23.0": [
+        "Numbers are said as words in other languages. Before the voice reads a reply or announcement, \"4,4°\", \"14:30\", \"40%\" and \"5-10\" are written out in that language (\"cztery przecinek cztery stopnia\"), with the right form after them in Polish, Czech, Russian and Ukrainian, so voices such as Piper no longer read out commas, colons and dashes. The AI is also asked to write numbers as words. New switch in Settings, Voice: \"Say numbers as words\", on by default. English, Chinese, Japanese and Korean are left as they are.",
+        "The \"For Alexa\" agent chosen in an Assist pipeline now answers as the main agent does, instead of giving up after a few seconds with \"That's taking a little while\". Its own replies are in your language too.",
+    ],
     "1.22.0": [
         "Fourteen more languages: Simplified and Traditional Chinese, Japanese, Korean, Russian, Ukrainian, Arabic, Hebrew, Hindi, Bengali, Indonesian, Vietnamese, Thai and Brazilian Portuguese. That's 31 in all.",
         "Spoken safety alerts now have proper wording in every language (\"Обнаружен дым: kitchen!\"), where before only Finnish and French did and the rest could mix in English words.",

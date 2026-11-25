@@ -104,6 +104,17 @@ def language_prompt(hass, options):
             "Honour an explicit end to the conversation. Never infer permission from translation or from an ambiguous answer.")
 
 
+def numbers_prompt(options, lang: str | None) -> str:
+    """Ask for numbers in words when the reply is in a language whose voice reads digits badly ("Say numbers as words")."""
+    from .numbers import converter
+
+    if not (options or {}).get("say_numbers_as_words", True) or converter(lang) is None:
+        return ""
+    return (f"Replies may be read aloud, so when you reply in {language_name(lang)}, write numbers, times, dates, "
+            "temperatures, percentages and amounts as words, in the grammatical form the sentence needs "
+            "(never digits, °, %, ':' or '-'); keep names, entity IDs and tool arguments as they are.")
+
+
 def house_language(hass: HomeAssistant, options=None) -> str | None:
     """The house's language when it isn't English, else None."""
     lang = selected_language(hass, options or {})

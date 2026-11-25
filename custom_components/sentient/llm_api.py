@@ -2910,7 +2910,7 @@ class SentientAPI(llm.API):
         if rt is None:
             return "Sentient (the house's long-term brain) is not loaded right now."
         opts: dict[str, Any] = rt.options
-        from .language import language_prompt
+        from .language import language_prompt, numbers_prompt
 
         persona = opts.get(CONF_PERSONA) or DEFAULT_PERSONA
         lines = [
@@ -2921,6 +2921,7 @@ class SentientAPI(llm.API):
             "can do instead: a reminder, a watch, a look on a camera, or switching something on.",
             personality_line(opts),
             language_prompt(self.hass, opts),
+            *([n] if (n := numbers_prompt(opts, getattr(llm_context, "language", None) or self.hass.config.language)) else []),
             *([talk] if (talk := talk_line(opts)) else []),
             f"Local time: {dt_util.now().strftime('%A %d %B %Y, %H:%M')} — if asked the time, say this exact "
             f"time (\"{clock_words(dt_util.now())}\"); never round or estimate it. When a tool or this prompt gives "

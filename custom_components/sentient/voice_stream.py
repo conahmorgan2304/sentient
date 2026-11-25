@@ -39,10 +39,10 @@ class StreamWatch:
 
             # a sentence offering to arm, disarm or unlock (or to do what no device here can) never reaches the voice
             self._offers = StreamFilter(security=no_security_offers, extra=impossible)
-        if pronouncer is not None and pronouncer.table():
+        if pronouncer is not None and (pronouncer.active() if hasattr(pronouncer, "active") else pronouncer.table()):
             from .pronounce import StreamPronouncer
 
-            self._say = StreamPronouncer(pronouncer, pronouncer.table)  # names as they're said, on their way to the voice
+            self._say = StreamPronouncer(pronouncer, pronouncer.table, getattr(pronouncer, "numbers", lambda: False))  # names as they're said, on their way to the voice
         self.start = len(log.content)
         self.chars = 0
         self.started = False
