@@ -75,11 +75,16 @@ def camera_for(hass: HomeAssistant, sensor: str) -> str | None:
         candidates = [e.entity_id for e in er.async_entries_for_device(reg, entry.device_id)
                       if e.domain == "camera" and not e.disabled_by]
         if candidates:
+            # Exact registry identity is usable even before entities publish states.
+            if len(candidates) == 1:
+                return candidates[0]
+            exact = unique(candidates)
+            if exact is not None:
+                return exact
             preferred = [eid for eid in candidates if eid in preferred_ids]
-            if preferred:
-                return preferred[0] if len(preferred) == 1 else unique(preferred)
-            return None
-    return unique(sorted(preferred_ids))
+            return preferred[0] if len(preferred) == 1 else None
+    # Without a shared device, duplicate friendly names remain ambiguous.
+    return unique([cam.entity_id for cam in hass.states.async_all("camera")])
 
 
 def place(hass: HomeAssistant, sensor: str) -> str:
