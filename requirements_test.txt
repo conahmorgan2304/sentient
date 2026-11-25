@@ -5,3 +5,4 @@ hassil==3.5.0
 home-assistant-intents==2026.1.28
 PyTurboJPEG
 pypdf>=5.1.0
+num2words==0.5.14
