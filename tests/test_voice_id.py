@@ -452,3 +452,13 @@ async def test_explicit_memory_owner_takes_precedence_over_name_prefix(hass: Hom
     assert personal in alex_memories and shared in alex_memories and legacy not in alex_memories
     sam_memories = voice_id.speaker_scope(hass, opts, stored, other)
     assert personal not in sam_memories and legacy in sam_memories
+
+
+async def test_stale_recognised_speaker_cannot_read_personal_memory_in_cautious_mode(hass):
+    from custom_components.sentient.memory import Memory
+
+    speaker = SimpleNamespace(display_name="Alex", share_name=True)
+    personal = Memory(text="A personal preference", owner="alex")
+    shared = Memory(text="Bins go out Friday")
+    options = {"voice_id": True, "speaker_memories": True, "voice_id_unknown": True}
+    assert voice_id.speaker_scope(hass, options, [personal, shared], speaker) == [shared]

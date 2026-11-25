@@ -49,7 +49,8 @@ async def inspect(control, session, context):
     if user_id and (user is None or not user.is_active):
         return {'text': 'I cannot access those device results with the current permissions.'}
     parts, retry, before = [], [], {}
-    for row in record['rows']:
+    latest = {row['action']['entity_id']: index for index, row in enumerate(record['rows'])}
+    for index, row in enumerate(record['rows']):
         action = row['action']
         eid = action['entity_id']
         if not async_should_expose(control.hass, 'conversation', eid) or (user and not user.permissions.check_entity(eid, POLICY_READ)):
@@ -57,6 +58,9 @@ async def inspect(control, session, context):
             continue
         state = control.hass.states.get(eid)
         name = state.name if state else 'A device'
+        if latest[eid] != index:
+            parts.append(f'{name}: an earlier request was superseded by a later action; I will not repeat it.')
+            continue
         if target_reached(state, action):
             parts.append(f'{name} now reports the requested state; I will not repeat it.')
         elif row['status'] == 'verified':

@@ -269,9 +269,8 @@ class Control:
                     row['status'] = outcome['status'] if outcome else ('attempted' if row['dispatched'] else 'not_started')
                 previous = self.recovery_records.get(session.owner)
                 if previous and previous.get('batch_turn') == batch_turn:
-                    combined = {r['action']['entity_id']: r for r in previous['rows']}
-                    combined.update({r['action']['entity_id']: r for r in record['rows']})
-                    record['rows'] = list(combined.values())[-20:]
+                    # Keep earlier dispatch evidence, even when a later batch targets the same device.
+                    record['rows'] = (previous['rows'] + record['rows'])[-40:]
                 record['batch_turn'] = batch_turn
                 if result is not None:
                     result['recovery_outcomes'] = [{'entity_id': r['action']['entity_id'], 'status': r['status'], 'dispatched': r['dispatched']} for r in record['rows']]

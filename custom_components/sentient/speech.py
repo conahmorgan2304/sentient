@@ -232,6 +232,14 @@ def clean_message(message: str, banned: list[str]) -> str:
 HOUSE_BUSY_STATES = {"on", "true", "busy", "priority_only", "alarms_only", "total_silence", "do_not_disturb", "dnd"}
 
 
+class SpeechDeliveryError(HomeAssistantError):
+    """All destinations failed; retain individual delivery evidence."""
+
+    def __init__(self, receipts):
+        self.receipts = receipts
+        super().__init__("; ".join(r.get("error", r["status"]) for r in receipts) or "No usable speech destination")
+
+
 class SpeechRouter:
     """Decides whether, where and how to speak."""
 
@@ -606,12 +614,15 @@ class SpeechRouter:
             async with delivered(self.hass, speakers, volume, self.duck_level):
                 if generation != self._privacy_generation:
                     return SpeechResult(False, "cancelled", "", [])
-                receipts = await self._speak(spoken, speakers, original=text)
+                try:
+                    receipts = await self._speak(spoken, speakers, original=text)
+                except SpeechDeliveryError as err:
+                    receipts = err.receipts
             # Compatibility for injected/test delivery backends that return no receipts.
             receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
             accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
             if generation != self._privacy_generation:
-                return SpeechResult(bool(accepted), 'spoken' if accepted else 'failed', spoken, accepted, receipts)
+                return SpeechResult(bool(accepted), 'spoken' if accepted else 'cancelled', '', accepted, receipts)
             for speaker in accepted:
                 self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
                 # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
@@ -619,7 +630,8 @@ class SpeechRouter:
             if accepted:
                 self._remember_said(text, spoken)
         if not accepted:
-            return SpeechResult(False, "failed", spoken, [], receipts)
+            return SpeechResult(False, "delivery_timeout" if any(r["status"] == "timed_out" for r in receipts)
+                                else "delivery_failed", spoken, [], receipts)
         speakers = accepted
         reason = "spoken" if len(accepted) == len(receipts) else "partial"
         self.hass.bus.async_fire(
@@ -638,6 +650,7 @@ class SpeechRouter:
         A story uses the reading voice from Settings when one is chosen (not on Echos — Alexa only has its own).
         Some satellites (a browser tablet, for one) accept an announcement and return straight away, so the
         wait is also paced by the passage's length — otherwise the next passage would cut this one off."""
+        generation = self._privacy_generation
         loop = asyncio.get_running_loop()
         text = clean_message(text, self.banned)
         started = took = 0.0
@@ -646,16 +659,20 @@ class SpeechRouter:
                 await self._wait_idle([speaker])
                 volume = await self._volumes([speaker])
                 async with delivered(self.hass, [speaker], volume, self.duck_level):
+                    if generation != self._privacy_generation:
+                        return False
                     started = loop.time()
                     receipts = None
                     if story and (engine := self.options.get(CONF_READING_TTS)):
                         receipts = await self._speak_voice(text, speaker, engine, self.options.get(CONF_READING_VOICE))
+                    if generation != self._privacy_generation:
+                        return False
                     if receipts is None:  # no reading voice, or this speaker can't take one
                         receipts = await self._speak(text, [speaker], chime=False)
                     took = loop.time() - started
         except HomeAssistantError:
             return False
-        if not any(r["status"] == "accepted" for r in receipts or []):
+        if generation != self._privacy_generation or not any(r["status"] == "accepted" for r in receipts or []):
             return False
         if took < INSTANT_SECONDS:
             # handed straight back (a browser tablet, or a media player still starting): wait for the speech —
@@ -666,11 +683,13 @@ class SpeechRouter:
             else:
                 await asyncio.sleep(max(0.0, reading_seconds(text) - took))
         for _ in range(int(reading_seconds(text)) + 30):  # and then until the speaker says it has finished
+            if generation != self._privacy_generation:
+                return False
             st = self.hass.states.get(speaker)
             if st is None or st.state not in ("playing", "responding"):
                 break
             await asyncio.sleep(1)
-        return True
+        return generation == self._privacy_generation
 
     @callback
     def prepare_reading(self, text: str, speaker: str) -> None:
@@ -817,9 +836,11 @@ class SpeechRouter:
                     + '. Playback may still occur; speech has not been retried.',
                     title='Sentient speaker delivery', notification_id='sentient_speech_failure')
         if not any(r['status'] == 'accepted' for r in receipts):
-            raise HomeAssistantError('; '.join(r.get('error', r['status']) for r in receipts) or 'No usable speech destination')
+            raise SpeechDeliveryError(receipts)
         if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
             await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
+            if generation != self._privacy_generation:
+                return receipts
             for row in receipts:  # a sign (not proof) that the Echo did something: its state moved while it was told to speak
                 if row['status'] == 'accepted' and row['entity_id'].startswith('media_player.'):
                     st = self.hass.states.get(row['entity_id'])
@@ -915,7 +936,11 @@ class SpeechRouter:
                 self.hass.bus.async_fire(EVENT_SPOKE, {"message": spoken, "speakers": [], "priority": priority, "source": source,
                                                        "question": True, "phone": True, "why": reason_for(source)})
                 return SpeechResult(True, "asked_phone", spoken, [])
+        if generation != self._privacy_generation:
+            return SpeechResult(False, "cancelled", "", [])
         if not listening:
+            if generation != self._privacy_generation:
+                return SpeechResult(False, "cancelled", "", [])
             return await self.async_say(text, priority, candidates, source, _spoken=spoken)
         speaker = listening[0]
         prompt = (
@@ -958,6 +983,7 @@ class SpeechRouter:
         act on it and return what to say back; None to let the AI handle it."""
         from .answers import classify
 
+        generation = self._privacy_generation
         question = self._questions.get(satellite or "")
         if question is None:
             return None
@@ -976,6 +1002,9 @@ class SpeechRouter:
 
             if await async_language_rejection(self.hass, self.options, text):
                 kind = 'no'
+        if (generation != self._privacy_generation or dt_util.utcnow() > question["until"]
+                or self._questions.get(satellite or "") is not None):
+            return "That question is no longer open."
         if kind is None:
             return None
         return await question["on_answer"](kind)

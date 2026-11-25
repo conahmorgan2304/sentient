@@ -287,3 +287,25 @@ def test_recovery_phrase_tolerates_stt_punctuation():
     assert requested('That didnt work!')
     assert requested('That didn’t work.')
     assert not requested('That did not work yesterday, turn on another lamp')
+
+
+async def test_same_device_across_batches_preserves_dispatch_history(hass):
+    _, session = active(OPTIONS)
+    control = Control(hass, OPTIONS, Mock())
+    hass.states.async_set("light.kitchen", "on")
+
+    async def off(call):
+        hass.states.async_set("light.kitchen", "off")
+
+    async def on(call):
+        hass.states.async_set("light.kitchen", "on")
+
+    hass.services.async_register("light", "turn_off", off)
+    hass.services.async_register("light", "turn_on", on)
+    with patch("custom_components.sentient.control.async_should_expose", return_value=True):
+        await control.execute(session, [{"entity_id": "light.kitchen", "action": "turn_off"}], Context())
+        result = await control.execute(session, [{"entity_id": "light.kitchen", "action": "turn_on"}], Context())
+    assert len(result["recovery_outcomes"]) == 2
+    rows = control.recovery_records[session.owner]["rows"]
+    assert [row["action"]["action"] for row in rows] == ["turn_off", "turn_on"]
+    assert all(row["dispatched"] for row in rows)

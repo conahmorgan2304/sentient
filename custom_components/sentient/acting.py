@@ -110,7 +110,7 @@ def words(hass: HomeAssistant, actions: list[dict[str, Any]], past: bool = False
 
 
 async def async_carry_out(hass: HomeAssistant, actions: list[dict[str, Any]], name: str,
-                          verify_seconds: float | None = None) -> dict[str, Any]:
+                          verify_seconds: float | None = None, *, before_run=None) -> dict[str, Any]:
     """Run the actions, then check each device. Returns {'said': sentence, 'not_done': [...], 'done': [...]}."""
     from .never import touches
     from .plans import async_verify, describe, plan
@@ -122,14 +122,21 @@ async def async_carry_out(hass: HomeAssistant, actions: list[dict[str, Any]], na
     if touches(hass, actions):
         return {"said": "I didn't do it: one of those devices is on the never-touch list.", "not_done": actions,
                 "done": [], "error": "never-touch"}
-    for a in actions:  # exposure can change between being asked and being done
-        target = (a.get("target") or {}).get("entity_id")
-        if isinstance(target, str) and not exposed(hass, target):
-            return {"said": "I didn't do it: one of those devices is no longer one the voice can control.",
-                    "not_done": actions, "done": [], "error": "not exposed"}
+    def targets_exposed():
+        for a in actions:
+            target = (a.get("target") or {}).get("entity_id") or (a.get("data") or {}).get("entity_id")
+            targets = [target] if isinstance(target, str) else target or []
+            if any(not isinstance(eid, str) or not exposed(hass, eid) for eid in targets):
+                return False
+        return True
+
+    if not targets_exposed():
+        return {"said": "I didn't do it: one of those devices is no longer one the voice can control.",
+                "not_done": actions, "done": [], "error": "not exposed"}
     planned = plan(hass, actions)
     try:
-        await async_run_actions(hass, actions, name)
+        await async_run_actions(hass, actions, name, before_run=lambda: (
+            (before_run is None or before_run()) and not touches(hass, actions) and targets_exposed()))
     except Exception as err:  # noqa: BLE001 - a failed device is reported, not raised
         return {"said": f"I tried to {words(hass, actions)}, but it didn't work.", "not_done": actions, "done": [],
                 "error": type(err).__name__}

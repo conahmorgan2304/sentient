@@ -129,6 +129,8 @@ def speaker_scope(hass: HomeAssistant, options: dict[str, Any], memories: list[A
         return memories
     if (not enabled(hass, options) or speaker is None) and not options.get(CONF_VOICE_ID_UNKNOWN):
         return memories
+    if not enabled(hass, options):
+        speaker = UNKNOWN_SPEAKER
     people = known_people(hass)
     me = (name_of(speaker) or "").casefold() if speaker is not UNKNOWN_SPEAKER else ""
     if me:
