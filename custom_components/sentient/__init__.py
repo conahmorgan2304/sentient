@@ -887,8 +887,22 @@ def _manual_pages(hass: HomeAssistant, rt: Any, options: dict[str, Any]) -> None
 
 async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry) -> None:
     options = _entry_options(entry)
-    if options == entry.runtime_data.options:
+    old = entry.runtime_data.options
+    changed = {k for k in old.keys() | options.keys() if old.get(k) != options.get(k)}
+    if not changed:
         return  # a no-op save must not interrupt active work
+    # Sidebar visibility changes do not affect voice permissions, camera analysis or AI tasks.
+    if changed <= {CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY}:
+        old.update({k: options[k] for k in changed if k in options})
+        for k in changed - options.keys():
+            old.pop(k, None)
+        if "frontend" in hass.config.components:
+            from homeassistant.components import frontend
+
+            if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
+                frontend.async_remove_panel(hass, PANEL_URL_PATH)
+            await _async_register_panel(hass, entry)
+        return
     from .language import clear_translations
 
     from .language import selected_language
@@ -984,7 +998,7 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     hass.bus.async_fire(EVENT_MODE_CHANGED, {"options": True})  # switches refresh what they show
     entry.runtime_data.welcome.async_start()
     entry.runtime_data.health.async_check()
-    if "frontend" in hass.config.components:
+    if changed & {CONF_SIDEBAR, CONF_PAGE_ADMIN_ONLY, CONF_PERSONA} and "frontend" in hass.config.components:
         from homeassistant.components import frontend
 
         if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
