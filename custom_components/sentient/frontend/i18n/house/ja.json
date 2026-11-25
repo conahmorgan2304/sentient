@@ -109,6 +109,7 @@
  "Books and stories": "本と物語",
  "Books folder": "書籍フォルダー",
  "Briefings are turned off in Sentient's settings": "Sentient の設定でブリーフィングがオフになっています",
+ "Cameras named after their stream (\"MainStream\", \"HD Stream\") show on the Security tab again when they're the only camera their device offers.": "ストリーム名が付いたカメラ（「MainStream」「HD Stream」）が、その機器の唯一のカメラであれば、セキュリティタブに再び表示されます。",
  "Cancel that.": "それをキャンセルしてください。",
  "Cancelled. No action was taken.": "キャンセルしました。何も実行していません。",
  "Carbon monoxide detected": "一酸化炭素を検知",
