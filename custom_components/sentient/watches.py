@@ -96,6 +96,7 @@ class Watch:
     second_opinions: int = 0
     last_checked: str | None = None
     last_result: str | None = None
+    delivery_retries: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -887,7 +888,19 @@ class WatchManager:
                                 "kind": watch.kind}
         )
         kind = "reminder" if watch.kind == KIND_REMINDER else "watch"
-        await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")
+        result = await self.speech.async_say(message, watch.priority, targets, source=f"{kind}:{watch.what}")
+        if (watch.kind == KIND_REMINDER and not watch.do and not self._stopped
+                and result is not None and not result.spoken and watch.delivery_retries < 2
+                and (result.reason == "no_speaker" or (
+                    result.reason == "delivery_failed" and result.deliveries
+                    and all(not r.get("dispatched", True) for r in result.deliveries)))):
+            # Retry only a pure reminder that was definitely not dispatched.
+            # Never replay an associated action or an uncertain speaker request.
+            watch.delivery_retries += 1
+            watch.until = (dt_util.utcnow() + timedelta(minutes=2)).isoformat()
+            self._watches[watch.id] = watch
+            self._schedule(watch)
+            self._save()
 
     def _default_message(self, watch: Watch, state: State | None) -> str:
         if state is not None:
