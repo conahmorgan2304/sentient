@@ -37,6 +37,16 @@ def on_gadget(hass: HomeAssistant, entity_id: str) -> bool:
     return any(e.domain in GADGET_DOMAINS and e.entity_id != entity_id for e in er.async_entries_for_device(reg, entry.device_id))
 
 
+# Primary stream names are not evidence of a duplicate on a registered device.
+PRIMARY_VIEW = re.compile(
+    r"\b(?:hd|main|high)[ _-]?(?:stream|res|resolution|quality)\b",
+    re.IGNORECASE,
+)
+NON_CAMERA_VIEW = re.compile(
+    r"\bscreenshot\b|\blive[ _-]?map\b|\bsnapshots?\b", re.IGNORECASE,
+)
+
+
 def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None = None) -> bool:
     """True for sub-streams, screenshots, maps and a gadget's own camera (matched on the id, name and device)."""
     if on_gadget(hass, entity_id):
@@ -44,7 +54,19 @@ def is_duplicate_view(hass: HomeAssistant, entity_id: str, state: State | None =
     entry = er.async_get(hass).async_get(entity_id)
     st = state or hass.states.get(entity_id)
     text = " ".join(filter(None, (entity_id.split(".", 1)[-1], st.name if st else None, entry.original_name if entry else None)))
-    return bool(DUPLICATE_VIEW.search(text.replace("_", " ")))
+    text = text.replace("_", " ")
+    if NON_CAMERA_VIEW.search(text):
+        return True
+    if entry is not None and entry.device_id:
+        # HA may already have disabled every alternative stream. Never discard
+        # the remaining camera merely because its name describes its stream.
+        siblings = (
+            e for e in er.async_entries_for_device(er.async_get(hass), entry.device_id)
+            if e.domain == "camera" and e.entity_id != entity_id and not e.disabled_by
+        )
+        if not any(siblings) or PRIMARY_VIEW.search(text):
+            return False
+    return bool(DUPLICATE_VIEW.search(text))
 
 
 def ignored(options: dict[str, Any]) -> set[str]:
