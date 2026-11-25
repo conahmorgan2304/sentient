@@ -438,7 +438,7 @@ class HeatingProgrammes:
                     events.append((heater, "recover_off", None, record["key"]))
         events.extend(e for e in self.reconcile(local) if e[0] not in scheduled)
         if events:
-            self.hass.async_create_background_task(self.async_run(events, local), "sentient_heating_programme")
+            self.hass.async_create_background_task(self.async_run(events, local, revalidate=True), "sentient_heating_programme")
 
     def held(self, heater: str, now: datetime) -> bool:
         """Is someone's own change to this thermostat still within its time? Then a period starting or ending waits.
@@ -626,11 +626,11 @@ class HeatingProgrammes:
             row["ok"], row["why"] = False, " · ".join(z["why"] for z in row["zones"].values())
         return False
 
-    async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
+    async def async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime, *, revalidate: bool = False) -> list[str]:
         async with self._lock:
-            return await self._async_run(events, local)
+            return await self._async_run(events, local, revalidate=revalidate)
 
-    async def _async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime) -> list[str]:
+    async def _async_run(self, events: list[tuple[str, str, float | None, str]], local: datetime, *, revalidate: bool = False) -> list[str]:
         from .own import own_context
 
         rt = self._rt()
@@ -640,18 +640,23 @@ class HeatingProgrammes:
             if self._stopped or rt is None or not enabled(rt.options):
                 break
             programme = self.items.items.get(key)
-            if programme is None or not programme.get("enabled", True) or heater not in programme["heaters"]:
+            current = dt_util.now() if revalidate else local
+            if programme is not None and not programme.get("enabled", True) and what != "recover_off":
                 continue
-            current = dt_util.now()
-            if self.held(heater, current):
-                continue
-            active = _active_period(self.programmes(), heater, current)
-            if what == "on" and (active is None or active[0].get("id", active[0]["name"]) != key
-                                 or float(active[1]["temp"]) != temp):
-                continue  # queued request no longer matches the live programme
-            if what != "on" and active is not None:
-                continue  # a new period started while this request was queued
-            name = programme["name"]
+            if revalidate:
+                if programme is None or heater not in programme["heaters"]:
+                    continue
+                # Only recheck holds if the request waited across a state change.
+                # A schedule's own just-issued command is not a manual override.
+                if self.held(heater, current) and self._manual.get(heater):
+                    continue
+                active = _active_period(self.programmes(), heater, current)
+                if what == "on" and (active is None or active[0].get("id", active[0]["name"]) != key
+                                     or float(active[1]["temp"]) != temp):
+                    continue
+                if what != "on" and active is not None:
+                    continue
+            name = programme["name"] if programme else key
             state = self.hass.states.get(heater)
             label = state.name if state else heater
             row = rows.setdefault(key, {"time": dt_util.as_utc(local).isoformat(), "zones": {}})
