@@ -433,7 +433,7 @@ async def test_reading_stop_command_from_the_panel(hass: HomeAssistant, tmp_path
 
 
 async def test_queued_reading_does_not_speak_after_privacy_change(hass, tmp_path):
-    entry = await _setup(hass, tmp_path)
+    entry, _ = await _setup(hass, tmp_path)
     speech = entry.runtime_data.speech
 
     async def invalidate(*args):
@@ -443,3 +443,28 @@ async def test_queued_reading_does_not_speak_after_privacy_change(hass, tmp_path
             patch.object(speech, "_speak", new_callable=AsyncMock) as speak:
         assert not await speech.async_read_aloud("A queued passage.", "assist_satellite.bedroom")
     speak.assert_not_awaited()
+
+
+async def test_reading_session_stops_without_advancing_bookmark_on_privacy_change(hass, tmp_path):
+    (tmp_path / "books").mkdir()
+    _epub(tmp_path / "books" / "Flump.epub")
+    entry, _ = await _setup(hass, tmp_path, books=True)
+    rt = entry.runtime_data
+    speaker = "assist_satellite.bedroom"
+    said = []
+
+    async def read_aloud(text, target, **kwargs):
+        said.append(text)
+        rt.speech._privacy_generation += 1
+        return True
+
+    with patch.object(rt.speech, "async_read_aloud", side_effect=read_aloud), \
+            patch.object(rt.speech, "prepare_reading"), \
+            patch("custom_components.sentient.books.asyncio.sleep", AsyncMock()):
+        result = await rt.books.async_read("Flump", speaker)
+        assert result["reading"]
+        task = rt.books.reading[speaker]["task"]
+        await task
+    assert len(said) == 1
+    assert speaker not in rt.books.reading
+    assert rt.books.place("Flump", speaker) is None
