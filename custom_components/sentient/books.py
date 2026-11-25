@@ -318,8 +318,14 @@ class Books:
             self._mark(book["name"], speaker, ch, ps + 1, chapters)
             return {"book": book["name"], "where": where, "read_aloud": text,
                     "note": "Reply with exactly the read_aloud text, then a short 'say carry on for more'. Don't summarise it."}
-        task = self.hass.async_create_background_task(self._read_loop(book, speaker, ch, ps, minutes, generation), f"sentient book {book['name']}")
-        self.reading[speaker] = {"task": task, "book": book["name"], "unsub": self._watch_wake(speaker)}
+        session = object()
+        self.reading[speaker] = {"task": None, "book": book["name"], "unsub": self._watch_wake(speaker),
+                                 "session": session}
+        task = self.hass.async_create_background_task(
+            self._read_loop(book, speaker, ch, ps, minutes, generation, session), f"sentient book {book['name']}")
+        info = self.reading.get(speaker)
+        if info and info.get("session") is session:
+            info["task"] = task
         start = "Starting" if (ch, ps) == (0, 0) else "Picking up in"
         return {"book": book["name"], "reading": True, "where": where, "for_minutes": minutes,
                 "say_first": f"{start} {where}." if (ch, ps) != (0, 0) else f"Starting {book['name']}.",
@@ -334,7 +340,7 @@ class Books:
         self._save()
 
     async def _read_loop(self, book: dict[str, Any], speaker: str, ch: int, ps: int, minutes: float | None,
-                         generation: int | None = None) -> None:
+                         generation: int | None = None, session: object | None = None) -> None:
         rt = self._rt()
         speech = rt.speech
         generation = getattr(speech, "_privacy_generation", 0) if generation is None else generation
@@ -397,7 +403,7 @@ class Books:
                 await speech.async_read_aloud(f"That's the end of {book['name']}.", speaker, story=True)
         finally:
             info = self.reading.get(speaker)
-            if info and info.get("task") is asyncio.current_task():
+            if info and session is not None and info.get("session") is session:
                 if info.get("unsub"):
                     info["unsub"]()
                 self.reading.pop(speaker, None)
