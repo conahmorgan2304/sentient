@@ -66,14 +66,21 @@ def camera_for(hass: HomeAssistant, sensor: str) -> str | None:
                    or ((st := hass.states.get(eid)) is not None and normal(st.name) in names)]
         return matched[0] if len(matched) == 1 else None
 
+    from .cameras import is_duplicate_view
+
     reg = er.async_get(hass)
     entry = reg.async_get(sensor)
     if entry and entry.device_id:
         candidates = [e.entity_id for e in er.async_entries_for_device(reg, entry.device_id)
                       if e.domain == "camera" and not e.disabled_by]
         if candidates:
-            return candidates[0] if len(candidates) == 1 else unique(candidates)
-    return unique([cam.entity_id for cam in hass.states.async_all("camera")])
+            preferred = [eid for eid in candidates if hass.states.get(eid) is not None
+                         and not is_duplicate_view(hass, eid)]
+            if preferred:
+                return preferred[0] if len(preferred) == 1 else unique(preferred)
+            return None
+    return unique([cam.entity_id for cam in hass.states.async_all("camera")
+                   if not is_duplicate_view(hass, cam.entity_id, cam)])
 
 
 def place(hass: HomeAssistant, sensor: str) -> str:
