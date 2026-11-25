@@ -996,14 +996,20 @@ class BackedUpAgent(conversation.ConversationEntity):
 
         A command is never sent twice: the first try may have acted before the service failed."""
         from .sessions import COMMAND
+        from .followups import classify
 
         text = why.lower()
         return (any(sign in text for sign in BUSY_SIGNS) and not attempt.get('started')
-                and not attempt.get('action_started') and not COMMAND.search(user_input.text))
+                and not attempt.get('action_started') and not COMMAND.search(user_input.text)
+                and classify(user_input.text) not in ('adjustment', 'correction'))
 
     async def _async_process_with_fallback(self, user_input, attempt):
         gate = getattr(getattr(self._entry, "runtime_data", None), "ai", None)
         why = "no main agent chosen in Sentient's settings"
+        from .sessions import COMMAND
+        from .followups import classify
+
+        may_change = bool(COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction'))
         if self.main_agent:
             for tries_left in (1, 0):
                 try:
@@ -1017,7 +1023,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     why = response.speech.get("plain", {}).get("speech") or "an error"
                 except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
                     why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
-                if tries_left and EMPTY_TURN in why.lower() and not attempt.get('started') \
+                if tries_left and not may_change and EMPTY_TURN in why.lower() and not attempt.get('started') \
                         and not attempt.get('action_started') and repair_chat_log(self.hass, user_input.conversation_id):
                     # 19 Nov 18:31: an earlier reply with nothing in it was left in the conversation, and Google
                     # refuses the whole conversation then ("content parts are required"). Mended: ask again.
@@ -1045,11 +1051,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(text)
             return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
-        from .sessions import COMMAND
-        from .followups import classify
-
-        if attempt.get('action_started') or (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)
-                and (COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction'))):
+        if attempt.get('action_started') or (self.main_agent and may_change):
             return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
         rt_local = getattr(self._entry, "runtime_data", None)
         from .local_answers import async_answer as local_answer
@@ -1101,6 +1103,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Backup agent %s failed too: %s", backup, err)
                 result = None
+            if may_change:
+                break  # a backup may have performed the action before failing
         response = intent.IntentResponse(language=user_input.language)
         response.async_set_speech(NOT_ANSWERING)
         try:  # so a streaming pipeline speaks it too
