@@ -27,7 +27,7 @@ from homeassistant.util import dt as dt_util
 CONF_MOMENT = "moment_awareness"
 JUST_NOW = timedelta(minutes=45)
 # timeline kinds that are the house talking to itself, not something that happened
-NOT_EVENTS = {"mind", "health", "learned", "loop", "settings", "ai", "selftest", "held", "digest"}
+NOT_EVENTS = {"mind", "health", "learned", "loop", "settings", "ai", "selftest", "held", "digest", "said", "reminder", "briefing"}
 MAX_EVENTS = 6
 MAX_UNUSUAL = 4
 

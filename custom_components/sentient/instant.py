@@ -41,6 +41,12 @@ ROOM_TEMP = re.compile(r"^\s*(?:what(?:'s| is) the (?:temperature|temp) in (?:th
 CALENDAR = re.compile(r"^\s*(?:what(?:'s| is) on|(?:have|has) (?:i|we) got anything(?: on)?|do (?:i|we) have anything(?: on)?|"
                       r"is there anything on)(?: (?:my|the|our) (?:calendar|diary))?(?: (?P<when>today|tomorrow|this week))?"
                       r"(?: on (?:my|the|our) (?:calendar|diary))?\s*\??\s*$", re.I)
+_EVENT_SUBJECT = r"(?:the |my |our )?(?P<subject>(?:[\w'-]+ ){0,5}(?:delivery|appointment|meeting|event))"
+SCHEDULED_EVENT = re.compile(
+    r"^(?:(?:when is|what date is) " + _EVENT_SUBJECT
+    + r"|(?P<challenge>why did you say) (?P<earlier>.+?) (?:was|is) (?:today|tomorrow))\??$", re.I
+)
+
 ON = {"on", "open", "unlocked", "playing", "home", "heat", "cool", "heat_cool", "auto"}
 OPENISH = {"open": "open", "closed": "closed", "shut": "closed", "locked": "locked", "unlocked": "unlocked"}
 
@@ -171,6 +177,30 @@ async def _calendar(hass: HomeAssistant, when: str, readable: Callable[[str], bo
     return f"On your calendar {label}: " + "; ".join(said) + more + "."
 
 
+async def _scheduled_event(hass: HomeAssistant, match: re.Match, readable: Callable[[str], bool]) -> str | None:
+    """Match a named event in the exposed calendar, independently of earlier speech."""
+    from .llm_api import _voice_calendars
+    from .memory import _words
+    from .skills import async_calendar_events
+
+    target = match["subject"] or match["earlier"]
+    terms = _words(target)
+    if not terms or not terms.intersection({"delivery", "appointment", "meeting", "event"}):
+        return None
+    calendars = [entity_id for entity_id in _voice_calendars(hass) if readable(entity_id)]
+    if not calendars:
+        return None
+    found = await async_calendar_events(hass, calendars, 31)
+    if "error" in found:
+        return "I couldn't verify the date on the calendar."
+    matches = [event for event in found["events"] if terms <= _words(str(event.get("what") or ""))]
+    if not matches:
+        return "I couldn't verify that event on the shared calendars for the next 31 days."
+    listed = [f"{event['what']}, {event['when']}" for event in matches[:4]]
+    remainder = f", and {len(matches) - 4} more" if len(matches) > 4 else ""
+    return "The current calendar shows " + "; ".join(listed) + remainder + "."
+
+
 LOCK = re.compile(r"^(?:(?:can|could|would|will) you |please |hey \w+,? )*(?P<verb>lock|unlock)(?: up)? (?P<what>(?:the |my |our )?[\w' -]{2,40}?)(?: for me| please| now)?[?.!]*$",
                   re.I)
 
@@ -255,6 +285,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             return report.get("summary")
         if (m := CALENDAR.match(text)) and (m.group("when") or re.search(r"calendar|diary", text, re.I)):
             return await _calendar(hass, (m.group("when") or "this week").casefold(), readable)
+        if (m := SCHEDULED_EVENT.fullmatch(text)) and (scheduled := await _scheduled_event(hass, m, readable)):
+            return scheduled
         if COMING.search(text):
             return _coming_up(rt)
         if VISITORS.search(text):

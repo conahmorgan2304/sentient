@@ -58,7 +58,7 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
         ("email", r"e-?mails?|inbox|\bmail\b",
          ["sentient_email"]),
         ("calendar", r"calendar|clash|diary|appointment|meeting|double.?booked|busy (?:today|tomorrow)|what'?s on\b|"
-                     r"(?:this|next) week|weekend|any plans|my plans",
+                     r"(?:this|next) week|weekend|any plans|my plans|scheduled|\bwhen\b.*\bdeliver|\bdate\b",
          ["sentient_calendar", "sentient_calendar_clashes"]),
         ("routines", r"good ?night|morning|\bbed\b|routine|hoover|vacuum|party|disco|light show|scene|briefing|"
                      r"motion light|\brule\b|every time|whenever|automat",
@@ -90,6 +90,27 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
 }
 
 
+def camera_inspection(text: str, *, named_spot: bool = False) -> bool:
+    """Identify a direct visual check independently of optional tool focusing."""
+    return (not schedule_request(text) and not history_request(text)
+            and bool(re.search(r"\b(?:camera|see|look|check|visible)\b", text, re.I))
+            and (named_spot or bool(re.search(r"\b(?:camera|door|gate|garden|shed|drive(?:way)?|porch|parcel)\b",
+                                              text, re.I))))
+
+
+def schedule_request(text: str) -> bool:
+    """When a request concerns a date on someone's calendar, use live facts."""
+    return bool(TOPICS["calendar"][0].search(text) or re.search(
+        r"\b(?:delivery|appointment|meeting|event)\b.*\b(?:today|tomorrow|date|due|scheduled|advance)\b"
+        r"|\b(?:today|tomorrow|date|due|scheduled|advance)\b.*\b(?:delivery|appointment|meeting|event)\b",
+        text, re.I))
+
+
+def history_request(text: str) -> bool:
+    """Use passive historical context for retrospective requests only."""
+    return bool(TOPICS["past"][0].search(text) or re.search(r"\b(?:earlier|previously|recently|last time)\b", text, re.I))
+
+
 class Focus:
     """Remembers each conversation's last topics, so short follow-ups keep their tools."""
 
@@ -101,6 +122,8 @@ class Focus:
         if not text:
             return None
         topics = {name for name, (words, _tools) in TOPICS.items() if words.search(text)}
+        if schedule_request(text):
+            topics.add("calendar")
         before = self._last.get(conversation_id or "", set())
         # Multi-system investigations need tools outside the first keyword hit.
         # Prefer completeness to a smaller model prompt for these requests.
@@ -109,9 +132,11 @@ class Focus:
             text, re.I))
         if investigating and len(topics) >= 2:
             return None
-        if not topics and not before:
-            from .sessions import COMMAND
+        from .followups import classify
+        from .sessions import COMMAND, YES
 
+        reference = bool(classify(text) or YES.fullmatch(text.strip()))
+        if not topics and not (before and (reference or investigating)):
             if COMMAND.search(text):
                 return set(ALWAYS)  # "turn the kitchen light off": Home Assistant's own tools do that
             return None  # nothing clearly matched: don't guess, offer everything
@@ -122,7 +147,7 @@ class Focus:
                 self._last.popitem(last=False)
         names = set(ALWAYS)
         # Retain earlier evidence routes for short references, not for a new fully named topic.
-        routes = (topics | before) if len(text.split()) <= 5 or investigating else (topics or before)
+        routes = (topics | before) if reference or investigating else topics
         for name in routes:
             names |= TOPICS[name][1]
         if investigating or re.search(r"\b(?:yesterday|earlier|last night|what happened|when did)\b", text, re.I):

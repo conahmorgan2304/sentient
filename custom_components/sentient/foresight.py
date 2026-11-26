@@ -86,10 +86,10 @@ class Foresight:
         """Tomorrow, as plain facts."""
         rt = self._rt()
         now = dt_util.now()
-        start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end = start + timedelta(days=1)
+        from .calendar_window import event_start, local_midnight, window_events
+
+        start, end = local_midnight(now, 1), local_midnight(now, 2)
         out: dict[str, Any] = {"tomorrow": start.strftime("%A %d %B")}
-        from .calendar_window import event_start, window_events
 
         events = []
         for cal in self.options.get(CONF_BRIEFING_CALENDARS) or []:

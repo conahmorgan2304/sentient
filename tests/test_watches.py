@@ -197,9 +197,14 @@ async def test_look_tool(hass: HomeAssistant) -> None:
     ctx = llm.LLMContext(platform="test", context=None, language="en", assistant="conversation", device_id=None)
     api = await llm.async_get_api(hass, "sentient", ctx)
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden", "question": "what's going on?"}))
-    assert {k: v for k, v in out.items() if k != "outside_text"} == {"camera": "Garden", "answer": "Two cats are sunbathing on the lawn."}
+    assert out["camera"] == "Garden" and out["answer"] == "Two cats are sunbathing on the lawn."
+    assert out["source"] == "interpretation of a newly requested camera image"
+    assert dt_util.parse_datetime(out["image_requested_at"]) is not None
     assert "information only" in out["outside_text"]  # what it read isn't instructions
     assert "structure" not in asked[0].data
+    cached = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "garden", "question": "what's going on?"}))
+    assert cached["source"] == "cached camera interpretation" and cached["seen_minutes_ago"] >= 0
+    assert cached["image_requested_at"] == out["image_requested_at"] and len(asked) == 1
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_look", tool_args={"camera": "attic", "question": "?"}))
     assert "error" in out
 

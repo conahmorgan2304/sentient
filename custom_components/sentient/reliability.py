@@ -59,7 +59,7 @@ ACTIONABLE_OFFER = re.compile(
     r"\b(?:shall i|should i|would you like me to|do you want me to|want me to)\s+"
     r"(?:please\s+)?(?:turn|switch|set|start|stop|open|close|lock|unlock|arm|disarm|"
     r"activate|deactivate|run|schedule|cancel|delete|add|remove|send|play|pause|"
-    r"make|brew|adjust|change|enable|disable|remind)\b", re.I)
+    r"make|brew|adjust|change|enable|disable|remind|monitor|watch|keep (?:an eye|watching)|let you know)\b", re.I)
 
 
 # Narrower than DONE: a current-state answer ("the light is now on") is
@@ -73,8 +73,37 @@ EXPLICIT_COMPLETION = re.compile(
     r"opened|closed|locked|unlocked|armed|disarmed|changed|activated|deactivated)\b", re.I)
 
 
+# Specific voice commitments require a matching kind of successful tool, even
+# when a different tool completed in the same turn.
+_ACTION_CLAIMS = (
+    (re.compile(r"\b(?:i(?:'ve|’ve| have| am|'m|’m)|i (?:will|shall)|i['’]ll)\s+(?:now |already )?"
+                r"(?:watch(?:ing)?|monitor(?:ing)?|keep(?:ing)? (?:an eye|watching)|let you know)\b"
+                r"|\b(?:monitoring|watch) (?:is |has been )?(?:active|enabled|started)\b", re.I),
+     {"sentient_watch"}),
+    (re.compile(r"\b(?:i(?:'ve|’ve| have)|i (?:will|shall)|i['’]ll)\s+(?:now |always )?"
+                r"(?:learn(?:ed|t)?|rememb(?:er|ered)|save(?:d)? (?:your|that|this) preference)\b", re.I),
+     {"sentient_remember", "sentient_correction"}),
+    (re.compile(r"\b(?:i (?:will|shall)|i['’]ll) (?:make sure|ensure|avoid|stop|be less|be more|change|adjust)\b"
+                r"|\b(?:i(?:'ve|’ve| have)|i) (?:now |just )?(?:changed|updated|adjusted|fixed)\b[^.!?]*"
+                r"\b(?:notif\w+|preferences?|settings?|reminders?)\b", re.I),
+     {"sentient_shush", "sentient_quiet"}),
+    (re.compile(r"\b(?:i(?:'ve|’ve| have)|i) (?:now |just )?(?:created|changed|updated|enabled|disabled|deleted)\b"
+                r"[^.!?]*\b(?:automation|rule)\b", re.I),
+     {"sentient_create_automation", "sentient_make_rule"}),
+    (re.compile(r"\b(?:i(?:'ve|’ve| have)|i) (?:now |just )?(?:created|set|scheduled)\b[^.!?]*\breminder\b"
+                r"|\byour reminder (?:has been|is now) (?:set|scheduled|created)\b", re.I),
+     {"sentient_remind"}),
+)
+
+
+def claimed_action_tools(text: str) -> tuple[set[str], ...]:
+    """Each matched claim needs a success from at least one of its supporting tools."""
+    return tuple(tools for pattern, tools in _ACTION_CLAIMS if pattern.search(text))
+
+
 def explicit_completion(text: str) -> bool:
-    return bool(EXPLICIT_COMPLETION.search(" ".join((text or "").split())))
+    text = " ".join((text or "").split())
+    return bool(EXPLICIT_COMPLETION.search(text) or claimed_action_tools(text))
 
 
 def actionable_offer(text: str) -> bool:
@@ -154,7 +183,7 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
 
 def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
     """Check a real tool result for completion, rather than preparation or a read-only success."""
-    _, error, changed = _tool_outcome(content)
+    name, error, changed = _tool_outcome(content)
     result = content.get("tool_result")
     if not isinstance(result, dict) or not result or result.get("read_back") or result.get("error"):
         return False
@@ -172,6 +201,13 @@ def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
         return changed
     if result.get("actions") and isinstance(result["actions"], list):
         return any(isinstance(row, dict) and row.get("status") == "verified" for row in result["actions"])
+    if name == "sentient_quiet":
+        return "hushed_until" in result or result.get("guest_mode_changed") is True
+    if name == "sentient_shush":
+        return bool((isinstance(result.get("shushed"), str) and "until" in result) or result.get("unshushed"))
+    if name in ("sentient_watch", "sentient_remind"):
+        recorded = result.get("watching" if name == "sentient_watch" else "reminder")
+        return bool(isinstance(recorded, dict) and recorded.get("id"))
     return (acting or response_type == "action_done") and not error and result.get("success") is not False
 
 

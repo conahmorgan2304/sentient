@@ -7,6 +7,12 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 
+def local_midnight(now: datetime, days: int = 0) -> datetime:
+    """Compute each boundary as a local date, including short and long DST days."""
+    return datetime.combine(dt_util.as_local(now).date() + timedelta(days=days), time.min,
+                            tzinfo=dt_util.get_default_time_zone())
+
+
 def event_start(value: Any) -> datetime | None:
     """Date-only events start at local midnight; timed events retain their actual offset."""
     if not value:
@@ -34,6 +40,8 @@ def window_events(events: Any, start: datetime, end: datetime) -> list[dict[str,
     if not isinstance(events, list):
         return []
     lower, upper = dt_util.as_utc(start), dt_util.as_utc(end)
+    if upper <= lower:
+        return []
     kept = []
     for event in events:
         if not isinstance(event, dict):
