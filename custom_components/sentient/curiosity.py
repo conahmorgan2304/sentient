@@ -94,12 +94,18 @@ class Curiosity:
         return True
 
     def listing(self) -> dict[str, Any]:
-        recent = sorted(self.asked.values(), key=lambda a: a.get("time", ""), reverse=True)[:5]
+        recent = sorted(self.asked.values(), key=lambda a: a.get("time", ""), reverse=True)
+        recent = [a for a in recent if not a.get("dismissed")][:5]
         return {"wondering": [q["question"] for q in self.queue], "asked": [a["question"] for a in recent]}
 
     def dismiss(self, words: str) -> bool:
         needle = words.lower()
         before = len(self.queue)
+        if not needle.strip():
+            return False
+        dismissed = [q for q in self.queue if needle in q["question"].lower()]
+        for q in dismissed:
+            self.asked[q["key"]] = {"question": q["question"], "time": dt_util.utcnow().isoformat(), "dismissed": True}
         self.queue = [q for q in self.queue if needle not in q["question"].lower()]
         if len(self.queue) != before:
             self._save()
