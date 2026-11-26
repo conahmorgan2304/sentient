@@ -27,7 +27,10 @@ async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
     """Persist the privacy request first, then forget all stores and await SQLite."""
     brain = getattr(rt, "brain", None)
     if brain is None or not brain.started:
-        return forget_recent(rt, hours)
+        gone = forget_recent(rt, hours)
+        await rt.speech.async_flush_deliveries()
+        await rt.sessions.memory.async_flush()
+        return gone
     # A single lock covers both saving the intent and clearing its completion
     # record. Concurrent forget commands must not overwrite one another.
     async with brain._forget_lock:
@@ -39,6 +42,8 @@ async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
             return {"database_error": f"Could not safely start forgetting: {err}. Nothing was cleared."}
         gone: dict[str, Any] = forget_recent(rt, hours, _registered=True, _since=since, _until=end)
         try:
+            await rt.speech.async_flush_deliveries()
+            await rt.sessions.memory.async_flush()
             for key, n in (await brain.async_finish_forget()).items():
                 gone[f"database_{key}"] = n
         except Exception as err:  # noqa: BLE001 - pending record survives until a successful restart replay
@@ -214,6 +219,8 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
         keep = [row for row in rows if not _after(row.get(stamp), since)]
         gone[label] = len(rows) - len(keep)
         setattr(owner, attr, deque(keep, maxlen=rows.maxlen) if isinstance(rows, deque) else keep)
+    rt.speech.save_deliveries()
+    rt.sessions.memory.save()
     for key, session in list(rt.sessions.items.items()):
         if not _outside(session.touched, since):
             rt.sessions.close(session)

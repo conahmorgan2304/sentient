@@ -185,8 +185,15 @@ def authority(reviews: list[dict[str, Any]], scope: str = AUTHORITY_SCOPE) -> di
     it called less serious stops it. The usual rules are scored the same way, so it's clear which judges better.
     """
     need = SCOPES[scope]
-    rows = [r for r in reviews if isinstance(r, dict) and r.get("label") in
-            ("household", "visitor", "false_detection", "concerning") and isinstance(r.get("core"), str)
+    latest = {}
+    for index, row in enumerate(reviews):
+        if isinstance(row, dict):
+            key = row.get("id")
+            key = key if isinstance(key, str) and key else index
+            latest.pop(key, None)
+            latest[key] = row
+    rows = [r for r in latest.values() if r.get("label") in
+            ("household", "visitor", "false_detection", "concerning") and isinstance(r.get("core"), str) and r["core"] in SEVERITY
             and r.get("prediction_recorded") is True][-AUTHORITY_WINDOW:]
     core = _score(rows, "core")
     progress = {
@@ -210,9 +217,10 @@ def authority(reviews: list[dict[str, Any]], scope: str = AUTHORITY_SCOPE) -> di
         why.append(f"needs {need['concerning'] - progress['concerning_reviewed']} more reviewed concerning incidents")
     if core["missed"]:
         why.append(f"called {core['missed']} concerning incident{'s' if core['missed'] > 1 else ''} less serious")
-    rules_rows = [r for r in rows if isinstance(r.get("legacy"), str)]
+    rules_rows = [r for r in rows if isinstance(r.get("legacy"), str) and r["legacy"] in SEVERITY]
     return {"scope": scope, "earned": not why, "why": why, "progress": progress,
-            "compared": {"core": core, "rules": _score(rules_rows, "legacy")} if rules_rows else {"core": core},
+            "compared": {"core": _score(rules_rows, "core"), "rules": _score(rules_rows, "legacy")}
+                        if rules_rows else {"core": core},
             "never": need["never"]}
 
 

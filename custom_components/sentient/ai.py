@@ -77,7 +77,7 @@ class AIGate:
         self._generation = 0
         from .voice_timing import VoiceTimings
 
-        self.voice_timings = VoiceTimings(hass)
+        self.voice_timings = VoiceTimings(hass, changed=self._save)
         self.cases = None  # case memory (the brain), when switched on
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
         self._observed_calls = deque(maxlen=100)  # volatile timing/outcome only; no inputs or model IDs
@@ -90,6 +90,10 @@ class AIGate:
         from .language import restore_phrases
 
         restore_phrases(self, data.get("language_phrases"))
+        if self.options.get("voice_timing_diagnostics"):
+            self.voice_timings.restore(data.get("voice_timings"))
+        elif data.get("voice_timings"):
+            self._save()
         if data.get("language_phrases") and not getattr(self, "speech_language_cache", None):
             self._save()  # remove disabled, stale or invalid saved phrases
         self.history = dict(data.get("history") or {})
@@ -116,6 +120,7 @@ class AIGate:
 
         return {
             "language_phrases": saved_phrases(self),
+            "voice_timings": self.voice_timings.describe() if self.options.get("voice_timing_diagnostics") else [],
             "service_attempts": self.service_attempts, "retry_attempts": self.retry_attempts,
             "day": self.day, "counts": self.counts, "history": self.history, "failed_today": self.failed_today,
             "fails_in_row": self.fails_in_row, "last_error": self.last_error, "last_error_at": self.last_error_at,
@@ -164,6 +169,10 @@ class AIGate:
     def spend(self, purpose: str = "camera", force: bool = False) -> bool:
         """Count one background call. False (and nothing counted) once today's limit is used up —
         unless `force`, for something a person asked for, which is always allowed."""
+        from .selftest import ACTIVE
+
+        if ACTIVE.get():
+            return force or not self.capped
         self._roll()
         if not force and self.over_budget(purpose):
             return False  # this feature's own allowance is used up; the rest carry on
@@ -266,6 +275,9 @@ class AIGate:
     # ----- calling -------------------------------------------------------------------------
     async def async_call(self, data: dict[str, Any], timeout: float = TIMEOUT) -> dict[str, Any]:
         """ai_task.generate_data with a time limit; failures are noted and raised as AIUnavailable."""
+        from .selftest import ACTIVE
+
+        synthetic = ACTIVE.get()
         generation, options = self._generation, self.options
         started_at = monotonic()
         data = dict(data)
@@ -288,19 +300,21 @@ class AIGate:
             if proposal.get("switched") and self.hass.states.get(target) is None:
                 target = ai  # never route to an absent AI Task provider
                 proposal = {"switched": False, "reason": "alternative_unavailable"}
-            self._last_route = {"switched": bool(proposal.get("switched")),
-                                "reason": str(proposal.get("reason") or "")[:100]}
+            if not synthetic:
+                self._last_route = {"switched": bool(proposal.get("switched")),
+                                    "reason": str(proposal.get("reason") or "")[:100]}
             data["entity_id"] = target
-        cases = self.cases
+        cases = None if synthetic else self.cases
         if cases is not None and (remembered := cases.case_get(data)) is not None:
             return remembered  # the same job, asked moments ago: case memory answers without another call
 
         async def attempt(retry=False):
-            self._roll()
-            self.service_attempts += 1
-            self.retry_attempts += int(retry)
-            self._record_call(data)
-            self._save()
+            if not synthetic:
+                self._roll()
+                self.service_attempts += 1
+                self.retry_attempts += int(retry)
+                self._record_call(data)
+                self._save()
             return await self.hass.services.async_call(
                 'ai_task', 'generate_data', data, blocking=True, return_response=True)
 
@@ -312,7 +326,7 @@ class AIGate:
                 try:
                     response = await attempt()
                 except Exception as err:  # noqa: BLE001
-                    if not busy(err):
+                    if synthetic or not busy(err):
                         raise
                     if not current():
                         raise AIUnavailable('AI settings or privacy changed; retry cancelled') from err
@@ -323,13 +337,13 @@ class AIGate:
                 if response is not None and not isinstance(response, dict):
                     raise HomeAssistantError('The AI service returned an invalid response format')
         except Exception as err:  # noqa: BLE001 - every failure means "use the plain version"
-            if current():
+            if current() and not synthetic:
                 self.failed(err)
                 self._record_outcome(data, False, round((monotonic() - started_at) * 1000))
             raise AIUnavailable(f"The AI didn't answer: {err or type(err).__name__}") from err
         if not current():
             raise AIUnavailable("AI settings or privacy changed; response discarded")
-        if current():
+        if current() and not synthetic:
             self.ok()
             self._record_outcome(data, True, round((monotonic() - started_at) * 1000))
             if cases is not None:
@@ -337,6 +351,10 @@ class AIGate:
         return response or {}
 
     def failed(self, err: BaseException) -> None:
+        from .selftest import ACTIVE
+
+        if ACTIVE.get():
+            return
         self._roll()
         self.fails_in_row += 1
         self.failed_today += 1
@@ -346,6 +364,10 @@ class AIGate:
         self._save()
 
     def ok(self) -> None:
+        from .selftest import ACTIVE
+
+        if ACTIVE.get():
+            return
         self.fails_in_row = 0
         self.last_ok_at = dt_util.utcnow().isoformat()
         self._save()

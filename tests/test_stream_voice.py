@@ -118,4 +118,18 @@ async def test_through_the_agent_a_confirmation_is_still_spoken(hass):
     finally:
         current_chat_log.reset(token)
     assert result.response.speech["plain"]["speech"] == "Shall I unlock the front door?"
-    assert log.heard[-1].strip() == "Shall I unlock the front door?"
+    assert not any(text for text in log.heard)  # the unsafe promise was never streamed; Assist speaks the final read-back
+
+
+async def test_rewritten_history_does_not_hide_an_unspoken_correction():
+    from dataclasses import replace
+
+    log = FakeLog()
+    log.delta_listener = lambda _log, delta: log.heard.append(delta.get("content"))
+    delivered = "The house is settled, and the heating has been holding its usual temperature."
+    correction = "I couldn't confirm that an action was completed."
+    with StreamWatch(log, "conversation.sentient") as watch:
+        _stream(log, delivered)
+        log.content[-1] = replace(log.content[-1], content=correction)
+        assert await watch.finish(correction) == correction
+    assert [part.strip() for part in log.heard if part] == [delivered, correction]

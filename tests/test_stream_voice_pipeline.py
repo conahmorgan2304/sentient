@@ -3,12 +3,12 @@
 import asyncio
 from dataclasses import replace
 from time import monotonic
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
 from homeassistant.components import conversation
 STREAM_RESPONSE_CHARS = 60  # assist_pipeline/pipeline.py
 from homeassistant.components.conversation import chat_log as chat_log_module
-from homeassistant.helpers import chat_session, intent
+from homeassistant.helpers import chat_session
 
 from tests.test_voice_sessions_control import agent, request
 
@@ -93,9 +93,10 @@ async def turn(hass, options, chunks, final=None, same_id=True, pause=0.05):
 
 
 async def test_a_long_answer_starts_before_the_model_finishes(hass):
-    chunks = [LONG[i:i + 20] for i in range(0, len(LONG), 20)]
+    answer = LONG + " " + LONG
+    chunks = [answer[i:i + 20] for i in range(0, len(answer), 20)]
     pipe, heard, final, total = await turn(hass, {"stream_voice_replies": True}, chunks)
-    assert pipe.streamed and heard == final == LONG
+    assert pipe.streamed and heard == final == answer
     assert pipe.first_audio < total * 0.7  # speaking began well before the model was done
 
 
@@ -129,3 +130,45 @@ async def test_how_much_sooner_it_starts(hass):
     pipe, heard, final, total = await turn(hass, {"stream_voice_replies": True}, chunks)
     assert heard == final
     assert pipe.first_audio < total  # speech began before the reply was complete
+
+
+async def test_streamed_completion_waits_for_the_tool_result(hass):
+    from pytest import MonkeyPatch
+
+    async def run(enabled, tool_success):
+        obj, _ = agent(hass, {"voice_agent": "conversation.model", "stream_voice_replies": enabled})
+        pipe = Pipeline()
+        user = request("Turn the light on")
+        claim = "I've turned the kitchen light on."
+
+        async def model(agent_id, req):
+            log = chat_log_module.current_chat_log.get()
+
+            async def stream():
+                yield {"role": "assistant"}
+                yield {"content": f"{LONG} {claim} "}
+                assert claim not in "".join(pipe.queue._queue)
+                log.async_add_assistant_content_without_tools(chat_log_module.ToolResultContent(
+                    agent_id=agent_id, tool_call_id="turn-on", tool_name="HassTurnOn", tool_result={
+                        "response_type": "action_done", "data": {
+                            "success" if tool_success else "failed": [{"name": "Kitchen light"}]}}))
+
+            async for _ in log.async_add_delta_content_stream(agent_id, stream()):
+                pass
+            return conversation.async_get_result_from_chat_log(req, log)
+
+        with chat_session.async_get_chat_session(hass, None) as session, \
+                chat_log_module.async_get_chat_log(hass, session, user, chat_log_delta_listener=pipe.listener), \
+                MonkeyPatch.context() as mock, patch.object(obj, "_converse", model):
+            mock.setattr(conversation, "async_get_agent", lambda *_: type("Model", (), {"supports_streaming": True})())
+            assert obj.supports_streaming is enabled
+            result = await obj.async_process(replace(user, conversation_id=session.conversation_id))
+            final = result.response.speech["plain"]["speech"]
+            expected = f"{LONG} {claim}" if tool_success else LONG
+            assert final.strip() == expected
+            assert pipe.streamed is enabled
+            assert pipe.spoken(final).strip() == expected
+
+    await run(True, True)
+    await run(True, False)
+    await run(False, False)

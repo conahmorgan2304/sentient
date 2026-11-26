@@ -54,6 +54,36 @@ OFFER = re.compile(
     r"\b(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
     r"let the \w+ (?:out|in)|top up|refill|go (?:and|out|outside|down|up)|pop (?:out|outside|down|up)|pick up|put (?:the )?\w+ away)\b",
     re.I)
+# Explicit offers to change the house, not informational offers such as "shall I check".
+ACTIONABLE_OFFER = re.compile(
+    r"\b(?:shall i|should i|would you like me to|do you want me to|want me to)\s+"
+    r"(?:please\s+)?(?:turn|switch|set|start|stop|open|close|lock|unlock|arm|disarm|"
+    r"activate|deactivate|run|schedule|cancel|delete|add|remove|send|play|pause|"
+    r"make|brew|adjust|change|enable|disable|remind)\b", re.I)
+
+
+# Narrower than DONE: a current-state answer ("the light is now on") is
+# not itself proof the assistant claims to have changed the device.
+EXPLICIT_COMPLETION = re.compile(
+    r"^(?:ok(?:ay)?[,. ]+)?(?:done|all set|sorted|all done)(?:[,.!:;]|$)|"
+    r"\bi (?:just |successfully )?(?:turned|switched|set|started|stopped|opened|closed|locked|unlocked)\b|"
+    r"\b(?:has|have) just been (?:turned|switched|set|started|stopped|opened|closed|locked|unlocked)\b|"
+    r"\byour (?:alarm|reminder|schedule|routine) (?:has been|is now) (?:set|scheduled|created|cancelled)\b|"
+    r"\bi(?:'ve|’ve| have) (?:(?:now|just|successfully) )?(?:turned|switched|set|started|stopped|"
+    r"opened|closed|locked|unlocked|armed|disarmed|changed|activated|deactivated)\b", re.I)
+
+
+def explicit_completion(text: str) -> bool:
+    return bool(EXPLICIT_COMPLETION.search(" ".join((text or "").split())))
+
+
+def actionable_offer(text: str) -> bool:
+    """Recognise explicit English action offers without treating questions as consent."""
+    if re.match(r"^\s*(?:which|what|when|where|who|how)\b", text or "", re.I):
+        return False  # requests for missing detail are not offers
+    return bool(ACTIONABLE_OFFER.search(text or "") or (re.search(r"\b(?:shall i|should i|want me to|i can|i could)\b", text or "", re.I) and OFFER.search(text or "")))
+
+
 UNANSWERED = re.compile(
     r"\bi (?:don't|do not|didn't|did not) (?:know|have (?:any )?(?:information|a record|records|access|details|data|way))\b|"
     r"\bi (?:couldn't|could not|can't|cannot|wasn't able to|was unable to|am unable to|'m unable to|’m unable to) "
@@ -120,6 +150,29 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
     if isinstance(result, dict) and result.get("success") is False:
         return name, _short(str(result.get("message") or result.get("reason") or "failed"), 140), False
     return name, None, False
+
+
+def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
+    """Check a real tool result for completion, rather than preparation or a read-only success."""
+    _, error, changed = _tool_outcome(content)
+    result = content.get("tool_result")
+    if not isinstance(result, dict) or not result or result.get("read_back") or result.get("error"):
+        return False
+    status = str(result.get("status") or "").casefold()
+    if status in NOT_DONE | {"awaiting_confirmation", "failed", "skipped", "attempted", "error"}:
+        return False
+    if any(key in result and not result[key] for key in ("done", "spoken", "cancelled", "forgotten")):
+        return False
+    data = result.get("data")
+    response_type = result.get("response_type")
+    if response_type in ("error", "query_answer"):
+        return False
+    # HA intent targets provide explicit evidence, including partial success.
+    if isinstance(data, dict) and ("success" in data or "failed" in data):
+        return changed
+    if result.get("actions") and isinstance(result["actions"], list):
+        return any(isinstance(row, dict) and row.get("status") == "verified" for row in result["actions"])
+    return (acting or response_type == "action_done") and not error and result.get("success") is not False
 
 
 def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozenset[str] = frozenset()) -> list[dict[str, str]]:

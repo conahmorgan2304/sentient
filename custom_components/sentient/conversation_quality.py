@@ -107,10 +107,12 @@ class ConversationQuality:
 
     def record(self, *, text: str, reply: str, carried: bool, asked_back: bool, error: bool,
                ms: int | None = None, memories: list[str] | None = None, recalled: bool = False,
-               corrected: bool = False, prompt_chars: int | None = None, instant: bool = False) -> dict[str, Any]:
+               corrected: bool = False, prompt_chars: int | None = None, instant: bool = False,
+               carry_kind: str | None = None, voice_id_block: str | None = None) -> dict[str, Any]:
         kind = classify(text)
         offered = list(memories or [])
         turn = {"time": dt_util.utcnow().isoformat(), "carried": bool(carried), "kind": kind,
+                "carry_kind": carry_kind, "voice_id_block": voice_id_block,
                 "asked_back": bool(asked_back), "error": bool(error), "ms": ms,
                 # memory recall: how many memories the voice was given, how many show in the reply, whether it had
                 # to search for more, and whether it was corrected (counts only — no memory text is kept)
@@ -144,6 +146,9 @@ class ConversationQuality:
         return {
             "turns": n,
             "carried_on": sum(t["carried"] for t in turns),
+            "kept_listening": sum(t.get("carry_kind") == "same_id" for t in turns),
+            "picked_up_after_wake": sum(t.get("carry_kind") == "rewake" for t in turns),
+            "voice_id_blocks": dict(Counter(t["voice_id_block"] for t in turns if t.get("voice_id_block"))),
             "follow_ups": len(follow),
             "follow_up_kinds": dict(kinds),
             "follow_ups_needing_clarification": sum(t["asked_back"] for t in follow),

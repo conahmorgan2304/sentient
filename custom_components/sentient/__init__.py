@@ -474,6 +474,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     entry.async_on_unload(tracker.async_stop)
     speech = SpeechRouter(hass, options, tracker)
     await speech.async_load_remarks(entry.entry_id)
+    await speech.async_load_deliveries(entry.entry_id)
     ai = AIGate(hass, entry.entry_id, options)
     await ai.async_start()
     watches = WatchManager(hass, entry.entry_id, options, speech)
@@ -629,7 +630,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: SentientConfigEntry) -> 
     voice_checks = VoiceChecks(hass, options)
     entry.async_on_unload(voice_checks.stop)
     sessions = Sessions(options)
-    entry.async_on_unload(sessions.stop)
+    await sessions.memory.async_load(hass, entry.entry_id, options)
+    entry.async_on_unload(lambda: sessions.stop(clear_memory=False))
     incidents = Incidents(hass, entry.entry_id, options)
     incidents.on_authority = lambda text: timeline.add("mind", text, "cognitive core")
     incidents.faces = faces  # a face Frigate named is evidence of who it was, for the core's judgement
@@ -843,7 +845,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.household_tasks.clear()
-    entry.runtime_data.ai.voice_timings.clear()
+    await entry.runtime_data.speech.async_flush_deliveries()
+    await entry.runtime_data.sessions.memory.async_flush()
     await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
@@ -921,7 +924,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.household_tasks.clear()
-    entry.runtime_data.ai.voice_timings.clear()
+    if not options.get("voice_timing_diagnostics"):
+        entry.runtime_data.ai.voice_timings.clear()
     if not options.get("voice_timing_diagnostics") and (quality := getattr(entry.runtime_data, "conversation_quality", None)):
         quality.clear()  # "Show voice timings" off: the saved conversation counts go too
     entry.runtime_data.voice_checks.stop()
@@ -974,6 +978,11 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     for name in ("sessions", "control", "evidence", "followyou", "loops", "conversations", "curiosity", "reflection", "drive", "foresight", "sleep", "ai", "appliances", "animals", "watchdog", "screen", "away", "selftest", "rain", "pets", "autobackup", "bins", "faces", "clips", "clipwatch", "selfaware", "inner", "goals", "books", "games", "recipes", "holiday", "trust", "parcels", "cheap_power", "whats_new", "usage", "window_heat", "tonight"):
         getattr(entry.runtime_data, name).options = options
     entry.runtime_data.ai._save()  # persist generic-pack opt-in/out after options have changed
+    if not options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
+        await entry.runtime_data.speech.async_flush_deliveries()
+    await entry.runtime_data.sessions.memory.async_flush()
+    if entry.runtime_data.options is options:
+        await entry.runtime_data.sessions.memory.async_load(hass, entry.entry_id, options)
     if not entry.runtime_data.holiday.enabled:
         await entry.runtime_data.holiday.async_end("disabled in settings")
     if entry.runtime_data.window_heat is not None and not entry.runtime_data.window_heat.enabled:

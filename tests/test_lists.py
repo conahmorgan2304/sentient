@@ -54,7 +54,7 @@ async def test_brew_offer_asks_in_the_kitchen_and_yes_puts_the_kettle_on(hass: H
     hass.states.async_set("binary_sensor.kitchen_motion", "on", {"device_class": "motion"})
     await hass.async_block_till_done()
     assert len(asked) == 1 and asked[0].data["start_message"] == "Fancy a brew?"
-    assert offer["id"] in asked[0].data["extra_system_prompt"]
+    assert "Sentient handles their yes or no" in asked[0].data["extra_system_prompt"]
     why = rt.timeline.since(1, ["said"], 1)[0]["why"]  # 'why did you offer that?' has an answer
     assert why.startswith("the 'Brew' offer: someone moved in the Kitchen") and "idle 45 minutes" in why
     # cooldown: walking in again doesn't ask again
@@ -66,9 +66,11 @@ async def test_brew_offer_asks_in_the_kitchen_and_yes_puts_the_kettle_on(hass: H
     api = await llm.async_get_api(hass, "sentient", ctx)
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_accept_offer", tool_args={"offer": "Brew"}))
     await hass.async_block_till_done()
-    assert out["done"] is True and on
+    assert "error" in out and not on
+    assert await rt.speech.async_take_answer("assist_satellite.kitchen", "yes")
+    assert on
     out = await api.async_call_tool(llm.ToolInput(tool_name="sentient_accept_offer", tool_args={"offer": "Brew", "accept": False}))
-    assert out["done"] is False and rt.feedback.score(f"offer:{offer['id']}", "offers") > 0
+    assert "error" in out
 
 
 async def test_gate_announcement_through_quiet_hours_but_not_after_the_back_door(hass: HomeAssistant, freezer) -> None:

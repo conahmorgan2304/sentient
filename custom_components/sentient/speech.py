@@ -260,6 +260,7 @@ class SpeechRouter:
         self.reading_fallbacks: deque[tuple[datetime, str, str]] = deque(maxlen=50)  # the reading voice failing
         self._questions: dict[str, dict[str, Any]] = {}  # satellite -> the house's open question and what to do with the answer
         self._delivered_recent: dict[tuple[str, str], datetime] = {}
+        self._delivery_store = None
         self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
@@ -288,6 +289,35 @@ class SpeechRouter:
             when = dt_util.parse_datetime(stamp) if isinstance(stamp, str) else None
             if when is not None and now - when < timedelta(hours=24) and key not in self._remarks:
                 self._remarks[key] = when
+
+    async def async_load_deliveries(self, entry_id):
+        self._delivery_store = Store(self.hass, 1, f"{DOMAIN}.{entry_id}.deliveries", private=True)
+        if not self.options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
+            await self._delivery_store.async_remove()
+            return
+        data = await self._delivery_store.async_load() or {}
+        cutoff = (dt_util.utcnow() - timedelta(hours=24)).isoformat()
+        for row in (data.get("deliveries") or [])[:20]:
+            if (isinstance(row, dict) and isinstance(row.get("time"), str) and row["time"] >= cutoff
+                    and isinstance(row.get("results"), list)):
+                self.deliveries.append(row)
+
+    def _delivery_storage(self):
+        cutoff = (dt_util.utcnow() - timedelta(hours=24)).isoformat()
+        # Keep playback diagnostics across restarts without storing announcement text or provider errors.
+        fields = ("entity_id", "status", "stage", "service", "duration_ms", "playback")
+        return {"deliveries": [{"time": row["time"],
+                                "results": [{k: item[k] for k in fields if k in item} for item in row["results"]],
+                                "note": row.get("note")}
+                               for row in self.deliveries if row["time"] >= cutoff]}
+
+    def save_deliveries(self):
+        if self._delivery_store is not None:
+            self._delivery_store.async_delay_save(self._delivery_storage, 2)
+
+    async def async_flush_deliveries(self):
+        if self._delivery_store is not None:
+            await self._delivery_store.async_save(self._delivery_storage())
 
     def save_remarks(self) -> None:
         if self._remark_store is not None:
@@ -858,8 +888,9 @@ class SpeechRouter:
                 self.failures[row['entity_id']] = (now, row.get('error', row['status']))
         record = {'time': now.isoformat(), 'message': text[:300], 'results': receipts,
                   'note': 'Accepted means Home Assistant completed the service call; audibility is unverified.'}
-        if self.options.get(CONF_SPEECH_DELIVERY_HISTORY, True):
+        if self.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) and not self.guest_mode:
             self.deliveries.appendleft(record)
+            self.save_deliveries()
             self.hass.bus.async_fire('sentient_speech_delivery')
 
     async def _volumes(self, speakers: list[str]) -> float | dict[str, float] | None:
@@ -947,6 +978,8 @@ class SpeechRouter:
             f'You have just asked the person: "{spoken}". Handle their reply: if they say yes, '
             "do it with your tools and confirm in a few words; if no, acknowledge briefly."
         )
+        if on_answer is not None:
+            prompt = f'The person was asked: "{spoken}". Sentient handles their yes or no. Never execute or confirm it yourself.'
         if extra_prompt:
             prompt += " " + extra_prompt
         async with self._lock:
@@ -955,22 +988,29 @@ class SpeechRouter:
                 return SpeechResult(False, "cancelled", "", [])
             if (held := self._gate(text, priority, source)) is not None:
                 return held
-            await self.hass.services.async_call(
-                "assist_satellite",
-                "start_conversation",
-                {
-                    "start_message": self.pronounce(spoken),
-                    "extra_system_prompt": prompt,
-                    "preannounce": self.chime if preannounce is None else preannounce,
-                },
-                target={"entity_id": speaker},
-                blocking=True,
-            )
+            pending = None
+            if on_answer is not None:
+                pending = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": spoken}
+                self._questions[speaker] = pending
+            try:
+                await self.hass.services.async_call(
+                    "assist_satellite",
+                    "start_conversation",
+                    {
+                        "start_message": self.pronounce(spoken),
+                        "extra_system_prompt": prompt,
+                        "preannounce": self.chime if preannounce is None else preannounce,
+                    },
+                    target={"entity_id": speaker},
+                    blocking=True,
+                )
+            except BaseException:
+                if pending is not None and self._questions.get(speaker) is pending:
+                    self._questions.pop(speaker, None)
+                raise
             if generation != self._privacy_generation:
                 return SpeechResult(True, "asked", spoken, [speaker])
             self._remember_said(text, spoken)
-        if on_answer is not None:
-            self._questions[speaker] = {"until": dt_util.utcnow() + QUESTION_OPEN, "on_answer": on_answer, "asked": spoken}
         self.hass.bus.async_fire(
             EVENT_SPOKE,
             {"message": spoken, "speakers": [speaker], "priority": priority, "source": source, "question": True,

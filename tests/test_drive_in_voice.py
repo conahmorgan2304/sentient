@@ -68,8 +68,13 @@ def test_discussions_end_on_the_answer_not_an_offer_of_more_help() -> None:
     from custom_components.sentient import conversation
 
     source = inspect.getsource(conversation)
-    assert "an offer of more help ('is there anything else you'd like me to check?', 'anything else?') never is one" in source
-    assert "so end with the answer instead" in source
+    assert "A real follow-up asks one specific question" in source
+    assert "'Anything else?' never counts" in source
+    assert "In natural style, ask only a useful follow-up question" in source
+    assert "Use current readings or fetch fresh evidence" in source
+    assert "Set active=true for information" in source
+    assert "security, health and system discussions" in source
+    assert "Never repeat a closing question or offer generic help" in source
 
 
 async def test_a_repeated_question_is_looked_up_afresh(hass: HomeAssistant) -> None:

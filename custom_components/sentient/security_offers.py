@@ -70,8 +70,11 @@ class StreamFilter:
     offers to arm, disarm or unlock, when it's dropped. ``flush`` decides on the last, unfinished sentence; if every
     sentence was an offer, it gives them back so the reply isn't silent (as ``remove`` does)."""
 
-    def __init__(self, *, security: bool = True, extra: re.Pattern[str] | None = None) -> None:
+    def __init__(self, *, security: bool = True, extra: re.Pattern[str] | None = None, blocked=None, defer=None) -> None:
         self.security, self.extra = security, extra
+        self.blocked = blocked
+        self.defer = defer
+        self._deferred = False
         self._held = ""
         self.passed: list[str] = []
         self.dropped: list[str] = []
@@ -89,14 +92,17 @@ class StreamFilter:
     def flush(self) -> str:
         text, self._held = self._held, ""
         out = self._decide(text, "") if text.strip() else text
-        if not self.passed and self.dropped:  # the reply was only the offer: say it rather than nothing
+        if self.blocked is None and self.defer is None and not self.passed and self.dropped:  # the reply was only the offer: say it rather than nothing
             out, self.dropped = " ".join(self.dropped), []
         return out
 
     def _decide(self, sentence: str, gap: str) -> str:
+        if self._deferred or (self.defer and self.defer(sentence)):
+            self._deferred = True
+            return ""
         if not sentence.strip():
             return sentence + gap
-        if _offer(sentence, self.security, self.extra):
+        if _offer(sentence, self.security, self.extra) or (self.blocked and self.blocked(sentence)):
             self.dropped.append(sentence.strip())
             return ""
         self.passed.append(sentence.strip())

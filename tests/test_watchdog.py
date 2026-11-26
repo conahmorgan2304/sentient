@@ -62,13 +62,18 @@ async def test_voice_actions_go_on_the_timeline(hass: HomeAssistant) -> None:
     assert voice[1]["detail"] == "by voice; didn't work: Landing light"
 
 
-async def test_why_didnt_you_say(hass: HomeAssistant) -> None:
+async def test_why_didnt_you_say(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to("2026-10-27T15:00:00+00:00")
     entry = await _setup(hass)
     entry.runtime_data.noticer.decisions.appendleft({"time": "2026-10-27T14:02:00", "changes": ["Washing machine: running → off"],
                                                      "result": "skipped: quiet_hours"})
     out = await (await _api(hass)).async_call_tool(llm.ToolInput(
         tool_name="sentient_why", tool_args={"what": "why didn't you tell me the washing machine finished"}))
     assert out["noticed_but_not_said"] == ["14:02 noticed Washing machine: running → off — skipped: quiet_hours"]
+    freezer.move_to("2026-10-28T15:00:00+00:00")
+    recent = await (await _api(hass)).async_call_tool(llm.ToolInput(
+        tool_name="sentient_why", tool_args={"what": "why didn't you tell me the washing machine finished"}))
+    assert "noticed_but_not_said" not in recent
 
 
 async def test_appliance_wearing_out(hass: HomeAssistant) -> None:

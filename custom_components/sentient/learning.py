@@ -193,6 +193,8 @@ class Routine:
             "routine": self.describe(),
             "how_sure": f"{round(self.support * 100)}% of days ({self.evidence()})",
             "adopted": self.adopted,
+            "review_suggested": self.adopted and (self.asked_fading or (
+                self.proof_days >= FADE_TIMES and self.proof_hits * 2 < self.proof_days)),
             "proved": (f"right on {self.proof_hits} of {self.proof_days} days since it was learned"
                        if self.proof_days else "not checked against a day since it was learned yet"),
         }
@@ -674,7 +676,7 @@ class Learner:
 
     def _version(self, item: Routine | Link) -> dict:
         data = item.as_dict()
-        for key in ('support', 'seen', 'spread', 'dates', 'learned', 'suggested'):
+        for key in ('support', 'seen', 'spread', 'dates', 'learned', 'suggested', 'proof_days', 'proof_hits'):
             data.pop(key, None)
         if isinstance(item, Routine) and item.anchor != 'clock':
             data.pop('minute', None)  # today's displayed clock time follows the approved anchor/offset
@@ -735,13 +737,16 @@ class Learner:
                     routine.adopted, routine.declined, routine.suggested = old.adopted, old.declined, old.suggested
                     routine.learned = old.learned
                     if old.adopted:
-                        routine = old  # approval stays attached to its agreed schedule, not a fresh estimate
+                        routine = deepcopy(old)  # keep the agreed schedule, but stage evidence changes
                 self.prove(routine, history.get(entity_id, []), automated.get(entity_id))
                 fresh[routine.id] = routine
         # adopted routines are kept even if a quiet fortnight made them fade
         for rid, old in self.routines.items():
             if old.adopted and rid not in fresh:
-                fresh[rid] = old
+                candidate = deepcopy(old)
+                if history.get(old.entity_id):
+                    self.prove(candidate, history[old.entity_id], automated.get(old.entity_id))
+                fresh[rid] = candidate
         ranked = sorted(fresh.values(), key=lambda r: (r.adopted, r.support, r.seen), reverse=True)
         try:
             links = await self._async_learn_links(entity_ids, history, automated)
@@ -750,7 +755,14 @@ class Learner:
             links = self.links
         if not current():
             return list(self.routines.values())
-        self.routines = {r.id: r for r in ranked[:MAX_ROUTINES]}
+        updated = {}
+        for candidate in ranked[:MAX_ROUTINES]:
+            old = self.routines.get(candidate.id)
+            if old is not None and old.adopted:
+                old.proof_hits, old.proof_days = candidate.proof_hits, candidate.proof_days
+                candidate = old  # active jobs and confirmations still hold this approved object
+            updated[candidate.id] = candidate
+        self.routines = updated
         self.links = links
         self._last_due = {rid: due for rid, due in self._last_due.items() if rid in self.routines}
         self.last_run = dt_util.utcnow().isoformat()

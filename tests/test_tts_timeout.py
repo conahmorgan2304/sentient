@@ -124,6 +124,9 @@ async def test_failure_notification_is_optional_and_contains_no_speech(hass, ena
     assert notify.called is expected
     if expected:
         assert 'Private spoken content' not in str(notify.call_args)
+    if guest:
+        assert not router.deliveries
+        return
     row = router.deliveries[0]['results'][0]
     assert row['stage'] == 'routing'
     assert row['dispatched'] is False

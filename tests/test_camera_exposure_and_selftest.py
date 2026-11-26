@@ -66,10 +66,16 @@ async def test_the_self_test_is_never_counted_as_a_person_and_its_tools_are_kept
     conv = entry.runtime_data.conversations
     conv.testing = "Has anyone been seen on the Garden camera in the last two hours?"
     conv.attach("t1", None)
-    conv._chat("t1", "content_added", {"content": {"role": "user", "content": conv.testing}})
-    conv._chat("t1", "content_added", {"content": {"role": "tool_result", "tool_name": "sentient_camera_activity",
-                                                   "tool_result": {"error": "Which camera?"}}})
-    conv._chat("t1", "content_added", {"content": {"role": "assistant", "content": "No, nobody's been seen."}})
+    from custom_components.sentient.selftest import ACTIVE
+
+    token = ACTIVE.set(True)
+    try:
+        conv._chat("t1", "content_added", {"content": {"role": "user", "content": conv.testing}})
+        conv._chat("t1", "content_added", {"content": {"role": "tool_result", "tool_name": "sentient_camera_activity",
+                                                       "tool_result": {"error": "Which camera?"}}})
+        conv._chat("t1", "content_added", {"content": {"role": "assistant", "content": "No, nobody's been seen."}})
+    finally:
+        ACTIVE.reset(token)
     conv.testing = None
     assert [c["tool_name"] for c in conv.test_tools["t1"]] == ["sentient_camera_activity"]
     summary = entry.runtime_data.reliability.summary()

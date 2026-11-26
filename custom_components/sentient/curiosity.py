@@ -94,12 +94,18 @@ class Curiosity:
         return True
 
     def listing(self) -> dict[str, Any]:
-        recent = sorted(self.asked.values(), key=lambda a: a.get("time", ""), reverse=True)[:5]
+        recent = sorted(self.asked.values(), key=lambda a: a.get("time", ""), reverse=True)
+        recent = [a for a in recent if not a.get("dismissed")][:5]
         return {"wondering": [q["question"] for q in self.queue], "asked": [a["question"] for a in recent]}
 
     def dismiss(self, words: str) -> bool:
         needle = words.lower()
         before = len(self.queue)
+        if not needle.strip():
+            return False
+        dismissed = [q for q in self.queue if needle in q["question"].lower()]
+        for q in dismissed:
+            self.asked[q["key"]] = {"question": q["question"], "time": dt_util.utcnow().isoformat(), "dismissed": True}
         self.queue = [q for q in self.queue if needle not in q["question"].lower()]
         if len(self.queue) != before:
             self._save()
@@ -179,6 +185,9 @@ class Curiosity:
             if said and dt_util.utcnow() - said < QUIET_FOR:
                 return {"asked": None, "why": "just spoke"}
         item = self.queue[0]
+        if PRIVATE.search(item["question"]):
+            self.dismiss(item["question"])
+            return {"asked": None, "why": "the question was private"}
         with because(f"I was curious: {item['why']}" if item.get("why") else None):
             result = await speech.async_ask(
                 item["question"], "low" if not force else "normal", source="curious",
@@ -187,7 +196,8 @@ class Curiosity:
                     "sentient_remember as one plain, durable fact (category fact) — e.g. 'The Tuesday morning "
                     "caller is the window cleaner.' Then thank them in a few words. If they don't know or would "
                     "rather not say, just say no problem and save nothing. If you were checking something you worked "
-                    "out and they say it's wrong, forget it with sentient_forget and save what's right instead."
+                    "out and they say it's wrong, use sentient_correction to record the correction. "
+                    "Keep the answer scoped to the question and never infer an action from it."
                 ) + (" " + item["extra"] if item.get("extra") else ""),
             )
         if (self._stopped or self.options is not options or (not force and not self.enabled)

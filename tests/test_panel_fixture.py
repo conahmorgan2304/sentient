@@ -31,6 +31,7 @@ READS: list[dict[str, Any]] = [
     {"type": "sentient/wizard", "language": "en"},
     {"type": "sentient/whats_new"},
     {"type": "sentient/weekly"},
+    {"type": "sentient/mind/details"},
     {"type": "sentient/voice_id/details"},
     {"type": "sentient/voice_check"},
     {"type": "sentient/usage"},

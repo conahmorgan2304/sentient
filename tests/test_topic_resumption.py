@@ -157,7 +157,7 @@ async def test_diagnostic_attributes_hidden_for_guests_and_excluded_from_recorde
     assert {'voice_sessions', 'conversation_diagnostics'} <= sensor._unrecorded_attributes
     entry.runtime_data.sessions.memory.traces.append({'time': '2099-01-01T00:00:00+00:00', 'request': 'private'})
     entry.runtime_data.speech.guest_mode = True
-    assert sensor.extra_state_attributes['conversation_diagnostics'] == []
+    assert 'conversation_diagnostics' not in sensor.extra_state_attributes
 
 
 async def test_explicit_room_handoff_refreshes_state_and_restarts_agent_history(hass, hass_admin_user):

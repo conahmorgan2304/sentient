@@ -785,6 +785,52 @@ async def ws_heating_energy_comparison(hass: HomeAssistant, connection, msg: dic
     connection.send_result(msg["id"], result)
 
 
+@websocket_api.websocket_command({
+    vol.Required("type"): "sentient/mind/details",
+    vol.Optional("snapshot_only"): bool,
+})
+@page_access
+@callback
+def ws_mind_details(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Fetch detailed diagnostics without publishing transcripts in sensor updates."""
+    from homeassistant.auth.permissions.const import POLICY_READ
+    from homeassistant.helpers import entity_registry as er
+
+    entry = _entry(hass)
+    if entry is None:
+        connection.send_result(msg["id"], {})
+        return
+    mind_id = er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_mind")
+    if not connection.user.is_admin and (not mind_id or not connection.user.permissions.check_entity(mind_id, POLICY_READ)):
+        connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "You cannot read the Mind sensor")
+        return
+    rt = entry.runtime_data
+    if msg.get("snapshot_only"):
+        snapshot = next((event for event in rt.security_events.recent()
+                         if event.get("has_snapshot") and not event.get("parked")), None)
+        connection.send_result(msg["id"], {"security_events": [
+            {key: snapshot[key] for key in ("id", "camera", "label", "start", "has_snapshot")}
+        ] if snapshot else []})
+        return
+    details = {
+        "security_incidents": rt.incidents.recent(),
+        "security_events": rt.security_events.recent(),
+        "security_visits": rt.security_events.visits(),
+        "security_event_feedback_summary": rt.security_events.feedback_summary(),
+    }
+    if rt.speech.guest_mode or not connection.user.is_admin:
+        connection.send_result(msg["id"], details)
+        return
+    connection.send_result(msg["id"], {**details,
+        "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
+        "speech_deliveries": list(rt.speech.deliveries) if rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else [],
+        "voice_timings": rt.ai.voice_timings.describe() if rt.options.get("voice_timing_diagnostics") else [],
+        "voice_sessions": rt.sessions.describe(),
+        "conversation_diagnostics": rt.sessions.memory.diagnostics(),
+        "self_test": rt.selftest.summary(),
+    })
+
+
 @websocket_api.websocket_command({vol.Required("type"): "sentient/brain"})
 @page_access
 @websocket_api.async_response
@@ -1299,6 +1345,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_memory_resolve)
     websocket_api.async_register_command(hass, ws_today)
     websocket_api.async_register_command(hass, ws_glance)
+    websocket_api.async_register_command(hass, ws_mind_details)
     websocket_api.async_register_command(hass, ws_brain)
     websocket_api.async_register_command(hass, ws_health_disable_copy)
     websocket_api.async_register_command(hass, ws_brain_clear)

@@ -15,6 +15,13 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.24.5": [
+        "Calendar searches respect their limits and report the end of the search window.",
+        "The nightly self-test keeps its results separate from household usage.",
+        "Voice replies check action claims before speaking. Offers need a pending confirmation.",
+        "The Mind page loads voice diagnostics separately. Recent speaker delivery details survive a restart.",
+        "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.",
+    ],
     "1.24.1": [
         "Cameras named after their stream (\"MainStream\", \"HD Stream\") show on the Security tab again when they're the only camera their device offers.",
     ],
