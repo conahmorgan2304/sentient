@@ -77,7 +77,7 @@ class AIGate:
         self._generation = 0
         from .voice_timing import VoiceTimings
 
-        self.voice_timings = VoiceTimings(hass)
+        self.voice_timings = VoiceTimings(hass, changed=self._save)
         self.cases = None  # case memory (the brain), when switched on
         self.sent: list[dict[str, Any]] = []  # what left the house: metadata only, never the content (newest first)
         self._observed_calls = deque(maxlen=100)  # volatile timing/outcome only; no inputs or model IDs
@@ -90,6 +90,10 @@ class AIGate:
         from .language import restore_phrases
 
         restore_phrases(self, data.get("language_phrases"))
+        if self.options.get("voice_timing_diagnostics"):
+            self.voice_timings.restore(data.get("voice_timings"))
+        elif data.get("voice_timings"):
+            self._save()
         if data.get("language_phrases") and not getattr(self, "speech_language_cache", None):
             self._save()  # remove disabled, stale or invalid saved phrases
         self.history = dict(data.get("history") or {})
@@ -116,6 +120,7 @@ class AIGate:
 
         return {
             "language_phrases": saved_phrases(self),
+            "voice_timings": self.voice_timings.describe() if self.options.get("voice_timing_diagnostics") else [],
             "service_attempts": self.service_attempts, "retry_attempts": self.retry_attempts,
             "day": self.day, "counts": self.counts, "history": self.history, "failed_today": self.failed_today,
             "fails_in_row": self.fails_in_row, "last_error": self.last_error, "last_error_at": self.last_error_at,
