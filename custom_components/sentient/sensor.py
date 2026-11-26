@@ -342,6 +342,7 @@ class MindSensor(_Base):
         super().__init__(entry, "mind")
         self._heavy: dict[str, Any] | None = None
         self._heavy_at = 0.0
+        self._write_cancel = None
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(async_track_time_interval(self.hass, self._minute, timedelta(minutes=1)))
@@ -353,7 +354,22 @@ class MindSensor(_Base):
 
     @callback
     def _tick(self, _now) -> None:
+        # Several diagnostic events arrive in one turn; publish just once per burst.
+        from homeassistant.helpers.event import async_call_later
+
+        if self._write_cancel is None:
+            self._write_cancel = async_call_later(self.hass, 1, self._flush_tick)
+
+    @callback
+    def _flush_tick(self, _now) -> None:
+        self._write_cancel = None
         self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._write_cancel is not None:
+            self._write_cancel()
+            self._write_cancel = None
+        await super().async_will_remove_from_hass()
 
     @callback
     def _minute(self, _now) -> None:
