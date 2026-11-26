@@ -24,14 +24,32 @@ def measure(stage):
 
 
 class VoiceTimings:
-    def __init__(self, hass=None):
+    def __init__(self, hass=None, changed=None):
         self.hass = hass
         self.rows = deque(maxlen=20)
         self.generation = 0
+        self.changed = changed
 
     def clear(self):
         self.generation += 1
         self.rows.clear()
+        if self.changed is not None:
+            self.changed()
+
+    def restore(self, rows):
+        """Restore bounded, content-free diagnostic records only."""
+        if not isinstance(rows, list):
+            return
+        for row in rows[:20]:
+            if not isinstance(row, dict) or not isinstance(row.get('time'), str):
+                continue
+            stages = row.get('stages_ms')
+            total = row.get('total_ms')
+            if not isinstance(stages, dict) or not isinstance(total, (int, float)):
+                continue
+            self.rows.append({'time': row['time'], 'outcome': str(row.get('outcome', 'completed')),
+                'total_ms': total, 'stages_ms': {k: v for k, v in stages.items() if isinstance(v, (int, float))},
+                'listen': bool(row.get('listen'))})
 
     @contextmanager
     def turn(self, allowed=None):
@@ -53,6 +71,8 @@ class VoiceTimings:
                     'total_ms': round((monotonic() - start) * 1000),
                     'stages_ms': {k: round(v * 1000) for k, v in trace['stages'].items()},
                     'listen': trace.get('listen', False)})
+                if self.changed is not None:
+                    self.changed()
                 if self.hass is not None:
                     self.hass.bus.async_fire('sentient_voice_timing')
 
