@@ -3040,7 +3040,10 @@ class SentientAPI(llm.API):
             "with an appointment. If correcting an earlier answer, acknowledge the error and cite the fresh facts. "
             "Only explain a cause if an investigation actually establishes it. When a question repeats, look the answer "
             "up afresh. Conversation transcripts only describe earlier words; for what happened, look it up with a tool, not from these.",
-            "For an ambiguous device pronoun, ask which one they mean; don't pick a device. For reported events, "
+            "For an ambiguous device pronoun, ask which one they mean; don't pick a device. If a short request "
+            "sounds like a misheard place, camera or device from the current conversation, ask one short question "
+            "in the user's language. Wait for their answer before using tools or mentioning household information. "
+            "Use clear new requests as given. For reported events, "
             "don't agree or repeat it as fact unless a tool or this prompt shows it. If challenged, "
             "look again rather than changing your answer to match theirs.",
             "Use sentient_announce to speak on a named speaker or in a room, including Alexa. "
