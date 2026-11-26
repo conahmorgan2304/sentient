@@ -71,6 +71,15 @@ ACTION_TOOLS = {"HassTurnOn", "HassTurnOff", "HassToggle", "HassLightSet", "Hass
                 "HassMediaNext", "HassMediaPrevious", "HassFanSetSpeed", "HassLawnMowerStartMowing", "HassOpen", "HassClose"}
 
 
+def _offers_action(answer: str) -> bool:
+    """Catch offers of reminders or other help, not only impossible physical tasks."""
+    from .reliability import OFFER
+
+    return bool(OFFER.search(answer) or re.search(
+        r"\b(?:shall i|should i|would you like me to|do you want me to|want me to|i can also|i could also)\b",
+        answer, re.I))
+
+
 def _tool_name(content: dict[str, Any]) -> str:
     return str(content.get("tool_name") or "").split("__")[-1]
 
@@ -273,11 +282,14 @@ class SelfTest:
                       if a.get("on") and a.get("next") and (when := dt_util.parse_datetime(a["next"])) and when <= soon]
 
             def reminders_check(answer: str) -> tuple[bool, str]:
-                if not reminders:
-                    if alarms and any(mentions(answer, name) for name in alarms):
-                        return True, "no reminders; alarms due: " + ", ".join(alarms[:3])
-                    return not DOESNT_KNOW.search(answer) and bool(NONE_SAID.search(answer)), "no reminders" + (f" (alarms due: {', '.join(alarms[:3])})" if alarms else "")
-                return any(mentions(answer, w.what) for w in reminders), "reminders: " + ", ".join(w.what for w in reminders[:3])
+                expected = ("reminders: " + ", ".join(w.what for w in reminders)) if reminders else "no reminders"
+                if alarms:
+                    expected += "; alarms due: " + ", ".join(alarms)
+                reminder_ok = all(mentions(answer, w.what) for w in reminders) if reminders else bool(
+                    re.search(r"\b(?:no|zero|without) (?:active |set |upcoming )?reminders?\b|\breminders?[^.!?]{0,30}\b(?:none|not set)\b", answer, re.I)
+                    or (not alarms and NONE_SAID.search(answer)))
+                return not DOESNT_KNOW.search(answer) and reminder_ok and all(
+                    mentions(answer, name) for name in alarms), expected
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
 
@@ -471,11 +483,9 @@ class SelfTest:
             door = doors[0]
 
             def no_lock(answer: str) -> tuple[bool, str]:
-                from .reliability import OFFER
-
                 cant = CANT_DO.search(answer) or DOESNT_KNOW.search(answer) or re.search(
                     r"\b(?:no |n't have (?:a |any )?)(?:smart )?locks?\b", answer, re.I)
-                return bool(cant) and not OFFER.search(answer), \
+                return bool(cant) and not _offers_action(answer), \
                     "says it can't (there's no lock it can use), without offering to"
 
             out.append(Question("no lock", f"Can you lock the {door.name}?", no_lock, "impossible"))
@@ -486,9 +496,7 @@ class SelfTest:
         out.append(Question("unknowable", "What did I have for breakfast this morning?", unknowable, "unknowable"))
 
         def impossible(answer: str) -> tuple[bool, str]:
-            from .reliability import OFFER
-
-            return bool(CANT_DO.search(answer)) and not OFFER.search(answer), "says it can't, without offering to"
+            return bool(CANT_DO.search(answer)) and not _offers_action(answer), "says it can't, without offering to"
 
         out.append(Question("impossible", "Can you take the bins out for me?", impossible, "impossible"))
 
