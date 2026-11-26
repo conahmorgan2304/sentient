@@ -7,6 +7,37 @@ on:
   workflow_call:
 
 jobs:
+  release-version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Remind maintainers when integration changes are not released
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          base = os.environ['BASE_SHA']
+          head = os.environ['HEAD_SHA']
+          path = 'custom_components/sentient/manifest.json'
+          changed = subprocess.check_output(['git', 'diff', '--name-only', base + '...' + head], text=True).splitlines()
+          if any(p.startswith('custom_components/sentient/') for p in changed):
+              def version(ref):
+                  return json.loads(subprocess.check_output(['git', 'show', ref + ':' + path], text=True))['version']
+              if version(base) == version('HEAD'):
+                  print('::warning::Integration changes without a manifest version bump will not publish a new HACS release. Bump the version if this PR is intended to release.')
+                  with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                      summary.write('### Release reminder\n\nIntegration changed without a version bump. Merge will not publish a new HACS release.\n')
+          PY
+
   hassfest:
     runs-on: ubuntu-latest
     timeout-minutes: 15

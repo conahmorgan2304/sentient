@@ -55,3 +55,34 @@ def test_a_question_with_the_instruction_is_still_cleared_from_history():
                                            "What reminders have I got?"])]
     real = [episode("2026-11-26T08:00:00+00:00", "Is the alarm on?")]
     assert drop_selftest_bursts(burst + real) == real
+
+
+async def test_overlapping_self_test_is_skipped_and_errors_cannot_pass(hass: HomeAssistant):
+    from custom_components.sentient.selftest import Question
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    nested = []
+
+    async def converse(hass_, text, cid, context, **kw):
+        nested.append(await rt.selftest.async_run(force=True))
+        raise RuntimeError("no reminders")
+
+    question = Question("test", "What reminders have I got?", lambda answer: (True, "no reminders"))
+    with patch.object(type(rt.selftest), "questions", lambda self: [question]), \
+            patch("homeassistant.components.conversation.async_converse", converse):
+        result = await rt.selftest.async_run(force=True)
+    assert nested == [{"skipped": "a self-test is already running"}]
+    assert not result["results"][0]["right"]
+    assert "conversation failed" in result["results"][0]["expected"]
+    assert rt.conversations.testing is None
+    assert not rt.selftest._running
+
+
+def test_cleanup_preserves_longer_real_questions():
+    questions = ["Is the alarm on? I need to know before leaving.",
+                 "What time is it? I have a meeting.",
+                 "Is anything open? Please check the garage."]
+    episodes = [{"start": f"2026-11-26T03:25:0{i}+00:00",
+                 "turns": [{"who": "them", "text": question}]} for i, question in enumerate(questions)]
+    assert drop_selftest_bursts(episodes) == episodes
