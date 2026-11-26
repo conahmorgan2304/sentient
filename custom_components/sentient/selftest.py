@@ -367,12 +367,12 @@ class SelfTest:
                 out.append(Question("camera", f"Has anyone been seen on the {name} camera in the last two hours?", camera, "camera"))
             visitors = getattr(rt, "visitors", None)
             if visitors is not None and visitors.camera:
-                came = any(v.get("kind") != "nobody" for v in visitors.today())
+                came = any(not v.get("household") and v.get("kind") not in ("nobody", "household") for v in visitors.today())
 
                 def door_today(answer: str, want=came) -> tuple[bool, str]:
                     return yes_no(answer) is want, "yes" if want else "no one"
 
-                out.append(Question("visitors", "Has anyone been to the front door today?", door_today, "history"))
+                out.append(Question("visitors", "According to the visitor log only (not camera motion or person detections), has any visitor been recorded at the front door since local midnight today?", door_today, "history"))
 
         # Additional bounded household checks: one real thermostat and one
         # real energy sensor where a current numeric reading is available.
