@@ -253,7 +253,7 @@ async def test_bin_alarm_says_tomorrows_bin_or_stays_quiet(hass: HomeAssistant, 
     entry.runtime_data.lists["alarms"].upsert({
         "name": "Bins", "time": "19:00:00", "days": ["thu"], "message": "Bins tonight: {tomorrow:calendar.bins}.",
     })
-    events = {"calendar.bins": {"events": [{"summary": "Recycling"}]}}
+    events = {"calendar.bins": {"events": [{"summary": "Recycling", "start": (_t(22, 19, 0).date() + timedelta(days=1)).isoformat()}]}}
 
     async def get_events(call):
         return events
