@@ -54,6 +54,19 @@ OFFER = re.compile(
     r"\b(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
     r"let the \w+ (?:out|in)|top up|refill|go (?:and|out|outside|down|up)|pop (?:out|outside|down|up)|pick up|put (?:the )?\w+ away)\b",
     re.I)
+# Explicit offers to change the house, not informational offers such as "shall I check".
+ACTIONABLE_OFFER = re.compile(
+    r"\b(?:shall i|should i|would you like me to|do you want me to|want me to)\s+"
+    r"(?:please\s+)?(?:turn|switch|set|start|stop|open|close|lock|unlock|arm|disarm|"
+    r"activate|deactivate|run|schedule|cancel|delete|add|remove|send|play|pause|"
+    r"make|brew|adjust|change|enable|disable)\b", re.I)
+
+
+def actionable_offer(text: str) -> bool:
+    """Recognise explicit English action offers without treating questions as consent."""
+    return bool(ACTIONABLE_OFFER.search(text or "") or OFFER.search(text or ""))
+
+
 UNANSWERED = re.compile(
     r"\bi (?:don't|do not|didn't|did not) (?:know|have (?:any )?(?:information|a record|records|access|details|data|way))\b|"
     r"\bi (?:couldn't|could not|can't|cannot|wasn't able to|was unable to|am unable to|'m unable to|’m unable to) "
