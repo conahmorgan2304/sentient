@@ -14,12 +14,12 @@ def event_start(value: Any) -> datetime | None:
     raw = str(value)
     try:
         if len(raw) == 10:
-            return datetime.combine(date.fromisoformat(raw), time.min, tzinfo=dt_util.DEFAULT_TIME_ZONE)
+            return datetime.combine(date.fromisoformat(raw), time.min, tzinfo=dt_util.get_default_time_zone())
         parsed = dt_util.parse_datetime(raw)
         if parsed is None:
             return None
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+            parsed = parsed.replace(tzinfo=dt_util.get_default_time_zone())
         return dt_util.as_local(parsed)
     except (TypeError, ValueError, OverflowError):
         return None
