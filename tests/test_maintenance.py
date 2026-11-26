@@ -69,3 +69,33 @@ async def test_a_date_typed_on_the_page_never_crashes_the_check(hass: HomeAssist
     assert status["Descale kettle"]["days_since"] == 10 and status["Descale kettle"]["due"]
     assert status["Coffee filter"]["days_since"] in (9, 10) and not status["Coffee filter"]["due"]
     assert said and "Descale kettle" in said[0].data["message"] or "descale" in said[0].data["message"].lower()
+
+
+async def test_maintenance_jobs_start_while_running_and_reset_independently(hass, freezer):
+    import pytest
+
+    hass.states.async_set("fan.purifier", "on")
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data=OPTIONS)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    rt = entry.runtime_data
+    jobs = rt.lists["maintenance"]
+    cleaning = jobs.upsert({"name": "Clean purifier", "entity": "fan.purifier", "every_hours": 1})
+    replacing = jobs.upsert({"name": "Replace filter", "entity": "fan.purifier", "every_hours": 1})
+
+    freezer.tick(timedelta(hours=2))
+    assert rt.maintenance.status(replacing)["due"]
+    rt.maintenance.done(cleaning["id"])
+    freezer.tick(timedelta(minutes=15))
+    hass.states.async_set("fan.purifier", "off")
+    await hass.async_block_till_done()
+    assert cleaning["used_hours"] == pytest.approx(0.25)
+    assert replacing["used_hours"] == pytest.approx(2.25)
+
+
+def test_focused_voice_tools_include_maintenance_for_due_and_done():
+    from custom_components.sentient.focus import Focus
+
+    for text in ("I've changed the purifier filter", "Is the purifier filter due?"):
+        assert "sentient_maintenance" in Focus().tools_for(text)

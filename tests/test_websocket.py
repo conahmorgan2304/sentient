@@ -157,3 +157,18 @@ async def test_saving_part_of_a_group_keeps_the_rest_and_an_empty_value_clears(h
     await ws.send_json({"id": 2, "type": "sentient/settings/save", "group": "safety", "data": {"left_open_ignore": ""}})
     assert (await ws.receive_json())["success"]
     assert not entry.options.get("left_open_ignore") and entry.options["left_open_minutes"] == 15
+
+
+async def test_sidebar_clears_the_speaker_set_at_installation(hass, hass_ws_client):
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={"persona": "Nova", "default_speaker": "assist_satellite.kitchen"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "sentient/settings/save", "group": "voice",
+                        "data": {"default_speaker": ""}})
+    assert (await ws.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.runtime_data.options["default_speaker"] is None
+    await ws.send_json({"id": 2, "type": "sentient/settings"})
+    assert "default_speaker" not in (await ws.receive_json())["result"]["data"]

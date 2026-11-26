@@ -72,3 +72,78 @@ jobs:
       - run: npm install --no-save eslint@9.14.0 globals@15.12.0 playwright@1.63.0 && npx playwright install --with-deps chromium
       - run: node --test tests/*.test.cjs
       - run: npx eslint custom_components/sentient/frontend
+
+  home-assistant-compatibility:
+    name: Home Assistant ${{ matrix.core }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - core: "2025.10.0"
+            python: "3.13"
+            harness: "0.13.285"
+            conversation: "pycares<5 hassil==3.2.0 home-assistant-intents==2025.10.1"
+          - core: "2026.10.4"
+            python: "3.14"
+            harness: "0.13.375"
+            conversation: "gazetteer-matcher==1.1.0 hassil==3.12.1 home-assistant-intents==2026.10.6"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the matching Home Assistant test harness
+        env:
+          HARNESS_VERSION: ${{ matrix.harness }}
+          CONVERSATION_DEPS: ${{ matrix.conversation }}
+        run: |
+          read -r -a conversation_deps <<< "$CONVERSATION_DEPS"
+          pip install "pytest-homeassistant-custom-component==$HARNESS_VERSION" "${conversation_deps[@]}" \
+            PyTurboJPEG 'pypdf>=5.1.0' num2words==0.5.14
+      - name: Check setup, voice, safety and recovery
+        run: |
+          pytest -q tests/test_config_flow.py tests/test_voice_retry.py tests/test_voice_grounding.py \
+            tests/test_safety_and_delivery.py tests/test_privacy.py tests/test_websocket.py \
+            tests/test_window_heating.py tests/test_maintenance.py
+
+  current-home-assistant-storage:
+    name: Home Assistant 2026.11.3 storage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install homeassistant==2026.11.3
+      - name: Verify checked privacy writes against Home Assistant storage
+        run: |
+          python - <<'PY'
+          import asyncio
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+
+          from homeassistant.core import HomeAssistant
+          from homeassistant.helpers.storage import Store
+          from custom_components.sentient.storage import RecoveryStore, async_flush_pending
+
+
+          async def check(directory):
+              hass = HomeAssistant(directory)
+              records = Store(hass, 1, "sentient.test.records")
+              journal = RecoveryStore(hass, 1, "sentient.test.forget", atomic_writes=True)
+              await records.async_save({"items": ["synthetic private record"]})
+              await journal.async_save({"pending": [[1, 2]]})
+              assert "synthetic private record" in Path(records.path).read_text()
+              records.async_delay_save(lambda: {"items": []}, 10)
+              await async_flush_pending([records])
+              await journal.async_save({"pending": []})
+              assert "synthetic private record" not in Path(records.path).read_text()
+              assert await journal.async_load() == {"pending": []}
+
+
+          with TemporaryDirectory() as directory:
+              asyncio.run(check(directory))
+          PY

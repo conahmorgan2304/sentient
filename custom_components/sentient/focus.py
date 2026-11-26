@@ -67,6 +67,10 @@ TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
           "sentient_create_automation"]),
         ("quiet", r"quiet|shush|hush|stop (?:telling|saying|talking)|guests?|talk again|shut up",
          ["sentient_quiet", "sentient_shush"]),
+        ("maintenance", r"\bmaintenance\b|\b(?:changed|replaced|cleaned|descaled|serviced)\b"
+                        r"[^.!?]*\b(?:filter|purifier|kettle|machine)\b"
+                        r"|\b(?:filter|descaling|service)\b[^.!?]*\b(?:due|overdue)\b",
+         ["sentient_maintenance"]),
         ("manuals", r"manual|instructions|warranty|guarantee|receipt|filter|descale|model number|how do (?:i|you) (?:clean|reset|change|fit)",
          ["sentient_manual"]),
         ("goals", r"\bgoals?\b|\baim\b|target|use less|cut (?:down|back)|reduce|save (?:energy|money)|how are we doing",

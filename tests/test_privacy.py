@@ -74,3 +74,50 @@ async def test_forget_recent_clears_replaced_memory_text(hass):
     removed = forget_recent(rt)
     assert removed["memories"] == removed["memory_changes"] == 1
     assert not rt.memory.items and not rt.memory.changed
+
+
+async def test_forget_waits_for_stores_and_preserves_the_journal_on_write_error(hass, hass_storage, monkeypatch):
+    from homeassistant.util.file import WriteError
+
+    from custom_components.sentient.privacy import async_forget_recent
+
+    rt = (await _setup(hass)).runtime_data
+    row = rt.timeline.add("said", "Private timeline entry")
+    timeline_store = rt.timeline._store
+    await timeline_store.async_save({"items": [row], "problems": {}})
+    rt.memory.add("Private memory")
+    memory_store = rt.memory._store
+    await memory_store.async_save({"items": [item.as_dict() for item in rt.memory.items]})
+    journal = rt.brain._forget_store
+
+    async def disk_failure(*args):
+        raise WriteError("Temporary storage failure")
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(timeline_store, "_async_write_data", disk_failure)
+        outcome = await async_forget_recent(rt)
+    assert "database_error" in outcome
+    assert hass_storage[journal.key]["data"]["pending"]
+    assert hass_storage[timeline_store.key]["data"]["items"] == [row]
+    assert hass_storage[memory_store.key]["data"]["items"] == []
+
+    outcome = await async_forget_recent(rt)
+    assert "database_error" not in outcome
+    assert hass_storage[timeline_store.key]["data"]["items"] == []
+    assert hass_storage[journal.key]["data"]["pending"] == []
+
+
+async def test_forget_clears_dormant_clip_history(hass, hass_storage):
+    from custom_components.sentient.privacy import async_forget_recent
+
+    rt = (await _setup(hass)).runtime_data
+    assert "clipwatch" in rt.dormant
+    store = rt.clipwatch._store
+    now = dt_util.utcnow()
+    old = {"time": (now - timedelta(days=3)).isoformat(), "summary": "Old clip"}
+    recent = {"time": now.isoformat(), "summary": "Private clip"}
+    await store.async_save({"items": [recent, old]})
+    result = await async_forget_recent(rt)
+    assert result["clip_descriptions"] == 1
+    assert hass_storage[store.key]["data"]["items"] == [old]
+    assert "clipwatch" in rt.dormant

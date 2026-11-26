@@ -193,3 +193,30 @@ async def test_never_touch_room_heater_is_left_alone(hass):
         await eng.async_check(_later(6))
     assert not calls and not eng.holding(LIVING)
     rt.speech.async_say.assert_awaited_once()  # still told, as for whole-house heating
+
+
+async def test_failed_restore_retries_the_saved_setpoint(hass):
+    from homeassistant.exceptions import HomeAssistantError
+
+    attempts = []
+
+    async def set_temperature(call):
+        target = call.data["temperature"]
+        attempts.append(target)
+        if len(attempts) == 2:
+            raise HomeAssistantError("Temporary thermostat failure")
+        _heater(hass, LIVING, target)
+
+    hass.services.async_register("climate", "set_temperature", set_temperature)
+    _heater(hass, LIVING, 21)
+    _window(hass, WIN_LIVING, "on")
+    eng = _engine(hass, _rt())
+    with _areas():
+        await eng.async_check(_later(6))
+        _window(hass, WIN_LIVING, "off")
+        await eng.async_check(_later(10))
+        assert eng.holding(LIVING)
+        await eng.async_check(_later(11))
+        assert not eng.holding(LIVING)
+        assert attempts == [15, 21, 21]
+        assert hass.states.get(LIVING).attributes["temperature"] == 21

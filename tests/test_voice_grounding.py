@@ -145,8 +145,9 @@ async def test_calendar_challenge_reads_current_exposed_calendar(hass, freezer):
         api = await llm.async_get_api(hass, "sentient", ctx)
         assert "Craft supplies delivery today." not in api.api_prompt
         recalled = await api.async_call_tool(llm.ToolInput("sentient_recall", {"query": "Craft supplies delivery today"}))
-        assert not recalled["memories"]
+        assert not getattr(recalled, "data", recalled)["memories"]
         current = await api.async_call_tool(llm.ToolInput("sentient_calendar", {"days": 8}))
+        current = getattr(current, "data", current)
         assert current["today"] == "Sunday 25 October"
         delivery = next(event for event in current["events"] if event["what"] == "Craft supplies delivery")
         assert delivery["when"] == "Sunday 1 November, all day"

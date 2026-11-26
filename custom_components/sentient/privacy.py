@@ -23,32 +23,66 @@ def _after(stamp: Any, since) -> bool:
     return when is not None and dt_util.as_utc(when) >= since
 
 
+async def async_flush_forgotten(rt: Any) -> None:
+    """Persist the scrubbed stores before clearing the recovery journal."""
+    from .storage import async_flush_pending
+
+    owners = (rt.timeline, rt.conversations, rt.visitors, rt.watches, rt.memory, rt.ai,
+              getattr(rt, "clipwatch", None), getattr(rt, "faces", None),
+              getattr(rt, "reflection", None), getattr(rt, "curiosity", None),
+              getattr(rt, "followyou", None), getattr(rt, "incidents", None),
+              getattr(rt, "security_events", None), getattr(rt, "threads", None),
+              getattr(rt, "lists", {}).get("checks"))
+    await async_flush_pending([
+        *(getattr(owner, "_store", None) for owner in owners),
+        rt.speech._remark_store, rt.speech._delivery_store, rt.sessions.memory.store,
+    ])
+
+
+async def async_load_dormant_records(rt: Any) -> None:
+    """Load retained records for deletion without starting disabled features."""
+    if "clipwatch" in getattr(rt, "dormant", ()):
+        clipwatch = rt.clipwatch
+        clipwatch.items = ((await clipwatch._store.async_load()) or {}).get("items", [])
+    if "faces" in getattr(rt, "dormant", ()):
+        faces = rt.faces
+        faces.seen = ((await faces._store.async_load()) or {}).get("seen", {})
+
+
 async def async_forget_recent(rt: Any, hours: float = 48) -> dict[str, Any]:
-    """Persist the privacy request first, then forget all stores and await SQLite."""
+    """Confirm only once the scrub is persisted across Sentient's stores."""
     brain = getattr(rt, "brain", None)
     if brain is None or not brain.started:
-        gone = forget_recent(rt, hours)
-        await rt.speech.async_flush_deliveries()
-        await rt.sessions.memory.async_flush()
+        try:
+            await async_load_dormant_records(rt)
+            gone = forget_recent(rt, hours)
+            await async_flush_forgotten(rt)
+        except Exception as err:  # noqa: BLE001
+            return {"database_error": f"Could not finish saving the deletion: {err}. Please try again."}
         return gone
-    # A single lock covers both saving the intent and clearing its completion
-    # record. Concurrent forget commands must not overwrite one another.
+
     async with brain._forget_lock:
         hours = max(1.0, min(float(hours), MAX_HOURS))
         since = dt_util.utcnow() - timedelta(hours=hours)
         try:
-            start, end = await brain.async_prepare_forget(since)
-        except Exception as err:  # noqa: BLE001 - do not clear other stores without a recovery record
+            await async_load_dormant_records(rt)
+            previous = list(brain._forget_pending)
+            _, end = await brain.async_prepare_forget(since)
+        except Exception as err:  # noqa: BLE001 - no deletion without a recovery record
             return {"database_error": f"Could not safely start forgetting: {err}. Nothing was cleared."}
-        gone: dict[str, Any] = forget_recent(rt, hours, _registered=True, _since=since, _until=end)
+
+        gone: dict[str, Any] = {}
         try:
-            await rt.speech.async_flush_deliveries()
-            await rt.sessions.memory.async_flush()
+            for start, stop in previous:
+                forget_recent(rt, (stop - start) / 3600, _registered=True,
+                              _since=dt_util.utc_from_timestamp(start), _until=stop)
+            gone = forget_recent(rt, hours, _registered=True, _since=since, _until=end)
+            await async_flush_forgotten(rt)
             for key, n in (await brain.async_finish_forget()).items():
                 gone[f"database_{key}"] = n
-        except Exception as err:  # noqa: BLE001 - pending record survives until a successful restart replay
-            gone["database_error"] = ("The memory database couldn't be cleared yet; it will finish when Sentient next "
-                                      f"starts, and nothing from that period can be saved meanwhile ({err}).")
+        except Exception as err:  # noqa: BLE001 - the journal survives until a successful retry
+            gone["database_error"] = (f"Recent data couldn't be cleared yet ({err}). "
+                                      "Sentient will retry next time it starts.")
         return gone
 
 
@@ -145,7 +179,8 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
     vis = rt.visitors
     keep_v = [v for v in vis.log if not _after(v.get("time"), since)]
     gone["visitors"] = len(vis.log) - len(keep_v)
-    vis.log = deque(keep_v, maxlen=vis.log.maxlen)
+    vis.log.clear()
+    vis.log.extend(keep_v)
     vis._save()
 
     if (cw := getattr(rt, "clipwatch", None)) is not None:
@@ -172,8 +207,7 @@ def forget_recent(rt: Any, hours: float = 48, *, _registered: bool = False,
 
     reflection = getattr(rt, 'reflection', None)
     if reflection is not None and reflection.last and _after(reflection.last.get('time'), since):
-        reflection.last = None
-        reflection._store.async_delay_save(lambda: {"last": reflection.last}, 2)
+        reflection._keep({})
         gone['reflection'] = 1
     curiosity = getattr(rt, 'curiosity', None)
     if curiosity is not None:

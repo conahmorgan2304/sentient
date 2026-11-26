@@ -440,7 +440,6 @@ DORMANT_WHEN_OFF: dict[str, Callable[[dict[str, Any]], bool]] = {
     "clipwatch": lambda o: bool(o.get("clip_watch")),
     "faces": lambda o: bool(o.get("faces") or o.get("face_teach") or float(o.get("face_forget_hours") or 0) > 0),
     "rain": lambda o: bool(o.get("rain_warnings")),
-    "window_heat": lambda o: bool(o.get("window_heating")),
     "parcels": lambda o: bool(o.get("outside_info") or o.get("parcel_trackers")),
     "cheap_power": lambda o: bool(o.get("price_entity")),
 }

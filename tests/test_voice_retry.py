@@ -125,3 +125,15 @@ async def test_an_ai_backup_that_fails_too_hands_on_to_home_assistants_own(hass)
         result = await obj.async_process(request('Turn the kitchen light off'))
     assert [c.args[0] for c in calls.call_args_list][-2:] == ['conversation.second_ai', 'conversation.home_assistant']
     assert result.response.speech['plain']['speech'] == 'Turned off the kitchen light.'
+
+
+async def test_provider_and_backup_work_without_chat_log_subscriptions(hass, monkeypatch):
+    from homeassistant.components.conversation import chat_log
+
+    monkeypatch.delattr(chat_log, "async_subscribe_chat_logs", raising=False)
+    obj = _agent(hass)
+    with patch.object(obj, "_converse", side_effect=[_error("Invalid API key"), response("Backup here.")]) as calls, \
+            patch.object(obj, "async_write_ha_state"):
+        result = await obj.async_process(request("Tell me a joke"))
+    assert [call.args[0] for call in calls.call_args_list] == ["conversation.primary", obj.backup_agent]
+    assert result.response.speech["plain"]["speech"] == "Backup here."

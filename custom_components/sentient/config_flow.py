@@ -1104,14 +1104,29 @@ class SentientOptionsFlow(OptionsFlow):
     def _save_page(self, schema: vol.Schema, user_input: dict[str, Any]) -> ConfigFlowResult:
         """Update only this page's settings; a field left empty is cleared."""
         options = {**self.config_entry.data, **self.config_entry.options}
-        for key in schema.schema:
-            options.pop(str(key), None)
-        options.update(user_input)
+        for marker in schema.schema:
+            key = str(marker)
+            if key in user_input and user_input[key] not in (None, ""):
+                options[key] = user_input[key]
+            elif key in self.config_entry.data and isinstance(marker, vol.Optional):
+                options[key] = None
+            else:
+                options.pop(key, None)
         return self.async_create_entry(data=options)
+
+    def _clearable_schema(self, schema: vol.Schema, defaults: vol.Schema, current: dict[str, Any]) -> vol.Schema:
+        # An optional field with no built-in default must stay absent when cleared.
+        # A suggested value prefills the form without being inserted by validation.
+        clearable = {str(marker) for marker in defaults.schema
+                     if isinstance(marker, vol.Optional) and marker.default is vol.UNDEFINED}
+        fields = {vol.Optional(str(marker), description=marker.description) if str(marker) in clearable else marker: value
+                  for marker, value in schema.schema.items()}
+        suggested = {key: current[key] for key in clearable if current.get(key) is not None}
+        return self.add_suggested_values_to_schema(vol.Schema(fields), suggested)
 
     async def async_step_briefing(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         current = {**self.config_entry.data, **self.config_entry.options}
-        schema = _briefing_schema(current)
+        schema = self._clearable_schema(_briefing_schema(current), _briefing_schema({}), current)
         if user_input is not None:
             return self._save_page(schema, user_input)
         return self.async_show_form(step_id="briefing", data_schema=schema)
@@ -1121,6 +1136,7 @@ class SentientOptionsFlow(OptionsFlow):
         schema = vol.Schema(
             {vol.Required(CONF_PERSONA, default=current.get(CONF_PERSONA, DEFAULT_PERSONA)): selector.TextSelector()}
         ).extend(_speech_schema(current).schema)
+        schema = self._clearable_schema(schema, _speech_schema({}), current)
         if user_input is not None:
             return self._save_page(schema, user_input)
         return self.async_show_form(step_id="settings", data_schema=schema)
