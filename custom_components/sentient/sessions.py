@@ -166,6 +166,7 @@ class VoiceSession:
     language: str | None = None
     specific_clarification: bool = False
     turn_text: str = ""
+    camera_topic: tuple[str, tuple[str, str | None], str] | None = None
     clarification: dict | None = None
     clarification_resolution: dict | None = None
     follow_up_context: dict | None = None
@@ -391,6 +392,7 @@ class Sessions:
         session.undo.clear()
         session.correction = None
         session.follow_up_context = None
+        session.camera_topic = None
         session.clarification = None
         session.clarification_resolution = None
         session.recovery_record = None

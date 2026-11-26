@@ -221,7 +221,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             if acting_results.get() is not completed or content.get("role") != "tool_result":
                 return
             if action_succeeded(content):
-                completed.append(True)
+                completed.append(str(content.get("tool_name") or "").split("__")[-1])
                 return
             log = current_chat_log.get()
             if log is None or log.llm_api is None:
@@ -230,7 +230,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             while isinstance(tool, getattr(llm, "NamespacedTool", ())):
                 tool = tool.tool
             if isinstance(tool, getattr(llm, "ActionTool", ())) and action_succeeded(content, acting=True):
-                completed.append(True)
+                completed.append(str(content.get("tool_name") or "").split("__")[-1])
 
         unsubscribe = async_subscribe_chat_logs(self.hass, observe)
         try:
@@ -238,7 +238,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         finally:
             unsubscribe()
             acting_results.reset(token)
-        return result, bool(completed)
+        return result, completed
 
     def _guarded_configuration(self) -> bool:
         """Fail closed for unknown agents or combined/unrestricted control APIs."""
@@ -489,7 +489,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                     rt.control.clear_recovery()
             if trace is not None:
                 trace['listen'] = result.continue_conversation
-                trace['outcome'] = 'error_reply' if result.response.response_type == intent.IntentResponseType.ERROR else 'completed'
+                trace['outcome'] = ('error_reply' if result.response.response_type == intent.IntentResponseType.ERROR
+                                    else turn_meta.get("grounding_outcome", "completed"))
                 if self._guest() or not self._options().get('voice_timing_diagnostics'):
                     rt.ai.voice_timings.clear()
             if not synthetic and not self._guest() and checks is not None and checks.generation == check_generation:
@@ -570,12 +571,13 @@ class BackedUpAgent(conversation.ConversationEntity):
             if offers:
                 self._drop_security_offers(result, security=security, extra=impossible)
             return result
-        from .reliability import actionable_offer, explicit_completion
+        from .reliability import actionable_offer, explicit_completion, unsupported_self_explanation
         from .voice_stream import StreamWatch
 
         with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=security,
                          impossible=impossible,
-                         blocked=lambda text: actionable_offer(text) or bool(SECURITY_OFFER.search(text)),
+                         blocked=lambda text: (actionable_offer(text) or unsupported_self_explanation(text)
+                                               or bool(SECURITY_OFFER.search(text))),
                          defer=explicit_completion) as watch:
             result = await self._async_process_impl(user_input)
             if offers:
@@ -698,8 +700,15 @@ class BackedUpAgent(conversation.ConversationEntity):
                 meta["carried"] = True
                 meta["carry_kind"] = "rewake"
 
-        if cautious or changed_speaker:
-            # A new or unverified speaker cannot reuse another person's conversation or confirmation.
+        sessions = getattr(self._entry.runtime_data, "sessions", None)
+        scoped_key = (user_input.conversation_id, *owner)
+        scoped_session = sessions.items.get(scoped_key) if sessions is not None else None
+        foreign_session = (user_input.conversation_id and sessions is not None and scoped_session is None
+                           and any(key[0] == user_input.conversation_id and key[1:] != owner for key in sessions.items))
+        retired_session = (scoped_session is not None and not scoped_session.running
+                           and (scoped_session.closed or (now - scoped_session.touched).total_seconds() > sessions.seconds))
+        if cautious or changed_speaker or foreign_session or retired_session:
+            # A new scope cannot reuse another speaker's provider history or confirmation.
             user_input = replace(user_input, conversation_id=None)
         if (cautious or changed_speaker) and (
             YES.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "yes"
@@ -736,7 +745,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             known_end = is_conversation_end(user_input.text, session.question, self._options().get(CONF_PERSONA) or DEFAULT_PERSONA,
                                             language=self._reply_language(user_input), cues=self._cues())
             # Known endings/cancellation must reach the existing cancellation path without waiting for preparation.
-            if not known_end and not cancel(user_input.text, self._reply_language(user_input)) and await async_language_ending(self.hass, self._options(), user_input.text, session.question):
+            waiting_for_camera = (session.clarification or {}).get("kind") == "camera"
+            if not waiting_for_camera and not known_end and not cancel(user_input.text, self._reply_language(user_input)) and await async_language_ending(self.hass, self._options(), user_input.text, session.question):
                 # Reuse the scoped cancellation path, without treating translated text as consent.
                 if self._options().get(CONF_RECOVERY):
                     result = await self._recoverable_turn(replace(user_input, text="cancel that"))
@@ -757,6 +767,12 @@ class BackedUpAgent(conversation.ConversationEntity):
                 asked = public[0]  # only canonical public questions, no previous answer, identity or permissions
             if said := await instant_answer(self.hass, self._entry.runtime_data, asked, user_input.context,
                                             user_input.device_id, public_only=cautious or changed_speaker):
+                if sessions is not None and (voice_session := sessions.items.get((user_input.conversation_id, *owner))):
+                    async with voice_session.lock:
+                        voice_session.camera_topic = None
+                        if (voice_session.clarification or {}).get("kind") == "camera":
+                            voice_session.clarification = None
+                            voice_session.question = voice_session.missing_detail = ""
                 # Store only a canonical intent, irrespective of whose voice was recognised.
                 if minutes and speaker and not synthetic and not self._guest():
                     for pattern, topic in ((TIME, "What time is it?"), (DATE, "What date is it?"),
@@ -982,10 +998,25 @@ class BackedUpAgent(conversation.ConversationEntity):
                         task, user_input, opts, lambda: not session.closed and not self._guest() and self._options() is opts
                     )
                     return self._reply(user_input, session, message)
-                from .clarification import enabled as clarification_enabled, consume
+                from .clarification import camera_turn, enabled as clarification_enabled, consume
 
                 if handoff:
                     return await self._resume_topic(user_input, session)
+                if (clarification_enabled(opts) and not self._guest() and not cautious_turn(opts)
+                        and not self._is_selftest(user_input) and (watches := getattr(rt, "watches", None)) is not None
+                        and (not session.clarification or session.clarification['kind'] == 'camera')):
+                    language = user_input.language or self._reply_language(user_input)
+                    camera = await camera_turn(
+                        self.hass, session, watches, user_input.text, user_input.context, language,
+                        affirmative=self._is_affirmative(user_input) or answer(user_input.text, language) == "yes",
+                    )
+                    if camera:
+                        from .conversation_quality import TURN
+
+                        if (meta := TURN.get(None)) is not None:
+                            meta["grounding_outcome"] = ("camera_clarification" if camera.get("listen")
+                                                         else "camera_inspection")
+                        return self._reply(user_input, session, camera['text'], camera.get('listen', False))
                 if clarification_enabled(opts) and session.clarification:
                     decision = await consume(self.hass, session, user_input.text, user_input.context)
                     if decision and decision.get('stop'):
@@ -1158,12 +1189,13 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     def _validated_agent_reply(self, user_input, result, *, completed=False):
         """Keep native intent results and validate prose returned by other agents."""
-        from .reliability import actionable_offer, explicit_completion
+        from .reliability import actionable_offer, claimed_action_tools, explicit_completion, unsupported_self_explanation
         from .security_offers import SECURITY_OFFER, sentences
         from .sessions import current_session
 
         response = result.response
         action_data = response.as_dict().get("data") or {}
+        completed_tools = set(completed) if isinstance(completed, (list, set, tuple)) else set()
         completed = completed or (response.response_type == intent.IntentResponseType.ACTION_DONE
                                   and bool(action_data.get("success")))
         session = current_session.get()
@@ -1187,10 +1219,19 @@ class BackedUpAgent(conversation.ConversationEntity):
                     return result
         plain = spoken_text(response)
         parts = sentences(plain)
-        kept = [part for part in parts if not actionable_offer(part) and not SECURITY_OFFER.search(part)
-                and (completed or not explicit_completion(part))]
+        kept = []
+        for part in parts:
+            required = claimed_action_tools(part)
+            if (not actionable_offer(part) and not SECURITY_OFFER.search(part)
+                    and not unsupported_self_explanation(part)
+                    and (all(tools & completed_tools for tools in required) if required
+                         else completed or not explicit_completion(part))):
+                kept.append(part)
         if len(kept) != len(parts):
-            text = " ".join(kept) or "I couldn't confirm that an action was completed."
+            fallback = ("I don't have a verified explanation for the earlier reply."
+                        if any(unsupported_self_explanation(part) for part in parts)
+                        else "I couldn't confirm that an action was completed.")
+            text = " ".join(kept) or fallback
             from homeassistant.components.conversation.chat_log import DATA_CHAT_LOGS, current_chat_log
 
             log = current_chat_log.get()

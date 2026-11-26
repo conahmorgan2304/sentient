@@ -66,6 +66,14 @@ def _expand(words: set[str]) -> set[str]:
     return out
 
 
+def relevant_text(asked: str, text: str) -> bool:
+    """A passive recall needs two independent concepts, not a shared word or stem."""
+    query = _words(asked) - {"check", "look", "tell", "show", "did", "can", "today", "tomorrow", "earlier"}
+    subject = _words(text)
+    concepts = {frozenset(_expand({word})) for word in query}
+    return sum(bool(concept & subject) for concept in concepts) >= 2
+
+
 _DAYNAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 _MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 _HABIT = re.compile(r"\b(every|each|usually|always|normally|most)\b")
@@ -595,13 +603,20 @@ class MemoryStore:
             self._save()
         return memory
 
-    def for_prompt(self, asked: str, limit: int, owner: str | None = None) -> list[Memory]:
+    def for_prompt(self, asked: str, limit: int, owner: str | None = None, *, strict: bool = False) -> list[Memory]:
         """What the voice is given: pinned ones, the speaker's own (when *owner* is known), then those matching
         what was asked (words and word stems), then the most used lately, then the newest — never more than
         *limit*."""
         everything = [m for m in self._items if m.category != "correction" and self.live(m)]
         if limit <= 0:
             return []
+        if strict:
+            terms = _words(asked)
+            everything = [m for m in everything if relevant_text(asked, m.text)
+                          and not m.expires and m.source not in ("briefing", "calendar", "notification", "reflection")]
+            everything.sort(key=lambda m: (m.pinned, bool(owner and m.owner == owner),
+                                           len(terms & _words(m.text)), m.created), reverse=True)
+            return everything[:limit]
         pinned = [m for m in everything if m.pinned][:limit]
         rest = [m for m in everything if not m.pinned]
         if owner:

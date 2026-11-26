@@ -337,17 +337,23 @@ class Conversations:
             "conversation": [f"{'They' if t['who'] == 'them' else 'You'}: {_short(t['text'], 220)}" for t in ep["turns"]],
         }
 
-    def prompt_lines(self, exclude: str | None = None, hours: float = 12, limit: int = 4) -> list[str]:
+    def prompt_lines(self, exclude: str | None = None, hours: float = 12, limit: int = 4, *, query: str = "") -> list[str]:
+        from .memory import relevant_text
+
         out = []
-        for ep in self.recent(hours=hours, limit=limit, exclude=exclude):
+        for ep in self.recent(hours=hours, limit=20 if query else limit, exclude=exclude):
             when = dt_util.as_local(dt_util.parse_datetime(ep["start"]))
             asked = next((t["text"] for t in ep["turns"] if t["who"] == "them"), "")
-            said = next((t["text"] for t in reversed(ep["turns"]) if t["who"] == "me"), "")
+            if query and not relevant_text(query, asked):
+                continue
+            said = next((t["text"] for t in reversed(ep["turns"]) if t["who"] == "me"), "") if not query else ""
             room = f", {ep['room']}" if ep.get("room") else ""
             line = f"- {when:%H:%M}{room}: asked \"{_short(asked, 110)}\""
             if said:
                 line += f" — you said \"{_short(said, 110)}\""
             out.append(line)
+            if len(out) >= limit:
+                break
         return out
 
     def count_today(self) -> int:

@@ -817,7 +817,8 @@ class WatchManager:
             key = _key(spot)
         return await self.spots.async_attachment(camera, key)
 
-    async def async_look(self, camera: str, question: str, spot: str | None = None) -> dict[str, Any]:
+    async def async_look(self, camera: str, question: str, spot: str | None = None, *,
+                         readable=None, target_entity: str | None = None, fresh: bool = False) -> dict[str, Any]:
         """One on-demand look through a camera: 'what's going on in the garden?'.
 
         A spot named in the question (or by another name for it — "the drive", "the driveway")
@@ -825,26 +826,34 @@ class WatchManager:
         """
         generation, options = self._cache_generation, self.options
         spot_key = None
-        if self.spots is not None:
+        if target_entity is None and self.spots is not None:
             spot_key = self.spots.find_any(spot) if spot else None
             spot_key = spot_key or self.spots.find_any(question) or self.spots.find_any(camera)
-        if spot_key:
+        if target_entity is not None:
+            entity_id = target_entity
+        elif spot_key:
             entity_id = self.spots.spots[spot_key]["camera"]
             spot = self.spots.spots[spot_key]["name"]
         else:
             entity_id = resolve_entity(self.hass, camera, "camera") or resolve_entity(self.hass, camera)
         if entity_id is None or not entity_id.startswith("camera."):
             raise HomeAssistantError(f"I can't find a camera called '{camera}'")
+        if readable is not None and not readable(entity_id):
+            raise HomeAssistantError("That camera is not available to this conversation")
         key = (entity_id, spot or "", " ".join(question.lower().split()).strip(" ?.!"))
         minutes = float(self.options.get(CONF_LOOK_CACHE, DEFAULT_LOOK_CACHE) or 0)
-        if minutes > 0 and (hit := self._looks.get(key)) and dt_util.utcnow() - hit[0] < timedelta(minutes=minutes):
-            return {**hit[1], "seen_minutes_ago": round((dt_util.utcnow() - hit[0]).total_seconds() / 60, 1)}
+        if not fresh and minutes > 0 and (hit := self._looks.get(key)) and dt_util.utcnow() - hit[0] < timedelta(minutes=minutes):
+            return {**hit[1], "source": "cached camera interpretation",
+                    "seen_minutes_ago": round((dt_util.utcnow() - hit[0]).total_seconds() / 60, 1)}
+        requested_at = dt_util.utcnow()
         data: dict[str, Any] = {
             "task_name": f"Sentient look: {question}"[:100],
             "instructions": (
                 f"Look at this home camera image and answer: {question} "
                 "Reply in one or two short spoken sentences. Describe only what is visible; "
-                "if it's too dark or unclear, say so. No camera names, IDs or timestamps."
+                "if it's too dark or unclear, say so. Describe parcels only by visible details; "
+                "do not infer contents, recipient, or a connection to any appointment or reminder. "
+                "No camera names, IDs or timestamps."
             ),
             "attachments": [
                 await self._attachment(
@@ -865,7 +874,9 @@ class WatchManager:
         if state is None:
             raise HomeAssistantError('The camera is no longer available')
         answer = (response or {}).get("data")
-        out = {"camera": state.name, "answer": str(answer or "").strip()}
+        out = {"camera": state.name, "answer": str(answer or "").strip(),
+               "source": "interpretation of a newly requested camera image",
+               "image_requested_at": requested_at.isoformat()}
         if spot:
             out["spot"] = spot
         if out["answer"]:

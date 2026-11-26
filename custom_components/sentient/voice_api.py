@@ -211,7 +211,7 @@ class IncidentsTool(_Tool):
 GUARDED_READ_ONLY = {
     # Each of these has explicit entity-visibility and household-privacy checks.
     'sentient_history', 'sentient_root_cause', 'sentient_camera_activity',
-    'sentient_evidence',
+    'sentient_evidence', 'sentient_calendar', 'sentient_calendar_clashes',
 }
 
 

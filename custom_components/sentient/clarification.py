@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 from copy import deepcopy
+from difflib import SequenceMatcher
 
 from homeassistant.auth.permissions.const import POLICY_READ
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
@@ -12,6 +13,126 @@ from .presence import area_of
 from .voice_locale import clean
 
 CONF = 'specific_clarification'
+
+# Deliberately accept only short, read-only inspection commands here. More
+# complex requests, including historical and cross-system questions, use Assist.
+_CAMERA_REQUESTS = {
+    'en': (r"(?:please )?(?:check|look at) (?:the )?(.+)", "Did you mean {name}?"),
+    'fr': (r"(?:vérifie|regarde) (?:(?:le|la|les) |l')?(.+)", "Tu voulais dire {name} ?"),
+    'fi': (r"(?:tarkista|katso) (.+)", "Tarkoititko kohdetta {name}?"),
+}
+
+
+def _camera_request(text, language):
+    code = (language or 'en').replace('_', '-').split('-')[0].lower()
+    pattern, question = _CAMERA_REQUESTS.get(code, ('', ''))
+    match = re.fullmatch(pattern, clean(text))
+    return (match[1], question) if match else (None, None)
+
+
+def _camera_names(hass, spots):
+    """Exact names and registry aliases. Keep collisions visible to the caller."""
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    names = {}
+    for state in hass.states.async_all('camera'):
+        entry = registry.async_get(state.entity_id)
+        area = ar.async_get(hass).async_get_area(area_of(hass, state.entity_id) or '')
+        labels = [state.name, state.entity_id, *(entry.aliases if entry else ())]
+        if area:
+            labels.extend([area.name, *area.aliases])
+        for label in labels:
+            names.setdefault(clean(label), {})[(state.entity_id, None)] = label
+    if spots is not None:
+        for spot in spots.listing():
+            for label in [spot['name'], *spot['also_called'].split(',')]:
+                if label.strip():
+                    names.setdefault(clean(label), {})[(spot['camera'], spot['name'])] = spot['name']
+    return names
+
+
+async def camera_turn(hass, session, watches, text, context, language, *, affirmative=False):
+    """Resolve exact inspections and offer a single likely transcription correction."""
+    item = session.clarification
+    prior = session.camera_topic
+    session.camera_topic = None
+    target, template = _camera_request(text, language)
+    if item and item['kind'] == 'camera':
+        session.clarification = None
+        session.question = session.missing_detail = ''
+        if affirmative or clean(text) == clean(item['name']):
+            # A read-only selection may use yes. It must never reach an action confirmation.
+            target = item['target']
+        else:
+            item = None
+    else:
+        item = None
+    if not target:
+        return None
+    names = _camera_names(hass, watches.spots)
+    choices = names.get(target, {})
+    if item:
+        choices = {key: name for key, name in choices.items() if key == item['camera']}
+        if len(choices) != 1:
+            return {'text': 'That camera or spot is no longer available.'}
+    if not choices and prior:
+        old_target, camera, label = prior
+        # A known subject is never a transcription correction. Require a close
+        # spelling match with the same initial and bounded length.
+        known = any(target in (clean(state.name), clean(state.entity_id))
+                    for state in hass.states.async_all())
+        known = known or any(target in {clean(area.name), *(clean(a) for a in area.aliases)}
+                             for area in ar.async_get(hass).async_list_areas())
+        similar = (4 <= len(target) <= 30 and target[0] == old_target[0]
+                   and abs(len(target) - len(old_target)) <= 1
+                   and SequenceMatcher(None, old_target, target, autojunk=False).ratio() >= 2 / 3)
+        if (not known and similar and camera in names.get(old_target, {})
+                and (readable := await candidates(hass, [camera[0]], context))
+                and not session.closed and not session.forgotten):
+            question = template.format(name=label)
+            session.pending = None
+            session.clarification = {'kind': 'camera', 'request': text[:300], 'target': old_target,
+                                     'camera': camera, 'name': label, 'choices': readable, 'question': question}
+            session.question = question
+            session.task_state = 'waiting'
+            session.missing_detail = 'camera'
+            session.listen_reason = 'specific_clarification'
+            return {'text': question, 'listen': True}
+    cropped = {key: label for key, label in choices.items() if key[1]}
+    choices = cropped or choices  # same name can denote a camera and its configured crop
+    if len(choices) != 1:
+        return None
+    (entity_id, spot), label = next(iter(choices.items()))
+    if not await candidates(hass, [entity_id], context):
+        return {'text': 'That camera is not available to this conversation.'} if item else None
+    if session.closed or session.forgotten:
+        return {'text': 'That conversation has ended. Please start again.'}
+    session.pending = None
+    session.question = ''
+    session.command_turn = True
+    session.listen_reason = 'camera_inspection'
+    session.goal = (item['request'] if item else text)[:200]
+    session.entities = [entity_id]
+    from homeassistant.exceptions import HomeAssistantError
+    from .language import language_name
+    from .voice_timing import measure
+
+    try:
+        with measure("camera_read"):
+            result = await watches.async_look(
+                entity_id, f"What is visible in this image? Reply in {language_name(language)}.",
+                spot, target_entity=entity_id, fresh=True,
+            )
+    except HomeAssistantError:
+        return {'text': "I couldn't check that camera."}
+    if session.closed or session.forgotten:
+        return {'text': 'That conversation has ended. Please start again.'}
+    session.task_state = 'completed'
+    if result.get('answer'):
+        session.camera_topic = (target, (entity_id, spot), label)
+    return {'text': result.get('answer') or "I couldn't tell what was on that camera."}
+
 
 
 def enabled(options):

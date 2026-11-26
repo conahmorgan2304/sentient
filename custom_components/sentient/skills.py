@@ -25,7 +25,7 @@ from typing import Any
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
-from .calendar_window import event_start, window_events
+from .calendar_window import event_start, local_midnight, window_events
 
 CONF_EMAIL = "email_read"
 CONF_CALENDAR_CLASHES = "calendar_clashes"
@@ -163,14 +163,16 @@ async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days:
     if not calendars:
         return {"events": [], "note": "No calendars are shared with the voice."}
     now = dt_util.now()
-    midnight = dt_util.start_of_local_day()
-    lower = midnight + timedelta(days=start_day) if start_day else now
-    end = midnight + timedelta(days=days)
+    lower = local_midnight(now, start_day) if start_day else now
+    end = local_midnight(now, days)
+    from .voice_timing import measure
+
     try:
-        response = await hass.services.async_call(
-            "calendar", "get_events", {"entity_id": calendars, "start_date_time": lower.isoformat(),
-                                       "end_date_time": end.isoformat()},
-            blocking=True, return_response=True)
+        with measure("calendar_read"):
+            response = await hass.services.async_call(
+                "calendar", "get_events", {"entity_id": calendars, "start_date_time": lower.isoformat(),
+                                           "end_date_time": end.isoformat()},
+                blocking=True, return_response=True)
     except Exception as err:  # noqa: BLE001
         return {"error": f"Couldn't read the calendars: {err}"}
     today = now.date()

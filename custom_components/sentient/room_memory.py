@@ -109,20 +109,24 @@ def carried(rt: Any, room: str, exclude: str | None) -> dict[str, Any] | None:
 
 
 def lines(rt: Any, options: dict[str, Any], room: str | None, conversation_id: str | None, *,
-          private: bool, guest: bool) -> list[str]:
+          private: bool, guest: bool, query: str = "") -> list[str]:
     if not options.get(CONF_ROOM_MEMORY) or not room:
         return []
+    if private or guest:
+        return []
     out: list[str] = []
-    here = conversations_here(rt, room, conversation_id)
+    # Automatic context for an actual request should contain no past speech from
+    # other conversation sessions or rooms. History tools remain explicit.
+    here = [] if query else conversations_here(rt, room, conversation_id)
     if here:
         out.append(f"Earlier in the {room} (last hour, newest first) — carry on from these naturally; \"it\" or "
                    "\"that\" may mean something from them:")
         out.extend(f"- {_hm(ep['start'])}: {_exchange(ep)}" for ep in here)
     if done := done_here(rt, room):
         out.append(f"Switched in the {room} by voice in the last hour: " + "; ".join(done) + ".")
-    if said := said_here(rt, room):
+    if not query and (said := said_here(rt, room)):
         out.append(f"Announced in the {room} in the last hour: " + "; ".join(said) + ".")
-    if not private and not guest and (ep := carried(rt, room, conversation_id)):
+    if not query and (ep := carried(rt, room, conversation_id)):
         out.append(f"Probably the same person, who was just talking to you in the {ep['room']} at "
                    f"{_hm(ep.get('last') or ep['start'])} — if what they say now follows on, carry on from it: "
                    + _exchange(ep))
