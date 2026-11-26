@@ -119,7 +119,7 @@ async def async_calendar_clashes(hass: HomeAssistant, calendars: list[str], hour
         for e in window_events((data or {}).get("events", []), now, end):
             if len(str(e.get("start"))) != 10:
                 events.append({**e, "calendar": cal})
-    return {"clashes": find_clashes(events), "events": len(events), "hours": hours}
+    return {"clashes": find_clashes(events), "events": len(events), "hours": hours, "window_end": end.isoformat()}
 
 
 def _day(d: Any, today: Any) -> str:
