@@ -75,3 +75,18 @@ async def test_options_settings(hass: HomeAssistant) -> None:
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.runtime_data.speech.options["quiet_start"] == "22:00:00"
+
+
+async def test_options_flow_clears_the_speaker_set_at_installation(hass):
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN,
+                            data={"persona": "Nova", "default_speaker": "assist_satellite.kitchen"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "settings"})
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"persona": "Nova"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    assert entry.runtime_data.options["default_speaker"] is None

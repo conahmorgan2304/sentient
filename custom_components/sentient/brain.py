@@ -109,10 +109,10 @@ class Brain:
         self.warming = False
         self._warm_task: Any = None
         self._generation = 0
-        from homeassistant.helpers.storage import Store
+        from .storage import RecoveryStore
 
         # forgotten periods not yet deleted from the database: kept on disk until they are
-        self._forget_store: Any = Store(hass, 1, f"sentient.{entry_id}.forget")
+        self._forget_store: Any = RecoveryStore(hass, 1, f"sentient.{entry_id}.forget", atomic_writes=True)
         self._forget_pending: list[tuple[float, float]] = []
         self._forget_lock = asyncio.Lock()  # serialise durable registration, deletion and completion
 
@@ -137,17 +137,16 @@ class Brain:
             # A crash may occur immediately after the durable intent is saved,
             # before the ordinary conversation stores have been cleared.
             # Replay that original bounded interval as well as SQLite deletion.
-            from .privacy import forget_recent
+            from .privacy import async_flush_forgotten, async_load_dormant_records, forget_recent
 
             rt = self._rt()
             try:
                 if rt is not None:
+                    await async_load_dormant_records(rt)
                     for start, end in list(self._forget_pending):
                         forget_recent(rt, (end - start) / 3600, _registered=True,
                                       _since=dt_util.utc_from_timestamp(start), _until=end)
-                if rt is not None:
-                    await rt.speech.async_flush_deliveries()
-                    await rt.sessions.memory.async_flush()
+                    await async_flush_forgotten(rt)
                 await self.async_finish_forget()
             except Exception:  # noqa: BLE001 - never stop the brain: the period stays blocked and is retried next start
                 _LOGGER.warning("Sentient couldn't finish forgetting an interrupted period yet; it will try again at the "
@@ -305,8 +304,10 @@ class Brain:
             live_refs = {str(m.id) for m in (items() if callable(items) else items)}
             gone["facts"] = await self.db.call(
                 lambda c: self.db.reconcile_fact_copies(c, live_refs))
-        self._forget_pending = [w for w in self._forget_pending if w not in pending]
-        await self._forget_store.async_save({"pending": self._forget_pending})
+        await self.db.call(lambda c: self.db.set_kv_text(c, "cases", "{}"))
+        remaining = [window for window in self._forget_pending if window not in pending]
+        await self._forget_store.async_save({"pending": remaining})
+        self._forget_pending = remaining
         return gone
 
     async def async_clear(self, what: str) -> None:

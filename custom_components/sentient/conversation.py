@@ -207,7 +207,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     async def _call_agent(self, agent_id, user_input):
         """Collect tool results for this provider call, independently of chat history."""
-        from homeassistant.components.conversation.chat_log import async_subscribe_chat_logs, current_chat_log
+        from homeassistant.components.conversation import chat_log
         from homeassistant.helpers import llm
         from .reliability import action_succeeded
         from .voice_actions import acting_results
@@ -223,7 +223,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             if action_succeeded(content):
                 completed.append(str(content.get("tool_name") or "").split("__")[-1])
                 return
-            log = current_chat_log.get()
+            log = chat_log.current_chat_log.get()
             if log is None or log.llm_api is None:
                 return
             tool = next((item for item in log.llm_api.tools if item.name == content.get("tool_name")), None)
@@ -232,11 +232,16 @@ class BackedUpAgent(conversation.ConversationEntity):
             if isinstance(tool, getattr(llm, "ActionTool", ())) and action_succeeded(content, acting=True):
                 completed.append(str(content.get("tool_name") or "").split("__")[-1])
 
-        unsubscribe = async_subscribe_chat_logs(self.hass, observe)
+        unsubscribe = None
         try:
+            # HA 2025.10 and 2025.11 lack the subscription API. Sentient tools
+            # still record their own results through acting_results on those versions.
+            if subscribe := getattr(chat_log, "async_subscribe_chat_logs", None):
+                unsubscribe = subscribe(self.hass, observe)
             result = await self._converse(agent_id, user_input)
         finally:
-            unsubscribe()
+            if unsubscribe is not None:
+                unsubscribe()
             acting_results.reset(token)
         return result, completed
 

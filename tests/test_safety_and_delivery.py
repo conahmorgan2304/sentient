@@ -101,3 +101,34 @@ async def test_alarm_triggered_and_extra(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
     msgs = [c.data["message"] for c in said]
     assert "The house alarm has gone off!" in msgs and "Alert: Panic button!" in msgs
+
+
+async def test_active_safety_sensors_at_start_and_first_recovery(hass):
+    smoke = "binary_sensor.kitchen_smoke"
+    gas = "binary_sensor.boiler_gas"
+    hass.states.async_set(smoke, "on", {"device_class": "smoke"})
+    hass.states.async_set(gas, "unavailable", {"device_class": "gas"})
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    # Configure the speakers before loading Sentient so it can use them on startup.
+    for speaker in OPTIONS["speakers"]:
+        hass.states.async_set(speaker, "idle")
+    entry = await _setup(hass)
+    assert len(said) == len(OPTIONS["speakers"])
+    assert "Smoke detected" in said[0].data["message"]
+
+    hass.states.async_set(gas, "on", {"device_class": "gas"})
+    await hass.async_block_till_done()
+    assert len(said) == 2 * len(OPTIONS["speakers"])
+
+    hass.states.async_set(smoke, "unavailable", {"device_class": "smoke"})
+    await hass.async_block_till_done()
+    hass.states.async_set(smoke, "on", {"device_class": "smoke"})
+    await hass.async_block_till_done()
+    assert len(said) == 2 * len(OPTIONS["speakers"])
+    assert not any("has cleared" in row["text"] for row in entry.runtime_data.timeline.items)
+
+    hass.states.async_set(smoke, "off", {"device_class": "smoke"})
+    await hass.async_block_till_done()
+    hass.states.async_set(smoke, "on", {"device_class": "smoke"})
+    await hass.async_block_till_done()
+    assert len(said) == 3 * len(OPTIONS["speakers"])

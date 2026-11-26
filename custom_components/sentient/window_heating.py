@@ -17,6 +17,7 @@ No AI. Off until switched on (Energy and appliances › Heating).
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import Any, Callable
@@ -56,6 +57,7 @@ class WindowHeating:
         self._gave_up: set[str] = set()  # windows open past the longest time: left alone until they're shut
         self._unsubs: list[Callable[[], None]] = []
         self._stopped = False
+        self._check_lock = asyncio.Lock()
 
     @property
     def enabled(self) -> bool:
@@ -142,19 +144,32 @@ class WindowHeating:
 
     @callback
     def _tick(self, now: datetime) -> None:
-        if not self._stopped and self.enabled:
+        if not self._stopped and (self.enabled or self.down):
             self.hass.async_create_task(self.async_check(), eager_start=False)
 
     async def async_check(self, now: datetime | None = None) -> None:
-        now = now or dt_util.utcnow()
-        await self._put_back(now)
-        open_now = self._open_long_enough(now)
-        for window in open_now:
+        # The next scheduled check reconciles fresh states if one is in progress.
+        if self._check_lock.locked():
+            return
+        async with self._check_lock:
+            if self._stopped:
+                return
+            now = now or dt_util.utcnow()
+            await self._put_back(now, force=not self.enabled)
+            if self.enabled:
+                await self._inspect_windows(now)
+
+    async def _inspect_windows(self, now: datetime) -> None:
+        for window in self._open_long_enough(now):
+            if self._stopped or not self.enabled:
+                return
             if window.entity_id in self._gave_up:
                 continue
             area_id = self._area(window.entity_id)
             room = self._room_heaters(area_id)
             for heater in room:
+                if self._stopped or not self.enabled:
+                    return
                 if heater not in self.down:
                     await self._turn_down(heater, window, area_id, now)
                 elif window.entity_id not in self.down[heater]["windows"]:
@@ -199,54 +214,56 @@ class WindowHeating:
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Couldn't mention the open window: %s", err)
 
-    async def _put_back(self, now: datetime) -> None:
+    async def _put_back(self, now: datetime, *, force: bool = False) -> None:
+        from .never import blocked
+        from .own import own_context
+
         for heater, record in list(self.down.items()):
+            if self._stopped:
+                return
             windows = [self.hass.states.get(w) for w in record.get("windows") or []]
             still_open = [w for w in windows if w is not None and w.state == "on"]
             since = dt_util.parse_datetime(record.get("since") or "")
             too_long = since is not None and now - since >= LONGEST
-            if still_open and not too_long:
+            if still_open and not (too_long or force):
                 continue
-            if still_open:
-                self._gave_up.update(w.entity_id for w in still_open)
-            self.down.pop(heater)
-            self._save()
             st = self.hass.states.get(heater)
-            have = _num(st.attributes.get("temperature")) if st is not None else None
-            if st is None or st.state == "off" or have is None or abs(have - float(record["set"])) > 0.3:
-                continue  # someone changed it meanwhile: theirs now
+            if st is None or st.state in ("unavailable", "unknown"):
+                continue
+            have = _num(st.attributes.get("temperature"))
+            if blocked(self.hass, heater) or st.state == "off" or (have is not None and abs(have - float(record["set"])) > 0.3):
+                self.down.pop(heater)
+                self._save()
+                continue  # ownership has changed
+            if have is None:
+                continue
+            if too_long:
+                self._gave_up.update(w.entity_id for w in still_open)
             rt = self._rt()
             target = None
             if rt is not None and getattr(rt, "heat_prog", None) is not None:
                 target = rt.heat_prog.target_now(heater)  # on the schedule: what it wants by now
             target = target if target is not None else float(record["was"])
-            from .own import own_context
-
+            why = ("window heating disabled" if force else
+                   "three-hour window limit" if too_long and still_open else "window shut")
             try:
                 await self.hass.services.async_call(
                     "climate", "set_temperature", {"entity_id": heater, "temperature": target}, blocking=True,
-                    context=own_context(self.hass, "window shut"))
+                    context=own_context(self.hass, why))
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Couldn't put %s back after the window: %s", heater, err)
                 continue
+            self.down.pop(heater)
+            self._save()
             if rt is not None:
-                why = "three hours is the longest" if too_long and still_open else "the window's shut"
-                rt.timeline.add("heating", f"{st.name}: back to {target:g}°", why)
+                rt.timeline.add("heating", f"{st.name}: requested return to {target:g}°", why)
 
     async def async_disable(self) -> None:
-        """Switched off: put back anything still turned down (if nobody's changed it) and forget the record."""
-        if not self.down:
-            try:
-                self.down = dict((await self._store.async_load() or {}).get("down") or {})
-            except Exception:  # noqa: BLE001
-                self.down = {}
-        if self.down:
-            for record in self.down.values():
-                record["since"] = "1970-01-01T00:00:00+00:00"  # past the longest: everything comes back now
-                record["windows"] = []
-            await self._put_back(dt_util.utcnow())
-        self.down, self._told, self._gave_up = {}, set(), set()
-        await self._store.async_remove()
+        """Restore outstanding setbacks. Keep failed restores for the next check."""
+        async with self._check_lock:
+            await self._put_back(dt_util.utcnow(), force=True)
+            self._told.clear()
+            self._gave_up.clear()
 
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"down": self.down}, 2)

@@ -31,14 +31,12 @@ class Maintenance:
         self.hass = hass
         self.items = items
         self._rt = rt_getter
-        self._since: dict[str, datetime] = {}  # entity -> when it started running (not yet counted)
+        self._running: dict[str, tuple[str, datetime]] = {}  # job ID -> (device, uncounted start)
         self._unsubs: list = []
 
     async def async_start(self) -> None:
-        now = dt_util.utcnow()
-        for item in self.items.enabled():
-            if (st := self.hass.states.get(item.get("entity") or "")) is not None and st.state in RUNNING:
-                self._since[st.entity_id] = now
+        self._items_changed()
+        self.items.listeners.append(self._items_changed)
         self._unsubs = [
             self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed),
             async_track_time_interval(self.hass, self._tick, timedelta(minutes=15)),
@@ -46,37 +44,50 @@ class Maintenance:
 
     @callback
     def async_stop(self) -> None:
+        self.items.listeners.remove(self._items_changed)
         self._count(dt_util.utcnow())
+        self._running.clear()
         while self._unsubs:
             self._unsubs.pop()()
 
     # ----- counting use ---------------------------------------------------------------------
-    def _watched(self) -> set[str]:
-        return {i["entity"] for i in self.items.enabled() if i.get("entity")}
+    @callback
+    def _items_changed(self) -> None:
+        """Start new jobs immediately and drop meters for removed or reconfigured jobs."""
+        now = dt_util.utcnow()
+        watched = {item["id"]: item.get("entity") for item in self.items.enabled()}
+        for job_id, (entity_id, _) in list(self._running.items()):
+            if watched.get(job_id) != entity_id:
+                self._running.pop(job_id)
+        for job_id, entity_id in watched.items():
+            if job_id not in self._running and entity_id:
+                state = self.hass.states.get(entity_id)
+                if state is not None and state.state in RUNNING:
+                    self._running[job_id] = (entity_id, now)
 
     @callback
     def _changed(self, event: Event) -> None:
         entity_id = event.data.get("entity_id")
-        if entity_id not in self._watched():
-            return
-        new, now = event.data.get("new_state"), dt_util.utcnow()
-        running = new is not None and new.state in RUNNING
-        if running and entity_id not in self._since:
-            self._since[entity_id] = now
-        elif not running and entity_id in self._since:
-            self._add(entity_id, now - self._since.pop(entity_id))
-
-    def _add(self, entity_id: str, ran: timedelta) -> None:
-        hours = ran.total_seconds() / 3600
+        new = event.data.get("new_state")
+        now = dt_util.utcnow()
         for item in self.items.enabled():
-            if item.get("entity") == entity_id:
-                self.items.update(item["id"], used_hours=round(float(item.get("used_hours") or 0) + hours, 2))
+            if item.get("entity") != entity_id:
+                continue
+            job_id = item["id"]
+            if new is not None and new.state in RUNNING:
+                self._running.setdefault(job_id, (entity_id, now))
+            elif pending := self._running.pop(job_id, None):
+                self._bank(item, now - pending[1])
+
+    def _bank(self, item: dict[str, Any], ran: timedelta) -> None:
+        hours = ran.total_seconds() / 3600
+        self.items.update(item["id"], used_hours=float(item.get("used_hours") or 0) + hours)
 
     def _count(self, now: datetime) -> None:
-        """Bank the time things have been running so far (so a restart loses nothing)."""
-        for entity_id, start in list(self._since.items()):
-            self._add(entity_id, now - start)
-            self._since[entity_id] = now
+        """Bank the uncounted time for each job."""
+        for job_id, (entity_id, start) in list(self._running.items()):
+            self._running[job_id] = (entity_id, now)
+            self._bank(self.items.items[job_id], now - start)
 
     # ----- due --------------------------------------------------------------------------------
     @staticmethod
@@ -94,8 +105,9 @@ class Maintenance:
         return dt_util.as_utc(when.replace(tzinfo=dt_util.get_default_time_zone()) if when.tzinfo is None else when)
 
     def status(self, item: dict[str, Any]) -> dict[str, Any]:
-        used = float(item.get("used_hours") or 0) + (
-            (dt_util.utcnow() - self._since[item["entity"]]).total_seconds() / 3600 if item.get("entity") in self._since else 0)
+        used = float(item.get("used_hours") or 0)
+        if pending := self._running.get(item["id"]):
+            used += (dt_util.utcnow() - pending[1]).total_seconds() / 3600
         done = self._when(item.get("last_done"))
         days = (dt_util.utcnow() - done).days if done else None
         every_h, every_d = float(item.get("every_hours") or 0), float(item.get("every_days") or 0)
@@ -141,9 +153,10 @@ class Maintenance:
         item = self.items.find(what)
         if item is None:
             return None
-        self.items.update(item["id"], used_hours=0, last_done=dt_util.utcnow().isoformat(), said=None)
-        if item.get("entity") in self._since:
-            self._since[item["entity"]] = dt_util.utcnow()
+        now = dt_util.utcnow()
+        if pending := self._running.get(item["id"]):
+            self._running[item["id"]] = (pending[0], now)
+        self.items.update(item["id"], used_hours=0, last_done=now.isoformat(), said=None)
         rt = self._rt()
         if rt is not None:
             rt.timeline.add("mode", f"Done: {item['name']}", "the count starts again")

@@ -49,23 +49,26 @@ class CriticalAlerts:
         self._unsub = None
         self._stopped = False
         self._timers: dict[str, Any] = {}
+        self._active: set[str] = set()
+
+    def _monitored(self, state) -> bool:
+        return (state.entity_id in (self.options.get(CONF_CRITICAL_EXTRA) or [])
+                or state.domain == "alarm_control_panel"
+                or (state.domain == "binary_sensor" and state.attributes.get("device_class") in WORDS))
 
     @callback
     def async_start(self) -> None:
         self._stopped = False
+
         @callback
         def _wanted(data) -> bool:
-            new = data.get("new_state")
-            if new is None:
-                return False
-            entity_id = data["entity_id"]
-            if entity_id in (self.options.get(CONF_CRITICAL_EXTRA) or []):
-                return True
-            if entity_id.startswith("alarm_control_panel."):
-                return True
-            return entity_id.startswith("binary_sensor.") and new.attributes.get("device_class") in WORDS
+            state = data.get("new_state") or data.get("old_state")
+            return state is not None and self._monitored(state)
 
         self._unsub = self.hass.bus.async_listen(EVENT_STATE_CHANGED, self._changed, event_filter=_wanted)
+        for state in self.hass.states.async_all():
+            if self._monitored(state) and is_active(state):
+                self._raise(state.entity_id, REPEATS)
 
     @callback
     def async_stop(self) -> None:
@@ -76,6 +79,7 @@ class CriticalAlerts:
         for unsub in self._timers.values():
             unsub()
         self._timers.clear()
+        self._active.clear()
 
     def message(self, entity_id: str) -> str:
         st = self.hass.states.get(entity_id)
@@ -92,19 +96,21 @@ class CriticalAlerts:
     @callback
     def _changed(self, event: Event) -> None:
         entity_id = event.data["entity_id"]
-        old, new = event.data["old_state"], event.data["new_state"]
+        new = event.data["new_state"]
         if not self.options.get(CONF_CRITICAL, True) or entity_id in (self.options.get(CONF_CRITICAL_IGNORE) or []):
             return
-        if not is_active(new):
-            if (unsub := self._timers.pop(entity_id, None)) is not None:
-                unsub()
-            if is_active(old):
-                st = self.hass.states.get(entity_id)
-                self._rt().timeline.add("critical", f"{st.name if st else entity_id} has cleared")
+        if is_active(new):
+            if entity_id not in self._active:
+                self._raise(entity_id, REPEATS)
             return
-        if old is None or is_active(old) or old.state in ("unavailable", "unknown"):
-            return  # not a fresh alarm (or just a sensor coming back)
-        self._raise(entity_id, REPEATS)
+        if new is not None and new.state in ("unavailable", "unknown"):
+            return  # the sensor has not reported that the alarm cleared
+        if (unsub := self._timers.pop(entity_id, None)) is not None:
+            unsub()
+        if entity_id in self._active:
+            self._active.discard(entity_id)
+            if new is not None:
+                self._rt().timeline.add("critical", f"{new.name} has cleared")
 
     @callback
     def _raise(self, entity_id: str, repeats_left: int) -> None:
@@ -117,6 +123,7 @@ class CriticalAlerts:
         text = self.message(entity_id)
         rt = self._rt()
         if repeats_left == REPEATS:
+            self._active.add(entity_id)
             rt.timeline.add("critical", text, st.name)
         self.hass.async_create_task(self._say_if_active(entity_id, text))
 
