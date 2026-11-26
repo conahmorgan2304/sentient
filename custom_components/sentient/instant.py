@@ -19,6 +19,7 @@ Off: every question goes to the AI.
 from __future__ import annotations
 
 import re
+import math
 from typing import Any
 
 from homeassistant.core import Context, HomeAssistant
@@ -27,6 +28,7 @@ from homeassistant.util import dt as dt_util
 
 CONF_INSTANT = "instant_answers"
 
+WEATHER = re.compile(r"^\s*(?:what(?:['’]s| is) the weather(?: like)?|how is the weather)(?: (?:outside|now|right now))?\s*\??\s*$", re.I)
 TIME = re.compile(r"^\s*(?:what(?:'s| is) the time|what time is it)(?: (?:now|please|right now))?\s*\??\s*$", re.I)
 OUTSIDE = re.compile(r"^\s*(?:what(?:'s| is) the (?:temperature|temp)|how (?:cold|warm|hot) is it)(?: like)? outside"
                      r"(?: (?:now|today|right now))?\s*\??\s*$", re.I)
@@ -58,7 +60,9 @@ def _say_state(st, want: str) -> str | None:
         if domain == "binary_sensor" and st.attributes.get("device_class") not in (
                 "door", "window", "garage_door", "opening", "lock"):
             return None
-        is_open = state in ("on", "open", "opening")
+        if state not in ("on", "off", "open", "closed"):
+            return None  # moving or unknown position is not a confirmed open/closed state
+        is_open = state in ("on", "open")
         if st.attributes.get("device_class") == "lock" and domain == "binary_sensor":
             now = "unlocked" if is_open else "locked"
         else:
@@ -66,7 +70,12 @@ def _say_state(st, want: str) -> str | None:
     elif domain in ("light", "switch", "fan", "input_boolean", "media_player", "climate", "vacuum"):
         if want not in ("on", "off"):
             return None
-        now = "on" if state in ON or (domain == "vacuum" and state == "cleaning") else "off"
+        if state in ON or (domain == "vacuum" and state == "cleaning"):
+            now = "on"
+        elif state == "off":
+            now = "off"
+        else:
+            return None  # idle, paused, docked and custom states are not necessarily off
     else:
         return None
     if now is None:
@@ -111,7 +120,9 @@ def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
         if (chosen and st.entity_id == chosen) or (not chosen and area_of(hass, st.entity_id) == area.id
                                                    and not _not_the_room(st)):
             try:
-                readings.append((st, float(st.state)))
+                value = float(st.state)
+                if math.isfinite(value):
+                    readings.append((st, value))
             except (TypeError, ValueError):
                 continue
     if len(readings) != 1:
@@ -125,11 +136,12 @@ def _outside(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     weather_id = options.get("briefing_weather")
     weather = hass.states.get(weather_id) if weather_id else next(
         (w for w in hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
-    if weather is None or weather.attributes.get("temperature") is None:
+    if weather is None or weather.state in ("unknown", "unavailable") or weather.attributes.get("temperature") is None:
         return None
     unit = weather.attributes.get("temperature_unit") or "°C"
     sky = str(weather.state).replace("partlycloudy", "partly cloudy").replace("clear-night", "clear").replace("-", " ")
-    return f"It's {round(float(weather.attributes['temperature']))}{unit} outside and {sky}."
+    value = float(weather.attributes["temperature"])
+    return f"It's {round(value)}{unit} outside and {sky}." if math.isfinite(value) else None
 
 
 async def _calendar(hass: HomeAssistant, when: str) -> str | None:
@@ -209,7 +221,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             from .llm_api import clock_words
 
             return f"It's {clock_words(dt_util.now())}."
-        if OUTSIDE.match(text):
+        if OUTSIDE.match(text) or WEATHER.match(text):
             return _outside(hass, options)
         if m := STATE.match(text):
             st = _one_entity(hass, m.group("name"))
