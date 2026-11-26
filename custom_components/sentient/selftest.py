@@ -89,6 +89,8 @@ def failed_tools(results: list[dict[str, Any]]) -> list[str]:
 
 def yes_no(answer: str) -> bool | None:
     """True for a yes, False for a no, None when it doesn't say."""
+    if DOESNT_KNOW.search(answer):
+        return None  # uncertainty is not evidence that nobody was seen
     no, yes = bool(SAYS_NO.search(answer)), bool(SAYS_YES.search(answer))
     if no and not re.search(r"\byes\b", answer, re.I):
         return False
@@ -96,6 +98,8 @@ def yes_no(answer: str) -> bool | None:
 
 
 def on_off(answer: str) -> bool | None:
+    if DOESNT_KNOW.search(answer):
+        return None
     if SAYS_OFF.search(answer):
         return False
     if SAYS_ON.search(answer):
@@ -122,11 +126,12 @@ def numbers(text: str) -> list[float]:
     i = 0
     while i < len(words):
         if words[i] in WORDS:
+            negative = i > 0 and words[i - 1] in {"minus", "negative"}
             value = WORDS[words[i]]
             if value >= 20 and i + 1 < len(words) and WORDS.get(words[i + 1], 99) < 10:
                 value += WORDS[words[i + 1]]
                 i += 1
-            out.append(float(value))
+            out.append(float(-value if negative else value))
         i += 1
     return out
 
@@ -252,7 +257,7 @@ class SelfTest:
 
         def anything_open(answer: str) -> tuple[bool, str]:
             if not opens:
-                return bool(NONE_SAID.search(answer)) and not re.search(r"\bis open\b|\bare open\b", answer, re.I), "nothing open"
+                return not DOESNT_KNOW.search(answer) and bool(NONE_SAID.search(answer)) and not re.search(r"\bis open\b|\bare open\b", answer, re.I), "nothing open"
             return any(mentions(answer, s.name) for s in opens), "open: " + ", ".join(s.name for s in opens[:4])
 
         if openings and all(s.state in ("on", "off") for s in openings):
@@ -271,7 +276,7 @@ class SelfTest:
                 if not reminders:
                     if alarms and any(mentions(answer, name) for name in alarms):
                         return True, "no reminders; alarms due: " + ", ".join(alarms[:3])
-                    return bool(NONE_SAID.search(answer)), "no reminders" + (f" (alarms due: {', '.join(alarms[:3])})" if alarms else "")
+                    return not DOESNT_KNOW.search(answer) and bool(NONE_SAID.search(answer)), "no reminders" + (f" (alarms due: {', '.join(alarms[:3])})" if alarms else "")
                 return any(mentions(answer, w.what) for w in reminders), "reminders: " + ", ".join(w.what for w in reminders[:3])
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
@@ -281,8 +286,13 @@ class SelfTest:
             armed = panels[0].state.startswith("armed_")
 
             def alarm(answer: str) -> tuple[bool, str]:
+                if DOESNT_KNOW.search(answer):
+                    return False, "armed" if armed else "disarmed"
                 says_off = bool(re.search(r"\b(disarmed|not (set|armed|on)|off)\b", answer, re.I))
                 says_on = bool(re.search(r"\b(armed|is on|is set)\b", answer, re.I)) and not says_off
+                if not says_on and not says_off:
+                    plain = on_off(answer)
+                    says_on, says_off = plain is True, plain is False
                 return (says_on if armed else says_off), "armed" if armed else "disarmed"
 
             out.append(Question("alarm", "Is the alarm on?", alarm))
