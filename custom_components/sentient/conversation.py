@@ -963,6 +963,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                 if clarification_enabled(opts):
                     prompt += "\nUse sentient_clarify for ambiguous device choices or a missing temperature. Do not guess. When clarification_resolution is present, combine its original request with the selected detail and current readings. Selection is not permission: use the normal control and fresh confirmation path. If an earlier action happened, acknowledge it; never silently replay or undo it. For an English correction such as 'no, the bedroom', retain the action but resolve the new target."
 
+                # Guarded control supplies authoritative action results; do not rely on
+                # the model's claim of success. Guarded replies never stream.
                 prior_action_result = session.last_action
                 request = replace(user_input, conversation_id=session.id, extra_system_prompt=prompt)
                 if guarded:
@@ -982,10 +984,17 @@ class BackedUpAgent(conversation.ConversationEntity):
                 if session.pending:
                     session.question = session.pending.get("question") or f"Shall I {session.pending['summary']}?"
                     return self._reply(user_input, session, session.question, True)
-                if opts.get('action_recovery') and session.last_action is not prior_action_result and session.last_action and session.last_action.get('actions'):
+                if (guarded or opts.get('action_recovery')) and session.last_action is not prior_action_result and session.last_action and session.last_action.get('actions'):
                     from .action_recovery import outcome_text
 
                     result.response.async_set_speech(outcome_text(self.hass, session.last_action))
+                if guarded and session.last_action is prior_action_result:
+                    from .reliability import actionable_offer, explicit_completion
+
+                    said = spoken_text(result.response)
+                    if explicit_completion(said) or actionable_offer(said):
+                        return self._reply(user_input, session,
+                            "I have no confirmed action result. Please make a fresh request if you want me to change something.")
                 if session.correction and result.response.response_type != intent.IntentResponseType.ERROR:
                     notice = rt.control.correction_notice(session)
                     if notice and (text := spoken_text(result.response)):
