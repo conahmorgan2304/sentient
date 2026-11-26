@@ -62,6 +62,18 @@ ACTIONABLE_OFFER = re.compile(
     r"make|brew|adjust|change|enable|disable)\b", re.I)
 
 
+# Narrower than DONE: a current-state answer ("the light is now on") is
+# not itself proof the assistant claims to have changed the device.
+EXPLICIT_COMPLETION = re.compile(
+    r"^(?:ok(?:ay)?[,. ]+)?(?:done|all set|sorted|all done)(?:[.!]|$)|"
+    r"\bi(?:'ve|’ve| have) (?:now )?(?:turned|switched|set|started|stopped|"
+    r"opened|closed|locked|unlocked|armed|disarmed|changed|activated|deactivated)\b", re.I)
+
+
+def explicit_completion(text: str) -> bool:
+    return bool(EXPLICIT_COMPLETION.search(" ".join((text or "").split())))
+
+
 def actionable_offer(text: str) -> bool:
     """Recognise explicit English action offers without treating questions as consent."""
     return bool(ACTIONABLE_OFFER.search(text or "") or OFFER.search(text or ""))
