@@ -241,7 +241,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         rt = self._entry.runtime_data
         from .voice_id import cautious_turn
 
-        rt.sessions.record(session, user_input.text, result, self._guest() or cautious_turn(self._options()))
+        if not self._is_selftest(user_input):
+            rt.sessions.record(session, user_input.text, result, self._guest() or cautious_turn(self._options()))
 
     def _history_generation(self):
         speech = getattr(self._entry.runtime_data, "speech", None)
