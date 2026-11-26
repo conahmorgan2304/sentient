@@ -274,21 +274,28 @@ class Reflection:
                 return []
             return [" ".join(v.split()) for v in value if isinstance(v, str) and v.strip() and len(v) <= 1000]
 
+        result["learning"] = {"upkeep_enabled": upkeep, "time_enabled": time_aware,
+                              "suggested": len(_list(out.get("memories"))), "rejected_private": 0,
+                              "rejected_one_off": 0, "already_known": 0, "invalid": 0}
         known_ids = {m.id for m in rt.memory.items}
         from .memory import one_off_event
 
         for text in _list(out.get("memories"))[:MAX_MEMORIES]:
             if any(p in text.lower() for p in PRIVATE):
+                result["learning"]["rejected_private"] += 1
                 continue
             if one_off_event(text):
+                result["learning"]["rejected_one_off"] += 1
                 continue  # 19 Nov: "Kayleigh's car left the drive at nine thirty-four this morning" — the timeline's
             try:
                 memory = rt.memory.add(text, "fact", source="reflection")
                 if memory.id not in known_ids:
                     result["memories"].append(memory.text)
                     known_ids.add(memory.id)
+                else:
+                    result["learning"]["already_known"] += 1
             except ValueError:
-                pass
+                result["learning"]["invalid"] += 1
         result["lessons"] = []
         for text in _list(out.get("lessons"))[:3]:
             if any(p in text.lower() for p in PRIVATE):
