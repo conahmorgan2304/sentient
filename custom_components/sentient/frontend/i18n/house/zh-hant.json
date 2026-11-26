@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "訪客模式下不支援語音識別。",
  "Voice pipeline": "語音管道",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "語音回覆會在說話前檢查操作聲明。報價需要等待確認。",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "語音回覆能更可靠地處理聽錯的攝影機名稱、行事曆日期和操作確認。",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "語音回覆可以保留已確認的操作，並可以提供提醒和監視以供批准。 Mind 感測器再次包含緊湊的診斷功能。",
  "Waiting for a current device report": "等待當前設備報告",
  "Warming the {a} to {b} degrees": "將 {a} 升溫至 {b} 度",

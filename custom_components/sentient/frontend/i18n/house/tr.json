@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Konuk modunda sesle tanımlama kullanılamaz.",
  "Voice pipeline": "Ses hattı",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Sesli yanıtlar, konuşmadan önce eylem taleplerini kontrol eder. Tekliflerin bekleyen bir onaya ihtiyacı vardır.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Sesli yanıtlar yanlış duyulan kamera adlarını, takvim tarihlerini ve işlem onaylarını daha güvenilir biçimde ele alır.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Sesli yanıtlar, onaylanmış eylemleri saklar ve onay için hatırlatıcılar ve izlemeler sunabilir. Mind sensörü yine kompakt tanılamayı içerir.",
  "Waiting for a current device report": "Güncel cihaz raporu bekleniyor",
  "Warming the {a} to {b} degrees": "{a}'nin {b} derecelerine ısıtılması",

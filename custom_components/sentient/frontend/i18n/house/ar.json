@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "التعرف الصوتي غير متاح في وضع الضيف.",
  "Voice pipeline": "خط أنابيب الصوت",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "الردود الصوتية تحقق من مطالبات الإجراء قبل التحدث. العروض تحتاج إلى تأكيد معلق.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "تتعامل الردود الصوتية بشكل أكثر موثوقية مع أسماء الكاميرات التي أُسيء سماعها وتواريخ التقويم وتأكيدات الإجراءات.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "تحافظ الردود الصوتية على الإجراءات المؤكدة ويمكن أن تقدم تذكيرات وساعات للموافقة عليها. يشتمل مستشعر العقل على تشخيصات مدمجة مرة أخرى.",
  "Waiting for a current device report": "في انتظار تقرير الجهاز الحالي",
  "Warming the {a} to {b} degrees": "تسخين {a} إلى درجات {b}",

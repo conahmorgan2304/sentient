@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "ゲストモードでは音声識別は利用できません。",
  "Voice pipeline": "音声パイプライン",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "音声応答では、話す前にアクションの主張を確認します。オファーには保留中の確認が必要です。",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "音声応答で、聞き間違えたカメラ名、カレンダーの日付、操作の確認をより確実に扱えるようになりました。",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "音声応答は確認されたアクションを保持し、リマインダーを提供したり承認を監視したりできます。 Mind センサーには、再びコンパクトな診断機能が含まれています。",
  "Waiting for a current device report": "現在のデバイスのレポートを待っています",
  "Warming the {a} to {b} degrees": "{a} を {b} 度に温めます",

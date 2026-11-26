@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Stemmeidentifikasjon er utilgjengelig i gjestemodus.",
  "Voice pipeline": "Stemmerørledning",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Talesvar kontroller handlingskrav før du snakker. Tilbud trenger en ventende bekreftelse.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Talesvar håndterer feilhørte kameranavn, kalenderdatoer og handlingsbekreftelser mer pålitelig.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Talesvar beholder bekreftede handlinger og kan tilby påminnelser og klokker for godkjenning. Mind-sensoren inkluderer igjen kompakt diagnostikk.",
  "Waiting for a current device report": "Venter på en gjeldende enhetsrapport",
  "Warming the {a} to {b} degrees": "Oppvarming av {a} til {b} grader",
