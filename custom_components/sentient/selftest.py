@@ -38,6 +38,10 @@ from .security_offers import SECURITY_OFFER  # "Shall I arm it in away mode?" wh
 _LOGGER = logging.getLogger(__name__)
 
 RUN_AT = (3, 25)  # quiet hours, after the overnight think
+# The question is already English and Home Assistant is asked for English, but the answer's own language is the
+# agent's choice: a German agent answered German and every English word list marked it wrong (issue #235). So the
+# question says which language to answer in.
+ENGLISH_ASK = "Please answer in English."
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
          "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
@@ -501,11 +505,13 @@ class SelfTest:
             cid = ulid_now()
             began = time.monotonic()
             rt.conversations.skip.add(cid)
-            rt.conversations.testing = q.ask
+            # the exact text sent, or the house's own question would be logged as a person talking
+            text = f"{q.ask} {ENGLISH_ASK}"
+            rt.conversations.testing = text
             results_seen: list[dict[str, Any]] = []
             try:
                 result = await conversation.async_converse(
-                    self.hass, q.ask, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
+                    self.hass, text, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
                 )
                 answer = result.response.speech.get("plain", {}).get("speech", "") or ""
                 # every conversation that asked this question (a voice that hands on to another agent has two ids)

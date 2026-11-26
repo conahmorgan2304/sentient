@@ -61,7 +61,12 @@ def drop_selftest_bursts(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]
     def first(ep: dict[str, Any]) -> str:
         return next((t["text"] for t in ep.get("turns", []) if t.get("who") == "them"), "").strip().lower()
 
-    marked = sorted((e for e in episodes if first(e) in SELFTEST_QUESTIONS), key=lambda e: e["start"])
+    def is_test(text: str) -> bool:
+        # the self-test sends the question with "Please answer in English." added, so a question is matched by
+        # where it starts
+        return any(text.startswith(question) for question in SELFTEST_QUESTIONS)
+
+    marked = sorted((e for e in episodes if is_test(first(e))), key=lambda e: e["start"])
     doomed: set[int] = set()
     group: list[dict[str, Any]] = []
 
