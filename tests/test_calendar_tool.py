@@ -81,3 +81,20 @@ def test_calendar_questions_get_the_calendar_tool() -> None:
     focus = Focus()
     for asked in ("what's on my calendar this week", "what's on tomorrow", "any plans this weekend"):
         assert "sentient_calendar" in (focus.tools_for(asked, asked) or []), asked
+
+
+async def test_calendar_tool_does_not_fetch_exposed_but_unreadable_calendars(hass: HomeAssistant, freezer) -> None:
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, patch
+
+    from homeassistant.core import Context
+
+    _, asked = await _setup(hass, freezer)
+    user = SimpleNamespace(is_active=True, permissions=SimpleNamespace(check_entity=lambda *_: False))
+    with patch.object(hass.auth, "async_get_user", AsyncMock(return_value=user)):
+        api = await llm.async_get_api(hass, DOMAIN, llm.LLMContext(
+            platform="t", context=Context(user_id="limited"), language="en", assistant=None, device_id=None,
+        ))
+        result = await api.async_call_tool(llm.ToolInput(tool_name="sentient_calendar", tool_args={}))
+    assert result["events"] == []
+    assert not asked

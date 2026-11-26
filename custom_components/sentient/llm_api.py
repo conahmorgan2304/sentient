@@ -1093,17 +1093,21 @@ AUTOMATION_YES = re.compile(
     r"|sounds good|please do)(?:[ ,]+(?:please|thanks|thank you|save it|do it|go ahead|that'?s (?:right|fine)))*[.!]*$", re.I)
 
 
-async def _history_read_permission(hass: HomeAssistant, llm_context: llm.LLMContext):
-    """Filter historical entities by Assist exposure and the requesting HA user."""
+async def _entity_read_permission(hass: HomeAssistant, context):
+    """Return a predicate for the requesting user's current entity read permissions."""
     from homeassistant.auth.permissions.const import POLICY_READ
 
-    context = llm_context.context
     user_id = getattr(context, "user_id", None)
-    user = await hass.auth.async_get_user(user_id) if user_id else None
-    if user_id and (user is None or not user.is_active):
-        return lambda entity_id: False
-    return lambda entity_id: (_exposed(hass, entity_id) and
-                              (user is None or user.permissions.check_entity(entity_id, POLICY_READ)))
+    if not user_id:
+        return lambda entity_id: True
+    user = await hass.auth.async_get_user(user_id)
+    return lambda entity_id: bool(user and user.is_active and user.permissions.check_entity(entity_id, POLICY_READ))
+
+
+async def _history_read_permission(hass: HomeAssistant, llm_context: llm.LLMContext):
+    """Filter historical entities by Assist exposure and the requesting HA user."""
+    readable = await _entity_read_permission(hass, llm_context.context)
+    return lambda entity_id: readable(entity_id) and _exposed(hass, entity_id)
 
 
 class HistoryTool(_Tool):
@@ -1256,7 +1260,9 @@ class CalendarTool(_Tool):
             return {"error": "Calendars aren't shared with guests or in a private room."}
         from .skills import async_calendar_events
 
-        return await async_calendar_events(hass, _voice_calendars(hass), tool_input.tool_args["days"])
+        readable = await _entity_read_permission(hass, llm_context.context)
+        calendars = [entity_id for entity_id in _voice_calendars(hass) if readable(entity_id)]
+        return await async_calendar_events(hass, calendars, tool_input.tool_args["days"])
 
 
 class CalendarClashesTool(_Tool):
@@ -1277,7 +1283,8 @@ class CalendarClashesTool(_Tool):
 
         exposed = set(_voice_calendars(hass))
         configured = rt.options.get("briefing_calendars") or exposed
-        calendars = [calendar for calendar in configured if calendar in exposed]
+        readable = await _entity_read_permission(hass, llm_context.context)
+        calendars = [calendar for calendar in configured if calendar in exposed and readable(calendar)]
         return await async_calendar_clashes(hass, calendars, tool_input.tool_args["hours"]) if calendars else {
             "clashes": [], "note": "No calendars are shared with the voice."}
 
@@ -2897,7 +2904,8 @@ class SentientAPI(llm.API):
             from .security_voice import reference_prompt
 
             context_line += await reference_prompt(self.hass, rt, llm_context)
-        prompt = self._prompt(llm_context, conversation_id) + context_line
+        readable = await _entity_read_permission(self.hass, llm_context.context)
+        prompt = self._prompt(llm_context, conversation_id, readable=readable) + context_line
         from .conversation_quality import TURN
 
         if (meta := TURN.get(None)) is not None:
@@ -2910,7 +2918,7 @@ class SentientAPI(llm.API):
             tools=tools,
         )
 
-    def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None) -> str:
+    def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None, *, readable) -> str:
         rt = _runtime(self.hass)
         if rt is None:
             return "Sentient (the house's long-term brain) is not loaded right now."
@@ -2960,7 +2968,8 @@ class SentientAPI(llm.API):
             (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
         from .numeric import finite_float
 
-        outside = finite_float(weather.attributes.get("temperature")) if weather is not None else None
+        outside = (finite_float(weather.attributes.get("temperature"))
+                   if weather is not None and readable(weather.entity_id) else None)
         if outside is not None and weather.state not in ("unknown", "unavailable"):
             unit = weather.attributes.get("temperature_unit") or "°C"
             lines.append(

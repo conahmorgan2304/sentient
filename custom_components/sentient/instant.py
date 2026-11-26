@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 import math
+from collections.abc import Callable
 from typing import Any
 
 from homeassistant.core import Context, HomeAssistant
@@ -107,7 +108,7 @@ def _not_the_room(st: Any) -> bool:
     return _chip(st)
 
 
-def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
+def _room_temperature(hass: HomeAssistant, room: str, readable: Callable[[str], bool]) -> str | None:
     from .presence import area_of
 
     area = ar.async_get(hass).async_get_area_by_name(room.strip())
@@ -116,7 +117,7 @@ def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
     chosen = getattr(area, "temperature_entity_id", None)
     readings = []
     for st in hass.states.async_all("sensor"):
-        if st.attributes.get("device_class") != "temperature" or not _exposed(hass, st.entity_id):
+        if st.attributes.get("device_class") != "temperature" or not (readable(st.entity_id) and _exposed(hass, st.entity_id)):
             continue
         if (chosen and st.entity_id == chosen) or (not chosen and area_of(hass, st.entity_id) == area.id
                                                    and not _not_the_room(st)):
@@ -133,11 +134,12 @@ def _room_temperature(hass: HomeAssistant, room: str) -> str | None:
     return f"It's {value:g}{unit} in the {area.name}."
 
 
-def _outside(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
+def _outside(hass: HomeAssistant, options: dict[str, Any], readable: Callable[[str], bool]) -> str | None:
     weather_id = options.get("briefing_weather")
     weather = hass.states.get(weather_id) if weather_id else next(
         (w for w in hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
-    if weather is None or weather.state in ("unknown", "unavailable") or weather.attributes.get("temperature") is None:
+    if (weather is None or not readable(weather.entity_id) or weather.state in ("unknown", "unavailable")
+            or weather.attributes.get("temperature") is None):
         return None
     unit = weather.attributes.get("temperature_unit") or "°C"
     sky = str(weather.state).replace("partlycloudy", "partly cloudy").replace("clear-night", "clear").replace("-", " ")
@@ -145,12 +147,12 @@ def _outside(hass: HomeAssistant, options: dict[str, Any]) -> str | None:
     return f"It's {round(value)}{unit} outside and {sky}." if math.isfinite(value) else None
 
 
-async def _calendar(hass: HomeAssistant, when: str) -> str | None:
+async def _calendar(hass: HomeAssistant, when: str, readable: Callable[[str], bool]) -> str | None:
     """What's on today, tomorrow or this week, from the calendars shared with the voice."""
     from .llm_api import _voice_calendars
     from .skills import async_calendar_events
 
-    calendars = _voice_calendars(hass)
+    calendars = [entity_id for entity_id in _voice_calendars(hass) if readable(entity_id)]
     if not calendars:
         return None
     days = {"today": 1, "tomorrow": 2}.get(when, 7)
@@ -173,7 +175,7 @@ LOCK = re.compile(r"^(?:(?:can|could|would|will) you |please |hey \w+,? )*(?P<ve
                   re.I)
 
 
-def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool) -> str | None:
+def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool, readable: Callable[[str], bool]) -> str | None:
     """'Lock the front door' in a house with no smart lock the voice may use: the plain truth, every time.
 
     23 Nov: the voice kept saying "this house doesn't have locks on the doors", which isn't true — they're ordinary
@@ -185,7 +187,8 @@ def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool) -> str | None:
         return reply
     wanted = " ".join(what.casefold().removeprefix("the ").removeprefix("my ").removeprefix("our ").split())
     doors = [st for st in hass.states.async_all("binary_sensor")
-             if st.attributes.get("device_class") in ("door", "garage_door", "opening") and _exposed(hass, st.entity_id)]
+             if st.attributes.get("device_class") in ("door", "garage_door", "opening")
+             and readable(st.entity_id) and _exposed(hass, st.entity_id)]
     match = [st for st in doors if wanted and wanted in " ".join((st.name or "").casefold().split())]
     if len(match) != 1 or match[0].state not in ("on", "off"):
         return reply
@@ -200,6 +203,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
     options = getattr(rt, "options", {}) or {}
     if not options.get(CONF_INSTANT) or not text:
         return None
+    from .llm_api import _entity_read_permission
     from .local_answers import COMING, SECURITY, VISITORS, _coming_up, _visitors, is_question
 
     text = " ".join(text.split())
@@ -218,7 +222,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         if public_only:
             return None
         try:
-            return _no_lock_reply(hass, lock.group("what"), guest)
+            return _no_lock_reply(hass, lock.group("what"), guest, await _entity_read_permission(hass, context))
         except Exception:  # noqa: BLE001
             return None
     try:
@@ -229,24 +233,19 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         if DATE.fullmatch(text):
             today = dt_util.now()
             return f"Today is {today:%A} {today.day} {today:%B %Y}."
+        readable = await _entity_read_permission(hass, context)
         if OUTSIDE.match(text) or WEATHER.match(text):
-            return _outside(hass, options)
+            return _outside(hass, options, readable)
         if public_only:
             return None
         if m := STATE.match(text):
             st = _one_entity(hass, m.group("name"))
-            if st is None:
+            if st is None or not readable(st.entity_id):
                 return None
-            if context and context.user_id:
-                from homeassistant.auth.permissions.const import POLICY_READ
-
-                user = await hass.auth.async_get_user(context.user_id)
-                if user is None or not user.is_active or not user.permissions.check_entity(st.entity_id, POLICY_READ):
-                    return None
             return _say_state(st, m.group("want").casefold())
         if m := ROOM_TEMP.match(text):
             room = m.group("a") or m.group("b") or ""
-            return None if room.casefold() in ("outside", "it outside") else _room_temperature(hass, room)
+            return None if room.casefold() in ("outside", "it outside") else _room_temperature(hass, room, readable)
         if guest:
             return None
         if SECURITY.search(text) and re.search(r"\b(locked up|all locked|secure|anything (left )?open)\b", text, re.I):
@@ -255,7 +254,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             report = await check_for_voice(hass, context)
             return report.get("summary")
         if (m := CALENDAR.match(text)) and (m.group("when") or re.search(r"calendar|diary", text, re.I)):
-            return await _calendar(hass, (m.group("when") or "this week").casefold())
+            return await _calendar(hass, (m.group("when") or "this week").casefold(), readable)
         if COMING.search(text):
             return _coming_up(rt)
         if VISITORS.search(text):

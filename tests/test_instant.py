@@ -125,3 +125,18 @@ async def test_a_real_smart_lock_is_left_to_the_voice(hass: HomeAssistant) -> No
     hass.states.async_set("lock.front", "locked", {"friendly_name": "Front door"})
     async_expose_entity(hass, "conversation", "lock.front", True)
     assert await async_answer(hass, rt, "Can you lock the back door?", None) is None
+
+
+async def test_direct_readings_respect_signed_in_user_permissions(hass: HomeAssistant) -> None:
+    from homeassistant.core import Context
+
+    rt = await _house(hass)
+    async_expose_entity(hass, "conversation", "calendar.shared", True)
+    hass.states.async_set("calendar.shared", "off")
+    user = SimpleNamespace(is_active=True, permissions=SimpleNamespace(check_entity=lambda *_: False))
+    with patch.object(hass.auth, "async_get_user", AsyncMock(return_value=user)):
+        context = Context(user_id="limited")
+        for question in ("Is the kitchen light on?", "How warm is it in the bedroom?",
+                         "What's the temperature outside?", "What's on my calendar today?"):
+            assert await async_answer(hass, rt, question, context) is None
+        assert "is shut" not in (await async_answer(hass, rt, "Lock the back door", context) or "")

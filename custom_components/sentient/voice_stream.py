@@ -43,7 +43,7 @@ class StreamWatch:
             from .pronounce import StreamPronouncer
 
             self._say = StreamPronouncer(pronouncer, pronouncer.table, getattr(pronouncer, "numbers", lambda: False))  # names as they're said, on their way to the voice
-        self.start = len(log.content)
+        self._spoken: list[str] = []
         self.chars = 0
         self.started = False
         self._role: str | None = None
@@ -64,6 +64,8 @@ class StreamWatch:
         if self._orig is None:
             return
         held = self._offers.flush() if self._offers is not None else ""
+        if held:
+            self._spoken.append(held)
         if self._say is not None:
             held = (self._say.feed(held) if held else "") + self._say.flush()
         if held:
@@ -75,8 +77,10 @@ class StreamWatch:
             self._role = role
         if self._offers is not None and not self._own and self._role == "assistant" and isinstance(delta.get("content"), str):
             delta = {**delta, "content": self._offers.feed(delta["content"])}
-        if self._say is not None and self._role == "assistant" and isinstance(delta.get("content"), str):
-            delta = {**delta, "content": self._say.feed(delta["content"])}
+        if self._role == "assistant" and isinstance(content := delta.get("content"), str):
+            self._spoken.append(content)
+            if self._say is not None:
+                delta = {**delta, "content": self._say.feed(content)}
         self._forward(chat_log, delta)
 
     def _forward(self, chat_log, delta):
@@ -90,11 +94,8 @@ class StreamWatch:
             self._orig(chat_log, delta)
 
     def streamed_text(self) -> str:
-        """What the voice was given as it was written: the model's words, less any sentence the filter took out."""
-        text = "".join(c.content or "" for c in self.log.content[self.start:] if getattr(c, "role", "") == "assistant")
-        for gone in self._offers.dropped if self._offers is not None else []:
-            text = text.replace(gone, "", 1)
-        return text
+        """The original wording forwarded to the pipeline, before pronunciation changes."""
+        return "".join(self._spoken)
 
     async def finish(self, final: str) -> str:
         """Say what the model didn't: it goes through the chat log's own delta stream, which is what a streaming

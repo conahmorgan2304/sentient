@@ -1081,8 +1081,8 @@ class BackedUpAgent(conversation.ConversationEntity):
         response = result.response
         if response.response_type == intent.IntentResponseType.ERROR:
             return result
-        if response.as_dict().get("data", {}).get("success"):
-            return result  # Home Assistant supplied an action result, not just model prose
+        action_data = response.as_dict().get("data") or {}
+        completed = bool(action_data.get("success") and not action_data.get("failed"))
         session = current_session.get()
         if session is not None and session.pending:
             return result  # the session will announce the real confirmation question
@@ -1104,7 +1104,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                     return result
         plain = spoken_text(response)
         parts = sentences(plain)
-        kept = [part for part in parts if not (actionable_offer(part) or explicit_completion(part))]
+        kept = [part for part in parts if not actionable_offer(part)
+                and (completed or not explicit_completion(part))]
         if len(kept) != len(parts):
             text = " ".join(kept) or "I couldn't confirm that an action was completed."
             result.response.async_set_speech(text)
@@ -1133,14 +1134,15 @@ class BackedUpAgent(conversation.ConversationEntity):
                 try:
                     async with asyncio.timeout(MAIN_TIMEOUT):
                         result = await self._converse(self.main_agent, user_input)
+                except Exception as err:  # noqa: BLE001 - provider failure may allow a backup
+                    why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
+                else:
                     response = result.response
                     if response.response_type != intent.IntentResponseType.ERROR or response.error_code not in FAILED_CODES:
                         if gate is not None:
                             gate.ok()
                         return self._validated_agent_reply(user_input, result)
                     why = response.speech.get("plain", {}).get("speech") or "an error"
-                except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
-                    why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
                 if not self._is_selftest(user_input) and tries_left and not may_change and EMPTY_TURN in why.lower() and not attempt.get('started') \
                         and not attempt.get('action_started') and repair_chat_log(self.hass, user_input.conversation_id):
                     # 19 Nov 18:31: an earlier reply with nothing in it was left in the conversation, and Google
@@ -1219,13 +1221,14 @@ class BackedUpAgent(conversation.ConversationEntity):
             try:
                 async with asyncio.timeout(BACKUP_TIMEOUT):
                     result = await self._converse(backup, user_input)
-                if result.response.response_type != intent.IntentResponseType.ERROR:
-                    return self._validated_agent_reply(user_input, result)
-                backup_failure = result.response.speech.get("plain", {}).get("speech") or ""
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Backup agent %s failed too: %s", backup, err)
                 result = None
                 backup_failure = str(err)
+            else:
+                if result.response.response_type != intent.IntentResponseType.ERROR:
+                    return self._validated_agent_reply(user_input, result)
+                backup_failure = result.response.speech.get("plain", {}).get("speech") or ""
             if may_change and (attempt.get("started") or attempt.get("action_started") or not _definitely_offline(backup_failure)):
                 break  # a backup may have performed the action before failing
         response = intent.IntentResponse(language=user_input.language)
