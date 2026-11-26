@@ -310,7 +310,8 @@ def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
     rt = entry.runtime_data
     speech = rt.speech
     if on:
-        speech._questions.clear()
+        if (questions := getattr(speech, "_questions", None)) is not None:
+            questions.clear()
         if getattr(rt, "sessions", None) is not None:
             rt.sessions.stop(clear_memory=False)
         if getattr(rt, "alarm_confirmations", None) is not None:
