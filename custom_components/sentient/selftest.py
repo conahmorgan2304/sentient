@@ -188,6 +188,7 @@ class SelfTest:
         # last change, and a sensor that reports "closed" again (a reload, a restart) moved that from 08:34 to 08:53
         self.shut: dict[str, str] = {}
         self.context = Context()
+        self._running = False
 
     async def async_start(self) -> None:
         self.last = await self._store.async_load() or {}
@@ -488,6 +489,15 @@ class SelfTest:
         return self.options.get(CONF_VOICE_AGENT) or self.options.get(CONF_CHAT_AGENT)
 
     async def async_run(self, force: bool = False) -> dict[str, Any]:
+        if self._running:
+            return {"skipped": "a self-test is already running"}
+        self._running = True
+        try:
+            return await self._run(force)
+        finally:
+            self._running = False
+
+    async def _run(self, force: bool = False) -> dict[str, Any]:
         if self.mode == "off" and not force:
             return {"skipped": "the self-test is turned off"}
         agent, rt = self.agent(), self._rt()
@@ -509,6 +519,7 @@ class SelfTest:
             text = f"{q.ask} {ENGLISH_ASK}"
             rt.conversations.testing = text
             results_seen: list[dict[str, Any]] = []
+            conversation_failed = False
             try:
                 result = await conversation.async_converse(
                     self.hass, text, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
@@ -520,13 +531,16 @@ class SelfTest:
                 if result.conversation_id:
                     rt.conversations.drop(result.conversation_id)  # HA gave it its own id: not a person talking
             except Exception as err:  # noqa: BLE001
+                conversation_failed = True
                 answer = f"(no answer: {err})"
             finally:
                 rt.conversations.testing = None
                 rt.conversations.test_tools.clear()
             right, expected = q.check(answer)
             acted = sorted(set(tools) & ACTION_TOOLS)
-            if acted:  # only asked: switching something is a fail whatever it said
+            if conversation_failed:
+                right, expected = False, f"{expected}, with every tool working (conversation failed)"
+            elif acted:  # only asked: switching something is a fail whatever it said
                 right, expected = False, f"{expected}, and nothing switched (it used {', '.join(acted)})"
             elif failed := failed_tools(results_seen):
                 # 15 Nov: the camera tool failed every time and the answer ("nobody") still passed; a guess isn't right
