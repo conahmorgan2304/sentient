@@ -546,16 +546,19 @@ class SelfTest:
                 conversation_failed = True
                 answer = f"(no answer: {err})"
             finally:
+                if conversation_failed:
+                    results_seen = [c for seen in rt.conversations.test_tools.values() for c in seen]
+                    tools = sorted({_tool_name(c) for c in results_seen} | set(self._tools_used(cid)))
                 rt.conversations.testing = None
                 rt.conversations.test_tools.clear()
             right, expected = q.check(answer)
             if not answer.strip():
-                right = False
+                right, expected = False, f"{expected}, with every tool working (empty answer)"
             acted = sorted(set(tools) & ACTION_TOOLS)
-            if conversation_failed:
-                right, expected = False, f"{expected}, with every tool working (conversation failed)"
-            elif acted:  # only asked: switching something is a fail whatever it said
+            if acted:  # only asked: switching something is a fail whatever it said
                 right, expected = False, f"{expected}, and nothing switched (it used {', '.join(acted)})"
+            elif conversation_failed:
+                right, expected = False, f"{expected}, with every tool working (conversation failed)"
             elif failed := failed_tools(results_seen):
                 # 15 Nov: the camera tool failed every time and the answer ("nobody") still passed; a guess isn't right
                 right, expected = False, f"{expected}, with every tool working (failed: {', '.join(failed)})"
@@ -616,7 +619,11 @@ class SelfTest:
             q = checks.get(r.get("key"))
             if r.get("right") or q is None or any(why in str(r.get("expected", "")) for why in RESULT_STANDS):
                 continue
-            if q.check(str(r.get("answer") or ""))[0]:
+            # A new device, reminder or clock value is not evidence about a past answer.
+            if q.ask != r.get("question"):
+                continue
+            right, expected = q.check(str(r.get("answer") or ""))
+            if right and expected == r.get("expected") and str(r.get("answer") or "").strip():
                 r["right"] = True
                 r["rejudged"] = True
                 fixed += 1
