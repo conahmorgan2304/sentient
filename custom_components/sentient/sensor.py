@@ -330,7 +330,7 @@ class MindSensor(_Base):
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
         "incident_review_quality", "security_review_quality", "cognitive_authority", "conversation_quality",
         "security_events", "security_visits", "security_event_feedback_summary", "reliability", "self_test",
-        "house_language_text",
+        "house_language_text", "overnight_learning",
     })
 
     # the security and learning summaries go through every kept camera event and review, and the page only needs
@@ -453,6 +453,7 @@ class MindSensor(_Base):
             "security_review_quality": heavy["security_review_quality"],
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
+            "overnight_learning": last.get("learning") or {},
             "last_reflection": last.get("time"),
             "wondering": curious["wondering"],
             "asked": curious["asked"],
