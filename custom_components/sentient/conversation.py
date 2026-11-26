@@ -933,6 +933,17 @@ class BackedUpAgent(conversation.ConversationEntity):
                     session.pending = None  # a rejection, correction or topic change invalidates the old plan
                     if (NO.fullmatch(user_input.text.strip()) or answer(user_input.text, self._reply_language(user_input)) == "no"):
                         return self._reply(user_input, session, "Cancelled. No action was taken.", session.active)
+                # A bare affirmative must not turn an unsupported offer into a device command.
+                # Real pending actions, household questions and clarification choices have
+                # already been handled above. Preserve ordinary informational affirmatives.
+                if session.question and (YES.fullmatch(user_input.text.strip())
+                        or answer(user_input.text, self._reply_language(user_input)) == "yes"):
+                    from .reliability import actionable_offer
+
+                    if actionable_offer(session.question) and not session.clarification:
+                        session.question = ""
+                        return self._reply(user_input, session,
+                            "There is no prepared action to confirm. Please tell me exactly what you want me to do.")
                 from .followups import refresh, INSTRUCTION
 
                 if session.follow_up_context:
