@@ -250,3 +250,26 @@ async def test_clock_question_uses_time_at_dispatch(hass: HomeAssistant, freezer
             patch("homeassistant.components.conversation.async_converse", converse):
         result = await test.async_run(force=True)
     assert result["results"][1]["right"]
+
+
+def test_uncertain_state_answers_and_negative_temperatures():
+    from custom_components.sentient.selftest import numbers
+
+    assert yes_no("I don't know whether anyone was seen.") is None
+    assert yes_no("I have no information about visits.") is None
+    assert on_off("I'm not sure whether it is on.") is None
+    assert numbers("It's minus five degrees.") == [-5.0]
+    assert numbers("Negative twenty one degrees.") == [-21.0]
+
+
+async def test_alarm_accepts_plain_yes_and_no(hass: HomeAssistant):
+    entry = await _setup(hass)
+    test = entry.runtime_data.selftest
+    hass.states.async_set("alarm_control_panel.test", "armed_home")
+    alarm = next(q for q in test.questions() if q.key == "alarm")
+    assert alarm.check("Yes, it is.")[0]
+    assert not alarm.check("No, it isn't.")[0]
+    hass.states.async_set("alarm_control_panel.test", "disarmed")
+    alarm = next(q for q in test.questions() if q.key == "alarm")
+    assert alarm.check("No, it isn't.")[0]
+    assert not alarm.check("I don't know whether it is off.")[0]
