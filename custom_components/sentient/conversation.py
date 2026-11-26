@@ -467,13 +467,17 @@ class BackedUpAgent(conversation.ConversationEntity):
                     pass
             return result
 
+    def _is_selftest(self, user_input) -> bool:
+        """Synthetic turns must not inflate household conversation statistics."""
+        selftest = getattr(getattr(self._entry, "runtime_data", None), "selftest", None)
+        context_id = getattr(getattr(selftest, "context", None), "id", None)
+        return context_id is not None and getattr(user_input.context, "parent_id", None) == context_id
+
     def _note_quality(self, user_input, result, meta: dict, ms: int) -> None:
         """Count how the turn went (Phase 2 measures): never the words, never in guest mode."""
         if self._guest() or not self._options().get('voice_timing_diagnostics'):
             return
-        selftest = getattr(getattr(self._entry, "runtime_data", None), "selftest", None)
-        if selftest is not None and user_input.context is not None \
-                and user_input.context.parent_id == getattr(selftest, "context", None).id:
+        if self._is_selftest(user_input):
             return  # the nightly self-test asks the same questions every night: not a person, and not a repeat
         try:
             from .conversation_quality import of
@@ -626,6 +630,11 @@ class BackedUpAgent(conversation.ConversationEntity):
             self._carry.clear()
         elif cautious or changed_speaker:
             self._carry.pop(owner, None)
+        elif minutes and speaker and last and user_input.conversation_id == last[0]:
+            from .conversation_quality import TURN
+
+            if (meta := TURN.get(None)) is not None:
+                meta["carried"] = True
         elif minutes and speaker and previous_key not in self._ours and last:
             user_input = replace(user_input, conversation_id=last[0])
             from .conversation_quality import TURN
@@ -684,7 +693,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             if said := await instant_answer(self.hass, self._entry.runtime_data, user_input.text, user_input.context,
                                             user_input.device_id):
                 # straight from the house, no AI: the clock, the weather, one device's state, Sentient's own records
-                if (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
+                if not self._is_selftest(user_input) and (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
                     brain.count("local")
                 from .conversation_quality import TURN
 
