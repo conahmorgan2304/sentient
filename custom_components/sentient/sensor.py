@@ -15,7 +15,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_LIVE_VOICE_CHECK, EVENT_MODE_CHANGED
+from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY, EVENT_MODE_CHANGED
 from . import SentientConfigEntry
 from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_HEALTH_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
 
@@ -324,7 +324,7 @@ class MindSensor(_Base):
 
     _attr_icon = "mdi:head-lightbulb-outline"
     _attr_native_unit_of_measurement = "conversations"
-    # live detail for the page and the voice; none of it is history, and together it passes the recorder's 16 KB limit
+    # These live diagnostics do not belong in recorder history.
     _unrecorded_attributes = frozenset({
         "voice_sessions", "conversation_diagnostics", "voice_check", "speech_deliveries", "voice_timings",
         "security_incidents", "recent_conversations", "thoughts", "lessons", "appliances", "ai", "cognitive_shadow", "action_intents", "learning_effectiveness",
@@ -406,12 +406,16 @@ class MindSensor(_Base):
             "learning_effectiveness": ({} if rt.speech.guest_mode else
                                        learning_report(cognitive=cognitive, intents=intent_metrics,
                                                        voice_timings=timings)),
-            "security_events": rt.security_events.recent(),
             "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
                                         else _security_review_quality(rt)),
         }
         self._heavy_at = now
         return self._heavy
+
+    @staticmethod
+    def _compact(row, keys):
+        return {key: value[:240] if isinstance(value, str) else value
+                for key in keys if (value := row.get(key)) is not None or key in row}
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -428,6 +432,9 @@ class MindSensor(_Base):
         if rt.speech.guest_mode != getattr(self, "_heavy_guest", None):
             self._heavy, self._heavy_guest = None, rt.speech.guest_mode  # guest mode hides parts: never serve stale
         heavy = self._heavy_part(cognitive, intent_metrics, timings)
+        guest = rt.speech.guest_mode
+        self_test = {"enabled": False} if guest else rt.selftest.summary()
+        sessions = [] if guest else sorted(rt.sessions.describe(), key=lambda row: row["last_activity"], reverse=True)
         return {
             "house_language_text": bool(rt.options.get("house_language_text", True)),
             "details_revision": self._details_revision,
@@ -440,8 +447,23 @@ class MindSensor(_Base):
             "reliability": ({"enabled": False} if rt.speech.guest_mode or rt.reliability is None
                             else rt.reliability.summary()),
             "guest_mode": rt.speech.guest_mode,
-            "self_test": ({"enabled": False} if rt.speech.guest_mode else
-                          {k: v for k, v in rt.selftest.summary().items() if k not in ("results", "history")}),
+            "voice_timings": [] if guest else [
+                {"total_ms": row["total_ms"], "slowest_stage": max(row["stages_ms"], key=row["stages_ms"].get, default=None)}
+                for row in timings[:10]
+            ],
+            "speech_deliveries": [] if guest or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else [
+                {**self._compact(row, ("time", "message", "note")),
+                 "results": [self._compact(receipt, ("entity_id", "status", "playback"))
+                             for receipt in row["results"][:5]]}
+                for row in list(rt.speech.deliveries)[:5]
+            ],
+            "voice_sessions": [self._compact(row, ("conversation_id", "state", "topic", "last_activity"))
+                               for row in sessions[:5]],
+            "self_test": {**self_test,
+                          "results": [self._compact(row, ("key", "kind", "question", "right", "expected", "ms"))
+                                      for row in self_test.get("results", [])],
+                          "history": [self._compact(row, ("time", "right", "total"))
+                                      for row in self_test.get("history", [])]},
             "incident_review_quality": heavy["incident_review_quality"],
             "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else
                                     {**rt.incidents.authority(), "heads_up": rt.incidents.authority("night_heads_up")}),
@@ -452,8 +474,6 @@ class MindSensor(_Base):
             "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
                                else intent_metrics),
             "learning_effectiveness": heavy["learning_effectiveness"],
-            # Older screen cards can still render the latest snapshot from the sensor.
-            "security_events": [e for e in heavy["security_events"] if e.get("has_snapshot") and not e.get("parked")][:1],
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
             "security_review_quality": heavy["security_review_quality"],
             "thoughts": last.get("thoughts") or [],

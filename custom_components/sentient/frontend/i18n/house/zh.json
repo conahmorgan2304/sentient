@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "访客模式下不支持语音识别。",
  "Voice pipeline": "语音管道",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "语音回复会在说话前检查操作声明。报价需要等待确认。",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "语音回复可以保留已确认的操作，并可以提供提醒和监视以供批准。 Mind 传感器再次包含紧凑的诊断功能。",
  "Waiting for a current device report": "等待当前设备报告",
  "Warming the {a} to {b} degrees": "将 {a} 升温至 {b} 度",
  "Warning in force: ": "警告生效: ",

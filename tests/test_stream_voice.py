@@ -118,7 +118,7 @@ async def test_through_the_agent_a_confirmation_is_still_spoken(hass):
     finally:
         current_chat_log.reset(token)
     assert result.response.speech["plain"]["speech"] == "Shall I unlock the front door?"
-    assert log.heard[-1].strip() == "Shall I unlock the front door?"
+    assert not any(text for text in log.heard)  # the unsafe promise was never streamed; Assist speaks the final read-back
 
 
 async def test_rewritten_history_does_not_hide_an_unspoken_correction():

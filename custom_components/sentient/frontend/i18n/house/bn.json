@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "গেস্ট মোডে ভয়েস শনাক্তকরণ অনুপলব্ধ৷.",
  "Voice pipeline": "ভয়েস পাইপলাইন",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "ভয়েস উত্তর কথা বলার আগে অ্যাকশন দাবি চেক করুন। অফার একটি মুলতুবি নিশ্চিতকরণ প্রয়োজন.",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "ভয়েস উত্তরগুলি নিশ্চিত ক্রিয়াগুলি রাখে এবং অনুমোদনের জন্য অনুস্মারক এবং ঘড়িগুলি অফার করতে পারে৷ মাইন্ড সেন্সর আবার কমপ্যাক্ট ডায়াগনস্টিকস অন্তর্ভুক্ত করে।",
  "Waiting for a current device report": "একটি বর্তমান ডিভাইস রিপোর্টের জন্য অপেক্ষা করা হচ্ছে",
  "Warming the {a} to {b} degrees": "{a} থেকে {b} ডিগ্রী উষ্ণ করা",
  "Warning in force: ": "বলবৎ সতর্কতা: ",

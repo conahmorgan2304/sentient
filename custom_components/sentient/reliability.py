@@ -152,6 +152,29 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
     return name, None, False
 
 
+def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
+    """Check a real tool result for completion, rather than preparation or a read-only success."""
+    _, error, changed = _tool_outcome(content)
+    result = content.get("tool_result")
+    if not isinstance(result, dict) or not result or result.get("read_back") or result.get("error"):
+        return False
+    status = str(result.get("status") or "").casefold()
+    if status in NOT_DONE | {"awaiting_confirmation", "failed", "skipped", "attempted", "error"}:
+        return False
+    if any(key in result and not result[key] for key in ("done", "spoken", "cancelled", "forgotten")):
+        return False
+    data = result.get("data")
+    response_type = result.get("response_type")
+    if response_type in ("error", "query_answer"):
+        return False
+    # HA intent targets provide explicit evidence, including partial success.
+    if isinstance(data, dict) and ("success" in data or "failed" in data):
+        return changed
+    if result.get("actions") and isinstance(result["actions"], list):
+        return any(isinstance(row, dict) and row.get("status") == "verified" for row in result["actions"])
+    return (acting or response_type == "action_done") and not error and result.get("success") is not False
+
+
 def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozenset[str] = frozenset()) -> list[dict[str, str]]:
     """The reliability problems in one turn, by plain rules. ``tools`` is each tool result as the chat log has it;
     ``actions`` are tool names that change something (a successful one counts as having done something)."""

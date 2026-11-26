@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Η φωνητική αναγνώριση δεν είναι διαθέσιμη στη λειτουργία επισκέπτη.",
  "Voice pipeline": "Φωνητικός αγωγός",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Οι φωνητικές απαντήσεις ελέγχουν τις αξιώσεις ενεργειών πριν μιλήσουν. Οι προσφορές χρειάζονται επιβεβαίωση σε εκκρεμότητα.",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Οι φωνητικές απαντήσεις διατηρούν επιβεβαιωμένες ενέργειες και μπορούν να προσφέρουν υπενθυμίσεις και ρολόγια για έγκριση. Ο αισθητήρας Mind περιλαμβάνει και πάλι συμπαγή διαγνωστικά.",
  "Waiting for a current device report": "Αναμονή για μια τρέχουσα αναφορά συσκευής",
  "Warming the {a} to {b} degrees": "Προθέρμανση του {a} στους {b} βαθμούς",
  "Warning in force: ": "Προειδοποίηση σε ισχύ: ",

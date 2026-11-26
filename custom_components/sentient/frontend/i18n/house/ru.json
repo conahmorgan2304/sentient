@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Голосовая идентификация недоступна в гостевом режиме.",
  "Voice pipeline": "Голосовой конвейер",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Голосовые ответы проверяют заявки на действия, прежде чем говорить. Предложениям требуется ожидающее подтверждения.",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Голосовые ответы сохраняют подтвержденные действия и могут предлагать напоминания и часы для утверждения. Датчик Mind снова включает в себя компактную диагностику.",
  "Waiting for a current device report": "Ожидание текущего отчета об устройстве",
  "Warming the {a} to {b} degrees": "Потепление {a} до {b} градусов",
  "Warning in force: ": "Предупреждение в силе: ",

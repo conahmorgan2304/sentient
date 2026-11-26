@@ -60,6 +60,15 @@
     _loadToday() {
       if (!this._hass) return;
       this._todayAt = Date.now();
+      this._hass.callWS({ type: "sentient/mind/details", snapshot_only: true }).then((r) => {
+        this._securityEvents = r.security_events || [];
+        this._draw();
+      }, () => {
+        if (this._securityEvents) {
+          this._securityEvents = undefined;
+          this._draw();
+        }
+      });
       this._hass.callWS({ type: "sentient/today" }).then((r) => { this._today = r; this._sig = ""; this.hass = this._hass; }, () => {});
     }
     disconnectedCallback() { clearInterval(this._clock); clearInterval(this._cam); clearInterval(this._todayTimer); }
@@ -210,7 +219,7 @@
       const hz = ((t.heating || {}).zones || [])[0];
       if (hz && hz.now != null) tiles.splice(1, 0, { icon: hz.action === "heating" ? "mdi:radiator" : "mdi:thermometer", val: `${Math.round(hz.now * 10) / 10}°`, label: hz.state === "off" ? "INSIDE · HEATING OFF" : "INSIDE · " + "SET {a}°".replace("{a}", hz.target ?? "–"), cls: hz.action === "heating" ? "warm" : "" });
       const nh = (t.heating || {}).next;
-      const ev = (mind.security_events || []).find((e) => e.has_snapshot && !e.parked);
+      const ev = (this._securityEvents || mind.security_events || []).find((e) => e.has_snapshot && !e.parked);
       const people = (t.people || []);
       const side = (ev || people.length || nh) ? `<div class="side">
           ${ev ? `<div class="seen"><img alt="" src="/api/frigate/notifications/${encodeURIComponent(ev.id)}/thumbnail.jpg"><span>LAST SEEN · ${esc(String(ev.camera).replace(/_/g, " ").toUpperCase())} · ${esc(String(ev.label).toUpperCase())} · ${esc(new Date(ev.start * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }))}</span></div>` : ""}

@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "การระบุด้วยเสียงไม่พร้อมใช้งานในโหมดผู้มาเยือน.",
  "Voice pipeline": "ท่อส่งเสียง",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "การตอบกลับด้วยเสียง ตรวจสอบการอ้างสิทธิ์การดำเนินการก่อนพูด ข้อเสนอที่จำเป็นต้องได้รับการยืนยันที่รอดำเนินการ",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "การตอบกลับด้วยเสียงจะยืนยันการกระทำและสามารถเสนอการเตือนและการเฝ้าดูเพื่อขออนุมัติได้ เซ็นเซอร์มายด์มีการวินิจฉัยแบบกะทัดรัดอีกครั้ง",
  "Waiting for a current device report": "กำลังรอรายงานอุปกรณ์ปัจจุบัน",
  "Warming the {a} to {b} degrees": "กำลังอุ่น {a} ถึง {b} องศา",
  "Warning in force: ": "คำเตือนมีผลบังคับใช้: ",

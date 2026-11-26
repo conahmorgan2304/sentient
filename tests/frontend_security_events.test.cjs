@@ -174,3 +174,29 @@ test('an incident card shows its camera picture, says what its stage means and a
   assert.doesNotMatch(visits, /ev1/);  // shown on the incident's card instead
   assert.match(visits, /ev9/);
 });
+
+test('the screen card loads only the latest snapshot and supports older Mind sensors', async () => {
+  let ScreenCard;
+  vm.runInNewContext(fs.readFileSync('custom_components/sentient/frontend/sentient-screen-card.js', 'utf8'), {
+    HTMLElement: class {}, customElements: { get: () => null, define: (_, cls) => { ScreenCard = cls; } },
+    window: {},
+  });
+  const item = { id: 'new-snapshot', camera: 'entrance', label: 'person', start: 1700000000, has_snapshot: true };
+  const card = new ScreenCard();
+  card.setConfig({});
+  card._st = (name) => name === 'mind' ? { attributes: { security_events: [{ ...item, id: 'old-snapshot' }] } } : undefined;
+  card._draw = () => {};
+  Object.defineProperty(card, 'hass', { set() {} });
+  const calls = [];
+  card._hass = { states: {}, async callWS(msg) {
+    calls.push(msg);
+    return msg.snapshot_only ? { security_events: [item] } : {};
+  } };
+  assert.match(card._idle(), /old-snapshot\/thumbnail.jpg/);
+  card._loadToday();
+  await Promise.resolve();
+  assert.equal(calls[0].type, 'sentient/mind/details');
+  assert.equal(calls[0].snapshot_only, true);
+  assert.match(card._idle(), /new-snapshot\/thumbnail.jpg/);
+  assert.doesNotMatch(card._idle(), /old-snapshot\/thumbnail.jpg/);
+});

@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Hlasová identifikace není v režimu hosta dostupná.",
  "Voice pipeline": "Hlasové potrubí",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Hlasové odpovědi si před mluvením zkontrolujte nároky na akce. Nabídky vyžadují potvrzení.",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Hlasové odpovědi uchovávají potvrzené akce a mohou nabízet připomenutí a sledování ke schválení. Senzor Mind opět obsahuje kompaktní diagnostiku.",
  "Waiting for a current device report": "Čekání na aktuální zprávu o zařízení",
  "Warming the {a} to {b} degrees": "Zahřívání {a} na {b} stupňů",
  "Warning in force: ": "Varování v platnosti: ",

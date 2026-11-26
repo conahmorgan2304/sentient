@@ -1,5 +1,4 @@
 """Session isolation, trusted confirmation turns, exact actions and cautious undo."""
-import asyncio
 from dataclasses import replace
 from datetime import timedelta
 from types import SimpleNamespace
@@ -350,3 +349,113 @@ async def test_feature_settings_apply_without_restart_and_clear_pending_actions(
     assert rt.control.options['voice_undo']
     assert rt.incidents.enabled
     assert session.closed and session.pending is None
+
+
+@pytest.mark.parametrize("tool_name,args", [
+    ("sentient_remind", {"message": "Check the washing.", "minutes": 10, "offer": True}),
+    ("sentient_watch", {"what": "Window opening", "entity": "binary_sensor.window", "to_state": "on", "offer": True}),
+    ("sentient_remind", {"minutes": 10, "then_do": [{"action": "light.turn_off", "target": "light.test"}]}),
+])
+async def test_real_offer_is_confirmed_once(hass, tool_name, args):
+    from custom_components.sentient.llm_api import RemindTool, WatchTool
+    from custom_components.sentient.speech import SpeechRouter
+    from custom_components.sentient.watches import WatchManager
+
+    options = {"conversation_sessions": True, "conversation_style": "natural",
+               "voice_agent": "conversation.primary", "watch_actions": True}
+    obj, rt = agent(hass, options)
+    rt.speech = SpeechRouter(hass, options)
+    rt.watches = WatchManager(hass, "offer-test", options, rt.speech)
+    hass.states.async_set("binary_sensor.window", "off")
+    hass.states.async_set("light.test", "on")
+    llm_context = llm.LLMContext(platform=DOMAIN, context=Context(), language="en", assistant=None, device_id=None)
+    tool = RemindTool() if tool_name == "sentient_remind" else WatchTool()
+
+    async def model(_agent_id, _request):
+        prepared = await tool.async_call(hass, llm.ToolInput(tool_name, args), llm_context)
+        assert prepared["status"] == "awaiting_confirmation"
+        return response("Shall I set that up?")
+
+    with patch("custom_components.sentient.llm_api._runtime", return_value=rt), \
+            patch("custom_components.sentient.acting.exposed", return_value=True), \
+            patch.object(obj, "_converse", side_effect=model) as provider:
+        offer = await obj.async_process(request("I should check on that later"))
+        assert offer.continue_conversation and offer.response.speech["plain"]["speech"].startswith("Shall I ")
+        assert not rt.watches._watches
+        result = await obj.async_process(request("Yes"))
+        assert result.response.speech["plain"]["speech"] == "Done."
+        assert len(rt.watches._watches) == 1
+        again = await obj.async_process(request("Yes"))
+        assert "no prepared action" in again.response.speech["plain"]["speech"]
+        assert provider.call_count == 1
+
+
+@pytest.mark.parametrize("turns,replies", [
+    (["Is it on?", "the kitchen one"], ["Which one?", "The light is on."]),
+    (["The sun is out"], ["It is a bright day."]),
+    (["Can you lock the door?"], ["There is no controllable lock. Shall I lock the door?"]),
+])
+async def test_bare_yes_does_not_reuse_an_offer_or_a_clarification(hass, turns, replies):
+    options = {"conversation_sessions": True, "voice_agent": "conversation.primary"}
+    obj, _ = agent(hass, options)
+    with patch.object(obj, "_converse", AsyncMock(side_effect=[response(text) for text in replies])) as provider:
+        for text in turns:
+            result = await obj.async_process(request(text))
+        assert "Shall I lock" not in result.response.speech["plain"]["speech"]
+        yes = await obj.async_process(request("Yes"))
+        assert "no prepared action" in yes.response.speech["plain"]["speech"]
+        assert provider.await_count == len(turns)
+
+
+async def test_bare_yes_still_answers_a_house_question(hass):
+    obj, rt = agent(hass, {"conversation_sessions": True})
+    rt.speech = SimpleNamespace(guest_mode=False, async_take_answer=AsyncMock(return_value="Thanks for letting me know."))
+    user_input = replace(request("Yes"), satellite_id="assist_satellite.test")
+    with patch.object(obj, "_converse", AsyncMock()) as provider:
+        result = await obj.async_process(user_input)
+    assert result.response.speech["plain"]["speech"] == "Thanks for letting me know."
+    rt.speech.async_take_answer.assert_awaited_once_with(user_input.satellite_id, "Yes")
+    provider.assert_not_awaited()
+
+
+async def test_bare_yes_after_a_structured_device_choice_is_not_confirmation(hass):
+    from custom_components.sentient.clarification import offer
+
+    options = {"conversation_sessions": True, "specific_clarification": True,
+               "conversation_style": "natural", "voice_agent": "conversation.primary"}
+    obj, _ = agent(hass, options)
+    hass.states.async_set("light.first", "on")
+    hass.states.async_set("light.second", "off")
+
+    async def model(_agent_id, user_input):
+        session = current_session.get()
+        if user_input.text == "Is it on?":
+            await offer(hass, session, ["light.first", "light.second"], user_input.context)
+            return response("Which light?")
+        assert session.clarification_resolution["entities"] == ["light.second"]
+        return response("The second light is off.")
+
+    with patch("custom_components.sentient.clarification.async_should_expose", return_value=True), \
+            patch.object(obj, "_converse", side_effect=model) as provider:
+        assert "Which device" in (await obj.async_process(request("Is it on?"))).response.speech["plain"]["speech"]
+        assert "is off" in (await obj.async_process(request("2"))).response.speech["plain"]["speech"]
+        assert "no prepared action" in (await obj.async_process(request("Yes"))).response.speech["plain"]["speech"]
+        assert provider.call_count == 2
+
+
+async def test_bare_yes_without_sessions_needs_a_question_or_pending_action(hass):
+    from homeassistant.components.conversation import chat_log
+    from homeassistant.helpers import chat_session
+
+    obj, _ = agent(hass, {"voice_agent": "conversation.primary"})
+    with patch.object(obj, "_converse", AsyncMock(return_value=response("The last reading was 20 degrees."))) as provider:
+        yes = request("Yes", cid=None)
+        assert "no prepared action" in (await obj.async_process(yes)).response.speech["plain"]["speech"]
+        provider.assert_not_awaited()
+        with chat_session.async_get_chat_session(hass, None) as session, \
+                chat_log.async_get_chat_log(hass, session, yes) as log:
+            log.async_add_assistant_content_without_tools(conversation.AssistantContent(
+                agent_id="conversation.primary", content="Did you mean the earlier reading?"))
+            assert "last reading" in (await obj.async_process(replace(yes, conversation_id=session.conversation_id))
+                                      ).response.speech["plain"]["speech"]
+        provider.assert_awaited_once()

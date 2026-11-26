@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Äänitunnistus ei ole käytettävissä Guest Modessa.",
  "Voice pipeline": "Ääniputki",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Äänivastaukset tarkistavat toimintavaatimukset ennen puhumista. Tarjoukset tarvitsevat vahvistuksen.",
+ "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Äänivastaukset säilyttävät vahvistetut toiminnot ja voivat tarjota muistutuksia ja kelloja hyväksyttäväksi. Mind-sensori sisältää jälleen kompaktin diagnosoinnin.",
  "Waiting for a current device report": "Odotetaan nykyistä laiteraporttia",
  "Warming the {a} to {b} degrees": "{a}:n lämmitys {b} asteeseen",
  "Warning in force: ": "Varoitus voimassa: ",

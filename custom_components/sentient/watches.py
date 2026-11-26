@@ -377,6 +377,7 @@ class WatchManager:
         only_if: str | None = None,
         only_if_state: str | None = None,
         hold_minutes: float | None = None,
+        preview: bool = False,
     ) -> Watch:
         # something to look for, with nothing to wait for on a device, is a camera watch: "watch for cars by the
         # gate" named the gate, and the gate sensor was picked instead of the gate camera (21 Nov, three retries)
@@ -440,11 +441,8 @@ class WatchManager:
             only_if_state=only_if_state,
             hold_minutes=hold_minutes if kind == KIND_STATE and hold_minutes and hold_minutes > 0 else None,
         )
-        self._words(watch)
-        self._watches[watch.id] = watch
-        self._save()
-        if watch.hold_minutes and (st := self.hass.states.get(entity_id)) is not None and self._state_met(watch, st):
-            self._hold(watch)  # already so: "if the back door's open for ten minutes" counts from now
+        if not preview:
+            self.commit_watch(watch)
         return watch
 
     def add_reminder(
@@ -458,6 +456,7 @@ class WatchManager:
         do: list[dict[str, Any]] | None = None,
         only_if: str | None = None,
         only_if_state: str | None = None,
+        preview: bool = False,
     ) -> Watch:
         """Say something at a time. People asked for it, so by default it gets through quiet hours."""
         message = " ".join((message or "").split())
@@ -471,11 +470,19 @@ class WatchManager:
             message=message or None, priority=priority, speaker=speaker,
             do=list(do or []), only_if=only_if, only_if_state=only_if_state,
         )
+        if not preview:
+            self.commit_watch(watch)
+        return watch
+
+    def commit_watch(self, watch: Watch) -> None:
+        """Store and start a watch already prepared by the normal validation path."""
         self._words(watch)
         self._watches[watch.id] = watch
-        self._schedule(watch)
+        if watch.kind == KIND_REMINDER:
+            self._schedule(watch)
+        elif watch.hold_minutes and (st := self.hass.states.get(watch.entity_id)) is not None and self._state_met(watch, st):
+            self._hold(watch)
         self._save()
-        return watch
 
     def _schedule(self, watch: Watch) -> None:
         @callback

@@ -26,7 +26,7 @@ from homeassistant.helpers import llm
 from homeassistant.util import dt as dt_util
 from homeassistant.util.json import JsonObjectType
 
-from .voice_actions import speech_attempt, ANNOUNCE_TIMEOUT
+from .voice_actions import acting_results, speech_attempt, ANNOUNCE_TIMEOUT
 
 from .const import (
     CONF_FALLBACK_SPEAKERS,
@@ -156,6 +156,12 @@ class _Tool(llm.Tool):
 
                 with measure("sentient_tools"):
                     result = await inner(self, hass, tool_input, llm_context)
+                if (self.acts and (completed := acting_results.get()) is not None
+                        and tool_input.tool_args.get("action") not in ("list", "status", "show", "read")):
+                    from .reliability import action_succeeded
+
+                    if action_succeeded({"tool_name": self.name, "tool_result": result}, acting=True):
+                        completed.append(True)
                 if not ACTIVE.get() and (rt := _runtime(hass)) is not None and getattr(rt, "usage", None) is not None:
                     rt.usage.tool(self.name)
                 if self.reads_outside:
@@ -646,6 +652,39 @@ def _acting_args(hass: HomeAssistant, rt: Any, args: dict[str, Any]) -> tuple[di
     return extra, None
 
 
+def _prepare_watch_offer(rt, watch, summary):
+    """Read back an exact prepared reminder or watch, without starting it."""
+    from .readback import WAIT, current
+    from .voice_id import cautious_turn
+
+    session = current()
+    if session is None or session.closed or session.pending or rt.speech.guest_mode or cautious_turn(rt.options):
+        return {"error": "No session is available to prepare this offer."}
+    from .acting import words
+
+    options = rt.options
+    hass = rt.watches.hass
+    if watch.only_if:
+        summary += f", only if {args_only_if(hass, {'only_if': watch.only_if, 'only_if_is': watch.only_if_state})}"
+    if watch.do:
+        summary += f", then {words(hass, watch.do)}"
+
+    def complete():
+        if rt.options is not options or session.closed or rt.speech.guest_mode or cautious_turn(options):
+            return "Cancelled. No action was taken."
+        if (watch.entity_id and hass.states.get(watch.entity_id) is None
+                or watch.only_if and hass.states.get(watch.only_if) is None
+                or (watch.do or watch.only_if or watch.hold_minutes) and not rt.watches.acting):
+            return "Cancelled. No action was taken."
+        rt.watches.commit_watch(watch)
+        return "Done."
+
+    question = f"Shall I {summary}?"
+    session.pending = {"turn": session.turn, "expires": min(dt_util.utcnow() + WAIT, watch.until_dt),
+                       "summary": summary, "question": question, "complete_watch": complete}
+    return {"status": "awaiting_confirmation", "read_back": question}
+
+
 class WatchTool(_Tool):
     acts = True
     name = "sentient_watch"
@@ -660,13 +699,14 @@ class WatchTool(_Tool):
         "can name a zone or object sensor (e.g. 'front garden person occupancy') so it only "
         "looks when something enters that zone. Confirm briefly using the local time "
         "returned; never read the id aloud. For a plain reminder at a time, use sentient_remind. "
+        "Use offer=true to prepare a watch before offering it. "
         "If a named spot (see sentient_spot) is mentioned, only that part of the picture is checked. "
         "When watches can act (then_do in the arguments), it can also do something when it fires — e.g. 'when the "
         "washing finishes, put the hallway light on' (entity + below a power number, then_do) or 'if the back door's "
         "open for 10 minutes, turn the hall light off and tell me' (to_state on, for_minutes 10, then_do). "
         "'only_if' + 'only_if_is' adds a condition checked when it fires. With then_do, first call with confirmed "
-        "false: read back the 'read_back' sentence and ask 'shall I set that up?'; only after their yes call again "
-        "with exactly the same details and confirmed true."
+        "false and say the returned read-back. Wait for yes; call again with identical details and confirmed true "
+        "only if the tool asks you to."
     )
     parameters = vol.Schema(
         {
@@ -690,6 +730,7 @@ class WatchTool(_Tool):
             vol.Optional("only_if_is"): cv.string,
             vol.Optional("for_minutes"): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=24 * 60)),
             vol.Optional("confirmed", default=False): cv.boolean,
+            vol.Optional("offer", default=False): cv.boolean,
         }
     )
 
@@ -700,6 +741,7 @@ class WatchTool(_Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         args = dict(tool_input.tool_args)
+        offer = args.pop("offer", False)
         # "camera" is what a model reaches for on a camera watch (21 Nov): take it as the thing to watch
         camera = args.pop("camera", None)
         entity = camera or args.pop("entity", None)
@@ -709,9 +751,15 @@ class WatchTool(_Tool):
         extra, why = _acting_args(hass, rt, args)
         if why:
             return {"error": why}
+        from .readback import current, readbacks
+
         confirmed = args.pop("confirmed", False)
-        if extra.get("do"):
-            from .readback import current, readbacks
+        session = current()
+        if session is not None and (session.pending or {}).get("complete_watch"):
+            return {"error": "A watch or reminder is already waiting for confirmation."}
+        if extra.get("do") and not confirmed and session is not None and session.running:
+            offer = True
+        if extra.get("do") and not offer:
             from .acting import words
 
             # what decides what happens, not the wording: the voice often rephrases "what" or the message on the yes
@@ -733,9 +781,22 @@ class WatchTool(_Tool):
             if refused := readbacks(rt).confirm("watch", details, current()):
                 return {"error": refused}
         try:
-            watch = rt.watches.add(args.pop("what"), entity, **args, **extra)
+            watch = rt.watches.add(args.pop("what"), entity, preview=offer, **args, **extra)
         except HomeAssistantError as err:
             return {"error": str(err)}
+        if offer:
+            st = hass.states.get(watch.entity_id)
+            target = st.name if st is not None else watch.entity_id
+            trigger = (watch.question or watch.to_state or
+                       (f"above {watch.above:g}" if watch.above is not None else f"below {watch.below:g}"))
+            if watch.hold_minutes:
+                trigger += f" for {watch.hold_minutes:g} minutes"
+            summary = f"watch {target} for {trigger} until {watch.summary()['until']}"
+            if watch.repeat:
+                summary += " and keep watching after each match"
+            if watch.message:
+                summary += f" and say “{watch.message}”"
+            return _prepare_watch_offer(rt, watch, summary)
         return {"watching": watch.summary()}
 
 
@@ -747,10 +808,11 @@ class RemindTool(_Tool):
         "'remind me at 6 to put the oven on' (at='18:00') or 'in 20 minutes check the "
         "washing' (minutes=20). 'message' is the exact sentence to say then, written to the "
         "listener (e.g. 'Time to put the oven on.'). Confirm with the local time returned. "
+        "Use offer=true to prepare a reminder before offering it. "
         "When watches can act, a reminder can also check and do: 'at 11, if the back door's still open, turn the "
         "hall light off and tell me' (at='23:00', only_if='back door', only_if_is='on', then_do=[…]). Nothing is "
-        "said or done if the condition isn't met then. With then_do, read back first (confirmed false) and only "
-        "after their yes call again with the same details and confirmed true."
+        "said or done if the condition isn't met. With then_do, first call with confirmed false and say the read-back. "
+        "Wait for yes; call again with identical details and confirmed true only if the tool asks you to."
     )
     parameters = vol.Schema(
         {
@@ -762,6 +824,7 @@ class RemindTool(_Tool):
             vol.Optional("only_if"): cv.string,
             vol.Optional("only_if_is"): cv.string,
             vol.Optional("confirmed", default=False): cv.boolean,
+            vol.Optional("offer", default=False): cv.boolean,
         }
     )
 
@@ -772,13 +835,20 @@ class RemindTool(_Tool):
         if rt is None:
             return {"error": "Sentient is not loaded"}
         args = dict(tool_input.tool_args)
+        offer = args.pop("offer", False)
         extra, why = _acting_args(hass, rt, args)
         if why:
             return {"error": why}
         extra.pop("hold_minutes", None)
+        from .readback import current, readbacks
+
         confirmed = args.pop("confirmed", False)
-        if extra.get("do"):
-            from .readback import current, readbacks
+        session = current()
+        if session is not None and (session.pending or {}).get("complete_watch"):
+            return {"error": "A watch or reminder is already waiting for confirmation."}
+        if extra.get("do") and not confirmed and session is not None and session.running:
+            offer = True
+        if extra.get("do") and not offer:
             from .acting import words
 
             details = {**{k: args.get(k) for k in ("at", "minutes")}, **extra}
@@ -793,10 +863,16 @@ class RemindTool(_Tool):
                 return {"error": refused}
         try:
             reminder = rt.watches.add_reminder(
-                args["message"], until=args.get("at"), minutes=args.get("minutes"), speaker=args.get("speaker"), **extra
+                args["message"], until=args.get("at"), minutes=args.get("minutes"), speaker=args.get("speaker"), preview=offer, **extra
             )
         except HomeAssistantError as err:
             return {"error": str(err)}
+        if offer:
+            when = reminder.summary()["until"]
+            summary = f"set a reminder for {when}"
+            if reminder.message:
+                summary += f" to say “{reminder.message}”"
+            return _prepare_watch_offer(rt, reminder, summary)
         return {"reminder": reminder.summary()}
 
 
@@ -873,8 +949,8 @@ class PlanTool(_Tool):
             return {"error": refused}
         outcome = await async_carry_out(hass, actions, f"plan: {args['goal'][:60]}")
         rt.timeline.add("mode", f"Plan: {args['goal'][:80]}", outcome["said"])
-        return {"said": outcome["said"], "not_done": [m.get("entity_id") for m in outcome["not_done"]
-                                                      if isinstance(m, dict)]}
+        return {"said": outcome["said"], "done": outcome["done"],
+                "not_done": [m.get("entity_id") for m in outcome["not_done"] if isinstance(m, dict)]}
 
 
 class RuleTool(_Tool):

@@ -151,7 +151,7 @@ async def test_live_check_endpoint_disabled_guest_and_manual_confirmation(hass, 
     assert (await ws.receive_json())['error']['code'] == 'private'
     sensor = MindSensor(entry)
     assert sensor.extra_state_attributes['voice_check'] is None
-    assert 'speech_deliveries' not in sensor.extra_state_attributes
+    assert sensor.extra_state_attributes['speech_deliveries'] == []
     assert {'voice_check', 'speech_deliveries'} <= sensor._unrecorded_attributes
 
 

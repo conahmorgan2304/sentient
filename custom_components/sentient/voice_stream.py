@@ -29,16 +29,16 @@ class StreamWatch:
     """Watches the chat log's deltas the way the pipeline does, to know whether speaking has begun early."""
 
     def __init__(self, log: Any, agent_id: str, pronouncer: Any = None, no_security_offers: bool = False,
-                 impossible: Any = None, blocked=None) -> None:
+                 impossible: Any = None, blocked=None, defer=None) -> None:
         self.log = log
         self.agent_id = agent_id
         self._say = None
         self._offers = None
-        if no_security_offers or impossible is not None or blocked is not None:
+        if no_security_offers or impossible is not None or blocked is not None or defer is not None:
             from .security_offers import StreamFilter
 
             # a sentence offering to arm, disarm or unlock (or to do what no device here can) never reaches the voice
-            self._offers = StreamFilter(security=no_security_offers, extra=impossible, blocked=blocked)
+            self._offers = StreamFilter(security=no_security_offers, extra=impossible, blocked=blocked, defer=defer)
         if pronouncer is not None and (pronouncer.active() if hasattr(pronouncer, "active") else pronouncer.table()):
             from .pronounce import StreamPronouncer
 
@@ -101,12 +101,13 @@ class StreamWatch:
         """Say what the model didn't: it goes through the chat log's own delta stream, which is what a streaming
         pipeline listens to (adding finished content to the log directly would not be spoken). Returns what was added."""
         self._flush()
-        if not self.started or not (extra := unspoken(self.streamed_text(), final)):
+        streamed = self.streamed_text()
+        if not self.started or not (extra := unspoken(streamed, final)):
             return ""
 
         async def delta():
             yield {"role": "assistant"}
-            yield {"content": " " + extra}
+            yield {"content": extra if streamed[-1].isspace() else " " + extra}
 
         self._own = True
         try:
