@@ -250,3 +250,13 @@ async def test_recognised_speaker_change_drops_pending_camera_question(hass):
         assert not result.continue_conversation
         assert look.await_count == 1
         provider.assert_not_awaited()
+
+
+async def test_unrecorded_internal_explanation_is_removed(hass):
+    obj, _ = agent(hass, {"voice_agent": "conversation.primary"})
+    with patch.object(obj, "_converse", AsyncMock(return_value=response(
+        "I’m still learning how best to space out my notifications. I’ll make sure to be less preemptive.",
+    ))):
+        result = await obj.async_process(request("Why did you tell me so early?"))
+    assert spoken(result) == "I don't have a verified explanation for the earlier reply."
+    assert not result.continue_conversation

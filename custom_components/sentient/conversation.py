@@ -571,12 +571,13 @@ class BackedUpAgent(conversation.ConversationEntity):
             if offers:
                 self._drop_security_offers(result, security=security, extra=impossible)
             return result
-        from .reliability import actionable_offer, explicit_completion
+        from .reliability import actionable_offer, explicit_completion, unsupported_self_explanation
         from .voice_stream import StreamWatch
 
         with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=security,
                          impossible=impossible,
-                         blocked=lambda text: actionable_offer(text) or bool(SECURITY_OFFER.search(text)),
+                         blocked=lambda text: (actionable_offer(text) or unsupported_self_explanation(text)
+                                               or bool(SECURITY_OFFER.search(text))),
                          defer=explicit_completion) as watch:
             result = await self._async_process_impl(user_input)
             if offers:
@@ -1188,7 +1189,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     def _validated_agent_reply(self, user_input, result, *, completed=False):
         """Keep native intent results and validate prose returned by other agents."""
-        from .reliability import actionable_offer, claimed_action_tools, explicit_completion
+        from .reliability import actionable_offer, claimed_action_tools, explicit_completion, unsupported_self_explanation
         from .security_offers import SECURITY_OFFER, sentences
         from .sessions import current_session
 
@@ -1222,11 +1223,15 @@ class BackedUpAgent(conversation.ConversationEntity):
         for part in parts:
             required = claimed_action_tools(part)
             if (not actionable_offer(part) and not SECURITY_OFFER.search(part)
+                    and not unsupported_self_explanation(part)
                     and (all(tools & completed_tools for tools in required) if required
                          else completed or not explicit_completion(part))):
                 kept.append(part)
         if len(kept) != len(parts):
-            text = " ".join(kept) or "I couldn't confirm that an action was completed."
+            fallback = ("I don't have a verified explanation for the earlier reply."
+                        if any(unsupported_self_explanation(part) for part in parts)
+                        else "I couldn't confirm that an action was completed.")
+            text = " ".join(kept) or fallback
             from homeassistant.components.conversation.chat_log import DATA_CHAT_LOGS, current_chat_log
 
             log = current_chat_log.get()

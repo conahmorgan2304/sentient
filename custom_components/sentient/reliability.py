@@ -106,6 +106,20 @@ def explicit_completion(text: str) -> bool:
     return bool(EXPLICIT_COMPLETION.search(text) or claimed_action_tools(text))
 
 
+_UNRECORDED_EXPLANATION = re.compile(
+    r"\bi(?: am| was| have been|['’]m)\s*(?:still )?(?:learning|trying to learn)"
+    r"\b[^.!?]*\b(?:notifications?|reminders?|preferences?)\b"
+    r"|\bi (?:mentioned|said|notified|told)\b[^.!?]*\bbecause\b[^.!?]*"
+    r"\b(?:i (?:assumed|guessed|inferred)|my (?:memory|internal process)|my training)\b",
+    re.I,
+)
+
+
+def unsupported_self_explanation(text: str) -> bool:
+    """Detect common invented internal explanations; recorded explanations use their own path."""
+    return bool(_UNRECORDED_EXPLANATION.search(text))
+
+
 def actionable_offer(text: str) -> bool:
     """Recognise explicit English action offers without treating questions as consent."""
     if re.match(r"^\s*(?:which|what|when|where|who|how)\b", text or "", re.I):
