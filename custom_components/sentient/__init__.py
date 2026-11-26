@@ -843,7 +843,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: SentientConfigEntry) ->
     clear_translations(entry.runtime_data.ai, keep_pack=bool(entry.runtime_data.options.get("remember_language_phrases")))
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.household_tasks.clear()
-    entry.runtime_data.ai.voice_timings.clear()
     await entry.runtime_data.ai.async_flush()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
@@ -921,7 +920,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: SentientConfigEntry
     clear_translations(entry.runtime_data.ai, keep_pack=keep_pack)
     entry.runtime_data.control.clear_recovery()
     entry.runtime_data.household_tasks.clear()
-    entry.runtime_data.ai.voice_timings.clear()
+    if not options.get("voice_timing_diagnostics"):
+        entry.runtime_data.ai.voice_timings.clear()
     if not options.get("voice_timing_diagnostics") and (quality := getattr(entry.runtime_data, "conversation_quality", None)):
         quality.clear()  # "Show voice timings" off: the saved conversation counts go too
     entry.runtime_data.voice_checks.stop()
