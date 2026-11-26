@@ -229,6 +229,8 @@ class Alarms:
 
     async def _fill_calendar(self, message: str, local: datetime) -> str:
         """{tomorrow:calendar.x} / {today:calendar.x} -> what's on it ("Recycling"); '' if nothing."""
+        from .calendar_window import window_events
+
         out = message
         for when, cal in re.findall(r"\{(today|tomorrow):([a-z0-9_.]+)\}", message):
             day = local.date() + timedelta(days=1 if when == "tomorrow" else 0)
@@ -239,7 +241,8 @@ class Alarms:
                     {"entity_id": cal, "start_date_time": start.isoformat(), "end_date_time": (start + timedelta(days=1)).isoformat()},
                     blocking=True, return_response=True,
                 )
-                events = [e.get("summary", "") for e in (resp or {}).get(cal, {}).get("events", [])]
+                valid = window_events((resp or {}).get(cal, {}).get("events", []), start, start + timedelta(days=1))
+                events = [e["summary"] for e in valid if e.get("summary")]
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Alarm couldn't read %s: %s", cal, err)
                 events = []

@@ -89,6 +89,8 @@ class Foresight:
         start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         end = start + timedelta(days=1)
         out: dict[str, Any] = {"tomorrow": start.strftime("%A %d %B")}
+        from .calendar_window import event_start, window_events
+
         events = []
         for cal in self.options.get(CONF_BRIEFING_CALENDARS) or []:
             try:
@@ -100,11 +102,15 @@ class Foresight:
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Foresight couldn't read %s: %s", cal, err)
                 continue
-            for e in (resp or {}).get(cal, {}).get("events", []):
-                when = str(e.get("start") or "")
-                events.append(f"{when[11:16] or 'all day'} {e.get('summary', '')}".strip())
+            events.extend(window_events((resp or {}).get(cal, {}).get("events", []), start, end))
         if events:
-            out["calendar"] = events
+            events.sort(key=lambda e: dt_util.as_utc(event_start(e["start"])))
+            out["calendar"] = []
+            for e in events:
+                begins = event_start(e["start"])
+                when = "all day" if len(str(e["start"])) == 10 else (
+                    "ongoing" if begins < start else f"{begins:%H:%M}")
+                out["calendar"].append(f"{when} {e.get('summary', '')}".strip())
         weather_id = self.options.get(CONF_BRIEFING_WEATHER) or next(
             (s.entity_id for s in self.hass.states.async_all("weather")), None
         )

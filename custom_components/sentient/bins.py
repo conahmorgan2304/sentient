@@ -80,6 +80,8 @@ class Bins:
     async def async_collection_tomorrow(self) -> str | None:
         """What's collected tomorrow ("Recycling"), from the bin calendar; None if nothing."""
         start = (dt_util.now() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        from .calendar_window import window_events
+
         for cal in self.calendars():
             try:
                 resp = await self.hass.services.async_call(
@@ -90,7 +92,8 @@ class Bins:
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Bins: couldn't read %s: %s", cal, err)
                 continue
-            names = [str(e.get("summary") or "") for e in (resp or {}).get(cal, {}).get("events", [])]
+            events = window_events((resp or {}).get(cal, {}).get("events", []), start, start + timedelta(days=1))
+            names = [str(e.get("summary") or "") for e in events]
             dedicated = BIN_WORDS.search(cal) is not None
             names = [n for n in names if n and (dedicated or BIN_WORDS.search(n))]
             if names:

@@ -36,7 +36,7 @@ def _ai(hass: HomeAssistant, reply):
 def _bin_calendar(hass: HomeAssistant, summary: str | None):
     async def get(call: ServiceCall):
         cal = call.data["entity_id"][0] if isinstance(call.data["entity_id"], list) else call.data["entity_id"]
-        return {cal: {"events": [{"summary": summary, "start": "x"}] if summary else []}}
+        return {cal: {"events": [{"summary": summary, "start": dt_util.parse_datetime(str(call.data["start_date_time"])).date().isoformat() if isinstance(call.data["start_date_time"], str) else call.data["start_date_time"].date().isoformat()}] if summary else []}}
 
     hass.services.async_register("calendar", "get_events", get, supports_response=SupportsResponse.ONLY)
 

@@ -25,6 +25,8 @@ from typing import Any
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 
+from .calendar_window import event_start, window_events
+
 CONF_EMAIL = "email_read"
 CONF_CALENDAR_CLASHES = "calendar_clashes"
 CONF_SECURITY_AUDIT = "security_audit"
@@ -102,17 +104,20 @@ async def async_calendar_clashes(hass: HomeAssistant, calendars: list[str], hour
     if not calendars:
         return {"clashes": [], "note": "No calendars."}
     now = dt_util.now()
+    end = dt_util.as_local(dt_util.as_utc(now) + timedelta(hours=hours))
     try:
         response = await hass.services.async_call(
             "calendar", "get_events", {"entity_id": calendars, "start_date_time": now.isoformat(),
-                                       "end_date_time": (now + timedelta(hours=hours)).isoformat()},
+                                       "end_date_time": end.isoformat()},
             blocking=True, return_response=True)
     except Exception as err:  # noqa: BLE001
         return {"error": f"Couldn't read the calendars: {err}"}
     events = []
     for cal, data in (response or {}).items():
-        for e in (data or {}).get("events", []):
-            if "T" in str(e.get("start")):
+        if cal not in calendars:
+            continue
+        for e in window_events((data or {}).get("events", []), now, end):
+            if len(str(e.get("start"))) != 10:
                 events.append({**e, "calendar": cal})
     return {"clashes": find_clashes(events), "events": len(events), "hours": hours}
 
@@ -132,14 +137,16 @@ def describe_when(event: dict[str, Any], today: Any) -> str:
     from datetime import date
 
     start, end = str(event.get("start") or ""), str(event.get("end") or "")
-    if "T" not in start:  # all day: the end date is the day after it finishes
+    if len(start) == 10:  # all day: the end date is the day after it finishes
         first = date.fromisoformat(start[:10])
         last = date.fromisoformat(end[:10]) - timedelta(days=1) if end else first
         if last <= first:
             return f"{_day(first, today)}, all day"
         return f"{_day(first, today)} to {_day(last, today)}, all day"
-    begins = dt_util.as_local(dt_util.parse_datetime(start))
-    ends = dt_util.as_local(dt_util.parse_datetime(end)) if end else None
+    begins = event_start(start)
+    ends = event_start(end)
+    if begins is None or (end and ends is None):
+        raise ValueError("Invalid calendar event date")
     when = f"{_day(begins.date(), today)} at {begins:%H:%M}"
     if ends is not None:
         when += f" until {ends:%H:%M}" if ends.date() == begins.date() else f" until {_day(ends.date(), today)} {ends:%H:%M}"
@@ -162,13 +169,15 @@ async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days:
     today = now.date()
     out = []
     for cal, data in (response or {}).items():
+        if cal not in calendars:
+            continue
         st = hass.states.get(cal)
-        for e in (data or {}).get("events", []):
+        for e in window_events((data or {}).get("events", []), now, end):
             try:
                 when = describe_when(e, today)
             except (TypeError, ValueError):
                 continue
-            out.append({"sort": str(e.get("start")), "calendar": st.name if st else cal, "what": e.get("summary"),
+            out.append({"sort": dt_util.as_utc(event_start(e["start"])), "calendar": st.name if st else cal, "what": e.get("summary"),
                         "when": when, **({"where": e["location"]} if e.get("location") else {})})
     out.sort(key=lambda e: e.pop("sort"))
     return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "events": out,
