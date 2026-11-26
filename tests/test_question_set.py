@@ -109,6 +109,8 @@ async def test_a_camera_and_the_door_are_asked_about_from_what_was_recorded(hass
         qs = {q.key: q for q in rt.selftest.household_questions(rt)}
     assert qs["camera"].check("Yes, someone was in the garden at ten to two.")[0]
     assert not qs["camera"].check("No one's been seen there.")[0]
+    assert "visitor log only" in qs["visitors"].ask
+    assert "since local midnight" in qs["visitors"].ask
     assert qs["visitors"].check("No, nobody's been to the door today.")[0]
     assert not qs["visitors"].check("Yes, a delivery driver came at noon.")[0]
 
