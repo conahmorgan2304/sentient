@@ -2918,7 +2918,7 @@ class SentientAPI(llm.API):
             tools=tools,
         )
 
-    def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None, *, readable) -> str:
+    def _prompt(self, llm_context: llm.LLMContext, conversation_id: str | None = None, *, readable=None) -> str:
         rt = _runtime(self.hass)
         if rt is None:
             return "Sentient (the house's long-term brain) is not loaded right now."
@@ -2968,8 +2968,12 @@ class SentientAPI(llm.API):
             (w for w in self.hass.states.async_all("weather") if w.attributes.get("temperature") is not None), None)
         from .numeric import finite_float
 
-        outside = (finite_float(weather.attributes.get("temperature"))
-                   if weather is not None and readable(weather.entity_id) else None)
+        if weather is not None and (
+            readable(weather.entity_id) if readable is not None else not getattr(llm_context.context, "user_id", None)
+        ):
+            outside = finite_float(weather.attributes.get("temperature"))
+        else:
+            outside = None
         if outside is not None and weather.state not in ("unknown", "unavailable"):
             unit = weather.attributes.get("temperature_unit") or "°C"
             lines.append(
