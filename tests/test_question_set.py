@@ -179,3 +179,72 @@ async def test_room_temperature_two_at_once_and_no_lock(hass: HomeAssistant) -> 
     assert qs["no lock"].ask == "Can you lock the Back door?"
     assert qs["no lock"].check("I can't lock it — there's no smart lock on that door.")[0]
     assert not qs["no lock"].check("Sure, I'll lock it now.")[0]
+
+
+def test_selftest_rejects_invalid_times_and_unrelated_words():
+    from custom_components.sentient.selftest import ASKS_BACK, mentions, spoken_times
+
+    assert spoken_times("12:99 or 99:15") == []
+    assert spoken_times("24:30") == []
+    assert spoken_times("quarter past three") == [195]
+    assert not mentions("The doorway is closed.", "Door")
+    assert mentions("The Eingangstür is open.", "Eingangstür")
+    assert not ASKS_BACK.search("Yes, it is on. Anything else?")
+    assert ASKS_BACK.search("Which device do you mean?")
+
+
+async def test_selftest_skips_empty_budget_without_replacing_last_result(hass: HomeAssistant):
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    previous = {"time": dt_util.utcnow().isoformat(), "results": [], "history": []}
+    rt.selftest.last = previous
+    with patch.object(type(rt.watches), "spend", return_value=False):
+        result = await rt.selftest.async_run()
+    assert "skipped" in result
+    assert rt.selftest.last is previous
+
+
+async def test_selftest_rejudge_requires_same_question_and_expectation(hass: HomeAssistant):
+    from custom_components.sentient.selftest import Question
+
+    entry = await _setup(hass)
+    test = entry.runtime_data.selftest
+    row = {"key": "light", "question": "Is the Lamp on?", "answer": "No.", "expected": "on", "right": False}
+    test.last = {"results": [row]}
+    with patch.object(type(test), "questions", return_value=[
+        Question("light", "Is the Lamp on?", lambda answer: (True, "off"))
+    ]):
+        assert test.rejudge() == 0
+    with patch.object(type(test), "questions", return_value=[
+        Question("light", "Is the Other Lamp on?", lambda answer: (True, "on"))
+    ]):
+        assert test.rejudge() == 0
+    assert not row["right"]
+    with patch.object(type(test), "questions", return_value=[
+        Question("light", "Is the Lamp on?", lambda answer: (True, "on"))
+    ]):
+        assert test.rejudge() == 1
+    assert row["right"]
+
+
+async def test_clock_question_uses_time_at_dispatch(hass: HomeAssistant, freezer):
+    from custom_components.sentient.selftest import Question
+
+    freezer.move_to("2026-06-15 12:00:00+00:00")
+    entry = await _setup(hass)
+    test = entry.runtime_data.selftest
+    questions = [
+        Question("first", "First?", lambda answer: (True, "yes")),
+        Question("time", "What time is it?", lambda answer: (False, "stale")),
+    ]
+
+    async def converse(hass_, text, cid, context, **kw):
+        if text.startswith("First?"):
+            freezer.move_to("2026-06-15 12:15:00+00:00")
+        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": f"It's {dt_util.now():%H:%M}."}}),
+                               conversation_id=cid)
+
+    with patch.object(type(test), "questions", return_value=questions), \
+            patch("homeassistant.components.conversation.async_converse", converse):
+        result = await test.async_run(force=True)
+    assert result["results"][1]["right"]
