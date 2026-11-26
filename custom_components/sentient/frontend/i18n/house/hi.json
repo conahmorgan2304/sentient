@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "अतिथि मोड में ध्वनि पहचान अनुपलब्ध है.",
  "Voice pipeline": "आवाज पाइपलाइन",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "वॉयस रिप्लाई बोलने से पहले कार्रवाई के दावों की जांच करें। ऑफ़र के लिए लंबित पुष्टि की आवश्यकता है।",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "आवाज़ में दिए गए जवाब अब गलत सुने गए कैमरा नामों, कैलेंडर की तारीख़ों और कार्रवाइयों की पुष्टि को ज़्यादा भरोसेमंद ढंग से संभालते हैं।",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "ध्वनि उत्तरों से कार्रवाई की पुष्टि होती रहती है और अनुमोदन के लिए अनुस्मारक और निगरानी की पेशकश की जा सकती है। माइंड सेंसर में फिर से कॉम्पैक्ट डायग्नोस्टिक्स शामिल है।",
  "Waiting for a current device report": "वर्तमान डिवाइस रिपोर्ट की प्रतीक्षा की जा रही है",
  "Warming the {a} to {b} degrees": "{a} को {b} डिग्री तक गर्म करना",

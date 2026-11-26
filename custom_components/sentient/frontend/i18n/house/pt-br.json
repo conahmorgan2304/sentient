@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "A identificação por voz não está disponível no modo visitante.",
  "Voice pipeline": "Pipeline de voz",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "As respostas de voz verificam as reivindicações de ação antes de falar. As ofertas precisam de confirmação pendente.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "As respostas por voz lidam melhor com nomes de câmeras mal compreendidos, datas do calendário e confirmações de ações.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "As respostas de voz mantêm ações confirmadas e podem oferecer lembretes e relógios para aprovação. O sensor Mind inclui novamente diagnósticos compactos.",
  "Waiting for a current device report": "Aguardando um relatório do dispositivo atual",
  "Warming the {a} to {b} degrees": "Aquecendo o {a} em graus {b}",

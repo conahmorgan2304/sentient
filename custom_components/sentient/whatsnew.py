@@ -14,12 +14,10 @@ from homeassistant.loader import async_get_integration
 
 from .const import CONF_WHATS_NEW, DOMAIN
 
-# Pending the next release version:
-# Short camera checks clarify likely misheard targets using the current conversation.
-# Voice calendar answers keep event dates separate from reminder and announcement times.
-# Monitoring, reminder and settings claims require matching successful actions.
-
 NOTES: dict[str, list[str]] = {
+    "1.24.6": [
+        "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.",
+    ],
     "1.24.5": [
         "Calendar searches respect their limits and report the end of the search window.",
         "The nightly self-test keeps its results separate from household usage.",

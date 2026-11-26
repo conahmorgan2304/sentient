@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "게스트 모드에서는 음성 인식을 사용할 수 없습니다.",
  "Voice pipeline": "음성 파이프라인",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "음성 응답은 말하기 전에 작업 주장을 확인합니다. 제안에는 보류 중인 확인이 필요합니다.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "음성 응답에서 잘못 알아들은 카메라 이름, 캘린더 날짜 및 작업 확인을 더 안정적으로 처리합니다.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "음성 응답은 확인된 작업을 유지하며 승인을 위해 미리 알림과 감시를 제공할 수 있습니다. Mind 센서에는 다시 컴팩트 진단이 포함됩니다.",
  "Waiting for a current device report": "현재 장치 보고서를 기다리는 중",
  "Warming the {a} to {b} degrees": "{a}를 {b}도로 예열",

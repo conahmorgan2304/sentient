@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Stemherkenning is niet beschikbaar in gastmodus.",
  "Voice pipeline": "Spraakpijplijn",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Gesproken antwoorden controleren actieclaims voordat ze spreken. Voor aanbiedingen is een in afwachting van bevestiging vereist.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Gesproken antwoorden gaan betrouwbaarder om met verkeerd verstane cameranamen, agendadata en bevestigingen van acties.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Gesproken antwoorden bewaren bevestigde acties en kunnen herinneringen en horloges ter goedkeuring aanbieden. De Mind-sensor bevat opnieuw compacte diagnostiek.",
  "Waiting for a current device report": "Wacht op een actuele melding van het apparaat",
  "Warming the {a} to {b} degrees": "Ik warm {a} op tot {b} graden",

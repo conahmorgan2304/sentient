@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Nhận dạng giọng nói không khả dụng ở chế độ khách.",
  "Voice pipeline": "Đường dẫn thoại",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Trả lời bằng giọng nói kiểm tra các yêu cầu hành động trước khi nói. Ưu đãi cần có xác nhận đang chờ xử lý.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Phản hồi bằng giọng nói xử lý đáng tin cậy hơn các tên camera nghe nhầm, ngày trên lịch và xác nhận thao tác.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Trả lời bằng giọng nói sẽ lưu giữ các hành động đã được xác nhận và có thể đưa ra lời nhắc cũng như theo dõi để phê duyệt. Cảm biến Tâm trí lại bao gồm các chẩn đoán nhỏ gọn.",
  "Waiting for a current device report": "Đang chờ báo cáo thiết bị hiện tại",
  "Warming the {a} to {b} degrees": "Làm nóng {a} lên độ {b}",

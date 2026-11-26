@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Identifikasi suara tidak tersedia dalam mode tamu.",
  "Voice pipeline": "Saluran suara",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Balasan suara memeriksa klaim tindakan sebelum berbicara. Penawaran memerlukan konfirmasi yang menunggu keputusan.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Respons suara menangani nama kamera yang salah terdengar, tanggal kalender, dan konfirmasi tindakan dengan lebih andal.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Balasan suara menyimpan tindakan yang dikonfirmasi dan dapat menawarkan pengingat dan jam tangan untuk persetujuan. Sensor Pikiran kembali menyertakan diagnostik ringkas.",
  "Waiting for a current device report": "Menunggu laporan perangkat saat ini",
  "Warming the {a} to {b} degrees": "Memanaskan {a} ke derajat {b}",

@@ -577,6 +577,7 @@
  "Voice identification is unavailable in guest mode.": "Röstidentifiering är inte tillgänglig i gästläge.",
  "Voice pipeline": "Röst pipeline",
  "Voice replies check action claims before speaking. Offers need a pending confirmation.": "Röstsvar kontrollera åtgärdsanspråk innan du talar. Erbjudanden behöver en väntande bekräftelse.",
+ "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.": "Röstsvar hanterar felhörda kameranamn, kalenderdatum och bekräftelser av åtgärder mer tillförlitligt.",
  "Voice replies keep confirmed actions and can offer reminders and watches for approval. The Mind sensor includes compact diagnostics again.": "Röstsvar behåller bekräftade åtgärder och kan erbjuda påminnelser och klockor för godkännande. Mindsensorn inkluderar återigen kompakt diagnostik.",
  "Waiting for a current device report": "Väntar på en aktuell enhetsrapport",
  "Warming the {a} to {b} degrees": "Värmer upp {a} till {b} grader",
