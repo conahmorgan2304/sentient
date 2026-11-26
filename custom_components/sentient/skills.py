@@ -180,7 +180,7 @@ async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days:
             out.append({"sort": dt_util.as_utc(event_start(e["start"])), "calendar": st.name if st else cal, "what": e.get("summary"),
                         "when": when, **({"where": e["location"]} if e.get("location") else {})})
     out.sort(key=lambda e: e.pop("sort"))
-    return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "events": out,
+    return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "window_end": end.isoformat(), "limited_to_days": days, "events": out,
             **({} if out else {"note": "Nothing on in that time."})}
 
 
