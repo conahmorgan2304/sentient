@@ -145,6 +145,9 @@ class Brain:
                     for start, end in list(self._forget_pending):
                         forget_recent(rt, (end - start) / 3600, _registered=True,
                                       _since=dt_util.utc_from_timestamp(start), _until=end)
+                if rt is not None:
+                    await rt.speech.async_flush_deliveries()
+                    await rt.sessions.memory.async_flush()
                 await self.async_finish_forget()
             except Exception:  # noqa: BLE001 - never stop the brain: the period stays blocked and is retried next start
                 _LOGGER.warning("Sentient couldn't finish forgetting an interrupted period yet; it will try again at the "

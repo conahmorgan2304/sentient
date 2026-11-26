@@ -317,7 +317,8 @@ class Reflection:
                 result["story"] = self.add_day(" ".join(story.split()))
             if question := self._check_an_old_fact(rt):
                 result["checking_old"] = question
-        result["thoughts"] = _list(out.get("thoughts"))[:MAX_THOUGHTS]
+        result["thoughts"] = [text for text in _list(out.get("thoughts"))
+                              if not any(word in text.lower() for word in PRIVATE)][:MAX_THOUGHTS]
         raw_question = out.get("question")
         question = " ".join(raw_question.split()) if isinstance(raw_question, str) and len(raw_question) <= 1000 else ""
         if question and rt.curiosity.wonder(question, why="overnight reflection", source="reflection"):

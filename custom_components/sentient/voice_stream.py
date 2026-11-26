@@ -29,16 +29,16 @@ class StreamWatch:
     """Watches the chat log's deltas the way the pipeline does, to know whether speaking has begun early."""
 
     def __init__(self, log: Any, agent_id: str, pronouncer: Any = None, no_security_offers: bool = False,
-                 impossible: Any = None) -> None:
+                 impossible: Any = None, blocked=None) -> None:
         self.log = log
         self.agent_id = agent_id
         self._say = None
         self._offers = None
-        if no_security_offers or impossible is not None:
+        if no_security_offers or impossible is not None or blocked is not None:
             from .security_offers import StreamFilter
 
             # a sentence offering to arm, disarm or unlock (or to do what no device here can) never reaches the voice
-            self._offers = StreamFilter(security=no_security_offers, extra=impossible)
+            self._offers = StreamFilter(security=no_security_offers, extra=impossible, blocked=blocked)
         if pronouncer is not None and (pronouncer.active() if hasattr(pronouncer, "active") else pronouncer.table()):
             from .pronounce import StreamPronouncer
 
@@ -67,23 +67,25 @@ class StreamWatch:
         if self._say is not None:
             held = (self._say.feed(held) if held else "") + self._say.flush()
         if held:
-            self._orig(self.log, {"content": held})
+            self._forward(self.log, {"content": held})
 
     def _spy(self, chat_log: Any, delta: dict) -> None:
         if role := delta.get("role"):
             self._flush()  # a held word belongs to the message that just ended
             self._role = role
-        if self._role == "assistant" and not self.started:
-            content = delta.get("content")
-            if self.chars > 0 and delta.get("tool_calls"):
-                self.started = True
-            elif content:
-                self.chars += len(content)
-                self.started = self.chars > STREAM_RESPONSE_CHARS
         if self._offers is not None and not self._own and self._role == "assistant" and isinstance(delta.get("content"), str):
             delta = {**delta, "content": self._offers.feed(delta["content"])}
         if self._say is not None and self._role == "assistant" and isinstance(delta.get("content"), str):
             delta = {**delta, "content": self._say.feed(delta["content"])}
+        self._forward(chat_log, delta)
+
+    def _forward(self, chat_log, delta):
+        if self._role == "assistant" and not self.started:
+            if self.chars and delta.get("tool_calls"):
+                self.started = True
+            elif content := delta.get("content"):
+                self.chars += len(content)
+                self.started = self.chars > STREAM_RESPONSE_CHARS
         if self._orig is not None:
             self._orig(chat_log, delta)
 

@@ -303,7 +303,8 @@ async def test_late_curiosity_delivery_does_not_restore_forgotten_question(hass,
         return SimpleNamespace(spoken=True)
     speech.async_ask = ask
     result = await obj.async_ask(force=True)
-    assert result['asked'] is None and not obj.asked and not obj._busy
+    assert result['asked'] is None and not obj._busy
+    assert all(row.get('dismissed') for row in obj.asked.values())
     rt.timeline.add.assert_not_called()
 
 

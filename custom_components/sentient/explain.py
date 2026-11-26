@@ -99,7 +99,11 @@ async def async_explain(hass: HomeAssistant, rt: Any, what: str, hours: float = 
         out["said_because"] = said
     # things it noticed and decided not to say, and why (quiet hours, the hourly limit, not worth it…)
     quiet = []
+    cutoff = dt_util.utcnow() - timedelta(hours=hours)
     for d in list(getattr(rt.noticer, "decisions", []))[:60]:
+        stamp = dt_util.parse_datetime(str(d.get("time") or ""))
+        if stamp is None or dt_util.as_utc(stamp) < cutoff:
+            continue
         text = " ".join(d.get("changes") or []).lower()
         if words and any(w in text for w in words) and not str(d.get("result", "")).startswith("spoke"):
             quiet.append(f"{str(d.get('time', ''))[11:16]} noticed {'; '.join(d.get('changes') or [])} — {d.get('result')}")

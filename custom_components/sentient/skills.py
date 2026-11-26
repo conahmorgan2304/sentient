@@ -89,13 +89,18 @@ def find_clashes(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         timed.append((dt_util.as_utc(start), dt_util.as_utc(end), e))
     timed.sort(key=lambda t: t[0])
     out = []
-    for (s1, e1, a), (s2, e2, b) in zip(timed, timed[1:]):
-        if s2 < e1:
-            out.append({"kind": "overlap", "first": a.get("summary"), "second": b.get("summary"),
-                        "at": dt_util.as_local(s2).strftime("%a %H:%M"), "minutes": int((e1 - s2).total_seconds() // 60)})
-        elif s2 - e1 < TIGHT:
-            out.append({"kind": "tight", "first": a.get("summary"), "second": b.get("summary"),
-                        "at": dt_util.as_local(s2).strftime("%a %H:%M"), "minutes": int((s2 - e1).total_seconds() // 60)})
+    for index, (s2, e2, second) in enumerate(timed):
+        for s1, e1, first in timed[:index]:
+            if s2 < e1:
+                minutes = int((min(e1, e2) - s2).total_seconds() // 60)
+                kind = "overlap"
+            elif s2 - e1 < TIGHT:
+                minutes = int((s2 - e1).total_seconds() // 60)
+                kind = "tight"
+            else:
+                continue
+            out.append({"kind": kind, "first": first.get("summary"), "second": second.get("summary"),
+                        "at": dt_util.as_local(s2).strftime("%a %H:%M"), "minutes": minutes})
     return out
 
 
@@ -153,15 +158,17 @@ def describe_when(event: dict[str, Any], today: Any) -> str:
     return when
 
 
-async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days: int = 7) -> dict[str, Any]:
+async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days: int = 7, *, start_day: int = 0) -> dict[str, Any]:
     """Upcoming events with 'when' already in words, soonest first."""
     if not calendars:
         return {"events": [], "note": "No calendars are shared with the voice."}
     now = dt_util.now()
-    end = dt_util.start_of_local_day() + timedelta(days=days)
+    midnight = dt_util.start_of_local_day()
+    lower = midnight + timedelta(days=start_day) if start_day else now
+    end = midnight + timedelta(days=days)
     try:
         response = await hass.services.async_call(
-            "calendar", "get_events", {"entity_id": calendars, "start_date_time": now.isoformat(),
+            "calendar", "get_events", {"entity_id": calendars, "start_date_time": lower.isoformat(),
                                        "end_date_time": end.isoformat()},
             blocking=True, return_response=True)
     except Exception as err:  # noqa: BLE001
@@ -172,7 +179,7 @@ async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days:
         if cal not in calendars:
             continue
         st = hass.states.get(cal)
-        for e in window_events((data or {}).get("events", []), now, end):
+        for e in window_events((data or {}).get("events", []), lower, end):
             try:
                 when = describe_when(e, today)
             except (TypeError, ValueError):
@@ -180,7 +187,7 @@ async def async_calendar_events(hass: HomeAssistant, calendars: list[str], days:
             out.append({"sort": dt_util.as_utc(event_start(e["start"])), "calendar": st.name if st else cal, "what": e.get("summary"),
                         "when": when, **({"where": e["location"]} if e.get("location") else {})})
     out.sort(key=lambda e: e.pop("sort"))
-    return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "window_end": end.isoformat(), "limited_to_days": days, "events": out,
+    return {"today": f"{now:%A} {now.day} {now:%B}", "days": days, "window_start": lower.isoformat(), "window_end": end.isoformat(), "limited_to_days": days, "events": out,
             **({} if out else {"note": "Nothing on in that time."})}
 
 

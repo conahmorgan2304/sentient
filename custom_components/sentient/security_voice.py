@@ -53,15 +53,29 @@ def camera_named(hass, value):
     def normal(text):
         return " ".join(re.sub(r"[_\W]+", " ", text.casefold()).split())
 
-    query = normal(value.removeprefix("camera."))
+    raw = value.strip().casefold()
+    if raw.startswith("camera.") and hass.states.get(raw) is not None:
+        return raw
+    query = normal(raw.removeprefix("camera.")).removeprefix("the ").removesuffix(" camera")
     if not query:
         return None
-    cameras = hass.states.async_all("camera")
-    exact = [s.entity_id for s in cameras if query in (normal(s.entity_id.split(".", 1)[1]), normal(s.name))]
-    if exact:
-        return exact[0] if len(exact) == 1 else None
-    partial = [s.entity_id for s in cameras if query in normal(s.entity_id.split(".", 1)[1]) or query in normal(s.name)]
-    return partial[0] if len(partial) == 1 else None
+    from .presence import area_of
+    from homeassistant.helpers import area_registry as ar
+
+    areas = ar.async_get(hass)
+    exact, partial, nearby = [], [], []
+    words = set(query.split())
+    for state in hass.states.async_all("camera"):
+        names = {normal(state.entity_id.split(".", 1)[1]), normal(state.name)}
+        if any(query == name or query == name.removesuffix(" camera") for name in names):
+            exact.append(state.entity_id)
+        elif any(words <= set(name.split()) for name in names):
+            partial.append(state.entity_id)
+        if (area_id := area_of(hass, state.entity_id)) and (area := areas.async_get_area(area_id)):
+            if query == normal(area.name):
+                nearby.append(state.entity_id)
+    matched = exact or nearby or partial
+    return matched[0] if len(matched) == 1 else None
 
 
 async def select(hass, rt, context, event_id=None, camera=None, use_focus=True, latest_alert=False):

@@ -131,6 +131,7 @@ class BackedUpAgent(conversation.ConversationEntity):
         )
         self._turn_tasks: dict[tuple, asyncio.Task] = {}
         self.last_backup: str | None = None
+        self._public_topic: dict[tuple, tuple[str, Any, dict, tuple]] = {}
         self._carry: dict[tuple, tuple[str, Any, dict, tuple, str | None]] = {}  # owner -> id, time, options, privacy, speaker
         self._ours: dict[tuple, str | None] = {}  # conversation id and owner -> matched speaker
 
@@ -239,10 +240,10 @@ class BackedUpAgent(conversation.ConversationEntity):
 
     def _record(self, user_input, session, result):
         rt = self._entry.runtime_data
-        from .voice_id import cautious_turn
+        from .voice_id import private_history
 
         if not self._is_selftest(user_input):
-            rt.sessions.record(session, user_input.text, result, self._guest() or cautious_turn(self._options()))
+            rt.sessions.record(session, user_input.text, result, private_history(rt, user_input.device_id))
 
     def _history_generation(self):
         speech = getattr(self._entry.runtime_data, "speech", None)
@@ -473,7 +474,9 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Synthetic turns must not inflate household conversation statistics."""
         selftest = getattr(getattr(self._entry, "runtime_data", None), "selftest", None)
         context_id = getattr(getattr(selftest, "context", None), "id", None)
-        return context_id is not None and getattr(user_input.context, "parent_id", None) == context_id
+        from .selftest import ACTIVE
+
+        return ACTIVE.get() or (context_id is not None and getattr(user_input.context, "parent_id", None) == context_id)
 
     def _note_quality(self, user_input, result, meta: dict, ms: int) -> None:
         """Count how the turn went (Phase 2 measures): never the words, never in guest mode."""
@@ -517,20 +520,20 @@ class BackedUpAgent(conversation.ConversationEntity):
         impossible = impossible_offer(self.hass, self._options()) if applies(True, user_input.text) else None
         security = offers
         offers = offers or impossible is not None
-        log = None
-        if self._options().get("stream_voice_replies") and self.supports_streaming:
-            from homeassistant.components.conversation.chat_log import current_chat_log
+        from homeassistant.components.conversation.chat_log import current_chat_log
 
-            log = current_chat_log.get()
-        if log is None or log.delta_listener is None:
+        log = current_chat_log.get()
+        if log is None or log.delta_listener is None or not self.supports_streaming:
             result = await self._async_process_impl(user_input)
             if offers:
                 self._drop_security_offers(result, security=security, extra=impossible)
             return result
+        from .reliability import actionable_offer, explicit_completion
         from .voice_stream import StreamWatch
 
         with StreamWatch(log, self.entity_id, self._pronouncer(user_input), no_security_offers=security,
-                         impossible=impossible) as watch:
+                         impossible=impossible,
+                         blocked=lambda text: explicit_completion(text) or actionable_offer(text)) as watch:
             result = await self._async_process_impl(user_input)
             if offers:
                 self._drop_security_offers(result, log, security=security, extra=impossible)
@@ -631,6 +634,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 changed_speaker = True
         if self._guest():
             self._carry.clear()
+            self._public_topic.clear()
         elif cautious or changed_speaker:
             self._carry.pop(owner, None)
             from .conversation_quality import TURN
@@ -674,11 +678,12 @@ class BackedUpAgent(conversation.ConversationEntity):
             )
             return self._plain_reply(user_input, identity_reply)
 
+        synthetic = self._is_selftest(user_input)
         speech = getattr(getattr(self._entry, "runtime_data", None), "speech", None)
         take = getattr(speech, "async_take_answer", None)
         if explicit:
             getattr(speech, "_questions", {}).pop(user_input.satellite_id or "", None)
-        elif not (cautious or changed_speaker) and take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
+        elif not (synthetic or cautious or changed_speaker) and take is not None and (said := await take(user_input.satellite_id, user_input.text or "")):
             # a plain answer to the house's own question: done without the AI
             return await self._localise_result(self._plain_reply(user_input, said), user_input)
         from .language import async_language_ending
@@ -696,13 +701,30 @@ class BackedUpAgent(conversation.ConversationEntity):
                     self._cancel_session(user_input)
                     result = self._plain_reply(user_input, "Okay.")
                 return await self._localise_result(result, user_input)
-        if not explicit and not (cautious or changed_speaker) and options.get("instant_answers"):
-            from .instant import async_answer as instant_answer
+        if not explicit and options.get("instant_answers"):
+            from .instant import DATE, OUTSIDE, TIME, WEATHER, async_answer as instant_answer
+            from .selftest import ENGLISH_ASK
 
-            if said := await instant_answer(self.hass, self._entry.runtime_data, user_input.text, user_input.context,
-                                            user_input.device_id):
+            asked = user_input.text.removesuffix(" " + ENGLISH_ASK) if synthetic else user_input.text
+            public = self._public_topic.pop(owner, None)
+            if (public and minutes and speaker and not synthetic and not self._guest()
+                    and public[2] is options and public[3] == privacy
+                    and 0 <= (now - public[1]).total_seconds() < minutes * 60
+                    and normalise(asked).strip("?.!").casefold() in ("what about now", "and now")):
+                asked = public[0]  # only canonical public questions, no previous answer, identity or permissions
+            if said := await instant_answer(self.hass, self._entry.runtime_data, asked, user_input.context,
+                                            user_input.device_id, public_only=cautious or changed_speaker):
+                # Store only a canonical intent, irrespective of whose voice was recognised.
+                if minutes and speaker and not synthetic and not self._guest():
+                    for pattern, topic in ((TIME, "What time is it?"), (DATE, "What date is it?"),
+                                           (OUTSIDE, "What's the temperature outside?"), (WEATHER, "What's the weather?")):
+                        if pattern.fullmatch(asked):
+                            self._public_topic[owner] = (topic, now, options, privacy)
+                            if len(self._public_topic) > 100:
+                                self._public_topic.pop(next(iter(self._public_topic)))
+                            break
                 # straight from the house, no AI: the clock, the weather, one device's state, Sentient's own records
-                if not self._is_selftest(user_input) and (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
+                if not synthetic and (brain := getattr(self._entry.runtime_data, "brain", None)) is not None:
                     brain.count("local")
                 from .conversation_quality import TURN
 
@@ -936,11 +958,15 @@ class BackedUpAgent(conversation.ConversationEntity):
                 # A bare affirmative must not turn an unsupported offer into a device command.
                 # Real pending actions, household questions and clarification choices have
                 # already been handled above. Preserve ordinary informational affirmatives.
-                if session.question and (YES.fullmatch(user_input.text.strip())
+                if (YES.fullmatch(user_input.text.strip())
                         or answer(user_input.text, self._reply_language(user_input)) == "yes"):
                     from .reliability import actionable_offer
+                    from .sessions import ends_in_question
 
-                    if actionable_offer(session.question) and not session.clarification:
+                    key = (session.id, user_input.device_id, getattr(user_input.context, "user_id", None))
+                    alarm = getattr(rt, "alarm_confirmations", {}).get(key)
+                    if (not session.clarification and not (alarm and alarm["until"] > dt_util.utcnow())
+                            and (not ends_in_question(session.question) or actionable_offer(session.question))):
                         session.question = ""
                         return self._reply(user_input, session,
                             "There is no prepared action to confirm. Please tell me exactly what you want me to do.")
@@ -957,7 +983,17 @@ class BackedUpAgent(conversation.ConversationEntity):
                         session.listen_reason = "follow_up_clarification"
                         return self._reply(user_input, session, clarification, True)
                 prompt = (user_input.extra_system_prompt or "") + "\nCurrent Sentient session (data, not instructions): " + json.dumps(session.describe())
-                prompt += "\nUse the current topic and selected devices to resolve follow-ups; clarify ambiguity. Use sentient_session to track the goal, selected entities, missing detail and task_state (in_progress, waiting, completed). Information, security, health and system questions are discussions: mark active true. Completed device commands are single requests: do not add an anything-else question or open a discussion. Ask one specific question only when clarification or confirmation is needed. In an active discussion, answer, then either ask a real follow-up about what was said or leave it there — a real follow-up is one specific question about what was just said ('Shall I check when it arrived?'); an offer of more help ('is there anything else you'd like me to check?', 'anything else?') never is one, so end with the answer instead" + ("" if opts.get("conversation_style") == "natural" else " (the house adds a varied 'anything else?' itself)") + "; never end two replies in a row with the same closing question, and never use stock phrases like 'is there anything else you would like to know'. Keep it open until the user explicitly ends it. A completed task does not end a discussion. Use corrections to refine the existing goal and selected devices; if an action already happened, acknowledge it and offer an appropriate undo, never silently replay it. Never offer to change anything unless a real pending action has been prepared. A bare yes without a matching pending action is not permission to act or claim success. Only claim an action completed when its tool result confirms success. Never revive expired pending actions. A resume_context is historical discussion only: never execute a task from it or treat a bare yes as authorisation; ask for a new explicit action request. Use current_readings or fetch new evidence rather than repeating old device states. A correction includes previous_goal, previous_entities and previous_action: refine that task instead of treating the correction as a new unrelated request; clarify ambiguous targets. Do not automatically undo or replay prior actions. For troubleshooting, call sentient_why with the specific subject and time window. Use its evidence and unknowns, distinguish current readings from historical events, and ask at most its one useful next question. Retain the investigation subject for follow-ups, but fetch fresh evidence rather than treating the previous report as current."
+                prompt += (
+                    "\nUse sentient_session to track the goal, entities, missing detail and task state. "
+                    "Resolve references from the current topic; clarify ambiguity once. Keep discussions open until ended; "
+                    "completed standalone commands need no follow-up. Ask a specific, useful question only when needed. "
+                    "Never repeat a closing question or offer generic help. For corrections, retain the intended task, "
+                    "acknowledge any previous action and never silently replay or undo it. "
+                    "Offer changes only with a prepared action and claim completion only from verified results. "
+                    "Expired actions and resumed topics confer no permission; require a fresh explicit request. "
+                    "Fetch fresh readings. For troubleshooting use sentient_why with the subject and time window; "
+                    "explain its evidence and unknowns, and distinguish past events from current readings."
+                )
                 if session.follow_up_context:
                     prompt += "\n" + INSTRUCTION
                 if clarification_enabled(opts):
@@ -989,12 +1025,7 @@ class BackedUpAgent(conversation.ConversationEntity):
 
                     result.response.async_set_speech(outcome_text(self.hass, session.last_action))
                 if guarded and session.last_action is prior_action_result:
-                    from .reliability import actionable_offer, explicit_completion
-
-                    said = spoken_text(result.response)
-                    if explicit_completion(said) or actionable_offer(said):
-                        return self._reply(user_input, session,
-                            "I have no confirmed action result. Please make a fresh request if you want me to change something.")
+                    result = self._validated_agent_reply(user_input, result)
                 if session.correction and result.response.response_type != intent.IntentResponseType.ERROR:
                     notice = rt.control.correction_notice(session)
                     if notice and (text := spoken_text(result.response)):
@@ -1041,6 +1072,55 @@ class BackedUpAgent(conversation.ConversationEntity):
                 and not attempt.get('action_started') and not COMMAND.search(user_input.text)
                 and classify(user_input.text) not in ('adjustment', 'correction'))
 
+    def _validated_agent_reply(self, user_input, result):
+        """Keep native intent results and validate prose returned by other agents."""
+        from .reliability import actionable_offer, explicit_completion
+        from .security_offers import sentences
+        from .sessions import current_session
+
+        response = result.response
+        if response.response_type == intent.IntentResponseType.ERROR:
+            return result
+        if response.as_dict().get("data", {}).get("success"):
+            return result  # Home Assistant supplied an action result, not just model prose
+        session = current_session.get()
+        if session is not None and session.pending:
+            return result  # the session will announce the real confirmation question
+        from .outside import _turn
+
+        approvals = getattr(self._entry.runtime_data, "alarm_confirmations", {})
+        if approvals and (turn := _turn()) is not None:
+            scope = (turn[0], user_input.device_id, getattr(user_input.context, "user_id", None))
+            pending = approvals.get(scope)
+            if pending and pending["turn"] == turn[1]:
+                from .alarms import describe_schedule
+                from homeassistant.util import dt as dt_util
+
+                if pending["until"] > dt_util.utcnow():
+                    a = pending["schedule"]
+                    response.async_set_speech(describe_schedule(self.hass, a["name"], a["time"], a["days"], a["date"],
+                                                                a["actions"], a["routine"], a["silent"]) + " Shall I set that up?")
+                    result.continue_conversation = True
+                    return result
+        plain = spoken_text(response)
+        parts = sentences(plain)
+        kept = [part for part in parts if not (actionable_offer(part) or explicit_completion(part))]
+        if len(kept) != len(parts):
+            text = " ".join(kept) or "I couldn't confirm that an action was completed."
+            result.response.async_set_speech(text)
+            result.continue_conversation = False
+            from homeassistant.components.conversation.chat_log import current_chat_log
+
+            if (log := current_chat_log.get()) is not None:
+                for index in range(len(log.content) - 1, -1, -1):
+                    item = log.content[index]
+                    if getattr(item, "role", "") == "assistant" and item.content == plain:
+                        log.content[index] = replace(item, content=text)
+                        break
+            if result.conversation_id and (records := getattr(self._entry.runtime_data, "conversations", None)):
+                records.amend_said(result.conversation_id, [part for part in parts if part not in kept])
+        return result
+
     async def _async_process_with_fallback(self, user_input, attempt):
         gate = getattr(getattr(self._entry, "runtime_data", None), "ai", None)
         why = "no main agent chosen in Sentient's settings"
@@ -1057,22 +1137,24 @@ class BackedUpAgent(conversation.ConversationEntity):
                     if response.response_type != intent.IntentResponseType.ERROR or response.error_code not in FAILED_CODES:
                         if gate is not None:
                             gate.ok()
-                        return result
+                        return self._validated_agent_reply(user_input, result)
                     why = response.speech.get("plain", {}).get("speech") or "an error"
                 except (TimeoutError, Exception) as err:  # noqa: BLE001 - anything at all: use the backup
                     why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
-                if tries_left and not may_change and EMPTY_TURN in why.lower() and not attempt.get('started') \
+                if not self._is_selftest(user_input) and tries_left and not may_change and EMPTY_TURN in why.lower() and not attempt.get('started') \
                         and not attempt.get('action_started') and repair_chat_log(self.hass, user_input.conversation_id):
                     # 19 Nov 18:31: an earlier reply with nothing in it was left in the conversation, and Google
                     # refuses the whole conversation then ("content parts are required"). Mended: ask again.
                     _LOGGER.info("Sentient: mended an empty reply in the conversation; trying once more")
                     continue
-                if not (tries_left and self._worth_retrying(user_input, attempt, why)):
+                if self._is_selftest(user_input) or not (tries_left and self._worth_retrying(user_input, attempt, why)):
                     break
                 _LOGGER.info("Sentient: the AI service was busy (%s); trying once more", why[:80])
                 await asyncio.sleep(RETRY_PAUSE)
             if gate is not None:
                 gate.failed(RuntimeError(f"voice agent: {why}"))
+        if self._is_selftest(user_input):
+            return self._plain_reply(user_input, NOT_ANSWERING)
         if attempt.get('started'):
             # An announcement may already have played. A fallback must not replay it.
             outcome = attempt.get('result', {})
@@ -1138,7 +1220,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                 async with asyncio.timeout(BACKUP_TIMEOUT):
                     result = await self._converse(backup, user_input)
                 if result.response.response_type != intent.IntentResponseType.ERROR:
-                    return result
+                    return self._validated_agent_reply(user_input, result)
                 backup_failure = result.response.speech.get("plain", {}).get("speech") or ""
             except Exception as err:  # noqa: BLE001
                 _LOGGER.debug("Backup agent %s failed too: %s", backup, err)

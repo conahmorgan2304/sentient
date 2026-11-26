@@ -307,8 +307,16 @@ def hush(hass: HomeAssistant, entry, until) -> None:
 
 @callback
 def set_guest_mode(hass: HomeAssistant, entry, on: bool) -> None:
-    speech = entry.runtime_data.speech
+    rt = entry.runtime_data
+    speech = rt.speech
     if on:
+        speech._questions.clear()
+        if getattr(rt, "sessions", None) is not None:
+            rt.sessions.stop(clear_memory=False)
+        if getattr(rt, "alarm_confirmations", None) is not None:
+            rt.alarm_confirmations.clear()
+        if getattr(rt, "notifier", None) is not None:
+            rt.notifier.invalidate_questions()
         speech._guest_generation = getattr(speech, '_guest_generation', 0) + 1
         if (tasks := getattr(entry.runtime_data, "household_tasks", None)) is not None:
             tasks.clear()

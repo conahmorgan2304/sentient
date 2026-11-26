@@ -93,9 +93,10 @@ async def turn(hass, options, chunks, final=None, same_id=True, pause=0.05):
 
 
 async def test_a_long_answer_starts_before_the_model_finishes(hass):
-    chunks = [LONG[i:i + 20] for i in range(0, len(LONG), 20)]
+    answer = LONG + " " + LONG
+    chunks = [answer[i:i + 20] for i in range(0, len(answer), 20)]
     pipe, heard, final, total = await turn(hass, {"stream_voice_replies": True}, chunks)
-    assert pipe.streamed and heard == final == LONG
+    assert pipe.streamed and heard == final == answer
     assert pipe.first_audio < total * 0.7  # speaking began well before the model was done
 
 

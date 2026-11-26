@@ -7,6 +7,7 @@ from datetime import timedelta
 import re
 import uuid
 
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 CONF_ROOM_HANDOFF = "room_conversation_handoff"
@@ -30,8 +31,46 @@ def words(text):
 
 class TopicMemory:
     def __init__(self):
+        self.store = None
         self.topics = []
         self.traces = deque(maxlen=40)
+
+    async def async_load(self, hass, entry_id, options):
+        from .const import CONF_CONVERSATIONS, DOMAIN
+        from .sessions import CONF_SESSIONS
+
+        self.store = Store(hass, 1, f"{DOMAIN}.{entry_id}.voice_topics", private=True)
+        if not options.get(CONF_SESSIONS) or not options.get(CONF_CONVERSATIONS, True):
+            await self.store.async_remove()
+            self.store = None
+            return
+        data = await self.store.async_load() or {}
+        self.traces.extend(row for row in (data.get("traces") or [])[:40]
+                           if isinstance(row, dict) and isinstance(row.get("time"), str))
+        if not options.get("voice_id"):
+            for row in (data.get("topics") or [])[:40]:
+                if not isinstance(row, dict) or not isinstance(row.get("saved_at"), str):
+                    continue
+                owner = row.get("owner")
+                if isinstance(owner, list) and len(owner) == 3 and owner[2]:
+                    self.topics.append({**row, "owner": tuple(owner)})
+        self.prune()
+        self.save()
+
+    def storage(self):
+        self.prune()
+        # Restored bookmarks contain only the topic and scoped identifiers. Permissions,
+        # tool outputs, previous replies and executable plans stay with the live session.
+        topics = [{**row, "previous_reply": "", "question": ""} for row in self.topics if row["owner"][2]]
+        return {"topics": topics, "traces": list(self.traces)}
+
+    def save(self):
+        if self.store is not None:
+            self.store.async_delay_save(self.storage, 2)
+
+    async def async_flush(self):
+        if self.store is not None:
+            await self.store.async_save(self.storage())
 
     def prune(self):
         cutoff = (dt_util.utcnow() - timedelta(hours=24)).isoformat()
@@ -51,6 +90,7 @@ class TopicMemory:
             'task_state': session.task_state, 'listen': result.continue_conversation,
             'reason': session.listen_reason, 'resumed_from': session.resumed_from,
         })
+        self.save()
         if (session.closed or not session.active or session.pending or session.command_turn
                 or session.listen_reason != 'discussion_follow_up'
                 or session.undo_turn == session.turn or (session.resume_context or {}).get('turn') == session.turn
@@ -105,16 +145,19 @@ class TopicMemory:
         for index, topic in enumerate(self.topics):
             if topic == bookmark:
                 self.topics.pop(index)
+                self.save()
                 return True
         return False
 
     def discard(self, session):
         self.topics = [t for t in self.topics if not (
             t['owner'] == session.owner and (t['source_session'] == session.id or t['id'] == session.resumed_from))]
+        self.save()
 
     def clear(self):
         self.topics.clear()
         self.traces.clear()
+        self.save()
 
     def diagnostics(self):
         self.prune()

@@ -12,11 +12,12 @@ the temperature outside?", "is anything open?", "what reminders have I got?". Ea
 against the house's real state with plain rules — the right temperature, the right count, "nothing" when
 there's nothing. Questions only: nothing is switched. Anything it got wrong shows in house health the next
 morning ("the voice said 19° for outside; the weather says 12°"), with the tool it used, so a bad setting
-somewhere else gets found. One AI call per question, counted on the AI meter. Off by default.
+somewhere else gets found. At most one voice turn per question, kept out of household statistics. Off by default.
 """
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
@@ -36,6 +37,8 @@ from .const import CONF_BRIEFING_WEATHER, CONF_CHAT_AGENT, CONF_SELF_TEST, CONF_
 from .security_offers import SECURITY_OFFER  # "Shall I arm it in away mode?" when only asked
 
 _LOGGER = logging.getLogger(__name__)
+
+ACTIVE = ContextVar("sentient_selftest", default=False)
 
 RUN_AT = (3, 25)  # quiet hours, after the overnight think
 # The question is already English and Home Assistant is asked for English, but the answer's own language is the
@@ -288,8 +291,11 @@ class SelfTest:
                 reminder_ok = all(mentions(answer, w.what) for w in reminders) if reminders else bool(
                     re.search(r"\b(?:no|zero|without) (?:active |set |upcoming )?reminders?\b|\breminders?[^.!?]{0,30}\b(?:none|not set)\b", answer, re.I)
                     or (not alarms and NONE_SAID.search(answer)))
-                return not DOESNT_KNOW.search(answer) and reminder_ok and all(
-                    mentions(answer, name) for name in alarms), expected
+                if not reminders:
+                    alarm_answer = bool(alarms) and all(mentions(answer, name) for name in alarms)
+                    no_answer = bool(re.search(r"\b(?:haven['’]t got|don['’]t have) any reminders?\b", answer, re.I))
+                    return not DOESNT_KNOW.search(answer) and (reminder_ok or alarm_answer or no_answer), expected
+                return not DOESNT_KNOW.search(answer) and reminder_ok, expected
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
 
@@ -539,18 +545,19 @@ class SelfTest:
                     return _near_time(answer, when, minutes=6), f"{when:%H:%M}"
 
                 q = Question(q.key, q.ask, clock_now, q.kind)
-            if not rt.watches.spend("self-test", force=force):
-                break
             tools: list[str] = []
             cid = ulid_now()
             began = time.monotonic()
             rt.conversations.skip.add(cid)
             # the exact text sent, or the house's own question would be logged as a person talking
             text = f"{q.ask} {ENGLISH_ASK}"
+            token = ACTIVE.set(True)
             rt.conversations.testing = text
             results_seen: list[dict[str, Any]] = []
             conversation_failed = False
             try:
+                if not rt.watches.spend("self-test", force=force):
+                    break
                 result = await conversation.async_converse(
                     self.hass, text, cid, Context(parent_id=self.context.id), language="en", agent_id=agent,
                 )
@@ -567,12 +574,15 @@ class SelfTest:
                 if conversation_failed:
                     results_seen = [c for seen in rt.conversations.test_tools.values() for c in seen]
                     tools = sorted({_tool_name(c) for c in results_seen} | set(self._tools_used(cid)))
+                ACTIVE.reset(token)
                 rt.conversations.testing = None
                 rt.conversations.test_tools.clear()
             right, expected = q.check(answer)
             if not answer.strip():
                 right, expected = False, f"{expected}, with every tool working (empty answer)"
-            acted = sorted(set(tools) & ACTION_TOOLS)
+            from .conversations import SENTIENT_ACTIONS
+
+            acted = sorted(set(tools) & (ACTION_TOOLS | SENTIENT_ACTIONS))
             if acted:  # only asked: switching something is a fail whatever it said
                 right, expected = False, f"{expected}, and nothing switched (it used {', '.join(acted)})"
             elif conversation_failed:

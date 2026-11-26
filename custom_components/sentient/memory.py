@@ -620,7 +620,7 @@ class MemoryStore:
                 score = len(q & words) + 2 * len(asked_links & set(m.links)) + 0.5 * sum(1 for a in q for b in words if a != b and len(a) > 3 and len(b) > 3 and (a in b or b in a))
                 if score:
                     scored.append((score, i, m))
-            scored.sort(key=lambda t: (-t[0], -t[1]))
+            scored.sort(key=lambda t: (-t[0], -_STRENGTH.get(t[2].basis, 0), -t[1]))
             matched = [m for _, _, m in scored][: max(0, (limit - len(pinned)) // 2)]
             if matched:
                 now = dt_util.now().isoformat()

@@ -15,7 +15,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_LIVE_VOICE_CHECK, CONF_SPEECH_DELIVERY_HISTORY
+from .const import CONF_LIVE_VOICE_CHECK, EVENT_MODE_CHANGED
 from . import SentientConfigEntry
 from .const import DOMAIN, EVENT_HELD, EVENT_MEMORY_CHANGED, EVENT_HEALTH_CHANGED, EVENT_NOTICED, EVENT_ROUTINES_CHANGED, EVENT_SPOKE, EVENT_VISITOR, EVENT_WATCH_CHANGED
 
@@ -351,6 +351,12 @@ class MindSensor(_Base):
         self.async_on_remove(self.hass.bus.async_listen("sentient_voice_timing", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_update_check", self._tick))
         self.async_on_remove(self.hass.bus.async_listen("sentient_speech_delivery", self._tick))
+        self.async_on_remove(self.hass.bus.async_listen(EVENT_MODE_CHANGED, self._mode_changed))
+
+    @callback
+    def _mode_changed(self, event) -> None:
+        if "guest_mode" in event.data:
+            self.async_write_ha_state()
 
     @callback
     def _tick(self, _now) -> None:
@@ -358,6 +364,7 @@ class MindSensor(_Base):
         from homeassistant.helpers.event import async_call_later
 
         if self._write_cancel is None:
+            self.async_write_ha_state()
             self._write_cancel = async_call_later(self.hass, 1, self._flush_tick)
 
     @callback
@@ -391,14 +398,11 @@ class MindSensor(_Base):
         from .effectiveness import report as learning_report
 
         self._heavy = {
-            "security_incidents": rt.incidents.recent(),
             "incident_review_quality": ({} if rt.speech.guest_mode else rt.incidents.reviewed_outcomes()),
             "learning_effectiveness": ({} if rt.speech.guest_mode else
                                        learning_report(cognitive=cognitive, intents=intent_metrics,
                                                        voice_timings=timings)),
             "security_events": rt.security_events.recent(),
-            "security_visits": rt.security_events.visits(),
-            "security_event_feedback_summary": rt.security_events.feedback_summary(),
             "security_review_quality": ({} if rt.speech.guest_mode or not rt.security_events.on("security_event_feedback")
                                         else _security_review_quality(rt)),
         }
@@ -425,17 +429,14 @@ class MindSensor(_Base):
             "sentient_updates": rt.updates.status(),
             "live_voice_check_enabled": rt.options.get(CONF_LIVE_VOICE_CHECK, True) and not rt.speech.guest_mode,
             "voice_check": None if rt.speech.guest_mode or not rt.options.get(CONF_LIVE_VOICE_CHECK, True) else rt.voice_checks.status(),
-            "speech_deliveries": [] if rt.speech.guest_mode or not rt.options.get(CONF_SPEECH_DELIVERY_HISTORY, True) else list(rt.speech.deliveries)[:5],
-            "voice_timings": timings if not rt.speech.guest_mode else [],
             "voice_timing_enabled": bool(rt.options.get("voice_timing_diagnostics")) and not rt.speech.guest_mode,
             "conversation_quality": (_conversation_quality(rt) if rt.options.get("voice_timing_diagnostics")
                                      and not rt.speech.guest_mode else {}),
-            "voice_sessions": [] if rt.speech.guest_mode else rt.sessions.describe(),
-            "conversation_diagnostics": [] if rt.speech.guest_mode else rt.sessions.memory.diagnostics(),
             "reliability": ({"enabled": False} if rt.speech.guest_mode or rt.reliability is None
                             else rt.reliability.summary()),
-            "self_test": {"enabled": False} if rt.speech.guest_mode else rt.selftest.summary(),
-            "security_incidents": heavy["security_incidents"],
+            "guest_mode": rt.speech.guest_mode,
+            "self_test": ({"enabled": False} if rt.speech.guest_mode else
+                          {k: v for k, v in rt.selftest.summary().items() if k not in ("results", "history")}),
             "incident_review_quality": heavy["incident_review_quality"],
             "cognitive_authority": ({} if rt.speech.guest_mode or not rt.incidents.enabled else
                                     {**rt.incidents.authority(), "heads_up": rt.incidents.authority("night_heads_up")}),
@@ -446,10 +447,9 @@ class MindSensor(_Base):
             "action_intents": ({} if rt.speech.guest_mode or not getattr(rt, "intents", None)
                                else intent_metrics),
             "learning_effectiveness": heavy["learning_effectiveness"],
-            "security_events": heavy["security_events"],
-            "security_visits": heavy["security_visits"],
+            # Older screen cards can still render the latest snapshot from the sensor.
+            "security_events": [e for e in heavy["security_events"] if e.get("has_snapshot") and not e.get("parked")][:1],
             "security_event_feedback_enabled": rt.security_events.on("security_event_feedback"),
-            "security_event_feedback_summary": heavy["security_event_feedback_summary"],
             "security_review_quality": heavy["security_review_quality"],
             "thoughts": last.get("thoughts") or [],
             "learned_overnight": last.get("memories") or [],
@@ -459,7 +459,6 @@ class MindSensor(_Base):
             "asked": curious["asked"],
             "follow_ups": rt.loops.listing(),
             "to_pass_on": [q["text"] for q in rt.followyou.queue if q.get("source") != "thought"],
-            "recent_conversations": [rt.conversations.describe(e) for e in rt.conversations.recent(hours=12, limit=5)],
             "ai": rt.ai.describe(),
             "lessons": [m.text for m in rt.memory.items if m.category == "correction"][-10:],
             "appliances": rt.appliances.listing(),

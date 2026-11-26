@@ -59,14 +59,17 @@ ACTIONABLE_OFFER = re.compile(
     r"\b(?:shall i|should i|would you like me to|do you want me to|want me to)\s+"
     r"(?:please\s+)?(?:turn|switch|set|start|stop|open|close|lock|unlock|arm|disarm|"
     r"activate|deactivate|run|schedule|cancel|delete|add|remove|send|play|pause|"
-    r"make|brew|adjust|change|enable|disable)\b", re.I)
+    r"make|brew|adjust|change|enable|disable|remind)\b", re.I)
 
 
 # Narrower than DONE: a current-state answer ("the light is now on") is
 # not itself proof the assistant claims to have changed the device.
 EXPLICIT_COMPLETION = re.compile(
-    r"^(?:ok(?:ay)?[,. ]+)?(?:done|all set|sorted|all done)(?:[.!]|$)|"
-    r"\bi(?:'ve|’ve| have) (?:now )?(?:turned|switched|set|started|stopped|"
+    r"^(?:ok(?:ay)?[,. ]+)?(?:done|all set|sorted|all done)(?:[,.!:;]|$)|"
+    r"\bi (?:just |successfully )?(?:turned|switched|set|started|stopped|opened|closed|locked|unlocked)\b|"
+    r"\b(?:has|have) just been (?:turned|switched|set|started|stopped|opened|closed|locked|unlocked)\b|"
+    r"\byour (?:alarm|reminder|schedule|routine) (?:has been|is now) (?:set|scheduled|created|cancelled)\b|"
+    r"\bi(?:'ve|’ve| have) (?:(?:now|just|successfully) )?(?:turned|switched|set|started|stopped|"
     r"opened|closed|locked|unlocked|armed|disarmed|changed|activated|deactivated)\b", re.I)
 
 
@@ -76,7 +79,9 @@ def explicit_completion(text: str) -> bool:
 
 def actionable_offer(text: str) -> bool:
     """Recognise explicit English action offers without treating questions as consent."""
-    return bool(ACTIONABLE_OFFER.search(text or "") or OFFER.search(text or ""))
+    if re.match(r"^\s*(?:which|what|when|where|who|how)\b", text or "", re.I):
+        return False  # requests for missing detail are not offers
+    return bool(ACTIONABLE_OFFER.search(text or "") or (re.search(r"\b(?:shall i|should i|want me to|i can|i could)\b", text or "", re.I) and OFFER.search(text or "")))
 
 
 UNANSWERED = re.compile(

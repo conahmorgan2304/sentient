@@ -29,6 +29,7 @@ from homeassistant.util import dt as dt_util
 CONF_INSTANT = "instant_answers"
 
 WEATHER = re.compile(r"^\s*(?:what(?:['’]s| is) the weather(?: like)?|how is the weather)(?: (?:outside|now|right now))?\s*\??\s*$", re.I)
+DATE = re.compile(r"^(?:what(?:[’']s| is) (?:today[’']s|the) date|what (?:date|day) is it(?: today)?)[?]?$", re.I)
 TIME = re.compile(r"^\s*(?:what(?:'s| is) the time|what time is it)(?: (?:now|please|right now))?\s*\??\s*$", re.I)
 OUTSIDE = re.compile(r"^\s*(?:what(?:'s| is) the (?:temperature|temp)|how (?:cold|warm|hot) is it)(?: like)? outside"
                      r"(?: (?:now|today|right now))?\s*\??\s*$", re.I)
@@ -152,12 +153,14 @@ async def _calendar(hass: HomeAssistant, when: str) -> str | None:
     calendars = _voice_calendars(hass)
     if not calendars:
         return None
-    found = await async_calendar_events(hass, calendars, {"today": 1, "tomorrow": 2}.get(when, 7))
+    days = {"today": 1, "tomorrow": 2}.get(when, 7)
+    if when == "tomorrow":
+        found = await async_calendar_events(hass, calendars, days, start_day=1)
+    else:
+        found = await async_calendar_events(hass, calendars, days)
     if "error" in found:
         return None
     events = found.get("events") or []
-    if when == "tomorrow":
-        events = [e for e in events if str(e.get("when", "")).startswith("tomorrow")]
     label = {"today": "today", "tomorrow": "tomorrow"}.get(when, "this week")
     if not events:
         return f"There's nothing on your calendar {label}."
@@ -192,7 +195,7 @@ def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool) -> str | None:
 
 
 async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context | None,
-                       device_id: str | None = None) -> str | None:
+                       device_id: str | None = None, *, public_only: bool = False) -> str | None:
     """An instant answer, or None for the AI to answer as usual."""
     options = getattr(rt, "options", {}) or {}
     if not options.get(CONF_INSTANT) or not text:
@@ -212,6 +215,8 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         except Exception:  # noqa: BLE001 - can't tell: be careful
             guest = True
     if lock:
+        if public_only:
+            return None
         try:
             return _no_lock_reply(hass, lock.group("what"), guest)
         except Exception:  # noqa: BLE001
@@ -221,11 +226,24 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             from .llm_api import clock_words
 
             return f"It's {clock_words(dt_util.now())}."
+        if DATE.fullmatch(text):
+            today = dt_util.now()
+            return f"Today is {today:%A} {today.day} {today:%B %Y}."
         if OUTSIDE.match(text) or WEATHER.match(text):
             return _outside(hass, options)
+        if public_only:
+            return None
         if m := STATE.match(text):
             st = _one_entity(hass, m.group("name"))
-            return _say_state(st, m.group("want").casefold()) if st is not None else None
+            if st is None:
+                return None
+            if context and context.user_id:
+                from homeassistant.auth.permissions.const import POLICY_READ
+
+                user = await hass.auth.async_get_user(context.user_id)
+                if user is None or not user.is_active or not user.permissions.check_entity(st.entity_id, POLICY_READ):
+                    return None
+            return _say_state(st, m.group("want").casefold())
         if m := ROOM_TEMP.match(text):
             room = m.group("a") or m.group("b") or ""
             return None if room.casefold() in ("outside", "it outside") else _room_temperature(hass, room)

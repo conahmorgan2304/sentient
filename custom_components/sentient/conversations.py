@@ -154,13 +154,16 @@ class Conversations:
         content = (data.get("content") or {}) if kind.endswith("content_added") else {}
         # 16 Nov: the self-test puts its own id in skip before asking, so "not in skip" never matched and every
         # answer was scored with no tools seen (a failed camera look-up could pass)
-        if (self.testing is not None and conversation_id not in self.test_tools and content.get("role") == "user"
-                and content.get("content") == self.testing):
+        from .selftest import ACTIVE
+
+        if ACTIVE.get() and self.testing is not None and conversation_id not in self.test_tools:
             self.skip.add(conversation_id)  # the self-test: not counted as a person talking, nor in reliability
             self.test_tools[conversation_id] = []
             if self.reliability is not None:
                 self.reliability.forget(conversation_id)
         if conversation_id in self.skip:
+            if kind.endswith("deleted"):
+                self.skip.discard(conversation_id)
             if content.get("role") == "tool_result" and (kept := self.test_tools.get(conversation_id)) is not None:
                 kept.append(content)
             return

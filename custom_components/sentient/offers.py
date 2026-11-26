@@ -184,14 +184,14 @@ class Offers:
         if self._stopped or self.items.items.get(offer['id']) is not offer or (not force and not self.ready(offer)):
             return {'error': 'That offer is no longer ready'}
         generation, options = self._generation, rt.options
-        privacy = getattr(rt.speech, '_privacy_generation', 0)
+        privacy = (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0))
         expected = version(offer)
         now = dt_util.utcnow()
         until = now + ANSWER_FOR
         consumed = False
         def valid():
             return (not self._stopped and generation == self._generation and rt.options is options
-                    and getattr(rt.speech, '_privacy_generation', 0) == privacy and not rt.speech.guest_mode
+                    and (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0)) == privacy and not rt.speech.guest_mode
                     and self.items.items.get(offer['id']) is offer and version(offer) == expected
                     and dt_util.utcnow() <= until)
         self._last_any = now
@@ -223,12 +223,7 @@ class Offers:
         with because(self.why(offer, area)):
             result = await rt.speech.async_ask(
                 question, source=f"offer:{offer['name']}", targets=targets, on_answer=answered,
-                extra_prompt=(
-                    f"This is the '{offer['name']}' offer. If they say yes or agree, call sentient_accept_offer with "
-                    f"offer '{offer['id']}' and accept true (put any detail they give, like a temperature, in 'note'). "
-                    f"If they say no, call it with accept false. Then say in a few words what you're doing, as a person would "
-                    f"(\"Okay, I'll put the kettle on.\") — never \"request sent\" or \"command sent\"."
-                ),
+                extra_prompt="The pending offer is handled by Sentient. If the answer is unclear, ask for yes or no.",
             )
         return result.as_dict()
 
@@ -263,13 +258,13 @@ class Offers:
 
         expected = version(offer) if expected is None else expected
         generation, options = self._generation, rt.options
-        privacy = getattr(rt.speech, '_privacy_generation', 0)
+        privacy = (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0))
         actions = deepcopy(offer.get('actions') or [])
         if not actions:
             return {'error': 'That offer has no configured actions'}
         def valid():
             return (not self._stopped and generation == self._generation and rt.options is options
-                    and getattr(rt.speech, '_privacy_generation', 0) == privacy and not rt.speech.guest_mode
+                    and (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0)) == privacy and not rt.speech.guest_mode
                     and (offer.get('enabled', True) or allow_disabled)
                     and self.items.items.get(offer['id']) is offer and version(offer) == expected
                     and (allowed is None or allowed()) and not touches(self.hass, actions))
@@ -280,7 +275,7 @@ class Offers:
         except Exception as err:  # noqa: BLE001
             return {"offer": offer["name"], "error": f"It didn't work: {err}"}
         if (self._stopped or generation != self._generation or rt.options is not options
-                or getattr(rt.speech, '_privacy_generation', 0) != privacy or rt.speech.guest_mode):
+                or (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0)) != privacy or rt.speech.guest_mode):
             return {'done': None, 'error': 'Actions were started, but the offer context changed. Check the devices before asking again.'}
         rt.timeline.add("mode", f"Yes to: {offer['name']}", note or None)
         return {"offer": offer["name"], "done": True, "note": "The configured actions completed; physical device results are not independently verified."}

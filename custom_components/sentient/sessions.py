@@ -313,8 +313,19 @@ class Sessions:
         from homeassistant.helpers import intent
 
         text = spoken_text(result.response)
+        previous_question = session.question
         session.question = ''
         session.waiting = False
+        if ends_in_question(text):
+            from .security_offers import sentences
+            from .voice_locale import generic_question
+
+            parts = sentences(text)
+            if len(parts) > 1 and (parts[-1].casefold() == previous_question.casefold()
+                    or (self.options.get("conversation_style") == "natural"
+                        and (GENERAL_FOLLOWUP.search(parts[-1]) or generic_question(parts[-1], session.language)))):
+                text = " ".join(parts[:-1])
+                result.response.async_set_speech(text)
         if result.response.response_type == intent.IntentResponseType.ERROR or not text:
             result.continue_conversation = False
             session.listen_reason = 'error_or_empty_reply'
@@ -402,8 +413,9 @@ class Sessions:
         self.prune()
         return [s.describe() for s in self.items.values() if not s.closed]
 
-    def stop(self):
+    def stop(self, *, clear_memory=True):
         for session in self.items.values():
             self.close(session)
         self.items.clear()
-        self.memory.clear()
+        if clear_memory:
+            self.memory.clear()

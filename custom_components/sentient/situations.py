@@ -105,7 +105,9 @@ class SituationBook:
         if ledger is None or not sensors:
             return {}
         rows = [r for r in ledger.recent_rows((now - GARDEN_WINDOW).timestamp()) if r["entity"] in sensors and r["new"] == "on"]
-        if len(rows) < GARDEN_TIMES:
+        previous = self.items.get("garden")
+        active = previous is not None and previous.get("ended") is None
+        if not rows or (not active and len(rows) < GARDEN_TIMES):
             return {}
         first = datetime.fromtimestamp(min(r["ts"] for r in rows), tz=dt_util.UTC)
         names = sorted({r.get("name") or r["entity"] for r in rows})
@@ -168,11 +170,14 @@ class SituationBook:
     def update(self, now: datetime | None = None) -> None:
         now = now or dt_util.utcnow()
         found: dict[str, dict[str, Any]] = {}
-        for detector in (self._arrivals, self._heating, self._garden, self._incidents, self._failing, self._asleep):
+        uncertain = set()
+        detectors = (("arrived:", self._arrivals), ("heating:", self._heating), ("garden", self._garden),
+                     ("incident:", self._incidents), ("failing:", self._failing), ("asleep", self._asleep))
+        for prefix, detector in detectors:
             try:
                 found.update(detector(now))
-            except Exception:  # noqa: BLE001 - one detector failing mustn't stop the rest
-                continue
+            except Exception:  # noqa: BLE001 - an unavailable detector does not prove a situation ended
+                uncertain.add(prefix)
         for key, item in found.items():
             known = self.items.get(key)
             if known is None or known.get("ended"):
@@ -180,8 +185,8 @@ class SituationBook:
             else:
                 known.update(evidence=item["evidence"], title=item["title"])  # still going: its start stays
         for key, item in list(self.items.items()):
-            if key not in found and not item.get("ended"):
-                item["ended"] = now
+            if key not in found and not item.get("ended") and not any(key.startswith(p) for p in uncertain):
+                item["ended"] = (min(now, item["started"] + ARRIVED_FOR) if key.startswith("arrived:") else now)
             if item.get("ended") and now - item["ended"] > KEEP_ENDED:
                 self.items.pop(key)
 

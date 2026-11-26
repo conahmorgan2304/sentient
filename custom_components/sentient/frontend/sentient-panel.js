@@ -618,7 +618,7 @@
           const cls = r.adopted ? "on" : r.declined ? "off" : "";
           const ask = r.adopted ? `Stop the house doing: ${r.routine}` : `Let the house do this from now on: ${r.routine}`;
           return `<div class="r rtr ${cls}" data-act="adopt" data-id="${esc(r.id)}" data-text="${esc(ask)}"><ha-icon icon="${esc(r.adopted ? "mdi:robot-happy-outline" : "mdi:repeat")}"></ha-icon>
-            <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)}${r.proved && !r.adopted ? " · " + esc(r.proved) : ""} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
+            <b class="wrap">${esc(r.routine)}<small>${esc(r.how_sure)}${r.proved && (!r.adopted || r.review_suggested) ? " · " + esc(r.proved) : ""} · tap to ${r.adopted ? "stop" : "let the house do it"}</small></b><s>${tag}</s><a class="x" data-act="unlearn" data-id="${esc(r.id)}" data-text="${esc(r.routine)}" title="Delete">✕</a></div>`;
         }).join("") || '<div class="e">NO ROUTINES LEARNED YET · CHECKED EACH NIGHT</div>');
 
       // watches (left alone while a reminder is being typed)
@@ -691,11 +691,31 @@
         + (healthRows || '<div class="e">EVERYTHING ONLINE · BATTERIES FINE</div>');
 
       // mind: what it's thinking, wondering, waiting to check and pass on
-      const mind = (this._st("mind") || {}).attributes || {};
+      const mindState = this._st("mind");
+      const mindAttrs = mindState?.attributes || {};
+      const guest = mindAttrs.guest_mode || this._st("guest_mode")?.state === "on";
+      const privateDetails = !guest && this._hass.user?.is_admin;
+      const stamp = `${mindState?.last_updated || ""}:${privateDetails ? "private" : "public"}`;
+      if (this._mindDetailsScope !== privateDetails) {
+        this._mindDetails = null;
+        this._mindDetailsScope = privateDetails;
+      }
+      if (this._mindDetailsStamp !== stamp && ["overview", "mind", "security"].includes(this._view)) {
+        this._mindDetailsStamp = stamp;
+        this._hass.callWS({ type: "sentient/mind/details" }).then((details) => {
+          if (this._mindDetailsStamp !== stamp) return;
+          this._mindDetails = details;
+          this._render();
+        }, () => { this._mindDetails = null; });  // older versions publish the data on the sensor
+      }
+      const mind = { ...mindAttrs, ...this._mindDetails };
+      if (!privateDetails) {
+        for (const key of ["speech_deliveries", "voice_timings", "voice_sessions", "conversation_diagnostics", "recent_conversations"]) delete mind[key];
+      }
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
       const voiceCheckRow = mind.live_voice_check_enabled === false ? "" : this._voiceCheckRow(mind.voice_check);
       const updateRow = this._updateRow(mind.sentient_updates);
-      const deliveryRows = (mind.speech_deliveries || []).slice(0, 10).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${esc(d.message)}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.stage ? " · " + esc(r.stage.replaceAll("_", " ")) : ""}${r.service ? " · " + esc(r.service) : ""}${r.duration_ms != null ? " · " + esc(r.duration_ms) + " ms" : ""}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`).join("");
+      const deliveryRows = (mind.speech_deliveries || []).slice(0, 10).map((d) => `<div class="r"><ha-icon icon="mdi:speaker-multiple"></ha-icon><b class="wrap">Announcement delivery<details><summary>${d.message ? esc(d.message) : "Announcement delivery"}</summary>${d.results.map((r) => `<small>${esc(this._hass.states[r.entity_id]?.attributes?.friendly_name || r.entity_id)} · ${esc(r.status.replaceAll("_", " "))}${r.stage ? " · " + esc(r.stage.replaceAll("_", " ")) : ""}${r.service ? " · " + esc(r.service) : ""}${r.duration_ms != null ? " · " + esc(r.duration_ms) + " ms" : ""}${r.error ? " · " + esc(r.error) : ""}</small>`).join("")}<small>${esc(d.note)}</small></details></b><u>${hm(d.time)}</u></div>`).join("");
       const voiceRows = [
         voiceCheckRow,
         ...(mind.voice_timing_enabled && (mind.conversation_quality || {}).turns ? [(() => {
@@ -2940,7 +2960,7 @@
       this._securityFeedbackError = null;
       this._render();
       try {
-        const visit = (this._st("mind")?.attributes?.security_visits || []).find(v => v.id === id);
+        const visit = (this._mindDetails?.security_visits || this._st("mind")?.attributes?.security_visits || []).find(v => v.id === id);
         const result = await this._hass.callWS({ type: "sentient/security/event/feedback", event_id: id, value,
           event_ids: (visit?.ids || [id]).slice(0, 50) });
         this._securityFeedbackReplies ||= new Map();

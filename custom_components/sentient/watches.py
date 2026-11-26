@@ -212,6 +212,13 @@ def resolve_entity(hass: HomeAssistant, text: str, prefer_domain: str | None = N
     text = (text or "").strip()
     if not text:
         return None
+    if prefer_domain == "camera":
+        from .security_voice import camera_named
+
+        if camera := camera_named(hass, text):
+            return camera
+        # Watch creation still accepts an exact non-camera entity and resolves its nearby camera.
+        return text if hass.states.get(text) is not None else None
     if hass.states.get(text) is not None:
         return text
     needle = text.lower().removeprefix("the ").strip()

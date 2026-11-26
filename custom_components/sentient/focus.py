@@ -121,6 +121,10 @@ class Focus:
             while len(self._last) > 200:
                 self._last.popitem(last=False)
         names = set(ALWAYS)
-        for name in topics | before:
+        # Retain earlier evidence routes for short references, not for a new fully named topic.
+        routes = (topics | before) if len(text.split()) <= 5 or investigating else (topics or before)
+        for name in routes:
             names |= TOPICS[name][1]
+        if investigating or re.search(r"\b(?:yesterday|earlier|last night|what happened|when did)\b", text, re.I):
+            names.update(("sentient_evidence", "sentient_why", "sentient_history", "sentient_root_cause"))
         return names
