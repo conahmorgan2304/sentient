@@ -67,11 +67,12 @@ async def test_the_set_is_built_from_the_house_and_scored(hass: HomeAssistant, f
 
     async def converse(hass_, text, cid, context, **kw):
         asked[text] = True
-        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": replies.get(text, "It's 14:00.")}}),
+        said = next((answer for question, answer in replies.items() if text.startswith(question)), "It's 14:00.")
+        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": said}}),
                                conversation_id=cid)
 
     def tools(self, cid):  # the voice switched something while only being asked about the bins
-        return ["HassTurnOn"] if list(asked)[-1] == qs["impossible"].ask else []
+        return ["HassTurnOn"] if list(asked)[-1].startswith(qs["impossible"].ask) else []
 
     with patch("homeassistant.components.conversation.async_converse", converse), \
             patch.object(type(rt.selftest), "_exposed", lambda self, entity_id: True), \

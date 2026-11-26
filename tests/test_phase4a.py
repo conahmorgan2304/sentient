@@ -53,7 +53,8 @@ async def test_self_test_finds_a_wrong_answer(hass: HomeAssistant) -> None:
     }
 
     async def converse(hass_, text, cid, context, **kw):
-        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": replies[text]}}), conversation_id=cid)
+        said = next((answer for question, answer in replies.items() if text.startswith(question)), "I don't know.")
+        return SimpleNamespace(response=SimpleNamespace(speech={"plain": {"speech": said}}), conversation_id=cid)
 
     with patch("homeassistant.components.conversation.async_converse", converse):
         out = await entry.runtime_data.selftest.async_run()
