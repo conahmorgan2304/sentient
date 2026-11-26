@@ -15,16 +15,21 @@ async def _async_write(store, data):
     """Write under the Store lock and let storage errors reach the caller."""
     if store._read_only:
         raise OSError(f"Storage is read-only: {store.key}")
-    store._manager.async_invalidate(store.key)
-    atomic = store._atomic_writes
-    store._atomic_writes = True
+    file_io = getattr(store, "_io", None)
+    if file_io is None:
+        store._manager.async_invalidate(store.key)
+        file_io = store
+    else:
+        file_io.async_invalidate_cache()
+    atomic = file_io._atomic_writes
+    file_io._atomic_writes = True
     try:
         if _WRITER_TAKES_PATH:
             await store._async_write_data(store.path, dict(data))
         else:
             await store._async_write_data(dict(data))
     finally:
-        store._atomic_writes = atomic
+        file_io._atomic_writes = atomic
 
 
 class RecoveryStore(Store):
