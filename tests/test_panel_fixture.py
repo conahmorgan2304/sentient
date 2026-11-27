@@ -127,8 +127,8 @@ async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client,
         out.update({
             "enabled": True,
             "devices": [{"name": "Dishwasher", "kwh": 1.2, "usual": 0.9, "unusual": True}],
-            "house": {"name": "The house", "kwh": 24.0, "usual": 20.0, "unusual": True},
-            "total_kwh": 1.2, "usual_kwh": 0.9,
+            "house": {"name": "Grid import", "kwh": 24.0, "usual": 20.0, "unusual": True},
+            "total_kwh": 24.0, "usual_kwh": 20.0, "total_scope": "grid_import", "device_total_kwh": 1.2,
             "unusual": [{"name": "Dishwasher", "kwh": 1.2, "usual": 0.9, "unusual": True}],
         })
         return out

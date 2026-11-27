@@ -1862,14 +1862,14 @@
       const top = en.devices.slice(0, 5), max = Math.max(0.01, ...top.map((d) => Math.max(d.kwh, d.usual)));
       const pct = en.usual_kwh > 0 ? Math.round((en.total_kwh / en.usual_kwh) * 100) : null;
       const house = en.house, hmax = house ? Math.max(0.01, house.kwh, house.usual) : 0;
-      el.innerHTML = this._h("ENERGY TODAY", `${en.total_kwh} KWH${en.cost_today != null ? ` · ${en.currency_symbol || "£"}${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
-        + (house ? `<div class="en${house.unusual ? " hot" : ""}"><span>THE HOUSE</span>
+      el.innerHTML = this._h(house ? "GRID IMPORT TODAY" : "TRACKED DEVICES TODAY", `${en.total_kwh} KWH${en.cost_today != null ? ` · ${en.currency_symbol || "£"}${en.cost_today.toFixed(2)}` : ""}${pct != null ? ` · ${pct}% OF USUAL` : ""}`)
+        + (house ? `<div class="en${house.unusual ? " hot" : ""}"><span>GRID IMPORT</span>
             <div class="bar2"><i style="width:${Math.round((house.kwh / hmax) * 100)}%"></i><b style="left:${Math.min(100, Math.round((house.usual / hmax) * 100))}%" title="Usual by now"></b></div>
             <u>${house.kwh}${house.unusual ? " ↑" : ""}</u></div>` : "")
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
-        + `<div class="hint" title="Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW · ${en.cost_today != null ? "COST = THESE DEVICES × YOUR RATE · " : ""}${pct != null ? "% AGAINST A NORMAL DAY SO FAR" : ""}</div>`;
+        + `<div class="hint" title="Energy: grid imports are not total household consumption. Without a grid meter, the total is tracked devices only. Estimated cost uses the displayed total and the configured rate.">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW · ${pct != null ? "% AGAINST A NORMAL DAY SO FAR" : ""}</div>`;
     }
 
     _drawAppliances(list) {

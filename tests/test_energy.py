@@ -57,22 +57,30 @@ async def test_the_house_total_comes_from_the_grid_meter(hass: HomeAssistant, fr
                 out.append({"start": dt_util.as_utc(t).timestamp(), "change": change_today if d == 0 else change_past})
         return out
 
-    data = {"sensor.grid": rows(1.0, 0.5)}
+    data = {"sensor.grid": rows(0.75, 0.25), "sensor.grid2": rows(0.25, 0.25)}
 
     class Inst:
         async def async_add_executor_job(self, fn, *args):
             return data
 
-    prefs = {"energy_sources": [{"type": "grid", "stat_energy_from": "sensor.grid"}]}
+    prefs = {"energy_sources": [
+        {"type": "grid", "stat_energy_from": "sensor.grid"},
+        {"type": "grid", "stat_energy_from": "sensor.grid2"},
+        {"type": "grid", "stat_energy_from": "sensor.grid"},
+    ]}
     with patch.object(energy, "_prefs", return_value=prefs), \
          patch.object(energy, "_devices", return_value={}), \
          patch("homeassistant.components.recorder.get_instance", return_value=Inst()):
         report = await energy.async_report(hass)
-    assert report["house"]["name"] == "The house"
+    assert report["house"]["name"] == "Grid import"
+    assert report["total_kwh"] == 18.0
+    assert report["total_scope"] == "grid_import"
+    assert report["device_total_kwh"] == 0.0
+    assert report["usual_kwh"] == 9.0
     assert report["house"]["kwh"] == 18.0  # 18 hours at 1 kWh
     assert report["house"]["usual"] == 9.0  # the same 18 hours, 7 days running
     assert report["house"]["unusual"] and report["house"]["times_usual"] == 2.0
-    assert energy.describe(report) == ["The house has used 18.0 kWh today, about 2.0× its usual"]
+    assert energy.describe(report) == ["Grid import recorded 18.0 kWh today, about 2.0× its usual"]
 
 
 async def test_energy_can_be_turned_off(hass: HomeAssistant) -> None:
@@ -124,3 +132,21 @@ async def test_rate_in_pence_or_in_pounds_both_work(hass: HomeAssistant) -> None
     assert round(5.51 * energy._price(hass) / 100, 2) == 0.66
     entry.runtime_data.options = {**entry.runtime_data.options, "energy_price": 24.5}
     assert energy._price(hass) == 24.5
+
+
+def test_grid_meters_are_unique_and_aggregate_before_median() -> None:
+    prefs = {"energy_sources": [
+        {"type": "grid", "stat_energy_from": "sensor.a"},
+        {"type": "grid", "stat_energy_from": "sensor.b"},
+        {"type": "grid", "stat_energy_from": "sensor.a"},
+        {"type": "solar", "stat_energy_from": "sensor.solar"},
+    ]}
+    meters = energy._grid(prefs)
+    assert meters == {"sensor.a", "sensor.b"}
+    midnight = dt_util.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    rows = {
+        stat: [{"start": midnight - timedelta(days=d), "change": value}
+               for d in range(8)]
+        for stat, value in [("sensor.a", 1.0), ("sensor.b", 2.0)]
+    }
+    assert energy._usage(rows, meters, midnight, 1) == {"kwh": 3.0, "usual": 3.0}

@@ -43,12 +43,13 @@ def _devices(prefs: dict[str, Any], hass: HomeAssistant) -> dict[str, str]:
     return out
 
 
-def _grid(prefs: dict[str, Any]) -> str | None:
-    """The grid meter: the whole house's electricity."""
-    for source in prefs.get("energy_sources", []) or []:
-        if source.get("type") == "grid" and source.get("stat_energy_from"):
-            return source["stat_energy_from"]
-    return None
+def _grid(prefs: dict[str, Any]) -> set[str]:
+    """Unique electricity import statistics, not whole-house consumption."""
+    return {
+        source["stat_energy_from"]
+        for source in prefs.get("energy_sources", []) or []
+        if source.get("type") == "grid" and source.get("stat_energy_from")
+    }
 
 
 def enabled(hass: HomeAssistant) -> bool:
@@ -84,11 +85,11 @@ def money(hass: HomeAssistant, amount: float) -> str:
     return f"{currency(hass)[1]}{amount:.2f}"
 
 
-def _usage(rows: dict[str, Any], stat: str, midnight, hours_in: float) -> dict[str, Any]:
-    """What one meter used today up to the last full hour, against the same window last week."""
+def _usage(rows: dict[str, Any], stats: set[str], midnight, hours_in: float) -> dict[str, Any]:
+    """What the selected meters recorded today up to the last full hour, against the same window last week."""
     today = 0.0
     past = [0.0] * DAYS
-    for row in rows.get(stat, []):
+    for row in (row for stat in sorted(stats) for row in rows.get(stat, [])):
         change = row.get("change") or 0.0
         when = dt_util.as_local(dt_util.utc_from_timestamp(row["start"]) if isinstance(row["start"], (int, float)) else row["start"])
         day_start = when.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -122,16 +123,18 @@ async def async_report(hass: HomeAssistant) -> dict[str, Any]:
     upto = now.replace(minute=0, second=0, microsecond=0)  # last full hour
     midnight = upto.replace(hour=0)
     start = dt_util.as_utc(midnight - timedelta(days=DAYS))
-    meters = set(devices) | ({grid} if grid else set())
+    meters = set(devices) | grid
     rows = await get_instance(hass).async_add_executor_job(
         statistics_during_period, hass, start, dt_util.as_utc(upto), meters, "hour", None, {"change"}
     )
     hours_in = (upto - midnight).total_seconds() / 3600
-    out = [{"name": name, **_usage(rows, stat, midnight, hours_in)} for stat, name in devices.items()]
+    out = [{"name": name, **_usage(rows, {stat}, midnight, hours_in)} for stat, name in devices.items()]
     out.sort(key=lambda i: i["kwh"], reverse=True)
-    house = {"name": "The house", **_usage(rows, grid, midnight, hours_in)} if grid else None
-    total = round(sum(i["kwh"] for i in out), 2)
-    total_usual = round(sum(i["usual"] for i in out), 2)
+    house = {"name": "Grid import", **_usage(rows, grid, midnight, hours_in)} if grid else None
+    device_total = round(sum(i["kwh"] for i in out), 2)
+    device_usual = round(sum(i["usual"] for i in out), 2)
+    total = house["kwh"] if house else device_total
+    total_usual = house["usual"] if house else device_usual
     price = _price(hass)
     return {
         "enabled": True,
@@ -140,6 +143,9 @@ async def async_report(hass: HomeAssistant) -> dict[str, Any]:
         "currency_symbol": currency(hass)[1],
         "up_to": upto.strftime("%H:%M"),
         "total_kwh": total,
+        "total_scope": "grid_import" if house else "tracked_devices",
+        "device_total_kwh": device_total,
+        "device_usual_kwh": device_usual,
         "usual_kwh": total_usual,
         "devices": out,
         "house": house,
@@ -152,9 +158,9 @@ def describe(report: dict[str, Any]) -> list[str]:
     house = report.get("house") or {}
     if house.get("unusual"):
         if house.get("times_usual"):
-            lines.append(f"{house['name']} has used {house['kwh']} kWh today, about {house['times_usual']}× its usual")
+            lines.append(f"{house['name']} recorded {house['kwh']} kWh today, about {house['times_usual']}× its usual")
         else:
-            lines.append(f"{house['name']} has used {house['kwh']} kWh today, when it's normally next to nothing")
+            lines.append(f"{house['name']} recorded {house['kwh']} kWh today, when it's normally next to nothing")
     for i in report.get("unusual", [])[:3]:
         if i.get("times_usual"):
             lines.append(f"{i['name']} has used {i['kwh']} kWh today, about {i['times_usual']}× its usual")

@@ -176,7 +176,7 @@ class Appliances:
             device = dr.async_get(self.hass).async_get(entry.device_id)
         except Exception:  # noqa: BLE001 - a missing registry is no reason to stop the appliances
             return None
-        return (getattr(device, "name_by_user", None) or "").strip() or None
+        return (getattr(device, "name_by_user", None) or getattr(device, "name", None) or "").strip() or None
 
     def usual(self, entity_id: str) -> float | None:
         runs = self.runs.get(entity_id) or []
