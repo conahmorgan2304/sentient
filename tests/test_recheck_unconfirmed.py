@@ -41,6 +41,25 @@ async def test_still_silent_is_noted_and_never_called_done(hass):
     assert 'still not reported' in result['actions'][0]['reason']
 
 
+async def test_service_timeout_is_uncertain_and_late_report_is_checked(hass):
+    _, session = active()
+    hass.states.async_set('light.lamp', 'off')
+    async_mock_service(hass, 'light', 'turn_on')
+    control = Control(hass, {}, Mock())
+    with patch('custom_components.sentient.control.async_should_expose', return_value=True), \
+            patch.object(type(hass.services), 'async_call', side_effect=TimeoutError) as service:
+        actions = [{'entity_id': 'light.lamp', 'action': 'turn_on'}]
+        result = await control.propose(session, actions, Context())
+        repeated = await control.propose(session, actions, Context())
+    assert result['assessment']['state'] == 'unverified'
+    assert repeated['already_pending']
+    assert result['actions'][0]['dispatched'] and service.call_count == 1
+    hass.states.async_set('light.lamp', 'on')
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=RECHECK_AFTER + 1))
+    await hass.async_block_till_done()
+    assert result['actions'][0]['verified_later']
+
+
 async def test_switched_off_or_forgotten_nothing_is_rechecked(hass):
     session, result, _calls, _timeline = await _slow_lamp(hass, {'recheck_unconfirmed': False})
     hass.states.async_set('light.lamp', 'on')

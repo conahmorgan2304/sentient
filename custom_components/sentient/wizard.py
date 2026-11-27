@@ -14,6 +14,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
+from homeassistant.components.media_player import MediaPlayerDeviceClass, MediaPlayerEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -41,6 +42,7 @@ from .const import (
     CONF_DRIVE_TRIGGERS,
     CONF_ENERGY,
     CONF_INSIDE_SENSORS,
+    CONF_MEDIA_SPEAKERS,
     CONF_MORNING_BRIEFING,
     CONF_PERSONA,
     CONF_PERSONALITY,
@@ -131,14 +133,25 @@ def suggest(hass: HomeAssistant, options: dict[str, Any], own_agent: str | None)
     out: dict[str, Any] = {}
     states = hass.states
 
-    sats = [s.entity_id for s in states.async_all("assist_satellite") if _usable(hass, s.entity_id)]
-    if sats:
-        out[CONF_SPEAKERS] = sats
-        out[CONF_DEFAULT_SPEAKER] = sats[0]
+    speakers = [s.entity_id for s in states.async_all("assist_satellite") if _usable(hass, s.entity_id)]
+    if options.get(CONF_MEDIA_SPEAKERS, True):
+        registry = er.async_get(hass)
+        excluded = set(options.get("never_entities") or [])
+        speakers.extend(
+            state.entity_id for state in states.async_all("media_player")
+            if (entry := registry.async_get(state.entity_id)) is not None and entry.platform == "cast"
+            and state.attributes.get("device_class") == MediaPlayerDeviceClass.SPEAKER
+            and (state.attributes.get("supported_features") or 0) & MediaPlayerEntityFeature.PLAY_MEDIA
+            and state.state != "unknown" and state.entity_id not in excluded
+            and _usable(hass, state.entity_id)
+        )
+    if speakers:
+        out[CONF_SPEAKERS] = speakers
+        out[CONF_DEFAULT_SPEAKER] = speakers[0]
 
     from .presence import inside_sensors
 
-    if found := inside_sensors(hass, {**options, CONF_INSIDE_SENSORS: [], CONF_SPEAKERS: options.get(CONF_SPEAKERS) or sats}):
+    if found := inside_sensors(hass, {**options, CONF_INSIDE_SENSORS: [], CONF_SPEAKERS: options.get(CONF_SPEAKERS) or speakers}):
         out[CONF_INSIDE_SENSORS] = [e for e in found if _usable(hass, e)]
 
     tasks = [s.entity_id for s in states.async_all("ai_task") if _usable(hass, s.entity_id)]

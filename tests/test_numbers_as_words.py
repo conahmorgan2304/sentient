@@ -19,9 +19,12 @@ from tests.test_search_alexa import _alexa_agent, _input, _result, _setup
     ("pl", "Jutro 3°C, deszcz 40%.", "Jutro trzy stopnie, deszcz czterdzieści procent."),
     ("pl", "1°C, 22°C, 25°", "jeden stopień, dwadzieścia dwa stopnie, dwadzieścia pięć stopni"),
     ("pl", "W nocy -3 stopnie", "W nocy minus trzy stopnie"),
-    ("pl", "Budzik na 6:05, spotkanie o 14:30 i 20:00", "Budzik na sześć zero pięć, spotkanie o czternaście trzydzieści i dwadzieścia"),
+    ("pl", "Budzik na 6:05, spotkanie o 14:30. Jest 20:00.", "Budzik na szóstą zero pięć, spotkanie o czternastej trzydzieści. Jest dwudziesta."),
     ("pl", "Między 5-10 minut", "Między pięć do dziesięć minut"),
-    ("pl", "Rachunek 1 234,50 zł albo 1.500 kroków", "Rachunek tysiąc dwieście trzydzieści cztery przecinek pięćdziesiąt zł albo tysiąc pięćset kroków"),
+    ("pl", "Rachunek 1 234,50 zł albo 1.500 kroków", "Rachunek tysiąc dwieście trzydzieści cztery złote i pięćdziesiąt groszy albo tysiąc pięćset kroków"),
+    ("pl", "Data 2026-11-25", "Data dwudziesty piąty listopada dwa tysiące dwudziestego szóstego roku"),
+    ("pl", "Data 3.12.2026", "Data trzeci grudnia dwa tysiące dwudziestego szóstego roku"),
+    ("pl", "Teraz −2,5°C. Potem 4.2°C.", "Teraz minus dwa przecinek pięć stopnia. Potem cztery przecinek dwa stopnia."),
     ("ru", "Завтра 21°C", "Завтра двадцать один градус"),
     ("cs", "Vlhkost 45%", "Vlhkost čtyřicet pět procent"),
     ("de", "Morgen 7,5 Grad", "Morgen sieben Komma fünf Grad"),
@@ -32,8 +35,8 @@ def test_numbers_become_words(lang: str, text: str, want: str) -> None:
     assert numbers.words(text, lang) == want
 
 
-@pytest.mark.parametrize("text", ["Wersja v1.2", "czujnik sensor_2", "WD-40", "data 2026-11-25", "mp3", "pokój #3"])
-def test_codes_names_and_dates_are_left_alone(text: str) -> None:
+@pytest.mark.parametrize("text", ["Wersja v1.2", "czujnik sensor_2", "WD-40", "data 2026-02-31", "mp3", "pokój #3"])
+def test_codes_names_and_invalid_dates_are_left_alone(text: str) -> None:
     assert numbers.words(text, "pl") == text
 
 

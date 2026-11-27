@@ -61,6 +61,7 @@ class Control:
     def __init__(self, hass, options, timeline):
         self.hass, self.options, self.timeline = hass, options, timeline
         self._lock = asyncio.Lock()
+        self._rechecks = {}
         self.recovery_records = {}
         self.recovery_generation = 0
         self.recovery_turns = {}
@@ -69,6 +70,9 @@ class Control:
         self.cognitive = None  # attached by runtime; shadow only, never authorises service calls
 
     def clear_recovery(self):
+        for cancel in self._rechecks:
+            cancel()
+        self._rechecks.clear()
         self.recovery_generation += 1
         self.recovery_records.clear()
         self.recovery_turns.clear()
@@ -256,7 +260,7 @@ class Control:
         try:
             with measure("guarded_actions"):
                 result = await self._execute_timed(session, actions, context, expected, deadline)
-            if self.on_result and not session.closed:
+            if self.on_result and not session.closed and not result.get("already_pending"):
                 self.on_result(session, actions, result, context)
             return result
         finally:
@@ -273,7 +277,10 @@ class Control:
                     record['rows'] = (previous['rows'] + record['rows'])[-40:]
                 record['batch_turn'] = batch_turn
                 if result is not None:
-                    result['recovery_outcomes'] = [{'entity_id': r['action']['entity_id'], 'status': r['status'], 'dispatched': r['dispatched']} for r in record['rows']]
+                    result['recovery_outcomes'] = [
+                        {'entity_id': r['action']['entity_id'], 'status': r['status'], 'dispatched': r['dispatched'],
+                         'accepted': outcomes.get(r['action']['entity_id'], {}).get('accepted')}
+                        for r in record['rows']]
                 self.recovery_records[session.owner] = record
                 while len(self.recovery_records) > 20:
                     self.recovery_records.pop(next(iter(self.recovery_records)))
@@ -283,6 +290,14 @@ class Control:
             await self.validate(actions, context)
         except (ValueError, TypeError) as err:
             return {'error': str(err)}
+        from .voice_id import current_speaker, name_of
+
+        scope = (session.owner if any(session.owner) else session.id, name_of(current_speaker.get()))
+        requested = {action['entity_id']: action for action in actions}
+        for previous, owner, wanted, result in self._rechecks.values():
+            if (owner == scope and requested == wanted and previous.last_action is result and not previous.forgotten
+                    and any(row.get('accepted') is False for row in result['actions'])):
+                return {**result, 'already_pending': True, 'instruction': 'The earlier request is still being checked. No second request was sent.'}
         if self.options.get('action_recovery') and self.options.get('conversation_sessions') and any(session.owner):
             session.recovery_record = {'expires': dt_util.utcnow() + timedelta(minutes=2),
                                       'rows': [{'action': deepcopy(a), 'status': 'not_started', 'dispatched': False} for a in actions]}
@@ -307,6 +322,10 @@ class Control:
                 if expected is not None and before != expected[eid]:
                     outcomes.append({'entity_id': eid, 'status': 'skipped', 'reason': 'device changed since confirmation'})
                     break
+                for cancel, (_, _, wanted, _) in list(self._rechecks.items()):
+                    if eid in wanted and wanted[eid] != a:
+                        self._rechecks.pop(cancel)
+                        cancel()
                 dispatched = True
                 if session.recovery_record:
                     session.recovery_record['rows'][index]['dispatched'] = True
@@ -332,7 +351,11 @@ class Control:
                     session.undo = [r for r in session.undo if r['entity_id'] != eid]
                     session.undo.append({'entity_id': eid, 'before': before, 'after': snapshot(state),
                                          'expires': dt_util.utcnow() + timedelta(minutes=5)})
-            except (HomeAssistantError, TimeoutError, ValueError, TypeError) as err:
+            except TimeoutError:
+                outcomes.append({'entity_id': eid, 'status': 'attempted', 'dispatched': dispatched, 'accepted': False,
+                                 'reason': 'service deadline elapsed; delivery is unconfirmed'})
+                break
+            except (HomeAssistantError, ValueError, TypeError) as err:
                 outcomes.append({'entity_id': eid, 'status': 'failed', 'reason': str(err), 'dispatched': dispatched})
                 break  # never replay a partly completed batch
         if self.options.get('action_recovery'):
@@ -350,10 +373,10 @@ class Control:
         self.timeline.add('voice', result['summary'], str(outcomes),
                           evidence='verified' if outcomes and all(o['status'] == 'verified' for o in outcomes) else 'attempted')
         if self.options.get(CONF_RECHECK, True) and any(o['status'] == 'attempted' for o in outcomes):
-            self._recheck_later(session, actions, result)
+            self._recheck_later(session, scope, actions, result)
         return result
 
-    def _recheck_later(self, session, actions, result):
+    def _recheck_later(self, session, scope, actions, result):
         """A slow device (a garage door, a cloud plug) often reports after the reply: look once more, then update the
         record so "did that work?" is answered from what the device says now. Nothing is sent again."""
         from homeassistant.helpers.event import async_call_later
@@ -361,6 +384,8 @@ class Control:
         wanted = {a['entity_id']: a for a in actions}
 
         def _look(_now):
+            if self._rechecks.pop(cancel, None) is None:
+                return
             if session.forgotten or session.last_action is not result:
                 return
             changed = []
@@ -386,8 +411,12 @@ class Control:
                                                     gaps=[], choice='record updated; nothing sent again',
                                                     reasons=['late_report']))
 
-        self._rechecks = [h for h in getattr(self, '_rechecks', []) if h is not None][-20:]
-        self._rechecks.append(async_call_later(self.hass, RECHECK_AFTER, _look))
+        if len(self._rechecks) >= 20:
+            oldest = next(iter(self._rechecks))
+            self._rechecks.pop(oldest)
+            oldest()
+        cancel = async_call_later(self.hass, RECHECK_AFTER, _look)
+        self._rechecks[cancel] = (session, scope, wanted, result)
 
     async def undo(self, session, context):
         if not session.authorised or session.closed or not self.options.get(CONF_UNDO):

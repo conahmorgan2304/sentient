@@ -4,14 +4,14 @@ A text-to-speech voice in many languages reads "4,4", "14:30", "40%" or "5–10"
 comma, the colon and the dash. Before speaking, Sentient writes them out ("cztery przecinek cztery", "czternaście
 trzydzieści", "czterdzieści procent", "pięć do dziesięciu" is beyond us, so "pięć do dziesięć").
 
-Words come from ``num2words``. Grammar after a number (Polish cases, say) isn't attempted here: the AI is asked to write
-numbers as words itself (llm_api), and this catches the rest, including Sentient's own sentences.
+Words come from num2words. Polish clock, calendar and unit forms use the local grammar below.
 
 English is left alone (English voices read numbers well), and so are Chinese, Japanese and Korean (their voices read
 digits natively) and any language ``num2words`` doesn't know. Switch: "Say numbers as words" (on by default).
 """
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 import logging
 import re
@@ -75,9 +75,83 @@ _NUM = r"\d+(?:[  .,]\d{3})*(?:[.,]\d+)?"
 _EDGE_L = r"(?<![\w.,:/#°%-])"
 _EDGE_R = r"(?![\w:/#]|[.,]\d|-\d)"
 _TIME = re.compile(_EDGE_L + r"([01]?\d|2[0-3]):([0-5]\d)" + _EDGE_R)
+_PL_TIME = re.compile(_EDGE_L + r"(?:(o|na)(?: godzinie)? )?([01]?\d|2[0-3]):([0-5]\d)" + _EDGE_R, re.I)
+_PL_DATE = re.compile(_EDGE_L + r"(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})\.(\d{1,2})\.(\d{4}))" + _EDGE_R)
+_PL_MONEY = re.compile(_EDGE_L + rf"(-?{_NUM})\s?(zł|PLN|EUR|USD|GBP|€|\$|£)" + _EDGE_R, re.I)
 _RANGE = re.compile(_EDGE_L + rf"({_NUM})\s?[-–]\s?({_NUM})" + _EDGE_R)
 # a minus only at the start of a word ("-3", not "WD-40")
-_ONE = re.compile(r"(?:(?<![^\s(\[])(-)|(?<![\w.,:/#°%-]))" + rf"({_NUM})" + r"(\s?%|\s?°C?)?" + _EDGE_R)
+_ONE = re.compile(r"(?:(?<![^\s(\[])([-−])|(?<![\w.,:/#°%-]))" + rf"({_NUM})" + r"(\s?%|\s?°[CFK]?)?" + _EDGE_R)
+
+_PL_ORDINALS = (
+    "", "pierwszy", "drugi", "trzeci", "czwarty", "piąty", "szósty", "siódmy", "ósmy", "dziewiąty",
+    "dziesiąty", "jedenasty", "dwunasty", "trzynasty", "czternasty", "piętnasty", "szesnasty",
+    "siedemnasty", "osiemnasty", "dziewiętnasty",
+)
+_PL_MONTHS = (
+    "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września",
+    "października", "listopada", "grudnia",
+)
+_PL_CURRENCY = {
+    "zł": (("złoty", "złote", "złotych"), ("grosz", "grosze", "groszy")),
+    "€": (("euro",) * 3, ("cent", "centy", "centów")),
+    "$": (("dolar", "dolary", "dolarów"), ("cent", "centy", "centów")),
+    "£": (("funt", "funty", "funtów"), ("pens", "pensy", "pensów")),
+}
+
+
+def _polish_ordinal(number: int, ending: str = "y") -> str:
+    if number < 20:
+        word = _PL_ORDINALS[number]
+        return word[:-1] + ({"a": "ia", "ą": "ią", "ej": "iej"}.get(ending, "i") if number == 3 else ending)
+    tens, rest = divmod(number, 10)
+    first = {2: "dwudziest", 3: "trzydziest"}[tens] + ending
+    return f"{first} {_polish_ordinal(rest, ending)}" if rest else first
+
+
+def _polish_time(match: re.Match) -> str:
+    prefix, raw_hour, raw_minute = match.groups()
+    hour, minute = int(raw_hour), int(raw_minute)
+    case = {"o": "ej", "na": "ą"}.get((prefix or "").lower(), "a")
+    said = _polish_ordinal(hour, case) if hour else {"ej": "północy", "ą": "północ"}.get(case, "północ")
+    if hour == 0 and minute:
+        said = {"ej": "zerowej", "ą": "zerową"}.get(case, "zerowa")
+    if minute:
+        said += (" zero " if minute < 10 else " ") + _say(Decimal(minute), "pl")
+    return f"{prefix} {said}" if prefix else said
+
+
+def _polish_date(match: re.Match) -> str:
+    from num2words import num2words
+
+    y, m, d, alt_d, alt_m, alt_y = match.groups()
+    try:
+        day = date(int(y or alt_y), int(m or alt_m), int(d or alt_d))
+    except ValueError:
+        return match[0]
+    year = num2words(day.year, lang="pl", to="ordinal").split()
+    inflect = lambda word: word[:-1] + ("iego" if word.endswith("i") else "ego")
+    year[-1] = inflect(year[-1])
+    if day.year % 100 >= 21 and day.year % 10:
+        year[-2] = inflect(year[-2])
+    year = " ".join(year)
+    return f"{_polish_ordinal(day.day)} {_PL_MONTHS[day.month - 1]} {year} roku"
+
+
+def _polish_money(match: re.Match) -> str:
+    raw, symbol = match.groups()
+    value = _value(raw, "pl")
+    if value is None or value * 100 != (value * 100).to_integral_value():
+        return match[0]
+    currency = {"pln": "zł", "eur": "€", "usd": "$", "gbp": "£"}.get(symbol.casefold(), symbol.casefold())
+    whole, small = divmod(int(abs(value) * 100), 100)
+
+    def amount(n, forms):
+        form = 0 if n == 1 else 1 if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else 2
+        return f"{_say(Decimal(n), 'pl')} {forms[form]}"
+
+    major, minor = _PL_CURRENCY[currency]
+    said = " i ".join([amount(whole, major), amount(small, minor)]) if small else amount(whole, major)
+    return "minus " + said if value < 0 else said
 
 
 def converter(language: str | None) -> str | None:
@@ -153,11 +227,18 @@ def words(text: str, language: str | None) -> str:
             if m[1]:
                 value = -value
             said = _say(value, code)
-            if unit := (m[3] or "").strip()[:1]:
-                said += " " + _unit(value, code, unit)
+            if unit := (m[3] or "").strip():
+                said += " " + _unit(value, code, unit[0])
+                if len(unit) > 1 and unit[1] != "C":
+                    said += " " + ({"F": "Fahrenheita", "K": "Kelvina"}[unit[1]] if code == "pl" else unit[1])
             return said
 
-        text = _TIME.sub(time, text)
+        if code == "pl":
+            text = _PL_DATE.sub(_polish_date, text)
+            text = _PL_TIME.sub(_polish_time, text)
+            text = _PL_MONEY.sub(_polish_money, text)
+        else:
+            text = _TIME.sub(time, text)
         text = _RANGE.sub(span, text)
         return _ONE.sub(one, text)
     except Exception:  # noqa: BLE001 - a number read as digits is better than no reply

@@ -22,6 +22,19 @@ def spoken(result):
     return result.response.speech["plain"]["speech"]
 
 
+async def test_chat_log_prompt_with_ask_later_uses_current_text(hass):
+    from homeassistant.components.conversation.chat_log import UserContent, async_get_chat_log
+    from homeassistant.helpers import chat_session
+
+    entry = await _setup(hass, ask_later=True)
+    entry.runtime_data.memory.add("A medical delivery is on Friday.", category="correction")
+    ctx = llm.LLMContext(platform="test", context=Context(), language="en", assistant=None, device_id=None)
+    with chat_session.async_get_chat_session(hass) as session, async_get_chat_log(hass, session) as chat:
+        chat.async_add_user_content(UserContent("Explain how forecasting works"))
+        api = await llm.async_get_api(hass, "sentient", ctx)
+    assert "medical delivery" not in api.api_prompt
+
+
 @pytest.mark.parametrize(("language", "first", "ambiguous", "question", "yes"), [
     ("en", "Check the gate", "Check the gath", "Did you mean Gate?", "Yes"),
     ("fr", "Regarde le portail", "Regarde le portain", "Tu voulais dire Portail ?", "Oui"),

@@ -18,7 +18,10 @@ def _fake_list(hass, items, entity="todo.shopping_list", name="Shopping List"):
             return  # a list that says yes and does nothing
         for i in store["items"]:
             if call.data["item"] in (i["uid"], i["summary"]):
-                i["status"] = call.data["status"]
+                if "status" in call.data:
+                    i["status"] = call.data["status"]
+                if "rename" in call.data:
+                    i["summary"] = call.data["rename"]
 
     async def add_item(call):
         store["next"] += 1
@@ -98,6 +101,53 @@ async def test_tool_is_offered_and_can_be_switched_off(hass):
     from custom_components.sentient.llm_api import ListsTool
 
     assert ListsTool.name == "sentient_lists" and ListsTool.acts
+
+
+async def test_polish_list_uses_authoritative_names_and_quantities(hass):
+    from dataclasses import replace
+    from unittest.mock import AsyncMock, patch
+    from tests.test_voice_sessions_control import agent, request
+
+    _fake_list(hass, [{"summary": "2 Bułki", "status": "needs_action"},
+                      {"summary": "Żółty ser", "status": "needs_action"}], name="Zakupy")
+    obj, _ = agent(hass, {"voice_lists": True})
+    req = replace(request("Co jest na liście zakupów?"), language="pl")
+    with patch.object(obj, "_async_process_legacy", AsyncMock()) as provider:
+        replies = [await obj.async_process(req) for _ in range(2)]
+        assert [r.response.speech["plain"]["speech"] for r in replies] == ["Zakupy. Do zrobienia: 2 Bułki, Żółty ser"] * 2
+        provider.assert_not_awaited()
+
+
+async def test_duplicate_items_are_ambiguous_and_rename_is_verified(hass):
+    store = _fake_list(hass, [{"summary": "2 Bułki", "status": "needs_action", "uid": "a"},
+                             {"summary": "2 Bułki", "status": "needs_action", "uid": "b"}])
+    out = await async_handle(hass, "remove", ["2 bułki"], None)
+    assert out["which_one"] and not out["done"] and len(store["items"]) == 2
+    store["items"].pop()
+    store["ignore"].add("a")
+    out = await async_handle(hass, "rename", ["2 bułki"], None, replacement="3 Bułki")
+    assert out["not_done"] == ["2 Bułki"] and not out["done"]
+    store["ignore"].clear()
+    out = await async_handle(hass, "rename", ["2 bułki"], None, replacement="3 Bułki")
+    assert out["done"] == ["3 Bułki"] and store["items"][0]["summary"] == "3 Bułki"
+
+
+async def test_private_or_unavailable_todo_does_not_masquerade_as_empty(hass, hass_read_only_user):
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+    from homeassistant.core import Context
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    _fake_list(hass, [{"summary": "Milk", "status": "needs_action"}])
+    eid = "todo.shopping_list"
+    async_expose_entity(hass, "conversation", eid, False)
+    assert "error" in await async_handle(hass, "show", [], None, default=eid)
+    async_expose_entity(hass, "conversation", eid, True)
+    context = Context(user_id=hass_read_only_user.id)
+    assert "error" in await async_handle(hass, "remove", ["Milk"], None, context=context)
+    assert (await async_handle(hass, "show", [], None, context=context))["to_get"] == ["Milk"]
+    hass.states.async_set(eid, "unavailable")
+    assert "error" in await async_handle(hass, "show", [], None, default=eid)
 
 
 def test_printer_and_appliance_temperatures_arent_the_rooms():

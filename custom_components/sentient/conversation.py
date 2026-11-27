@@ -550,12 +550,18 @@ class BackedUpAgent(conversation.ConversationEntity):
             pass
 
     def _pronouncer(self, user_input):
-        """Names as they're said for a reply going to a speaker (a typed chat keeps the spelling), and numbers as
-        words in the reply's language for either (Assist can read a typed chat's reply aloud too)."""
+        """Format the speech path while keeping typed dashboard replies readable."""
+        from homeassistant.components.conversation.chat_log import current_chat_log
+        from .focus import via_alexa
+
+        log = current_chat_log.get()
+        if not (user_input.satellite_id or user_input.device_id or via_alexa.get() or getattr(log, "delta_listener", None)):
+            return None
         pronouncer = getattr(self._entry.runtime_data, 'pronouncer', None)
         if pronouncer is None or not hasattr(pronouncer, 'speaking'):
             return pronouncer if (user_input.satellite_id or user_input.device_id) else None
-        say = pronouncer.speaking(user_input.language, names=bool(user_input.satellite_id or user_input.device_id))
+        say = pronouncer.speaking(self._reply_language(user_input) or user_input.language,
+                                  names=bool(user_input.satellite_id or user_input.device_id))
         return say if say.active() else None
 
     async def _process_streaming_aware(self, user_input):
@@ -575,7 +581,10 @@ class BackedUpAgent(conversation.ConversationEntity):
         log = current_chat_log.get()
         from .security_voice import camera_history_request
 
-        if log is None or log.delta_listener is None or not self.supports_streaming or camera_history_request(user_input.text):
+        from .lists import LIST_WORDS
+
+        if (log is None or log.delta_listener is None or not self.supports_streaming
+                or camera_history_request(user_input.text) or LIST_WORDS.search(user_input.text)):
             listener = log.delta_listener if log is not None else None
             if listener is not None:
                 log.delta_listener = None  # the Assist pipeline also receives provider deltas directly
@@ -782,7 +791,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                     and normalise(asked).strip("?.!").casefold() in ("what about now", "and now")):
                 asked = public[0]  # only canonical public questions, no previous answer, identity or permissions
             if said := await instant_answer(self.hass, self._entry.runtime_data, asked, user_input.context,
-                                            user_input.device_id, public_only=cautious or changed_speaker):
+                                            user_input.device_id, public_only=cautious or changed_speaker,
+                                            language=self._reply_language(user_input) or user_input.language):
                 if sessions is not None and (voice_session := sessions.items.get((user_input.conversation_id, *owner))):
                     async with voice_session.lock:
                         voice_session.camera_topic = None
@@ -807,6 +817,17 @@ class BackedUpAgent(conversation.ConversationEntity):
                     meta["instant"] = True
                 return await self._localise_result(self._instant_reply(user_input, said), user_input)
         from .focus import current_request, turn_flags
+        from .lists import SHOW, async_handle as handle_list, async_reply as list_reply
+        from .voice_id import private_history
+
+        rt = self._entry.runtime_data
+        if (not synthetic and not (explicit or cautious or changed_speaker)
+                and options.get("voice_lists", True) and SHOW.fullmatch(user_input.text or "")
+                and not private_history(rt, user_input.device_id)):
+            result = await handle_list(self.hass, "show", [], None, options.get("recipes_list"),
+                                       context=user_input.context)
+            said = await list_reply(self.hass, result, self._reply_language(user_input) or user_input.language)
+            return self._instant_reply(user_input, said)
 
         flags: dict = {}
         token, ftoken = current_request.set(user_input.text), turn_flags.set(flags)
@@ -823,6 +844,11 @@ class BackedUpAgent(conversation.ConversationEntity):
             result.response.async_set_speech(flags["hand_off"])
             result.continue_conversation = False
             self._carry.pop(owner, None)
+            return result
+        if "list_result" in flags and result.response.response_type != intent.IntentResponseType.ERROR:
+            result.response.async_set_speech(await list_reply(
+                self.hass, flags["list_result"], self._reply_language(user_input) or user_input.language))
+            result.continue_conversation = bool(flags["list_result"].get("lists") or flags["list_result"].get("which_one"))
             return result
         result = await self._localise_result(result, user_input)
         if (minutes and speaker and result.conversation_id and not cautious and not self._guest()
@@ -850,13 +876,14 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .language import async_in_house_language
 
         # Sentient's own fixed replies ("Cancelled. No action was taken.") in the conversation's language: no AI
-        lang = getattr(user_input, "language", None) if user_input is not None else None
+        lang = (self._reply_language(user_input) or user_input.language) if user_input is not None else None
         if (lang and self._options().get("house_language_text", True) and lang.lower().split("-")[0] != "en"
                 and (text := spoken_text(result.response))):
             await phrases.async_load(self.hass, lang)
             if (fixed := phrases.translate(text, lang)) != text:
                 result.response.async_set_speech(fixed)
                 self._ask_again(result, user_input, fixed)
+                return result
         if self._options().get('automatic_language') and (text := spoken_text(result.response)):
             translated = await async_in_house_language(self.hass, self._options(), text)
             if translated != text:
@@ -894,15 +921,18 @@ class BackedUpAgent(conversation.ConversationEntity):
         self._carry.pop((user_input.device_id, user_input.satellite_id, user_input.context.user_id), None)
 
     async def _recoverable_turn(self, user_input):
-        if not (self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)):
-            return await self._process_turn(user_input)
-        key = (user_input.conversation_id, user_input.device_id, user_input.satellite_id, user_input.context.user_id)
-        identified = any(key[1:])
+        from . import voice_id
+
+        recovery = self._options().get(CONF_RECOVERY) and self._options().get(CONF_SESSIONS)
+        owner = (user_input.device_id, user_input.satellite_id, user_input.context.user_id)
+        speaker = voice_id.name_of(voice_id.current_speaker.get())
+        key = ("voice", owner, speaker, None if any(owner) else user_input.conversation_id)
+        identified = any(owner) or bool(user_input.conversation_id)
         running = self._turn_tasks.get(key) if identified else None
         from .voice_locale import explicit_cancel, thanks
 
         busy = running is not None and not running.done()
-        if cancel(user_input.text, self._reply_language(user_input)) and not (busy and thanks(user_input.text) == "thanks"):
+        if recovery and cancel(user_input.text, self._reply_language(user_input)) and not (busy and thanks(user_input.text) == "thanks"):
             if busy:
                 self._cancel_session(user_input)
                 running.cancel()
@@ -914,7 +944,9 @@ class BackedUpAgent(conversation.ConversationEntity):
             # "thanks", "that's all", "no thanks" aren't cancellations, so don't say something was cancelled
             return self._plain_reply(user_input, "You're welcome." if thanks(user_input.text) == "thanks" else "Okay.")
         if running is not None and not running.done():
-            return self._plain_reply(user_input, "I'm still handling the previous request. Say cancel that to stop waiting.")
+            text = ("I'm still handling the previous request. Say cancel that to stop waiting." if recovery
+                    else "The previous request is still in progress.")
+            return self._plain_reply(user_input, text)
         if not identified:
             return await self._process_turn(user_input)
         task = self.hass.async_create_task(self._process_turn(user_input))
@@ -1278,7 +1310,14 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .sessions import COMMAND
         from .followups import classify
 
-        may_change = bool(COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction'))
+        from .focus import future_device_request
+        from .lists import LIST_WORDS, SHOW
+
+        language = (user_input.language or "en").lower().split("-")[0]
+        future_device = future_device_request(user_input.text)
+        may_change = bool(COMMAND.search(user_input.text) or classify(user_input.text) in ('adjustment', 'correction')
+                          or (LIST_WORDS.search(user_input.text) and not SHOW.fullmatch(user_input.text))
+                          or language != "en" or future_device)
         if self.main_agent:
             for tries_left in (1, 0):
                 try:
@@ -1299,7 +1338,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     # refuses the whole conversation then ("content parts are required"). Mended: ask again.
                     _LOGGER.info("Sentient: mended an empty reply in the conversation; trying once more")
                     continue
-                if self._is_selftest(user_input) or not (tries_left and self._worth_retrying(user_input, attempt, why)):
+                if self._is_selftest(user_input) or not (tries_left and not may_change and self._worth_retrying(user_input, attempt, why)):
                     break
                 _LOGGER.info("Sentient: the AI service was busy (%s); trying once more", why[:80])
                 await asyncio.sleep(RETRY_PAUSE)
@@ -1323,7 +1362,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(text)
             return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
-        if attempt.get('action_started') or (self.main_agent and may_change and not _definitely_offline(why)):
+        if attempt.get('action_started') or future_device or (self.main_agent and may_change and not _definitely_offline(why)):
             return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
         rt_local = getattr(self._entry, "runtime_data", None)
         from .local_answers import async_answer as local_answer
@@ -1498,21 +1537,48 @@ class AlexaAgent(BackedUpAgent):
             extra_system_prompt=(user_input.extra_system_prompt or "") + ALEXA_PROMPT,
         )
         from .focus import via_alexa
+        from .voice_locale import explicit_cancel
+
+        scope = (echo or request.device_id or request.satellite_id or request.conversation_id, request.context.user_id)
+        key = ("alexa", *scope)
+        if any(scope) and (running := self._turn_tasks.get(key)) is not None and not running.done():
+            if explicit_cancel(text):
+                self._turn_tasks.pop(key, None)
+                running.cancel()
+                return await self._plain(user_input, "Stopped waiting for that request. An action may already have happened; please check the device. I haven't retried or undone it.")
+            return await self._plain(user_input, "The previous request is still in progress.")
 
         token = via_alexa.set(True)
         try:
             task = self.hass.async_create_task(super().async_process(request), "sentient alexa answer")
         finally:
             via_alexa.reset(token)
+        if any(scope):
+            self._turn_tasks[key] = task
+        privacy = self._history_generation()
         wait = float(opts.get(CONF_ALEXA_WAIT, DEFAULT_ALEXA_WAIT) or DEFAULT_ALEXA_WAIT)
         done, _ = await asyncio.wait({task}, timeout=wait)
         if task in done:
+            if self._turn_tasks.get(key) is task:
+                self._turn_tasks.pop(key, None)
+            if task.cancelled():
+                return await self._plain(user_input, "Okay.")
             return task.result()
-        if echo and opts.get(CONF_ALEXA_LATE, True):
-            task.add_done_callback(lambda t: self.hass.async_create_task(self._say_late(t, echo, text)))
+        late = bool(echo and opts.get(CONF_ALEXA_LATE, True))
+
+        @callback
+        def finished(t):
+            if self._turn_tasks.get(key) is t:
+                self._turn_tasks.pop(key, None)
+                if late and privacy == self._history_generation() and opts is self._options():
+                    self.hass.async_create_task(self._say_late(t, echo, text))
+            if not t.cancelled():
+                t.exception()
+
+        task.add_done_callback(finished)
+        if late:
             return await self._plain(user_input, "Give me a moment, I'll tell you when I've got it.")
-        task.add_done_callback(lambda t: t.cancelled() or t.exception())  # let it finish quietly
-        return await self._plain(user_input, "That's taking a little while. Ask me again in a moment.")
+        return await self._plain(user_input, "The previous request is still in progress.")
 
     async def _say_late(self, task: asyncio.Task, echo: str, asked: str) -> None:
         from homeassistant.util import dt as dt_util

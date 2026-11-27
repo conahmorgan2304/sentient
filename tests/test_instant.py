@@ -36,7 +36,7 @@ async def test_everyday_questions(hass: HomeAssistant) -> None:
     assert await ask("Is the kitchen light on?") == "Yes, the Kitchen light is on."
     assert await ask("is the kitchen lamp on") == "No, the Kitchen lamp is off."
     assert await ask("Is the back door open?") == "No, the Back door is closed."
-    assert await ask("What's the temperature outside?") == "It's 6°C outside and partly cloudy."
+    assert await ask("What's the temperature outside?") == "It's 6.4°C outside and partly cloudy."
     assert await ask("How warm is it in the bedroom?") == "It's 18.5°C in the Bedroom."
     assert (await ask("What time is it?")).startswith("It's ")
 
@@ -67,6 +67,24 @@ async def test_the_agent_answers_without_the_ai_and_keeps_the_conversation(hass:
         assert log.content[-1].content == "Yes, the Kitchen light is on."
         await obj.async_process(request("Turn it off", cid=result.conversation_id))
         ai.assert_awaited_once()
+
+
+async def test_polish_weather_and_device_state_need_no_provider(hass):
+    from dataclasses import replace
+
+    from custom_components.sentient.phrases import translate
+
+    await _house(hass)
+    hass.states.async_set("weather.home", "cloudy", {"temperature": 2, "temperature_unit": "°C"})
+    hass.states.async_set("light.kitchen_light", "off", {"friendly_name": "Kitchen light"})
+    obj, _ = agent(hass, {"instant_answers": True})
+    with patch.object(obj, "_async_process_legacy", AsyncMock()) as ai:
+        result = await obj.async_process(replace(request("Jaka jest pogoda?"), language="pl"))
+        assert result.response.speech["plain"]["speech"] == "Na zewnątrz jest pochmurno, 2°C."
+        assert translate("It's cloudy, 2°C out.", "pl") == "Na zewnątrz jest pochmurno, 2°C."
+        result = await obj.async_process(replace(request("Is the kitchen light on?"), language="pl"))
+        assert result.response.speech["plain"]["speech"] == "Nie. Kitchen light: wyłączone."
+        ai.assert_not_awaited()
 
 
 def test_instant_answers_and_prompt_size_are_measured() -> None:

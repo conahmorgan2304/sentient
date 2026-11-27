@@ -110,6 +110,10 @@ class ControlTool(_Tool):
         rt, session = _runtime(hass), current_session.get()
         if rt is None or session is None:
             return {'error': 'Use guarded control through the Sentient with backup agent'}
+        from .focus import current_request, future_device_request
+
+        if future_device_request(current_request.get() or SentientAPI._asked()):
+            return {'error': 'This request is for a future time. Use the Schedules page for timed actions.'}
         return await rt.control.propose(session, tool_input.tool_args['actions'], llm_context.context)
 
 

@@ -124,6 +124,32 @@ async def test_alexa_slow_answer_said_on_that_echo(hass: HomeAssistant) -> None:
     said.assert_awaited_once_with("The bins go out tomorrow.", targets=["media_player.kitchen_echo"], source="alexa:reply")
 
 
+async def test_repeated_alexa_command_while_pending_is_not_sent_twice(hass):
+    hass.states.async_set("media_player.kitchen_echo", "idle", {
+        "last_called": True, "last_called_timestamp": time.time() * 1000})
+    entry = await _setup(hass, alexa_skill=True, alexa_wait=0.01, voice_agent="conversation.ai")
+    agent = await _alexa_agent(hass)
+    release = asyncio.Event()
+    calls = []
+
+    async def converse(_agent_id, request):
+        calls.append(request.text)
+        await release.wait()
+        return _result("The speaker reported playback.")
+
+    with patch.object(agent, "_converse", side_effect=converse), \
+            patch.object(entry.runtime_data.speech, "async_say", AsyncMock()) as said:
+        ask = _input("Play the radio")
+        first = await agent.async_process(ask)
+        repeated = await agent.async_process(ask)
+        assert "Give me a moment" in first.response.speech["plain"]["speech"]
+        assert "still in progress" in repeated.response.speech["plain"]["speech"]
+        assert calls == ["Play the radio"]
+        release.set()
+        await hass.async_block_till_done()
+        said.assert_awaited_once()
+
+
 async def test_alexa_off(hass: HomeAssistant) -> None:
     await _setup(hass, voice_agent="conversation.ai")
     agent = await _alexa_agent(hass)

@@ -23,7 +23,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
-from .language import write_in
+from .language import spoken_language, write_in
 from .ai import AIUnavailable, async_generate
 from .const import (
     personality_line,
@@ -77,7 +77,8 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime, *, readable=
     if "weather" in want:
         weather_id = opts.get(CONF_BRIEFING_WEATHER)
         weather = hass.states.get(weather_id) if weather_id else next(iter(hass.states.async_all("weather")), None)
-        if weather is not None:
+        if (weather is not None and (readable is None or readable(weather.entity_id))
+                and weather.state not in ("unknown", "unavailable") and weather.attributes.get("temperature") is not None):
             unit = weather.attributes.get("temperature_unit") or ""
             out["weather"] = (
                 f"{weather.state.replace('-', ' ').replace('partlycloudy', 'partly cloudy')}, "
@@ -240,7 +241,7 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime, *, readable=
 
 
 
-def plain_briefing(facts: dict[str, Any]) -> str:
+def plain_briefing(facts: dict[str, Any], language: str | None = None) -> str:
     """The briefing without the AI: the facts that matter, in plain sentences."""
     out: list[str] = []
     if weather := facts.get("weather"):
@@ -274,7 +275,9 @@ def plain_briefing(facts: dict[str, Any]) -> str:
         first = overnight[0] if isinstance(overnight, list) and overnight else overnight
         if isinstance(first, str):
             out.append(first.rstrip(".") + ".")
-    return " ".join(out[:5]) or "Nothing needs doing right now."
+    from .phrases import translate
+
+    return " ".join(translate(line, language) for line in out[:5]) or "Nothing needs doing right now."
 
 def _item_key(text: str) -> str:
     """An item with its numbers taken out, so "about 5 days left" and "about 4 days left" are the same item."""
@@ -720,7 +723,11 @@ class Upkeep:
             return changed
         message = str(text or "").strip() if isinstance(text, (str, type(None))) else ""
         if not message:
-            message = plain_briefing(facts)  # the AI couldn't: say the facts plainly
+            from .phrases import async_load
+
+            language = spoken_language(self.hass, rt.options)
+            await async_load(self.hass, language)
+            message = plain_briefing(facts, language)
         if facts.get("animals_outside"):
             # the briefing says how the animals' place is; what was kept about it overnight needn't be said again
             thought_ids |= {q['id'] for q in rt.followyou.queue if q.get('source') == 'animals'}

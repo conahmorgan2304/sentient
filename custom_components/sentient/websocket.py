@@ -2537,7 +2537,15 @@ async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
         if store_of(msg["kind"]) == "alarms":
             item["silent"] = msg["kind"] == "schedules"  # alarms speak; automated routines just do things
             item["made_by"] = "page"  # set by an admin on the page: run as set (anything else is checked when it rings)
-        entry.runtime_data.lists[store_of(msg["kind"])].upsert(item)
+            item["voice_user_id"] = None
+            alarms = entry.runtime_data.lists["alarms"]
+            async with alarms.write_lock:
+                await alarms.async_commit(lambda: alarms.upsert(item))
+        else:
+            entry.runtime_data.lists[store_of(msg["kind"])].upsert(item)
+    except OSError:
+        connection.send_error(msg["id"], "storage_error", "The schedule could not be saved.")
+        return
     except (vol.Invalid, ValueError, HomeAssistantError) as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return
@@ -2548,15 +2556,25 @@ async def ws_items_save(hass: HomeAssistant, connection, msg: dict[str, Any]) ->
     {vol.Required("type"): "sentient/items/delete", vol.Required("kind"): _KIND, vol.Required("item_id"): str}
 )
 @websocket_api.require_admin
-@callback
-def ws_items_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+@websocket_api.async_response
+async def ws_items_delete(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
     from .kinds import store_of
 
-    entry.runtime_data.lists[store_of(msg["kind"])].remove(msg["item_id"])
+    kind = store_of(msg["kind"])
+    items = entry.runtime_data.lists[kind]
+    if kind == "alarms":
+        try:
+            async with items.write_lock:
+                await items.async_commit(lambda: items.remove(msg["item_id"]))
+        except OSError:
+            connection.send_error(msg["id"], "storage_error", "The schedule could not be deleted.")
+            return
+    else:
+        items.remove(msg["item_id"])
     connection.send_result(msg["id"], _items_payload(hass, entry, msg["kind"]))
 
 
