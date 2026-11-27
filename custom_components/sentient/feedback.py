@@ -15,7 +15,8 @@ nothing is held against it for ever. Unshushing takes the score back down.
 
 * remarks: from 2 points a thing is only mentioned when it really matters (the
   AI is told so); from 3 it isn't noticed at all.
-* offers: two declines or deletions for a thing, and no more are offered for it.
+* learned routines: two declines or deletions suppress further suggestions.
+* configured offers: ordinary refusals only pause offers for up to 24 hours; disable the offer to stop it.
 
 Everything learned is listed, and can be reset, on the Shushed settings page.
 
@@ -157,6 +158,15 @@ class Feedback:
         return "quiet" if s >= QUIET else "important_only" if s >= IMPORTANT_ONLY else None
 
     def offers_blocked(self, entity_id: str) -> bool:
+        if entity_id.startswith("offer:"):
+            item = self.items.get(f"offers|{entity_id}")
+            if not item:
+                return False
+            now = dt_util.utcnow()
+            updated = dt_util.parse_datetime(item.get("updated") or "")
+            score = self._faded(item, now)
+            # Configured questions are wanted by design; a refusal means not now.
+            return bool(updated and score >= 0.5 and now - updated < timedelta(hours=min(24, 2 * score)))
         return self.score(entity_id, "offers") >= NO_MORE_OFFERS
 
     # ----- signals ------------------------------------------------------------------
@@ -235,7 +245,10 @@ class Feedback:
             st = self.hass.states.get(entity_id)
             name = st.name if st else (f"{entity_id[7:].replace(':', ' — ')} remarks" if entity_id.startswith("source:") else entity_id)
             if kind == "offers":
-                effect = "no more offers" if score >= NO_MORE_OFFERS else "fewer offers"
+                if entity_id.startswith("offer:"):
+                    effect = "temporarily paused" if self.offers_blocked(entity_id) else "fewer offers"
+                else:
+                    effect = "no more offers" if score >= NO_MORE_OFFERS else "fewer offers"
             else:
                 effect = "not mentioned" if score >= QUIET else "only if it matters" if score >= IMPORTANT_ONLY else "noted"
             out.append({

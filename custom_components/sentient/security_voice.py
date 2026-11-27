@@ -77,7 +77,7 @@ def _camera_matches(hass, value):
         if entry and entry.disabled_by:
             continue
         names = {normal(n) for n in (state.entity_id.split(".", 1)[1], state.name,
-                                     *(entry.aliases if entry else ())) if n}
+                                     *(entry.aliases if entry else ())) if isinstance(n, str) and n}
         if query in names:
             literal.append(state.entity_id)
         elif short and any(short == name.removesuffix(" camera") for name in names):
