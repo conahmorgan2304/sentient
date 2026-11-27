@@ -37,7 +37,7 @@ def is_question(text: str) -> bool:
     return bool(_QUESTION.search(text or "")) and not COMMAND.search(text or "")
 
 
-def _coming_up(rt: Any) -> str | None:
+def _coming_up(rt: Any, question: str = "") -> str | None:
     from .watches import local_when
 
     alarms = [a for a in (rt.alarms.listing() if getattr(rt, "alarms", None) else []) if a["on"] and a["next"]]
@@ -47,6 +47,16 @@ def _coming_up(rt: Any) -> str | None:
     for w in (listed() if callable(listed) else listed):  # a property on the real engine
         if getattr(w, "kind", "") == "reminder":
             reminders.append(w)
+    wants_reminders = bool(re.search(r"\breminders?\b|\bremind me\b", question, re.I))
+    wants_alarms = bool(re.search(r"\balarms?\b", question, re.I))
+    if wants_reminders and not wants_alarms:
+        alarms = []
+        if not reminders:
+            return "You have no reminders set."
+    elif wants_alarms and not wants_reminders:
+        reminders = []
+        if not alarms:
+            return "You have no alarms coming up."
     parts = []
     if alarms:
         first = alarms[0]
@@ -93,7 +103,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         if guest:
             return None  # alarms, reminders and visitors are household details
         if COMING.search(text):
-            body = _coming_up(rt)
+            body = _coming_up(rt, text)
         elif VISITORS.search(text):
             body = _visitors(rt)
         else:
