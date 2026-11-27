@@ -119,11 +119,21 @@ class FrigateHealth:
             if (event := normal_event(data.get("after"))) and (eid := f"camera.{event['camera']}") in cameras:
                 self.events[eid] = now
 
+    def stats_fresh(self, now=None):
+        now = now or dt_util.utcnow()
+        return bool(self.availability not in ("offline", "stopped") and self.stats_at
+                    and timedelta(0) <= now - self.stats_at <= STALE_AFTER)
+
+    def pipeline_availability(self, now=None):
+        if self.availability == "online" and not self.stats_fresh(now):
+            return "unknown"
+        return self.availability or "unknown"
+
     def report(self, user):
         if not self.options.get(CONF_FRIGATE_HEALTH):
             return {"enabled": False}
         now = dt_util.utcnow()
-        fresh = bool(self.availability not in ("offline", "stopped") and self.stats_at and now - self.stats_at <= STALE_AFTER)
+        fresh = self.stats_fresh(now)
         cameras = []
         for eid in sorted(configured_cameras(self.hass, self.options)):
             if not user.permissions.check_entity(eid, POLICY_READ):
@@ -136,8 +146,6 @@ class FrigateHealth:
                             "ha_report": state.state if state and not state.attributes.get("restored") else "unknown",
                             "processing": "zero_rate" if zero else "reporting" if values.get("process_fps") else "unknown",
                             "last_event_received": event.isoformat() if event else None, **values})
-        availability = self.availability or "unknown"
-        if availability == "online" and not fresh:
-            availability = "unknown"
-        return {"enabled": True, "availability": availability, "last_reported_availability": self.availability,
+        return {"enabled": True, "availability": self.pipeline_availability(now),
+                "last_reported_availability": self.availability,
                 "stats_fresh": fresh, "stats_at": self.stats_at.isoformat() if self.stats_at else None, "cameras": cameras}

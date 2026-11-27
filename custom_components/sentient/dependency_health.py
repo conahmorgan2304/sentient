@@ -53,11 +53,11 @@ def runtime_dependencies(rt: Any, hass: Any) -> dict[str, bool | None]:
         return None if stopped is None else not bool(stopped)
 
     def frigate() -> bool | None:
-        # Loaded isn't the same as up: Frigate can drop out while its integration stays loaded. Only what
-        # Frigate last reported over MQTT counts; without that it's unchecked.
-        if "frigate" not in components:
+        # Use the same freshness requirement as the camera pipeline report.
+        monitor = getattr(rt, "frigate_health", None)
+        if "frigate" not in components or monitor is None:
             return None
-        said = getattr(getattr(rt, "frigate_health", None), "availability", None)
+        said = monitor.pipeline_availability()
         if said == "online":
             return True
         if said in ("offline", "stopped"):
