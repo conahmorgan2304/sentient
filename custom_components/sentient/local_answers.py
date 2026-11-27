@@ -62,6 +62,9 @@ def _coming_up(rt: Any, question: str = "") -> str | None:
         first = alarms[0]
         when = dt_util.parse_datetime(first["next"])
         parts.append(f"your next alarm is {first['name']} at {local_when(when)}" if when else f"your next alarm is {first['name']}")
+    if reminders and wants_reminders and not wants_alarms:
+        reminders.sort(key=lambda w: w.until_dt)
+        return "Your reminders are " + "; ".join(f"“{w.what}” at {local_when(w.until_dt)}" for w in reminders) + "."
     if reminders:
         reminders.sort(key=lambda w: w.until_dt)
         nxt = reminders[0]
