@@ -370,8 +370,8 @@ class CameraActivityTool(_Tool):
         label = (args.get("label") or "").strip().casefold() or None
         stamp = events.stamp()
         visits, source = await events.async_activity(camera, since, label)
-        if (stamp != events.stamp() or not events.tracking or name not in events.cameras()
-                or not await allowed(hass, llm_context, camera)):
+        if (not await allowed(hass, llm_context, camera) or stamp != events.stamp()
+                or not events.tracking or name not in events.cameras()):
             return {"error": "Camera access or event configuration changed", "reason": "camera_access", "note": couldnt}
         if visits is None:
             return {"error": "Camera history is unavailable for this period", "reason": "evidence_unavailable",

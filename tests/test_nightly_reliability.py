@@ -97,6 +97,22 @@ async def test_camera_history_checks_permissions_aliases_and_renamed_frigate_cam
     checked = await query(camera, True)
     assert checked["camera_id"] == camera and checked["visits"][0]["seen"] == ["person"]
 
+    checks = 0
+
+    async def change_scope_on_recheck(*_args):
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            rt.security_events.invalidate()
+        return True
+
+    with patch("custom_components.sentient.security_voice._runtime", return_value=rt), \
+            patch("custom_components.sentient.security_voice.allowed", side_effect=change_scope_on_recheck):
+        result = await tool.async_call(
+            hass, llm.ToolInput(tool.name, {"camera": camera, "hours": 2, "label": "person"}), context,
+        )
+    assert getattr(result, "data", result)["reason"] == "camera_access"
+
 
 async def test_coming_up_separates_reminders_from_alarms_in_both_answer_paths(hass):
     from custom_components.sentient.local_answers import async_answer as offline
