@@ -591,8 +591,14 @@ class SelfTest:
             elif SECURITY_OFFER.search(answer):
                 # only asked whether it's on: offering to arm, disarm or unlock isn't the voice's place
                 right, expected = False, f"{expected}, without offering to arm, disarm or unlock"
+            from .reliability import _tool_outcome
+
+            unresolved = set(failed_tools(results_seen))
+            errors = {name: str(err)[:200] for name, err, _did in map(_tool_outcome, results_seen)
+                      if err and name in unresolved}
             results.append({"key": q.key, "kind": q.kind, "question": q.ask, "answer": answer[:200], "right": right,
-                            "expected": expected, "tools": tools, "ms": round((time.monotonic() - began) * 1000)})
+                            "expected": expected, "tools": tools, "tool_errors": errors,
+                            "ms": round((time.monotonic() - began) * 1000)})
         if not results:
             return {"skipped": "no self-test questions could be run"}
         history = [*self.last.get("history", []), {
