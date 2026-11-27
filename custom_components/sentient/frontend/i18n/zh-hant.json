@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "能源儀表板設備的用電量－並且透過分時電價，在最便宜的時候運行洗衣機或洗碗機。",
  "Energy": "活力",
  "Energy, appliances and routines": "能源、電器和日常事務",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "能源：今天到目前為止，從 Home Assistant 能源儀表板上的設備（不是電網儀表）添加。成本：總計乘以「設定」中的費率。平時的百分比：相對於正常一天到目前為止。",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "基本設定",
  "Event clips": "活動剪輯",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "每個人工智慧呼叫和網路搜尋 Sentient 都是根據功能自行進行的 — 發送了什麼類型的內容以及發送的位置，而不是它所說或顯示的內容。您透過語音提出的問題將透過您的語音代理進行，而不是在這裡。",

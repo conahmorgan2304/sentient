@@ -200,6 +200,35 @@ async def test_power_sensor_finishes_after_settling(hass: HomeAssistant) -> None
     assert said[-1].data["message"] == "Washing machine's finished."
 
 
+async def test_appliances_follow_the_house_s_own_names(hass: HomeAssistant) -> None:
+    """A power sensor called 'Geschirrspüler' is only followed when the house says that's an appliance."""
+    entry = await _setup(hass)
+    app = entry.runtime_data.appliances
+    attrs = {"device_class": "power", "unit_of_measurement": "W", "friendly_name": "Küche - Geschirrspüler Leistung"}
+    hass.states.async_set("sensor.kuche_geschirrspuler_leistung", "0", attrs)
+    await hass.async_block_till_done()
+    assert "sensor.kuche_geschirrspuler_leistung" not in app.watched()  # no English word in the name
+    entry.runtime_data.appliances.options = {**app.options, "appliance_names": "Geschirrspüler, Waschmaschine"}
+    assert "sensor.kuche_geschirrspuler_leistung" in app.watched()
+
+
+async def test_an_appliance_is_called_by_the_name_its_device_has(hass: HomeAssistant) -> None:
+    """'Küche - Geschirrspüler Leistung' is the sensor; the device is called 'Küche - Geschirrspüler'."""
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    entry = await _setup(hass, appliances=["sensor.kuche_geschirrspuler_leistung"])
+    devices = dr.async_get(hass)
+    device = devices.async_get_or_create(config_entry_id=entry.entry_id, identifiers={("shelly", "abc")},
+                                          name="shellyplus1pm-abc")
+    devices.async_update_device(device.id, name_by_user="Küche - Geschirrspüler")
+    er.async_get(hass).async_get_or_create("sensor", "shelly", "abc_power",
+                                            suggested_object_id="kuche_geschirrspuler_leistung",
+                                            device_id=device.id, config_entry=entry)
+    app = entry.runtime_data.appliances
+    assert app._friendly("sensor.kuche_geschirrspuler_leistung", "Küche - Geschirrspüler Leistung") == "Küche - Geschirrspüler"
+    assert app._friendly("sensor.without_device", "Washing machine power") == "Washing machine"
+
+
 async def test_noticer_leaves_appliances_alone(hass: HomeAssistant) -> None:
     entry = await _setup(hass, appliances=["vacuum.robot"], notice_entities=["vacuum.robot"])
     hass.states.async_set("vacuum.robot", "docked")

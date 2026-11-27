@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "שימוש בחשמל ממכשירי לוח המחוונים של Energy — ועם תעריף זמן שימוש, דחיפה להפעיל את מכונת הכביסה או מדיח הכלים כשהם הכי זולים.",
  "Energy": "אֵנֶרְגִיָה",
  "Energy, appliances and routines": "אנרגיה, מכשירי חשמל ושגרה",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "אנרגיה: היום עד כה, מתווסף מהמכשירים בלוח המחוונים האנרגיה של Home Assistant (לא מד הרשת). עלות: הסכום הכולל כפול מהתעריף בהגדרות. % מהרגיל: נגד יום רגיל עד לשעה זו.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "יסודות",
  "Event clips": "קטעי אירועים",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "כל קריאת AI וחיפוש באינטרנט Sentient מבצעים מעצמם, לפי תכונה — איזה סוג של דבר נשלח ולאן, אף פעם לא מה הוא אמר או הראה. שאלות שאתה שואל קול עוברות דרך הסוכן הקולי שלך, לא כאן.",

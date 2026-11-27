@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "استهلاك الكهرباء من أجهزة لوحة معلومات الطاقة — ومع تعرفة وقت الاستخدام، تنبيه لتشغيل الغسالة أو غسالة الأطباق عندما تكون أرخص.",
  "Energy": "طاقة",
  "Energy, appliances and routines": "الطاقة والأجهزة والروتين",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "الطاقة: اليوم حتى الآن، تمت إضافتها من الأجهزة الموجودة على لوحة معلومات الطاقة الخاصة بـ Home Assistant (وليس عداد الشبكة). التكلفة: إجمالي مرات السعر في الإعدادات. النسبة المئوية للمعتاد: مقابل يوم عادي حتى هذا الوقت.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "أساسيات",
  "Event clips": "مقاطع الحدث",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "كل مكالمة بتقنية الذكاء الاصطناعي وبحث على الويب تجريها Sentient بنفسها، حسب الميزة — نوع الشيء الذي تم إرساله وأين، وليس أبدًا ما قيل أو أظهر. الأسئلة التي تطرحها صوتيًا تمر عبر وكيل الصوت الخاص بك، وليس هنا.",

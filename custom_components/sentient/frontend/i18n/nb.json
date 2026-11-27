@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "Elektrisitetsbruk fra enhetene til Energy-dashbordet — og, med en brukstidstariff, en dytt til å kjøre vaskemaskinen eller oppvaskmaskinen når det er billigst.",
  "Energy": "Energi",
  "Energy, appliances and routines": "Energi, hvitevarer og rutiner",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "Energi: i dag så langt, lagt opp fra enhetene på Home Assistants energidashbord (ikke rutenettmåleren). Kostnad: det totale antallet ganger prisen i Innstillinger. % av vanlig: mot en vanlig dag frem til dette tidspunktet.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "Det viktigste",
  "Event clips": "Event klipp",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "Hvert AI-anrop og nettsøk Sentient gjør av seg selv, etter funksjon — hva slags ting ble sendt og hvor, aldri hva den sa eller viste. Spørsmål du stiller til en stemme går gjennom stemmeagenten din, ikke her.",

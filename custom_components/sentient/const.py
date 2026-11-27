@@ -69,6 +69,7 @@ CONF_DAILY_AI_LIMIT = "daily_ai_limit"
 CONF_APPLIANCES = "appliances"
 CONF_APPLIANCE_ANNOUNCE = "appliance_announce"
 CONF_APPLIANCE_WATTS = "appliance_watts"
+CONF_APPLIANCE_NAMES = "appliance_names"  # extra words that mark a device as an appliance, for names in another language
 CONF_NOTICE_ENTITIES = "notice_entities"
 CONF_CHATTINESS = "chattiness"
 CONF_TALK_STYLE = "conversation_style"  # brief / natural

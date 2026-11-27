@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "การใช้ไฟฟ้าจากอุปกรณ์ของแดชบอร์ด Energy — และด้วยอัตราค่าไฟฟ้าตามระยะเวลาการใช้งาน ให้คุณกระตุ้นเครื่องซักผ้าหรือเครื่องล้างจานเมื่อราคาถูกที่สุด.",
  "Energy": "พลังงาน",
  "Energy, appliances and routines": "พลังงาน เครื่องใช้ไฟฟ้า และกิจวัตรประจำวัน",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "พลังงาน: จนถึงวันนี้ เพิ่มจากอุปกรณ์บนแดชบอร์ดพลังงานของ Home Assistant (ไม่ใช่กริดมิเตอร์) ค่าใช้จ่าย: จำนวนทั้งหมดคูณด้วยอัตราในการตั้งค่า % ของปกติ: เทียบกับวันปกติจนถึงเวลานี้.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "สิ่งจำเป็น",
  "Event clips": "คลิปเหตุการณ์",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "การโทรและการค้นหาเว็บของ AI ทุกครั้ง Sentient สร้างขึ้นด้วยตัวมันเอง ตามคุณสมบัติ — ประเภทของสิ่งที่ถูกส่งและที่ไหน ไม่เคยพูดหรือแสดงอะไร คำถามที่คุณถามด้วยเสียงจะต้องผ่านตัวแทนเสียงของคุณ ไม่ใช่ที่นี่.",
