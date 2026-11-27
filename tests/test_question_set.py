@@ -103,9 +103,10 @@ async def test_a_camera_and_the_door_are_asked_about_from_what_was_recorded(hass
     rt = entry.runtime_data
     now = dt_util.utcnow().timestamp()
     fake_events = SimpleNamespace(tracking=True, cameras=lambda: {"garden"},
-                                  activity=lambda cam, since: [{"labels": ["person"], "start": now - 600}])
+                                  activity=lambda cam, since, label=None: [{"labels": ["person"], "start": now - 600}])
     fake_visitors = SimpleNamespace(camera="camera.doorbell", today=lambda: [])
-    with patch.object(rt, "security_events", fake_events), patch.object(rt, "visitors", fake_visitors):
+    with patch.object(rt, "security_events", fake_events), patch.object(rt, "visitors", fake_visitors), \
+            patch.object(type(rt.selftest), "_exposed", return_value=True):
         qs = {q.key: q for q in rt.selftest.household_questions(rt)}
     assert qs["camera"].check("Yes, someone was in the garden at ten to two.")[0]
     assert not qs["camera"].check("No one's been seen there.")[0]

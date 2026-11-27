@@ -148,7 +148,7 @@ EVIDENCE_NAMES = ("history", "timeline", "what_happened", "camera_activity", "vi
                   # answering without looking; "What did you say?" is answered from what was said
                   "calendar", "said", "spoken",
                   # 22 Nov: "What did the person look like at 6:14?" looked at a saved picture
-                  "snapshot", "clip", "recap", "camera_events")
+                  "snapshot", "clip", "recap", "camera_events", "frigate_query")
 
 
 def needs_evidence(asked: str) -> bool:
@@ -170,13 +170,46 @@ def _short(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
+def tool_payload(content: dict[str, Any]) -> dict[str, Any]:
+    result = content.get("result")
+    if isinstance(result, dict) and isinstance(result.get("data"), dict):
+        return result["data"]
+    result = content.get("tool_result")
+    return result if isinstance(result, dict) else {}
+
+
+CAMERA_ERROR_REASONS = frozenset({
+    "camera_unresolved", "camera_access", "camera_not_configured", "evidence_disabled", "evidence_unavailable",
+})
+TOOL_ERROR_REASONS = CAMERA_ERROR_REASONS | {"invalid_arguments", "timeout", "read_only", "tool_failed"}
+
+
+def tool_error_reason(content: dict[str, Any]) -> str:
+    """Keep a useful category without persisting provider messages, tool arguments or entity names."""
+    result = tool_payload(content)
+    reason = result.get("reason")
+    if isinstance(reason, str) and reason in CAMERA_ERROR_REASONS:
+        return reason
+    error = str(result.get("error") or "").casefold()
+    if error.startswith("wrong arguments") or error in ("invalid", "multipleinvalid", "vol.invalid", "validationerror", "invalidtoolarguments"):
+        return "invalid_arguments"
+    if "timeout" in error or "timed out" in error:
+        return "timeout"
+    if "read-only" in error:
+        return "read_only"
+    return "tool_failed"
+
+
 def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
     """(tool name, what went wrong or None, whether it was a device action that did something)."""
     name = str(content.get("tool_name") or "").split("__")[-1]
-    result = content.get("tool_result")
-    if isinstance(result, dict) and result.get("error"):
-        return name, _short(str(result["error"]), 140), False
-    data = result.get("data") if isinstance(result, dict) else None
+    result = content.get("result", content.get("tool_result"))
+    payload = tool_payload(content)
+    if payload.get("error") or (isinstance(result, dict) and result.get("error")):
+        return name, _short(str(payload.get("error") or "tool reported an error"), 140), False
+    if payload.get("response_type") == "error" or payload.get("status") in ("failed", "error", "timed_out"):
+        return name, "tool reported an error", False
+    data = payload.get("data")
     if isinstance(data, dict) and ("success" in data or "failed" in data):
         bad = [str(t.get("name")) for t in data.get("failed") or [] if isinstance(t, dict) and t.get("name")]
         # A nonempty success list represents a reported successful target, not
@@ -186,12 +219,12 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
         if bad:
             return name, "didn't work: " + ", ".join(bad[:4]), ok
         return name, None, ok
-    if isinstance(result, dict) and result.get("success") is True:
+    if payload.get("success") is True:
         # Explicit success is evidence that the tool reports completion. It is
         # not independent verification that the physical device changed.
         return name, None, True
-    if isinstance(result, dict) and result.get("success") is False:
-        return name, _short(str(result.get("message") or result.get("reason") or "failed"), 140), False
+    if payload.get("success") is False:
+        return name, _short(str(payload.get("message") or payload.get("reason") or "failed"), 140), False
     return name, None, False
 
 

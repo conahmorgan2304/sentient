@@ -460,7 +460,7 @@ class MindSensor(_Base):
             "voice_sessions": [self._compact(row, ("conversation_id", "state", "topic", "last_activity"))
                                for row in sessions[:5]],
             "self_test": {**self_test,
-                          "results": [self._compact(row, ("key", "kind", "question", "right", "expected", "ms"))
+                          "results": [self._compact(row, ("key", "kind", "question", "right", "expected", "outcome", "ms"))
                                       for row in self_test.get("results", [])],
                           "history": [self._compact(row, ("time", "right", "total"))
                                       for row in self_test.get("history", [])]},

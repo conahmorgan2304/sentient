@@ -9,7 +9,7 @@ from homeassistant.auth.permissions.const import POLICY_READ
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.util import dt as dt_util
 
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry as er
 
 from .llm_api import _Tool, _runtime, _read_only
 from .security_events import CONF_EVENT_CONTEXT, CONF_EVENT_FEEDBACK, FEEDBACK
@@ -50,32 +50,44 @@ async def allowed(hass, context, entity_id):
 
 def camera_named(hass, value):
     """An explicit full match or one unambiguous partial name; never a first hit."""
+    matched = _camera_matches(hass, value)
+    return matched[0] if len(matched) == 1 else None
+
+
+def _camera_matches(hass, value):
     def normal(text):
         return " ".join(re.sub(r"[_\W]+", " ", text.casefold()).split())
 
     raw = value.strip().casefold()
-    if raw.startswith("camera.") and hass.states.get(raw) is not None:
-        return raw
-    query = normal(raw.removeprefix("camera.")).removeprefix("the ").removesuffix(" camera")
+    if raw.startswith("camera."):
+        return [raw] if hass.states.get(raw) is not None else []
+    query = normal(raw).removeprefix("the ")
     if not query:
-        return None
+        return []
     from .presence import area_of
     from homeassistant.helpers import area_registry as ar
 
     areas = ar.async_get(hass)
-    exact, partial, nearby = [], [], []
-    words = set(query.split())
+    registry = er.async_get(hass)
+    literal, exact, partial, nearby = [], [], [], []
+    short = query.removesuffix(" camera")
+    words = set(short.split())
     for state in hass.states.async_all("camera"):
-        names = {normal(state.entity_id.split(".", 1)[1]), normal(state.name)}
-        if any(query == name or query == name.removesuffix(" camera") for name in names):
+        entry = registry.async_get(state.entity_id)
+        if entry and entry.disabled_by:
+            continue
+        names = {normal(n) for n in (state.entity_id.split(".", 1)[1], state.name,
+                                     *(entry.aliases if entry else ())) if n}
+        if query in names:
+            literal.append(state.entity_id)
+        elif short and any(short == name.removesuffix(" camera") for name in names):
             exact.append(state.entity_id)
-        elif any(words <= set(name.split()) for name in names):
+        elif words and any(words <= set(name.split()) for name in names):
             partial.append(state.entity_id)
         if (area_id := area_of(hass, state.entity_id)) and (area := areas.async_get_area(area_id)):
-            if query == normal(area.name):
+            if short == normal(area.name):
                 nearby.append(state.entity_id)
-    matched = exact or nearby or partial
-    return matched[0] if len(matched) == 1 else None
+    return literal or exact or nearby or partial
 
 
 async def select(hass, rt, context, event_id=None, camera=None, use_focus=True, latest_alert=False):
@@ -240,6 +252,64 @@ class SecurityFeedbackTool(_Tool):
         return rt.security_events.feedback(row["id"], tool_input.tool_args["value"])
 
 
+def camera_history_request(text):
+    """A retrospective question about camera detections."""
+    from .focus import history_request
+
+    past = history_request(text) or re.search(r"\b(?:since|last|past|today|this morning|has anyone been)\b", text, re.I)
+    return bool(past and re.search(r"\b(camera|seen|detected|detections?|spotted)\b", text, re.I))
+
+
+def checked_history_reply(answer, results):
+    """A failed lookup cannot substantiate a claim about who was seen."""
+    from .reliability import _tool_outcome, tool_payload
+    from .selftest import yes_no
+
+    latest = {}
+    for content in results:
+        name, error, _ = _tool_outcome(content)
+        if name in ("sentient_camera_activity", "frigate_query"):
+            latest[name] = (content, error)
+    failures = [tool_payload(content) for content, error in latest.values() if error]
+    if not failures:
+        return answer
+    fallback = "I couldn't verify the camera's detection history for that period."
+    if any(failure.get("reason") in ("camera_access", "evidence_disabled") for failure in failures):
+        return fallback
+    for failure in failures:
+        camera, hours = failure.get("camera_id"), failure.get("hours")
+        if not camera or not hours:
+            continue
+        for tool, (content, error) in latest.items():
+            if not error and (seen := person_evidence(content, camera, hours)) is not None and yes_no(answer) is seen:
+                source = "Frigate's event history" if tool == "frigate_query" else "Sentient's camera history"
+                return f"According to {source}, {answer[0].lower() + answer[1:]}"
+    return fallback
+
+
+def person_evidence(result, camera, hours):
+    """A person's presence/absence from a source bounded to this exact camera and period."""
+    from .reliability import _tool_outcome, tool_payload
+
+    name, error, _ = _tool_outcome(result)
+    payload = tool_payload(result)
+    if error or payload.get("camera_id") != camera or payload.get("hours") != hours:
+        return None
+    if (name == "sentient_camera_activity" and payload.get("source") in
+            ("Sentient's retained Frigate events", "Frigate event history") and isinstance(visits := payload.get("visits"), list)):
+        if any(isinstance(visit, dict) and "person" in (visit.get("seen") or ()) for visit in visits):
+            return True
+        if payload.get("label") == "person" or (not visits and payload.get("label") is None
+                                                 and payload["source"] == "Frigate event history"):
+            return False
+    if name == "frigate_query" and payload.get("label") == "person":
+        # Accept external tools only when their result identifies the requested scope.
+        count = payload.get("count")
+        if type(count) is int and count >= 0:
+            return count > 0
+    return None
+
+
 class CameraActivityTool(_Tool):
     annotations = _read_only()
     reads_outside = True
@@ -249,6 +319,9 @@ class CameraActivityTool(_Tool):
                    "in the garden?', 'when did you last see the rabbits?', 'did anyone go to the shed this afternoon?'. Look it up "
                    "every time — not from an earlier answer or the house summary. 'camera' is a camera, a room or a named "
                    "spot (e.g. 'rabbit pen'); 'hours' is how far back (default 12; 'this morning' is since the morning). "
+                   "Use an exact camera entity ID or unambiguous name, and label 'person' when asked about anyone. "
+                   "On an error, report that the record could not "
+                   "be checked. If another source successfully checked that exact camera and period, name that source. "
                    "Use this for anything in the past, not sentient_look (that's only the picture right now) or "
                    "sentient_what_happened (one clip). A detection says a person was seen, not who.")
     parameters = vol.Schema({vol.Required("camera"): cv.string,
@@ -262,48 +335,57 @@ class CameraActivityTool(_Tool):
         events = rt.security_events
         if not events.tracking:
             return {"error": "Camera event records are switched off (Settings → Camera security)",
-                    "note": "You couldn't check, so don't say nobody or nothing was seen."}
+                    "reason": "evidence_disabled", "note": "Say you couldn't check this source."}
         args = tool_input.tool_args
         asked = args["camera"]
-        camera, spot = camera_named(hass, asked), None
+        matched = _camera_matches(hass, asked)
+        camera, spot = (matched[0] if len(matched) == 1 else None), None
         spots = getattr(rt, "spots", None)
-        if camera is None and spots is not None and (key := spots.find_any(asked)):
-            spot = spots.spots[key]
-            camera = spot["camera"]
+        # Only an exact spot name may stand in for a camera. A conflicting camera alias
+        # must be clarified before using a different source.
+        if not matched and not asked.strip().casefold().startswith("camera.") and spots is not None and (key := spots.find_any(asked)):
+            candidate = spots.spots[key]
+            if candidate["name"].strip().casefold() == asked.strip().casefold().removeprefix("the "):
+                spot = candidate
+                camera = spot["camera"]
+        couldnt = ("Say you couldn't check this camera's record. If a separate source successfully checked "
+                   "the same camera, label and period, attribute the result to that source. Otherwise don't say nobody was seen.")
+        configured = events.cameras()
         if camera is None:
-            from .watches import resolve_entity
-
-            found = resolve_entity(hass, asked, "camera")
-            camera = found if found and found.startswith("camera.") else None
-        couldnt = ("You couldn't check, so don't say nobody or nothing was seen: say you couldn't look at that "
-                   "camera's record.")
-        if camera is None:
-            readable = [f"camera.{c}" for c in sorted(events.cameras())
+            readable = [f"camera.{c}" for c in sorted(configured)
                         if await allowed(hass, llm_context, f"camera.{c}")]
-            if not readable:  # 15 Nov: every camera was hidden from Assist, so each call failed and it said "nobody"
-                return {"error": "None of the cameras Sentient keeps a record of are exposed to Assist", "note": couldnt}
-            return {"error": "Which camera? Use one of these", "cameras": readable, "note": couldnt}
+            if not readable:
+                return {"error": "None of the cameras with event records can be read through Assist",
+                        "reason": "camera_access", "note": couldnt}
+            return {"error": "Choose an unambiguous exposed camera with event records",
+                    "reason": "camera_unresolved", "cameras": readable, "note": couldnt}
         if not await allowed(hass, llm_context, camera):
-            state = hass.states.get(camera)
-            return {"error": f"{state.name if state else camera} isn't exposed to Assist, so its record can't be read",
-                    "note": couldnt}
+            return {"error": "That camera is not exposed to Assist or you don't have permission to read it",
+                    "reason": "camera_access", "note": couldnt}
         name = camera.removeprefix("camera.")
-        if name not in events.cameras():
-            return {"error": f"{hass.states.get(camera).name if hass.states.get(camera) else camera} isn't one of the cameras Sentient keeps a record of",
-                    "note": couldnt}
+        if name not in configured:
+            return {"error": "That camera is outside Sentient's configured event inventory",
+                    "reason": "camera_not_configured", "note": couldnt}
         since = dt_util.utcnow().timestamp() - args["hours"] * 3600
-        visits = events.activity(name, since)
-        if label := (args.get("label") or "").strip().lower():
-            visits = [v for v in visits if label in [str(x).lower() for x in v["labels"]]]
+        label = (args.get("label") or "").strip().casefold() or None
+        stamp = events.stamp()
+        visits, source = await events.async_activity(camera, since, label)
+        if (stamp != events.stamp() or not events.tracking or name not in events.cameras()
+                or not await allowed(hass, llm_context, camera)):
+            return {"error": "Camera access or event configuration changed", "reason": "camera_access", "note": couldnt}
+        if visits is None:
+            return {"error": "Camera history is unavailable for this period", "reason": "evidence_unavailable",
+                    "camera_id": camera, "hours": args["hours"], "label": label, "note": couldnt}
         local = lambda t: dt_util.as_local(dt_util.utc_from_timestamp(t)).strftime("%H:%M") if t else None  # noqa: E731
         state = hass.states.get(camera)
         return {
-            "camera": state.name if state else camera, "spot": spot["name"] if spot else None,
+            "camera": state.name if state else camera, "camera_id": camera, "source": source, "label": label, "hours": args["hours"],
+            "spot": spot["name"] if spot else None,
             "since": dt_util.as_local(dt_util.utc_from_timestamp(since)).isoformat(timespec="minutes"),
             "visits": [{"from": local(v["start"]), "to": local(v["end"]) or "still going", "seen": v["labels"],
                         "zones": v["zones"], "what_was_seen": (v.get("analysis") or {}).get("summary"),
                         "events": len(v["ids"])} for v in visits],
-            "note": ("Frigate's detections on this camera, grouped into visits a minute apart. None listed means it "
-                     "detected nothing, not that it watched the whole time. A person detected isn't who it was"
+            "note": ("Report what this source recorded for this camera and period. An empty result means no matching "
+                     "records were returned; it does not establish continuous detection coverage. A person detected isn't who it was"
                      + (f"; the {spot['name']} is part of this camera's picture, and visits aren't split by spot." if spot else ".")),
         }

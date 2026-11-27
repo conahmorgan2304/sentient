@@ -967,7 +967,8 @@ async def test_answers_from_the_house_count_as_without_the_ai(hass: HomeAssistan
     rt = entry.runtime_data
     # the real alarms and reminders engines (1.4.0's test used stand-ins, which hid a crash on the live system)
     out = await async_answer(hass, rt, "when's my next alarm?", None)
-    assert out and "no alarms or reminders" in out
+    # The answer to an alarm-only question omits unrelated reminders.
+    assert out and "no alarms coming up" in out
     assert (await rt.brain.async_status())["independence"]["without_ai"] == 1
 
 

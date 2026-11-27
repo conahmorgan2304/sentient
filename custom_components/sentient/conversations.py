@@ -135,7 +135,9 @@ class Conversations:
     @callback
     def attach(self, conversation_id: str, device_id: str | None, platform: str | None = None) -> None:
         """Called when a conversation asks for the Sentient API: this one's worth keeping."""
-        if conversation_id in self.skip:
+        from .selftest import ACTIVE
+
+        if ACTIVE.get() or conversation_id in self.skip:
             return  # the house testing itself: not a conversation worth remembering
         if conversation_id not in self._ours:
             self._ours[conversation_id] = {"room": self._room(device_id), "device_id": device_id, "via": platform}
@@ -264,7 +266,7 @@ class Conversations:
             self._save()
 
     @callback
-    def amend_said(self, conversation_id: str, sentences: list[str]) -> None:
+    def amend_said(self, conversation_id: str, sentences: list[str], *, replacement: str | None = None) -> None:
         """Take sentences out of what was last said in a conversation (a security offer that was never spoken)."""
         for ep in [self._open.get(conversation_id)] + [e for e in self.episodes if e.get("id") == conversation_id[-10:]]:
             if not ep:
@@ -274,7 +276,7 @@ class Conversations:
                     text = turn["text"]
                     for sentence in sentences:
                         text = text.replace(sentence, "", 1)
-                    turn["text"] = " ".join(text.split())
+                    turn["text"] = _short(replacement, 400) if replacement is not None else " ".join(text.split())
                     break
 
     @callback

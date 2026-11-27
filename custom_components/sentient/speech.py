@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from contextlib import AsyncExitStack, asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 import logging
@@ -22,6 +23,7 @@ from time import monotonic
 import re
 from collections.abc import Awaitable, Callable
 from typing import Any
+from weakref import WeakValueDictionary
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -63,7 +65,7 @@ from .const import (
     PRIORITY_LOW,
     PRIORITY_URGENT,
 )
-from .delivery import RoomLevels, delivered, playing_nearby
+from .delivery import RoomLevels, delivered, playing_nearby, volume_control
 from .language import async_in_house_language, selected_language
 from .reasons import reason_for
 from .presence import ActivityTracker, area_of
@@ -263,6 +265,7 @@ class SpeechRouter:
         self._delivery_store = None
         self.deliveries: deque[dict[str, Any]] = deque(maxlen=20)
         self._lock = asyncio.Lock()
+        self._speaker_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
         self.hush_until: datetime | None = None  # "be quiet for an hour"
         self.hold_until: datetime | None = None  # just announced something important: no chatter for a moment
         self.guest_mode = False
@@ -627,39 +630,48 @@ class SpeechRouter:
             self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT
         )
 
-        async with self._lock:
-            await self._wait_idle(speakers)
-            if generation != self._privacy_generation:
-                return SpeechResult(False, "cancelled", "", [])
-            if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
-                return held
-            now = dt_util.utcnow()
-            self._delivered_recent = {k: v for k, v in self._delivered_recent.items() if now - v < _DUPLICATE_WINDOW}
-            speakers = list(dict.fromkeys(speakers))
-            if source != "critical":
-                speakers = [s for s in speakers if (_remark_key(text), s) not in self._delivered_recent and (text.lower(), s) not in self._delivered_recent]
-            if not speakers:
-                return self._held("duplicate", text, source)
-            volume = await self._volumes(speakers)
-            async with delivered(self.hass, speakers, volume, self.duck_level):
+        if generation != self._privacy_generation:
+            return SpeechResult(False, "cancelled", "", [])
+        if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
+            return held
+        speakers = list(dict.fromkeys(speakers))
+        now = dt_util.utcnow()
+        self._delivered_recent = {k: v for k, v in self._delivered_recent.items() if now - v < _DUPLICATE_WINDOW}
+
+        @asynccontextmanager
+        async def prepare(eid):
+            async with self._speaker_resources(eid) as duck_targets:
+                if source != "critical" and any(
+                    (key, eid) in self._delivered_recent for key in (_remark_key(text), text.lower())
+                ):
+                    yield "duplicate"
+                    return
+                await self._wait_idle([eid])
                 if generation != self._privacy_generation:
-                    return SpeechResult(False, "cancelled", "", [])
-                try:
-                    receipts = await self._speak(spoken, speakers, original=text)
-                except SpeechDeliveryError as err:
-                    receipts = err.receipts
-            # Compatibility for injected/test delivery backends that return no receipts.
-            receipts = receipts if receipts is not None else [{'entity_id': s, 'status': 'accepted'} for s in speakers]
-            accepted = [r['entity_id'] for r in receipts if r['status'] == 'accepted']
-            if generation != self._privacy_generation:
-                return SpeechResult(bool(accepted), 'spoken' if accepted else 'cancelled', '', accepted, receipts)
-            for speaker in accepted:
-                self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
-                # Preserve the legacy exact-text receipt for existing diagnostics and integrations.
-                self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
-            if accepted:
-                self._remember_said(text, spoken)
-        if not accepted:
+                    yield "cancelled"
+                    return
+                volume = await self._volumes([eid])
+                async with delivered(self.hass, [eid], volume, self.duck_level, duck_targets=duck_targets):
+                    yield None if generation == self._privacy_generation else "cancelled"
+
+        try:
+            receipts = await self._speak(spoken, speakers, original=text, prepare=prepare)
+        except SpeechDeliveryError as err:
+            receipts = err.receipts
+        # Compatibility for injected delivery backends that return no receipts.
+        if receipts is None:
+            receipts = [{"entity_id": s, "status": "accepted"} for s in speakers]
+        if not receipts:
+            return self._held("duplicate", text, source)
+        accepted = [r["entity_id"] for r in receipts if r["status"] == "accepted"]
+        if generation != self._privacy_generation:
+            return SpeechResult(bool(accepted), "spoken" if accepted else "cancelled", "", accepted, receipts)
+        for speaker in accepted:
+            self._delivered_recent[(_remark_key(text), speaker)] = dt_util.utcnow()
+            self._delivered_recent[(text.lower(), speaker)] = dt_util.utcnow()
+        if accepted:
+            self._remember_said(text, spoken)
+        else:
             return SpeechResult(False, "delivery_timeout" if any(r["status"] == "timed_out" for r in receipts)
                                 else "delivery_failed", spoken, [], receipts)
         speakers = accepted
@@ -673,6 +685,21 @@ class SpeechRouter:
             self.on_unheard(text, priority, source, None)
         return SpeechResult(True, reason, spoken, speakers, receipts)
 
+    @asynccontextmanager
+    async def _speaker_resources(self, speaker, *, duck=True):
+        resources = {speaker}
+        if control := volume_control(self.hass, speaker):
+            resources.add(control[1])
+        duck_targets = playing_nearby(self.hass, [speaker]) if duck and self.duck_level is not None else []
+        resources.update(duck_targets)
+        async with AsyncExitStack() as stack:
+            for entity_id in sorted(resources):
+                lock = self._speaker_locks.get(entity_id)
+                if lock is None:
+                    lock = self._speaker_locks[entity_id] = asyncio.Lock()
+                await stack.enter_async_context(lock)
+            yield duck_targets
+
     async def async_read_aloud(self, text: str, speaker: str, story: bool = False) -> bool:
         """One passage of a book or a recipe step someone asked for: straight to that speaker, not logged as
         something the house said, and not held for quiet hours (they asked). Waits until it has been read.
@@ -685,10 +712,10 @@ class SpeechRouter:
         text = clean_message(text, self.banned)
         started = took = 0.0
         try:
-            async with self._lock:
+            async with self._lock, self._speaker_resources(speaker) as duck_targets:
                 await self._wait_idle([speaker])
                 volume = await self._volumes([speaker])
-                async with delivered(self.hass, [speaker], volume, self.duck_level):
+                async with delivered(self.hass, [speaker], volume, self.duck_level, duck_targets=duck_targets):
                     if generation != self._privacy_generation:
                         return False
                     started = loop.time()
@@ -788,19 +815,26 @@ class SpeechRouter:
             receipts = await self._speak(READING_SAMPLE, [speaker], chime=False)
         return {"ok": any(r["status"] == "accepted" for r in receipts or []), "speaker": speaker}
 
-    async def _speak(self, text: str, speakers: list[str], chime: bool | None = None, *, original: str | None = None) -> list[dict[str, Any]]:
+    async def _speak(self, text: str, speakers: list[str], chime: bool | None = None, *,
+                     original: str | None = None, prepare=None) -> list[dict[str, Any]]:
         from .voice_timing import measure
 
         with measure('speech_delivery'):
-            return await self._speak_timed(text, speakers, chime, original=original)
+            return await self._speak_timed(text, speakers, chime, original=original, prepare=prepare)
 
-    async def _speak_timed(self, text: str, speakers: list[str], chime: bool | None = None, *, original: str | None = None) -> list[dict[str, Any]]:
+    async def _speak_timed(self, text: str, speakers: list[str], chime: bool | None = None, *,
+                           original: str | None = None, prepare=None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
         generation = self._privacy_generation
         chime = self.chime if chime is None else chime
         rows = {eid: {'entity_id': eid, 'status': 'cancelled',
                       'error': 'Delivery interrupted; playback outcome is unknown'} for eid in dict.fromkeys(speakers)}
-        seen_before = {eid: st.last_updated for eid in rows if eid.startswith('media_player.') and (st := self.hass.states.get(eid))}
+        @asynccontextmanager
+        async def ready(_eid):
+            yield None
+
+        prepare = prepare or ready
+        key = _remark_key(original if original is not None else text)
 
         async def send(eid):
             row = rows[eid]
@@ -827,25 +861,45 @@ class SpeechRouter:
                 if not self.hass.services.has_service(domain, service):
                     row.update(status='unroutable', error=f'{domain}.{service} is unavailable')
                     return row
-                state = self.hass.states.get(eid)
-                if state is not None and state.state == 'unavailable':
-                    row.update(status='unavailable', error='Speaker reports unavailable')
-                    return row
-                row.update(stage='service_call', dispatched=True)
-                async with asyncio.timeout(DELIVERY_TIMEOUT):
-                    await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
-                row.update(status='accepted', stage='service_completed')
-                if generation == self._privacy_generation:
-                    self._delivered_recent[((original if original is not None else text).lower(), eid)] = dt_util.utcnow()
+                async with prepare(eid) as held:
+                    if held:
+                        row.update(status=held)
+                        return row
+                    state = self.hass.states.get(eid)
+                    if state is not None and state.state == 'unavailable':
+                        row.update(status='unavailable', error='Speaker reports unavailable')
+                        return row
+                    before = state.last_updated if state is not None else None
+                    row.update(stage='service_call', dispatched=True)
+                    started = monotonic()
+                    try:
+                        async with asyncio.timeout(DELIVERY_TIMEOUT):
+                            await self.hass.services.async_call(domain, service, data, target=target, blocking=True)
+                    except TimeoutError:
+                        row.update(status='timed_out', error='Delivery timed out; playback outcome is unknown')
+                    else:
+                        row.update(status='accepted', stage='service_completed')
+                    row['duration_ms'] = round((monotonic() - started) * 1000)
+                    if generation == self._privacy_generation:
+                        # A timed-out service may have played. Only a new critical alert can repeat it.
+                        self._delivered_recent[(key, eid)] = dt_util.utcnow()
+                        if row['status'] == 'accepted':
+                            self._delivered_recent[((original if original is not None else text).lower(), eid)] = dt_util.utcnow()
+                    if row['status'] == 'accepted' and eid.startswith('media_player.'):
+                        await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
+                        if generation == self._privacy_generation:
+                            st = self.hass.states.get(eid)
+                            moved = st is not None and (st.state == 'playing' or (before is not None and st.last_updated > before))
+                            row['playback'] = 'state_changed' if moved else 'no_change'
+                            self.silent_runs[eid] = 0 if moved else self.silent_runs.get(eid, 0) + 1
             except asyncio.CancelledError:
-                row.update(status='cancelled', error='Delivery interrupted; playback outcome is unknown')
+                if row['status'] not in ('accepted', 'timed_out'):
+                    row.update(status='cancelled', error='Delivery interrupted; playback outcome is unknown')
                 raise
-            except TimeoutError:
-                row.update(status='timed_out', error='Delivery timed out; playback outcome is unknown')
             except Exception as err:  # one failed destination must not cancel another
                 row['error'] = (str(err) or type(err).__name__)[:200]
             finally:
-                row['duration_ms'] = round((monotonic() - started) * 1000)
+                row.setdefault('duration_ms', round((monotonic() - started) * 1000))
             return row
 
         try:
@@ -854,6 +908,9 @@ class SpeechRouter:
             if generation == self._privacy_generation:
                 self._record_deliveries(text, list(rows.values()))
             raise
+        receipts = [row for row in receipts if row["status"] != "duplicate"]
+        if not receipts:
+            return []
         if generation == self._privacy_generation:
             self._record_deliveries(text, receipts)
             if (self.options.get('speech_failure_notification', False) and not self.guest_mode
@@ -867,16 +924,6 @@ class SpeechRouter:
                     title='Sentient speaker delivery', notification_id='sentient_speech_failure')
         if not any(r['status'] == 'accepted' for r in receipts):
             raise SpeechDeliveryError(receipts)
-        if any(r['status'] == 'accepted' and r['entity_id'].startswith('media_player.') for r in receipts):
-            await asyncio.sleep(min(15.0, 2.0 + len(text.split()) / 2.6))
-            if generation != self._privacy_generation:
-                return receipts
-            for row in receipts:  # a sign (not proof) that the Echo did something: its state moved while it was told to speak
-                if row['status'] == 'accepted' and row['entity_id'].startswith('media_player.'):
-                    st = self.hass.states.get(row['entity_id'])
-                    moved = st is not None and (st.state == 'playing' or st.last_updated > seen_before.get(row['entity_id'], st.last_updated))
-                    row['playback'] = 'state_changed' if moved else 'no_change'
-                    self.silent_runs[row['entity_id']] = 0 if moved else self.silent_runs.get(row['entity_id'], 0) + 1
         return receipts
 
     def _record_deliveries(self, text, receipts):
@@ -982,7 +1029,7 @@ class SpeechRouter:
             prompt = f'The person was asked: "{spoken}". Sentient handles their yes or no. Never execute or confirm it yourself.'
         if extra_prompt:
             prompt += " " + extra_prompt
-        async with self._lock:
+        async with self._lock, self._speaker_resources(speaker, duck=False):
             await self._wait_idle([speaker])
             if generation != self._privacy_generation:
                 return SpeechResult(False, "cancelled", "", [])

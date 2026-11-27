@@ -101,3 +101,19 @@ test('single-turn check exposes playback confirmation and separate check modes',
   await panel._voiceCheckAction('heard', 'run-one');
   assert.match(panel.html, /SAVED · You confirmed/);
 });
+
+test('the Mind question card shows outcomes and tool errors, including on old reports', () => {
+  const panel = setup(async () => null);
+  panel._fold = (_id, _title, rows) => rows;
+  const html = panel._questionsCard({
+    right: 1, total: 2, results: [
+      { question: 'Was anyone seen?', outcome: 'failed_evidence_retrieval', right: false,
+        tool_errors: { '<camera>': 'timeout' } },
+      { question: 'What time is it?', right: true },
+    ],
+  });
+  assert.match(html, /Why · failed evidence retrieval/);
+  assert.match(html, /&lt;camera&gt; · timeout/);
+  assert.match(html, /What time is it\?/);
+  assert.doesNotMatch(html, /<camera>/);
+});

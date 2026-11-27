@@ -14,10 +14,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import callback
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
+from .camsecurity import FRIGATE_ZONES
 from .clipwatch import frigate_prefix
 from .faces import frigate_url
+from .const import CONF_CAMSEC_SENSORS
 from .media import read_media
 from .numeric import finite_float
 
@@ -83,6 +86,8 @@ class SecurityEvents:
         self._unsub = None
         self._subscribing = None
         self._retention_unsub = None
+        self._zone_task = None
+        self._zone_entry = None
         self._zoned = set()  # cameras Frigate says have zones
         self._zoned_seen = set()  # cameras with a retained event that entered a zone (kept as events arrive)
 
@@ -135,31 +140,49 @@ class SecurityEvents:
         if self._prune():
             self._save()
         self.configure(self.options)
-        if self.tracking:
-            self.hass.async_create_background_task(self._async_zoned(), "sentient frigate zones", eager_start=False)
+    def _refresh_zones(self):
+        if (self.tracking or self.options.get(CONF_CAMSEC_SENSORS)) and self._zone_task is None and not self._stopped:
+            self._zone_task = self.hass.async_create_background_task(
+                self._async_zoned(), "sentient frigate zones", eager_start=False)
 
     async def _async_zoned(self):
-        """Which cameras have zones in Frigate's own settings; unknown leaves every event listed."""
-        url = frigate_url(self.hass)
-        if not url or self._stopped:
-            return
+        """Read camera ownership from the same Frigate server used for evidence."""
         try:
+            url = frigate_url(self.hass)
+            if not url:
+                return
+            entry = next((e for e in self.hass.config_entries.async_entries("frigate")
+                          if str(e.data.get("url", "")).rstrip("/") == url), None)
             async with asyncio.timeout(5):
-                response = await async_get_clientsession(self.hass).get(f"{url}/api/config")
-                config = await response.json() if response.status == 200 else None
-        except Exception:  # noqa: BLE001 - without it, a camera counts as zoned once an event enters a zone
+                async with async_get_clientsession(self.hass).get(f"{url}/api/config") as response:
+                    config = await response.json() if response.status == 200 else None
+            cameras = config.get("cameras") if isinstance(config, dict) else None
+            if self._stopped or not isinstance(cameras, dict):
+                return
+            zones = {}
+            zoned = set()
+            for name, cam in cameras.items():
+                if isinstance(cam, dict) and isinstance(cam.get("zones"), dict) and cam["zones"]:
+                    zoned.add(name)
+                    for zone in cam["zones"]:
+                        zones.setdefault(zone.casefold(), set()).add(name)
+            self._zoned = zoned
+            if entry is not None:
+                self._zone_entry = entry.entry_id
+                self.hass.data.setdefault(FRIGATE_ZONES, {})[entry.entry_id] = zones
+        except Exception:  # noqa: BLE001 - missing metadata leaves unverified associations unresolved
             return
-        cameras = config.get("cameras") if isinstance(config, dict) else None
-        if isinstance(cameras, dict):
-            self._zoned = {name for name, cam in cameras.items()
-                           if isinstance(cam, dict) and isinstance(cam.get("zones"), dict) and cam["zones"]}
+        finally:
+            if self._zone_task is asyncio.current_task():
+                self._zone_task = None
 
     def hidden_zones(self, camera):
         return {z.split("/", 1)[1] for z in self.options.get(CONF_HIDDEN_ZONES) or []
                 if isinstance(z, str) and "/" in z and z.split("/", 1)[0] == camera}
 
     def zoned(self, camera):
-        return camera in self._zoned or camera in self._zoned_seen
+        _, frigate_name = self._frigate_camera(f"camera.{camera}")
+        return frigate_name in self._zoned or camera in self._zoned_seen
 
     def in_scope(self, row):
         """Whether an event belongs on the list: in a zone that isn't hidden, unless the camera has no zones."""
@@ -177,11 +200,12 @@ class SecurityEvents:
         if self._subscribing is not None:
             self._subscribing.cancel()
             self._subscribing = None
-        if not self._stopped and (self.items or self.tracking) and self._retention_unsub is None:
+        if not self._stopped and (self.items or self.tracking or options.get(CONF_CAMSEC_SENSORS)) and self._retention_unsub is None:
             self._retention_unsub = async_track_time_interval(self.hass, self._expire, timedelta(hours=6))
         elif self._stopped and self._retention_unsub:
             self._retention_unsub()
             self._retention_unsub = None
+        self._refresh_zones()
         if not self.tracking:
             if self._unsub:
                 self._unsub()
@@ -207,12 +231,39 @@ class SecurityEvents:
 
     def async_stop(self):
         self._stopped = True
+        if self._zone_task is not None:
+            self._zone_task.cancel()
+            self._zone_task = None
+        if self._zone_entry is not None:
+            self.hass.data.get(FRIGATE_ZONES, {}).pop(self._zone_entry, None)
+            self._zone_entry = None
         self.configure(self.options)
 
     def cameras(self):
         from .incidents import configured_cameras
 
         return {camera.removeprefix("camera.") for camera in configured_cameras(self.hass, self.options)}
+
+    def _frigate_camera(self, entity_id):
+        """Return the owning Frigate entry and its stable name for a registered camera."""
+        entry = er.async_get(self.hass).async_get(entity_id)
+        config_id = entry.config_entry_id if entry and entry.platform == "frigate" else None
+        if config_id and entry.unique_id.startswith(prefix := f"{config_id}:camera:"):
+            config_entry = self.hass.config_entries.async_get_entry(config_id)
+            if config_entry and config_entry.domain == "frigate":
+                return config_entry, entry.unique_id.removeprefix(prefix)
+        return None, entity_id.removeprefix("camera.")
+
+    def _event_camera(self, name, config_entry=None):
+        if config_entry is None:
+            url = frigate_url(self.hass)
+            config_entry = next((e for e in self.hass.config_entries.async_entries("frigate")
+                                 if str(e.data.get("url") or "").rstrip("/") == url), None)
+        if config_entry:
+            registry = er.async_get(self.hass)
+            if entity_id := registry.async_get_entity_id("camera", "frigate", f"{config_entry.entry_id}:camera:{name}"):
+                return entity_id.removeprefix("camera.")
+        return name
 
     def _prune(self):
         before = len(self.items)
@@ -225,11 +276,11 @@ class SecurityEvents:
     def _expire(self, _now):
         if self._prune():
             self._save()
-        if self.tracking:
-            self.hass.async_create_background_task(self._async_zoned(), "sentient frigate zones", eager_start=False)
+        self._refresh_zones()
 
     def _save(self):
-        self._prune()
+        if len(self.items) > MAX_EVENTS:
+            self._prune()
         self._store.async_delay_save(lambda: {"items": list(self.items.values())}, 30)  # Home Assistant writes pending saves at shutdown
 
     @callback
@@ -243,8 +294,10 @@ class SecurityEvents:
         if isinstance(payload, dict) and payload.get("type") in ("new", "update", "end"):
             self.ingest(payload.get("after"))
 
-    def ingest(self, data):
+    def ingest(self, data, config_entry=None):
         event = normal_event(data)
+        if event:
+            event["camera"] = self._event_camera(event["camera"], config_entry)
         if event and (existing := self.items.get(event["id"])) and (existing["camera"] != event["camera"] or existing["start"] != event["start"]):
             return None
         if not event or not self.tracking or event["camera"] not in self.cameras():
@@ -295,7 +348,8 @@ class SecurityEvents:
         if row and row["camera"] == camera and row["end"] is not None:
             return deepcopy(row)
         stamp = self.stamp()
-        url = frigate_url(self.hass)
+        config_entry, frigate_name = self._frigate_camera(f"camera.{camera}")
+        url = str(config_entry.data.get("url") or "").rstrip("/") if config_entry else frigate_url(self.hass)
         if not url:
             return deepcopy(row) if row and row["camera"] == camera else None
         try:
@@ -307,9 +361,9 @@ class SecurityEvents:
         if self._stopped or stamp != self.stamp():
             return None
         event = normal_event(data)
-        if not event or event["id"] != event_id or event["camera"] != camera:
+        if not event or event["id"] != event_id or event["camera"] != frigate_name:
             return None
-        return self.ingest(data)
+        return self.ingest(data, config_entry)
 
     async def async_match(self, camera, when):
         if not self.on(CONF_EVENT_EVIDENCE):
@@ -324,17 +378,20 @@ class SecurityEvents:
                     and r["start"] >= moment - 300]
 
         found = candidates()
-        if not found and (url := frigate_url(self.hass)):
+        if not found:
+            config_entry, frigate_name = self._frigate_camera(f"camera.{camera}")
+            url = str(config_entry.data.get("url") or "").rstrip("/") if config_entry else frigate_url(self.hass)
+        if not found and url:
             try:
                 async with asyncio.timeout(3):
                     response = await async_get_clientsession(self.hass).get(f"{url}/api/events", params={
-                        "cameras": camera, "after": str(int(moment - 300)), "before": str(int(moment + 3)), "limit": "20"})
+                        "cameras": frigate_name, "after": str(int(moment - 300)), "before": str(int(moment + 3)), "limit": "20"})
                     data = await response.json() if response.status == 200 else []
                 if stamp != self.stamp() or not self.on(CONF_EVENT_EVIDENCE):
                     return None
                 for event in data if isinstance(data, list) else []:
-                    if isinstance(event, dict) and event.get("camera") == camera:
-                        self.ingest(event)
+                    if isinstance(event, dict) and event.get("camera") == frigate_name:
+                        self.ingest(event, config_entry)
             except Exception:  # noqa: BLE001 - an MQTT candidate may still arrive
                 pass
             found = candidates()
@@ -470,7 +527,8 @@ class SecurityEvents:
         if not self.tracking:
             return []
         self._prune()
-        rows = [row for row in self.items.values() if row["camera"] in self.cameras() and self.in_scope(row)]
+        cameras = self.cameras()
+        rows = [row for row in self.items.values() if row["camera"] in cameras and self.in_scope(row)]
         # a parked bike re-found all day mustn't push real sightings off the list
         rows = [r for r in rows if not r.get("parked")] + [r for r in rows if r.get("parked")]
         return [self.describe(row) for row in rows[:12]]
@@ -483,30 +541,66 @@ class SecurityEvents:
         cameras = self.cameras()
         rows = sorted((r for r in self.items.values() if r["camera"] in cameras and not r.get("parked")
                        and self.in_scope(r)), key=lambda r: (r["camera"], r["start"]))
-        groups = []
-        for row in rows:
-            last = groups[-1] if groups else None
-            if last and last[0]["camera"] == row["camera"] and row["start"] <= max(
-                    (r["end"] or r["start"]) for r in last) + VISIT_GAP:
-                last.append(row)
-            else:
-                groups.append([row])
+        groups = self._visit_groups(rows)
         groups.sort(key=lambda g: g[0]["start"], reverse=True)
         return [self._visit(g) for g in groups[:limit]]
 
-    def activity(self, camera, since, limit=20):
-        """Every detection on one camera since a time, as visits (newest first), zones or not: what the house
-        actually saw, for "has anyone been in the garden today?". Parked vehicles are left out."""
-        self._prune()
-        rows = sorted((r for r in self.items.values() if r["camera"] == camera and not r.get("parked")
-                       and (r["end"] or r["start"]) >= since), key=lambda r: r["start"])
+    def activity(self, camera, since, limit=20, label=None):
+        """Retained detections on one camera since a time, most recent visits first."""
+        cutoff = (dt_util.utcnow() - timedelta(days=7)).timestamp()
+        rows = (r for r in self.items.values() if r["camera"] == camera and not r.get("parked")
+                and r["start"] >= cutoff and (r["end"] or r["start"]) >= since
+                and (label is None or r["label"].casefold() == label))
+        return self._activity_visits(rows, limit)
+
+    def _activity_visits(self, rows, limit=20):
+        groups = self._visit_groups(sorted(rows, key=lambda r: r["start"]))
+        return [self._visit(g) for g in reversed(groups[-limit:])] if limit else []
+
+    @staticmethod
+    def _visit_groups(rows):
         groups = []
+        end = 0
         for row in rows:
-            if groups and row["start"] <= max((r["end"] or r["start"]) for r in groups[-1]) + VISIT_GAP:
+            boundary = row["end"] or row["start"]
+            if groups and groups[-1][0]["camera"] == row["camera"] and row["start"] <= end + VISIT_GAP:
                 groups[-1].append(row)
+                end = max(end, boundary)
             else:
                 groups.append([row])
-        return [self._visit(g) for g in reversed(groups)][:limit]
+                end = boundary
+        return groups
+
+    async def async_activity(self, camera, since, label):
+        """Use retained detections, or check Frigate directly before reporting an empty record."""
+        if visits := self.activity(camera.removeprefix("camera."), since, label=label):
+            return visits, "Sentient's retained Frigate events"
+        config_entry, name = self._frigate_camera(camera)
+        if not config_entry:
+            return None, None
+        url = str(config_entry.data.get("url") or "").rstrip("/")
+        stamp = self.stamp()
+        if not url or not safe_id(name):
+            return None, None
+        params = {"cameras": name, "after": str(int(since)), "limit": "100"}
+        if label:
+            params["labels"] = label
+        try:
+            async with asyncio.timeout(4):
+                async with async_get_clientsession(self.hass).get(f"{url}/api/events", params=params) as response:
+                    data = await response.json() if response.status == 200 else None
+        except Exception:  # noqa: BLE001 - timeout, provider or payload error
+            return None, None
+        if not isinstance(data, list) or stamp != self.stamp():
+            return None, None
+        rows = []
+        for raw in data:
+            event = normal_event(raw)
+            if not event or event["camera"] != name or (label and event["label"].casefold() != label):
+                return None, None  # never treat a malformed or mismatched response as an empty record
+            if (event["end"] or event["start"]) >= since:
+                rows.append({**event, "camera": camera.removeprefix("camera.")})
+        return self._activity_visits(rows), "Frigate event history"
 
     def _visit(self, rows):
         hidden = self.hidden_zones(rows[0]["camera"])
@@ -532,9 +626,10 @@ class SecurityEvents:
             return []
         self._prune()
         cameras = {}
+        configured = self.cameras()
         for row in self.items.values():
             feedback = row.get("feedback", {}).get("value")
-            if feedback not in FEEDBACK or feedback == "clear" or row["camera"] not in self.cameras():
+            if feedback not in FEEDBACK or feedback == "clear" or row["camera"] not in configured:
                 continue
             counts = cameras.setdefault(row["camera"], {"camera": row["camera"], "reviewed": 0,
                 "useful": 0, "not_useful": 0, "false_positive": 0, "cat": 0, "person_corrections": 0})
@@ -544,7 +639,7 @@ class SecurityEvents:
                 counts["person_corrections"] += 1
         zones = {}
         for row in self.items.values():
-            if (row.get("feedback") or {}).get("value") in NOT_PERSON and row["label"] == "person" and row["camera"] in self.cameras():
+            if (row.get("feedback") or {}).get("value") in NOT_PERSON and row["label"] == "person" and row["camera"] in configured:
                 hidden = self.hidden_zones(row["camera"])
                 for zone in row.get("zones") or []:
                     if zone not in hidden:

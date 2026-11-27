@@ -212,7 +212,8 @@ def playing_nearby(hass: HomeAssistant, speakers: list[str]) -> list[str]:
 
 @contextlib.asynccontextmanager
 async def delivered(
-    hass: HomeAssistant, speakers: list[str], volume: float | dict[str, float] | None, duck: float | None
+    hass: HomeAssistant, speakers: list[str], volume: float | dict[str, float] | None, duck: float | None,
+    *, duck_targets: list[str] | None = None,
 ):
     """Set speaker volume (one level, or one per speaker) and duck nearby media for the block."""
     restore: list[tuple[tuple[str, str], float]] = []
@@ -227,7 +228,7 @@ async def delivered(
                                 restore.append((control, before))
                                 await _set(hass, control, level)
                 if duck is not None:
-                    for player in playing_nearby(hass, speakers):
+                    for player in duck_targets if duck_targets is not None else playing_nearby(hass, speakers):
                         control = ("media_player", player)
                         if (before := _level(hass, control)) is not None and before > duck:
                             restore.append((control, before))

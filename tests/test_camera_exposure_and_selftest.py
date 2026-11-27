@@ -25,7 +25,9 @@ async def test_a_camera_hidden_from_assist_says_so_and_not_to_guess(hass: HomeAs
     with patch("custom_components.sentient.security_voice._runtime", return_value=rt), \
             patch("custom_components.sentient.security_voice.allowed", return_value=False):
         out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "garden"}), context())
-        assert "isn't exposed to Assist" in out["error"] and "Garden" in out["error"]
+        # The response covers both an exposure failure and a denied read without disclosing the camera's name.
+        assert out["reason"] == "camera_access" and "not exposed to Assist" in out["error"]
+        assert "Garden" not in out["error"]
         assert "don't say nobody" in out["note"]
         # a name it can't place, with no camera it may read: says that, not "which camera?" with nothing to pick
         out = await tool.async_call(hass, llm.ToolInput(tool_name=tool.name, tool_args={"camera": "moon"}), context())
