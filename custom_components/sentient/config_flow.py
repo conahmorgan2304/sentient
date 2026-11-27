@@ -244,6 +244,7 @@ from .const import (
     CONF_DAILY_AI_LIMIT,
     CONF_APPLIANCES,
     CONF_APPLIANCE_ANNOUNCE,
+    CONF_APPLIANCE_NAMES,
     CONF_APPLIANCE_WATTS,
     DEFAULT_APPLIANCE_WATTS,
     CONF_FALLBACK_SPEAKERS,
@@ -558,6 +559,7 @@ def _speech_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_APPLIANCES, **d(CONF_APPLIANCES, [])): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["sensor", "vacuum", "switch", "binary_sensor", "select", "climate", "water_heater", "media_player", "fan"], multiple=True)
             ),
+            vol.Optional(CONF_APPLIANCE_NAMES, **d(CONF_APPLIANCE_NAMES, "")): selector.TextSelector(),
             vol.Required(CONF_APPLIANCE_ANNOUNCE, **d(CONF_APPLIANCE_ANNOUNCE, True)): selector.BooleanSelector(),
             vol.Required(CONF_APPLIANCE_WATTS, **d(CONF_APPLIANCE_WATTS, DEFAULT_APPLIANCE_WATTS)): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=200, step=1, unit_of_measurement="W", mode=selector.NumberSelectorMode.BOX)

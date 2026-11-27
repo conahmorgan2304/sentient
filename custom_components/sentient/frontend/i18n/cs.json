@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "Spotřeba elektřiny ze zařízení Energy dashboard — a s tarifem doby používání pošťouchnutí spustit pračku nebo myčku, když je to nejlevnější.",
  "Energy": "Energie",
  "Energy, appliances and routines": "Energie, spotřebiče a rutiny",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "Energie: dosud sečtená ze zařízení na řídicím panelu Energy společnosti Home Assistant (nikoli na měřiči sítě). Cena: Součet vynásobený sazbou v Nastavení. % obvyklého: oproti běžnému dni do této doby.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "Základy",
  "Event clips": "Klipy z událostí",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "Každé volání AI a vyhledávání na webu Sentient dělá samo o sobě, podle funkce — jaký druh věci byl odeslán a kam, nikdy co říkal nebo ukazoval. Otázky, které položíte hlasově, procházejí tvým hlasovým agentem, nikoli zde.",

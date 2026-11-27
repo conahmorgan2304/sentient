@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "Zużycie prądu z urządzeń panelu Energia — a przy taryfie strefowej podpowiedź, by włączyć pralkę lub zmywarkę, gdy jest najtaniej.",
  "Energy": "Energia",
  "Energy, appliances and routines": "Energia, urządzenia i rutyny",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "Energia: dziś do tej pory, zsumowana z urządzeń w panelu Energia Home Assistant (nie licznik sieci). Koszt: ta suma razy stawka z Ustawień. % zwykłego: w porównaniu ze zwykłym dniem do tej godziny.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "Podstawy",
  "Event clips": "Klipy zdarzeń",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "Każde wywołanie AI i wyszukiwanie w sieci, które Sentient wykonuje sam, według funkcji — jakiego rodzaju rzeczy i dokąd wysłano, nigdy co powiedziano lub pokazano. Pytania zadawane głosowi przechodzą przez twojego agenta głosowego, nie tutaj.",

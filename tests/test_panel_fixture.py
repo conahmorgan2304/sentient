@@ -107,7 +107,7 @@ async def _record(hass: HomeAssistant, ws, name: str) -> None:
                                                  default=str), encoding="utf-8")
 
 
-async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client, tmp_path) -> None:
+async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client, tmp_path, monkeypatch) -> None:
     hass.config.media_dirs = {"local": str(tmp_path)}
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", unique_id=DOMAIN, data=_house(hass))
     entry.add_to_hass(hass)
@@ -117,6 +117,23 @@ async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client,
     rt.memory.add("The bins go out on Thursday", "routine")
     rt.timeline.add("said", "The kitchen window is still open.", "Kitchen", source="left_open")
     rt.timeline.add("noticed", "Lounge light changed from off to on", "noticed, decided it wasn't worth saying")
+    # a test house has no Energy dashboard, so the energy card would never be drawn: give it one to draw
+    from custom_components.sentient import energy
+
+    real_report = energy.async_report
+
+    async def report_with_a_house(hass):
+        out = await real_report(hass)
+        out.update({
+            "enabled": True,
+            "devices": [{"name": "Dishwasher", "kwh": 1.2, "usual": 0.9, "unusual": True}],
+            "house": {"name": "The house", "kwh": 24.0, "usual": 20.0, "unusual": True},
+            "total_kwh": 1.2, "usual_kwh": 0.9,
+            "unusual": [{"name": "Dishwasher", "kwh": 1.2, "usual": 0.9, "unusual": True}],
+        })
+        return out
+
+    monkeypatch.setattr(energy, "async_report", report_with_a_house)
     ws = await hass_ws_client(hass)
     await _record(hass, ws, "defaults")
 

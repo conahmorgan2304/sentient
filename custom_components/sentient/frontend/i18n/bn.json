@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "এনার্জি ড্যাশবোর্ডের ডিভাইসগুলি থেকে বিদ্যুতের ব্যবহার — এবং, ব্যবহারের সময়-শুল্ক সহ, ওয়াশিং মেশিন বা ডিশওয়াশার চালাওোর জন্য এটি যখন সবচেয়ে সস্তা হয়.",
  "Energy": "শক্তি",
  "Energy, appliances and routines": "শক্তি, যন্ত্রপাতি এবং রুটিন",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "শক্তি: আজ পর্যন্ত, Home Assistant-এর শক্তি ড্যাশবোর্ডে (গ্রিড মিটার নয়) ডিভাইসগুলি থেকে যোগ করা হয়েছে৷ খরচ: সেটিংসে থাকা হারের মোট গুণ। স্বাভাবিকের %: এই সময় পর্যন্ত একটি সাধারণ দিনের বিপরীতে.",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "অপরিহার্য",
  "Event clips": "ইভেন্ট ক্লিপ",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "প্রতিটি AI কল এবং ওয়েব অনুসন্ধান Sentient নিজেই করে, বৈশিষ্ট্য দ্বারা — কী ধরণের জিনিস পাঠানো হয়েছিল এবং কোথায়, এটি কী বলেছে বা দেখায়নি। তুমি যে প্রশ্নগুলি একটি ভয়েস জিজ্ঞাসা করেন তা তোমার ভয়েস এজেন্টের মাধ্যমে যায়, এখানে নয়.",

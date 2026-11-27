@@ -266,7 +266,7 @@
  "Electricity use from the Energy dashboard's devices — and, with a time-of-use tariff, a nudge to run the washing machine or dishwasher when it's cheapest.": "エネルギー ダッシュボードのデバイスからの電気使用量 — 使用時間料金により、洗濯機または食器洗い機を最も安い時間帯に稼働させるよう促します。",
  "Energy": "エネルギー",
  "Energy, appliances and routines": "エネルギー、家電、日常生活",
- "Energy: today so far, added up from the devices on Home Assistant's Energy dashboard (not the grid meter). Cost: that total times the rate in Settings. % of usual: against a normal day up to this time.": "エネルギー: 今日までのところ、Home Assistant のエネルギー ダッシュボード (グリッド メーターではありません) 上のデバイスから合計されました。コスト: [設定] のレートに合計を掛けたものです。通常の %: この時点までの通常の日に対する。",
+ "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.": "Energy: today so far — the devices on Home Assistant's Energy dashboard, and the house from the grid meter. Cost: the devices' total times the rate in Settings. % of usual: against a normal day up to this time.",
  "Essentials": "必需品",
  "Event clips": "イベントクリップ",
  "Every AI call and web search Sentient makes by itself, by feature — what kind of thing was sent and where, never what it said or showed. Questions you ask a voice go through your voice agent, not here.": "Sentient が行うすべての AI 呼び出しと Web 検索は、機能ごとに自動的に行われます。どのような内容がどこに送信されたかであり、何を言ったり表示したりすることはありません。音声で尋ねた質問は、ここではなく音声エージェントを通じて送信されます。",

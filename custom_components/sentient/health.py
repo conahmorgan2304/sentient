@@ -427,10 +427,10 @@ def duplicates(hass: HomeAssistant, ignore: set[str] | None = None) -> list[dict
             if counts[d.id] or d.id in ignore:
                 continue
             source = ""
-            for entry_id in d.config_entries:
-                if (entry := hass.config_entries.async_get_entry(entry_id)) is not None:
-                    source = entry.title or entry.domain
-                    break
+            # DeviceEntry.config_entry_id is the way since HA 2026.11; older versions only have config_entries
+            entry_id = d.config_entry_id if hasattr(d, "config_entry_id") else next(iter(d.config_entries), None)
+            if entry_id and (entry := hass.config_entries.async_get_entry(entry_id)) is not None:
+                source = entry.title or entry.domain
             name = d.name_by_user or d.name
             out.append({"kind": "duplicate", "name": name, "device_id": d.id, "duplicate": True,
                         "text": f"{name} is listed twice: the copy from {source or 'another integration'} is empty"})

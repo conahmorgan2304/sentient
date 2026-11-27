@@ -2486,9 +2486,9 @@ class EnergyTool(_Tool):
     annotations = _read_only()
     name = "sentient_energy"
     description = (
-        "Electricity used today by the devices on the Energy dashboard, compared with the past week at "
-        "the same time of day: biggest users and anything using far more than usual. For 'what's using "
-        "all the electricity?', 'has the heater been on a lot today?'."
+        "Electricity used today by the devices on the Energy dashboard and by the whole house from the grid "
+        "meter, compared with the past week at the same time of day: biggest users and anything using far "
+        "more than usual. For 'what's using all the electricity?', 'has the heater been on a lot today?'."
     )
     parameters = vol.Schema({})
 
@@ -2506,8 +2506,10 @@ class EnergyTool(_Tool):
             "up_to": report.get("up_to"),
             "total_kwh_today": report.get("total_kwh"),
             "usual_by_now": report.get("usual_kwh"),
+            "house": report.get("house"),
             "top": report.get("devices", [])[:6],
             "unusual": describe(report),
+            "note": report.get("note"),
         }
 
 

@@ -40,6 +40,41 @@ async def test_report_flags_unusual(hass: HomeAssistant, freezer) -> None:
     assert energy.describe(report) == ["Heater has used 5.4 kWh today, about 6.0× its usual"]
 
 
+async def test_the_house_total_comes_from_the_grid_meter(hass: HomeAssistant, freezer) -> None:
+    """The whole house's electricity, from the Energy dashboard's grid meter."""
+    tz = dt_util.get_default_time_zone()
+    freezer.move_to(datetime(2026, 10, 22, 18, 30, tzinfo=tz))
+    midnight = datetime(2026, 10, 22, 0, 0, tzinfo=tz)
+
+    def rows(change_today, change_past):
+        out = []
+        for d in range(0, 8):
+            day = midnight - timedelta(days=d)
+            for h in range(0, 24):
+                t = day + timedelta(hours=h)
+                if t >= datetime(2026, 10, 22, 18, 0, tzinfo=tz):
+                    continue
+                out.append({"start": dt_util.as_utc(t).timestamp(), "change": change_today if d == 0 else change_past})
+        return out
+
+    data = {"sensor.grid": rows(1.0, 0.5)}
+
+    class Inst:
+        async def async_add_executor_job(self, fn, *args):
+            return data
+
+    prefs = {"energy_sources": [{"type": "grid", "stat_energy_from": "sensor.grid"}]}
+    with patch.object(energy, "_prefs", return_value=prefs), \
+         patch.object(energy, "_devices", return_value={}), \
+         patch("homeassistant.components.recorder.get_instance", return_value=Inst()):
+        report = await energy.async_report(hass)
+    assert report["house"]["name"] == "The house"
+    assert report["house"]["kwh"] == 18.0  # 18 hours at 1 kWh
+    assert report["house"]["usual"] == 9.0  # the same 18 hours, 7 days running
+    assert report["house"]["unusual"] and report["house"]["times_usual"] == 2.0
+    assert energy.describe(report) == ["The house has used 18.0 kWh today, about 2.0× its usual"]
+
+
 async def test_energy_can_be_turned_off(hass: HomeAssistant) -> None:
     from homeassistant.helpers import llm
     from pytest_homeassistant_custom_component.common import MockConfigEntry

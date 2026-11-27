@@ -125,6 +125,7 @@ GitHub checks show the software works under tested conditions; they can't show i
 - [x] Named routines (goodnight, morning…) and backup/restore (0.27.0)
 - [x] Energy: today vs usual from Energy-dashboard devices, card, briefing, voice tool, unusual-use notes (0.28.0)
 - [x] Energy on/off and cost; routine buttons on the overview (0.28.1)
+- [x] The whole house from the Energy dashboard's grid meter next to its devices, today vs usual; extra appliance names for names in another language; an appliance called by the name its device has (1.25.0)
 - [x] Security check (tool, card, briefing, routine check) and scenes by description (0.29.0)
 - [x] Left-open nudges and a leaving check (0.30.0)
 - [x] Safety alerts: alarm triggered, tamper, extra entities, test button (0.30.1)

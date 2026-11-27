@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_APPLIANCE_ANNOUNCE,
+    CONF_APPLIANCE_NAMES,
     CONF_APPLIANCE_WATTS,
     CONF_APPLIANCES,
     DEFAULT_APPLIANCE_WATTS,
@@ -56,11 +57,17 @@ KEEP_RUNS = 20
 STUCK_FACTOR = 1.5
 STUCK_EXTRA = timedelta(minutes=20)
 AUTO_NAMES = re.compile(r"wash|dryer|drier|dishwasher|tumble", re.I)
+MEASUREMENT = re.compile(r"\s+(power|energy|consumption|current|plug|outlet|socket|state|status)$", re.I)
 
 
-def _friendly(name: str) -> str:
-    """'Washing machine power' -> 'Washing machine'."""
-    return re.sub(r"\s+(power|energy|consumption|current|plug|outlet|socket|state|status)$", "", name.strip(), flags=re.I)
+def appliance_pattern(extra: Any = None) -> re.Pattern[str]:
+    """The built-in appliance words plus any the house added in its own language."""
+    words = [AUTO_NAMES.pattern]
+    for word in str(extra or "").replace("\n", ",").split(","):
+        word = word.strip()
+        if word:
+            words.append(re.escape(word))
+    return re.compile("|".join(words), re.I)
 
 
 def _mins(td: timedelta | float) -> str:
@@ -114,9 +121,10 @@ class Appliances:
         chosen = [e for e in self.options.get(CONF_APPLIANCES) or [] if self.hass.states.get(e)]
         if chosen:
             return chosen
+        pattern = appliance_pattern(self.options.get(CONF_APPLIANCE_NAMES))
         auto = [s.entity_id for s in self.hass.states.async_all("vacuum")]
         auto += [s.entity_id for s in self.hass.states.async_all("sensor")
-                 if self._is_power(s) and AUTO_NAMES.search(f"{s.entity_id} {s.name}")]
+                 if self._is_power(s) and pattern.search(f"{s.entity_id} {s.name}")]
         return auto
 
     def handled(self) -> set[str]:
@@ -151,6 +159,25 @@ class Appliances:
         state = st.state.lower()
         return state not in RESTING and state not in IGNORED and state not in ERROR
 
+    def _friendly(self, entity_id: str, name: str) -> str:
+        """'Washing machine power' -> 'Washing machine'; the device's own name wins, in any language."""
+        if device_name := self._device_name(entity_id):
+            return device_name
+        return MEASUREMENT.sub("", name.strip())
+
+    def _device_name(self, entity_id: str) -> str | None:
+        """The name the house gave the device this sensor belongs to ('Küche - Geschirrspüler')."""
+        try:
+            from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+            entry = er.async_get(self.hass).async_get(entity_id)
+            if entry is None or not entry.device_id:
+                return None
+            device = dr.async_get(self.hass).async_get(entry.device_id)
+        except Exception:  # noqa: BLE001 - a missing registry is no reason to stop the appliances
+            return None
+        return (getattr(device, "name_by_user", None) or "").strip() or None
+
     def usual(self, entity_id: str) -> float | None:
         runs = self.runs.get(entity_id) or []
         return median(runs) if len(runs) >= 3 else None
@@ -164,7 +191,7 @@ class Appliances:
         entity_id, now = new.entity_id, dt_util.utcnow()
         if new.state.lower() in ERROR and (old is None or old.state.lower() not in ERROR):
             self._error(entity_id)
-            self.hass.async_create_task(self._async_say(f"{_friendly(new.name)} seems to be stuck.", "stuck", entity_id),
+            self.hass.async_create_task(self._async_say(f"{self._friendly(new.entity_id, new.name)} seems to be stuck.", "stuck", entity_id),
                                         eager_start=False)
         working = self._working(new)
         if new.domain == "vacuum" and new.state.lower() != "idle":
@@ -218,7 +245,7 @@ class Appliances:
             if ran > max(timedelta(minutes=usual * STUCK_FACTOR), timedelta(minutes=usual) + STUCK_EXTRA):
                 self._warned.add(entity_id)
                 st = self.hass.states.get(entity_id)
-                name = _friendly(st.name if st else entity_id)
+                name = self._friendly(entity_id, st.name if st else entity_id)
                 self.hass.async_create_task(self._async_say(
                     f"{name} has been going {_mins(ran)}; it usually takes about {_mins(usual)}. It may be stuck.",
                     "stuck", entity_id), eager_start=False)
@@ -238,7 +265,7 @@ class Appliances:
         self.last[entity_id] = {"ended": ended.isoformat(), "minutes": round(ran.total_seconds() / 60)}
         self._save()
         st = self.hass.states.get(entity_id)
-        name = _friendly(st.name if st else entity_id)
+        name = self._friendly(entity_id, st.name if st else entity_id)
         rt = self._rt()
         if rt is not None:
             rt.timeline.add("appliance", f"{name} finished",
@@ -266,7 +293,7 @@ class Appliances:
             st = self.hass.states.get(entity_id)
             usual = self.usual(entity_id)
             item: dict[str, Any] = {
-                "entity_id": entity_id, "name": _friendly(st.name) if st else entity_id,
+                "entity_id": entity_id, "name": self._friendly(entity_id, st.name) if st else entity_id,
                 "running": entity_id in self.running, "usual_minutes": round(usual) if usual else None,
                 "runs_seen": len(self.runs.get(entity_id) or []),
             }
