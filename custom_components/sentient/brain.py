@@ -868,6 +868,28 @@ class Brain:
                         "a suggestion", decision={"kind": "gating_suggestion", "would_save": saved, "ai_used": False})
 
     # ----- what the Mind tab shows ------------------------------------------------------------
+    @staticmethod
+    def _storage_counts(conn: Any) -> dict[str, Any]:
+        return {
+            "ledger": conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0],
+            "memories": dict(conn.execute("SELECT kind, COUNT(*) FROM memories GROUP BY kind").fetchall()),
+        }
+
+    async def async_storage_status(self) -> dict[str, Any]:
+        """Read committed storage counts for diagnostics without flushing the ledger."""
+        def _counts(conn: Any) -> dict[str, Any]:
+            return {**self._storage_counts(conn), "beliefs": conn.execute("SELECT COUNT(*) FROM beliefs").fetchone()[0]}
+
+        return {
+            **await self.db.call(_counts),
+            "ledger_on": bool(self.ledger and self.ledger.enabled),
+            "gating": self.gating,
+            "warming": self.warming,
+            "search": "full-text" if self.db.fts else "words",
+            "prediction_percent": self.expect.score().get("percent"),
+            "disk_mb": await self.hass.async_add_executor_job(self.db.size_mb),
+        }
+
     async def async_status(self) -> dict[str, Any]:
         today = dt_util.now().date().isoformat()
         rt = self._rt()
@@ -879,7 +901,7 @@ class Brain:
 
         def _counts(conn: Any) -> dict[str, Any]:
             return {
-                "ledger": conn.execute("SELECT COUNT(*) FROM ledger").fetchone()[0],
+                **self._storage_counts(conn),
                 # controlled devices only: a motion sensor or thermometer changes by itself all the time, by design
                 "unexplained_week": conn.execute(
                     f"SELECT COUNT(*) FROM ledger WHERE cause = 'device' AND ts > ? AND domain IN ({','.join('?' * len(CONTROLLED))}) "
@@ -891,7 +913,6 @@ class Brain:
                     "AND old NOT IN ('unavailable', 'unknown') AND new NOT IN ('unavailable', 'unknown') "
                     "GROUP BY entity ORDER BY n DESC LIMIT 5",
                     (dt_util.utcnow().timestamp() - 7 * 86400, *CONTROLLED))],
-                "memories": dict(conn.execute("SELECT kind, COUNT(*) FROM memories GROUP BY kind").fetchall()),
                 "beliefs": self.beliefs.all(conn)[:12],
             }
 

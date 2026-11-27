@@ -50,8 +50,9 @@ DONE = re.compile(
     re.I)
 # an offer to do something with hands: no device in the house can
 OFFER = re.compile(
-    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|i'll|i will|let me)\b[^.?!]{0,40}?"
-    r"\b(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
+    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|i['’]ll|i will|let me)"
+    r"\s+(?:(?:also|just|please|quickly)\s+)*"
+    r"(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
     r"let the \w+ (?:out|in)|top up|refill|go (?:and|out|outside|down|up)|pop (?:out|outside|down|up)|pick up|put (?:the )?\w+ away)\b",
     re.I)
 # Explicit offers to change the house, not informational offers such as "shall I check".
@@ -130,8 +131,17 @@ def actionable_offer(text: str) -> bool:
 UNANSWERED = re.compile(
     r"\bi (?:don't|do not|didn't|did not) (?:know|have (?:any )?(?:information|a record|records|access|details|data|way))\b|"
     r"\bi (?:couldn't|could not|can't|cannot|wasn't able to|was unable to|am unable to|'m unable to|’m unable to) "
-    r"(?:find|see|tell|check|access|look|say|confirm|get)\b|\bno (?:record|records|information|data) (?:of|about|for)\b|"
+    r"(?:find|see|tell|check|access|look|say|confirm|verify|get)\b|\bno (?:record|records|information|data) (?:of|about|for)\b|"
     r"\bi'?m not (?:sure|able)\b", re.I)
+# A camera can report seeing nobody. An unavailable frame or an unsuccessful history
+# search still counts as uncertainty, including when it asks what to check next.
+_CAMERA_NEGATIVE = re.compile(
+    r"\bi (?:can['’]t|cannot) see (?:anyone|anybody|any people|anything moving)"
+    r"(?: (?:about|around|there|right now|at the moment))*\s*(?=[.!?]|$)", re.I,
+)
+_CURRENT_CAMERA_READS = {"ask_camera", "sentient_look", "frigate_query"}
+
+
 QUESTION = re.compile(r"\?\s*$|^(?:has|have|had|did|was|were|when|who|what|which|how (?:long|many|often)|is there|are there)\b", re.I)
 PAST = re.compile(r"\b(?:has|have|had|did|was|were|last|earlier|yesterday|today|tonight|this (?:morning|afternoon|evening)|"
                   r"recently|ago|been|happened|overnight|previously)\b", re.I)
@@ -258,6 +268,21 @@ def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
     return (acting or response_type == "action_done") and not error and result.get("success") is not False
 
 
+def _unanswered(asked: str, said: str, tools: list[dict[str, Any]],
+                outcomes: list[tuple[str, str | None, bool]]) -> bool:
+    if not UNANSWERED.search(said):
+        return False
+    current = not needs_evidence(asked) and re.search(
+        r"\b(?:camera|see|look|visible)\b", asked, re.I,
+    )
+    if current and _CAMERA_NEGATIVE.search(said) and any(
+        name in _CURRENT_CAMERA_READS and not error and tool_payload(tools[i])
+        for i, (name, error, _) in enumerate(outcomes)
+    ):
+        return bool(UNANSWERED.search(_CAMERA_NEGATIVE.sub("", said)))
+    return True
+
+
 def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozenset[str] = frozenset()) -> list[dict[str, str]]:
     """The reliability problems in one turn, by plain rules. ``tools`` is each tool result as the chat log has it;
     ``actions`` are tool names that change something (a successful one counts as having done something)."""
@@ -295,7 +320,7 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
                     "detail": "action outcome not verified" if attempted_action else "no action in this turn succeeded"})
     if said_clean and (m := OFFER.search(said_clean)):
         out.append({"kind": "offered_impossible", "detail": f"\"{_short(m.group(0), 80)}\""})
-    if said_clean and UNANSWERED.search(said_clean):
+    if said_clean and _unanswered(asked, said_clean, tools, outcomes):
         out.append({"kind": "unanswered", "detail": "used " + (", ".join(dict.fromkeys(n for n, _e, _c in outcomes)) or "no tools")})
     elif needs_evidence(asked):
         # A generic device command is not evidence about prior events. This

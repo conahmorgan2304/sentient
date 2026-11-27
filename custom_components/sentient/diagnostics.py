@@ -30,14 +30,14 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
         "startup": out_startup,
         "options": async_redact_data({**entry.data, **entry.options}, TO_REDACT),
         "memory": {"count": len(rt.memory.items), "categories": sorted({m.category for m in rt.memory.items})},
-        "brain": await _brain(hass, rt),
+        "brain": await _brain(rt),
         "speech": {"quiet_now": rt.speech.quiet_now(), "speaker_now": rt.speech.pick_speaker()},
         "rooms": rt.tracker.scores(),
         "watches": [
             async_redact_data({**w.summary(), "entity_id": w.entity_id, "wakes_on": w.triggers, "spot": w.spot}, TO_REDACT)
             for w in rt.watches.watches
         ],
-        "ai": rt.ai.describe(),
+        "ai": async_redact_data(rt.ai.describe(), {"last_error"}),
         "camera_security": {
             "enabled": bool(rt.camsec.options.get("camera_security")),
             "camera_matches": [{"sensor": sensor, "camera": camera_for(hass, sensor)} for sensor in rt.camsec.sensors],
@@ -67,20 +67,20 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Sentien
     }
 
 
-async def _brain(hass: HomeAssistant, rt: Any) -> dict[str, Any] | None:
+async def _brain(rt: Any) -> dict[str, Any] | None:
     """Counts and switches only: no changes, beliefs, conversations or names."""
     brain = getattr(rt, "brain", None)
     if brain is None or not brain.started:
         return None
     try:
-        status = await brain.async_status()
-    except Exception as err:  # noqa: BLE001 - diagnostics must download even if the database is unhappy
-        return {"error": str(err)[:200]}
+        status = await brain.async_storage_status()
+    except Exception:  # noqa: BLE001 - diagnostics must download even if the database is unhappy
+        return {"error": "storage_status_unavailable"}
     return {
         "ledger_on": status.get("ledger_on"), "ledger_rows": status.get("ledger"), "disk_mb": status.get("disk_mb"),
         "search": status.get("search"), "recovered_from_damage": bool(brain.db.recovered), "warming": status.get("warming"),
-        "gating": status.get("gating"), "prediction_percent": (status.get("prediction") or {}).get("percent"),
-        "beliefs": len(status.get("beliefs") or []), "memories_copied": status.get("memories"),
+        "gating": status.get("gating"), "prediction_percent": status.get("prediction_percent"),
+        "beliefs": status.get("beliefs"), "memories_copied": status.get("memories"),
         "case_memory_entries": len(brain.cases),
     }
 
