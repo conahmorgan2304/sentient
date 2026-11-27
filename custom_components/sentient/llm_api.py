@@ -2506,6 +2506,7 @@ class EnergyTool(_Tool):
             "up_to": report.get("up_to"),
             "total_kwh_today": report.get("total_kwh"),
             "total_scope": report.get("total_scope"),
+            "cost_is_estimate": report.get("cost_today") is not None,
             "tracked_device_kwh": report.get("device_total_kwh"),
             "usual_by_now": report.get("usual_kwh"),
             "grid_import": report.get("house"),

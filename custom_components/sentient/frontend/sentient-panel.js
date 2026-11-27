@@ -1869,7 +1869,7 @@
         + top.map((d) => `<div class="en${d.unusual ? " hot" : ""}"><span>${esc(d.name)}</span>
             <div class="bar2"><i style="width:${Math.round((d.kwh / max) * 100)}%"></i><b style="left:${Math.min(100, Math.round((d.usual / max) * 100))}%" title="Usual by now"></b></div>
             <u>${d.kwh}${d.unusual ? " ↑" : ""}</u></div>`).join("")
-        + `<div class="hint" title="Energy: grid imports are not total household consumption. Without a grid meter, the total is tracked devices only. Estimated cost uses the displayed total and the configured rate.">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW · ${en.cost_today != null ? "" : ""}${pct != null ? "% AGAINST A NORMAL DAY SO FAR" : ""}</div>`;
+        + `<div class="hint" title="Energy: grid imports are not total household consumption. Without a grid meter, the total is tracked devices only. Estimated cost uses the displayed total and the configured rate.">UP TO ${esc(en.up_to)} · MARKER = USUAL BY NOW · ${pct != null ? "% AGAINST A NORMAL DAY SO FAR" : ""}</div>`;
     }
 
     _drawAppliances(list) {

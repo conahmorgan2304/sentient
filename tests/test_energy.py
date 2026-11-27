@@ -57,13 +57,17 @@ async def test_the_house_total_comes_from_the_grid_meter(hass: HomeAssistant, fr
                 out.append({"start": dt_util.as_utc(t).timestamp(), "change": change_today if d == 0 else change_past})
         return out
 
-    data = {"sensor.grid": rows(1.0, 0.5)}
+    data = {"sensor.grid": rows(0.75, 0.25), "sensor.grid2": rows(0.25, 0.25)}
 
     class Inst:
         async def async_add_executor_job(self, fn, *args):
             return data
 
-    prefs = {"energy_sources": [{"type": "grid", "stat_energy_from": "sensor.grid"}]}
+    prefs = {"energy_sources": [
+        {"type": "grid", "stat_energy_from": "sensor.grid"},
+        {"type": "grid", "stat_energy_from": "sensor.grid2"},
+        {"type": "grid", "stat_energy_from": "sensor.grid"},
+    ]}
     with patch.object(energy, "_prefs", return_value=prefs), \
          patch.object(energy, "_devices", return_value={}), \
          patch("homeassistant.components.recorder.get_instance", return_value=Inst()):
@@ -72,6 +76,7 @@ async def test_the_house_total_comes_from_the_grid_meter(hass: HomeAssistant, fr
     assert report["total_kwh"] == 18.0
     assert report["total_scope"] == "grid_import"
     assert report["device_total_kwh"] == 0.0
+    assert report["usual_kwh"] == 9.0
     assert report["house"]["kwh"] == 18.0  # 18 hours at 1 kWh
     assert report["house"]["usual"] == 9.0  # the same 18 hours, 7 days running
     assert report["house"]["unusual"] and report["house"]["times_usual"] == 2.0

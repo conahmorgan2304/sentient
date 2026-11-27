@@ -149,7 +149,7 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime, *, readable=
             if report.get("devices") or report.get("house"):
                 house = report.get("house") or {}
                 out["energy_today"] = {
-                    **({"cost_so_far": f"{report.get('currency_symbol', '£')}{report['cost_today']:.2f}"} if report.get("cost_today") else {}),
+                    **({"cost_so_far": f"{report.get('currency_symbol', '£')}{report['cost_today']:.2f}"} if report.get("cost_today") is not None else {}),
                     "kwh_so_far": report["total_kwh"],
                     "total_scope": report.get("total_scope", "tracked_devices"),
                     "usual_by_now": report["usual_kwh"],
@@ -490,12 +490,18 @@ class Upkeep:
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Energy check skipped: %s", err)
             return
-        for item in report.get("unusual", []):
-            if item["name"] in self._energy_flagged:
+        house = report.get("house") or {}
+        items = [(False, item) for item in report.get("unusual", [])]
+        if house.get("unusual"):
+            items.insert(0, (True, house))
+        for is_grid, item in items:
+            key = (is_grid, item["name"])
+            if key in self._energy_flagged:
                 continue
-            self._energy_flagged.add(item["name"])
+            self._energy_flagged.add(key)
             times = f"about {item['times_usual']}× its usual" if item.get("times_usual") else "far more than usual"
-            self._rt().timeline.add("energy", f"{item['name']} has used {item['kwh']} kWh today — {times}")
+            verb = "recorded" if is_grid else "has used"
+            self._rt().timeline.add("energy", f"{item['name']} {verb} {item['kwh']} kWh today — {times}")
 
     def weekly_report(self) -> dict[str, Any]:
         """What the house learned and noticed this week — kept on the timeline."""
