@@ -201,8 +201,8 @@ async def test_diagnostic_checks_are_always_on_and_not_offered_as_switches(hass,
     assert entry.options['live_voice_check'] is True
 
 
-async def test_selftest_counts_an_alarm_due_today_as_a_right_answer_about_reminders(hass):
-    """12 Nov: asked "what reminders have I got?", the voice named the Bins alarm at 7pm, and the test said wrong."""
+async def test_selftest_distinguishes_alarms_from_reminders(hass):
+    """A scheduled alarm is not a personal reminder."""
     from datetime import timedelta
     from types import SimpleNamespace
 
@@ -214,7 +214,10 @@ async def test_selftest_counts_an_alarm_due_today_as_a_right_answer_about_remind
                          alarms=SimpleNamespace(listing=lambda: [{'name': 'Bins', 'on': True, 'next': soon},
                                                                  {'name': 'Dentist', 'on': True, 'next': later}]))
     question = next(q for q in SelfTest(hass, 'test', {}, lambda: rt).questions() if q.key == 'reminders')
-    assert question.check("You've got a reminder set for seven this evening about the bins.")[0]
+    assert not question.check("You've got a reminder set for seven this evening about the bins.")[0]
+    from custom_components.sentient.local_answers import _coming_up
+    assert _coming_up(rt, "What reminders have I got?") == "You have no reminders set."
+    assert "Bins" in _coming_up(rt, "What is my next alarm?")
     assert question.check("You haven't got any reminders.")[0]
     assert not question.check("You've got the dentist on Monday.")[0]  # three days away: not what was asked
 
@@ -226,7 +229,8 @@ async def test_a_wrong_answer_a_fixed_check_now_passes_is_cleared(hass):
 
     runner = SelfTest(hass, 'test', {'self_test': 'nightly'}, lambda: None)
     runner._store.async_delay_save = lambda *a: None
-    runner.last = {"time": dt_util.utcnow().isoformat(), "results": [
+    when = dt_util.utcnow().isoformat()
+    runner.last = {"time": when, "history": [{"time": when, "right": 0, "total": 2}], "results": [
         {"key": "unknowable", "question": "What did I have for breakfast this morning?", "right": False,
          "answer": "I can't check what you ate or what was prepared for breakfast, as I only track devices.",
          "expected": "says it doesn't know (an invented answer is a fail)", "tools": []},
@@ -237,3 +241,11 @@ async def test_a_wrong_answer_a_fixed_check_now_passes_is_cleared(hass):
     issues = runner.issues()
     assert len(issues) == 1 and "nothing switched" in issues[0]["text"]  # switching something still fails
     assert runner.last["results"][0]["right"] and runner.last["results"][0]["rejudged"]
+    summary = runner.summary()
+    assert summary["right"] == summary["history"][-1]["right"] == 1
+
+
+def test_bins_offer_distinguishes_reminders_from_physical_work():
+    from custom_components.sentient.selftest import _offers_bins_action
+    assert not _offers_bins_action("I can't take the bins out myself. Shall I put a reminder on your list?")
+    assert _offers_bins_action("I can't right now. Shall I take the bins out later?")

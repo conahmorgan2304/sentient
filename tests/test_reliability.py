@@ -300,3 +300,56 @@ async def test_kept_notes_are_judged_again_with_todays_rules(hass: HomeAssistant
     assert [r["asked"] for r in rel.records] == ["Can you watch for cars?", "What did the person look like at 6:14?",
                                                  "Has anyone been to the shed today?"]
     assert [p["kind"] for p in rel.records[1]["problems"]] == ["tool_failed"]  # only the stale note goes
+
+
+def test_displaying_a_camera_feed_is_not_offering_physical_work() -> None:
+    camera = {"tool_name": "ask_camera", "tool_result": {"answer": "The path is quiet."}}
+    assert _kinds("Check the back.", "It's quiet. Shall I put the garden feed up on the screen?", [camera]) == []
+    assert _kinds("Check the back.", "I can remind you to feed the rabbits.", [camera]) == []
+    assert _kinds("Check the back.", "I can't feed the rabbits.", [camera]) == []
+    assert _kinds("Check the back.", "Shall I quickly feed the rabbits?", [camera]) == ["offered_impossible"]
+
+
+def test_a_recent_camera_observation_can_report_nobody_in_view() -> None:
+    asked = "What can you see at the back at the moment?"
+    said = "It's quiet right now, and I can't see anyone about."
+    success = {"tool_name": "frigate_query", "result": {"data": {"count": 0}, "error": False}}
+    assert _kinds(asked, said, [success]) == []
+    assert _kinds(asked, said, []) == ["unanswered"]
+    failed = {"tool_name": "frigate_query", "result": {"data": {"reason": "timeout"}, "error": True}}
+    assert _kinds(asked, said, [failed]) == ["tool_failed", "unanswered"]
+    assert _kinds(asked, "I can't see anyone because the camera is offline.", [success]) == ["unanswered"]
+    assert _kinds(asked, said + " I can't check the other camera.", [success]) == ["unanswered"]
+    assert _kinds("Have you seen anyone today?", "I can't see anyone about.", [success]) == ["unanswered"]
+
+
+async def test_voice_rate_survives_trimming_details_and_separate_grading(hass, monkeypatch):
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient import reliability
+
+    monkeypatch.setattr(reliability, "KEEP_MAX", 2)
+    rel = reliability.Reliability(hass, "rate", {})
+    for cid in ("first", "second", "third"):
+        rel.asked(cid, "Did anyone visit?")
+        rel.answered(cid, "They did.")
+    rel.asked("fourth", "What time is it?")
+    rel.answered("fourth", "It's three.")
+    assert len(rel.records) == 2
+    assert rel.summary()["clean_rate"] == 0.25
+
+    rel.add_graded(time=dt_util.utcnow().isoformat(), room=None, asked="Is the light on?",
+                   said="It's on.", detail="The light was off.")
+    assert rel.summary()["clean_turns"] == 1
+    assert rel.summary()["clean_rate"] == 0.25
+
+    await rel._store.async_save(rel._saved())
+    restored = reliability.Reliability(hass, "rate", {})
+    await restored.async_start()
+    assert restored.summary()["clean_rate"] == 0.25
+
+    assert rel.add_graded(time=rel.turns[-1], room=None, asked="What time is it?",
+                          said="It's three.", detail="A later check found an error.")
+    assert rel.summary()["clean_rate"] == 0
+    assert not rel.add_graded(time=rel.turns[-1], room=None, asked="What time is it?",
+                              said="It's three.", detail="A later check found an error.")
+    assert rel.summary()["turns"] == 4

@@ -711,6 +711,11 @@
       const mind = { ...mindAttrs, ...this._mindDetails };
       if (!privateDetails) {
         for (const key of ["speech_deliveries", "voice_timings", "voice_sessions", "conversation_diagnostics", "recent_conversations"]) delete mind[key];
+        mind.self_test = mindAttrs.self_test;
+      }
+      if (guest) {
+        delete mind.self_test;
+        delete mind.reliability;
       }
       const fresh = mind.last_reflection && Date.now() - new Date(mind.last_reflection) < 16 * 3600e3;
       const voiceCheckRow = mind.live_voice_check_enabled === false ? "" : this._voiceCheckRow(mind.voice_check);
@@ -1995,12 +2000,34 @@
     }
 
     // ---------- what it's thinking (Mind tab) ----------
+    _innerScope() {
+      const guest = Boolean(this._attr("mind", "guest_mode", false) || this._st("guest_mode")?.state === "on");
+      return { guest, key: `${this._hass.user?.id || ""}:${this._hass.user?.is_admin || false}:${guest}` };
+    }
+
     _loadInner() {
+      const { guest, key } = this._innerScope();
+      if (key !== this._innerScopeKey) {
+        this._innerScopeKey = key;
+        this._innerAt = 0;
+        this._inner = this._brain = this._mcheck = null;
+        this._drawInner();
+        this._drawBrain();
+        this._drawCheck();
+      }
       if (this._innerAt && Date.now() - this._innerAt < 60000) return;
       this._innerAt = Date.now();
-      this._hass.callWS({ type: "sentient/inner" }).then((r) => { this._inner = r; this._drawInner(); }, () => { this._inner = null; this._drawInner(); });
-      this._hass.callWS({ type: "sentient/memory/review" }).then((r) => { this._mcheck = r.pairs || []; this._drawCheck(); }, () => {});
-      this._hass.callWS({ type: "sentient/brain" }).then((r) => { this._brain = r; this._drawBrain(); }, () => { this._brain = null; this._drawBrain(); });
+      const request = this._innerRequest = {};
+      const current = () => request === this._innerRequest && this._innerScope().key === key;
+      const load = (type, accept) => this._hass.callWS({ type }).then(
+        (result) => { if (current()) accept(result); },
+        () => { if (current()) accept(null); },
+      );
+      if (!guest) {
+        load("sentient/inner", (result) => { this._inner = result; this._drawInner(); });
+        load("sentient/memory/review", (result) => { this._mcheck = result?.pairs || []; this._drawCheck(); });
+      }
+      load("sentient/brain", (result) => { this._brain = result; this._drawBrain(); });
     }
 
     // HOW I'M LEARNING: how much of the day it expected, how its remarks and actions landed, AI calls saved
@@ -2995,7 +3022,7 @@
     _questionsCard(quiz) {
       const when = (t) => t ? new Date(t).toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
       const trend = (quiz.history || []).slice(-14).map((h) => h.total ? Math.round(h.right / h.total * 100) + "%" : "").filter(Boolean).join(" · ");
-      const rows = (quiz.results || []).map((r) => `<div class="r${r.right ? "" : " warn"}"><ha-icon icon="${r.right ? "mdi:check" : "mdi:close"}"></ha-icon><b class="wrap">${esc(r.question)}<details><summary>${r.right ? "Right" : "Wrong"}</summary><small>SAID · ${esc(r.answer)}</small><small>EXPECTED · ${esc(r.expected)}</small><small>TOOLS · ${esc((r.tools || []).join(", ") || "none")}${r.ms != null ? " · " + esc(r.ms) + " ms" : ""}</small></details></b><u>${esc(String(r.kind || "").toUpperCase())}</u></div>`).join("");
+      const rows = (quiz.results || []).map((r) => `<div class="r${r.right ? "" : " warn"}"><ha-icon icon="${r.right ? "mdi:check" : "mdi:close"}"></ha-icon><b class="wrap">${esc(r.question)}<details><summary>${r.right ? "All good" : "CHECK FAILED"}</summary><small>SAID · ${esc(r.answer)}</small><small>EXPECTED · ${esc(r.expected)}</small>${r.outcome ? `<small>Why · ${esc(r.outcome.replaceAll("_", " "))}</small>` : ""}${Object.entries(r.tool_errors || {}).map(([tool, reason]) => `<small>${esc(tool)} · ${esc(String(reason).replaceAll("_", " "))}</small>`).join("")}<small>TOOLS · ${esc((r.tools || []).join(", ") || "none")}${r.ms != null ? " · " + esc(r.ms) + " ms" : ""}</small></details></b><u>${esc(String(r.kind || "").toUpperCase())}</u></div>`).join("");
       return this._h("HOUSEHOLD QUESTIONS", `${quiz.right} OF ${quiz.total}`)
         + `<div class="r"><ha-icon icon="mdi:clipboard-check-outline"></ha-icon><b class="wrap">${esc(quiz.right)} of ${esc(quiz.total)} right${trend ? `<small>RECENT RUNS · ${esc(trend)}</small>` : ""}</b><u>${when(quiz.time)}</u></div>`
         + this._fold("quiz", `EACH QUESTION (${(quiz.results || []).length})`, rows);

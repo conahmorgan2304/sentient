@@ -101,3 +101,51 @@ test('single-turn check exposes playback confirmation and separate check modes',
   await panel._voiceCheckAction('heard', 'run-one');
   assert.match(panel.html, /SAVED · You confirmed/);
 });
+
+test('the Mind question card shows outcomes and tool errors, including on old reports', () => {
+  const panel = setup(async () => null);
+  panel._fold = (_id, _title, rows) => rows;
+  const html = panel._questionsCard({
+    right: 1, total: 2, results: [
+      { question: 'Was anyone seen?', outcome: 'failed_evidence_retrieval', right: false,
+        tool_errors: { '<camera>': 'timeout' } },
+      { question: 'What time is it?', right: true },
+    ],
+  });
+  assert.match(html, /Why · failed evidence retrieval/);
+  assert.match(html, /&lt;camera&gt; · timeout/);
+  assert.match(html, /What time is it\?/);
+  assert.doesNotMatch(html, /<camera>/);
+});
+
+test('changing guest mode clears Mind caches and ignores earlier replies', async () => {
+  const requests = [];
+  const panel = setup(({ type }) => new Promise(resolve => requests.push({ type, resolve })));
+  let guest = false;
+  panel._st = () => ({ attributes: { guest_mode: guest } });
+  panel._drawInner = panel._drawBrain = panel._drawCheck = () => {};
+  panel._loadInner();
+  assert.equal(requests.length, 3);
+  panel._inner = { knows: ['private'] };
+  panel._brain = { on: true, trust: ['private'] };
+
+  guest = true;
+  panel._loadInner();
+  assert.equal(panel._inner, null);
+  assert.equal(panel._brain, null);
+  assert.equal(requests.length, 4);
+  assert.equal(requests[3].type, 'sentient/brain');
+  for (const old of requests.slice(0, 3)) old.resolve({ pairs: ['private'], knows: ['private'] });
+  requests[3].resolve({ on: true, ledger: 39 });
+  await Promise.resolve();
+  assert.equal(panel._inner, null);
+  assert.equal(panel._mcheck, null);
+  assert.equal(panel._brain.ledger, 39);
+
+  guest = false;
+  panel._loadInner();
+  assert.equal(requests.length, 7);
+  requests[4].resolve({ knows: ['current'] });
+  await Promise.resolve();
+  assert.deepEqual(panel._inner.knows, ['current']);
+});

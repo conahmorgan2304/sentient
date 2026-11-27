@@ -23,8 +23,13 @@ _QUESTION = re.compile(r"^\s*(is|are|was|were|did|do|does|have|has|any|anything|
 SECURITY = re.compile(r"\b(locked up|lock(ed)? up|all locked|(door|doors|window|windows|gate|garage)\b.*\b(open|locked|shut|closed)|"
                       r"(left|leave) (a|any|the)? ?(door|window|gate)s?\b.*open|anything (left )?open|house (secure|safe)|"
                       r"(everything|all|we) (is |are )?(secure|safe))\b", re.I)
-COMING = re.compile(r"\b(next alarm|alarms?\b.*\b(set|tomorrow|morning)|reminders?|remind me (about|of) anything|"
-                    r"what'?s coming up)\b", re.I)
+_SCHEDULE_ITEMS = r"(?:(?:personal )?reminders?(?: and (?:scheduled )?alarms?)?|(?:scheduled )?alarms?(?: and (?:personal )?reminders?)?)"
+COMING = re.compile(
+    rf"^(?:can you tell me |tell me )?(?:"
+    rf"(?:what|which) (?:{_SCHEDULE_ITEMS})(?: (?:have i (?:got|set)|do i have|are (?:set|coming up)))?"
+    rf"|(?:what|which|when)(?: is| are|'s) (?:my |the |our )?(?:next |scheduled |personal )?{_SCHEDULE_ITEMS}"
+    rf"|(?:do i have|have i got|are there|any)(?: any)? {_SCHEDULE_ITEMS}"
+    r"|what(?:'s| is) coming up|what do i have coming up)[?.!]*$", re.I)
 VISITORS = re.compile(r"\b(anyone|anybody|someone)\b.*\b(come round|came round|been round|call(ed)? round|at the door|"
                       r"to the door|knock(ed)?|rang|ring the (bell|doorbell))\b|\bvisitors?\b|\bwho (came|called|rang)\b|"
                       r"\b(parcels?|delivery|deliveries)\b.*\b(come|came|left|arrived|been)\b", re.I)
@@ -34,33 +39,39 @@ LEAD = "My AI isn't answering right now, so this is straight from the house: "
 def is_question(text: str) -> bool:
     from .sessions import COMMAND
 
-    return bool(_QUESTION.search(text or "")) and not COMMAND.search(text or "")
+    text = (text or "").strip()
+    return bool(_QUESTION.search(text) or COMING.fullmatch(text)) and not COMMAND.search(text)
 
 
-def _coming_up(rt: Any) -> str | None:
+def _coming_up(rt: Any, question: str = "") -> str | None:
     from .watches import local_when
 
-    alarms = [a for a in (rt.alarms.listing() if getattr(rt, "alarms", None) else []) if a["on"] and a["next"]]
-    reminders = []
-    watches = getattr(rt, "watches", None)
-    listed = getattr(watches, "watches", []) if watches is not None else []
-    for w in (listed() if callable(listed) else listed):  # a property on the real engine
-        if getattr(w, "kind", "") == "reminder":
-            reminders.append(w)
+    wants_reminders = bool(re.search(r"\breminders?\b", question, re.I))
+    wants_alarms = bool(re.search(r"\balarms?\b", question, re.I))
     parts = []
-    if alarms:
-        first = alarms[0]
-        when = dt_util.parse_datetime(first["next"])
-        parts.append(f"your next alarm is {first['name']} at {local_when(when)}" if when else f"your next alarm is {first['name']}")
-    if reminders:
-        reminders.sort(key=lambda w: w.until_dt)
-        nxt = reminders[0]
-        more = f", and {len(reminders) - 1} more after that" if len(reminders) > 1 else ""
-        parts.append(f"the next reminder is “{nxt.what}” at {local_when(nxt.until_dt)}{more}")
-    if not parts:
-        return "there are no alarms or reminders coming up."
-    text = " and ".join(parts) + "."
-    return text[0].upper() + text[1:]
+    if wants_alarms or not wants_reminders:
+        alarms = getattr(rt, "alarms", None)
+        upcoming = [a for a in (alarms.listing() if alarms else ()) if a["on"] and a["next"]]
+        if upcoming:
+            plural = bool(re.search(r"\balarms\b", question, re.I))
+            listed = []
+            for alarm in upcoming if plural else upcoming[:1]:
+                when = dt_util.parse_datetime(alarm["next"])
+                listed.append(alarm["name"] + (f" at {local_when(when)}" if when else ""))
+            parts.append(("your alarms are " if len(listed) > 1 else "your next alarm is ") + "; ".join(listed))
+        elif wants_alarms:
+            parts.append("you have no alarms coming up")
+    if wants_reminders or not wants_alarms:
+        watches = getattr(getattr(rt, "watches", None), "watches", ())
+        watches = watches() if callable(watches) else watches
+        reminders = sorted((w for w in watches if w.kind == "reminder"), key=lambda w: w.until_dt)
+        if reminders:
+            listed = [f"“{w.what}” at {local_when(w.until_dt)}" for w in reminders]
+            parts.append("your " + ("reminder is " if len(listed) == 1 else "reminders are ") + "; ".join(listed))
+        elif wants_reminders:
+            parts.append("you have no reminders set")
+    text = " and ".join(parts) if parts else "there are no alarms or reminders coming up"
+    return text[0].upper() + text[1:] + "."
 
 
 def _visitors(rt: Any) -> str | None:
@@ -93,7 +104,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         if guest:
             return None  # alarms, reminders and visitors are household details
         if COMING.search(text):
-            body = _coming_up(rt)
+            body = _coming_up(rt, text)
         elif VISITORS.search(text):
             body = _visitors(rt)
         else:

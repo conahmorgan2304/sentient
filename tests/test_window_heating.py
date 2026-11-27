@@ -220,3 +220,43 @@ async def test_failed_restore_retries_the_saved_setpoint(hass):
         assert not eng.holding(LIVING)
         assert attempts == [15, 21, 21]
         assert hass.states.get(LIVING).attributes["temperature"] == 21
+
+
+async def test_other_open_window_in_room_keeps_existing_setback(hass, freezer):
+    second = "binary_sensor.second_living_window"
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    _heater(hass, LIVING, 21)
+    _window(hass, WIN_LIVING, "on")
+    eng = _engine(hass, _rt())
+    areas = {**AREAS, second: "living_room"}
+    with patch("custom_components.sentient.presence.area_of", lambda _h, eid: areas.get(eid)):
+        freezer.tick(timedelta(minutes=6))
+        await eng.async_check()
+        assert len(calls) == 1 and eng.holding(LIVING)
+        _heater(hass, LIVING, 15)
+        _window(hass, second, "on")
+        _window(hass, WIN_LIVING, "off")
+        await eng.async_check()
+        assert len(calls) == 1 and eng.holding(LIVING)
+        _window(hass, second, "off")
+        await eng.async_check()
+    assert [c.data["temperature"] for c in calls] == [15.0, 21.0]
+
+
+async def test_only_window_state_changes_schedule_immediate_checks(hass):
+    from homeassistant.core import Event, State
+
+    eng = _engine(hass, _rt())
+    with patch.object(eng, "async_check", new_callable=AsyncMock) as check:
+        for domain, device_class, old, new in (
+            ("binary_sensor.motion", "motion", "on", "off"),
+            (WIN_LIVING, "window", "off", "off"),
+            (WIN_LIVING, "window", "on", "off"),
+        ):
+            eng._changed(Event("state_changed", {
+                "entity_id": domain,
+                "old_state": State(domain, old, {"device_class": device_class}),
+                "new_state": State(domain, new, {"device_class": device_class}),
+            }))
+        await hass.async_block_till_done()
+    check.assert_awaited_once()

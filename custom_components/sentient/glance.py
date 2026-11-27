@@ -164,14 +164,19 @@ def knows(rt: Any) -> list[dict[str, Any]]:
     if (sleep := getattr(rt, "sleep", None)) is not None and sleep.enabled:
         usual = sleep.usual()
         if usual.get("bedtime") or usual.get("up"):
-            bits = [f"bed around {usual['bedtime']}" if usual.get("bedtime") else "", f"up around {usual['up']}" if usual.get("up") else ""]
-            add("mdi:sleep", "The house usually goes to " + " and is ".join(b for b in bits if b) + ".", "from the last three weeks of nights")
+            bedtime, up = usual.get("bedtime"), usual.get("up")
+            if bedtime:
+                text = f"The house usually goes to bed around {bedtime}" + (f" and is up around {up}" if up else "")
+            else:
+                text = f"The house is usually up around {up}"
+            add("mdi:sleep", text + ".", "from the last three weeks of nights")
         else:
             add("mdi:sleep", "Still learning when the house goes to bed and gets up.", "it needs three nights it can tell apart")
-        for r in sleep.never_rests():
+        restless_by_day = sleep.never_rests()
+        for r in restless_by_day:
             add("mdi:motion-sensor-off", f"I'm setting aside the {r['name']} at night: it's on {round(r['on_share'] * 100)}% of the time.",
                 "a sensor that never rests can't say whether anyone's up — it may be too sensitive or pointing at something that moves", True)
-        day = {r["entity_id"] for r in sleep.never_rests()}
+        day = {r["entity_id"] for r in restless_by_day}
         for r in sleep.restless_at_night():
             if r["entity_id"] not in day:
                 add("mdi:motion-sensor-off", f"I'm setting aside the {r['name']} at night: at night it's on {round(r['on_share'] * 100)}% of the time.",

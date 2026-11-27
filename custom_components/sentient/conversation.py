@@ -209,9 +209,12 @@ class BackedUpAgent(conversation.ConversationEntity):
         """Collect tool results for this provider call, independently of chat history."""
         from homeassistant.components.conversation import chat_log
         from homeassistant.helpers import llm
+        from .focus import turn_flags
         from .reliability import action_succeeded
+        from .security_voice import camera_history_request
         from .voice_actions import acting_results
 
+        history_results = [] if camera_history_request(user_input.text) else None
         completed = []
         token = acting_results.set(completed)
 
@@ -220,6 +223,10 @@ class BackedUpAgent(conversation.ConversationEntity):
             content = data.get("content") or {}
             if acting_results.get() is not completed or content.get("role") != "tool_result":
                 return
+            if history_results is not None and str(content.get("tool_name") or "").split("__")[-1] in (
+                "sentient_camera_activity", "frigate_query",
+            ):
+                history_results.append(content)
             if action_succeeded(content):
                 completed.append(str(content.get("tool_name") or "").split("__")[-1])
                 return
@@ -243,6 +250,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             if unsubscribe is not None:
                 unsubscribe()
             acting_results.reset(token)
+        if (flags := turn_flags.get()) is not None and history_results is not None:
+            flags["camera_history_results"] = history_results
         return result, completed
 
     def _guarded_configuration(self) -> bool:
@@ -564,7 +573,9 @@ class BackedUpAgent(conversation.ConversationEntity):
         from homeassistant.components.conversation.chat_log import current_chat_log
 
         log = current_chat_log.get()
-        if log is None or log.delta_listener is None or not self.supports_streaming:
+        from .security_voice import camera_history_request
+
+        if log is None or log.delta_listener is None or not self.supports_streaming or camera_history_request(user_input.text):
             listener = log.delta_listener if log is not None else None
             if listener is not None:
                 log.delta_listener = None  # the Assist pipeline also receives provider deltas directly
@@ -1223,7 +1234,11 @@ class BackedUpAgent(conversation.ConversationEntity):
                     result.continue_conversation = True
                     return result
         plain = spoken_text(response)
-        parts = sentences(plain)
+        from .focus import turn_flags
+        from .security_voice import checked_history_reply
+
+        history_reply = checked_history_reply(plain, (turn_flags.get() or {}).get("camera_history_results", ()))
+        parts = sentences(history_reply)
         kept = []
         for part in parts:
             required = claimed_action_tools(part)
@@ -1232,7 +1247,7 @@ class BackedUpAgent(conversation.ConversationEntity):
                     and (all(tools & completed_tools for tools in required) if required
                          else completed or not explicit_completion(part))):
                 kept.append(part)
-        if len(kept) != len(parts):
+        if history_reply != plain or len(kept) != len(parts):
             fallback = ("I don't have a verified explanation for the earlier reply."
                         if any(unsupported_self_explanation(part) for part in parts)
                         else "I couldn't confirm that an action was completed.")
@@ -1249,7 +1264,10 @@ class BackedUpAgent(conversation.ConversationEntity):
                         log.content[index] = replace(item, content=text)
                         break
             if result.conversation_id and (records := getattr(self._entry.runtime_data, "conversations", None)):
-                records.amend_said(result.conversation_id, [part for part in parts if part not in kept])
+                if history_reply != plain:
+                    records.amend_said(result.conversation_id, [plain], replacement=text)
+                else:
+                    records.amend_said(result.conversation_id, [part for part in parts if part not in kept])
             response.async_set_speech(text)
             result.continue_conversation = False
         return result

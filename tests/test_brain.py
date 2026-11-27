@@ -967,7 +967,8 @@ async def test_answers_from_the_house_count_as_without_the_ai(hass: HomeAssistan
     rt = entry.runtime_data
     # the real alarms and reminders engines (1.4.0's test used stand-ins, which hid a crash on the live system)
     out = await async_answer(hass, rt, "when's my next alarm?", None)
-    assert out and "no alarms or reminders" in out
+    # The answer to an alarm-only question omits unrelated reminders.
+    assert out and "no alarms coming up" in out
     assert (await rt.brain.async_status())["independence"]["without_ai"] == 1
 
 
@@ -1170,3 +1171,28 @@ async def test_a_notify_call_with_a_plain_text_target_is_fine(hass: HomeAssistan
     await hass.async_block_till_done()
     assert rt.brain.ledger is not None
     assert "Error running job" not in caplog.text and "has no attribute 'get'" not in caplog.text
+
+
+async def test_diagnostics_reads_committed_counts_without_flushing_or_exporting_provider_errors(hass):
+    from unittest.mock import AsyncMock, patch
+
+    from custom_components.sentient.ai import FAILING_AFTER
+    from custom_components.sentient.diagnostics import async_get_config_entry_diagnostics
+
+    entry = await _setup(hass)
+    rt = entry.runtime_data
+    for _ in range(FAILING_AFTER):
+        rt.ai.failed(RuntimeError("Private provider endpoint and credential"))
+    with patch.object(rt.brain.ledger, "async_flush", new_callable=AsyncMock) as flush:
+        data = await async_get_config_entry_diagnostics(hass, entry)
+
+    flush.assert_not_awaited()
+    assert data["brain"]["ledger_rows"] >= 0
+    assert data["brain"]["memories_copied"] == {}
+    assert data["ai"]["failing"] is True
+    assert data["ai"]["last_error"] == "**REDACTED**"
+
+    failure = RuntimeError("Private database path")
+    with patch.object(rt.brain, "async_storage_status", side_effect=failure):
+        data = await async_get_config_entry_diagnostics(hass, entry)
+    assert data["brain"] == {"error": "storage_status_unavailable"}

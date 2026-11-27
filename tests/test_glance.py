@@ -101,8 +101,20 @@ async def test_what_it_knows_on_the_mind_tab(hass: HomeAssistant, hass_ws_client
     await ws.send_json({"id": 1, "type": "sentient/inner"})
     knows = (await ws.receive_json())["result"]["knows"]
     assert any("bed" in k["text"] for k in knows)  # still learning when the house sleeps
+
+    entry.runtime_data.speech.guest_mode = True
+    for command, forbidden in (
+        ("sentient/inner", {"knows", "thoughts"}),
+        ("sentient/brain", {"situations", "situation_book", "beliefs", "voice", "by_themselves", "trust"}),
+    ):
+        await ws.send_json({"id": 10 if command.endswith("inner") else 11, "type": command})
+        data = (await ws.receive_json())["result"]
+        assert not forbidden.intersection(data)
+        if command.endswith("brain"):
+            assert "judged" in data["prediction"] and "surprises" not in data["prediction"]
+    entry.runtime_data.speech.guest_mode = False
     entry.runtime_data.options = {**entry.runtime_data.options, "knowledge_card": False}
-    await ws.send_json({"id": 2, "type": "sentient/inner"})
+    await ws.send_json({"id": 12, "type": "sentient/inner"})
     assert "knows" not in (await ws.receive_json())["result"]
 
 
@@ -210,3 +222,12 @@ async def test_the_areas_chosen_sensors_win(hass: HomeAssistant):
     hass.states.async_set("sensor.lounge_other", "unavailable", {"device_class": "temperature"})
     lo = next(r for r in rooms(hass) if r["area_id"] == lounge)
     assert lo["temp"] is None  # never falls back to a guess when one was chosen
+
+
+def test_what_it_knows_reports_a_wake_time_without_a_bedtime():
+    from types import SimpleNamespace
+    from custom_components.sentient.glance import knows
+
+    sleep = SimpleNamespace(enabled=True, usual=lambda: {"up": "7:30"},
+                            never_rests=list, restless_at_night=list)
+    assert knows(SimpleNamespace(sleep=sleep))[0]["text"] == "The house is usually up around 7:30."

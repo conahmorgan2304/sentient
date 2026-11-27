@@ -1,4 +1,5 @@
 """Ensure root-cause reporting is conservative and private."""
+from datetime import timedelta
 from types import SimpleNamespace
 
 from custom_components.sentient.dependency_health import evaluate, runtime_dependencies
@@ -43,10 +44,21 @@ def test_no_false_claim_of_frigate_or_climate_availability():
     assert result["features"]["voice_conversation"]["status"] == "unknown"
 
 
-def test_frigate_loaded_but_offline_is_not_called_available():
+def test_frigate_dependency_requires_fresh_stats():
+    from homeassistant.util import dt as dt_util
+    from custom_components.sentient.frigate_health import FrigateHealth
+
     hass = SimpleNamespace(config=SimpleNamespace(components={"frigate", "recorder"}),
                            states=SimpleNamespace(async_all=lambda domain: []))
-    for said, expected in (("online", True), ("offline", False), ("stopped", False), (None, None)):
-        rt = SimpleNamespace(frigate_health=SimpleNamespace(availability=said))
-        assert runtime_dependencies(rt, hass)["frigate"] is expected
-    assert runtime_dependencies(SimpleNamespace(), hass)["frigate"] is None  # loaded, never checked
+    monitor = FrigateHealth(hass, {"frigate_pipeline_health": True})
+    rt = SimpleNamespace(frigate_health=monitor)
+    assert runtime_dependencies(rt, hass)["frigate"] is None  # loaded, never checked
+    monitor.availability = "online"
+    assert runtime_dependencies(rt, hass)["frigate"] is None  # retained status alone
+    monitor.stats_at = dt_util.utcnow()
+    assert runtime_dependencies(rt, hass)["frigate"] is True
+    monitor.stats_at -= timedelta(minutes=4)
+    assert runtime_dependencies(rt, hass)["frigate"] is None
+    for said in ("offline", "stopped"):
+        monitor.availability = said
+        assert runtime_dependencies(rt, hass)["frigate"] is False

@@ -163,6 +163,19 @@ async def test_record_what_the_page_is_told(hass: HomeAssistant, hass_ws_client,
     # camera visits on the Security page: one to review, one reviewed, and a zone suggested for hiding
     from homeassistant.util import dt as dt_util
 
+    finished = dt_util.utcnow().isoformat()
+    rt.selftest.options = {**rt.selftest.options, "self_test": "nightly"}
+    rt.selftest.last = {
+        "time": finished,
+        "results": [{"key": "alarm", "kind": "everyday", "question": "Is the alarm on?", "answer": "No.",
+                     "expected": "disarmed", "right": True, "outcome": "correct"},
+                    {"key": "camera", "kind": "camera", "question": "Was anyone seen?", "answer": "No.",
+                     "expected": "no one", "right": False, "outcome": "failed_evidence_retrieval"}],
+        "history": [{"time": finished, "right": 1, "total": 2}],
+    }
+    rt.reliability.asked("fixture-turn", "Did anyone visit?")
+    rt.reliability.answered("fixture-turn", "They did.")
+
     events = rt.security_events
     events.cameras = lambda: {"gate"}
     now = dt_util.utcnow().timestamp()

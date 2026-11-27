@@ -288,7 +288,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         if (m := SCHEDULED_EVENT.fullmatch(text)) and (scheduled := await _scheduled_event(hass, m, readable)):
             return scheduled
         if COMING.search(text):
-            return _coming_up(rt)
+            return _coming_up(rt, text)
         if VISITORS.search(text):
             return _visitors(rt)
     except Exception:  # noqa: BLE001 - an instant answer is a bonus; the AI is always there behind it

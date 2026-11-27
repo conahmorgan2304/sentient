@@ -28,6 +28,14 @@ for (const file of FIXTURES) {
           await page.evaluate((v) => window.__panel._show(v, true), view);
           await settle(page);
           opened.push(view);
+          if (view === "mind" && name === "all_on") {
+            for (const id of ["mrel", "mquiz", "mknow", "mlearn"]) {
+              await page.waitForFunction((key) => {
+                const card = window.__panel.shadowRoot.getElementById(key);
+                return card && !card.hidden && card.textContent.trim().length > 0;
+              }, id, { timeout: 5000 });
+            }
+          }
         }
         if (admin) {
           const pages = await page.evaluate(() => Object.keys(window.__panel._pages()));

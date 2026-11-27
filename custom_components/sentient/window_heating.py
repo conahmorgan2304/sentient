@@ -136,11 +136,15 @@ class WindowHeating:
         if self._stopped or not self.enabled:
             return
         entity_id = event.data.get("entity_id", "")
-        new = event.data.get("new_state")
-        if entity_id.startswith("binary_sensor.") and new is not None and new.state != "on":
-            self._told.discard(entity_id)
-            self._gave_up.discard(entity_id)
-            self.hass.async_create_task(self.async_check(), eager_start=False)
+        old, new = event.data.get("old_state"), event.data.get("new_state")
+        if (not entity_id.startswith("binary_sensor.") or new is None or new.state == "on"
+                or (old is not None and old.state == new.state)):
+            return
+        if not any(st is not None and st.attributes.get("device_class") in WINDOW_CLASSES for st in (old, new)):
+            return
+        self._told.discard(entity_id)
+        self._gave_up.discard(entity_id)
+        self.hass.async_create_task(self.async_check(), eager_start=False)
 
     @callback
     def _tick(self, now: datetime) -> None:
@@ -174,6 +178,7 @@ class WindowHeating:
                     await self._turn_down(heater, window, area_id, now)
                 elif window.entity_id not in self.down[heater]["windows"]:
                     self.down[heater]["windows"].append(window.entity_id)
+                    self._save()
             others = [h for h in self._heaters() if h not in room and self._warming(self.hass.states.get(h))]
             if others and window.entity_id not in self._told:
                 self._told.add(window.entity_id)
@@ -218,11 +223,20 @@ class WindowHeating:
         from .never import blocked
         from .own import own_context
 
+        if not self.down:
+            return
+        # A second window may have opened just before the first one closed. Its
+        # setback delay only applies when starting a hold, not when ending one.
+        open_by_room: dict[str, set[str]] = {}
+        for window in self._windows():
+            if window.state == "on" and (area := self._area(window.entity_id)):
+                open_by_room.setdefault(area, set()).add(window.entity_id)
         for heater, record in list(self.down.items()):
             if self._stopped:
                 return
-            windows = [self.hass.states.get(w) for w in record.get("windows") or []]
-            still_open = [w for w in windows if w is not None and w.state == "on"]
+            tracked_open = {eid for eid in record.get("windows") or []
+                            if (window := self.hass.states.get(eid)) is not None and window.state == "on"}
+            still_open = tracked_open | open_by_room.get(record.get("area"), set())
             since = dt_util.parse_datetime(record.get("since") or "")
             too_long = since is not None and now - since >= LONGEST
             if still_open and not (too_long or force):
@@ -238,7 +252,7 @@ class WindowHeating:
             if have is None:
                 continue
             if too_long:
-                self._gave_up.update(w.entity_id for w in still_open)
+                self._gave_up.update(still_open)
             rt = self._rt()
             target = None
             if rt is not None and getattr(rt, "heat_prog", None) is not None:

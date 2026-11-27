@@ -17,7 +17,7 @@ switching it off stops it and clears what was kept. The house testing itself ove
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import re
 from typing import Any
 
@@ -50,8 +50,9 @@ DONE = re.compile(
     re.I)
 # an offer to do something with hands: no device in the house can
 OFFER = re.compile(
-    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|i'll|i will|let me)\b[^.?!]{0,40}?"
-    r"\b(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
+    r"\b(?:shall i|should i|do you want me to|would you like me to|want me to|i can|i could|i['’]ll|i will|let me)"
+    r"\s+(?:(?:also|just|please|quickly)\s+)*"
+    r"(?:feed|fetch|bring|carry|cook|make you|make a (?:cup|brew|drink|tea|coffee)|pour|tidy|clean up|water the|walk the|"
     r"let the \w+ (?:out|in)|top up|refill|go (?:and|out|outside|down|up)|pop (?:out|outside|down|up)|pick up|put (?:the )?\w+ away)\b",
     re.I)
 # Explicit offers to change the house, not informational offers such as "shall I check".
@@ -130,8 +131,17 @@ def actionable_offer(text: str) -> bool:
 UNANSWERED = re.compile(
     r"\bi (?:don't|do not|didn't|did not) (?:know|have (?:any )?(?:information|a record|records|access|details|data|way))\b|"
     r"\bi (?:couldn't|could not|can't|cannot|wasn't able to|was unable to|am unable to|'m unable to|’m unable to) "
-    r"(?:find|see|tell|check|access|look|say|confirm|get)\b|\bno (?:record|records|information|data) (?:of|about|for)\b|"
+    r"(?:find|see|tell|check|access|look|say|confirm|verify|get)\b|\bno (?:record|records|information|data) (?:of|about|for)\b|"
     r"\bi'?m not (?:sure|able)\b", re.I)
+# A camera can report seeing nobody. An unavailable frame or an unsuccessful history
+# search still counts as uncertainty, including when it asks what to check next.
+_CAMERA_NEGATIVE = re.compile(
+    r"\bi (?:can['’]t|cannot) see (?:anyone|anybody|any people|anything moving)"
+    r"(?: (?:about|around|there|right now|at the moment))*\s*(?=[.!?]|$)", re.I,
+)
+_CURRENT_CAMERA_READS = {"ask_camera", "sentient_look", "frigate_query"}
+
+
 QUESTION = re.compile(r"\?\s*$|^(?:has|have|had|did|was|were|when|who|what|which|how (?:long|many|often)|is there|are there)\b", re.I)
 PAST = re.compile(r"\b(?:has|have|had|did|was|were|last|earlier|yesterday|today|tonight|this (?:morning|afternoon|evening)|"
                   r"recently|ago|been|happened|overnight|previously)\b", re.I)
@@ -148,7 +158,7 @@ EVIDENCE_NAMES = ("history", "timeline", "what_happened", "camera_activity", "vi
                   # answering without looking; "What did you say?" is answered from what was said
                   "calendar", "said", "spoken",
                   # 22 Nov: "What did the person look like at 6:14?" looked at a saved picture
-                  "snapshot", "clip", "recap", "camera_events")
+                  "snapshot", "clip", "recap", "camera_events", "frigate_query")
 
 
 def needs_evidence(asked: str) -> bool:
@@ -170,13 +180,46 @@ def _short(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
+def tool_payload(content: dict[str, Any]) -> dict[str, Any]:
+    result = content.get("result")
+    if isinstance(result, dict) and isinstance(result.get("data"), dict):
+        return result["data"]
+    result = content.get("tool_result")
+    return result if isinstance(result, dict) else {}
+
+
+CAMERA_ERROR_REASONS = frozenset({
+    "camera_unresolved", "camera_access", "camera_not_configured", "evidence_disabled", "evidence_unavailable",
+})
+TOOL_ERROR_REASONS = CAMERA_ERROR_REASONS | {"invalid_arguments", "timeout", "read_only", "tool_failed"}
+
+
+def tool_error_reason(content: dict[str, Any]) -> str:
+    """Keep a useful category without persisting provider messages, tool arguments or entity names."""
+    result = tool_payload(content)
+    reason = result.get("reason")
+    if isinstance(reason, str) and reason in CAMERA_ERROR_REASONS:
+        return reason
+    error = str(result.get("error") or "").casefold()
+    if error.startswith("wrong arguments") or error in ("invalid", "multipleinvalid", "vol.invalid", "validationerror", "invalidtoolarguments"):
+        return "invalid_arguments"
+    if "timeout" in error or "timed out" in error:
+        return "timeout"
+    if "read-only" in error:
+        return "read_only"
+    return "tool_failed"
+
+
 def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
     """(tool name, what went wrong or None, whether it was a device action that did something)."""
     name = str(content.get("tool_name") or "").split("__")[-1]
-    result = content.get("tool_result")
-    if isinstance(result, dict) and result.get("error"):
-        return name, _short(str(result["error"]), 140), False
-    data = result.get("data") if isinstance(result, dict) else None
+    result = content.get("result", content.get("tool_result"))
+    payload = tool_payload(content)
+    if payload.get("error") or (isinstance(result, dict) and result.get("error")):
+        return name, _short(str(payload.get("error") or "tool reported an error"), 140), False
+    if payload.get("response_type") == "error" or payload.get("status") in ("failed", "error", "timed_out"):
+        return name, "tool reported an error", False
+    data = payload.get("data")
     if isinstance(data, dict) and ("success" in data or "failed" in data):
         bad = [str(t.get("name")) for t in data.get("failed") or [] if isinstance(t, dict) and t.get("name")]
         # A nonempty success list represents a reported successful target, not
@@ -186,12 +229,12 @@ def _tool_outcome(content: dict[str, Any]) -> tuple[str, str | None, bool]:
         if bad:
             return name, "didn't work: " + ", ".join(bad[:4]), ok
         return name, None, ok
-    if isinstance(result, dict) and result.get("success") is True:
+    if payload.get("success") is True:
         # Explicit success is evidence that the tool reports completion. It is
         # not independent verification that the physical device changed.
         return name, None, True
-    if isinstance(result, dict) and result.get("success") is False:
-        return name, _short(str(result.get("message") or result.get("reason") or "failed"), 140), False
+    if payload.get("success") is False:
+        return name, _short(str(payload.get("message") or payload.get("reason") or "failed"), 140), False
     return name, None, False
 
 
@@ -223,6 +266,21 @@ def action_succeeded(content: dict[str, Any], *, acting: bool = False) -> bool:
         recorded = result.get("watching" if name == "sentient_watch" else "reminder")
         return bool(isinstance(recorded, dict) and recorded.get("id"))
     return (acting or response_type == "action_done") and not error and result.get("success") is not False
+
+
+def _unanswered(asked: str, said: str, tools: list[dict[str, Any]],
+                outcomes: list[tuple[str, str | None, bool]]) -> bool:
+    if not UNANSWERED.search(said):
+        return False
+    current = not needs_evidence(asked) and re.search(
+        r"\b(?:camera|see|look|visible)\b", asked, re.I,
+    )
+    if current and _CAMERA_NEGATIVE.search(said) and any(
+        name in _CURRENT_CAMERA_READS and not error and tool_payload(tools[i])
+        for i, (name, error, _) in enumerate(outcomes)
+    ):
+        return bool(UNANSWERED.search(_CAMERA_NEGATIVE.sub("", said)))
+    return True
 
 
 def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozenset[str] = frozenset()) -> list[dict[str, str]]:
@@ -262,7 +320,7 @@ def classify(asked: str, said: str, tools: list[dict[str, Any]], actions: frozen
                     "detail": "action outcome not verified" if attempted_action else "no action in this turn succeeded"})
     if said_clean and (m := OFFER.search(said_clean)):
         out.append({"kind": "offered_impossible", "detail": f"\"{_short(m.group(0), 80)}\""})
-    if said_clean and UNANSWERED.search(said_clean):
+    if said_clean and _unanswered(asked, said_clean, tools, outcomes):
         out.append({"kind": "unanswered", "detail": "used " + (", ".join(dict.fromkeys(n for n, _e, _c in outcomes)) or "no tools")})
     elif needs_evidence(asked):
         # A generic device command is not evidence about prior events. This
@@ -296,6 +354,7 @@ class Reliability:
         self._store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry_id}.reliability")
         self.records: list[dict[str, Any]] = []  # newest first
         self.turns: list[str] = []  # when each checked turn happened, for a rate
+        self.flagged_turns: list[str] = []  # kept alongside turns, independent of the detail cap
         self._turn: dict[str, dict[str, Any]] = {}  # conversation id -> the turn being written
         self.actions: frozenset[str] = frozenset()
 
@@ -311,6 +370,9 @@ class Reliability:
             return
         self.records = data.get("records", [])
         self.turns = data.get("turns", [])
+        self.flagged_turns = data.get("flagged_turns", [
+            r["time"] for r in self.records if not r.get("graded") and r.get("problems")
+        ])
         self._trim()
         if self.rejudge():
             self._save()
@@ -331,12 +393,14 @@ class Reliability:
             cleared += 1
             if not record["problems"]:
                 self.records.remove(record)
+                if not record.get("graded") and record["time"] in self.flagged_turns:
+                    self.flagged_turns.remove(record["time"])
         return cleared
 
     @callback
     def async_stop(self) -> None:
         if self.enabled:
-            self._store.async_delay_save(lambda: {"records": self.records, "turns": self.turns}, 0)
+            self._store.async_delay_save(self._saved, 0)
 
     def update_options(self, options: dict[str, Any]) -> None:
         self.options = options
@@ -345,17 +409,22 @@ class Reliability:
 
     @callback
     def clear(self) -> None:
-        self.records, self.turns, self._turn = [], [], {}
-        self._store.async_delay_save(lambda: {"records": [], "turns": []}, 1)
+        self.records, self.turns, self.flagged_turns, self._turn = [], [], [], {}
+        self._last = None
+        self._store.async_delay_save(self._saved, 1)
 
     @callback
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"records": self.records, "turns": self.turns}, SAVE_DELAY)
+        self._store.async_delay_save(self._saved, SAVE_DELAY)
+
+    def _saved(self) -> dict[str, Any]:
+        return {"records": self.records, "turns": self.turns, "flagged_turns": self.flagged_turns}
 
     def _trim(self) -> None:
         cutoff = (dt_util.utcnow() - timedelta(days=KEEP_DAYS)).isoformat()
         self.records = [r for r in self.records if r["time"] >= cutoff][:KEEP_MAX]
         self.turns = [t for t in self.turns if t >= cutoff][-5000:]
+        self.flagged_turns = [t for t in self.flagged_turns if self.turns and t >= self.turns[0]][-5000:]
 
     # ----- fed by the conversation recorder ------------------------------------------------
     @callback
@@ -370,11 +439,11 @@ class Reliability:
 
     @callback
     def answered(self, conversation_id: str, text: str, room: str | None = None,
-                 device_id: str | None = None) -> None:
+                 device_id: str | None = None, *, when: datetime | None = None) -> None:
         turn = self._turn.pop(conversation_id, None)
         if not self.enabled or turn is None:
             return
-        now_dt = dt_util.utcnow()
+        now_dt = when or dt_util.utcnow()
         now = now_dt.isoformat()
         key = (" ".join(str(turn["asked"]).split()).casefold(), " ".join(str(text or "").split()).casefold())
         last = getattr(self, "_last", None)
@@ -391,7 +460,10 @@ class Reliability:
             if turn["tools"] and not last["tools"]:
                 if last["record"] is not None and last["record"] in self.records:
                     self.records.remove(last["record"])
-                last["record"] = self._record(now, room, turn, text)
+                first = last["at"].isoformat()
+                if last["record"] is not None and first in self.flagged_turns:
+                    self.flagged_turns.remove(first)
+                last["record"] = self._record(first, room, turn, text)
                 last["tools"] = True
                 self._trim()
                 self._save()
@@ -409,6 +481,7 @@ class Reliability:
         record = {"time": now, "room": room, "asked": _short(turn["asked"], 120), "said": _short(text, 160),
                   "tools": list(dict.fromkeys(_tool_outcome(t)[0] for t in turn["tools"]))[:6], "problems": found}
         self.records.insert(0, record)
+        self.flagged_turns.append(now)
         return record
 
     def add_graded(self, *, time: str, room: str | None, asked: str, said: str, detail: str) -> bool:
@@ -416,11 +489,19 @@ class Reliability:
         if not self.enabled:
             return False
         short = _short(said, 160)
-        if any(r["time"] == time and r["said"] == short for r in self.records):
-            return False
-        self.records.insert(0, {"time": time, "room": room, "asked": _short(asked, 120), "said": short, "tools": [],
-                                "problems": [{"kind": "wrong_state", "detail": detail}], "graded": True})
-        self.records.sort(key=lambda r: r["time"], reverse=True)
+        problem = {"kind": "wrong_state", "detail": detail}
+        existing = next((r for r in self.records if r["time"] == time and r["said"] == short), None)
+        if existing is not None:
+            if problem in existing["problems"]:
+                return False
+            existing["problems"].append(problem)
+        else:
+            self.records.append({"time": time, "room": room, "asked": _short(asked, 120), "said": short, "tools": [],
+                                 "problems": [problem], "graded": True})
+            self.records.sort(key=lambda r: r["time"], reverse=True)
+        if time in self.turns and time not in self.flagged_turns:
+            self.flagged_turns.append(time)
+            self.flagged_turns.sort()
         self._trim()
         self._save()
         return True
@@ -440,9 +521,10 @@ class Reliability:
         for r in recent:
             for p in r["problems"]:
                 counts[p["kind"]] = counts.get(p["kind"], 0) + 1
-        clean = turns - len(recent)
+        flagged = sum(1 for t in self.flagged_turns if t >= cutoff)
+        clean = max(turns - flagged, 0)
         return {
-            "enabled": True, "days": days, "turns": turns, "clean_turns": max(clean, 0),
+            "enabled": True, "days": days, "turns": turns, "clean_turns": clean,
             "clean_rate": round(clean / turns, 2) if turns else None,
             "counts": [{"kind": k, "label": KINDS[k], "count": n} for k, n in counts.items() if n],
             "recent": [{**r, "problems": [{**p, "label": KINDS.get(p["kind"], p["kind"])} for p in r["problems"]]}

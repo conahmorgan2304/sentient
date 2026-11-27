@@ -24,7 +24,7 @@ from typing import Any, Callable
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
@@ -50,6 +50,7 @@ ENTRY_WINDOW = timedelta(minutes=5)  # …and no way in used in this long, for "
 AWAY_SETTLE = timedelta(minutes=5)  # everyone has been out this long: not someone just leaving
 LOITER = timedelta(minutes=4)
 REPEAT = timedelta(minutes=10)
+FRIGATE_ZONES = "sentient_frigate_camera_zones"
 
 
 def camera_for(hass: HomeAssistant, sensor: str) -> str | None:
@@ -68,21 +69,40 @@ def camera_for(hass: HomeAssistant, sensor: str) -> str | None:
 
     from .cameras import inventory
 
-    preferred_ids = {row["entity_id"] for row in inventory(hass, {}) if not row["extra"]}
     reg = er.async_get(hass)
     entry = reg.async_get(sensor)
     if entry and entry.device_id:
         candidates = [e.entity_id for e in er.async_entries_for_device(reg, entry.device_id)
                       if e.domain == "camera" and not e.disabled_by]
         if candidates:
-            # Exact registry identity is usable even before entities publish states.
             if len(candidates) == 1:
                 return candidates[0]
             exact = unique(candidates)
             if exact is not None:
                 return exact
-            preferred = [eid for eid in candidates if eid in preferred_ids]
+            preferred = [row["entity_id"] for row in inventory(hass, {}) if not row["extra"]
+                         and row["entity_id"] in candidates]
             return preferred[0] if len(preferred) == 1 else None
+        if entry.platform == "frigate":
+            # Frigate gives zones their own device, under the server rather than the camera.
+            # The registry identifier survives entity and device display-name changes.
+            device = dr.async_get(hass).async_get(entry.device_id)
+            config_id = entry.config_entry_id
+            by_zone = hass.data.get(FRIGATE_ZONES, {}).get(config_id, {})
+            if device is not None:
+                prefix = f"{config_id}:"
+                zones = {ident.removeprefix(prefix).casefold() for domain, ident in device.identifiers
+                         if domain == "frigate" and ident.startswith(prefix)}
+                known_zones = zones & by_zone.keys()
+                if known_zones:
+                    names = set().union(*(by_zone[zone] for zone in known_zones))
+                    if len(names) != 1:
+                        return None
+                    uid = f"{config_id}:camera:{next(iter(names))}"
+                    entity_id = reg.async_get_entity_id("camera", "frigate", uid)
+                    camera = reg.async_get(entity_id) if entity_id else None
+                    return entity_id if camera and not camera.disabled_by and camera.config_entry_id == config_id else None
+            return None  # a Frigate zone without authoritative metadata may match an unrelated camera by name
     # Without a shared device, duplicate friendly names remain ambiguous.
     return unique([cam.entity_id for cam in hass.states.async_all("camera")])
 
