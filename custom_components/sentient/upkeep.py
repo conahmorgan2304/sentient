@@ -151,8 +151,9 @@ async def gather_briefing(hass: HomeAssistant, rt: SentientRuntime, *, readable=
                 out["energy_today"] = {
                     **({"cost_so_far": f"{report.get('currency_symbol', '£')}{report['cost_today']:.2f}"} if report.get("cost_today") else {}),
                     "kwh_so_far": report["total_kwh"],
+                    "total_scope": report.get("total_scope", "tracked_devices"),
                     "usual_by_now": report["usual_kwh"],
-                    **({"house": f"{house['kwh']} kWh so far (usually {house['usual']} kWh by now)"} if house else {}),
+                    **({"grid_import": f"{house['kwh']} kWh so far (usually {house['usual']} kWh by now); not total household consumption"} if house else {}),
                     "biggest": [f"{d['name']} {d['kwh']} kWh" for d in report["devices"][:3]],
                     "unusual": describe(report),
                 }

@@ -227,6 +227,8 @@ async def test_an_appliance_is_called_by_the_name_its_device_has(hass: HomeAssis
     app = entry.runtime_data.appliances
     assert app._friendly("sensor.kuche_geschirrspuler_leistung", "Küche - Geschirrspüler Leistung") == "Küche - Geschirrspüler"
     assert app._friendly("sensor.without_device", "Washing machine power") == "Washing machine"
+    devices.async_update_device(device.id, name_by_user=None)
+    assert app._friendly("sensor.kuche_geschirrspuler_leistung", "Küche - Geschirrspüler Leistung") == "shellyplus1pm-abc"
 
 
 async def test_noticer_leaves_appliances_alone(hass: HomeAssistant) -> None:
