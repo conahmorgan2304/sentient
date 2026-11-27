@@ -66,3 +66,19 @@ async def test_feedback_fades(hass: HomeAssistant, freezer) -> None:
     fb.record("sensor.washer", 3, "test")
     freezer.tick(timedelta(days=30))
     assert round(fb.score("sensor.washer"), 1) == 1.5
+
+
+async def test_configured_offer_refusals_expire_without_reset(hass: HomeAssistant, freezer) -> None:
+    from datetime import timedelta
+
+    entry = await _setup(hass)
+    fb = entry.runtime_data.feedback
+    for _ in range(5):
+        fb.record("offer:brew", 1, "said no", "offers")
+        fb.record("light.test", 1, "said no", "offers")
+    assert fb.offers_blocked("offer:brew")
+    assert fb.offers_blocked("light.test")
+    assert next(i for i in fb.listing() if i["entity_id"] == "offer:brew")["effect"] == "temporarily paused"
+    freezer.tick(timedelta(hours=24))
+    assert not fb.offers_blocked("offer:brew")
+    assert fb.offers_blocked("light.test")
