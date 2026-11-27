@@ -1,6 +1,6 @@
 """Faces: putting names to people the cameras already recognise.
 
-Sentient doesn't recognise faces itself. Frigate does (its "<name> last camera" sensors), and so do some
+Sentient doesn't recognise faces itself. Frigate does (its "last camera" and "last recognised face" sensors), and so do some
 doorbells (a "last recognised face" sensor). When one of those names someone, Sentient notes it:
 "Sam seen at the gate, 17:32" goes on the timeline, and the voice can answer "has Sam come home?"
 or "when did Nan last come round?". Names are only ever said when someone asks — never announced, never
@@ -29,6 +29,7 @@ from typing import Any, Callable
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
@@ -127,13 +128,20 @@ class Faces:
         people = [p.strip().lower() for p in self.options.get(CONF_FACE_PEOPLE) or [] if p.strip()]
         return not people or name.lower() in people
 
-    def camera_allowed(self, camera: str) -> bool:
+    def camera_allowed(self, camera: str, frigate_entry_id: str | None = None) -> bool:
         """Only names from the chosen cameras count (none chosen: all)."""
         chosen = self.options.get(CONF_FACE_CAMERAS) or []
         if not chosen:
             return True
+        registry = er.async_get(self.hass)
         names = set()
         for c in chosen:
+            if (entry := registry.async_get(c)) is not None and entry.platform == "frigate":
+                if frigate_entry_id and entry.config_entry_id != frigate_entry_id:
+                    continue
+                _, _, source = entry.unique_id.partition(":camera:")
+                if source:
+                    names.add(_norm(source))
             names.add(_norm(c.split(".", 1)[-1]))
             if (st := self.hass.states.get(c)) is not None:
                 names.add(_norm(st.name))
@@ -155,15 +163,30 @@ class Faces:
         if not self.enabled:
             return
         new = event.data.get("new_state")
+        selected = self.options.get(CONF_FACE_SENSOR)
         if new is None or str(new.state).strip().lower() in NOT_A_NAME:
             return
-        old = event.data.get("old_state")
-        if old is not None and old.state == new.state and new.entity_id != self.options.get(CONF_FACE_SENSOR):
+        if new.domain != "sensor" and new.entity_id != selected:
             return
-        if m := FRIGATE.match(new.entity_id):
+        old = event.data.get("old_state")
+        if old is not None and old.state == new.state and new.entity_id != selected:
+            return
+        entry = er.async_get(self.hass).async_get(new.entity_id)
+        entry_id = None
+        if entry is not None and entry.platform == "frigate":
+            entry_id = entry.config_entry_id
+            _, _, tail = entry.unique_id.partition(":")
+            kind, _, source = tail.partition(":")
+        else:
+            kind, source = "", ""
+        if kind == "sensor_recognized_face" and source:
+            name, camera = str(new.state), source
+        elif kind == "sensor_global_face" and source:
+            name, camera = source, str(new.state)
+        elif (entry is None or entry.platform == "frigate") and (m := FRIGATE.match(new.entity_id)):
             name = (new.name or m.group(1)).removeprefix("Frigate ").removesuffix(" Last Camera").removesuffix(" last camera")
             camera = str(new.state)
-        elif new.entity_id == self.options.get(CONF_FACE_SENSOR):
+        elif new.entity_id == selected:
             name = str(new.state)
             door = self.hass.states.get(self.options.get(CONF_DOOR_CAMERA) or "")
             camera = door.name if door else "the door"
@@ -172,7 +195,7 @@ class Faces:
         name = " ".join(w.capitalize() for w in re.split(r"[_\s]+", name.strip()) if w)
         if not name or not self.allowed(name):
             return
-        if not self.camera_allowed(camera):
+        if not self.camera_allowed(camera, entry_id):
             return
         self.saw(name, camera.replace("_", " "))
 
@@ -180,7 +203,7 @@ class Faces:
     def saw(self, name: str, camera: str) -> None:
         now = dt_util.utcnow()
         last = self.seen.get(name)
-        if last and last.get("camera") == camera and now - (dt_util.parse_datetime(last["time"]) or now) < REPEAT:
+        if last and _norm(last.get("camera", "")) == _norm(camera) and now - (dt_util.parse_datetime(last["time"]) or now) < REPEAT:
             self.seen[name]["time"] = now.isoformat()
             return
         self.seen[name] = {"camera": camera, "time": now.isoformat()}

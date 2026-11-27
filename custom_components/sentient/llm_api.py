@@ -1937,6 +1937,12 @@ class LookTool(_Tool):
             return {"error": "Sentient is not loaded"}
         try:
             args = tool_input.tool_args
+            from .drive import OWNER_QUESTION, async_owner_answer
+            from .focus import current_request
+
+            asked = current_request.get() or SentientAPI._asked()
+            if OWNER_QUESTION.fullmatch(asked.strip()) or OWNER_QUESTION.fullmatch(args["question"].strip()):
+                return {"answer": await async_owner_answer(hass, rt, llm_context.context, llm_context.device_id)}
             readable = await _entity_read_permission(hass, llm_context.context)
             return await rt.watches.async_look(args["camera"], args["question"], args.get("spot"),
                                                readable=readable)
