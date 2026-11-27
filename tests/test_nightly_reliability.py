@@ -148,14 +148,15 @@ def test_camera_result_requires_matching_scope_and_keeps_redacted_errors():
     alternate = {"tool_name": "frigate_query", "tool_result": {**scope, "count": 0}}
     wrong_scope = {"tool_name": "frigate_query", "tool_result": {**scope, "camera_id": "camera.other", "count": 0}}
     assert failed_tool_reasons([broken]) == {"sentient_camera_activity": "evidence_unavailable"}
-    assert checked_history_reply("No one was seen.", [broken, wrong_scope]).startswith("I couldn't verify")
+    guarded = checked_history_reply("No one was seen.", [broken, wrong_scope])
+    assert guarded.startswith("I couldn't verify")
     assert checked_history_reply("No one was seen.", [broken, alternate]).startswith("According to Frigate")
     test = SelfTest.__new__(SelfTest)
     check = lambda answer: (yes_no(answer) is False, "no one")
     q = Question("camera", "", check, "camera", camera_id=cam)
     for answer, results, tools, outcome in (
         ("No one was seen.", [broken], ["sentient_camera_activity"], "failed_evidence_retrieval"),
-        ("I couldn't check the camera.", [broken], ["sentient_camera_activity"], "correct_uncertainty"),
+        (guarded, [broken], ["sentient_camera_activity"], "correct_uncertainty"),
         ("I couldn't check the camera. No one was seen.", [broken], ["sentient_camera_activity"], "failed_evidence_retrieval"),
         ("No one was seen.", [broken, alternate], ["sentient_camera_activity", "frigate_query"], "supported_answer_with_tool_error"),
         ("No one was seen.", [wrong_scope], ["frigate_query"], "incorrect_tool_selection"),
