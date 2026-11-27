@@ -30,6 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 DIR = Path(__file__).parent / "frontend" / "i18n" / "house"
 _SLOT = re.compile(r"(\{[a-z]+\})")
 _CLOCK = re.compile(r"(1[0-2]|[1-9])(?::([0-5][0-9]))?([ap])m", re.I)
+_WEATHER = re.compile(r"It's (?:(?P<condition>[^,]+), (?P<temp>[^ ]+) out|(?P<reading>[^ ]+) outside and (?P<sky>[^.]+))\.")
 # a template that starts with one of these is an ending; one that ends with one of these is an opening
 _ENDING_START = (" ", ",", ";", ".", ":", "!", "?", "—", "(")
 _OPENING_END = (" ", ":", "—")
@@ -42,6 +43,7 @@ class Dictionary:
     slots: list[tuple[re.Pattern, re.Pattern, list[str], str]] = field(default_factory=list)
     openings: list[tuple[re.Pattern, list[str], str]] = field(default_factory=list)
     endings: list[tuple[re.Pattern, list[str], str]] = field(default_factory=list)
+    decimal_comma: bool = False
 
 
 def _pattern(template: str, caps: bool, anchor: str) -> tuple[re.Pattern, list[str]]:
@@ -119,6 +121,14 @@ def _one(text: str, d: Dictionary, split: bool = True, depth: int = 0) -> str | 
         return None
     if text in d.exact:
         return d.exact[text]
+    if weather := _WEATHER.fullmatch(text):
+        temp = weather["temp"] or weather["reading"]
+        sky = weather["condition"] or weather["sky"]
+        label = d.exact.get("Weather condition: " + sky)
+        if label:
+            if d.decimal_comma:
+                temp = re.sub(r"(?<=\d)\.(?=\d)", ",", temp)
+            return d.exact.get("It's {a} out.", "It's {a} out.").replace("{a}", f"{label}, {temp}")
     caps = _caps(text)
     if caps and text in d.upper:
         return d.upper[text].upper()
@@ -170,6 +180,8 @@ def load(lang: str | None) -> Dictionary | None:
         path = _file_for(key)
         try:
             _loaded[key] = compile_dictionary(json.loads(path.read_text(encoding="utf-8"))) if path else None
+            if _loaded[key] is not None:
+                _loaded[key].decimal_comma = key.replace("_", "-").split("-")[0] == "pl"
         except (OSError, ValueError) as err:
             _LOGGER.warning("Sentient couldn't read %s: %s", path, err)
             _loaded[key] = None
@@ -201,6 +213,12 @@ def translate(text: str, lang: str | None) -> str:
         return text
     hit = _one(core, d)
     return text if hit is None else text.replace(core, hit, 1)
+
+
+def label(text: str, lang: str | None) -> str:
+    """Look up a fixed label while leaving adjacent household text untouched."""
+    d = loaded(lang)
+    return d.exact.get(text, text) if d is not None else text
 
 
 def known(text: str, lang: str | None) -> bool:

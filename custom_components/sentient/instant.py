@@ -30,6 +30,9 @@ from homeassistant.util import dt as dt_util
 CONF_INSTANT = "instant_answers"
 
 WEATHER = re.compile(r"^\s*(?:what(?:['’]s| is) the weather(?: like)?|how is the weather)(?: (?:outside|now|right now))?\s*\??\s*$", re.I)
+POLISH_WEATHER = re.compile(r"(?:jaka jest (?:teraz )?(?:pogoda|temperatura)(?: na zewnątrz)?|ile (?:jest )?stopni na zewnątrz)[? .]*", re.I)
+POLISH_TIME = re.compile(r"(?:która (?:jest )?godzina|jaka jest godzina)[? .]*", re.I)
+POLISH_DATE = re.compile(r"(?:jaka (?:jest )?(?:dzisiaj |dziś )?data|który (?:jest )?(?:dziś |dzisiaj )?dzień)[? .]*", re.I)
 DATE = re.compile(r"^(?:what(?:[’']s| is) (?:today[’']s|the) date|what (?:date|day) is it(?: today)?)[?]?$", re.I)
 TIME = re.compile(r"^\s*(?:what(?:'s| is) the time|what time is it)(?: (?:now|please|right now))?\s*\??\s*$", re.I)
 OUTSIDE = re.compile(r"^\s*(?:what(?:'s| is) the (?:temperature|temp)|how (?:cold|warm|hot) is it)(?: like)? outside"
@@ -57,10 +60,14 @@ def _exposed(hass: HomeAssistant, entity_id: str) -> bool:
     return exposed(hass, entity_id)
 
 
-def _say_state(st, want: str) -> str | None:
+def _say_state(st, want: str, language: str | None = None) -> str | None:
+    from .phrases import label
+
     domain = st.domain
     state = str(st.state)
     if state in ("unavailable", "unknown"):
+        if language:
+            return f"{st.name}: {label(state, language)}."
         return f"I can't tell: the {st.name} isn't reporting right now."
     if domain == "lock":
         now = "locked" if state == "locked" else "unlocked" if state == "unlocked" else None
@@ -90,6 +97,8 @@ def _say_state(st, want: str) -> str | None:
         return None
     wanted = OPENISH.get(want, want)
     yes = now == wanted
+    if language:
+        return f"{label('Yes' if yes else 'No', language)}. {st.name}: {label(now, language)}."
     return f"{'Yes' if yes else 'No'}, the {st.name} is {now}."
 
 
@@ -148,9 +157,9 @@ def _outside(hass: HomeAssistant, options: dict[str, Any], readable: Callable[[s
             or weather.attributes.get("temperature") is None):
         return None
     unit = weather.attributes.get("temperature_unit") or "°C"
-    sky = str(weather.state).replace("partlycloudy", "partly cloudy").replace("clear-night", "clear").replace("-", " ")
+    sky = str(weather.state).replace("partlycloudy", "partly cloudy").replace("-", " ")
     value = float(weather.attributes["temperature"])
-    return f"It's {round(value)}{unit} outside and {sky}." if math.isfinite(value) else None
+    return f"It's {value:g}{unit} outside and {sky}." if math.isfinite(value) else None
 
 
 async def _calendar(hass: HomeAssistant, when: str, readable: Callable[[str], bool]) -> str | None:
@@ -228,7 +237,8 @@ def _no_lock_reply(hass: HomeAssistant, what: str, guest: bool, readable: Callab
 
 
 async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context | None,
-                       device_id: str | None = None, *, public_only: bool = False) -> str | None:
+                       device_id: str | None = None, *, public_only: bool = False,
+                       language: str | None = None) -> str | None:
     """An instant answer, or None for the AI to answer as usual."""
     options = getattr(rt, "options", {}) or {}
     if not options.get(CONF_INSTANT) or not text:
@@ -237,8 +247,11 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
     from .local_answers import COMING, SECURITY, VISITORS, _coming_up, _visitors, is_question
 
     text = " ".join(text.split())
+    polish = (language or "").lower().split("-")[0] == "pl"
     lock = LOCK.match(text)
-    if not lock and not is_question(text):
+    if not lock and not is_question(text) and not (
+        polish and any(pattern.fullmatch(text) for pattern in (POLISH_WEATHER, POLISH_TIME, POLISH_DATE))
+    ):
         return None
     guest = bool(getattr(getattr(rt, "speech", None), "guest_mode", False))
     if not guest and device_id:
@@ -256,6 +269,10 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
         except Exception:  # noqa: BLE001
             return None
     try:
+        if polish and (TIME.fullmatch(text) or POLISH_TIME.fullmatch(text)):
+            return f"Jest {dt_util.now():%H:%M}."
+        if polish and (DATE.fullmatch(text) or POLISH_DATE.fullmatch(text)):
+            return f"Dzisiaj jest {dt_util.now():%Y-%m-%d}."
         if TIME.match(text):
             from .llm_api import clock_words
 
@@ -264,7 +281,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             today = dt_util.now()
             return f"Today is {today:%A} {today.day} {today:%B %Y}."
         readable = await _entity_read_permission(hass, context)
-        if OUTSIDE.match(text) or WEATHER.match(text):
+        if OUTSIDE.match(text) or WEATHER.match(text) or (polish and POLISH_WEATHER.fullmatch(text)):
             return _outside(hass, options, readable)
         if public_only:
             return None
@@ -272,6 +289,11 @@ async def async_answer(hass: HomeAssistant, rt: Any, text: str, context: Context
             st = _one_entity(hass, m.group("name"))
             if st is None or not readable(st.entity_id):
                 return None
+            if language and language.lower().split("-")[0] != "en":
+                from .phrases import async_load
+
+                await async_load(hass, language)
+                return _say_state(st, m.group("want").casefold(), language)
             return _say_state(st, m.group("want").casefold())
         if m := ROOM_TEMP.match(text):
             room = m.group("a") or m.group("b") or ""

@@ -31,6 +31,8 @@ def outcome_text(hass, result):
     for row in result.get('recovery_outcomes', result.get('actions', [])):
         state = hass.states.get(row['entity_id'])
         label = 'not sent; validation failed' if row['status'] == 'failed' and row.get('dispatched') is False else labels.get(row['status'], 'result uncertain')
+        if row['status'] == 'attempted' and row.get('accepted') is False:
+            label = 'service timed out before acceptance could be confirmed'
         parts.append(f"{state.name if state else 'A device'}: {label}.")
     return ' '.join(parts)
 

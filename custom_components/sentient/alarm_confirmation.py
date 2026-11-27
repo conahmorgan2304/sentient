@@ -29,7 +29,7 @@ def approved(rt, context, schedule, confirmed):
             return False
         previous = pending.pop(key, None)
         return bool(previous and number == previous["turn"] + 1
-                    and (YES.fullmatch(normalise(text)) or answer(text, context.language if rt.options.get("speak_house_language") else None) == "yes")
+                    and (YES.fullmatch(normalise(text)) or answer(text, context.language) == "yes")
                     and previous["schedule"] == schedule)
     pending[key] = {"schedule": deepcopy(schedule), "turn": number, "until": now + timedelta(minutes=2)}
     while len(pending) > 100:

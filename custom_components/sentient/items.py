@@ -4,11 +4,13 @@ that act on them read them live, so a change on the page works straight away."""
 
 from __future__ import annotations
 
+import asyncio
 import copy
 from typing import Any, Callable
 import uuid
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
@@ -24,6 +26,7 @@ class Items:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}.{kind}")
         self.items: dict[str, dict[str, Any]] = {}
         self.listeners: list[Callable[[], None]] = []
+        self.write_lock = asyncio.Lock()
 
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
@@ -72,6 +75,29 @@ class Items:
 
     def listing(self) -> list[dict[str, Any]]:
         return [copy.deepcopy(i) for i in self.items.values()]
+
+    async def async_flush(self) -> None:
+        """Wait for the queued write and propagate a storage failure."""
+        from .storage import async_flush_pending
+
+        await async_flush_pending([self._store])
+
+    async def async_commit(self, change: Callable[[], Any]) -> Any:
+        """Commit a voice change before acknowledging it."""
+        before = copy.deepcopy(self.items)
+        result = change()
+        flush = self.hass.async_create_task(self.async_flush())
+        try:
+            try:
+                await asyncio.shield(flush)
+            except asyncio.CancelledError:
+                await asyncio.shield(flush)
+                raise
+        except (OSError, HomeAssistantError) as err:
+            self.items = before
+            self._save()
+            raise OSError("Could not commit the saved items") from err
+        return result
 
     def enabled(self) -> list[dict[str, Any]]:
         return [i for i in self.items.values() if i.get("enabled", True)]

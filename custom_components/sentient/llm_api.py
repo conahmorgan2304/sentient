@@ -838,6 +838,10 @@ class RemindTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
+        from .focus import current_request, future_device_request
+
+        if future_device_request(current_request.get() or SentientAPI._asked()):
+            return {"error": "This is a scheduled device change. Use sentient_alarm, with silent=true."}
         args = dict(tool_input.tool_args)
         offer = args.pop("offer", False)
         extra, why = _acting_args(hass, rt, args)
@@ -1794,15 +1798,17 @@ class ListsTool(_Tool):
     name = "sentient_lists"
     description = (
         "Shopping and to-do lists: read them out, add things, tick things off (bought, done, got it), put ticked things "
-        "back, take things off. Use this rather than any other list tool. action: show, add, complete, reopen, remove; "
+        "back, take things off. Use this rather than any other list tool. action: show, add, complete, reopen, remove, "
+        "or rename (one item, replacement is its full new summary including the requested quantity); "
         "items: what was said, one entry each ('milk', 'bin bags'); list: the list's name if one was said (otherwise "
         "the shopping list). Only what comes back in done has happened: never say something was done unless it's "
         "there. Follow house_notes_about_lists when it comes back."
     )
     parameters = vol.Schema({
-        vol.Required("action"): vol.In(["show", "add", "complete", "reopen", "remove"]),
+        vol.Required("action"): vol.In(["show", "add", "complete", "reopen", "remove", "rename"]),
         vol.Optional("items", default=[]): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional("list"): cv.string,
+        vol.Optional("replacement"): cv.string,
     })
 
     async def async_call(
@@ -1811,11 +1817,13 @@ class ListsTool(_Tool):
         from .lists import async_handle
 
         rt = _runtime(hass)
-        if rt is None or not rt.options.get("voice_lists", True):
+        if rt is None or not rt.options.get("voice_lists", True) or _household_private(hass, llm_context):
             return {"error": "lists by voice are switched off in Sentient's settings"}
         a = tool_input.tool_args
         if a["action"] != "show" and not a.get("items"):
             return {"error": "which items?"}
+        if a["action"] == "rename" and (len(a["items"]) != 1 or not (a.get("replacement") or "").strip()):
+            return {"error": "Name one item and its full replacement."}
         notes: list[str] = []
         try:
             from .voice_id import speaker_scope
@@ -1826,10 +1834,17 @@ class ListsTool(_Tool):
         except Exception:  # noqa: BLE001 - notes are a help, not a need
             notes = []
         try:
-            return await async_handle(hass, a["action"], a.get("items") or [], a.get("list"),
-                                      rt.options.get("recipes_list"), notes)
+            result = await async_handle(hass, a["action"], a.get("items") or [], a.get("list"),
+                                        rt.options.get("recipes_list"), notes, context=llm_context.context,
+                                        replacement=a.get("replacement"))
         except Exception as err:  # noqa: BLE001
-            return {"error": f"the list couldn't be changed: {err}", "done": []}
+            _LOGGER.debug("List service did not complete", exc_info=err)
+            result = {"error": "The list is unavailable.", "done": []}
+        from .focus import turn_flags
+
+        if (flags := turn_flags.get()) is not None:
+            flags["list_result"] = result
+        return result
 
 
 class ReadyTonightTool(_Tool):
@@ -2119,18 +2134,31 @@ class AlarmTool(_Tool):
         "either days (list of mon..sun, or 'weekdays'/'weekends'/'every day') to repeat, or date (YYYY-MM-DD) "
         "for a one-off on another day (neither = next time it comes round); optional description and routine "
         "(the name of one of the household's voice routines to run). For an automated routine set silent=true "
-        "and turn_on / turn_off (devices by name). Anything that switches devices or runs a routine is read back "
+        "and turn_on / turn_off (devices by name), or use device_actions for brightness, colour, temperature "
+        "and modes. Use this for future device commands in every language. Use sentient_remind only when "
+        "the user asks to be reminded. Anything that controls devices or runs a routine is read back "
         "first: call with confirmed false, read the read_back exactly and ask 'shall I set that up?'; only after a "
         "clear yes, call again with the same details and confirmed true. action 'list' shows both and when each "
-        "next happens. action 'cancel' with name deletes one; 'off'/'on' with name pauses or resumes it."
+        "next happens. Use an ID from list to modify a schedule with set or to cancel, pause or resume one."
     )
     parameters = vol.Schema({
         vol.Required("action"): vol.In(["set", "list", "cancel", "off", "on"]),
         vol.Optional("name"): cv.string, vol.Optional("time"): cv.string,
+        vol.Optional("id"): cv.string,
         vol.Optional("days"): vol.Any(cv.string, [cv.string]), vol.Optional("date"): cv.string,
         vol.Optional("description"): cv.string, vol.Optional("routine"): cv.string,
         vol.Optional("silent"): cv.boolean, vol.Optional("turn_on"): vol.Any(cv.string, [cv.string]),
         vol.Optional("turn_off"): vol.Any(cv.string, [cv.string]),
+        vol.Optional("device_actions", default=[]): [vol.Schema({
+            vol.Required("entity_id"): cv.entity_id,
+            vol.Optional("brightness_pct"): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            vol.Optional("color_name"): cv.string,
+            vol.Optional("rgb_color"): vol.All([vol.All(vol.Coerce(int), vol.Range(min=0, max=255))], vol.Length(min=3, max=3)),
+            vol.Optional("color_temp_kelvin"): vol.Coerce(int),
+            vol.Optional("temperature"): vol.Coerce(float),
+            vol.Optional("hvac_mode"): cv.string,
+            vol.Optional("preset_mode"): cv.string,
+        })],
         vol.Optional("confirmed", default=False): cv.boolean,
     })
 
@@ -2140,23 +2168,62 @@ class AlarmTool(_Tool):
         rt = _runtime(hass)
         if rt is None:
             return {"error": "Sentient is not loaded"}
-        a = tool_input.tool_args
+        async with rt.lists["alarms"].write_lock:
+            return await self._schedule(hass, rt, tool_input, llm_context)
+
+    async def _schedule(self, hass, rt, tool_input, llm_context):
+        a = dict(tool_input.tool_args)
         action = a["action"]
+        alarms = rt.lists["alarms"]
+        user_id = getattr(llm_context.context, "user_id", None)
+        manage = await _can_manage_house(hass, llm_context)
+        if _household_private(hass, llm_context):
+            return {"error": "Household schedules aren't shared with guests or in a private room."}
+        def accessible(row):
+            return manage or (row.get("made_by") == "voice" and row.get("voice_user_id") == user_id)
+
+        available = [row for row in rt.alarms.listing() if accessible(alarms.items[row["id"]])]
         if action == "list":
-            return {"alarms": rt.alarms.listing()}
+            return {"alarms": available}
+        item = alarms.items.get(a.get("id"))
+        if item is None and not a.get("id") and a.get("name"):
+            name = a["name"].strip().casefold()
+            matches = [row for row in alarms.items.values() if row["name"].casefold() == name]
+            if not matches and action != "set" and name:
+                matches = [row for row in alarms.items.values() if accessible(row) and name in row["name"].casefold()]
+            if len(matches) > 1:
+                return {"error": "Which alarm?", "alarms": available}
+            item = matches[0] if matches else None
+        if (a.get("id") and item is None) or (item is not None and not accessible(item)):
+            return {"error": "No accessible schedule matches.", "alarms": available}
+        if item is not None:
+            a.setdefault("name", item["name"])
         if not a.get("name"):
             return {"error": "Which alarm?"}
+        if action == "set" and any(row is not item and row["name"].casefold() == a["name"].strip().casefold()
+                                   for row in alarms.items.values()):
+            return {"error": "A schedule already has that name."}
         if action in ("cancel", "off", "on"):
-            item = rt.lists["alarms"].find(a["name"])
             if item is None:
-                return {"error": f"No alarm called {a['name']}", "alarms": [x["name"] for x in rt.alarms.listing()]}
+                return {"error": f"No alarm called {a['name']}", "alarms": available}
             if action == "cancel":
-                rt.lists["alarms"].remove(item["id"])
+                await alarms.async_commit(lambda: alarms.remove(item["id"]))
                 return {"cancelled": item["name"]}
-            rt.lists["alarms"].update(item["id"], enabled=action == "on")
+            await alarms.async_commit(lambda: alarms.update(item["id"], enabled=action == "on"))
             return {"alarm": item["name"], "on": action == "on"}
+        if item is not None and a.get("id"):
+            for field in ("time", "days", "date", "description", "silent"):
+                a.setdefault(field, item.get(field))
         if not a.get("time"):
             return {"error": "What time?"}
+        from datetime import date, time
+
+        try:
+            a["time"] = time.fromisoformat(a["time"]).strftime("%H:%M")
+            if a.get("date"):
+                a["date"] = date.fromisoformat(a["date"]).isoformat()
+        except ValueError:
+            return {"error": "Use a valid local time (HH:MM) and date (YYYY-MM-DD)."}
         from .kinds import DAYS
 
         days = a.get("days") or []
@@ -2166,7 +2233,7 @@ class AlarmTool(_Tool):
                     else DAYS[5:] if "weekend" in low else [d for d in DAYS if d in low])
         if a.get("routine") and rt.shortcuts.find(a["routine"]) is None:
             return {"error": f"There's no routine called {a['routine']}", "routines": [r.name for r in rt.shortcuts.items.values()]}
-        from .alarms import voice_actions_problem
+        from .alarms import next_ring, voice_actions_problem, voice_control_allowed
         from .watches import resolve_entity
 
         actions, unknown = [], []
@@ -2180,16 +2247,61 @@ class AlarmTool(_Tool):
                 actions.append({"action": f"{eid.split('.', 1)[0]}.{service}", "target": {"entity_id": eid}})
         if unknown:
             return {"error": "I couldn't find " + ", ".join(unknown)}
+        for spec in a["device_actions"]:
+            eid = spec["entity_id"]
+            state = hass.states.get(eid)
+            data = {key: value for key, value in spec.items() if key != "entity_id"}
+            fields = set(data)
+            if state is None:
+                return {"error": "The requested device is unavailable."}
+            domain = state.domain
+            colours = fields & {"color_name", "rgb_color", "color_temp_kelvin"}
+            if domain == "light" and fields and fields <= {"brightness_pct", *colours}:
+                if len(colours) > 1:
+                    return {"error": "Choose one colour format."}
+                if "color_temp_kelvin" in fields and not float(state.attributes.get("min_color_temp_kelvin", 1000)) <= data["color_temp_kelvin"] <= float(state.attributes.get("max_color_temp_kelvin", 10000)):
+                    return {"error": "Colour temperature is outside the light's range."}
+                service = "turn_on"
+            elif domain == "climate" and fields and fields <= {"temperature", "hvac_mode"}:
+                service = "set_temperature" if "temperature" in fields else "set_hvac_mode"
+                if "temperature" in fields and not float(state.attributes.get("min_temp", 7)) <= data["temperature"] <= float(state.attributes.get("max_temp", 35)):
+                    return {"error": "Temperature is outside this device's range."}
+            elif domain in ("climate", "fan") and fields == {"preset_mode"}:
+                service = "set_preset_mode"
+            else:
+                return {"error": "The requested settings aren't supported together for this device."}
+            if any(data[key] not in state.attributes.get(key + "s", ()) for key in ("hvac_mode", "preset_mode") if key in data):
+                return {"error": "The requested mode isn't supported by this device."}
+            if not hass.services.has_service(domain, service):
+                return {"error": "The requested device service is unavailable."}
+            actions.append({"action": f"{domain}.{service}", "target": {"entity_id": eid}, "data": data})
+        if item is not None and not (actions or a.get("routine")) and item.get("actions"):
+            if item.get("made_by") != "voice":
+                return {"error": "Edit this schedule on the Alarms page."}
+            for old in item.get("actions") or []:
+                if old.get("action") == "sentient.run_routine":
+                    a["routine"] = old["data"]["name"]
+                else:
+                    actions.append(old)
+        if a.get("routine") and (not manage or rt.shortcuts.find(a["routine"]) is None):
+            return {"error": "This routine is unavailable to the requesting user."}
         # the same guards as rules: only allowed actions, never-touch respected, and only what voice may control
         if why := voice_actions_problem(hass, actions):
             return {"error": why, "say": "Say plainly that an alarm made by voice can't do that."}
+        if not await voice_control_allowed(hass, user_id, actions):
+            return {"error": "The requesting user cannot control the selected devices."}
         silent = bool(a.get("silent")) or (bool(actions) and not a.get("description"))
         from .alarm_confirmation import approved
 
         schedule = {"name": a["name"], "time": a["time"], "days": days, "date": a.get("date"),
                     "description": a.get("description") or "", "routine": a.get("routine"),
                     "routine_details": vars(rt.shortcuts.find(a["routine"])) if a.get("routine") else None,
-                    "silent": silent, "actions": actions}
+                    "silent": silent, "actions": actions, "id": item["id"] if item else None, "user_id": user_id}
+        next_at = next_ring(schedule, dt_util.utcnow())
+        if (a.get("date") and days) or any(day not in DAYS for day in days) or next_at is None:
+            return {"error": "Choose a future local time on an existing date or valid repeat days."}
+        if (actions or a.get("routine")) and not days and not a.get("date"):
+            schedule["date"] = a["date"] = next_at.date().isoformat()
         if (actions or a.get("routine")) and not approved(rt, llm_context, schedule, a.get("confirmed")):
             if a.get("confirmed"):
                 return {"error": "No matching approval from the next user turn. Read the schedule back with confirmed false, then wait for their yes."}
@@ -2198,10 +2310,12 @@ class AlarmTool(_Tool):
             text = describe_schedule(hass, a["name"], a["time"], days, a.get("date"), actions, a.get("routine"), silent)
             return {"read_back": text, "next": "Read this back and ask 'shall I set that up?'. Only after a clear yes, "
                                                "call sentient_alarm again with exactly the same details and confirmed true."}
-        item = rt.alarms.set(a["name"], a["time"], days, a.get("date"), a.get("description") or "", a.get("routine"),
-                             silent=silent, actions=actions, made_by="voice")
+        item = await alarms.async_commit(lambda: rt.alarms.set(
+                             a["name"], a["time"], days, a.get("date"), a.get("description") or "", a.get("routine"),
+                             silent=silent, actions=actions, made_by="voice", voice_user_id=user_id,
+                             item_id=item["id"] if item else None))
         nxt = next((x for x in rt.alarms.listing() if x["id"] == item["id"]), {})
-        return {"set": item["name"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next"),
+        return {"set": item["name"], "id": item["id"], "time": str(item["time"])[:5], "days": item["days"], "next": nxt.get("next"),
                 "kind": "automated routine" if item.get("silent") else "alarm"}
 
 
@@ -3053,6 +3167,9 @@ class SentientAPI(llm.API):
             "look again rather than changing your answer to match theirs.",
             "Use sentient_announce to speak on a named speaker or in a room, including Alexa. "
             "Never use media playback to test a speaker or infer availability from parental settings.",
+            "For future device changes in any language, use sentient_alarm: set a silent scheduled action, "
+            "or list, modify or cancel scheduled actions by ID. Use sentient_remind for asking to be reminded. "
+            "Never perform a future command immediately or claim it was saved before the tool returns set.",
         ]
         from .sessions import CONF_EVIDENCE
         if opts.get(CONF_EVIDENCE):
@@ -3181,7 +3298,6 @@ class SentientAPI(llm.API):
             )
             from .sessions import COMMAND
 
-            asked = current_request.get()
             if not (asked and COMMAND.search(asked)) and not rt.speech.quiet_now() and (due := rt.threads.take_due()):
                 lines.append(
                     f"Something to ask about, once: \"{due['question']}\" ({due['about']}). After you've answered, "

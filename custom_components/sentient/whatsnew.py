@@ -15,6 +15,9 @@ from homeassistant.loader import async_get_integration
 from .const import CONF_WHATS_NEW, DOMAIN
 
 NOTES: dict[str, list[str]] = {
+    "1.25.3": [
+        "Improved device schedules, to-do lists, and spoken weather and numbers.",
+    ],
     "1.24.6": [
         "Voice replies handle misheard camera names, calendar dates and action confirmations more reliably.",
     ],

@@ -16,6 +16,25 @@ function setup(callWS) {
   return panel;
 }
 
+test('Ask sends one turn while pending and never renders an empty reply as success', async () => {
+  let finish, calls = 0;
+  const panel = setup(() => {
+    calls++;
+    return new Promise(resolve => { finish = resolve; });
+  });
+  panel._agent = async () => 'conversation.sentient';
+  const input = { value: 'Add milk to the shopping list' }, reply = { innerHTML: '' };
+  panel._$ = id => ({ ask: input, reply })[id];
+  const pending = panel._ask();
+  input.value = 'Add milk to the shopping list';
+  await panel._ask();
+  assert.equal(calls, 1);
+  finish({ response: {} });
+  await pending;
+  assert.match(reply.innerHTML, /No answer\./);
+  assert.doesNotMatch(reply.innerHTML, /Done\./);
+});
+
 test('YES acknowledges immediately without waiting for a sensor update and prevents duplicate clicks', async () => {
   let finish, calls = 0;
   const panel = setup((msg) => {

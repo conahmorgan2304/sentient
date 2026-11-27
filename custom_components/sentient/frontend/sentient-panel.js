@@ -3509,7 +3509,8 @@
     async _ask() {
       const input = this._$("ask"), reply = this._$("reply");
       const text = input.value.trim();
-      if (!text) return;
+      if (!text || this._askPending) return;
+      this._askPending = true;
       input.value = ""; reply.hidden = false;
       reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a thinking">THINKING…</span>`;
       try {
@@ -3519,10 +3520,12 @@
         if (this._cid) msg.conversation_id = this._cid;
         const res = await this._hass.callWS(msg);
         this._cid = res.conversation_id;
-        const speech = (((res.response || {}).speech || {}).plain || {}).speech || "Done.";
+        const speech = (((res.response || {}).speech || {}).plain || {}).speech || "No answer.";
         reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a">${esc(speech)}</span><a class="x" id="rx">✕</a>`;
       } catch (e) {
         reply.innerHTML = `<span class="q">${esc(text)}</span><span class="a err">${esc(e.message || e)}</span><a class="x" id="rx">✕</a>`;
+      } finally {
+        this._askPending = false;
       }
       const rx = this._$("rx");
       if (rx) rx.addEventListener("click", () => { reply.hidden = true; this._cid = null; });

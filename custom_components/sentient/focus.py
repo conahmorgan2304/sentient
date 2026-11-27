@@ -34,7 +34,7 @@ ALWAYS = {
     "sentient_session", "sentient_clarify", "sentient_incidents", "sentient_remember", "sentient_correction", "sentient_undo_last", "sentient_recall",
     "sentient_forget", "sentient_why", "sentient_conversations", "sentient_follow_up", "sentient_accept_offer",
     "sentient_search", "sentient_ask_later", "sentient_self", "sentient_game", "sentient_game_set", "sentient_game_log",
-    "sentient_history", "sentient_root_cause", "sentient_evidence",
+    "sentient_history", "sentient_root_cause", "sentient_evidence", "sentient_alarm", "sentient_lists",
 }
 
 TOPICS: dict[str, tuple[re.Pattern, set[str]]] = {
@@ -113,6 +113,22 @@ def schedule_request(text: str) -> bool:
 def history_request(text: str) -> bool:
     """Use passive historical context for retrospective requests only."""
     return bool(TOPICS["past"][0].search(text) or re.search(r"\b(?:earlier|previously|recently|last time)\b", text, re.I))
+
+
+def future_device_request(text: str | None) -> bool:
+    """Recognise explicit timed device commands for routing and fallback safety."""
+    text = (text or "").strip()
+    if re.match(r"(?:what|when|which|how|kiedy|jak|o której|quand|à quelle|wann|wie)\b", text, re.I):
+        return False
+    command = re.search(
+        r"\b(?:turn|switch|set|dim|brighten|start|stop|włącz|wyłącz|ustaw|przyciemnij|"
+        r"allume|éteins|règle|schalte|stelle)\b", text, re.I)
+    future = re.search(
+        r"\b(?:at \d|in \d+ (?:minutes?|hours?)|tomorrow|tonight|every (?:day|night|morning)|"
+        r"o (?:godzinie )?\d|za \d+ (?:minut|godzin)\w*|jutro|dziś wieczorem|"
+        r"à \d|dans \d+ minutes?|demain|ce soir|um \d|morgen|heute abend)\b", text, re.I)
+    reminder = re.search(r"\b(?:remind|przypomnij|rappelle|erinnere|if|jeśli|si)\b", text, re.I)
+    return bool(command and future and not reminder)
 
 
 class Focus:

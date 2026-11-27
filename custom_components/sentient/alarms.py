@@ -11,7 +11,7 @@ import re
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED
-from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.core import Context, Event, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
@@ -46,21 +46,26 @@ def next_ring(alarm: dict[str, Any], now: datetime) -> datetime | None:
     if not alarm.get("enabled", True):
         return None
     try:
-        h, m = (int(x) for x in str(alarm.get("time") or "")[:5].split(":"))
+        clock = datetime.strptime(str(alarm.get("time") or "")[:5], "%H:%M").time()
     except ValueError:
         return None
     local = dt_util.as_local(now)
     for add in range(0, 370):
         day = (local + timedelta(days=add)).date()
-        at = local.replace(year=day.year, month=day.month, day=day.day, hour=h, minute=m, second=0, microsecond=0)
-        if at <= local:
-            continue
         days = alarm.get("days") or []
         if days and DAYS[day.weekday()] not in days:
             continue
         if not days and alarm.get("date") and str(alarm["date"])[:10] != day.isoformat():
             continue
-        return at
+        wall = datetime.combine(day, clock, local.tzinfo)
+        rang = dt_util.parse_datetime(alarm.get("last_rang") or "")
+        if rang and dt_util.as_local(rang).replace(tzinfo=None, second=0, microsecond=0) == wall.replace(tzinfo=None):
+            continue
+        for fold in (0, 1):
+            at = wall.replace(fold=fold)
+            utc = dt_util.as_utc(at)
+            if utc > dt_util.as_utc(now) and dt_util.as_local(utc).replace(tzinfo=None) == wall.replace(tzinfo=None):
+                return at
     return None
 
 
@@ -96,6 +101,17 @@ def voice_actions_problem(hass: HomeAssistant, actions: list[dict[str, Any]]) ->
     return None
 
 
+async def voice_control_allowed(hass: HomeAssistant, user_id: str | None, actions: list[dict[str, Any]]) -> bool:
+    if user_id is None:
+        return True
+    from homeassistant.auth.permissions.const import POLICY_CONTROL
+
+    user = await hass.auth.async_get_user(user_id)
+    return bool(user and user.is_active and all(
+        user.permissions.check_entity(action["target"]["entity_id"], POLICY_CONTROL) for action in actions
+    ))
+
+
 def describe_schedule(hass: HomeAssistant, name: str, at: str, days: list[str], on: str | None,
                       actions: list[dict[str, Any]], routine: str | None, silent: bool) -> str:
     """What's read back before an alarm made by voice is saved."""
@@ -115,8 +131,10 @@ def describe_schedule(hass: HomeAssistant, name: str, at: str, days: list[str], 
     for action in actions:
         eid = (action.get("target") or {}).get("entity_id")
         st = hass.states.get(eid) if isinstance(eid, str) else None
-        verb = "switch on" if str(action.get("action", "")).endswith("turn_on") else "switch off"
-        doing.append(f"{verb} the {st.name if st else eid}")
+        verb = {"turn_on": "switch on", "turn_off": "switch off"}.get(
+            service := action["action"].split(".")[-1], service.replace("_", " "))
+        details = ", ".join(f"{key.replace('_', ' ')}: {value}" for key, value in (action.get("data") or {}).items())
+        doing.append(f"{verb} the {st.name if st else eid}" + (f" ({details})" if details else ""))
     if routine:
         doing.append(f"run the routine '{routine}'")
     what = " and ".join(doing) or ("say it out loud" if not silent else "nothing")
@@ -130,6 +148,7 @@ class Alarms:
         self._rt = runtime
         self._room: dict[str, tuple[str, datetime, list]] = {}  # alarm id -> (area, until, actions)
         self._unsubs: list = []
+        self._generation = 0
 
     @callback
     def async_start(self) -> None:
@@ -138,6 +157,7 @@ class Alarms:
 
     @callback
     def async_stop(self) -> None:
+        self._generation += 1
         while self._unsubs:
             self._unsubs.pop()()
 
@@ -146,7 +166,29 @@ class Alarms:
         local = dt_util.as_local(now)
         for alarm in list(self.items.items.values()):
             if due(alarm, local):
-                self.hass.async_create_task(self.async_ring(alarm))
+                self.hass.async_create_task(self._ring_due(alarm["id"], local, self._generation))
+
+    async def _ring_due(self, item_id: str, local: datetime, generation: int) -> None:
+        async with self.items.write_lock:
+            alarm = self.items.items.get(item_id)
+            if generation != self._generation or alarm is None or not due(alarm, local):
+                return
+            try:
+                await self._claim(alarm)
+            except OSError:
+                _LOGGER.exception("Alarm %s could not record its dispatch", alarm["name"])
+                return
+        if generation == self._generation:
+            await self.async_ring(alarm, claimed=True)
+
+    async def _claim(self, alarm):
+        changes = {"last_rang": dt_util.utcnow().isoformat()}
+        if not alarm.get("days"):
+            changes["enabled"] = False
+        if alarm.get("made_by") == "voice" and alarm.get("actions"):
+            await self.items.async_commit(lambda: self.items.update(alarm["id"], **changes))
+        else:
+            self.items.update(alarm["id"], **changes)
 
     def _checked(self, alarm: dict[str, Any]) -> list[dict[str, Any]]:
         """The actions to run. Only alarms saved on the Alarms page by an admin run exactly as set; everything else —
@@ -191,20 +233,18 @@ class Alarms:
         rt.timeline.add("heating", f"Schedule: {describe(self.hass, alarm['heating'])}", alarm["name"])
         return {"ran": alarm["name"]}
 
-    async def async_ring(self, alarm: dict[str, Any]) -> dict[str, Any]:
+    async def async_ring(self, alarm: dict[str, Any], *, claimed: bool = False) -> dict[str, Any]:
         if alarm.get("heating"):
             return await self._ring_heating(alarm)
         rt = self._rt()
-        now = dt_util.utcnow()
-        changes: dict[str, Any] = {"last_rang": now.isoformat()}
-        if not alarm.get("days"):
-            changes["enabled"] = False  # a one-off: done
-        self.items.update(alarm["id"], **changes)
-        local = dt_util.as_local(now)
+        if not claimed:
+            async with self.items.write_lock:
+                await self._claim(alarm)
+        local = dt_util.now()
         if alarm.get("silent"):
             rt.timeline.add("mode", alarm["name"], "schedule")
             try:
-                await async_run_actions(self.hass, self._checked(alarm), f"alarm: {alarm['name']}")
+                await self._run_actions(alarm)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
             return {"spoken": False, "reason": "silent"}
@@ -219,13 +259,23 @@ class Alarms:
         speakers = [s for s in alarm.get("speakers") or [] if self.hass.states.get(s)] or None
         rt.timeline.add("watch", f"Alarm: {alarm['name']}", alarm.get("description") or None)
         if alarm.get("room_area") and alarm.get("room_actions"):
-            self._room[alarm["id"]] = (alarm["room_area"], now + ROOM_WINDOW, alarm["room_actions"])
+            self._room[alarm["id"]] = (alarm["room_area"], dt_util.utcnow() + ROOM_WINDOW, alarm["room_actions"])
         result = await rt.speech.async_say(message, "urgent", speakers, source=f"alarm:{alarm['name']}")
         try:
-            await async_run_actions(self.hass, self._checked(alarm), f"alarm: {alarm['name']}")
+            await self._run_actions(alarm)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Alarm %s: actions failed: %s", alarm["name"], err)
         return result.as_dict()
+
+    async def _run_actions(self, alarm):
+        actions = self._checked(alarm)
+        user_id = alarm.get("voice_user_id") if alarm.get("made_by") == "voice" else None
+        devices = [action for action in actions if action.get("action") != "sentient.run_routine"]
+        if not await voice_control_allowed(self.hass, user_id, devices):
+            self._rt().timeline.add("health", f"Didn't run: {alarm['name']}", "Entity control permission changed")
+            return
+        await async_run_actions(self.hass, actions, f"alarm: {alarm['name']}",
+                                context=Context(user_id=user_id) if user_id else None)
 
     async def _fill_calendar(self, message: str, local: datetime) -> str:
         """{tomorrow:calendar.x} / {today:calendar.x} -> what's on it ("Recycling"); '' if nothing."""
@@ -271,12 +321,15 @@ class Alarms:
     # ----- by voice ------------------------------------------------------------------------
     def set(self, name: str, at: str, days: list[str] | None = None, on: str | None = None,
             description: str = "", routine: str | None = None, silent: bool = False,
-            actions: list[dict[str, Any]] | None = None, made_by: str = "") -> dict[str, Any]:
+            actions: list[dict[str, Any]] | None = None, made_by: str = "",
+            voice_user_id: str | None = None, item_id: str | None = None) -> dict[str, Any]:
         """An alarm (said at a time) — or, silent, an automated routine (just done at a time)."""
         actions = list(actions or []) + ([{"action": "sentient.run_routine", "data": {"name": routine}}] if routine else [])
         item = {"name": name, "time": at if len(at) > 5 else f"{at}:00", "days": days or [], "date": on,
-                "description": description, "actions": actions, "enabled": True, "silent": silent, "made_by": made_by}
-        existing = self.items.find(name)
+                "description": description, "actions": actions, "enabled": True, "silent": silent, "made_by": made_by,
+                "voice_user_id": voice_user_id, "last_rang": None}
+        existing = self.items.items.get(item_id) if item_id else next(
+            (row for row in self.items.items.values() if row["name"].casefold() == name.strip().casefold()), None)
         if existing:
             item["id"] = existing["id"]
         return self.items.upsert(item)

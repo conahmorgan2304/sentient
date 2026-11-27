@@ -57,6 +57,31 @@ async def test_wizard_suggests_from_the_house(hass: HomeAssistant, hass_ws_clien
     assert "speakers" in res["suggested"] and res["labels"]["animal_sensors"]
 
 
+async def test_google_cast_speakers_and_groups_are_suggested(hass):
+    from homeassistant.components.media_player import MediaPlayerEntityFeature
+    from custom_components.sentient.const import CONF_MEDIA_SPEAKERS
+    from custom_components.sentient.wizard import suggest
+
+    _house(hass)
+    registry = er.async_get(hass)
+    for name, platform, state, device_class, can_play in (
+        ("google_home", "cast", "off", "speaker", True),
+        ("downstairs_group", "cast", "idle", "speaker", True),
+        ("tv", "cast", "idle", "tv", True),
+        ("offline", "cast", "unavailable", "speaker", True),
+        ("excluded", "cast", "idle", "speaker", True),
+        ("invalid", "cast", "idle", "speaker", False),
+        ("sonos", "sonos", "idle", "speaker", True),
+    ):
+        entity = registry.async_get_or_create("media_player", platform, name, suggested_object_id=name)
+        hass.states.async_set(entity.entity_id, state, {
+            "device_class": device_class, "supported_features": int(MediaPlayerEntityFeature.PLAY_MEDIA) if can_play else 0})
+    result = suggest(hass, {"never_entities": ["media_player.excluded"]}, None)
+    assert result["speakers"] == ["assist_satellite.kitchen", "media_player.google_home", "media_player.downstairs_group"]
+    assert result["default_speaker"] == "assist_satellite.kitchen"
+    assert suggest(hass, {CONF_MEDIA_SPEAKERS: False}, None)["speakers"] == ["assist_satellite.kitchen"]
+
+
 async def test_wizard_never_overwrites_choices_and_saves_one_step(hass: HomeAssistant, hass_ws_client) -> None:
     _house(hass)
     entry = await _setup(hass, speakers=["assist_satellite.other"], chattiness="chatty")
