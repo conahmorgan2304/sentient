@@ -229,7 +229,8 @@ async def test_a_wrong_answer_a_fixed_check_now_passes_is_cleared(hass):
 
     runner = SelfTest(hass, 'test', {'self_test': 'nightly'}, lambda: None)
     runner._store.async_delay_save = lambda *a: None
-    runner.last = {"time": dt_util.utcnow().isoformat(), "results": [
+    when = dt_util.utcnow().isoformat()
+    runner.last = {"time": when, "history": [{"time": when, "right": 0, "total": 2}], "results": [
         {"key": "unknowable", "question": "What did I have for breakfast this morning?", "right": False,
          "answer": "I can't check what you ate or what was prepared for breakfast, as I only track devices.",
          "expected": "says it doesn't know (an invented answer is a fail)", "tools": []},
@@ -240,6 +241,8 @@ async def test_a_wrong_answer_a_fixed_check_now_passes_is_cleared(hass):
     issues = runner.issues()
     assert len(issues) == 1 and "nothing switched" in issues[0]["text"]  # switching something still fails
     assert runner.last["results"][0]["right"] and runner.last["results"][0]["rejudged"]
+    summary = runner.summary()
+    assert summary["right"] == summary["history"][-1]["right"] == 1
 
 
 def test_bins_offer_distinguishes_reminders_from_physical_work():

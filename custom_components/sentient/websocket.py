@@ -843,7 +843,10 @@ async def ws_brain(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
         return
     status = await brain.async_status()
     if entry.runtime_data.speech.guest_mode:
-        status = {k: v for k, v in status.items() if k not in ("situations", "beliefs", "voice")}
+        status = {k: v for k, v in status.items() if k not in (
+            "situations", "situation_book", "beliefs", "voice", "by_themselves", "trust",
+        )}
+        status["prediction"] = {k: v for k, v in status["prediction"].items() if k != "surprises"}
     warnings = getattr(entry.runtime_data, "warnings", None)
     feedback = getattr(entry.runtime_data, "feedback", None)
     connection.send_result(msg["id"], {"on": True, **status, "warnings": warnings.listing() if warnings is not None else None,
@@ -909,7 +912,8 @@ def ws_day(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
 def ws_memory_review(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """Memories to look at: ones that contradict each other, or say the same thing twice."""
     entry = _entry(hass)
-    connection.send_result(msg["id"], {"pairs": entry.runtime_data.memory.review() if entry is not None else []})
+    pairs = entry.runtime_data.memory.review() if entry is not None and not entry.runtime_data.speech.guest_mode else []
+    connection.send_result(msg["id"], {"pairs": pairs})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "sentient/memory/resolve", vol.Required("pair"): str,
@@ -945,6 +949,9 @@ def ws_notice_unwatch(hass: HomeAssistant, connection, msg: dict[str, Any]) -> N
 def ws_inner(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     """What it's thinking: lessons from corrections, an unusual day, and how well it guesses the next room."""
     entry = _entry(hass)
+    if entry is not None and entry.runtime_data.speech.guest_mode:
+        connection.send_result(msg["id"], {"learn": False, "day": False, "thoughts_on": False})
+        return
     inner = getattr(entry.runtime_data, "inner", None) if entry is not None else None
     out = dict(inner.summary()) if inner is not None else {"learn": False, "day": False, "thoughts_on": False}
     if entry is not None and entry.runtime_data.options.get(CONF_KNOWLEDGE, True):

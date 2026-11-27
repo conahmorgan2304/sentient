@@ -738,10 +738,11 @@ class SelfTest:
                             "tool_errors": errors, "ms": round((time.monotonic() - began) * 1000)})
         if not results:
             return {"skipped": "no self-test questions could be run"}
+        finished = dt_util.utcnow().isoformat()
         history = [*self.last.get("history", []), {
-            "time": dt_util.utcnow().isoformat(), "right": sum(1 for r in results if r["right"]), "total": len(results),
+            "time": finished, "right": sum(1 for r in results if r["right"]), "total": len(results),
             "ms": sorted(r["ms"] for r in results)[len(results) // 2] if results else None}][-HISTORY_KEEP:]
-        self.last = {"time": dt_util.utcnow().isoformat(), "results": results, "history": history}
+        self.last = {"time": finished, "results": results, "history": history}
         self._store.async_delay_save(self._saved, 2)
         wrong = [r for r in results if not r["right"]]
         rt.timeline.add(  # only a wrong answer is house health (and reaches phones); a pass is just noted
@@ -825,8 +826,20 @@ class SelfTest:
                                          for name, reason in (r.get("tool_errors") or {}).items()
                                          if isinstance(name, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", name)}}
                    for r in self.last.get("results", [])]
-        return {"enabled": True, "time": self.last["time"], "right": sum(1 for r in results if r["right"]),
-                "total": len(results), "results": results, "history": self.last.get("history", [])}
+        right = sum(1 for r in results if r["right"])
+        return {"enabled": True, "time": self.last["time"], "right": right,
+                "total": len(results), "results": results, "history": self._scored_history(right, len(results))}
+
+    def _scored_history(self, right: int, total: int) -> list[dict[str, Any]]:
+        history = self.last.get("history", [])
+        if not history or history[-1].get("total") != total:
+            return history
+        # Older builds read the clock twice when saving one test run.
+        run = dt_util.parse_datetime(self.last["time"])
+        point = dt_util.parse_datetime(history[-1].get("time") or "")
+        if run and point and abs((run - point).total_seconds()) < 1:
+            return [*history[:-1], {**history[-1], "right": right}]
+        return history
 
     def rejudge(self) -> int:
         """Look again at the last run's wrong answers with today's checks. A check fixed in an update (19 Nov:
@@ -857,6 +870,7 @@ class SelfTest:
                 r["rejudged"] = True
                 fixed += 1
         if fixed:
+            self.last["history"] = self._scored_history(sum(1 for r in results if r["right"]), len(results))
             self._store.async_delay_save(self._saved, 5)
         return fixed
 

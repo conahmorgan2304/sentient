@@ -174,8 +174,9 @@ class Conversations:
             if self.reliability is not None:
                 self.reliability.forget(conversation_id)
             return
+        when = dt_util.utcnow()
         if kind.endswith("content_added") and self.reliability is not None:
-            self._check(conversation_id, data.get("content") or {})
+            self._check(conversation_id, content, when)
         if not kind.endswith("content_added") or not self.enabled:
             return
         content = data.get("content") or {}
@@ -185,6 +186,7 @@ class Conversations:
         role, text = content.get("role"), content.get("content")
         if role not in ("user", "assistant") or not text or not isinstance(text, str):
             return
+        at = when.isoformat()
         ep = self._open.get(conversation_id)
         if ep is None:
             ours = self._ours.get(conversation_id) or {}
@@ -193,12 +195,12 @@ class Conversations:
                 "via": ours.get("via"), "turns": [],
             }
         ep["turns"].append({"who": "them" if role == "user" else "me", "text": _short(text, 400),
-                            "at": dt_util.utcnow().isoformat()})
-        ep["last"] = dt_util.utcnow().isoformat()
+                            "at": at})
+        ep["last"] = at
         del ep["turns"][:-12]
 
     @callback
-    def _check(self, conversation_id: str, content: dict[str, Any]) -> None:
+    def _check(self, conversation_id: str, content: dict[str, Any], when) -> None:
         """Hand each voice turn to the reliability check: the question, the tools' results, the answer."""
         role, text = content.get("role"), content.get("content")
         if role == "user" and isinstance(text, str) and text:
@@ -208,7 +210,7 @@ class Conversations:
         elif role == "assistant" and isinstance(text, str) and text and not content.get("tool_calls"):
             if conversation_id in self._ours:  # a conversation using Sentient, not a background AI job
                 source = self._ours.get(conversation_id) or {}
-                self.reliability.answered(conversation_id, text, source.get("room"), source.get("device_id"))
+                self.reliability.answered(conversation_id, text, source.get("room"), source.get("device_id"), when=when)
             else:
                 self.reliability.forget(conversation_id)
 
