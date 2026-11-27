@@ -277,5 +277,6 @@ class Offers:
         if (self._stopped or generation != self._generation or rt.options is not options
                 or (getattr(rt.speech, '_privacy_generation', 0), getattr(rt.speech, '_guest_generation', 0)) != privacy or rt.speech.guest_mode):
             return {'done': None, 'error': 'Actions were started, but the offer context changed. Check the devices before asking again.'}
+        rt.feedback.record(f"offer:{offer['id']}", -1.0, "said yes", "offers")
         rt.timeline.add("mode", f"Yes to: {offer['name']}", note or None)
         return {"offer": offer["name"], "done": True, "note": "The configured actions completed; physical device results are not independently verified."}
