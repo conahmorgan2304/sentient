@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import re
 from typing import Any, Callable
 
 from homeassistant.const import EVENT_STATE_CHANGED, STATE_ON
@@ -42,6 +43,56 @@ COOLDOWN = timedelta(minutes=3)
 CHANGED = 0.06  # share of the drive picture that must look different before the AI is asked
 MAX_COOLDOWN = timedelta(hours=1)  # cars passing on the road: each look that finds nothing new waits twice as long
 _TRIGGER_WORDS = ("motion", "car", "vehicle", "occupancy", "all_occupancy")
+OWNER_QUESTION = re.compile(
+    r"whose (?:cars?|vehicles?|vans?) (?:is|are) (?:(?:currently|parked) )?"
+    r"(?:on|in) (?:the|my|our) drive(?:way)?(?: (?:right )?now)?[?.!]*", re.I)
+_GENERIC = {"a", "an", "the", "car", "vehicle", "dark", "light", "small", "large", "big", "only", "one"}
+_COLOURS = {"black", "blue", "brown", "gold", "green", "grey", "orange", "pink", "purple", "red", "silver", "white", "yellow"}
+_UNCERTAIN = re.compile(r"\b(?:and|or|possibly|maybe|probably|appears|looks like|not|unclear|unknown)\b", re.I)
+
+
+async def async_owner_answer(hass, rt, context, device_id, *, private=False) -> str:
+    from .llm_api import _entity_read_permission, _exposed
+    from .voice_id import private_history
+
+    unavailable = "I can't verify whose vehicles are on the drive."
+    drive = getattr(rt, "drive", None)
+    if private or private_history(rt, device_id) or drive is None or not (spot := drive.spot()):
+        return unavailable
+    camera = spot["camera"]
+    readable = await _entity_read_permission(hass, context)
+    if private_history(rt, device_id) or drive.spot() != spot or not readable(camera) or not _exposed(hass, camera):
+        return unavailable
+    return drive.owner_answer()
+
+
+def _vehicle_words(description: str) -> set[str]:
+    words = description.casefold().replace("station wagon", "estate")
+    return {{"gray": "grey", "wagon": "estate"}.get(word, word)
+            for word in re.findall(r"\w+", words) if word not in _GENERIC}
+
+
+def _source(spot: dict[str, Any] | None) -> dict[str, Any] | None:
+    return {key: spot.get(key) for key in ("camera", "box", "points")} if spot else None
+
+
+def _owners(cars: int | None, description: str, known: list[tuple[str, str]]) -> list[str]:
+    """Name only a unique match supported by one parked vehicle's visible details."""
+    observations = [part.strip() for part in description.split(",") if part.strip()]
+    if not cars or len(observations) != cars:
+        return []
+    candidates = [(owner, _vehicle_words(details)) for owner, details in known]
+    matches = []
+    for observation in observations:
+        if _UNCERTAIN.search(observation):
+            continue
+        visible = _vehicle_words(observation)
+        owners = {owner for owner, needed in candidates
+                  if len(needed) >= 2 and needed <= visible
+                  and (not needed & _COLOURS or needed & _COLOURS == visible & _COLOURS)}
+        if len(owners) == 1:
+            matches.append(owners.pop())
+    return [owner for owner in matches if matches.count(owner) == 1]
 
 
 class Drive:
@@ -54,6 +105,7 @@ class Drive:
         self._unsub = None
         self._pending = None
         self._last_look = None
+        self._last_source = None
         self._same = 0  # looks in a row that found nothing new
         self.skipped = 0  # looks saved because the picture hadn't changed
         self._triggers: set[str] = set()
@@ -143,30 +195,33 @@ class Drive:
         spot = self.spot()
         if rt is None or spot is None:
             return {"error": "No drive spot: draw one called 'drive' on the camera that can see it"}
+        source = _source(spot)
+        same_source = source == self.state.get("source")
         now = dt_util.utcnow()
-        if not force and self._last_look and now - self._last_look < self.cooldown():
+        if not force and source == self._last_source and self._last_look and now - self._last_look < self.cooldown():
             return self.describe()
         from .spots import _key, changed_share
 
         fingerprint = await rt.spots.async_fingerprint(spot["camera"], _key(spot["name"]))
-        if (not force and fingerprint and self.state.get("fingerprint")
+        if (not force and same_source and not self.state.get("unclear") and fingerprint and self.state.get("fingerprint")
                 and changed_share(fingerprint, self.state["fingerprint"]) < CHANGED):
             self.skipped += 1
             return self.describe()  # the drive looks just as it did last time: no need to ask the AI
         self._last_look = now
+        self._last_source = source
 
         data: dict[str, Any] = {
             "task_name": "Sentient: the drive",
             "instructions": (
                 "This picture shows only the drive of a house. Count the cars or vans parked on it (ignore "
-                "anything on the road beyond). For each, a few plain words — colour and type (e.g. 'silver "
-                "estate', 'small white van'). If it's too dark or unclear to tell — or the picture is black, grey, frozen, "
+                "anything on the road beyond). Give one comma-separated description per parked vehicle, "
+                "including visible colour, body type and a make or model only if clearly identifiable. "
+                "Describe visual details only; do not infer an owner. If it's too dark or unclear to tell — "
+                "or the picture is black, grey, frozen, "
                 "a 'camera asleep/offline' screen or otherwise doesn't clearly show the drive — set unsure rather than "
                 "saying it's empty."
             ),
             "structure": {
-                **({"whose": {"description": "Whose cars these are, from the known cars, comma-separated; empty if none clearly match",
-                              "required": False, "selector": {"text": {}}}} if self.known() else {}),
                 "cars": {"description": "How many cars or vans are on the drive", "required": True,
                          "selector": {"number": {"min": 0, "max": 10}}},
                 "description": {"description": "A few words on each, comma-separated; empty if none", "required": False,
@@ -176,9 +231,6 @@ class Drive:
             },
             "attachments": [await rt.spots.async_attachment(spot["camera"], _key(spot["name"]))],
         }
-        if known := self.known():
-            data["instructions"] += (" Known household cars: " + "; ".join(f"{who} — {what}" for who, what in known)
-                                     + ". In 'whose', name a car only if it clearly matches one of these.")
         if ai_entity := self.options.get(CONF_AI_TASK_ENTITY):
             data["entity_id"] = ai_entity
         if not rt.watches.spend("drive", force=force):
@@ -189,36 +241,36 @@ class Drive:
             _LOGGER.debug("Drive look failed: %s", err)
             return {"error": str(err)}
         result = (response or {}).get("data") or {}
-        if not isinstance(result, dict):
+        if _source(self.spot()) != source or not isinstance(result, dict):
             return self.describe()
         unsure = result.get("unsure") in (True, "true", "yes")
         try:
-            cars = max(0, int(float(result.get("cars"))))
-        except (TypeError, ValueError):
+            cars = None if unsure else max(0, int(float(result.get("cars"))))
+        except (TypeError, ValueError, OverflowError):
             return self.describe()
         description = " ".join(str(result.get("description") or "").split()).strip(" .")
-        names = {who.lower(): who for who, _ in self.known()}
-        whose = [names[w.strip().lower()] for w in str(result.get("whose") or "").split(",") if w.strip().lower() in names]
-        before = self.state.get("cars")
-        self._same = 0 if before is None or cars != before else self._same + 1
-        if unsure and before is not None:
-            self.state["checked"] = now.isoformat()  # keep what we knew; it's just dark
+        before = self.state.get("cars") if same_source else None
+        if unsure:
+            self.state["unclear"] = True
         else:
-            had = set(self.state.get("whose") or [])
-            self.state = {"cars": cars, "description": description, "checked": now.isoformat(), "whose": whose,
+            known = self.known()
+            had = set(_owners(before, self.state.get("description") or "", known))
+            whose = set(_owners(cars, description, known))
+            self._same = self._same + 1 if cars == before else 0
+            self.state = {"cars": cars, "description": description, "checked": now.isoformat(), "source": source,
                           "changed": now.isoformat() if cars != before else self.state.get("changed")}
             if before is not None and cars != before:
-                came = [w for w in whose if w not in had]
-                if cars > before and came:
-                    text = f"{came[0]}'s car arrived on the drive{f' — now {description}' if description else ''}"
-                elif cars > before:
-                    text = f"A car arrived on the drive{f' — now {description}' if description else ''}"
+                if cars > before:
+                    came = whose - had if cars == before + 1 and len(had) == before and had <= whose else set()
+                    name = f"{came.pop()}'s car" if len(came) == 1 else "A car"
+                    text = f"{name} arrived on the drive" + (f" — now {description}" if description else "")
                 else:
-                    gone = [w for w in had if w not in whose]
-                    text = (f"{gone[0]}'s car left the drive" if gone else "A car left the drive") + (
+                    gone = had - whose if before == cars + 1 and len(whose) == cars and whose <= had else set()
+                    name = f"{gone.pop()}'s car" if len(gone) == 1 else "A car"
+                    text = f"{name} left the drive" + (
                         f" — {description} still there" if cars and description else " — it's clear now" if not cars else "")
                 rt.timeline.add("drive", text, f"{cars} on the drive")
-        if fingerprint:
+        if fingerprint and not unsure:
             self.state["fingerprint"] = fingerprint
         self._store.async_delay_save(lambda: {"state": self.state}, 2)
         self.hass.bus.async_fire(EVENT_DRIVE, self.describe())
@@ -240,18 +292,38 @@ class Drive:
         if not self.state:
             return {"cars": None}
         checked = dt_util.parse_datetime(self.state.get("checked") or "")
+        unclear = bool(self.state.get("unclear")) or self.state.get("source") != _source(self.spot())
         return {
             "cars": self.state.get("cars"),
             "description": self.state.get("description") or "",
             "checked": dt_util.as_local(checked).strftime("%H:%M") if checked else None,
             "checked_at": self.state.get("checked"),
             "changed_at": self.state.get("changed"),
-            "whose": self.state.get("whose") or [],
+            "whose": [] if unclear else _owners(self.state.get("cars"), self.state.get("description") or "", self.known()),
+            "unclear": unclear,
         }
+
+    def owner_answer(self) -> str:
+        """Answer from the latest clear observation and say how old it is."""
+        from .watches import local_when
+
+        result = self.describe()
+        checked = dt_util.parse_datetime(result.get("checked_at") or "")
+        if result.get("unclear") or checked is None or (cars := result.get("cars")) is None:
+            return "I can't verify whose vehicles are on the drive."
+        when = local_when(checked)
+        if not cars:
+            return f"The driveway was empty at the last clear check, {when}."
+        count = f"{cars} {'vehicle' if cars == 1 else 'vehicles'}"
+        if not (owners := result["whose"]):
+            return f"The last clear driveway check, {when}, showed {count}. I couldn't verify the owner."
+        names = ", ".join(owners)
+        rest = " I couldn't verify the other owners." if len(owners) < cars else ""
+        return f"The last clear driveway check, {when}, showed {count}. The visible details match the saved entries for {names}.{rest}"
 
     def prompt_line(self) -> str | None:
         d = self.describe()
-        if d.get("cars") is None:
+        if d.get("cars") is None or d.get("unclear"):
             return None
         what = "nothing parked" if not d["cars"] else f"{d['cars']} — {d['description']}" if d["description"] else str(d["cars"])
         if d.get("whose"):

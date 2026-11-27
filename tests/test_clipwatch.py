@@ -64,6 +64,8 @@ async def test_gate_clip_watched_written_down_and_deleted(hass: HomeAssistant, a
     cw._message(_review())
     await hass.async_block_till_done()
     assert ai and ai[0].data["attachments"][0]["media_content_type"] == "video/mp4"
+    assert "sequence of frames to distinguish entering from exiting" in ai[0].data["instructions"]
+    assert "leave the direction unspecified" in ai[0].data["instructions"]
     assert "whose" not in ai[0].data["structure"]  # names only when chosen
     item = cw.items[0]
     assert item["summary"] == "A man walked a dog past the gate." and item["event"] == "ev1"

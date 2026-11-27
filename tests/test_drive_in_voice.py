@@ -1,11 +1,87 @@
 """15 Nov: "what time did Kayleigh get back?" — the drive had logged her car arriving at 15:12, but the voice only saw
 what was parked now, the timeline tool left out the drive, and the question didn't bring the timeline tool along."""
 
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import llm
 
 from custom_components.sentient.focus import Focus
 from tests.test_phase3 import _setup
+
+
+@pytest.mark.parametrize(("description", "count", "expected"), [
+    ("black Mercedes estate", 1, ["Alex"]),
+    ("silver Mercedes with black wheels", 1, []),
+    ("black estate", 1, []),
+    ("black or silver Mercedes", 1, []),
+    ("black Mercedes, black Mercedes", 2, []),
+    ("black Mercedes, silver Mercedes", 2, ["Alex", "Taylor"]),
+    ("black Mercedes, silver Mercedes", 1, []),
+])
+def test_known_car_identity_requires_distinctive_visible_details(description, count, expected):
+    from custom_components.sentient.drive import _owners
+
+    known = [("Alex", "black Mercedes"), ("Taylor", "silver Mercedes")]
+    assert _owners(count, description, known) == expected
+    assert not _owners(1, "black Mercedes", [*known, ("Sam", "black Mercedes")])
+
+
+async def test_driveway_voice_ignores_conflicting_owner_and_unclear_frames(hass, freezer):
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+    from homeassistant.setup import async_setup_component
+    from custom_components.sentient.conversation import BackedUpAgent
+    from tests.test_voice_sessions_control import request
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    hass.states.async_set("camera.gate", "idle")
+    async_expose_entity(hass, "conversation", "camera.gate", True)
+    entry = await _setup(hass, known_cars="Alex: black Mercedes\nTaylor: silver Mercedes")
+    rt = entry.runtime_data
+    rt.spots.set("camera.gate", "drive", [0.1, 0.4, 0.6, 0.9])
+    replies = iter([{"cars": 0}, {"cars": 1, "description": "black estate", "whose": "Taylor"},
+                    {"cars": 1, "description": "black Mercedes estate", "whose": "Taylor"},
+                    {"unsure": True}])
+
+    async def generate(_call):
+        return {"data": next(replies)}
+
+    hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
+    await rt.drive.async_check(force=True)
+    freezer.tick(60)
+    uncertain = await rt.drive.async_check(force=True)
+    assert not uncertain["whose"]
+    assert rt.timeline.since(1, ["drive"], 1)[0]["text"] == "A car arrived on the drive — now black estate"
+    obj = BackedUpAgent(entry)
+    obj.hass, obj.entity_id = hass, "conversation.sentient"
+    req = request("Whose cars are on the drive right now?")
+    with patch.object(obj, "_converse", AsyncMock()) as provider:
+        initial = (await obj.async_process(req)).response.speech["plain"]["speech"]
+        assert "1 vehicle. I couldn't verify the owner." in initial and "Taylor" not in initial
+        freezer.tick(60)
+        clear = await rt.drive.async_check(force=True)
+        assert clear["whose"] == ["Alex"]
+        first = (await obj.async_process(req)).response.speech["plain"]["speech"]
+        assert "last clear driveway check" in first and "Alex" in first and "Taylor" not in first
+        from custom_components.sentient.llm_api import LookTool
+
+        context = llm.LLMContext(platform="test", context=req.context, language="en", assistant=None, device_id=None)
+        looked = await LookTool().async_call(
+            hass, llm.ToolInput("sentient_look", {"camera": "Gate", "spot": "drive", "question": req.text}), context)
+        assert getattr(looked, "data", looked)["answer"] == first
+        async_expose_entity(hass, "conversation", "camera.gate", False)
+        denied = (await obj.async_process(req)).response.speech["plain"]["speech"]
+        assert denied == "I can't verify whose vehicles are on the drive."
+        async_expose_entity(hass, "conversation", "camera.gate", True)
+        rt.spots.set("camera.gate", "drive", [0.2, 0.4, 0.6, 0.9])
+        assert (await obj.async_process(req)).response.speech["plain"]["speech"] == denied
+        rt.spots.set("camera.gate", "drive", [0.1, 0.4, 0.6, 0.9])
+        freezer.tick(60)
+        unclear = await rt.drive.async_check(force=True)
+        assert unclear["checked_at"] == clear["checked_at"] and not unclear["whose"]
+        assert (await obj.async_process(req)).response.speech["plain"]["speech"] == denied
+        provider.assert_not_awaited()
 
 
 async def test_the_voice_hears_when_a_car_came_and_can_look_it_up(hass: HomeAssistant) -> None:

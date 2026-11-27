@@ -468,7 +468,9 @@ class ClipWatch:
             "what actually happened — e.g. 'A delivery driver left a parcel by the door and went.' or 'A man walked "
             "a dog past the gate.' Describe clothing and actions only. Never guess a stranger's name; no camera names, "
             "IDs or times. 'suspicious' is only for someone trying doors, looking into windows or cars, or lingering "
-            "for no clear reason.")
+            "for no clear reason. For someone by a vehicle, use the sequence of frames to distinguish entering "
+            "from exiting. If that movement isn't clearly visible, describe the person by the vehicle and leave "
+            "the direction unspecified. A still image alone cannot establish the direction.")
         plain = (instructions, dict(structure))  # the video on its own, if the extras are refused
         if len(attachments) > 1:
             instructions += " The clip is a small preview; a full-size still of the clearest moment follows it."

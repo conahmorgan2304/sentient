@@ -764,7 +764,16 @@ class BackedUpAgent(conversation.ConversationEntity):
             # a plain answer to the house's own question: done without the AI
             return await self._localise_result(self._plain_reply(user_input, said), user_input)
         from .language import async_language_ending
+        from .drive import OWNER_QUESTION, async_owner_answer
 
+        rt = self._entry.runtime_data
+        if (not explicit and getattr(rt, "drive", None) is not None
+                and OWNER_QUESTION.fullmatch(user_input.text.strip())):
+            said = await async_owner_answer(self.hass, rt, user_input.context, user_input.device_id,
+                                            private=cautious or changed_speaker)
+            if self._history_generation() != privacy:
+                said = "I can't verify whose vehicles are on the drive."
+            return await self._localise_result(self._instant_reply(user_input, said), user_input)
         if not explicit and options.get(CONF_SESSIONS) and options.get('automatic_language'):
             session = self._entry.runtime_data.sessions.get(user_input)
             known_end = is_conversation_end(user_input.text, session.question, self._options().get(CONF_PERSONA) or DEFAULT_PERSONA,
@@ -820,7 +829,6 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .lists import SHOW, async_handle as handle_list, async_reply as list_reply
         from .voice_id import private_history
 
-        rt = self._entry.runtime_data
         if (not synthetic and not (explicit or cautious or changed_speaker)
                 and options.get("voice_lists", True) and SHOW.fullmatch(user_input.text or "")
                 and not private_history(rt, user_input.device_id)):

@@ -107,6 +107,35 @@ async def test_faces_off(hass: HomeAssistant) -> None:
     assert "Recognised by the cameras" not in (await _api(hass)).api_prompt
 
 
+async def test_frigate_camera_face_sensor_is_recognised_after_entity_rename(hass):
+    from homeassistant.helpers import entity_registry as er
+
+    frigate = MockConfigEntry(domain="frigate")
+    frigate.add_to_hass(hass)
+    other = MockConfigEntry(domain="frigate")
+    other.add_to_hass(hass)
+    registry = er.async_get(hass)
+    camera = registry.async_get_or_create("camera", "frigate", f"{frigate.entry_id}:camera:drive_cam",
+                                          config_entry=frigate, suggested_object_id="parking")
+    source = registry.async_get_or_create("sensor", "frigate", f"{frigate.entry_id}:sensor_recognized_face:drive_cam",
+                                          config_entry=frigate, suggested_object_id="arrival_identity")
+    global_sensor = registry.async_get_or_create("sensor", "frigate", f"{frigate.entry_id}:sensor_global_face:sam",
+                                                 config_entry=frigate, suggested_object_id="sam_last_seen")
+    foreign = registry.async_get_or_create("sensor", "frigate", f"{other.entry_id}:sensor_recognized_face:drive_cam",
+                                           config_entry=other, suggested_object_id="other_identity")
+    entry = await _setup(hass, faces=True, face_people=["Sam"], face_cameras=[camera.entity_id])
+    rt = entry.runtime_data
+    hass.states.async_set(foreign.entity_id, "Sam")
+    hass.states.async_set(source.entity_id, "Nan")
+    await hass.async_block_till_done()
+    assert rt.faces.recent() == []
+    hass.states.async_set(source.entity_id, "Sam")
+    hass.states.async_set(global_sensor.entity_id, "Drive Cam")
+    await hass.async_block_till_done()
+    assert [(row["name"], row["camera"].lower()) for row in rt.faces.recent()] == [("Sam", "drive cam")]
+    assert len([row for row in rt.timeline.items if row["text"] == "Sam seen at the drive cam"]) == 1
+
+
 async def test_stronger_ai_for_security_only_when_chosen(hass: HomeAssistant) -> None:
     entry = await _setup(hass, ai_task_entity="ai_task.usual")
     sent = []
@@ -173,7 +202,8 @@ async def test_known_cars_named_from_the_same_look(hass: HomeAssistant) -> None:
     hass.services.async_register("ai_task", "generate_data", generate, supports_response=SupportsResponse.ONLY)
     await rt.drive.async_check(force=True)
     await rt.drive.async_check(force=True)
-    assert "Sam — dark grey hatchback" in calls[-1].data["instructions"]
+    assert "Sam" not in calls[-1].data["instructions"]
+    assert "whose" not in calls[-1].data["structure"]
     assert rt.timeline.items[0]["text"] == "Sam's car arrived on the drive — now dark grey hatchback"
     assert "(Sam's)" in rt.drive.prompt_line()
 
