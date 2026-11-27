@@ -87,7 +87,7 @@ def _offers_bins_action(answer: str) -> bool:
     """Reject offers of physical work, not an offer to set a reminder."""
     return bool(re.search(
         r"\b(?:shall i|should i|would you like me to|do you want me to|want me to|i can|i could|i will|i['’]ll)\s+"
-        r"(?:also\s+)?(?:take|put|move|wheel|bring|empty|collect)\b", answer, re.I))
+        r"(?:also\s+)?(?:take|put|move|wheel|bring|empty|collect)\s+(?:the |your |our )?bins?\b", answer, re.I))
 
 
 def _tool_name(content: dict[str, Any]) -> str:
@@ -292,7 +292,7 @@ class SelfTest:
                 return bool(re.search(
                     r"\b(?:no|zero|without) (?:active |set |upcoming )?reminders?\b|"
                     r"\breminders?[^.!?]{0,30}\b(?:none|not set)\b|"
-                    r"\b(?:haven['’]t got|don['’]t have) any reminders?\b",
+                    r"\b(?:haven['’]t got|don['’]t have|do not have|aren['’]t) any reminders?\b",
                     answer, re.I)), expected
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
