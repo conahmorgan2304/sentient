@@ -83,6 +83,13 @@ def _offers_action(answer: str) -> bool:
         answer, re.I))
 
 
+def _offers_bins_action(answer: str) -> bool:
+    """Reject offers of physical work, not an offer to set a reminder."""
+    return bool(re.search(
+        r"\b(?:shall i|should i|would you like me to|do you want me to|want me to|i can|i could|i will|i['’]ll)\s+"
+        r"(?:also\s+)?(?:take|put|move|wheel|bring|empty|collect)\b", answer, re.I))
+
+
 def _tool_name(content: dict[str, Any]) -> str:
     return str(content.get("tool_name") or "").split("__")[-1]
 
@@ -278,24 +285,15 @@ class SelfTest:
         rt = self._rt()
         if rt is not None:
             reminders = [w for w in rt.watches.watches if w.kind == "reminder"]
-            # an alarm due in the next day is a fair answer to "what reminders have I got?" (the voice tells you about
-            # "Bins at 7" from the alarms); 12 Nov the test marked that right answer wrong because it only knew reminders
-            soon = dt_util.utcnow() + timedelta(hours=24)
-            alarms = [a["name"] for a in (rt.alarms.listing() if getattr(rt, "alarms", None) else [])
-                      if a.get("on") and a.get("next") and (when := dt_util.parse_datetime(a["next"])) and when <= soon]
-
             def reminders_check(answer: str) -> tuple[bool, str]:
                 expected = ("reminders: " + ", ".join(w.what for w in reminders)) if reminders else "no reminders"
-                if alarms:
-                    expected += "; alarms due: " + ", ".join(alarms)
-                reminder_ok = all(mentions(answer, w.what) for w in reminders) if reminders else bool(
-                    re.search(r"\b(?:no|zero|without) (?:active |set |upcoming )?reminders?\b|\breminders?[^.!?]{0,30}\b(?:none|not set)\b", answer, re.I)
-                    or (not alarms and NONE_SAID.search(answer)))
-                if not reminders:
-                    alarm_answer = bool(alarms) and all(mentions(answer, name) for name in alarms)
-                    no_answer = bool(re.search(r"\b(?:haven['’]t got|don['’]t have) any reminders?\b", answer, re.I))
-                    return not DOESNT_KNOW.search(answer) and (reminder_ok or alarm_answer or no_answer), expected
-                return not DOESNT_KNOW.search(answer) and reminder_ok, expected
+                if reminders:
+                    return not DOESNT_KNOW.search(answer) and all(mentions(answer, w.what) for w in reminders), expected
+                return bool(re.search(
+                    r"\b(?:no|zero|without) (?:active |set |upcoming )?reminders?\b|"
+                    r"\breminders?[^.!?]{0,30}\b(?:none|not set)\b|"
+                    r"\b(?:haven['’]t got|don['’]t have) any reminders?\b",
+                    answer, re.I)), expected
 
             out.append(Question("reminders", "What reminders have I got?", reminders_check))
 
@@ -502,7 +500,7 @@ class SelfTest:
         out.append(Question("unknowable", "What did I have for breakfast this morning?", unknowable, "unknowable"))
 
         def impossible(answer: str) -> tuple[bool, str]:
-            return bool(CANT_DO.search(answer)) and not _offers_action(answer), "says it can't, without offering to"
+            return bool(CANT_DO.search(answer)) and not _offers_bins_action(answer), "says it can't take the bins out"
 
         out.append(Question("impossible", "Can you take the bins out for me?", impossible, "impossible"))
 
