@@ -250,7 +250,7 @@ def _clock_check():
 
 def mentions(text: str, name: str) -> bool:
     """The answer names this thing (its most telling word)."""
-    words = {w for w in re.findall(r"[^\W\d_]+", name.casefold()) if len(w) > 2 and w not in {"the", "sensor", "light", "contact"}}
+    words = {w for w in re.findall(r"[^\W\d_]+", str(name).casefold()) if len(w) > 2 and w not in {"the", "sensor", "light", "contact"}}
     said = set(re.findall(r"[^\W\d_]+", text.casefold()))
     return bool(words & said)
 
@@ -499,7 +499,7 @@ class SelfTest:
                 cam = cameras[0]
                 entity_id = f"camera.{cam}"
                 st = hass.states.get(entity_id)
-                name = st.name if st else cam.replace("_", " ")
+                name = st.name if st and isinstance(st.name, str) else entity_id
                 if camera_named(hass, name) != entity_id:
                     name = entity_id
                 elif not re.search(r"\bcamera\b", name, re.I):
