@@ -131,7 +131,9 @@ class Announcements:
         tasks = []
         if item.get("actions"):
             tasks.append(self.hass.async_create_task(self._actions(item)))
-        result = await rt.speech.async_say(message, priority, speakers, source=f"announce:{item['name']}")
+        result = await rt.speech.async_say(
+            message, priority, speakers, source=f"announce:{item['name']}", translate_urgent=True,
+        )
         rt.speech.hold(HOLD_AFTER)  # nothing else chatters over it for a minute
         for t in tasks:
             await t

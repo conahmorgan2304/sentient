@@ -607,7 +607,9 @@ class SpeechRouter:
         priority: str = "normal",
         targets: list[str] | None = None,
         source: str | None = None,
-        *, _spoken: str | None = None,
+        *,
+        translate_urgent: bool = False,
+        _spoken: str | None = None,
     ) -> SpeechResult:
         generation = self._privacy_generation
         text = clean_message(message, self.banned)
@@ -627,7 +629,8 @@ class SpeechRouter:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
         spoken = _spoken if _spoken is not None else await async_in_house_language(
-            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT
+            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT,
+            translate_urgent=translate_urgent and source != "critical",
         )
 
         if generation != self._privacy_generation:

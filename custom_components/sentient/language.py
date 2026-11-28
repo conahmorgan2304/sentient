@@ -179,7 +179,8 @@ def write_in_line(hass: HomeAssistant, options=None, *, spoken: bool) -> str:
 
 
 async def async_in_house_language(
-    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *, known_english: bool = False
+    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *,
+    known_english: bool = False, translate_urgent: bool = False,
 ) -> str:
     """What to actually say: *text* in the house's language, or *text* itself when that can't be done."""
     if not text or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
@@ -207,9 +208,11 @@ async def async_in_house_language(
     if (fixed := phrases.translate(text, lang)) != text:
         return fixed
     if urgent:
-        return ((prepared_alert(cache, text, lang) if options.get('automatic_language') else None)
-                or cache.kept.get(key) or text)
-    if options.get('automatic_language'):
+        ready = (prepared_alert(cache, text, lang) if options.get('automatic_language') else None) or cache.kept.get(key)
+        if ready or not translate_urgent:
+            return ready or text
+        # Custom announcements can bypass quiet hours and still try translating this sentence.
+    elif options.get('automatic_language'):
         await async_prepare_language(hass, options)
         if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
             return text
