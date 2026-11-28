@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 import re
 
+from .media_files import media_file
+
 _WORD = re.compile(r"[a-z0-9]{3,}")
 STOP = {"what", "when", "where", "which", "does", "have", "with", "about", "from",
         "this", "that", "need", "tell", "please", "there", "could", "would"}
@@ -26,11 +28,10 @@ def best_passage(folder: str, filename: str, question: str, limit: int = 500) ->
     The same path rules as the search apply; nothing outside the folder or behind a symlink is read.
     """
     query = _terms(question)
-    if (not query or not isinstance(filename, str) or filename != os.path.basename(filename) or filename.startswith(".")
-            or os.path.splitext(filename)[1].lower() not in (".md", ".txt")):
+    if not query or not isinstance(filename, str) or os.path.splitext(filename)[1].lower() not in (".md", ".txt"):
         return None
-    path = os.path.join(folder, filename)
-    if os.path.islink(path) or not os.path.isfile(path):
+    path = media_file(folder, filename)
+    if path is None:
         return None
     try:
         with open(path, "rb") as handle:
@@ -71,11 +72,10 @@ def search_local_text(folder: str, filenames: list[str], question: str) -> str |
         return None
     matches: list[tuple[int, str]] = []
     for filename in sorted(filenames)[:MAX_FILES]:
-        if (not isinstance(filename, str) or filename != os.path.basename(filename)
-                or filename.startswith(".") or os.path.splitext(filename)[1].lower() not in (".md", ".txt")):
+        if not isinstance(filename, str) or os.path.splitext(filename)[1].lower() not in (".md", ".txt"):
             continue
-        path = os.path.join(folder, filename)
-        if os.path.islink(path) or not os.path.isfile(path):
+        path = media_file(folder, filename)
+        if path is None:
             continue
         try:
             with open(path, "rb") as handle:

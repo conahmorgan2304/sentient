@@ -22,6 +22,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .const import CONF_MANUALS, CONF_MANUALS_FOLDER, CONF_MANUALS_LOCAL, DEFAULT_MANUALS_FOLDER
+from .media_files import walk_media
 
 _LOGGER = logging.getLogger(__name__)
 TYPES = {".pdf": "application/pdf", ".txt": "text/plain", ".md": "text/plain", ".jpg": "image/jpeg",
@@ -45,21 +46,32 @@ def folder(hass: HomeAssistant, options: dict[str, Any]) -> tuple[str, str] | No
 
 def listing(hass: HomeAssistant, options: dict[str, Any]) -> list[str]:
     where = folder(hass, options)
-    if where is None or not os.path.isdir(where[0]):
+    if where is None:
         return []
-    return sorted(f for f in os.listdir(where[0]) if os.path.splitext(f)[1].lower() in TYPES)
+    return sorted(os.path.join(directory, entry) for directory, entries in walk_media(where[0]) for entry in entries
+                  if os.path.splitext(entry)[1].lower() in TYPES)
 
 
 def pick(files: list[str], question: str, name: str | None = None) -> str | None:
     want = _words(name or "") or _words(question)
-    best, score = None, 0
+    requested = (name or "").strip().casefold()
+    best, score = None, (False, 0, 0)
     for f in files:
         stem = os.path.splitext(f)[0]
-        if name and stem.lower() == name.strip().lower():
+        if requested in (stem.casefold(), f.casefold()):
             return f
-        s = len(want & _words(stem))
+        if "/" in requested:
+            continue
+        directory, title = os.path.split(stem)
+        same_title = title.casefold() == requested
+        shared = len(want & _words(title))
+        if not same_title and not shared:
+            continue
+        s = (same_title, shared, len(want & _words(directory)))
         if s > score:
             best, score = f, s
+        elif s == score and best and os.path.splitext(os.path.basename(best))[0].casefold() == title.casefold():
+            best = None  # same filename and the question did not distinguish their folders
     return best
 
 
@@ -118,7 +130,7 @@ async def async_answer(hass: HomeAssistant, rt: Any, question: str, name: str | 
         try:
             # inside a document picked by its name, the name's own words ("air purifier") say nothing about the page
             ask = question if chosen is None else " ".join(
-                w for w in question.split() if not (_words(w) & _words(os.path.splitext(chosen)[0]))) or question
+                w for w in question.split() if not (_words(w) & _words(os.path.splitext(os.path.basename(chosen))[0]))) or question
             hits = await hass.async_add_executor_job(pages.search, db, ask, chosen)
         except Exception:  # noqa: BLE001
             hits = []

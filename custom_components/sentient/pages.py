@@ -20,6 +20,8 @@ import re
 import sqlite3
 from typing import Any
 
+from .media_files import media_file
+
 _LOGGER = logging.getLogger(__name__)
 
 CONF_MANUALS_PAGES = "manuals_pages"
@@ -142,8 +144,7 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
     extraction swaps the index and its mode marker inside one transaction.
     Crashes, unavailable PDFs or disk errors leave the old index usable.
     """
-    wanted = {f for f in files if os.path.splitext(f)[1].lower() in READ and f == os.path.basename(f)
-              and not f.startswith(".")}
+    wanted = {f: path for f in files if os.path.splitext(f)[1].lower() in READ and (path := media_file(folder, f))}
     from .local_ocr import available as ocr_available
 
     ocr_installed = ocr_available()
@@ -162,19 +163,17 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
 
     known, changing_mode = db.run(_known)
 
-    def _read(name: str) -> tuple[float, int, int, str, str | None, list[tuple[int, str, str]]] | None:
+    def _read(name: str) -> tuple[float, int, int, str, str | None, list[tuple[int, str, str]]]:
         """The file's pages, or a row recording why it can't be read page by page (a damaged or very large
         PDF is still read whole by the AI, and isn't tried again until the file changes)."""
-        path = os.path.join(folder, name)
-        if os.path.islink(path) or not os.path.isfile(path):
-            return None
-        stat = os.stat(path)
+        path = wanted[name]
+        stat = path.stat()
         unit = "page" if name.lower().endswith(".pdf") else "section"
         if stat.st_size > MAX_FILE_BYTES:
             return stat.st_mtime, stat.st_size, 0, unit, "too large to read page by page", []
         try:
-            data, total = (read_pdf(path, local_ocr=actual_ocr) if name.lower().endswith(".pdf")
-                           else read_text(path))
+            data, total = (read_pdf(os.fspath(path), local_ocr=actual_ocr) if name.lower().endswith(".pdf")
+                           else read_text(os.fspath(path)))
         except ImportError:
             raise
         except Exception as err:  # noqa: BLE001 - one damaged document doesn't stop the rest
@@ -195,8 +194,6 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
         try:
             for name in sorted(wanted):
                 result = _read(name)
-                if result is None:
-                    continue
                 mtime, size, total, unit, error, data = result
                 if error and name in known:
                     # can't be read again now: carry its old pages over, so one damaged file doesn't stop
@@ -237,7 +234,7 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
             return {"error": "OCR reindex could not complete; previous index was kept",
                     "read": 0, "removed": 0, "local_ocr_available": ocr_installed,
                     "local_ocr_active": actual_ocr, "reindex_completed": False}
-        return {"read": count, "removed": len(set(known) - wanted),
+        return {"read": count, "removed": len(known.keys() - wanted.keys()),
                 "local_ocr_available": ocr_installed, "local_ocr_active": actual_ocr,
                 "reindex_completed": True}
 
@@ -246,11 +243,9 @@ def sync(db: Any, folder: str, files: list[str], *, local_ocr: bool = False) -> 
         try:
             result = _read(name) if name not in known else None
             if result is None and name in known:
-                path = os.path.join(folder, name)
-                if not os.path.islink(path) and os.path.isfile(path):
-                    st = os.stat(path)
-                    if known.get(name) != (st.st_mtime, st.st_size):
-                        result = _read(name)
+                st = wanted[name].stat()
+                if known[name] != (st.st_mtime, st.st_size):
+                    result = _read(name)
             if result is None:
                 continue
             mtime, size, total, unit, error, data = result

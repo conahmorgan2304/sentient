@@ -1,7 +1,7 @@
 """Books: audiobooks played and ebooks read aloud, each picking up where it was left off.
 
 Put books in a folder of Home Assistant's media (books by default):
-* an ebook — an .epub or .txt file (DRM-free) — is read aloud by the house voice, a short passage at a time;
+* an ebook — a DRM-free .epub, .mobi or .txt file — is read aloud by the house voice, a short passage at a time;
 * an audiobook — an .mp3/.m4b/.m4a/.ogg file, or a folder of them for one book — is played on a speaker.
 
 Every book keeps a bookmark per speaker, so a bedtime book in one room doesn't move another room's
@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from html.parser import HTMLParser
 import os
 import posixpath
 import re
-from typing import Any
 import zipfile
+from html.parser import HTMLParser
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Any
 
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
@@ -29,9 +31,10 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_BOOKS, CONF_BOOKS_FOLDER, DEFAULT_BOOKS_FOLDER, DOMAIN
+from .media_files import media_file, walk_media
 
 STORAGE_VERSION = 1
-EBOOK = {".epub", ".txt"}
+EBOOK = {".epub", ".mobi", ".txt"}
 AUDIO = {".mp3": "audio/mpeg", ".m4b": "audio/mp4", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".opus": "audio/ogg"}
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,27 +76,62 @@ def _html_text(html: str) -> str:
     return "\n".join(" ".join(line.split()) for line in "".join(p.parts).splitlines() if line.strip())
 
 
-def read_chapters(path: str) -> list[dict[str, Any]]:
-    """[{title, passages: [str]}] for an .epub or .txt file; empty when it is too big or can't be read."""
+def read_chapters(path: str, relative: str | None = None) -> list[dict[str, Any]]:
+    """Read an ebook as chapters and passages, optionally resolving it inside a catalog."""
+    if relative is not None:
+        file = media_file(path, relative)
+        if file is None:
+            return []
+        path = os.fspath(file)
     try:
         if os.path.getsize(path) > MAX_BOOK_BYTES:
             _LOGGER.warning("Book %s is over %d MB and was skipped", os.path.basename(path), MAX_BOOK_BYTES // 1024 // 1024)
             return []
         return _read_chapters(path)
-    except (OSError, zipfile.BadZipFile, KeyError, AttributeError, ValueError) as err:
+    except (OSError, zipfile.BadZipFile, AttributeError, LookupError, ValueError) as err:
         _LOGGER.warning("Couldn't read book %s: %s", os.path.basename(path), err)
         return []
 
 
+def _plain_chapters(text: str) -> list[tuple[str, str]]:
+    chapters = []
+    parts = re.split(r"\n\s*(?=(?:chapter|part)\s+[\w ]{1,30}\n)", text, flags=re.IGNORECASE)
+    for n, part in enumerate(parts, 1):
+        first = part.strip().splitlines()[0] if part.strip() else ""
+        chapters.append((first[:60] if re.match(r"(chapter|part)\b", first, re.IGNORECASE) else f"Part {n}", part))
+    return chapters
+
+
+def _read_mobi(path: str) -> list[dict[str, Any]]:
+    # Use a caller-owned directory so failures during unpacking also clean up.
+    with TemporaryDirectory(prefix="sentient-mobi-") as directory:
+        try:
+            from mobi.kindleunpack import unpackBook
+
+            unpackBook(path, directory, epubver="A")
+        except Exception as err:  # KindleUnpack can raise different errors for invalid books.
+            raise ValueError("could not unpack the MOBI file") from err
+
+        epub = Path(directory, "mobi8", Path(path).with_suffix(".epub").name)
+        if epub.is_file():
+            return read_chapters(os.fspath(epub))
+        html = Path(directory, "mobi7", "book.html")
+        if not html.is_file() or html.stat().st_size > MAX_BOOK_BYTES:
+            return []  # Print Replica MOBIs contain a PDF instead of ebook text.
+        content = html.read_bytes()
+        charset = re.search(rb"<meta\b[^>]*\bcharset\s*=\s*[\"']?([\w-]+)", content[:4096], re.IGNORECASE)
+        encoding = charset[1].decode("ascii") if charset else "utf-8"
+        return _passages(_plain_chapters(_html_text(content.decode(encoding, errors="replace"))))
+
+
 def _read_chapters(path: str) -> list[dict[str, Any]]:
     chapters: list[tuple[str, str]] = []
-    if path.lower().endswith(".txt"):
+    suffix = os.path.splitext(path)[1].lower()
+    if suffix == ".mobi":
+        return _read_mobi(path)
+    if suffix == ".txt":
         with open(path, encoding="utf-8", errors="replace") as f:
-            text = f.read()
-        parts = re.split(r"\n\s*(?=(?:chapter|part)\s+[\w ]{1,30}\n)", text, flags=re.I)
-        for n, part in enumerate(parts, 1):
-            first = part.strip().splitlines()[0] if part.strip() else ""
-            chapters.append((first[:60] if re.match(r"(chapter|part)\b", first, re.I) else f"Part {n}", part))
+            chapters = _plain_chapters(f.read())
     else:
         with zipfile.ZipFile(path) as z:
             container = z.read("META-INF/container.xml").decode("utf-8", "replace")
@@ -121,6 +159,10 @@ def _read_chapters(path: str) -> list[dict[str, Any]]:
                     continue  # covers, title pages, contents
                 title = text.splitlines()[0][:60]
                 chapters.append((title, text))
+    return _passages(chapters)
+
+
+def _passages(chapters: list[tuple[str, str]]) -> list[dict[str, Any]]:
     out = []
     for title, text in chapters:
         passages, cur = [], ""
@@ -141,22 +183,26 @@ def _read_chapters(path: str) -> list[dict[str, Any]]:
 
 
 def scan(base: str) -> list[dict[str, Any]]:
-    """Every book in the folder: [{name, kind: ebook|audio, files: [relative paths]}]."""
-    if not os.path.isdir(base):
-        return []
+    """Find books by title, keeping their catalog names distinct across folders."""
     out = []
-    for entry in sorted(os.listdir(base)):
-        full = os.path.join(base, entry)
-        stem, ext = os.path.splitext(entry)
-        if os.path.isdir(full):
-            tracks = sorted(f for f in os.listdir(full) if os.path.splitext(f)[1].lower() in AUDIO)
-            if tracks:
-                out.append({"name": entry, "kind": "audio", "files": [f"{entry}/{t}" for t in tracks]})
-        elif ext.lower() in EBOOK:
-            out.append({"name": stem, "kind": "ebook", "files": [entry]})
-        elif ext.lower() in AUDIO:
-            out.append({"name": stem, "kind": "audio", "files": [entry]})
-    return out
+    for directory, entries in walk_media(base):
+        tracks = []
+        for entry in entries:
+            title, ext = os.path.splitext(entry)
+            relative = os.path.join(directory, entry)
+            if ext.lower() in EBOOK:
+                out.append({"name": relative if directory else title, "title": title, "kind": "ebook", "files": [relative]})
+            elif ext.lower() in AUDIO:
+                if directory:
+                    tracks.append(relative)
+                else:
+                    out.append({"name": title, "title": title, "kind": "audio", "files": [relative]})
+        if tracks:
+            title = os.path.basename(directory)
+            # Keep the old bookmark name for audiobook folders directly under the root.
+            name = f"{directory}/" if "/" in directory else title
+            out.append({"name": name, "title": title, "kind": "audio", "files": tracks})
+    return sorted(out, key=lambda book: book["name"])
 
 
 def _words(text: str) -> set[str]:
@@ -164,14 +210,30 @@ def _words(text: str) -> set[str]:
 
 
 def match(books: list[dict[str, Any]], title: str) -> dict[str, Any] | None:
+    requested = title.strip().rstrip("/")
+    for book in books:
+        if book["name"].rstrip("/") == requested:
+            return book
+    requested = requested.casefold()
+    if "/" in requested:
+        # A saved path must never resume a different copy if the file has gone.
+        matches = [book for book in books if book["name"].rstrip("/").casefold() == requested]
+        return matches[0] if len(matches) == 1 else None
+
     want = _words(title)
-    best, score = None, 0
+    best, score = None, (False, 0, 0)
     for b in books:
-        if b["name"].lower() == title.strip().lower():
+        if b["name"].casefold() == requested:
             return b
-        s = len(want & _words(b["name"]))
+        same_title = b["title"].casefold() == requested
+        shared = len(want & _words(b["title"]))
+        if not same_title and not shared:
+            continue
+        s = (same_title, shared, len(want & _words(b["name"])))
         if s > score:
             best, score = b, s
+        elif s == score:
+            best = None
     return best
 
 
@@ -245,10 +307,11 @@ class Books:
         return await self.hass.async_add_executor_job(scan, self.folder())
 
     async def _chapters_of(self, book: dict[str, Any]) -> list[dict[str, Any]]:
-        if book["name"] not in self._chapters:
-            path = os.path.join(self.folder(), book["files"][0])
-            self._chapters[book["name"]] = await self.hass.async_add_executor_job(read_chapters, path)
-        return self._chapters[book["name"]]
+        folder, relative = self.folder(), book["files"][0]
+        path = os.path.join(folder, relative)
+        if path not in self._chapters:
+            self._chapters[path] = await self.hass.async_add_executor_job(read_chapters, folder, relative)
+        return self._chapters[path]
 
     def is_echo(self, speaker: str) -> bool:
         entry = er.async_get(self.hass).async_get(speaker)
@@ -273,7 +336,7 @@ class Books:
     def listing(self) -> list[dict[str, Any]]:
         out = []
         for key, mark in self.marks.items():
-            book, speaker = key.split("|", 1)
+            book, speaker = key.rsplit("|", 1)
             st = self.hass.states.get(speaker)
             out.append({"book": book, "speaker": st.name if st else speaker, "where": mark.get("where", ""),
                         "when": mark.get("when"), "reading": speaker in self.reading and self.reading[speaker]["book"] == book})
@@ -288,7 +351,7 @@ class Books:
         if generation != getattr(speech, "_privacy_generation", 0):
             return {"error": "The reading request is no longer current. Please ask again."}
         if not books:
-            return {"error": f"no books yet — put .epub, .txt or audiobook files in the media folder '{self.options.get(CONF_BOOKS_FOLDER) or DEFAULT_BOOKS_FOLDER}'"}
+            return {"error": f"no books yet — put .epub, .mobi, .txt or audiobook files in the media folder '{self.options.get(CONF_BOOKS_FOLDER) or DEFAULT_BOOKS_FOLDER}'"}
         name = title or self.last.get(speaker)
         book = match(books, name) if name else None
         if book is None:
@@ -328,7 +391,7 @@ class Books:
             info["task"] = task
         start = "Starting" if (ch, ps) == (0, 0) else "Picking up in"
         return {"book": book["name"], "reading": True, "where": where, "for_minutes": minutes,
-                "say_first": f"{start} {where}." if (ch, ps) != (0, 0) else f"Starting {book['name']}.",
+                "say_first": f"{start} {where}." if (ch, ps) != (0, 0) else f"Starting {book['title']}.",
                 "note": "Say say_first in a few words; the reading starts on that speaker straight after."}
 
     def _mark(self, book: str, speaker: str, ch: int, ps: int, chapters: list[dict[str, Any]]) -> None:
@@ -400,7 +463,7 @@ class Books:
                     if not await speech.async_read_aloud(f"Chapter {ch + 1}.", speaker, story=True):
                         return
             if current():
-                await speech.async_read_aloud(f"That's the end of {book['name']}.", speaker, story=True)
+                await speech.async_read_aloud(f"That's the end of {book['title']}.", speaker, story=True)
         finally:
             info = self.reading.get(speaker)
             if info and session is not None and info.get("session") is session:
@@ -462,7 +525,12 @@ class Books:
         track = min(mark.get("track", 0), len(book["files"]) - 1)
         position = float(mark.get("position") or 0)
         await self._play_track(book, speaker, player, track, position)
-        unsub = async_track_state_change_event(self.hass, [player], lambda e: self._audio_changed(e, book, speaker, player))
+
+        @callback
+        def changed(event: Event) -> None:
+            self._audio_changed(event, book, speaker, player)
+
+        unsub = async_track_state_change_event(self.hass, [player], changed)
         task = None
         if minutes:
             task = self.hass.async_create_background_task(self._sleep_timer(speaker, minutes), "sentient book timer")
@@ -471,7 +539,7 @@ class Books:
         where = f"part {track + 1} of {len(book['files'])}" if len(book["files"]) > 1 else ""
         mins = int(position // 60)
         return {"book": book["name"], "playing": True, "on": player,
-                "say_first": (f"Picking up {mins} minutes in" + (f" to {where}" if where else "") + ".") if position > 30 else f"Starting {book['name']}."}
+                "say_first": (f"Picking up {mins} minutes in" + (f" to {where}" if where else "") + ".") if position > 30 else f"Starting {book['title']}."}
 
     async def _play_track(self, book, speaker, player, track, position) -> None:
         rel = book["files"][track]
@@ -494,7 +562,7 @@ class Books:
     def _audio_changed(self, event: Event, book, speaker, player) -> None:
         old, new = event.data.get("old_state"), event.data.get("new_state")
         info = self.reading.get(speaker)
-        if not info or new is None:
+        if not info or info.get("audio") is not book or new is None:
             return
         if old is not None and old.state == "playing" and new.state in ("idle", "off"):
             dur, pos = _num(old.attributes.get("media_duration")), self._position(old)
@@ -543,11 +611,12 @@ class Books:
 
     @callback
     def _stop(self, speaker: str, save: bool) -> str | None:
-        info = self.reading.pop(speaker, None)
+        info = self.reading.get(speaker)
         if not info:
             return None
         if save and "player" in info:
             self._save_audio(speaker)
+        self.reading.pop(speaker)
         if info.get("unsub"):
             info["unsub"]()
         if (task := info.get("task")) is not None and not task.done():
@@ -575,6 +644,8 @@ class Books:
         if book is None or book["kind"] != "ebook":
             return {"error": "that only works for a book being read aloud"}
         chapters = await self._chapters_of(book)
+        if not chapters:
+            return {"error": f"couldn't find any text in {book['name']} (is it DRM-free?)"}
         mark = self.place(book["name"], speaker) or {"chapter": 0, "passage": 0}
         ch, ps = mark["chapter"], mark["passage"]
         if how == "next_chapter":

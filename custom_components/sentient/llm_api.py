@@ -1491,7 +1491,8 @@ class ManualTool(_Tool):
     description = (
         "Answer from the household's own documents (appliance manuals, warranties, receipts) — e.g. 'what filter does "
         "the air purifier need?', 'how do I descale the coffee machine?', 'when does the boiler warranty end?'. "
-        "'question' is what they asked; 'document' the appliance or document name if they said it. Say the page "
+        "'question' is what they asked; 'document' the appliance or document name if they said it. Include the "
+        "folder path when distinguishing documents with the same name. Say the page "
         "or section the answer is on when the result gives one."
     )
     parameters = vol.Schema({vol.Required("question"): cv.string, vol.Optional("document"): cv.string})
@@ -1697,6 +1698,7 @@ class BookTool(_Tool):
         "last time?', 'what books are there?'. Always use this for a book or story in the books folder: never read, "
         "retell or make up its text yourself. action: read (title optional — the last book on this speaker; minutes "
         "optional), resume, pause, stop, next_chapter, previous_chapter, back, restart, where, recap, list. "
+        "When several books have the same title, ask which folder and use the catalog title with its folder path. "
         "'speaker' only if they name another room."
     )
     parameters = vol.Schema({
@@ -1765,7 +1767,8 @@ class RecipeTool(_Tool):
         "Recipes and step-by-step cooking — 'let's make the lasagne', 'what can I make with chicken?', 'next', 'repeat "
         "that', 'go back', 'what's after this?', 'go to step 5', 'make it for 6', 'add the ingredients to the shopping "
         "list', 'stop cooking'. action: find (query), cook (query; servings optional), next, previous, repeat, peek, "
-        "goto (step), shopping, stop. Read each step as given; when a step has timer_minutes, offer the speaker's own timer."
+        "goto (step), shopping, stop. Use the folder-qualified recipe name when titles are the same. "
+        "Read each step as given; when a step has timer_minutes, offer the speaker's own timer."
     )
     parameters = vol.Schema({
         vol.Required("action"): vol.In(["find", "cook", "next", "previous", "repeat", "peek", "goto", "shopping", "stop"]),
