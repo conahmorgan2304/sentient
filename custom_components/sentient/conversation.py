@@ -830,12 +830,19 @@ class BackedUpAgent(conversation.ConversationEntity):
         from .voice_id import private_history
 
         if (not synthetic and not (explicit or cautious or changed_speaker)
-                and options.get("voice_lists", True) and SHOW.fullmatch(user_input.text or "")
+                and options.get("voice_lists", True) and (show := SHOW.fullmatch(user_input.text or ""))
                 and not private_history(rt, user_input.device_id)):
-            result = await handle_list(self.hass, "show", [], None, options.get("recipes_list"),
+            list_name = show["todo"] or ("lista zadań" if show["tasks"] else None)
+            result = await handle_list(self.hass, "show", [], list_name, options.get("recipes_list"),
                                        context=user_input.context)
-            said = await list_reply(self.hass, result, self._reply_language(user_input) or user_input.language)
-            return self._instant_reply(user_input, said)
+            language = self._reply_language(user_input) or user_input.language
+            said = await list_reply(self.hass, result, language)
+            if self._history_generation() != privacy or private_history(rt, user_input.device_id):
+                said = await list_reply(self.hass, {"error": "The list is unavailable."}, language)
+                return self._instant_reply(user_input, said)
+            reply = self._instant_reply(user_input, said)
+            reply.continue_conversation = bool(result.get("lists"))
+            return reply
 
         flags: dict = {}
         token, ftoken = current_request.set(user_input.text), turn_flags.set(flags)

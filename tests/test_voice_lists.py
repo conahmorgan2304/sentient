@@ -118,6 +118,29 @@ async def test_polish_list_uses_authoritative_names_and_quantities(hass):
         provider.assert_not_awaited()
 
 
+async def test_voice_reads_the_to_do_list_instead_of_the_shopping_default(hass):
+    from unittest.mock import AsyncMock, patch
+
+    from tests.test_voice_sessions_control import agent, request
+
+    shopping = "todo.shopping_list"
+    tasks = "todo.to_do"
+    hass.states.async_set(shopping, "1", {"friendly_name": "Shopping List"})
+    hass.states.async_set(tasks, "1", {"friendly_name": "To-do List"})
+
+    async def get_items(call):
+        entity = call.data["entity_id"]
+        return {entity: {"items": [{"summary": "Phone the plumber" if entity == tasks else "Milk",
+                                   "status": "needs_action"}]}}
+
+    hass.services.async_register("todo", "get_items", get_items, supports_response=SupportsResponse.ONLY)
+    obj, _ = agent(hass, {"voice_lists": True, "recipes_list": shopping})
+    with patch.object(obj, "_async_process_legacy", AsyncMock()) as provider:
+        reply = await obj.async_process(request("What's on my to-do list?"))
+        assert reply.response.speech["plain"]["speech"] == "To-do List. To do: Phone the plumber"
+        provider.assert_not_awaited()
+
+
 async def test_duplicate_items_are_ambiguous_and_rename_is_verified(hass):
     store = _fake_list(hass, [{"summary": "2 Bułki", "status": "needs_action", "uid": "a"},
                              {"summary": "2 Bułki", "status": "needs_action", "uid": "b"}])

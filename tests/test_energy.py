@@ -150,3 +150,15 @@ def test_grid_meters_are_unique_and_aggregate_before_median() -> None:
         for stat, value in [("sensor.a", 1.0), ("sensor.b", 2.0)]
     }
     assert energy._usage(rows, meters, midnight, 1) == {"kwh": 3.0, "usual": 3.0}
+
+
+def test_grid_supports_legacy_import_flows_and_unified_sources() -> None:
+    prefs = {"energy_sources": [
+        {"type": "grid", "flow_from": [{"stat_energy_from": "sensor.legacy"},
+                                      {"stat_energy_from": "sensor.shared"}],
+         "flow_to": [{"stat_energy_to": "sensor.export"}]},
+        {"type": "grid", "stat_energy_from": "sensor.shared"},
+        {"type": "grid", "stat_energy_from": None, "stat_energy_to": "sensor.other_export"},
+        {"type": "solar", "stat_energy_from": "sensor.solar"},
+    ]}
+    assert energy._grid(prefs) == {"sensor.legacy", "sensor.shared"}

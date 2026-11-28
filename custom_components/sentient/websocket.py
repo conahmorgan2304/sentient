@@ -1065,8 +1065,8 @@ def ws_heating(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     vol.Optional("enabled", default=True): bool,
 })
 @websocket_api.require_admin
-@callback
-def ws_heating_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+@websocket_api.async_response
+async def ws_heating_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     from .heating_schedule import describe, enabled, heating_actions
 
     entry = _entry(hass)
@@ -1074,27 +1074,33 @@ def ws_heating_save(hass: HomeAssistant, connection, msg: dict[str, Any]) -> Non
         connection.send_error(msg["id"], "not_loaded", "Sentient is not set up")
         return
     rt = entry.runtime_data
-    if not enabled(rt.options):
-        connection.send_error(msg["id"], "off", "Heating schedules are switched off in Settings → Heating")
-        return
     if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d(:00)?", msg["time"]):
         connection.send_error(msg["id"], "invalid", "That isn't a time")
         return
     spec = {"entity_id": msg["entity_id"], "temperature": msg.get("temperature")}
-    _actions, why = heating_actions(hass, rt.options, spec)
-    if why:
-        connection.send_error(msg["id"], "invalid", why)
-        return
     at = msg["time"][:5]
     days = [d for d in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] if d in msg["days"]]
-    item = {"name": f"Heating: {describe(hass, spec)} at {at}", "time": f"{at}:00", "days": days, "enabled": msg["enabled"],
-            "silent": True, "made_by": "page", "heating": spec, "actions": _actions}
-    if msg.get("item_id"):
-        if msg["item_id"] not in rt.lists["alarms"].items or not rt.lists["alarms"].items[msg["item_id"]].get("heating"):
-            connection.send_error(msg["id"], "not_found", "That heating time is gone")
+    alarms = rt.lists["alarms"]
+    async with alarms.write_lock:
+        if not enabled(rt.options):
+            connection.send_error(msg["id"], "off", "Heating schedules are switched off in Settings → Heating")
             return
-        item["id"] = msg["item_id"]
-    rt.lists["alarms"].upsert(item)
+        actions, why = heating_actions(hass, rt.options, spec)
+        if why:
+            connection.send_error(msg["id"], "invalid", why)
+            return
+        item = {"name": f"Heating: {describe(hass, spec)} at {at}", "time": f"{at}:00", "days": days,
+                "enabled": msg["enabled"], "silent": True, "made_by": "page", "heating": spec, "actions": actions}
+        if item_id := msg.get("item_id"):
+            if not alarms.items.get(item_id, {}).get("heating"):
+                connection.send_error(msg["id"], "not_found", "That heating time is gone")
+                return
+            item["id"] = item_id
+        try:
+            await alarms.async_commit(lambda: alarms.upsert(item))
+        except OSError:
+            connection.send_error(msg["id"], "storage_error", "The schedule could not be saved.")
+            return
     connection.send_result(msg["id"], {"saved": item["name"]})
 
 

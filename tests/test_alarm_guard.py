@@ -198,3 +198,13 @@ async def test_explicit_polish_future_command_cannot_be_saved_as_reminder(hass):
         result = await api.async_call_tool(llm.ToolInput("sentient_remind", {"message": "Włącz lampę", "at": "20:00"}))
     assert "sentient_alarm" in getattr(result, "data", result)["error"]
     assert not entry.runtime_data.watches.watches
+
+
+def test_spoken_durations_route_to_scheduled_actions():
+    from custom_components.sentient.focus import future_device_request
+
+    assert future_device_request("Switch the lamp off in five minutes")
+    assert future_device_request("Turn the heater on in half an hour")
+    assert future_device_request("Turn the lamp on at midnight")
+    assert not future_device_request("Switch the lamp off now")
+    assert not future_device_request("Remind me to switch the lamp off in five minutes")

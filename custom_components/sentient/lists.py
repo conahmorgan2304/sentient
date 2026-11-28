@@ -28,9 +28,8 @@ CONF_VOICE_LISTS = "voice_lists"
 FILLER = {"the", "a", "an", "some", "of", "my", "our", "more", "any"}
 LIST_WORDS = re.compile(r"shopping list|to[- ]do list|list[ayę] zakup(?:ów|owa)|liście zakupów|"
                         r"lista zadań|liście zadań|liste (?:de courses|des tâches)|einkaufsliste", re.I)
-SHOW = re.compile(r"(?:what(?:'s| is) on (?:my |the |our )?(?:shopping|to[- ]do) list|"
-                  r"co (?:jest |mam )?na (?:mojej )?liście (?:zakupów|zadań)|"
-                  r"pokaż (?:mi )?listę (?:zakupów|zadań)|"
+SHOW = re.compile(r"(?:what(?:['’]s| is) on (?:my |the |our )?(?:shopping list|(?P<todo>to[- ]do list))|"
+                  r"(?:co (?:jest |mam )?na (?:mojej )?liście|pokaż (?:mi )?listę) (?:zakupów|(?P<tasks>zadań))|"
                   r"qu['’]est-ce qu['’]il y a sur (?:ma |la )?liste de courses)[? .]*", re.I)
 
 
@@ -85,7 +84,7 @@ def visible_lists(hass: HomeAssistant) -> list[Any]:
 
 
 def _list_key(text: str) -> str:
-    return " ".join(w for w in _words(text) if w not in ("list", "todo", "to", "do"))
+    return re.sub(r"\bto do\b", "todo", " ".join(w for w in _words(text) if w != "list"))
 
 
 def pick_list(hass: HomeAssistant, name: str | None, default: str | None = None,

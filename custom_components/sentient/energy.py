@@ -45,11 +45,15 @@ def _devices(prefs: dict[str, Any], hass: HomeAssistant) -> dict[str, str]:
 
 def _grid(prefs: dict[str, Any]) -> set[str]:
     """Unique electricity import statistics, not whole-house consumption."""
-    return {
-        source["stat_energy_from"]
-        for source in prefs.get("energy_sources", []) or []
-        if source.get("type") == "grid" and source.get("stat_energy_from")
-    }
+    meters = set()
+    for source in prefs.get("energy_sources", []) or []:
+        if source.get("type") != "grid":
+            continue
+        if stat := source.get("stat_energy_from"):
+            meters.add(stat)
+        meters.update(flow["stat_energy_from"] for flow in source.get("flow_from", []) or []
+                      if flow.get("stat_energy_from"))
+    return meters
 
 
 def enabled(hass: HomeAssistant) -> bool:
