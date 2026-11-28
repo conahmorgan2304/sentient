@@ -426,6 +426,7 @@ EVENT_WATCH_EXPIRED = f"{DOMAIN}_watch_expired"
 CONF_FULL_VOLUME_SPEAKERS = "full_volume_speakers"
 CONF_TTS_ENTITY = "tts_entity"
 CONF_SPEAK_HOUSE_LANGUAGE = "speak_house_language"  # Sentient's own English sentences said in the house's language
+CONF_STRICT_SPEECH_LANGUAGE = "strict_speech_language"
 CONF_HOUSE_LANGUAGE_TEXT = "house_language_text"  # Sentient's own written words (timeline, health, briefings shown) in the house's language
 CONF_MEDIA_SPEAKERS = "media_speakers"
 CONF_MEDIA_IMPORTANT_ONLY = "media_important_only"  # Echos: alarms, reminders and safety alerts only

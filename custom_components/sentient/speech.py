@@ -66,7 +66,7 @@ from .const import (
     PRIORITY_URGENT,
 )
 from .delivery import RoomLevels, delivered, playing_nearby, volume_control
-from .language import async_in_house_language, selected_language
+from .language import async_announcement_language, matches_spoken_language, selected_language, strict_spoken_language
 from .reasons import reason_for
 from .presence import ActivityTracker, area_of
 
@@ -607,7 +607,9 @@ class SpeechRouter:
         priority: str = "normal",
         targets: list[str] | None = None,
         source: str | None = None,
-        *, _spoken: str | None = None,
+        *,
+        translate_urgent: bool = False,
+        _spoken: str | None = None,
     ) -> SpeechResult:
         generation = self._privacy_generation
         text = clean_message(message, self.banned)
@@ -626,12 +628,15 @@ class SpeechRouter:
         if not speakers:
             return self._held("no_speaker", text, source)
         unheard = not targets and self.nobody_about
-        spoken = _spoken if _spoken is not None else await async_in_house_language(
-            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT
+        spoken = _spoken if _spoken is not None else await async_announcement_language(
+            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT,
+            critical=source == "critical", translate_urgent=translate_urgent and source != "critical",
         )
 
         if generation != self._privacy_generation:
             return SpeechResult(False, "cancelled", "", [])
+        if spoken is None:
+            return self._held("language_unavailable", text, source)
         if (held := self._gate(text, priority, source, check_duplicate=False)) is not None:
             return held
         speakers = list(dict.fromkeys(speakers))
@@ -828,6 +833,13 @@ class SpeechRouter:
         with measure('speech_delivery'):
             return await self._speak_timed(text, speakers, chime, original=original, prepare=prepare)
 
+    async def _announcement_pronunciation(self, text: str) -> str:
+        spoken = self.pronounce(text)
+        if (spoken != text and (lang := strict_spoken_language(self.hass, self.options))
+                and not await self.hass.async_add_executor_job(matches_spoken_language, spoken, lang)):
+            return text
+        return spoken
+
     async def _speak_timed(self, text: str, speakers: list[str], chime: bool | None = None, *,
                            original: str | None = None, prepare=None) -> list[dict[str, Any]]:
         """One request per destination; acceptance is not independent proof of audible sound."""
@@ -841,6 +853,7 @@ class SpeechRouter:
 
         prepare = prepare or ready
         key = _remark_key(original if original is not None else text)
+        pronunciation = await self._announcement_pronunciation(text) if original is not None else self.pronounce(text)
 
         async def send(eid):
             row = rows[eid]
@@ -851,15 +864,21 @@ class SpeechRouter:
             try:
                 if eid.startswith('assist_satellite.'):
                     domain, service = 'assist_satellite', 'announce'
-                    data, target = {'message': self.pronounce(text), 'preannounce': chime}, {'entity_id': [eid]}
+                    data, target = {'message': pronunciation, 'preannounce': chime}, {'entity_id': [eid]}
                 elif eid.startswith('media_player.') and _platform(self.hass, eid) == 'alexa_media':
                     domain, service = 'notify', 'alexa_media'
                     # Each call targets one Echo; use its entity ID directly.
                     kind = 'tts' if self.options.get(CONF_ALEXA_TTS_ONLY, False) or not chime else 'announce'
-                    data, target = {'message': self.pronounce(text), 'target': eid, 'data': {'type': kind}}, None
+                    data, target = {'message': pronunciation, 'target': eid, 'data': {'type': kind}}, None
                 elif eid.startswith('media_player.') and (tts := self.options.get(CONF_TTS_ENTITY)):
                     domain, service = 'tts', 'speak'
-                    data, target = {'media_player_entity_id': [eid], 'message': self.pronounce(text), 'cache': True}, {'entity_id': tts}
+                    data, target = {'media_player_entity_id': [eid], 'message': pronunciation, 'cache': True}, {'entity_id': tts}
+                    if original is not None and (preferred := strict_spoken_language(self.hass, self.options)):
+                        language = tts_language(self.hass, tts, preferred)
+                        if not language or language.lower().split('-')[0] != preferred.lower().split('-')[0]:
+                            row.update(status='unroutable', error='Text-to-speech does not support the selected language')
+                            return row
+                        data['language'] = language
                 else:
                     row.update(status='unroutable', error='No usable announcement or TTS service is configured')
                     return row
@@ -1009,9 +1028,14 @@ class SpeechRouter:
             if s.startswith("assist_satellite.") and (st := self.hass.states.get(s)) is not None
             and int(st.attributes.get("supported_features") or 0) & _START_CONVERSATION
         ]
-        spoken = await async_in_house_language(self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT)
+        spoken = await async_announcement_language(
+            self.hass, self.options, text, urgent=source == "critical" or priority == PRIORITY_URGENT,
+            critical=source == "critical",
+        )
         if generation != self._privacy_generation:
             return SpeechResult(False, "cancelled", "", [])
+        if spoken is None:
+            return self._held("language_unavailable", text, source)
         if on_answer is not None and not targets and self.nobody_about and self.phone is not None and self.phone.can_ask():
             # nobody near a speaker: ask on the phones, with Yes / No buttons
             if await self.phone.async_ask(spoken, on_answer):
@@ -1026,6 +1050,7 @@ class SpeechRouter:
             if generation != self._privacy_generation:
                 return SpeechResult(False, "cancelled", "", [])
             return await self.async_say(text, priority, candidates, source, _spoken=spoken)
+        pronunciation = await self._announcement_pronunciation(spoken)
         speaker = listening[0]
         prompt = (
             f'You have just asked the person: "{spoken}". Handle their reply: if they say yes, '
@@ -1050,7 +1075,7 @@ class SpeechRouter:
                     "assist_satellite",
                     "start_conversation",
                     {
-                        "start_message": self.pronounce(spoken),
+                        "start_message": pronunciation,
                         "extra_system_prompt": prompt,
                         "preannounce": self.chime if preannounce is None else preannounce,
                     },

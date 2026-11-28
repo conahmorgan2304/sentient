@@ -42,6 +42,7 @@ HELD_REASONS = {
     "no_speaker": "no speaker to say it on", "busy": "already saying something", "hourly_limit": "enough said this hour",
     "empty": "nothing to say", "holiday": "holiday mode (sent to phones instead)",
     "room_quiet": "that room's own quiet time",
+    "language_unavailable": "the selected speech language could not be verified",
 }
 
 

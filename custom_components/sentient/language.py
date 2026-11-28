@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 import asyncio
+from functools import lru_cache
 import json
 import logging
 import re
@@ -25,7 +26,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .ai import AIUnavailable, async_generate, gate
-from .const import CONF_AI_TASK_ENTITY, CONF_HOUSE_LANGUAGE_TEXT, CONF_SPEAK_HOUSE_LANGUAGE
+from .const import CONF_AI_TASK_ENTITY, CONF_HOUSE_LANGUAGE_TEXT, CONF_SPEAK_HOUSE_LANGUAGE, CONF_STRICT_SPEECH_LANGUAGE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -153,6 +154,79 @@ def spoken_language(hass: HomeAssistant, options=None) -> str | None:
     return house_language(hass, options) if options.get(CONF_SPEAK_HOUSE_LANGUAGE) else None
 
 
+def strict_spoken_language(hass: HomeAssistant, options) -> str | None:
+    return spoken_language(hass, options) if options.get(CONF_STRICT_SPEECH_LANGUAGE) else None
+
+
+@lru_cache(maxsize=1)
+def _language_detector():
+    from langdetect.detector_factory import PROFILES_DIRECTORY, DetectorFactory
+
+    detector = DetectorFactory()
+    detector.load_profile(PROFILES_DIRECTORY)
+    detector.set_seed(0)
+    return detector
+
+
+def matches_spoken_language(text: str, lang: str) -> bool:
+    """Require a positive local language match for each clause with words."""
+    try:
+        from langdetect.lang_detect_exception import LangDetectException
+    except ImportError:
+        return False
+
+    if len(text) > 10000:
+        return False
+    base = lang.lower().split("-")[0]
+    expected = {"zh-cn", "zh-tw"} if base == "zh" else {"no" if base in {"nb", "nn"} else base}
+    try:
+        factory = _language_detector()
+        for clause in re.split(r"(?<=\.)\s+|[\n!?;,：:。！？、，；—]+", text):
+            words = _WORD.findall(clause)
+            if not words:
+                continue
+            if _CONTRACTION.search(clause) or sum(word.casefold() in _ENGLISH for word in words) >= 3:
+                return False
+            detector = factory.create()
+            detector.append(clause)
+            candidates = detector.get_probabilities()
+            if not candidates or candidates[0].lang not in expected or candidates[0].prob < 0.85:
+                return False
+    except (LangDetectException, OSError, ImportError):
+        return False
+    return True
+
+
+async def async_announcement_language(
+    hass: HomeAssistant, options: dict[str, Any], text: str, *, urgent: bool, critical: bool = False,
+    translate_urgent: bool = False,
+) -> str | None:
+    """Localise routed speech. In strict mode only trusted or verified wording may be spoken."""
+    if not (lang := strict_spoken_language(hass, options)):
+        return await async_in_house_language(hass, options, text, urgent, translate_urgent=translate_urgent)
+
+    from . import phrases
+    from .voice_locale import safety_sentence
+
+    owner = gate(hass)
+    cache = _language_cache(owner) if owner is not None else None
+    generation = cache.generation if cache is not None else None
+    await phrases.async_load(hass, lang)
+    if urgent and (label := safety_sentence(text, lang, include_location=False)):
+        return label
+    fixed = phrases.label(text, lang)
+    if fixed != text:
+        return fixed
+    if critical:
+        # The critical event and configured phone notification retain the complete details.
+        return safety_sentence("Alert", lang, include_location=False)
+    if await hass.async_add_executor_job(matches_spoken_language, text, lang):
+        return text
+    if cache is not None and generation == cache.generation:
+        return await _async_cached_translation(hass, options, text, lang, owner, cache, generation, verify=True)
+    return None
+
+
 def language_name(lang: str | None) -> str:
     """"Polish" for pl; British English when there's no other language."""
     if not lang:
@@ -179,7 +253,8 @@ def write_in_line(hass: HomeAssistant, options=None, *, spoken: bool) -> str:
 
 
 async def async_in_house_language(
-    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *, known_english: bool = False
+    hass: HomeAssistant, options: dict[str, Any], text: str, urgent: bool = False, *,
+    known_english: bool = False, translate_urgent: bool = False,
 ) -> str:
     """What to actually say: *text* in the house's language, or *text* itself when that can't be done."""
     if not text or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
@@ -189,8 +264,7 @@ async def async_in_house_language(
     owner = gate(hass)
     if owner is None:
         return text
-    if (cache := getattr(owner, 'speech_language_cache', None)) is None:
-        cache = owner.speech_language_cache = TranslationCache()
+    cache = _language_cache(owner)
     generation = cache.generation
     key = (lang, text)
     # Sentient's own fixed sentences have a written translation: no AI, no waiting, even when urgent
@@ -207,9 +281,11 @@ async def async_in_house_language(
     if (fixed := phrases.translate(text, lang)) != text:
         return fixed
     if urgent:
-        return ((prepared_alert(cache, text, lang) if options.get('automatic_language') else None)
-                or cache.kept.get(key) or text)
-    if options.get('automatic_language'):
+        ready = (prepared_alert(cache, text, lang) if options.get('automatic_language') else None) or cache.kept.get(key)
+        if ready or not translate_urgent:
+            return ready or text
+        # Custom announcements can bypass quiet hours and still try translating this sentence.
+    elif options.get('automatic_language'):
         await async_prepare_language(hass, options)
         if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
             return text
@@ -227,15 +303,27 @@ async def async_in_house_language(
                     return main + ' ' + cache.pack['followup']
     if not known_english and not looks_english(text):
         return text
+    return await _async_cached_translation(hass, options, text, lang, owner, cache, generation)
+
+
+def _language_cache(owner):
+    if (cache := getattr(owner, 'speech_language_cache', None)) is None:
+        cache = owner.speech_language_cache = TranslationCache()
+    return cache
+
+
+async def _async_cached_translation(hass, options, text, lang, owner, cache, generation, *, verify=False):
+    key = (lang, text, verify) if verify else (lang, text)
+    fallback = None if verify else text
     if len(cache.translation_locks) >= KEEP and key not in cache.translation_locks:
-        return text
+        return fallback
     pending = cache.translation_locks.setdefault(key, {'lock': asyncio.Lock(), 'users': 0})
     pending['users'] += 1
     try:
         async with pending['lock']:
             if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
-                return text
-            return await _translate(hass, options, text, lang, owner, cache, key, generation)
+                return fallback
+            return await _translate(hass, options, text, lang, owner, cache, key, generation, verify=verify)
     finally:
         pending['users'] -= 1
         if not pending['users'] and cache.translation_locks.get(key) is pending:
@@ -249,20 +337,24 @@ def _translation_failed(cache, key, generation):
             cache.failed.popitem(last=False)
 
 
-async def _translate(hass, options, text, lang, owner, cache, key, generation):
+async def _translate(hass, options, text, lang, owner, cache, key, generation, *, verify=False):
+    fallback = None if verify else text
     if (kept := cache.kept.get(key)) is not None:
         cache.kept.move_to_end(key)
         return kept
     if cache.failed.get(key, 0) > time.monotonic():
-        return text
+        return fallback
     if not owner.spend(PURPOSE):
-        return text  # today's AI limit is used up: the English it is
+        return fallback
+    names = ("Translate room and device descriptions, including any English fragments. Preserve personal names "
+             "only when they are needed to understand the announcement. Use a complete sentence if the message is brief."
+             if verify else "Keep the names of people, rooms and devices exactly as written.")
     data: dict[str, Any] = {
         "task_name": "Sentient: speech language",
         "instructions": (
             f"A smart-home voice is about to say the sentence below out loud. Translate it into the language "
-            f"with the code '{lang}', short and natural for speech. Keep the names of people, rooms and "
-            "devices exactly as written. Preserve numbered choices and their order. Reply with the translated sentence only, no quotes. If it is "
+            f"with the code '{lang}', short and natural for speech. {names} "
+            "Preserve numbered choices and their order. Reply with the translated sentence only, no quotes. If it is "
             "already in that language, reply with it unchanged.\n\n"
             f'Sentence: "{text}"'
         ),
@@ -275,16 +367,17 @@ async def _translate(hass, options, text, lang, owner, cache, key, generation):
         with measure("translation"):
             response = await async_generate(hass, data, TIMEOUT)
     except AIUnavailable as err:
-        _LOGGER.debug("Said in English, the AI couldn't translate it: %s", err)
+        _LOGGER.debug("The AI couldn't translate the speech: %s", err)
         _translation_failed(cache, key, generation)
-        return text
+        return fallback
     raw = response.get("data") if isinstance(response, dict) else None
     out = " ".join(raw.split()).strip().strip("\"'«»“”") if isinstance(raw, str) else ""
-    if not out or len(out) > 3 * len(text) + 40:
+    if (not out or len(out) > 3 * len(text) + 40
+            or (verify and not await hass.async_add_executor_job(matches_spoken_language, out, lang))):
         _translation_failed(cache, key, generation)
-        return text
+        return fallback
     if generation != cache.generation or not options.get(CONF_SPEAK_HOUSE_LANGUAGE):
-        return text  # disabling/forgetting while the AI runs must not recreate deleted data
+        return fallback  # disabling/forgetting while the AI runs must not recreate deleted data
     cache.kept[key] = out
     while len(cache.kept) > KEEP:
         cache.kept.popitem(last=False)

@@ -5,7 +5,6 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
-from custom_components.sentient import language
 from custom_components.sentient.const import DOMAIN
 from custom_components.sentient.language import async_in_house_language, looks_english
 
@@ -59,6 +58,35 @@ async def test_english_sentence_is_said_in_the_house_language(hass: HomeAssistan
     assert len(ai) == 1 and "'fi'" in ai[0].data["instructions"] and "Pesukone Job's finished." in ai[0].data["instructions"]
 
 
+@pytest.mark.parametrize("automatic_language", [False, True])
+@pytest.mark.parametrize(("house_language", "reply"), [
+    ("fi", "Takaportti on avattu."),
+    ("de", "Das hintere Tor wurde geöffnet."),
+    ("fi", None),
+])
+async def test_custom_announcement_translates_during_quiet_hours(
+    hass: HomeAssistant, freezer, house_language: str, reply: str | None, automatic_language: bool,
+) -> None:
+    freezer.move_to("2026-11-28T12:00:00Z")
+    original = "The back gate has opened."
+    ai = await _setup(hass, reply=reply, house_language=house_language, automatic_language=automatic_language,
+                      quiet_start="00:00:00", quiet_end="23:59:59")
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    runtime = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
+    assert runtime.speech.quiet_hours_now()
+    item = runtime.lists["announce"].upsert({
+        "name": "Gate", "event_type": "test_gate_opened", "messages": original,
+    })
+    assert item["through_quiet"] is True
+
+    hass.bus.async_fire("test_gate_opened")
+    await hass.async_block_till_done()
+
+    assert [call.data["message"] for call in said] == [reply or original]
+    assert [call.data["task_name"] for call in ai] == ["Sentient: speech language"]
+    assert f"'{house_language}'" in ai[0].data["instructions"]
+
+
 async def test_each_sentence_is_translated_once(hass: HomeAssistant) -> None:
     ai = await _setup(hass)
     options = hass.config_entries.async_entries(DOMAIN)[0].data
@@ -110,6 +138,15 @@ async def test_safety_alert_uses_fixed_translation_without_ai_even_at_limit(hass
     said = async_mock_service(hass, "assist_satellite", "announce")
     await hass.services.async_call(DOMAIN, "say", {"message": "Smoke in the kitchen!", "priority": "urgent"}, blocking=True)
     assert said[0].data["message"] == "Savua havaittu: kitchen!" and not ai
+
+
+async def test_urgent_message_without_fixed_translation_does_not_wait_for_ai(hass: HomeAssistant) -> None:
+    ai = await _setup(hass, automatic_language=True)
+    said = async_mock_service(hass, "assist_satellite", "announce")
+    message = "Please check the downstairs sensor now."
+    await hass.services.async_call(DOMAIN, "say", {"message": message, "priority": "urgent"}, blocking=True)
+    assert [call.data["message"] for call in said] == [message]
+    assert not ai
 
 
 async def test_a_runaway_reply_is_not_said(hass: HomeAssistant) -> None:
