@@ -26,7 +26,8 @@
   "issue_tracker": "https://github.com/conahmorgan2304/sentient/issues",
   "requirements": [
     "pypdf>=5.1.0",
-    "num2words==0.5.14"
+    "num2words==0.5.14",
+    "langdetect==1.0.9"
   ],
   "version": "1.25.7"
 }

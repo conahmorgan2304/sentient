@@ -28,6 +28,14 @@ Ordinary English-looking sentences use the AI gateway with a ten-second limit an
 
 Custom announcements with **Say it even in quiet hours** still bypass quiet hours. With spoken translation enabled, they use any fixed or cached wording first and can wait up to ten seconds for a translation of the message. They skip preparing the phrase pack. If translation is unavailable, they say the original message.
 
+## Announcements and questions in the selected language only
+
+In **Settings → Voice → Language**, enable spoken translation, select the speech language and turn on **Use only the selected language for announcements**. This applies to messages and questions Sentient sends to speakers. Assist and Echo devices use their own configured voice. For other media players, Sentient requests the selected language from the configured TTS engine.
+
+Critical alerts use the built-in warning for their type immediately, including when the AI Task is unavailable. The speaker says the warning without a potentially untranslated device or room name. The timeline and configured phone notifications retain the full details. These offline warnings are available for languages with a bundled catalogue.
+
+For other messages, Sentient checks the language locally, using the existing AI Task and translation budget when it needs to translate. It holds the original in the timeline when the requested language is unsupported or the wording cannot be verified. Language detection is statistical, and short or mixed-language text can be ambiguous. Translations are cached in memory and cleared under the existing settings and privacy rules.
+
 The runtime owns the pack and translation cache. By default, Settings changes, forgetting recent data and unload clear both, including in-flight results. With the new **Remember common language phrases** option enabled, only the generic pack survives restarts and unrelated Settings changes; personal sentence translations remain memory-only. Disabling persistence, changing language/provider or forgetting clears saved phrases. [Details and diagnostic tools](CONVERSATION_RELIABILITY.md). Disabling Automatic language support clears prepared data and stops its preparation/conversation handling; the separate built-in speech translation option can remain on. Disable that too to stop all optional language work. Already dispatched AI requests cannot be recalled.
 
 Question-to-announcement fallback reuses a single translation attempt. Duplicate detection and follow-you delivery retain the original text. Actual spoken translations are returned by the speech engine, and automatic conversation replies update the waiting question text. Existing session history can still include the original deterministic wording recorded before the final translation.

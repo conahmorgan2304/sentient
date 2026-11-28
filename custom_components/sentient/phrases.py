@@ -165,6 +165,8 @@ _loaded: dict[str, Dictionary | None] = {}
 
 def _file_for(lang: str) -> Path | None:
     lang = lang.lower().replace("_", "-")
+    if lang == "no" or lang == "no-no":
+        lang = "nb"
     for name in (lang, lang.split("-")[0]):
         if re.fullmatch(r"[a-z]{2,3}(-[a-z0-9]{2,8})*", name) and (DIR / f"{name}.json").is_file():
             return DIR / f"{name}.json"

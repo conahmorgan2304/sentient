@@ -99,17 +99,17 @@ def _alert_words(language):
     return catalog if 'Alarm' in catalog else {}
 
 
-def safety_sentence(text, language):
+def safety_sentence(text, language, *, include_location=True):
     catalog = _alert_words(language)
     for original, translated in catalog.items():
         match = re.fullmatch(re.escape(original) + r'(?: in the |: )(.+?)[.!]*', text)
         if match:
-            return f'{translated}: {match[1]}!'
+            return f'{translated}: {match[1]}!' if include_location else translated + '!'
         if text.rstrip('.!') == original:
             return translated + '!'
     match = re.fullmatch(r'The (.+) has gone off!', text)
     if match and catalog:
-        return f"{catalog['Alarm']}: {match[1]}!"
+        return f"{catalog['Alarm']}: {match[1]}!" if include_location else catalog['Alarm'] + '!'
     return None
 
 FOLLOWUPS = {'fi': 'Voinko auttaa vielä jossakin?', 'fr': 'Puis-je vous aider avec autre chose ?'}
