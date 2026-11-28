@@ -73,6 +73,33 @@ async def test_a_document_is_found_by_what_it_says_when_its_name_doesnt_match(ha
     assert result["document"] == "Air purifier" and result["pages"] == ["page 4"]
 
 
+async def test_nested_manuals_are_found_by_contents_and_attached_by_relative_path(hass: HomeAssistant, tmp_path) -> None:
+    root = tmp_path / "manuals"
+    kitchen = root / "Appliances" / "Kitchen"
+    kitchen.mkdir(parents=True)
+    make_pdf(kitchen / "Quick start.pdf", PAGES)
+    garage = root / "Garage"
+    garage.mkdir()
+    make_pdf(garage / "Quick start.pdf", ["The recommended pressure for each tyre is thirty-two PSI."])
+    hass.config.media_dirs = {"local": str(tmp_path)}
+    rt = _rt(hass, tmp_path)
+
+    found = await async_answer(hass, rt, "how long is the guarantee?")
+    assert found["document"] == "Appliances/Kitchen/Quick start" and found["pages"] == ["page 4"]
+    assert (await hass.async_add_executor_job(pages.status, rt.brain.db))["documents"] == 2
+
+    ambiguous = await async_answer(hass, rt, "which filter?", "Quick start")
+    assert ambiguous["documents"] == ["Appliances/Kitchen/Quick start", "Garage/Quick start"]
+
+    rt.ai.async_call.side_effect = [{"data": "NOT_HERE"}, {"data": "The tyre pressure is thirty-two PSI."}]
+    result = await async_answer(hass, rt, "what pressure should I use?", "Garage/Quick start")
+    assert result["document"] == "Garage/Quick start"
+    assert rt.ai.async_call.call_args.args[0]["attachments"] == [{
+        "media_content_id": "media-source://media_source/local/manuals/Garage/Quick start.pdf",
+        "media_content_type": "application/pdf",
+    }]
+
+
 async def test_pages_that_dont_answer_fall_back_to_the_whole_document(hass: HomeAssistant, tmp_path) -> None:
     _folder(hass, tmp_path)
     rt = _rt(hass, tmp_path)

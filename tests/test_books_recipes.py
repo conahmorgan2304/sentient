@@ -1,6 +1,7 @@
 """Books (ebooks read aloud, audiobooks played, bookmarks per speaker) and recipes (cooking mode)."""
 
 import asyncio
+from struct import pack, pack_into
 from unittest.mock import AsyncMock, patch
 import zipfile
 
@@ -23,6 +24,23 @@ def _epub(path):
                                      '<spine><itemref idref="c1"/><itemref idref="c2"/></spine></package>')
         z.writestr("OEBPS/c1.xhtml", CHAPTER)
         z.writestr("OEBPS/c2.xhtml", CHAPTER.replace("One", "Two"))
+
+
+def _mobi(path, *, encrypted=False):
+    """Write two short chapters as an uncompressed Mobipocket 6 file."""
+    content = ("<html><head></head><body><h1>Chapter One</h1><p>Café in the story.</p>"
+               "<h1>Chapter Two</h1><p>Another page.</p></body></html>").encode("cp1252")
+    header = bytearray(16 + 0xe4)
+    pack_into(">HHIHHHH", header, 0, 1, 0, len(content), 1, 4096, int(encrypted), 0)
+    pack_into(">4sIIIII", header, 16, b"MOBI", 0xe4, 2, 1252, 1, 6)
+    for offset in (0x28, 0x2c, 0x50, 0x6c):
+        pack_into(">I", header, offset, 0xffffffff)  # optional indexes and resources are absent
+    database = bytearray(78)
+    database[60:68] = b"BOOKMOBI"
+    pack_into(">H", database, 76, 2)
+    first_record = len(database) + 18  # two record entries and two bytes of padding
+    records = pack(">IIIIH", first_record, 1, first_record + len(header), 2, 0)
+    path.write_bytes(database + records + header + content)
 
 
 async def _setup(hass, tmp_path, **extra):
@@ -56,6 +74,72 @@ def test_epub_and_txt_become_chapters_and_passages(tmp_path) -> None:
     (tmp_path / "Narnia" / "02.mp3").write_bytes(b"x"); (tmp_path / "Narnia" / "01.mp3").write_bytes(b"x")
     books = {b["name"]: b for b in scan(str(tmp_path))}
     assert books["Flump"]["kind"] == "ebook" and books["Narnia"]["files"] == ["Narnia/01.mp3", "Narnia/02.mp3"]
+
+
+def test_unreadable_mobi_is_skipped(tmp_path) -> None:
+    encrypted = tmp_path / "Protected.mobi"
+    _mobi(encrypted, encrypted=True)
+    assert read_chapters(str(encrypted)) == []
+    damaged = tmp_path / "Damaged.mobi"
+    damaged.write_bytes(b"broken MOBI")
+    assert read_chapters(str(damaged)) == []
+
+
+async def test_nested_ebooks_are_listed_and_keep_distinct_bookmarks(hass: HomeAssistant, tmp_path) -> None:
+    from custom_components.sentient.focus import via_alexa
+
+    books = tmp_path / "books"
+    (books / "Fiction" / "Romance").mkdir(parents=True)
+    (books / "Mystery").mkdir()
+    _mobi(books / "Fiction" / "Romance" / "Tale.MOBI")
+    (books / "Mystery" / "Tale.txt").write_text("A different story.", encoding="utf-8")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "Private.txt").write_text("A private document.", encoding="utf-8")
+    (books / "Linked shelf").symlink_to(outside, target_is_directory=True)
+    (books / "Linked book.txt").symlink_to(outside / "Private.txt")
+
+    entry, device = await _setup(hass, tmp_path, books=True)
+    api = await _api(hass, device)
+    listed = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "list"}))
+    assert [item["title"] for item in listed["books"]] == ["Fiction/Romance/Tale.MOBI", "Mystery/Tale.txt"]
+
+    token = via_alexa.set(True)
+    try:
+        ambiguous = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "Tale"}))
+        assert ambiguous["error"] == "which book?"
+        first = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "Romance Tale"}))
+        assert "Café in the story." in first["read_aloud"]
+        other = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "read", "title": "Mystery/Tale.txt"}))
+        assert other["read_aloud"] == "A different story."
+        bookmarks = entry.runtime_data.books
+        assert bookmarks.place("Fiction/Romance/Tale.MOBI", "assist_satellite.bedroom")["chapter"] == 1
+        assert bookmarks.place("Mystery/Tale.txt", "assist_satellite.bedroom")["chapter"] == 0
+        resumed = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "resume"}))
+        assert resumed["book"] == "Mystery/Tale.txt" and resumed["finished"]
+        (books / "Mystery" / "Tale.txt").unlink()
+        missing = await api.async_call_tool(llm.ToolInput(tool_name="sentient_book", tool_args={"action": "resume"}))
+        assert missing["error"] == "which book?"
+    finally:
+        via_alexa.reset(token)
+
+
+async def test_nested_multipart_audiobook_plays_tracks_in_order(hass: HomeAssistant, tmp_path) -> None:
+    album = tmp_path / "books" / "Fiction" / "The Long Story"
+    album.mkdir(parents=True)
+    (album / "02.mp3").write_bytes(b"x")
+    (album / "01.mp3").write_bytes(b"x")
+    entry, _ = await _setup(hass, tmp_path, books=True)
+    play = async_mock_service(hass, "media_player", "play_media")
+    speaker = "assist_satellite.bedroom"
+    await entry.runtime_data.books.async_read("The Long Story", speaker)
+    hass.states.async_set("media_player.bedroom", "playing", {"media_position": 119, "media_duration": 120})
+    hass.states.async_set("media_player.bedroom", "idle")
+    await hass.async_block_till_done()
+    assert [item.data["media_content_id"] for item in play] == [
+        "media-source://media_source/local/books/Fiction/The Long Story/01.mp3",
+        "media-source://media_source/local/books/Fiction/The Long Story/02.mp3",
+    ]
 
 
 async def test_reading_keeps_the_place_and_picks_up(hass: HomeAssistant, tmp_path) -> None:
@@ -164,6 +248,27 @@ async def test_cooking_from_a_file(hass: HomeAssistant, tmp_path) -> None:
         await api.async_call_tool(llm.ToolInput(tool_name="sentient_recipe", tool_args={"action": "shopping"}))
         await rt.recipes.async_cook("lasagne", "other")  # opened again: no second AI call
     assert ai.await_count == 1 and len(added) == 2
+
+
+async def test_nested_recipes_with_the_same_name_load_from_the_selected_folder(hass: HomeAssistant, tmp_path) -> None:
+    root = tmp_path / "recipes"
+    for category in ("Desserts/Weekend", "Dinner"):
+        folder = root / category
+        folder.mkdir(parents=True)
+        (folder / "Pie.pdf").write_bytes(b"%PDF")
+    entry, device = await _setup(hass, tmp_path, recipes=True)
+    api = await _api(hass, device)
+    ai = AsyncMock(return_value={"data": {"steps": ["Bake the pie."]}})
+    with patch.object(entry.runtime_data.ai, "async_call", ai):
+        found = await api.async_call_tool(llm.ToolInput(tool_name="sentient_recipe", tool_args={"action": "find", "query": "pie"}))
+        assert found["recipes"] == ["Desserts/Weekend/Pie", "Dinner/Pie"]
+        ambiguous = await api.async_call_tool(llm.ToolInput(tool_name="sentient_recipe", tool_args={"action": "cook", "query": "pie"}))
+        assert ambiguous["which"] == found["recipes"]
+        for title in found["recipes"]:
+            result = await api.async_call_tool(llm.ToolInput(tool_name="sentient_recipe", tool_args={"action": "cook", "query": title}))
+            assert result["recipe"] == "Pie" and result["steps"] == 1
+            assert ai.call_args.args[0]["attachments"][0]["media_content_id"] == f"media-source://media_source/local/recipes/{title}.pdf"
+    assert ai.await_count == 2
 
 
 async def test_mealie_recipe_needs_no_ai(hass: HomeAssistant, tmp_path) -> None:

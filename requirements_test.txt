@@ -7,3 +7,4 @@ PyTurboJPEG
 pypdf>=5.1.0
 num2words==0.5.14
 langdetect==1.0.9
+mobi==0.4.1

@@ -28,6 +28,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_RECIPES, CONF_RECIPES_FOLDER, CONF_RECIPES_LIST, CONF_TANDOOR_TOKEN, CONF_TANDOOR_URL, DEFAULT_RECIPES_FOLDER, DOMAIN,
 )
+from .media_files import walk_media
 
 STORAGE_VERSION = 1
 FILES = {".pdf": "application/pdf", ".txt": "text/plain", ".md": "text/plain", ".jpg": "image/jpeg",
@@ -100,10 +101,17 @@ class Recipes:
 
     def _files(self) -> list[tuple[str, float]]:
         path, _ = self._folder()
-        if not os.path.isdir(path):
-            return []
-        return sorted((f, os.path.getmtime(os.path.join(path, f))) for f in os.listdir(path)
-                      if os.path.splitext(f)[1].lower() in FILES)
+        found = []
+        for directory, entries in walk_media(path):
+            for entry in entries:
+                if os.path.splitext(entry)[1].lower() not in FILES:
+                    continue
+                relative = os.path.join(directory, entry)
+                try:
+                    found.append((relative, os.path.getmtime(os.path.join(path, relative))))
+                except OSError:
+                    continue  # the file disappeared or became inaccessible during the scan
+        return sorted(found)
 
     def _mealie_entry(self):
         entries = [e for e in self.hass.config_entries.async_entries("mealie") if e.state.value == "loaded"]
@@ -132,7 +140,9 @@ class Recipes:
                     found.append((len(want & _words(r.get("name", ""))) + 1, {"name": r.get("name", ""), "source": "tandoor", "ref": str(r.get("id"))}))
             except Exception:  # noqa: BLE001
                 pass
-        found.sort(key=lambda x: -x[0])
+        requested = query.strip().casefold()
+        found.sort(key=lambda x: ("/" in requested and x[1]["source"] == "folder"
+                                 and x[1]["name"].casefold() == requested, x[0]), reverse=True)
         if want:
             found = [f for f in found if f[0] > 0] or found
         return [f for _, f in found][:10]
@@ -177,7 +187,7 @@ class Recipes:
             return {"name": r.get("name") or item["name"], "servings": r.get("recipe_yield") or r.get("servings"),
                     "ingredients": [i for i in ingredients if i], "steps": steps}
         # a file: tidied by the AI once, then kept
-        path, prefix = self._folder()
+        _, prefix = self._folder()
         files = dict(await self.hass.async_add_executor_job(self._files))
         if item["ref"] not in files:
             return None
@@ -207,7 +217,7 @@ class Recipes:
         except AIUnavailable:
             return None
         data = (resp or {}).get("data") or {}
-        recipe = {"name": data.get("name") or item["name"], "servings": data.get("servings"),
+        recipe = {"name": data.get("name") or os.path.basename(item["name"]), "servings": data.get("servings"),
                   "ingredients": list(data.get("ingredients") or []), "steps": list(data.get("steps") or [])}
         if recipe["steps"]:
             self.parsed[key] = recipe
@@ -233,8 +243,17 @@ class Recipes:
         if not matches:
             return {"error": f"I couldn't find a recipe for {query}"}
         best = matches[0]
-        if len(matches) > 1 and not (_words(query) <= _words(best["name"])) and (_words(query) & _words(matches[1]["name"])):
-            return {"which": [m["name"] for m in matches[:4]], "note": "Ask which one they mean."}
+        if len(matches) > 1:
+            other = matches[1]
+            want = _words(query)
+            first_hits = want & _words(best["name"])
+            other_hits = want & _words(other["name"])
+            requested = query.strip().casefold()
+            exact_path = "/" in requested and best["name"].casefold() == requested
+            same_title = (best["source"] == other["source"] == "folder"
+                          and os.path.basename(best["name"]).casefold() == os.path.basename(other["name"]).casefold())
+            if not exact_path and other_hits and (first_hits != want or (same_title and first_hits == other_hits)):
+                return {"which": [m["name"] for m in matches[:4]], "note": "Ask which one they mean."}
         recipe = await self.async_load_recipe(best)
         if not recipe or not recipe["steps"]:
             return {"error": f"I couldn't read the {best['name']} recipe"}
