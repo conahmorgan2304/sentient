@@ -47,6 +47,11 @@ def test_saying_its_done_when_nothing_was() -> None:
     assert _kinds("turn off the hall and landing", "I've turned them off.", half) == ["action_failed"]
 
 
+def test_current_reminders_are_not_treated_as_a_history_question() -> None:
+    assert _kinds("What reminders have I got?", "You have no reminders set.", []) == []
+    assert _kinds("What reminders did I have yesterday?", "There were no reminders yesterday.", []) == ["no_evidence"]
+
+
 async def _setup(hass: HomeAssistant, **extra) -> MockConfigEntry:
     entry = MockConfigEntry(domain=DOMAIN, title="Nova", data={**OPTIONS, **extra}, unique_id=DOMAIN)
     entry.add_to_hass(hass)

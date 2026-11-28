@@ -163,8 +163,11 @@ EVIDENCE_NAMES = ("history", "timeline", "what_happened", "camera_activity", "vi
 
 def needs_evidence(asked: str) -> bool:
     """A question about something that happened, which should be looked up rather than answered from memory."""
+    from .local_answers import COMING
+
     asked = (asked or "").strip()
-    return bool(asked and QUESTION.search(asked) and PAST.search(asked) and not ABOUT_ITSELF.search(asked))
+    return bool(asked and QUESTION.search(asked) and PAST.search(asked)
+                and not (COMING.fullmatch(asked) or ABOUT_ITSELF.search(asked)))
 
 
 def is_evidence(name: str) -> bool:

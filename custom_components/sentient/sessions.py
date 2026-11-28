@@ -121,10 +121,11 @@ def is_conversation_end(text, question='', persona='', language=None, cues=False
 
 def spoken_text(response):
     """Read the final spoken response, including SSML, rather than tool metadata."""
-    speech = response.speech
-    if "plain" in speech:
-        return speech["plain"].get("speech", "").strip()
-    return html.unescape(re.sub(r"<[^>]+>", "", speech.get("ssml", {}).get("speech", ""))).strip()
+    speech = response.speech or {}
+    if isinstance(plain := (speech.get("plain") or {}).get("speech"), str) and plain.strip():
+        return plain.strip()
+    ssml = (speech.get("ssml") or {}).get("speech")
+    return html.unescape(re.sub(r"<[^>]+>", "", ssml)).strip() if isinstance(ssml, str) else ""
 
 
 def ends_in_question(text):

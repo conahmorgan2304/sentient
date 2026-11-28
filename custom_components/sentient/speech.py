@@ -796,7 +796,11 @@ class SpeechRouter:
                         "media_player_entity_id": [speaker], "message": text, "cache": True,
                         **({"language": language} if language else {}), **({"options": options} if options else {}),
                     }, target={"entity_id": engine}, blocking=True)
-        except (HomeAssistantError, TimeoutError, ValueError) as err:
+        except TimeoutError:
+            _LOGGER.warning("The reading voice (%s) timed out on %s. Playback is unconfirmed.", engine, speaker)
+            return [{"entity_id": speaker, "status": "timed_out", "playback": "unverified",
+                     "error": "Playback is unconfirmed after a timeout"}]
+        except (HomeAssistantError, ValueError) as err:
             _LOGGER.warning("The reading voice (%s) couldn't speak on %s: %s — using the usual voice", engine, speaker,
                             str(err) or type(err).__name__)
             self.reading_fallbacks.append((dt_util.utcnow(), engine, speaker))
@@ -813,6 +817,8 @@ class SpeechRouter:
                 return {"ok": False, "why": "that voice couldn't speak on this speaker (Echos only have Alexa's own voice)"}
         else:
             receipts = await self._speak(READING_SAMPLE, [speaker], chime=False)
+        if receipts and receipts[0]["status"] == "timed_out":
+            return {"ok": False, "why": receipts[0]["error"], "speaker": speaker}
         return {"ok": any(r["status"] == "accepted" for r in receipts or []), "speaker": speaker}
 
     async def _speak(self, text: str, speakers: list[str], chime: bool | None = None, *,

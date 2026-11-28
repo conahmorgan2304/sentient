@@ -1,7 +1,7 @@
 """Live checks observe real agent results; delivery receipts describe each target."""
 import asyncio
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import Context
@@ -13,12 +13,12 @@ from custom_components.sentient.speech import SpeechRouter
 from custom_components.sentient.selftest import SelfTest
 
 
-def turn(text, listening, device='one', reply='Anything else?'):
+def turn(text, listening, device='one', reply='Anything else?', cid='voice-check'):
     response = intent.IntentResponse(language='en')
     response.async_set_speech(reply)
     return (SimpleNamespace(text=text, device_id=device, satellite_id=None,
-                            context=Context(user_id='owner'), agent_id='sentient', language='en'),
-            SimpleNamespace(response=response, continue_conversation=listening))
+                            context=Context(user_id='owner'), agent_id='sentient', language='en', conversation_id=cid),
+            SimpleNamespace(response=response, continue_conversation=listening, conversation_id=cid))
 
 
 @pytest.mark.parametrize('closing,passed', [(False, True), (True, False)])
@@ -60,6 +60,42 @@ async def test_empty_reply_cannot_pass_live_check(hass):
     checks.observe(*turn('How is the system?', True, reply=''))
     checks.observe(*turn('No thankyou', False, reply=''))
     assert checks.status()['status'] == 'failed_agent_checks'
+
+
+async def test_live_check_reports_early_stop_as_a_failure_right_away(hass):
+    checks = VoiceChecks(hass)
+    run = checks.start()
+    checks.observe(*turn('How is the system?', False, reply='The system is fine.'))
+    assert checks.status()['status'] == 'failed_agent_checks'
+    assert len(checks.status()['steps']) == 1
+    assert checks.confirm_heard(run['id'], True)['heard_replies'] is True
+
+
+async def test_ending_a_different_conversation_on_the_same_speaker_does_not_pass(hass):
+    checks = VoiceChecks(hass)
+    checks.start()
+    checks.observe(*turn('How is the system?', True))
+    checks.observe(*turn('No thankyou', False, cid='other'))
+    assert checks.status()['status'] == 'waiting_for_ending'
+    assert len(checks.status()['steps']) == 1
+    checks.observe(*turn('No thankyou', False))
+    assert checks.status()['status'] == 'passed_agent_checks'
+
+
+async def test_a_timed_out_reading_voice_does_not_replay_through_default_tts(hass):
+    router = SpeechRouter(hass, {'reading_tts': 'tts.story', 'tts_entity': 'tts.usual'})
+    hass.states.async_set('tts.story', 'unknown')
+    calls = []
+
+    async def speak(call):
+        calls.append(call.data['entity_id'])
+        if len(calls) == 1:
+            raise TimeoutError
+
+    hass.services.async_register('tts', 'speak', speak)
+    with patch('custom_components.sentient.speech.asyncio.sleep', new_callable=AsyncMock):
+        assert not await router.async_read_aloud('Once upon a time.', 'media_player.bedroom', story=True)
+    assert calls == ['tts.story']
 
 
 async def test_partial_delivery_retry_skips_successful_speaker(hass):

@@ -98,6 +98,7 @@ def find_ai_agent(hass: HomeAssistant, opts: dict[str, Any], me: str | None) -> 
 
 
 NOT_ANSWERING = "The AI isn't answering right now, so I can only do simple things like lights and heating."
+NO_AGENT_REPLY = "The voice agent returned no spoken reply."
 
 
 async def async_setup_entry(
@@ -250,6 +251,8 @@ class BackedUpAgent(conversation.ConversationEntity):
             if unsubscribe is not None:
                 unsubscribe()
             acting_results.reset(token)
+            if completed and (attempt := speech_attempt.get()) is not None:
+                attempt["action_started"] = True  # the provider can fail after Home Assistant has acted
         if (flags := turn_flags.get()) is not None and history_results is not None:
             flags["camera_history_results"] = history_results
         return result, completed
@@ -459,9 +462,12 @@ class BackedUpAgent(conversation.ConversationEntity):
         return conversation.ConversationResult(response=response, conversation_id=conversation_id,
                                                continue_conversation=False)
 
-    def _plain_reply(self, user_input, text: str):
+    def _plain_reply(self, user_input, text: str, *, failed: bool = False):
         response = intent.IntentResponse(language=user_input.language)
-        response.async_set_speech(text)
+        if failed:
+            response.async_set_error(intent.IntentResponseErrorCode.UNKNOWN, text)
+        else:
+            response.async_set_speech(text)
         return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id,
                                                continue_conversation=False)
 
@@ -1197,6 +1203,8 @@ class BackedUpAgent(conversation.ConversationEntity):
                     result.response.async_set_speech(outcome_text(self.hass, session.last_action))
                 if guarded and session.last_action is prior_action_result:
                     result = self._checked_reply(user_input, result, completed)
+                    if result.response.response_type != intent.IntentResponseType.ERROR and not self._has_agent_reply(result):
+                        result.response.async_set_error(intent.IntentResponseErrorCode.UNKNOWN, NO_AGENT_REPLY)
                 if session.correction and result.response.response_type != intent.IntentResponseType.ERROR:
                     notice = rt.control.correction_notice(session)
                     if notice and (text := spoken_text(result.response)):
@@ -1249,6 +1257,26 @@ class BackedUpAgent(conversation.ConversationEntity):
         except Exception:  # noqa: BLE001 - keep the original reply without replaying any tool calls
             _LOGGER.debug("Couldn't validate the voice reply", exc_info=True)
             return result
+
+    @staticmethod
+    def _has_agent_reply(result) -> bool:
+        """Allow structured replies that Sentient renders locally and speech already sent to Assist."""
+        if spoken_text(result.response):
+            return True
+        from .focus import turn_flags
+
+        flags = turn_flags.get() or {}
+        if flags.get("hand_off") or "list_result" in flags:
+            return True
+        if (session := current_session.get()) is not None and (session.pending or session.clarification):
+            return True
+        from homeassistant.components.conversation.chat_log import current_chat_log
+
+        from .voice_stream import StreamWatch
+
+        log = current_chat_log.get()
+        watch = getattr(getattr(log, "delta_listener", None), "__self__", None)
+        return isinstance(watch, StreamWatch) and watch.started
 
     def _validated_agent_reply(self, user_input, result, *, completed=False):
         """Keep native intent results and validate prose returned by other agents."""
@@ -1342,11 +1370,16 @@ class BackedUpAgent(conversation.ConversationEntity):
                     why = "timed out" if isinstance(err, TimeoutError) else str(err) or type(err).__name__
                 else:
                     response = result.response
-                    if response.response_type != intent.IntentResponseType.ERROR or response.error_code not in FAILED_CODES:
-                        if gate is not None:
-                            gate.ok()
-                        return self._checked_reply(user_input, result, completed)
-                    why = response.speech.get("plain", {}).get("speech") or "an error"
+                    is_error = response.response_type == intent.IntentResponseType.ERROR
+                    if not is_error or response.error_code not in FAILED_CODES:
+                        reply = self._checked_reply(user_input, result, completed)
+                        if is_error or self._has_agent_reply(reply):
+                            if gate is not None:
+                                gate.ok()
+                            return reply
+                    if completed or (response.as_dict().get("data") or {}).get("success"):
+                        attempt["action_started"] = True
+                    why = spoken_text(response) or NO_AGENT_REPLY
                 if not self._is_selftest(user_input) and tries_left and not may_change and EMPTY_TURN in why.lower() and not attempt.get('started') \
                         and not attempt.get('action_started') and repair_chat_log(self.hass, user_input.conversation_id):
                     # 19 Nov 18:31: an earlier reply with nothing in it was left in the conversation, and Google
@@ -1360,7 +1393,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             if gate is not None:
                 gate.failed(RuntimeError(f"voice agent: {why}"))
         if self._is_selftest(user_input):
-            return self._plain_reply(user_input, NOT_ANSWERING)
+            return self._plain_reply(user_input, NOT_ANSWERING, failed=True)
         if attempt.get('started'):
             # An announcement may already have played. A fallback must not replay it.
             outcome = attempt.get('result', {})
@@ -1378,7 +1411,7 @@ class BackedUpAgent(conversation.ConversationEntity):
             response.async_set_speech(text)
             return conversation.ConversationResult(response=response, conversation_id=user_input.conversation_id)
         if attempt.get('action_started') or future_device or (self.main_agent and may_change and not _definitely_offline(why)):
-            return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.")
+            return self._plain_reply(user_input, "The AI didn't finish. I cannot confirm whether the requested action happened, so I haven't sent it to the backup or retried it. Please check the device before asking again.", failed=True)
         rt_local = getattr(self._entry, "runtime_data", None)
         from .local_answers import async_answer as local_answer
 
@@ -1431,12 +1464,16 @@ class BackedUpAgent(conversation.ConversationEntity):
                 backup_failure = str(err)
             else:
                 if result.response.response_type != intent.IntentResponseType.ERROR:
-                    return self._checked_reply(user_input, result, completed)
-                backup_failure = result.response.speech.get("plain", {}).get("speech") or ""
+                    reply = self._checked_reply(user_input, result, completed)
+                    if self._has_agent_reply(reply):
+                        return reply
+                    if completed or (result.response.as_dict().get("data") or {}).get("success"):
+                        attempt["action_started"] = True
+                backup_failure = spoken_text(result.response) or NO_AGENT_REPLY
             if may_change and (attempt.get("started") or attempt.get("action_started") or not _definitely_offline(backup_failure)):
                 break  # a backup may have performed the action before failing
         response = intent.IntentResponse(language=user_input.language)
-        response.async_set_speech(NOT_ANSWERING)
+        response.async_set_error(intent.IntentResponseErrorCode.UNKNOWN, NOT_ANSWERING)
         try:  # so a streaming pipeline speaks it too
             from homeassistant.components.conversation.chat_log import current_chat_log
 
@@ -1505,6 +1542,7 @@ class AlexaAgent(BackedUpAgent):
 
     _attr_translation_key = "alexa"
     _attr_icon = "mdi:amazon-alexa"
+    _unrecorded_attributes = frozenset({"last_late_answer"})
 
     def __init__(self, entry: SentientConfigEntry) -> None:
         super().__init__(entry)
@@ -1518,7 +1556,7 @@ class AlexaAgent(BackedUpAgent):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {**super().extra_state_attributes, "enabled": bool(self._options().get(CONF_ALEXA_SKILL)),
-                "last_late_answer": self.late or None}
+                "last_late_answer": None if self._guest() else self.late or None}
 
     async def _plain(self, user_input, text: str) -> conversation.ConversationResult:
         if (lang := user_input.language) and lang.lower().split("-")[0] != "en" \
@@ -1586,7 +1624,7 @@ class AlexaAgent(BackedUpAgent):
             if self._turn_tasks.get(key) is t:
                 self._turn_tasks.pop(key, None)
                 if late and privacy == self._history_generation() and opts is self._options():
-                    self.hass.async_create_task(self._say_late(t, echo, text))
+                    self.hass.async_create_task(self._say_late(t, echo, text, privacy, opts))
             if not t.cancelled():
                 t.exception()
 
@@ -1595,15 +1633,19 @@ class AlexaAgent(BackedUpAgent):
             return await self._plain(user_input, "Give me a moment, I'll tell you when I've got it.")
         return await self._plain(user_input, "The previous request is still in progress.")
 
-    async def _say_late(self, task: asyncio.Task, echo: str, asked: str) -> None:
+    async def _say_late(self, task: asyncio.Task, echo: str, asked: str, privacy: tuple, options: dict) -> None:
         from homeassistant.util import dt as dt_util
 
-        if task.cancelled() or task.exception() is not None:
+        if task.cancelled() or task.exception() is not None or privacy != self._history_generation() or options is not self._options():
             return
         answer = spoken_text(task.result().response)
         rt = getattr(self._entry, "runtime_data", None)
         if not answer or rt is None:
             return
-        await rt.speech.async_say(answer, targets=[echo], source="alexa:reply")
-        self.late = {"asked": asked[:200], "said": answer[:300], "on": echo, "time": dt_util.utcnow().isoformat()}
+        delivery = await rt.speech.async_say(answer, targets=[echo], source="alexa:reply")
+        if privacy != self._history_generation() or options is not self._options() or self._guest():
+            return
+        self.late = {"on": echo, "time": dt_util.utcnow().isoformat(), "delivery": delivery.reason}
+        if delivery.spoken:
+            self.late.update(asked=asked[:200], said=answer[:300])
         self.async_write_ha_state()

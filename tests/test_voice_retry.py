@@ -1,6 +1,7 @@
 """A busy AI service gets one more try before the backup answers."""
 from unittest.mock import Mock, patch
 
+import pytest
 from homeassistant.helpers import intent
 
 from tests.test_voice_sessions_control import agent, request, response
@@ -137,3 +138,79 @@ async def test_provider_and_backup_work_without_chat_log_subscriptions(hass, mon
         result = await obj.async_process(request("Tell me a joke"))
     assert [call.args[0] for call in calls.call_args_list] == ["conversation.primary", obj.backup_agent]
     assert result.response.speech["plain"]["speech"] == "Backup here."
+
+
+@pytest.mark.parametrize("silence", ["   ", None])
+async def test_a_silent_primary_uses_the_backup_for_an_information_request(hass, silence):
+    obj = _agent(hass)
+    silent = response("")
+    silent.response.speech["plain"]["speech"] = silence
+    with patch.object(obj, "_converse", side_effect=[silent, response("Backup here.")]) as calls, \
+            patch.object(obj, "async_write_ha_state"):
+        result = await obj.async_process(request("Tell me a joke"))
+    assert [call.args[0] for call in calls.call_args_list] == ["conversation.primary", obj.backup_agent]
+    assert result.response.speech["plain"]["speech"] == "Backup here."
+
+
+async def test_a_silent_primary_does_not_replay_a_device_command(hass):
+    obj = _agent(hass)
+    with patch.object(obj, "_converse", return_value=response("")) as provider:
+        result = await obj.async_process(request("Turn the light off"))
+    provider.assert_awaited_once()
+    assert result.response.response_type == intent.IntentResponseType.ERROR
+    assert "haven't sent it to the backup" in result.response.speech["plain"]["speech"]
+
+
+async def test_two_silent_agents_return_a_spoken_error(hass):
+    from custom_components.sentient.conversation import NOT_ANSWERING
+
+    obj = _agent(hass)
+    with patch.object(obj, "_converse", side_effect=[response(""), response(" ")]) as provider, \
+            patch.object(obj, "async_write_ha_state"):
+        result = await obj.async_process(request("Tell me a joke"))
+    assert provider.await_count == 2
+    assert result.response.response_type == intent.IntentResponseType.ERROR
+    assert result.response.speech["plain"]["speech"] == NOT_ANSWERING
+
+
+async def test_a_spoken_handoff_keeps_the_authoritative_reply(hass):
+    from custom_components.sentient.focus import turn_flags
+
+    obj = _agent(hass)
+
+    async def converse(_agent, _input):
+        turn_flags.get()["hand_off"] = "I started reading it on the tablet."
+        return response("")
+
+    with patch.object(obj, "_converse", side_effect=converse) as provider:
+        result = await obj.async_process(request("Read me the book"))
+    provider.assert_awaited_once()
+    assert result.response.speech["plain"]["speech"] == "I started reading it on the tablet."
+
+
+async def test_a_reported_device_action_survives_the_provider_failing_afterwards(hass, monkeypatch):
+    from homeassistant.components.conversation import chat_log
+
+    obj = _agent(hass)
+    callbacks = []
+
+    def subscribe(_hass, callback):
+        callbacks.append(callback)
+        return lambda: callbacks.remove(callback)
+
+    async def converse(_agent, _input):
+        for observer in callbacks:
+            observer("voice", "content_added", {"content": {
+                "role": "tool_result", "tool_name": "HassTurnOn", "tool_result": {
+                    "response_type": "action_done", "data": {"success": [{"name": "Heater"}]},
+                },
+            }})
+        raise RuntimeError("503 Service Unavailable")
+
+    monkeypatch.setattr(chat_log, "async_subscribe_chat_logs", subscribe, raising=False)
+    with patch.object(obj, "_converse", side_effect=converse) as provider, \
+            patch.object(obj, "async_write_ha_state"), patch("custom_components.sentient.conversation.RETRY_PAUSE", 0):
+        result = await obj.async_process(request("I’m cold"))
+    provider.assert_awaited_once()
+    assert result.response.response_type == intent.IntentResponseType.ERROR
+    assert "haven't sent it to the backup" in result.response.speech["plain"]["speech"]
