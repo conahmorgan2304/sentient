@@ -22,6 +22,7 @@ from .shortcuts import async_run_actions
 
 _LOGGER = logging.getLogger(__name__)
 ROOM_WINDOW = timedelta(minutes=90)
+HEATING_OFF = "heating schedules are switched off in Settings"
 
 
 def due(alarm: dict[str, Any], local: datetime) -> bool:
@@ -174,14 +175,20 @@ class Alarms:
             if generation != self._generation or alarm is None or not due(alarm, local):
                 return
             try:
-                await self._claim(alarm)
+                if not await self._claim(alarm):
+                    return
             except OSError:
                 _LOGGER.exception("Alarm %s could not record its dispatch", alarm["name"])
                 return
         if generation == self._generation:
             await self.async_ring(alarm, claimed=True)
 
-    async def _claim(self, alarm):
+    async def _claim(self, alarm) -> bool:
+        if alarm.get("heating"):
+            from .heating_schedule import enabled
+
+            if not enabled(self._rt().options):
+                return False
         changes = {"last_rang": dt_util.utcnow().isoformat()}
         if not alarm.get("days"):
             changes["enabled"] = False
@@ -189,6 +196,7 @@ class Alarms:
             await self.items.async_commit(lambda: self.items.update(alarm["id"], **changes))
         else:
             self.items.update(alarm["id"], **changes)
+        return True
 
     def _checked(self, alarm: dict[str, Any]) -> list[dict[str, Any]]:
         """The actions to run. Only alarms saved on the Alarms page by an admin run exactly as set; everything else —
@@ -213,12 +221,7 @@ class Alarms:
 
         rt = self._rt()
         if not enabled(rt.options):
-            return {"skipped": "heating schedules are switched off in Settings"}
-        now = dt_util.utcnow()
-        changes: dict[str, Any] = {"last_rang": now.isoformat()}
-        if not alarm.get("days"):
-            changes["enabled"] = False
-        self.items.update(alarm["id"], **changes)
+            return {"skipped": HEATING_OFF}
         actions, why = heating_actions(self.hass, rt.options, alarm.get("heating"))
         if why:
             _LOGGER.warning("Heating schedule %s: not run — %s", alarm["name"], why)
@@ -234,12 +237,13 @@ class Alarms:
         return {"ran": alarm["name"]}
 
     async def async_ring(self, alarm: dict[str, Any], *, claimed: bool = False) -> dict[str, Any]:
+        if not claimed:
+            async with self.items.write_lock:
+                if not await self._claim(alarm):
+                    return {"skipped": HEATING_OFF}
         if alarm.get("heating"):
             return await self._ring_heating(alarm)
         rt = self._rt()
-        if not claimed:
-            async with self.items.write_lock:
-                await self._claim(alarm)
         local = dt_util.now()
         if alarm.get("silent"):
             rt.timeline.add("mode", alarm["name"], "schedule")

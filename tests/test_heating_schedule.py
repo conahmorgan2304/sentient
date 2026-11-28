@@ -87,6 +87,46 @@ async def test_switched_off_and_deleted_from_the_page(hass: HomeAssistant, hass_
     assert (await ws.receive_json())["success"]
     await ws.send_json({"id": 6, "type": "sentient/heating"})
     assert (await ws.receive_json())["result"]["schedules"] == []
+
+
+async def test_disabled_heating_does_not_consume_a_one_off_schedule(hass: HomeAssistant, freezer) -> None:
+    freezer.move_to(dt_util.as_utc(datetime(2026, 11, 9, 6, 29, tzinfo=dt_util.get_default_time_zone())))
+    entry = await _setup(hass, heating_schedule=False)
+    rt = entry.runtime_data
+    calls = async_mock_service(hass, "climate", "set_temperature")
+    alarm = rt.lists["alarms"].upsert({"name": "Living room", "time": "06:30:00", "days": [],
+                                     "heating": {"entity_id": ZONE, "temperature": 21}})
+
+    freezer.tick(timedelta(minutes=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert not calls
+    assert alarm["enabled"] and alarm.get("last_rang") is None
+
+    rt.options = {**rt.options, "heating_schedule": True}
+    freezer.tick(timedelta(days=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [call.data["temperature"] for call in calls] == [21]
+    assert not alarm["enabled"] and alarm["last_rang"]
+
+
+async def test_heating_save_requires_a_successful_storage_write(hass, hass_ws_client, hass_admin_user, monkeypatch):
+    entry = await _setup(hass)
+    items = entry.runtime_data.lists["alarms"]
+
+    async def failed_save():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(items, "async_flush", failed_save)
+    ws = await hass_ws_client(hass)
+    await ws.send_json_auto_id({"type": "sentient/heating/save", "entity_id": ZONE, "time": "06:30",
+                                "temperature": 21})
+    reply = await ws.receive_json()
+    assert not reply["success"] and reply["error"]["code"] == "storage_error"
+    assert not items.items
+
+
 def test_a_thermostat_that_is_off_is_switched_back_on(hass: HomeAssistant) -> None:
     from custom_components.sentient.heating_schedule import heating_actions
 

@@ -124,7 +124,8 @@ def future_device_request(text: str | None) -> bool:
         r"\b(?:turn|switch|set|dim|brighten|start|stop|włącz|wyłącz|ustaw|przyciemnij|"
         r"allume|éteins|règle|schalte|stelle)\b", text, re.I)
     future = re.search(
-        r"\b(?:at \d|in \d+ (?:minutes?|hours?)|tomorrow|tonight|every (?:day|night|morning)|"
+        r"\b(?:at (?:\d|midnight|noon)|in (?:\d+|[a-z]+(?:[- ][a-z]+){0,2}) (?:minutes?|hours?)|"
+        r"tomorrow|tonight|every (?:day|night|morning)|"
         r"o (?:godzinie )?\d|za \d+ (?:minut|godzin)\w*|jutro|dziś wieczorem|"
         r"à \d|dans \d+ minutes?|demain|ce soir|um \d|morgen|heute abend)\b", text, re.I)
     reminder = re.search(r"\b(?:remind|przypomnij|rappelle|erinnere|if|jeśli|si)\b", text, re.I)
