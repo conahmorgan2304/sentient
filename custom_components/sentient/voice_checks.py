@@ -41,6 +41,7 @@ class VoiceChecks:
                     'instructions': f'End any previous discussion, then start with your wake word and say “{question}”.' + (f' Then say “{ending}”.' if mode in ('conversation', 'question') else ' It should finish without listening again.'),
                     'limits': 'Observes the text and result reaching the Sentient agent. It cannot independently verify microphone capture, audibility, or the hardware stopping.'}
         self._owner = None
+        self._conversation_id = None
         self._notify()
         return self.status()
 
@@ -92,9 +93,12 @@ class VoiceChecks:
             if not matches:
                 return
             self._owner = owner
+            self._conversation_id = result.conversation_id
             expected = run["mode"] in ("conversation", "question")
         else:
             if owner != self._owner:
+                return
+            if self._conversation_id and self._conversation_id not in (user_input.conversation_id, result.conversation_id):
                 return
             from .voice_locale import clean
 
@@ -108,7 +112,7 @@ class VoiceChecks:
                 'expected_listening': expected,
                 'passed': bool(spoken_text(result.response)) and result.continue_conversation == expected and result.response.response_type != intent.IntentResponseType.ERROR}
         self.run['steps'].append(step)
-        if expected:
+        if expected and step['passed']:
             self.run['status'] = 'waiting_for_ending'
         else:
             self.run['status'] = 'passed_agent_checks' if all(s['passed'] for s in self.run['steps']) else 'failed_agent_checks'

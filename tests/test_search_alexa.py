@@ -11,6 +11,7 @@ from homeassistant.helpers import intent, llm
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
 from custom_components.sentient.const import DOMAIN
+from custom_components.sentient.speech import SpeechResult
 
 OPTIONS = {"persona": "Nova", "speakers": ["assist_satellite.kitchen"], "default_speaker": "assist_satellite.kitchen",
            "quiet_start": "00:00:00", "quiet_end": "00:00:00"}
@@ -109,7 +110,7 @@ async def test_alexa_slow_answer_said_on_that_echo(hass: HomeAssistant) -> None:
         await release.wait()
         return _result("The bins go out tomorrow.")
 
-    said = AsyncMock()
+    said = AsyncMock(return_value=SpeechResult(True, "spoken", "The bins go out tomorrow.", ["media_player.kitchen_echo"]))
     with patch.object(agent, "_converse", side_effect=converse), \
          patch("custom_components.sentient.conversation.DEFAULT_ALEXA_WAIT", 2), \
          patch.object(entry.runtime_data.speech, "async_say", said):
@@ -122,6 +123,7 @@ async def test_alexa_slow_answer_said_on_that_echo(hass: HomeAssistant) -> None:
         await asyncio.sleep(0)
         await hass.async_block_till_done()
     said.assert_awaited_once_with("The bins go out tomorrow.", targets=["media_player.kitchen_echo"], source="alexa:reply")
+    assert agent.late["delivery"] == "spoken" and agent.late["said"] == "The bins go out tomorrow."
 
 
 async def test_repeated_alexa_command_while_pending_is_not_sent_twice(hass):
@@ -137,8 +139,9 @@ async def test_repeated_alexa_command_while_pending_is_not_sent_twice(hass):
         await release.wait()
         return _result("The speaker reported playback.")
 
+    delivery = SpeechResult(True, "spoken", "The speaker reported playback.", ["media_player.kitchen_echo"])
     with patch.object(agent, "_converse", side_effect=converse), \
-            patch.object(entry.runtime_data.speech, "async_say", AsyncMock()) as said:
+            patch.object(entry.runtime_data.speech, "async_say", AsyncMock(return_value=delivery)) as said:
         ask = _input("Play the radio")
         first = await agent.async_process(ask)
         repeated = await agent.async_process(ask)
@@ -148,6 +151,28 @@ async def test_repeated_alexa_command_while_pending_is_not_sent_twice(hass):
         release.set()
         await hass.async_block_till_done()
         said.assert_awaited_once()
+
+
+async def test_alexa_late_reply_does_not_report_failed_delivery_as_said(hass):
+    echo = "media_player.kitchen_echo"
+    hass.states.async_set(echo, "idle", {"last_called": True, "last_called_timestamp": time.time() * 1000})
+    entry = await _setup(hass, alexa_skill=True, alexa_wait=0.01, voice_agent="conversation.ai")
+    agent = await _alexa_agent(hass)
+    release = asyncio.Event()
+
+    async def converse(_agent_id, _input):
+        await release.wait()
+        return _result("The bins go out tomorrow.")
+
+    with patch.object(agent, "_converse", side_effect=converse), \
+            patch.object(entry.runtime_data.speech, "async_say", AsyncMock(return_value=SpeechResult(
+                False, "delivery_timeout", "The bins go out tomorrow.", []))):
+        first = await agent.async_process(_input("When are the bins?"))
+        assert "Give me a moment" in first.response.speech["plain"]["speech"]
+        release.set()
+        await hass.async_block_till_done()
+    assert agent.late["delivery"] == "delivery_timeout"
+    assert "said" not in agent.late
 
 
 async def test_alexa_off(hass: HomeAssistant) -> None:
